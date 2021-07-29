@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -29,11 +28,10 @@ public class PersistEventIndexHandlerStateMediator
 
   protected EventImportIndexHandlerRegistry importIndexHandlerRegistry;
 
-  protected PersistEventIndexHandlerStateMediator(final ImportIndexWriter importIndexWriter,
-                                                  final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                  final EventImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                  final ConfigurationService configurationService) {
-    super(new StoreIndexesEngineImportService(importIndexWriter, elasticsearchImportJobExecutor), configurationService);
+  protected PersistEventIndexHandlerStateMediator(final ConfigurationService configurationService,
+                                                  final ImportIndexWriter importIndexWriter,
+                                                  final EventImportIndexHandlerRegistry importIndexHandlerRegistry) {
+    super(new StoreIndexesEngineImportService(configurationService, importIndexWriter), configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
   }
 

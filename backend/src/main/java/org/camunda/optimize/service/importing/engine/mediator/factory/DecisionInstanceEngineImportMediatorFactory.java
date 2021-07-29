@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -55,14 +54,11 @@ public class DecisionInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   public DecisionInstanceEngineImportMediator createDecisionInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new DecisionInstanceEngineImportMediator(
       importIndexHandlerRegistry.getDecisionInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(DecisionInstanceFetcher.class, engineContext),
       new DecisionInstanceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         engineContext,
         decisionInstanceWriter,
         decisionDefinitionResolverService,

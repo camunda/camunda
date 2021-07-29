@@ -5,19 +5,18 @@
  */
 package org.camunda.optimize.service.es;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ElasticsearchImportJobExecutor extends ImportJobExecutor {
 
   private final ConfigurationService configurationService;
+
+  public ElasticsearchImportJobExecutor(final String name, final ConfigurationService configurationService) {
+    super(name);
+    this.configurationService = configurationService;
+    startExecutingImportJobs();
+  }
 
   @Override
   protected int getExecutorThreadCount() {

@@ -35,11 +35,12 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
 
   public RunningActivityInstanceImportService(final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                               final CamundaEventImportService camundaEventService,
-                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               final EngineContext engineContext,
-                                              final ProcessDefinitionResolverService processDefinitionResolverService,
-                                              final ConfigurationService configurationService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+                                              final ConfigurationService configurationService,
+                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventService = camundaEventService;

@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -38,11 +37,9 @@ public class StorePositionBasedIndexImportMediatorFactory extends AbstractZeebeI
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto dataSourceDto) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
     return List.of(new StorePositionBasedIndexesImportMediator(
       importIndexHandlerRegistry,
-      new StorePositionBasedIndexImportService(importIndexWriter, elasticsearchImportJobExecutor),
+      new StorePositionBasedIndexImportService(configurationService, importIndexWriter),
       configurationService,
       dataSourceDto
     ));

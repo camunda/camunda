@@ -30,11 +30,12 @@ public abstract class AbstractIncidentImportService implements ImportService<His
   protected final ConfigurationService configurationService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  protected AbstractIncidentImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  protected AbstractIncidentImportService(final ConfigurationService configurationService,
                                           final EngineContext engineContext,
-                                          final ProcessDefinitionResolverService processDefinitionResolverService,
-                                          final ConfigurationService configurationService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+                                          final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;

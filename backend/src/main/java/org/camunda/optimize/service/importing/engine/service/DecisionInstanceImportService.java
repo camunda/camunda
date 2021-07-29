@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
@@ -29,6 +28,7 @@ import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsear
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
-@AllArgsConstructor
 @Slf4j
 public class DecisionInstanceImportService implements ImportService<HistoricDecisionInstanceDto> {
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -45,6 +44,22 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
   private final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
   private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
+
+  public DecisionInstanceImportService(final ConfigurationService configurationService,
+                                       final EngineContext engineContext,
+                                       final DecisionInstanceWriter decisionInstanceWriter,
+                                       final DecisionDefinitionResolverService decisionDefinitionResolverService,
+                                       final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
+                                       final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.decisionInstanceWriter = decisionInstanceWriter;
+    this.decisionDefinitionResolverService = decisionDefinitionResolverService;
+    this.decisionInputImportAdapterProvider = decisionInputImportAdapterProvider;
+    this.decisionOutputImportAdapterProvider = decisionOutputImportAdapterProvider;
+  }
 
   @Override
   public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable importCompleteCallback) {

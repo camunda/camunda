@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.StorePositionBasedIndexElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.PositionBasedImportIndexWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
@@ -24,6 +25,14 @@ public class StorePositionBasedIndexImportService implements ImportService<Posit
 
   private final PositionBasedImportIndexWriter importIndexWriter;
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+
+  public StorePositionBasedIndexImportService(final ConfigurationService configurationService,
+                                              final PositionBasedImportIndexWriter importIndexWriter) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.importIndexWriter = importIndexWriter;
+  }
 
   public void executeImport(final List<PositionBasedImportIndexDto> importIndexesToStore,
                             final Runnable importCompleteCallback) {

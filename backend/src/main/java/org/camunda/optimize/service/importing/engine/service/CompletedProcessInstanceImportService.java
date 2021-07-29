@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
@@ -26,20 +25,13 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final CamundaEventImportService camundaEventService;
 
-  public CompletedProcessInstanceImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public CompletedProcessInstanceImportService(final ConfigurationService configurationService,
                                                final EngineContext engineContext,
                                                final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                                final CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                final CamundaEventImportService camundaEventService,
-                                               final ProcessDefinitionResolverService processDefinitionResolverService,
-                                               final ConfigurationService configurationService) {
-    super(
-      elasticsearchImportJobExecutor,
-      engineContext,
-      businessKeyImportAdapterProvider,
-      processDefinitionResolverService,
-      configurationService
-    );
+                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
+    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService);
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }

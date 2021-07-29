@@ -5,22 +5,29 @@
  */
 package org.camunda.optimize.service.importing.event.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.EventTraceStateService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.EventCountAndTracesImportJob;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
-@RequiredArgsConstructor
 @Slf4j
 public class EventTraceImportService implements ImportService<EventDto> {
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EventTraceStateService eventTraceStateService;
+
+  public EventTraceImportService(final ConfigurationService configurationService,
+                                 final EventTraceStateService eventTraceStateService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.eventTraceStateService = eventTraceStateService;
+  }
 
   @Override
   public void executeImport(final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {

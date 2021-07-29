@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service.zeebe;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -23,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
 @Slf4j
 public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeProcessDefinitionRecordDto> {
 
@@ -31,6 +29,17 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ConfigurationService configurationService;
   private final int partitionId;
+
+  public ZeebeProcessDefinitionImportService(final ConfigurationService configurationService,
+                                             final ProcessDefinitionWriter processDefinitionWriter,
+                                             final int partitionId) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.partitionId = partitionId;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void executeImport(final List<ZeebeProcessDefinitionRecordDto> pageOfProcessDefinitions,

@@ -9,26 +9,22 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public abstract class ImportJobExecutor {
 
-  private static final ThreadFactory THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("ImportJobExecutor-pool-%d").build();
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  @PostConstruct
-  public void init() {
-    startExecutingImportJobs();
+  private final String name;
+
+  protected ImportJobExecutor(final String name) {
+    this.name = name;
   }
 
-  @PreDestroy
   public void shutdown() {
     stopExecutingImportJobs();
   }
@@ -60,7 +56,7 @@ public abstract class ImportJobExecutor {
           Long.MAX_VALUE,
           TimeUnit.DAYS,
           importJobsQueue,
-          THREAD_FACTORY,
+          new ThreadFactoryBuilder().setNameFormat("ImportJobExecutor-pool-" + this.name + "-%d").build(),
           new BlockCallerUntilExecutorHasCapacity()
         );
     }
@@ -78,7 +74,7 @@ public abstract class ImportJobExecutor {
 
   public void stopExecutingImportJobs() {
     // Ask the thread pool to finish and exit
-    importExecutor.shutdown();
+    importExecutor.shutdownNow();
 
     // Waits for 1 minute to finish all currently executing jobs
     try {

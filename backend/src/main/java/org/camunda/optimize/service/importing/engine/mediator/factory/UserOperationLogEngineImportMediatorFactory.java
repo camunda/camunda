@@ -7,11 +7,10 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ProcessInstanceResolverService;
 import org.camunda.optimize.service.importing.engine.service.UserOperationLogImportService;
@@ -50,14 +49,11 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineI
 
   public UserOperationLogEngineImportMediator createUserOperationLogEngineImportMediator(
     final EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new UserOperationLogEngineImportMediator(
       importIndexHandlerRegistry.getUserOperationsLogImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(UserOperationLogFetcher.class, engineContext),
       new UserOperationLogImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         runningProcessInstanceWriter,
         importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
         processDefinitionResolverService,

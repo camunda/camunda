@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -14,27 +15,25 @@ import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticse
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class CompletedUserTaskInstanceImportService implements ImportService<HistoricUserTaskInstanceDto> {
-  private static final Logger logger = LoggerFactory.getLogger(CompletedUserTaskInstanceImportService.class);
-
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
 
-  public CompletedUserTaskInstanceImportService(final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
-                                                final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public CompletedUserTaskInstanceImportService(final ConfigurationService configurationService,
+                                                final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
                                                 final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                final ConfigurationService configurationService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -44,7 +43,7 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   @Override
   public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities,
                             Runnable importCompleteCallback) {
-    logger.trace("Importing completed user task entities from engine...");
+    log.trace("Importing completed user task entities from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {

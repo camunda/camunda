@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
@@ -25,20 +24,13 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final CamundaEventImportService camundaEventService;
 
-  public RunningProcessInstanceImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public RunningProcessInstanceImportService(final ConfigurationService configurationService,
                                              final EngineContext engineContext,
                                              final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                              final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                              final CamundaEventImportService camundaEventService,
-                                             final ProcessDefinitionResolverService processDefinitionResolverService,
-                                             final ConfigurationService configurationService) {
-    super(
-      elasticsearchImportJobExecutor,
-      engineContext,
-      businessKeyImportAdapterProvider,
-      processDefinitionResolverService,
-      configurationService
-    );
+                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
+    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }

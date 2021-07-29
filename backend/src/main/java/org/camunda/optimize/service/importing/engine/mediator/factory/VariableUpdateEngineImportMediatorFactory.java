@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -50,20 +49,16 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
 
   public VariableUpdateEngineImportMediator createVariableUpdateEngineImportMediator(
     final EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new VariableUpdateEngineImportMediator(
       importIndexHandlerRegistry.getVariableUpdateInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
       new VariableUpdateInstanceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         variableImportAdapterProvider,
         variableWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         engineContext,
-        processDefinitionResolverService,
-        configurationService
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

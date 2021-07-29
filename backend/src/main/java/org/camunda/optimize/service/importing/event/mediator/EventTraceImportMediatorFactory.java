@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.EventTraceStateServiceFactory;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.events.CamundaTraceableEventFetcherService;
 import org.camunda.optimize.service.events.ExternalEventService;
@@ -31,15 +30,12 @@ public class EventTraceImportMediatorFactory {
   private final BackoffCalculator idleBackoffCalculator;
 
   public EventTraceImportMediator createCamundaEventTraceImportMediator(final String processDefinitionKey) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return beanFactory.getBean(
       EventTraceImportMediator.class,
       beanFactory.getBean(CamundaTraceableEventFetcherService.class, camundaEventService, processDefinitionKey),
       eventImportIndexHandlerRegistry.getCamundaEventTraceImportIndexHandler(processDefinitionKey),
       new EventTraceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey)
       ),
       configurationService,
@@ -48,15 +44,12 @@ public class EventTraceImportMediatorFactory {
   }
 
   public EventTraceImportMediator createExternalEventTraceImportMediator() {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return beanFactory.getBean(
       EventTraceImportMediator.class,
       externalEventService,
       eventImportIndexHandlerRegistry.getExternalEventTraceImportIndexHandler(),
       new EventTraceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         eventTraceStateServiceFactory.createEventTraceStateService(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX)
       ),
       configurationService,

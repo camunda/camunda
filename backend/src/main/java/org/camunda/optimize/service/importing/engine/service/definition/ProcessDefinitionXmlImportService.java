@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.service.importing.engine.service.definition;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,11 +26,20 @@ import static org.camunda.optimize.service.util.BpmnModelUtil.extractUserTaskNam
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
 @Slf4j
-@AllArgsConstructor
 public class ProcessDefinitionXmlImportService implements ImportService<ProcessDefinitionXmlEngineDto> {
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
+
+  public ProcessDefinitionXmlImportService(final ConfigurationService configurationService,
+                                           final EngineContext engineContext,
+                                           final ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.processDefinitionXmlWriter = processDefinitionXmlWriter;
+  }
 
   @Override
   public void executeImport(final List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities,

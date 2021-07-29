@@ -16,8 +16,6 @@ import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceEl
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,8 +24,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CompletedActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
 
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
+
+  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -35,11 +34,12 @@ public class CompletedActivityInstanceImportService implements ImportService<His
 
   public CompletedActivityInstanceImportService(final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                 final CamundaEventImportService camundaEventService,
-                                                final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                 final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                final ConfigurationService configurationService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+                                                final ConfigurationService configurationService,
+                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventService = camundaEventService;

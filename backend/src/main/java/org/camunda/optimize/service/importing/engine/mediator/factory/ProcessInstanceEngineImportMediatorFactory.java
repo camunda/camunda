@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -61,20 +60,16 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
 
   public CompletedProcessInstanceEngineImportMediator createCompletedProcessInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new CompletedProcessInstanceEngineImportMediator(
       importIndexHandlerRegistry.getCompletedProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(CompletedProcessInstanceFetcher.class, engineContext),
       new CompletedProcessInstanceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         engineContext,
         businessKeyImportAdapterProvider,
         completedProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService,
-        configurationService
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -83,20 +78,16 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
 
   public RunningProcessInstanceEngineImportMediator createRunningProcessInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new RunningProcessInstanceEngineImportMediator(
       importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(RunningProcessInstanceFetcher.class, engineContext),
       new RunningProcessInstanceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         engineContext,
         businessKeyImportAdapterProvider,
         runningProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService,
-        configurationService
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

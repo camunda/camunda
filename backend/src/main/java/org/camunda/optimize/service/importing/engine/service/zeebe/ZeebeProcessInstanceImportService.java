@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -40,7 +39,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
-@AllArgsConstructor
 @Slf4j
 public class ZeebeProcessInstanceImportService implements ImportService<ZeebeProcessInstanceRecordDto> {
 
@@ -52,6 +50,17 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
   private final ZeebeProcessInstanceWriter processInstanceWriter;
   private final ConfigurationService configurationService;
   private final int partitionId;
+
+  public ZeebeProcessInstanceImportService(final ConfigurationService configurationService,
+                                           final ZeebeProcessInstanceWriter processInstanceWriter,
+                                           final int partitionId) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.processInstanceWriter = processInstanceWriter;
+    this.partitionId = partitionId;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void executeImport(final List<ZeebeProcessInstanceRecordDto> zeebeProcessInstanceRecords,

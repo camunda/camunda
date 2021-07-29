@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service.definition;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
@@ -19,6 +18,7 @@ import org.camunda.optimize.service.es.job.importing.DecisionDefinitionXmlElasti
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,13 +28,24 @@ import static org.camunda.optimize.service.util.DmnModelUtil.extractInputVariabl
 import static org.camunda.optimize.service.util.DmnModelUtil.extractOutputVariables;
 import static org.camunda.optimize.service.util.DmnModelUtil.parseDmnModel;
 
-@AllArgsConstructor
 @Slf4j
 public class DecisionDefinitionXmlImportService implements ImportService<DecisionDefinitionXmlEngineDto> {
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
+
+  public DecisionDefinitionXmlImportService(final ConfigurationService configurationService,
+                                            final EngineContext engineContext,
+                                            final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
+                                            final DecisionDefinitionResolverService decisionDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
+    this.decisionDefinitionResolverService = decisionDefinitionResolverService;
+  }
 
   @Override
   public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList,

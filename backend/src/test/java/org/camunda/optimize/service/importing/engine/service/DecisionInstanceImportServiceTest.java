@@ -9,18 +9,19 @@ import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +45,7 @@ public class DecisionInstanceImportServiceTest {
   private DecisionInstanceWriter decisionInstanceWriter;
 
   @Mock
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private ConfigurationService configurationService;
 
   @Mock
   private EngineContext engineContext;
@@ -62,6 +63,8 @@ public class DecisionInstanceImportServiceTest {
 
   @BeforeEach
   public void init() {
+    when(configurationService.getElasticsearchJobExecutorThreadCount()).thenReturn(1);
+    when(configurationService.getElasticsearchJobExecutorQueueSize()).thenReturn(1);
     when(decisionDefinitionResolverService.getDefinition(any(), any()))
       .thenReturn(Optional.of(
         DecisionDefinitionOptimizeDto.builder()
@@ -73,13 +76,18 @@ public class DecisionInstanceImportServiceTest {
           .tenantId("")
           .build()));
     this.underTest = new DecisionInstanceImportService(
-      elasticsearchImportJobExecutor,
+      configurationService,
       engineContext,
       decisionInstanceWriter,
       decisionDefinitionResolverService,
       decisionInputImportAdapterProvider,
       decisionOutputImportAdapterProvider
     );
+  }
+
+  @AfterEach
+  public void after() {
+    this.underTest.shutdown();
   }
 
   @Test

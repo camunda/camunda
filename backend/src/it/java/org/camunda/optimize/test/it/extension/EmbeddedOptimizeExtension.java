@@ -21,7 +21,6 @@ import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -248,24 +247,29 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
-    ProcessDefinitionResolverService processDefinitionResolverService = getApplicationContext().getBean(
-      ProcessDefinitionResolverService.class);
+    ProcessDefinitionResolverService processDefinitionResolverService =
+      getApplicationContext().getBean(ProcessDefinitionResolverService.class);
     CamundaEventImportServiceFactory camundaEventServiceFactory =
-      getApplicationContext().getBean(CamundaEventImportServiceFactory.class);
+      getApplicationContext().getimport org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;Bean(CamundaEventImportServiceFactory.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
-      RunningActivityInstanceImportService service =
+      final RunningActivityInstanceImportService service =
         new RunningActivityInstanceImportService(
           writer,
           camundaEventServiceFactory.createCamundaEventService(configuredEngine),
-          getElasticsearchImportJobExecutor(),
           configuredEngine,
-          processDefinitionResolverService,
-          getConfigurationService()
+          getConfigurationService(),
+          processDefinitionResolverService
         );
-      CompletableFuture<Void> done = new CompletableFuture<>();
-      service.executeImport(activities, () -> done.complete(null));
-      done.get();
+      try {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        service.executeImport(activities, () -> done.complete(null));
+        done.get();
+      } finally {
+        service.shutdown();
+      }
     }
   }
 
@@ -390,10 +394,6 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  private ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return getOptimize().getElasticsearchImportJobExecutor();
-  }
-
   public OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutor;
   }
@@ -418,7 +418,6 @@ public class EmbeddedOptimizeExtension
     getOptimize().start();
     getElasticsearchMetadataService().initMetadataIfMissing(getOptimizeElasticClient());
     getAlertService().init();
-    getElasticsearchImportJobExecutor().startExecutingImportJobs();
   }
 
   public void reloadConfiguration() {
@@ -430,12 +429,6 @@ public class EmbeddedOptimizeExtension
   }
 
   public void stopOptimize() {
-    try {
-      this.getElasticsearchImportJobExecutor().stopExecutingImportJobs();
-    } catch (Exception e) {
-      log.error("Failed to stop elasticsearch import", e);
-    }
-
     try {
       this.getAlertService().destroy();
     } catch (Exception e) {

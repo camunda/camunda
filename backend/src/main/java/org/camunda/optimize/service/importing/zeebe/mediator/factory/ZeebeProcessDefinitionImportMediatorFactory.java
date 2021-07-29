@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -40,8 +39,6 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
     return Collections.singletonList(
       new ZeebeProcessDefinitionImportMediator(
         importIndexHandlerRegistry.getZeebeProcessDefinitionImportIndexHandler(zeebeDataSourceDto.getPartitionId()),
@@ -53,9 +50,8 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
           configurationService
         ),
         new ZeebeProcessDefinitionImportService(
-          elasticsearchImportJobExecutor,
-          processDefinitionWriter,
           configurationService,
+          processDefinitionWriter,
           zeebeDataSourceDto.getPartitionId()
         ),
         configurationService,

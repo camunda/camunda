@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -49,19 +48,15 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
 
   private IdentityLinkLogEngineImportMediator createIdentityLinkLogEngineImportMediator(
     final EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new IdentityLinkLogEngineImportMediator(
       importIndexHandlerRegistry.getIdentityLinkImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(IdentityLinkLogInstanceFetcher.class, engineContext),
       new IdentityLinkLogImportService(
+        configurationService,
         identityLinkLogWriter,
         assigneeCandidateGroupService,
-        elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService,
-        configurationService
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

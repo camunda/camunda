@@ -36,16 +36,17 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
 
-  public IdentityLinkLogImportService(final IdentityLinkLogWriter identityLinkLogWriter,
+  public IdentityLinkLogImportService(final ConfigurationService configurationService,
+                                      final IdentityLinkLogWriter identityLinkLogWriter,
                                       final AssigneeCandidateGroupService assigneeCandidateGroupService,
-                                      final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                       final EngineContext engineContext,
-                                      final ProcessDefinitionResolverService processDefinitionResolverService,
-                                      final ConfigurationService configurationService) {
-    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
+                                      final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.identityLinkLogWriter = identityLinkLogWriter;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
   }

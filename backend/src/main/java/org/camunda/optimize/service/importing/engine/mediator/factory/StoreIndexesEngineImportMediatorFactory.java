@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -33,11 +32,9 @@ public class StoreIndexesEngineImportMediatorFactory extends AbstractEngineImpor
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
     return List.of(new StoreIndexesEngineImportMediator(
       importIndexHandlerRegistry,
-      new StoreIndexesEngineImportService(importIndexWriter, elasticsearchImportJobExecutor),
+      new StoreIndexesEngineImportService(configurationService, importIndexWriter),
       engineContext,
       configurationService
     ));

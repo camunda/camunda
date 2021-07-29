@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
@@ -33,7 +32,6 @@ import static org.camunda.optimize.service.util.DateFormatterUtil.isValidOptimiz
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
 @Slf4j
-@AllArgsConstructor
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -43,6 +41,24 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private final EngineContext engineContext;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+
+  public VariableUpdateInstanceImportService(final ConfigurationService configurationService,
+                                             final VariableImportAdapterProvider variableImportAdapterProvider,
+                                             final ProcessVariableUpdateWriter variableWriter,
+                                             final CamundaEventImportService camundaEventService,
+                                             final EngineContext engineContext,
+                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+
+    this.variableImportAdapterProvider = variableImportAdapterProvider;
+    this.variableWriter = variableWriter;
+    this.camundaEventService = camundaEventService;
+    this.engineContext = engineContext;
+    this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,

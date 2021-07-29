@@ -28,12 +28,13 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
 
-  public RunningUserTaskInstanceImportService(final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
-                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public RunningUserTaskInstanceImportService(final ConfigurationService configurationService,
+                                              final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                               final EngineContext engineContext,
-                                              final ProcessDefinitionResolverService processDefinitionResolverService,
-                                              final ConfigurationService configurationService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
