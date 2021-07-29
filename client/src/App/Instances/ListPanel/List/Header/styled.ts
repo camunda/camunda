@@ -63,6 +63,9 @@ const CheckAll = styled.div<CheckAllProps>`
       display: inline-block;
       margin-left: ${shouldShowOffset ? 15 : 16}px;
       margin-right: 28px;
+      &:empty {
+        margin-right: 0;
+      }
     `;
   }}
 `;

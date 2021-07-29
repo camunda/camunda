@@ -15,6 +15,9 @@ const iconPosition = css`
   position: relative;
   top: 3px;
   margin-right: 5px;
+  &:first-child {
+    margin-left: 15px;
+  }
 `;
 
 const IncidentIcon = styled(StateIconIncident)`

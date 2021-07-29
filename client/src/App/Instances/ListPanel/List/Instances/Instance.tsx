@@ -17,6 +17,7 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {useNotifications} from 'modules/notifications';
 import Table from 'modules/components/Table';
 import React from 'react';
+import {Restricted} from 'modules/components/Restricted';
 
 const {TD} = Table;
 
@@ -37,15 +38,20 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
     >
       <TD>
         <Cell>
-          <SelectionStatusIndicator selected={isSelected} />
-          <Checkbox
-            data-testid="instance-checkbox"
-            type="selection"
-            isChecked={isSelected}
-            onChange={() => instanceSelectionStore.selectInstance(instance.id)}
-            title={`Select instance ${instance.id}`}
-          />
-
+          <Restricted scopes={['edit']}>
+            <>
+              <SelectionStatusIndicator selected={isSelected} />
+              <Checkbox
+                data-testid="instance-checkbox"
+                type="selection"
+                isChecked={isSelected}
+                onChange={() =>
+                  instanceSelectionStore.selectInstance(instance.id)
+                }
+                title={`Select instance ${instance.id}`}
+              />
+            </>
+          </Restricted>
           <StateIcon
             state={instance.state}
             data-testid={`${instance.state}-icon-${instance.id}`}
@@ -76,25 +82,27 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
           'None'
         )}
       </TD>
-      <TD>
-        <Operations
-          instance={instance}
-          selected={isSelected}
-          onOperation={() =>
-            instancesStore.markInstancesWithActiveOperations({
-              ids: [instance.id],
-            })
-          }
-          onFailure={() => {
-            instancesStore.unmarkInstancesWithActiveOperations({
-              instanceIds: [instance.id],
-            });
-            notifications.displayNotification('error', {
-              headline: 'Operation could not be created',
-            });
-          }}
-        />
-      </TD>
+      <Restricted scopes={['edit']}>
+        <TD>
+          <Operations
+            instance={instance}
+            selected={isSelected}
+            onOperation={() =>
+              instancesStore.markInstancesWithActiveOperations({
+                ids: [instance.id],
+              })
+            }
+            onFailure={() => {
+              instancesStore.unmarkInstancesWithActiveOperations({
+                instanceIds: [instance.id],
+              });
+              notifications.displayNotification('error', {
+                headline: 'Operation could not be created',
+              });
+            }}
+          />
+        </TD>
+      </Restricted>
     </TR>
   );
 });

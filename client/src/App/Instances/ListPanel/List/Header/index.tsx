@@ -19,6 +19,7 @@ import {
 } from './styled';
 import ColumnHeader from '../ColumnHeader';
 import Checkbox from 'modules/components/Checkbox';
+import {Restricted} from 'modules/components/Restricted';
 
 const Header = observer(function (props: any) {
   const {
@@ -43,16 +44,18 @@ const Header = observer(function (props: any) {
       <TRHeader>
         <TH>
           <CheckAll shouldShowOffset={!isInitialDataLoaded}>
-            {isInitialDataLoaded ? (
-              <Checkbox
-                disabled={isListEmpty}
-                isChecked={isAllChecked}
-                onChange={instanceSelectionStore.selectAllInstances}
-                title="Select all instances"
-              />
-            ) : (
-              <SkeletonCheckboxBlock />
-            )}
+            <Restricted scopes={['edit']}>
+              {isInitialDataLoaded ? (
+                <Checkbox
+                  disabled={isListEmpty}
+                  isChecked={isAllChecked}
+                  onChange={instanceSelectionStore.selectAllInstances}
+                  title="Select all instances"
+                />
+              ) : (
+                <SkeletonCheckboxBlock />
+              )}
+            </Restricted>
           </CheckAll>
           <ColumnHeader
             disabled={isListEmpty}
@@ -95,9 +98,11 @@ const Header = observer(function (props: any) {
             sortKey="parentInstanceId"
           />
         </TH>
-        <OperationsTH>
-          <ColumnHeader disabled={isListEmpty} label="Operations" />
-        </OperationsTH>
+        <Restricted scopes={['edit']}>
+          <OperationsTH>
+            <ColumnHeader disabled={isListEmpty} label="Operations" />
+          </OperationsTH>
+        </Restricted>
       </TRHeader>
     </THead>
   );

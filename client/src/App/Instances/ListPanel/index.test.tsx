@@ -25,6 +25,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {instancesStore} from 'modules/stores/instances';
 import {NotificationProvider} from 'modules/notifications';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
+import {authenticationStore} from 'modules/stores/authentication';
 
 function createWrapper({
   expandOperationsMock,
@@ -114,6 +115,10 @@ describe('ListPanel', () => {
   });
 
   describe('display instances List', () => {
+    afterEach(() => {
+      authenticationStore.reset();
+    });
+
     it('should render a skeleton', async () => {
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
@@ -148,6 +153,13 @@ describe('ListPanel', () => {
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
 
       expect(
+        screen.getByRole('checkbox', {name: 'Select all instances'})
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole('checkbox', {name: /select instance/i}).length
+      ).toBe(2);
+      expect(screen.getByText('Operations')).toBeInTheDocument();
+      expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
       ).toBeInTheDocument();
     });
@@ -170,6 +182,34 @@ describe('ListPanel', () => {
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
       ).toBeInTheDocument();
+    });
+
+    it('should render for restricted users', async () => {
+      authenticationStore.setRoles(['view']);
+
+      mockServer.use(
+        rest.post('/api/process-instances', (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              processInstances: [INSTANCE, ACTIVE_INSTANCE],
+              totalCount: 0,
+            })
+          )
+        )
+      );
+
+      instancesStore.fetchInstancesFromFilters();
+
+      render(<ListPanel />, {wrapper: createWrapper()});
+      await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
+
+      expect(
+        screen.queryByRole('checkbox', {name: 'Select all instances'})
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('checkbox', {name: /select instance/i})
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Operations')).not.toBeInTheDocument();
     });
   });
 

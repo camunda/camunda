@@ -31,6 +31,7 @@ const Authentication: React.FC<Props> = observer((props) => {
       } else {
         authenticationStore.enableUserSession();
         authenticationStore.setRoles(roles);
+
         setForceRedirect(false);
       }
       setResponseInterceptor(({status, url}: Response) => {
