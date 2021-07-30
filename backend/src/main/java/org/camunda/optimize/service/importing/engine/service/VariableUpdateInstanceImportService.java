@@ -20,6 +20,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +36,13 @@ import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSup
 @AllArgsConstructor
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private VariableImportAdapterProvider variableImportAdapterProvider;
-  private ProcessVariableUpdateWriter variableWriter;
-  private CamundaEventImportService camundaEventService;
-  protected EngineContext engineContext;
+  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final VariableImportAdapterProvider variableImportAdapterProvider;
+  private final ProcessVariableUpdateWriter variableWriter;
+  private final CamundaEventImportService camundaEventService;
+  private final EngineContext engineContext;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
   @Override
   public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,
@@ -244,6 +246,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(
       variableWriter,
       camundaEventService,
+      configurationService,
       callback
     );
     importJob.setEntitiesToImport(processVariables);

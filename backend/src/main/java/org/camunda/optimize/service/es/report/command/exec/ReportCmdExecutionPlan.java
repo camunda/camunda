@@ -26,6 +26,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -94,7 +95,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
           "Could not evaluate report because required instance index {} does not exist. Returning empty result instead",
-          getIndexNames(executionContext)
+          Arrays.asList(getIndexNames(executionContext))
         );
         return mapToReportResult.apply(new CompositeCommandResult(
           executionContext.getReportData(),

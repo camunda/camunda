@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -45,8 +44,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return configurationService.isImportUserTaskWorkerDataEnabled() ?
-      ImmutableList.of(createIdentityLinkLogEngineImportMediator(engineContext))
-      : Collections.emptyList();
+      List.of(createIdentityLinkLogEngineImportMediator(engineContext)) : Collections.emptyList();
   }
 
   private IdentityLinkLogEngineImportMediator createIdentityLinkLogEngineImportMediator(
@@ -62,7 +60,8 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
         assigneeCandidateGroupService,
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

@@ -11,6 +11,7 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,13 +20,16 @@ public class RunningActivityInstanceElasticsearchImportJob extends Elasticsearch
 
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
   private final CamundaEventImportService camundaEventImportService;
+  private final ConfigurationService configurationService;
 
-  public RunningActivityInstanceElasticsearchImportJob(RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                                       CamundaEventImportService camundaEventImportService,
-                                                       Runnable callback) {
+  public RunningActivityInstanceElasticsearchImportJob(final RunningActivityInstanceWriter runningActivityInstanceWriter,
+                                                       final CamundaEventImportService camundaEventImportService,
+                                                       final ConfigurationService configurationService,
+                                                       final Runnable callback) {
     super(callback);
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -33,6 +37,10 @@ public class RunningActivityInstanceElasticsearchImportJob extends Elasticsearch
     final List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(runningActivityInstanceWriter.generateActivityInstanceImports(runningActivityInstances));
     importBulks.addAll(camundaEventImportService.generateRunningCamundaActivityEventsImports(runningActivityInstances));
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Running activity instances", importBulks);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      "Running activity instances",
+      importBulks,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
   }
 }

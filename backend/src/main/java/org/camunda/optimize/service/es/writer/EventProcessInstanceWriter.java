@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -60,6 +61,7 @@ public class EventProcessInstanceWriter {
 
   private final EventProcessInstanceIndex eventProcessInstanceIndex;
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
@@ -75,11 +77,12 @@ public class EventProcessInstanceWriter {
     final String importItemName = "event process instances";
     log.debug("Writing [{}] {} to ES.", eventProcessInstanceDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       eventProcessInstanceDtos,
-      this::addImportProcessInstanceRequest
+      this::addImportProcessInstanceRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

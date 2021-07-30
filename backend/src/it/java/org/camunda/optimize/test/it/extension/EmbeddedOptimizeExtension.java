@@ -260,7 +260,8 @@ public class EmbeddedOptimizeExtension
           camundaEventServiceFactory.createCamundaEventService(configuredEngine),
           getElasticsearchImportJobExecutor(),
           configuredEngine,
-          processDefinitionResolverService
+          processDefinitionResolverService,
+          getConfigurationService()
         );
       CompletableFuture<Void> done = new CompletableFuture<>();
       service.executeImport(activities, () -> done.complete(null));

@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
@@ -29,12 +30,14 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
                                              final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                              final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                              final CamundaEventImportService camundaEventService,
-                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                             final ProcessDefinitionResolverService processDefinitionResolverService,
+                                             final ConfigurationService configurationService) {
     super(
       elasticsearchImportJobExecutor,
       engineContext,
       businessKeyImportAdapterProvider,
-      processDefinitionResolverService
+      processDefinitionResolverService,
+      configurationService
     );
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
@@ -45,7 +48,12 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
     final List<ProcessInstanceDto> processInstances,
     final Runnable callback) {
     RunningProcessInstanceElasticsearchImportJob importJob =
-      new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter, camundaEventService, callback);
+      new RunningProcessInstanceElasticsearchImportJob(
+        runningProcessInstanceWriter,
+        camundaEventService,
+        configurationService,
+        callback
+      );
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

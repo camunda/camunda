@@ -19,6 +19,7 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.TaskResponse;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Request;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,8 +56,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchWriterUtil {
+
   private static final String TASKS_ENDPOINT = "_tasks";
   private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
+    "limit of";
 
   public static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
                                                         final Object entityDto) {
@@ -134,11 +139,12 @@ public class ElasticsearchWriterUtil {
   static String createUpdateFieldsScript(final Set<String> fieldKeys) {
     return fieldKeys
       .stream()
-      .map(fieldKey -> String.format("%s.%s = params.%s;\n", "ctx._source", fieldKey, fieldKey))
+      .map(fieldKey -> String.format("%s.%s = params.%s;%n", "ctx._source", fieldKey, fieldKey))
       .collect(Collectors.joining());
   }
 
-  public static void executeImportRequestsAsBulk(String bulkRequestName, List<ImportRequestDto> importRequestDtos) {
+  public static void executeImportRequestsAsBulk(String bulkRequestName, List<ImportRequestDto> importRequestDtos,
+                                                 boolean retryFailedRequestsOnNestedDocLimit) {
     final Map<OptimizeElasticsearchClient, List<ImportRequestDto>> esClientToImportRequests = importRequestDtos.stream()
       .collect(groupingBy(ImportRequestDto::getEsClient));
     esClientToImportRequests.forEach((esClient, requestList) -> {
@@ -161,21 +167,22 @@ public class ElasticsearchWriterUtil {
             }
           });
         });
-        doBulkRequest(esClient, bulkRequest, bulkRequestName);
+        doBulkRequest(esClient, bulkRequest, bulkRequestName, retryFailedRequestsOnNestedDocLimit);
       }
     });
   }
 
-  public static <T> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
-                                               String importItemName,
-                                               Collection<T> entityCollection,
-                                               BiConsumer<BulkRequest, T> addDtoToRequestConsumer) {
+  public static <T> void doImportBulkRequestWithList(OptimizeElasticsearchClient esClient,
+                                                     String importItemName,
+                                                     Collection<T> entityCollection,
+                                                     BiConsumer<BulkRequest, T> addDtoToRequestConsumer,
+                                                     boolean retryRequestIfNestedDocLimitReached) {
     if (entityCollection.isEmpty()) {
       log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
       final BulkRequest bulkRequest = new BulkRequest();
       entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
-      doBulkRequest(esClient, bulkRequest, importItemName);
+      doBulkRequest(esClient, bulkRequest, importItemName, retryRequestIfNestedDocLimitReached);
     }
   }
 
@@ -284,14 +291,27 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  public static void doBulkRequest(OptimizeElasticsearchClient esClient, BulkRequest bulkRequest, String itemName) {
+  public static void doBulkRequest(OptimizeElasticsearchClient esClient,
+                                   BulkRequest bulkRequest,
+                                   String itemName,
+                                   boolean retryRequestIfNestedDocLimitReached) {
+    if (retryRequestIfNestedDocLimitReached) {
+      doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
+    } else {
+      doBulkRequestWithoutRetries(esClient, bulkRequest, itemName);
+    }
+  }
+
+  private static void doBulkRequestWithoutRetries(OptimizeElasticsearchClient esClient,
+                                                  BulkRequest bulkRequest,
+                                                  String itemName) {
     try {
       BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       if (bulkResponse.hasFailures()) {
         throw new OptimizeRuntimeException(String.format(
           "There were failures while performing bulk on %s.%n%s Message: %s",
           itemName,
-          getHintForErrorMsg(bulkResponse.buildFailureMessage()),
+          getHintForErrorMsg(bulkResponse),
           bulkResponse.buildFailureMessage()
         ));
       }
@@ -302,8 +322,45 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  private static String getHintForErrorMsg(final String errorMsg) {
-    if (errorMsg.contains("nested")) {
+  private static void doBulkRequestWithNestedDocHandling(OptimizeElasticsearchClient esClient,
+                                                         BulkRequest bulkRequest,
+                                                         String itemName) {
+    try {
+      BulkResponse bulkResponse = esClient.bulk(bulkRequest);
+      if (bulkResponse.hasFailures()) {
+        if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+          log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
+                     " Removing failed items and retrying", itemName);
+          final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
+            .filter(BulkItemResponse::isFailed)
+            .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
+            .map(BulkItemResponse::getId)
+            .collect(Collectors.toSet());
+          bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
+          if (!bulkRequest.requests().isEmpty()) {
+            doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
+          }
+        } else {
+          throw new OptimizeRuntimeException(String.format(
+            "There were failures while performing bulk on %s. Message: %s",
+            itemName,
+            bulkResponse.buildFailureMessage()
+          ));
+        }
+      }
+    } catch (IOException e) {
+      String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+  }
+
+  private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
+    return bulkResponse.buildFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE);
+  }
+
+  private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
+    if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
       // exception potentially related to nested object limit
       return "If you are experiencing failures due to too many nested documents, " +
         "try carefully increasing the configured nested object limit (es.settings.index.nested_documents_limit). " +

@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -28,31 +30,35 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_R
 public class EventProcessDefinitionWriter {
 
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
     log.debug("Writing [{}] event process definitions to elastic.", definitionOptimizeDtos.size());
     final String importItemName = "event process definition information";
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       definitionOptimizeDtos,
-      this::addImportProcessDefinitionToRequest
+      this::addImportProcessDefinitionToRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
     final String importItemName = "event process definition ids";
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       definitionIds,
-      this::addDeleteProcessDefinitionToRequest
+      this::addDeleteProcessDefinitionToRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 
   private void addImportProcessDefinitionToRequest(final BulkRequest bulkRequest,
                                                    final EventProcessDefinitionDto processDefinitionDto) {
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
     final UpdateRequest updateRequest = new UpdateRequest()
       .index(EVENT_PROCESS_DEFINITION_INDEX_NAME)
       .id(processDefinitionDto.getId())

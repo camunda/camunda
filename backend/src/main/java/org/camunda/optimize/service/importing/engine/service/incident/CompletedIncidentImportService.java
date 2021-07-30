@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedIncidentElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
@@ -24,11 +25,13 @@ public class CompletedIncidentImportService extends AbstractIncidentImportServic
   public CompletedIncidentImportService(final CompletedIncidentWriter completedIncidentWriter,
                                         final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                         final EngineContext engineContext,
-                                        final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                        final ProcessDefinitionResolverService processDefinitionResolverService,
+                                        final ConfigurationService configurationService) {
     super(
       elasticsearchImportJobExecutor,
       engineContext,
-      processDefinitionResolverService
+      processDefinitionResolverService,
+      configurationService
     );
     this.completedIncidentWriter = completedIncidentWriter;
   }
@@ -36,7 +39,7 @@ public class CompletedIncidentImportService extends AbstractIncidentImportServic
   protected ElasticsearchImportJob<IncidentDto> createElasticsearchImportJob(List<IncidentDto> incidents,
                                                                              Runnable callback) {
     CompletedIncidentElasticsearchImportJob incidentImportJob =
-      new CompletedIncidentElasticsearchImportJob(completedIncidentWriter, callback);
+      new CompletedIncidentElasticsearchImportJob(completedIncidentWriter, configurationService, callback);
     incidentImportJob.setEntitiesToImport(incidents);
     return incidentImportJob;
   }

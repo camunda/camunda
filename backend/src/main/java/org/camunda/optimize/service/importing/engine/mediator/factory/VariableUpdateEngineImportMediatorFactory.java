@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -46,7 +45,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(createVariableUpdateEngineImportMediator(engineContext));
+    return List.of(createVariableUpdateEngineImportMediator(engineContext));
   }
 
   public VariableUpdateEngineImportMediator createVariableUpdateEngineImportMediator(
@@ -63,7 +62,8 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
         variableWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

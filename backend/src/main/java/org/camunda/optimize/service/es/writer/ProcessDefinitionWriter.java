@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -51,9 +52,13 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     Collections.emptyMap()
   );
 
+  private final ConfigurationService configurationService;
+
   public ProcessDefinitionWriter(final OptimizeElasticsearchClient esClient,
-                                 final ObjectMapper objectMapper) {
+                                 final ObjectMapper objectMapper,
+                                 final ConfigurationService configurationService) {
     super(objectMapper, esClient);
+    this.configurationService = configurationService;
   }
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
@@ -101,11 +106,12 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       procDefs,
-      this::addImportProcessDefinitionToRequest
+      this::addImportProcessDefinitionToRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 }

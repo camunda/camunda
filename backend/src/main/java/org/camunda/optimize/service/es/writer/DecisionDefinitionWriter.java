@@ -6,11 +6,11 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -41,7 +41,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Slf4j
 public class DecisionDefinitionWriter {
-  private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
+  private static final Set<String> FIELDS_TO_UPDATE = Set.of(
     DECISION_DEFINITION_KEY,
     DECISION_DEFINITION_VERSION,
     DECISION_DEFINITION_VERSION_TAG,
@@ -52,6 +52,7 @@ public class DecisionDefinitionWriter {
 
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private static final Script MARK_AS_DELETED_SCRIPT = new Script(
     ScriptType.INLINE,
     Script.DEFAULT_SCRIPT_LANG,
@@ -98,11 +99,12 @@ public class DecisionDefinitionWriter {
   private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitionOptimizeDtos.size(), importItemName);
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       decisionDefinitionOptimizeDtos,
-      this::addImportDecisionDefinitionRequest
+      this::addImportDecisionDefinitionRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

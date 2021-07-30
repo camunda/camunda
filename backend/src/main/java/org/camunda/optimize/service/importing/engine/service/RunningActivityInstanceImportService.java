@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,17 +30,20 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
   public RunningActivityInstanceImportService(final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                               final CamundaEventImportService camundaEventService,
                                               final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               final EngineContext engineContext,
-                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                              final ProcessDefinitionResolverService processDefinitionResolverService,
+                                              final ConfigurationService configurationService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -83,7 +87,12 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
                                                                                 Runnable callback) {
     RunningActivityInstanceElasticsearchImportJob activityImportJob =
-      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, camundaEventService, callback);
+      new RunningActivityInstanceElasticsearchImportJob(
+        runningActivityInstanceWriter,
+        camundaEventService,
+        configurationService,
+        callback
+      );
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }

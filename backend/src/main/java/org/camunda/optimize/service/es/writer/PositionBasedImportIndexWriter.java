@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -27,17 +28,19 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BA
 public class PositionBasedImportIndexWriter {
 
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public void importIndexes(List<PositionBasedImportIndexDto> importIndexDtos) {
     String importItemName = "position based import index information";
     log.debug("Writing [{}] {} to ES.", importIndexDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       importIndexDtos,
-      this::addImportIndexRequest
+      this::addImportIndexRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

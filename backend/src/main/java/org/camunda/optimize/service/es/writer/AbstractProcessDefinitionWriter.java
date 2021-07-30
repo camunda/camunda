@@ -24,6 +24,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 
 @AllArgsConstructor
 public abstract class AbstractProcessDefinitionWriter {
+
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
   protected final OptimizeElasticsearchClient esClient;

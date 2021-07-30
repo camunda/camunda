@@ -123,6 +123,7 @@ public class ConfigurationService {
   private Integer importIndexAutoStorageIntervalInSec;
   private Boolean importDmnDataEnabled;
   private Boolean importUserTaskWorkerDataEnabled;
+  private Boolean skipDataAfterNestedDocLimitReached;
 
   // plugin base packages
   private List<String> variableImportPluginBasePackages;
@@ -828,6 +829,16 @@ public class ConfigurationService {
       );
     }
     return importUserTaskWorkerDataEnabled;
+  }
+
+  public Boolean getSkipDataAfterNestedDocLimitReached() {
+    if (skipDataAfterNestedDocLimitReached == null) {
+      skipDataAfterNestedDocLimitReached = configJsonContext.read(
+        ConfigurationServiceConstants.IMPORT_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED,
+        Boolean.class
+      );
+    }
+    return skipDataAfterNestedDocLimitReached;
   }
 
   @JsonIgnore

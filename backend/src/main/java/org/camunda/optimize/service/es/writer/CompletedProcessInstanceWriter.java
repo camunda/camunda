@@ -21,9 +21,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
@@ -67,7 +67,12 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
     processInstanceIds.forEach(
       id -> bulkRequest.add(new DeleteRequest(getProcessInstanceIndexAliasName(definitionKey), id))
     );
-    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, getProcessInstanceIndexAliasName(definitionKey));
+    ElasticsearchWriterUtil.doBulkRequest(
+      esClient,
+      bulkRequest,
+      getProcessInstanceIndexAliasName(definitionKey),
+      false
+    );
   }
 
   @Override

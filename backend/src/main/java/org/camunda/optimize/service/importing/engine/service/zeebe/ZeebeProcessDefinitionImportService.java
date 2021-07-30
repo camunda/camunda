@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.job.importing.ProcessDefinitionElasticsea
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -28,7 +29,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ProcessDefinitionWriter processDefinitionWriter;
-  private final String zeebeName;
+  private final ConfigurationService configurationService;
   private final int partitionId;
 
   @Override
@@ -84,7 +85,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
       .name(BpmnModelUtil.extractProcessDefinitionName(String.valueOf(recordData.getBpmnProcessId()), bpmn)
               .orElse(recordData.getBpmnProcessId()))
       .bpmn20Xml(bpmn)
-      .dataSource(new ZeebeDataSourceDto(zeebeName, partitionId))
+      .dataSource(new ZeebeDataSourceDto(configurationService.getConfiguredZeebe().getName(), partitionId))
       .tenantId(null)
       .deleted(false)
       .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmn))

@@ -43,7 +43,7 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
   protected boolean includeUndefined;
   protected boolean excludeUndefined;
 
-  public DateFilterDataDto(final DateFilterType type, final START start, final OffsetDateTime end) {
+  protected DateFilterDataDto(final DateFilterType type, final START start, final OffsetDateTime end) {
     this.type = type;
     this.start = start;
     this.end = end;

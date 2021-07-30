@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -49,7 +50,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ZeebeProcessInstanceWriter processInstanceWriter;
-  private final String zeebeName;
+  private final ConfigurationService configurationService;
   private final int partitionId;
 
   @Override
@@ -101,7 +102,10 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     processInstanceDto.setProcessDefinitionId(String.valueOf(firstRecordValue.getProcessDefinitionKey()));
     processInstanceDto.setProcessDefinitionKey(firstRecordValue.getBpmnProcessId());
     processInstanceDto.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
-    processInstanceDto.setDataSource(new ZeebeDataSourceDto(zeebeName, partitionId));
+    processInstanceDto.setDataSource(new ZeebeDataSourceDto(
+      configurationService.getConfiguredZeebe().getName(),
+      partitionId
+    ));
     // We don't currently store variables or incidents for zeebe process instances
     processInstanceDto.setIncidents(Collections.emptyList());
     processInstanceDto.setVariables(Collections.emptyList());
@@ -185,7 +189,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     final List<ProcessInstanceDto> processDefinitions,
     final Runnable importCompleteCallback) {
     ZeebeProcessInstanceElasticsearchImportJob procDefImportJob = new ZeebeProcessInstanceElasticsearchImportJob(
-      processInstanceWriter, importCompleteCallback
+      processInstanceWriter, configurationService, importCompleteCallback
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;

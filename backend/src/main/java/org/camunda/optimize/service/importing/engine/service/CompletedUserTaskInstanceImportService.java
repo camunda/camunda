@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +29,18 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   private final EngineContext engineContext;
   private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
   public CompletedUserTaskInstanceImportService(final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
                                                 final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                 final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                                final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                final ConfigurationService configurationService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -78,9 +82,10 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   }
 
   private ElasticsearchImportJob<FlowNodeInstanceDto> createElasticsearchImportJob(final List<FlowNodeInstanceDto> userTasks,
-                                                                                   Runnable callback) {
+                                                                                   final Runnable callback) {
     final CompletedUserTasksElasticsearchImportJob importJob = new CompletedUserTasksElasticsearchImportJob(
       completedProcessInstanceWriter,
+      configurationService,
       callback
     );
     importJob.setEntitiesToImport(userTasks);

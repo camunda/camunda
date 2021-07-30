@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,17 +30,20 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
   public CompletedActivityInstanceImportService(final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                 final CamundaEventImportService camundaEventService,
                                                 final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                 final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                                final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                final ConfigurationService configurationService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -86,6 +90,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
       new CompletedActivityInstanceElasticsearchImportJob(
         completedActivityInstanceWriter,
         camundaEventService,
+        configurationService,
         callback
       );
     activityImportJob.setEntitiesToImport(events);

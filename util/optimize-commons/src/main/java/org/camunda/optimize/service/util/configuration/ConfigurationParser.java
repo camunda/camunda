@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.collect.ImmutableSet;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -22,8 +21,11 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.util.SuppressionConstants;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,8 +41,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationParser {
 
   private static final String ENGINES_FIELD = "engines";
@@ -48,10 +50,11 @@ public class ConfigurationParser {
     "\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)(:(.*))?}"
   );
   // explicit yaml null values see https://yaml.org/type/null.html
-  private static final Set<String> YAML_EXPLICIT_NULL_VALUES = ImmutableSet.of("~", "null", "Null", "NULL");
+  private static final Set<String> YAML_EXPLICIT_NULL_VALUES = Set.of("~", "null", "Null", "NULL");
   private static final Pattern LIST_PATTERN = Pattern.compile("^\\[.*\\]$");
   // @formatter:off
-  private static final TypeReference<List<Object>> LIST_TYPE_REFERENCE = new TypeReference<List<Object>>() {}; public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE = new TypeReference<Map<String, Object>>() {
+  private static final TypeReference<List<Object>> LIST_TYPE_REFERENCE = new TypeReference<List<Object>>() {};
+  public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE = new TypeReference<Map<String, Object>>() {
   };
   // @formatter:on
 
@@ -93,10 +96,13 @@ public class ConfigurationParser {
   private static Object resolveVariablePlaceholders(final Object value, final YAMLMapper yamlMapper) {
     Object newValue = value;
     if (value instanceof Map) {
-      newValue = resolveVariablePlaceholders((Map<String, Object>) value, yamlMapper);
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      final Map<String, Object> valueMap = (Map<String, Object>) value;
+      newValue = resolveVariablePlaceholders(valueMap, yamlMapper);
     } else if (value instanceof List) {
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
       final List<Object> values = ((List<Object>) value);
-      if (values.size() > 0) {
+      if (!values.isEmpty()) {
         newValue = values.stream()
           .map(entryValue -> resolveVariablePlaceholders(entryValue, yamlMapper))
           .collect(Collectors.toList());

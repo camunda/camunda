@@ -73,7 +73,8 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
         businessKeyImportAdapterProvider,
         completedProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -94,7 +95,8 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
         businessKeyImportAdapterProvider,
         runningProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

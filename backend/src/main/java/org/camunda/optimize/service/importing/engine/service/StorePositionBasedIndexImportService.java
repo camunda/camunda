@@ -22,8 +22,8 @@ import java.util.List;
 @Slf4j
 public class StorePositionBasedIndexImportService implements ImportService<PositionBasedImportIndexDto> {
 
-  private PositionBasedImportIndexWriter importIndexWriter;
-  private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final PositionBasedImportIndexWriter importIndexWriter;
+  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
   public void executeImport(final List<PositionBasedImportIndexDto> importIndexesToStore,
                             final Runnable importCompleteCallback) {

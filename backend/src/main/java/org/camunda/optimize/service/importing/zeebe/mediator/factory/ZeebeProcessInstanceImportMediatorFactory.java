@@ -55,7 +55,7 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
         new ZeebeProcessInstanceImportService(
           elasticsearchImportJobExecutor,
           zeebeProcessInstanceWriter,
-          configurationService.getConfiguredZeebe().getName(),
+          configurationService,
           zeebeDataSourceDto.getPartitionId()
         ),
         configurationService,

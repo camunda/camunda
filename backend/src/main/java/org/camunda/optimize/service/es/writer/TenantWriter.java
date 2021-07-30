@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
@@ -32,16 +34,18 @@ public class TenantWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(TenantDto.Fields.name.name());
 
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public void writeTenants(final List<TenantDto> tenantDtos) {
     String importItemName = "tenants";
     log.debug("Writing [{}] {} to ES.", tenantDtos.size(), importItemName);
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       tenantDtos,
-      this::addImportTenantRequest
+      this::addImportTenantRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 
@@ -52,7 +56,12 @@ public class TenantWriter {
     TenantDto tenantDto = (TenantDto) optimizeDto;
 
     final String id = tenantDto.getId();
-    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto, objectMapper);
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+      FIELDS_TO_UPDATE,
+      tenantDto,
+      objectMapper
+    );
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
     final UpdateRequest request =
       new UpdateRequest()
         .index(TENANT_INDEX_NAME)

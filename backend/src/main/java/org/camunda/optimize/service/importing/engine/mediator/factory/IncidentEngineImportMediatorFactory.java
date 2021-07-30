@@ -65,7 +65,8 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
         completedIncidentWriter,
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -84,7 +85,8 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
         openIncidentWriter,
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

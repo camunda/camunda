@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -47,19 +48,21 @@ public class DecisionInstanceWriter implements ConfigurationReloadable {
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
 
-  private Set<String> existingInstanceIndexDefinitionKeys = ConcurrentHashMap.newKeySet();
+  private final Set<String> existingInstanceIndexDefinitionKeys = ConcurrentHashMap.newKeySet();
 
   public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) {
     final String importItemName = "decision instances";
     log.debug("Writing [{}] {} to ES.", decisionInstanceDtos.size(), importItemName);
     createInstanceIndicesIfMissing(decisionInstanceDtos);
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       decisionInstanceDtos,
-      this::addImportDecisionInstanceRequest
+      this::addImportDecisionInstanceRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

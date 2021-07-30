@@ -145,7 +145,8 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     ElasticsearchWriterUtil.doBulkRequest(
       esClient,
       bulkRequest,
-      getProcessInstanceIndexAliasName(processDefinitionKey)
+      getProcessInstanceIndexAliasName(processDefinitionKey),
+      false
     );
   }
 

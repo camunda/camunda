@@ -10,22 +10,32 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
 public class RunningUserTaskElasticsearchImportJob extends ElasticsearchImportJob<FlowNodeInstanceDto> {
-  private RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
+
+  private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
+  private final ConfigurationService configurationService;
 
   public RunningUserTaskElasticsearchImportJob(final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
-                                               Runnable callback) {
+                                               final ConfigurationService configurationService,
+                                               final Runnable callback) {
     super(callback);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
+    this.configurationService = configurationService;
   }
 
   @Override
   protected void persistEntities(List<FlowNodeInstanceDto> newOptimizeEntities) {
-    final List<ImportRequestDto> importRequests = runningUserTaskInstanceWriter.generateUserTaskImports(newOptimizeEntities);
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Running user tasks", importRequests);
+    final List<ImportRequestDto> importRequests = runningUserTaskInstanceWriter.generateUserTaskImports(
+      newOptimizeEntities);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      "Running user tasks",
+      importRequests,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
   }
 }
 

@@ -46,10 +46,10 @@ public class BusinessKeyWriter {
       .map(this::createIndexRequestForBusinessKey)
       .filter(Optional::isPresent)
       .map(request -> ImportRequestDto.builder()
-          .importName(importItemName)
-          .esClient(esClient)
-          .request(request.get())
-          .build())
+        .importName(importItemName)
+        .esClient(esClient)
+        .request(request.get())
+        .build())
       .collect(Collectors.toList());
   }
 
@@ -57,7 +57,7 @@ public class BusinessKeyWriter {
     final BulkRequest bulkRequest = new BulkRequest();
     log.debug("Deleting [{}] business key documents by id with bulk request.", processInstanceIds.size());
     processInstanceIds.forEach(id -> bulkRequest.add(new DeleteRequest(BUSINESS_KEY_INDEX_NAME, id)));
-    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, BUSINESS_KEY_INDEX_NAME);
+    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, BUSINESS_KEY_INDEX_NAME, false);
   }
 
   private BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {
@@ -67,8 +67,8 @@ public class BusinessKeyWriter {
   private Optional<IndexRequest> createIndexRequestForBusinessKey(BusinessKeyDto businessKeyDto) {
     try {
       return Optional.of(new IndexRequest(BUSINESS_KEY_INDEX_NAME)
-        .id(businessKeyDto.getProcessInstanceId())
-        .source(objectMapper.writeValueAsString(businessKeyDto), XContentType.JSON));
+                           .id(businessKeyDto.getProcessInstanceId())
+                           .source(objectMapper.writeValueAsString(businessKeyDto), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Business Key: {}", businessKeyDto, e);
       return Optional.empty();

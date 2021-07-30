@@ -13,6 +13,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
   protected final EngineContext engineContext;
   protected final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  protected final ConfigurationService configurationService;
 
   protected abstract ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
     List<ProcessInstanceDto> processInstances,

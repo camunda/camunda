@@ -13,7 +13,7 @@ import java.util.List;
 
 public class StorePositionBasedIndexElasticsearchImportJob extends ElasticsearchImportJob<PositionBasedImportIndexDto> {
 
-  private PositionBasedImportIndexWriter positionBasedImportIndexWriter;
+  private final PositionBasedImportIndexWriter positionBasedImportIndexWriter;
 
   public StorePositionBasedIndexElasticsearchImportJob(final PositionBasedImportIndexWriter positionBasedImportIndexWriter,
                                                        final Runnable importCompleteCallback) {

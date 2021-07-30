@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
@@ -46,7 +45,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(
+    return List.of(
       createRunningUserTaskInstanceEngineImportMediator(engineContext),
       createCompletedUserTaskInstanceEngineImportMediator(engineContext)
     );
@@ -64,7 +63,8 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
         runningUserTaskInstanceWriter,
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -83,7 +83,8 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
         completedUserTaskInstanceWriter,
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

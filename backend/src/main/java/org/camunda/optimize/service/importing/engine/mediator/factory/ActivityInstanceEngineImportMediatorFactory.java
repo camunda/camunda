@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
@@ -49,7 +48,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(
+    return List.of(
       createCompletedActivityInstanceEngineImportMediator(engineContext),
       createRunningActivityInstanceEngineImportMediator(engineContext)
     );
@@ -68,7 +67,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -88,7 +88,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        configurationService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
