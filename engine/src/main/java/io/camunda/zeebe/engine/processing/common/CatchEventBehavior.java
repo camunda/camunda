@@ -90,12 +90,19 @@ public final class CatchEventBehavior {
       final ExecutableCatchEventSupplier supplier,
       final SideEffects sideEffects,
       final TypedCommandWriter commandWriter) {
-    return supplier.getEvents().stream()
-        .filter(event -> event.isTimer() || event.isMessage())
-        .map(event -> evalExpressions(event, context))
-        .collect(Either.collector())
-        .peek(results -> subscribeToMessageEvents(context, sideEffects, results))
-        .peek(results -> subscribeToTimerEvents(context, sideEffects, commandWriter, results))
+    final var evaluationResults =
+        supplier.getEvents().stream()
+            .filter(event -> event.isTimer() || event.isMessage())
+            .map(event -> evalExpressions(event, context))
+            .collect(Either.collector());
+
+    evaluationResults.ifRight(
+        results -> {
+          subscribeToMessageEvents(context, sideEffects, results);
+          subscribeToTimerEvents(context, sideEffects, commandWriter, results);
+        });
+
+    return evaluationResults
         // we can only deal with the first failure, so it's enough to return that
         .mapLeft(f -> f.get(0))
         .map(r -> r.stream().map(EvalResult::event).collect(Collectors.toList()));
