@@ -290,16 +290,18 @@ public final class ExpressionProcessor {
       final EvaluationResult result,
       final Collection<ResultType> expectedResultTypes,
       final long scopeKey) {
-    final var defaultFailure =
-        new Failure(
-            String.format(
-                "Expected result of expression '%s' to be one of '%s', but was '%s'",
-                result.getExpression(), expectedResultTypes, result.getType()),
-            ErrorType.EXTRACT_VALUE_ERROR,
-            scopeKey);
     return expectedResultTypes.stream()
-        .map(type -> typeCheck(result, type, scopeKey))
-        .reduce(Either.left(defaultFailure), (a, b) -> b.isRight() ? b : a);
+        .map(expected -> typeCheck(result, expected, scopeKey))
+        .filter(Either::isRight)
+        .findFirst()
+        .orElse(
+            Either.left(
+                new Failure(
+                    String.format(
+                        "Expected result of expression '%s' to be one of '%s', but was '%s'",
+                        result.getExpression(), expectedResultTypes, result.getType()),
+                    ErrorType.EXTRACT_VALUE_ERROR,
+                    scopeKey)));
   }
 
   private EvaluationResult evaluateExpression(
