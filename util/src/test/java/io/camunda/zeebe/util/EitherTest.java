@@ -134,18 +134,6 @@ class EitherTest {
     assertThat(Either.left(value).flatMap(Either::right)).isEqualTo(Either.left(value));
   }
 
-  @DisplayName("Only a Right can be .peek(..)-ed")
-  @ParameterizedTest
-  @MethodSource("parameters")
-  void onlyARightCanBePeeked(final Object value) {
-    final var verifiableConsumer = new VerifiableConsumer();
-    assertThat(Either.right(value).peek(verifiableConsumer))
-        .isRight()
-        .matches(x -> value.equals(x.get()));
-    assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
-    assertThat(Either.left(value).peek(new FailConsumer())).hasLeft(value);
-  }
-
   @DisplayName("Only a Right is consumed by .ifRight(..)")
   @ParameterizedTest
   @MethodSource("parameters")

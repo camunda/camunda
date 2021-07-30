@@ -235,14 +235,6 @@ public interface Either<L, R> {
    * Performs the given action with the value if this is a {@link Right}, otherwise does nothing.
    *
    * @param action the consuming function for the right value
-   * @return this either
-   */
-  Either<L, R> peek(Consumer<R> action);
-
-  /**
-   * Performs the given action with the value if this is a {@link Right}, otherwise does nothing.
-   *
-   * @param action the consuming function for the right value
    */
   void ifRight(Consumer<R> action);
 
@@ -312,12 +304,6 @@ public interface Either<L, R> {
     @Override
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return right.apply(value);
-    }
-
-    @Override
-    public Either<L, R> peek(final Consumer<R> action) {
-      action.accept(value);
-      return this;
     }
 
     @Override
@@ -408,12 +394,6 @@ public interface Either<L, R> {
     @SuppressWarnings("unchecked")
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return (Either<L, T>) this;
-    }
-
-    @Override
-    public Either<L, R> peek(final Consumer<R> action) {
-      // nothing to peek at
-      return this;
     }
 
     @Override
