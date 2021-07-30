@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
-def static OPENJDK_MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.8.1-jdk-${javaVersion}" }
+def static OPENJDK_MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
@@ -139,7 +139,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("11-slim"))
+          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE())
         }
       }
       steps {
@@ -153,7 +153,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-sonarqube_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("11-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+          yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE(), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
         }
       }
       environment {
