@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker;
 
 import static java.lang.Runtime.getRuntime;
 
+import io.camunda.zeebe.broker.clustering.BrokerActor;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.shared.EnvironmentHelper;
 import io.camunda.zeebe.util.FileUtil;
@@ -49,7 +51,7 @@ public class StandaloneBroker implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    final Broker broker;
+    final BrokerActor broker;
 
     if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
       broker = createBrokerInBaseDirectory();
@@ -64,7 +66,7 @@ public class StandaloneBroker implements CommandLineRunner {
               @Override
               public void run() {
                 try {
-                  broker.close();
+                  broker.stop().join();
                 } finally {
                   deleteTempDirectory();
                   LogManager.shutdown();
@@ -74,22 +76,27 @@ public class StandaloneBroker implements CommandLineRunner {
     waiting_latch.await();
   }
 
-  private Broker createBrokerInBaseDirectory() {
+  private BrokerActor createBrokerInBaseDirectory() {
     String basePath = System.getProperty("basedir");
 
     if (basePath == null) {
       basePath = Paths.get(".").toAbsolutePath().normalize().toString();
     }
 
-    return new Broker(configuration, basePath, null, springBrokerBridge);
+    final var systemContext = new SystemContext(configuration, basePath, null);
+
+    return new BrokerActor(springBrokerBridge, systemContext, configuration);
   }
 
-  private Broker createBrokerInTempDirectory() {
+  private BrokerActor createBrokerInTempDirectory() {
     Loggers.SYSTEM_LOGGER.info("Launching broker in temporary folder.");
 
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      return new Broker(configuration, tempFolder, null, springBrokerBridge);
+
+      final var systemContext = new SystemContext(configuration, tempFolder, null);
+
+      return new BrokerActor(springBrokerBridge, systemContext, configuration);
     } catch (final IOException e) {
       throw new UncheckedIOException("Could not start broker", e);
     }

@@ -21,7 +21,7 @@ import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.clustering.ClusterServicesActor;
 import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
@@ -30,8 +30,8 @@ import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerActor;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
@@ -139,7 +139,7 @@ public final class Broker implements AutoCloseable {
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
 
-  private ClusterServicesImpl clusterServices;
+  private ClusterServicesActor clusterServices;
   private CompletableFuture<Broker> startFuture;
   private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
@@ -153,7 +153,7 @@ public final class Broker implements AutoCloseable {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final List<ZeebePartition> partitions = new ArrayList<>();
   private BrokerAdminService brokerAdminService;
-  private PartitionManagerImpl partitionManager;
+  private PartitionManagerActor partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
 
@@ -280,7 +280,7 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     final var atomix = AtomixClusterFactory.fromConfiguration(brokerCfg);
     testCompanionObject.atomix = atomix;
-    clusterServices = new ClusterServicesImpl(atomix);
+    clusterServices = new ClusterServicesActor(atomix);
 
     return () -> {
       clusterServices.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);

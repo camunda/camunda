@@ -27,20 +27,20 @@ public class PartitionManagerFactory {
 
   public static final String GROUP_NAME = "raft-partition";
 
-  public static PartitionManagerImpl fromBrokerConfiguration(
+  public static PartitionManagerActor fromBrokerConfiguration(
       final BrokerCfg configuration,
       final ClusterServices clusterServices,
       final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final var partitionGroup = buildRaftPartitionGroup(configuration, snapshotStoreFactory);
 
-    return new PartitionManagerImpl(
+    return new PartitionManagerActor(
         partitionGroup,
         clusterServices.getMembershipService(),
         clusterServices.getCommunicationService());
   }
 
-  private static RaftPartitionGroup buildRaftPartitionGroup(
+  public static RaftPartitionGroup buildRaftPartitionGroup(
       final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final DataCfg dataConfiguration = configuration.getData();

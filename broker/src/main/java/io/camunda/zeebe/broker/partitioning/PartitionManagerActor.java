@@ -17,13 +17,13 @@ import io.atomix.utils.concurrent.Futures;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-public final class PartitionManagerImpl implements PartitionManager {
+public final class PartitionManagerActor implements PartitionManager {
 
   protected volatile CompletableFuture<Void> closeFuture;
   private ManagedPartitionService partitions;
   private ManagedPartitionGroup partitionGroup;
 
-  public PartitionManagerImpl(
+  public PartitionManagerActor(
       final RaftPartitionGroup partitionGroup,
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService communicationService) {

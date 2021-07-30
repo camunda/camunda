@@ -12,13 +12,18 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import java.util.concurrent.CompletableFuture;
 
-public class ClusterServicesImpl implements ClusterServices {
+public class ClusterServicesActor implements ClusterServices {
 
   private final AtomixCluster atomixCluster;
 
-  public ClusterServicesImpl(final AtomixCluster atomixCluster) {
+  public ClusterServicesActor(final BrokerCfg brokerCfg) {
+    this(AtomixClusterFactory.fromConfiguration(brokerCfg));
+  }
+
+  public ClusterServicesActor(final AtomixCluster atomixCluster) {
     this.atomixCluster = atomixCluster;
   }
 

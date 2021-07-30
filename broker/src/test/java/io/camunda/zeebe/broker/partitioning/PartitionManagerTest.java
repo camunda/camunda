@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.clustering.ClusterServicesActor;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.Environment;
@@ -39,7 +39,7 @@ public final class PartitionManagerTest {
     final var partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
             brokerConfig,
-            mock(ClusterServicesImpl.class),
+            mock(ClusterServicesActor.class),
             mock(FileBasedSnapshotStoreFactory.class));
 
     // then
@@ -57,7 +57,7 @@ public final class PartitionManagerTest {
     final var partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
             brokerConfig,
-            mock(ClusterServicesImpl.class),
+            mock(ClusterServicesActor.class),
             mock(FileBasedSnapshotStoreFactory.class));
     // then
     final var config = getPartitionGroupConfig(partitionManager);
