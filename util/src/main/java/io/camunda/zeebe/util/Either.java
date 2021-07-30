@@ -9,17 +9,12 @@ package io.camunda.zeebe.util;
 
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collector;
 
 /**
@@ -122,45 +117,22 @@ public interface Either<L, R> {
    */
   static <L, R>
       Collector<Either<L, R>, Tuple<List<L>, List<R>>, Either<List<L>, List<R>>> collector() {
-    return new Collector<>() {
-      @Override
-      public Supplier<Tuple<List<L>, List<R>>> supplier() {
-        return () -> new Tuple<>(new ArrayList<>(), new ArrayList<>());
-      }
-
-      @Override
-      public BiConsumer<Tuple<List<L>, List<R>>, Either<L, R>> accumulator() {
-        return (accumulated, next) ->
-            next.ifRightOrLeft(
-                right -> accumulated.getRight().add(right),
-                left -> accumulated.getLeft().add(left));
-      }
-
-      @Override
-      public BinaryOperator<Tuple<List<L>, List<R>>> combiner() {
-        return (a, b) -> {
+    return Collector.of(
+        () -> new Tuple<>(new ArrayList<>(), new ArrayList<>()),
+        (acc, next) ->
+            next.ifRightOrLeft(right -> acc.getRight().add(right), left -> acc.getLeft().add(left)),
+        (a, b) -> {
           a.getLeft().addAll(b.getLeft());
           a.getRight().addAll(b.getRight());
           return a;
-        };
-      }
-
-      @Override
-      public Function<Tuple<List<L>, List<R>>, Either<List<L>, List<R>>> finisher() {
-        return accumulator -> {
-          if (!accumulator.getLeft().isEmpty()) {
-            return left(accumulator.getLeft());
+        },
+        acc -> {
+          if (!acc.getLeft().isEmpty()) {
+            return left(acc.getLeft());
           } else {
-            return right(accumulator.getRight());
+            return right(acc.getRight());
           }
-        };
-      }
-
-      @Override
-      public Set<Characteristics> characteristics() {
-        return Collections.emptySet();
-      }
-    };
+        });
   }
 
   /**
