@@ -42,16 +42,16 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 4
+        value: 6
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 6
-        memory: 8Gi
+        memory: 12Gi
       requests:
         cpu: 6
-        memory: 8Gi
+        memory: 12Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     imagePullPolicy: Always
@@ -78,13 +78,20 @@ spec:
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
     - name: ES_JAVA_OPTS
-      value: "-Xms1g -Xmx1g"
+      value: "-Xms2g -Xmx2g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
       value: single-node
+    - name: http.port
+      value: 9200
     - name: bootstrap.memory_lock
       value: true
+    # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+    # internally make usage of scroll contexts this lead to hits on the scroll limit.
+    # Thus this increased scroll context limit.
+    - name: search.max_open_scroll_context
+      value: 1000
     securityContext:
       privileged: true
       capabilities:

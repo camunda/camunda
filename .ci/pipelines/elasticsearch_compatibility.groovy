@@ -53,16 +53,16 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 2
+        value: 6
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 6
-        memory: 6Gi
+        memory: 12Gi
       requests:
         cpu: 6
-        memory: 6Gi
+        memory: 12Gi
 """
 }
 
@@ -99,11 +99,13 @@ static String elasticSearchContainerSpec(esVersion) {
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
     - name: ES_JAVA_OPTS
-      value: "-Xms1g -Xmx1g"
+      value: "-Xms2g -Xmx2g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
       value: single-node
+    - name: http.port
+      value: 9200
     - name: bootstrap.memory_lock
       value: true
     # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
@@ -117,11 +119,11 @@ static String elasticSearchContainerSpec(esVersion) {
         add: ["IPC_LOCK"]
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
   """
 }
 

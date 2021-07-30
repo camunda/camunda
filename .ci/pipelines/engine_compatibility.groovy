@@ -51,16 +51,16 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 2
+        value: 6
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 6
-        memory: 6Gi
+        memory: 12Gi
       requests:
         cpu: 6
-        memory: 6Gi
+        memory: 12Gi
     """
 }
 
@@ -68,32 +68,33 @@ String elasticSearchContainerSpec(def esVersion) {
   return """
   - name: elasticsearch-9200
     image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
+    env:
+    - name: ES_JAVA_OPTS
+      value: "-Xms2g -Xmx2g"
+    - name: cluster.name
+      value: elasticsearch
+    - name: http.port
+      value: 9200
+    - name: discovery.type
+      value: single-node
+    - name: bootstrap.memory_lock
+      value: true
+    # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+    # internally make usage of scroll contexts this lead to hits on the scroll limit.
+    # Thus this increased scroll context limit.
+    - name: search.max_open_scroll_context
+      value: 1000
     securityContext:
       privileged: true
       capabilities:
         add: ["IPC_LOCK", "SYS_RESOURCE"]
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 2
-        memory: 2Gi
-    env:
-      - name: ES_NODE_NAME
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.name
-      - name: ES_JAVA_OPTS
-        value: "-Xms1g -Xmx1g"
-      - name: bootstrap.memory_lock
-        value: true
-      - name: discovery.type
-        value: single-node
-      - name: http.port
-        value: 9200
-      - name: cluster.name
-        value: elasticsearch
+        cpu: 4
+        memory: 4Gi
    """
 }
 
