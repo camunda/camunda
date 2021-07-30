@@ -218,4 +218,39 @@ class EitherTest {
                   .collect(Collectors.toList()));
     }
   }
+
+  @DisplayName("Streams of Eithers can be collected using .collectorFoldingLeft()")
+  @Nested
+  class CollectorFoldingLeftTests {
+
+    @DisplayName("Only Streams without Lefts are collected into a Right")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#collectionsWithoutLefts")
+    void onlyStreamsWithoutLeftsAreCollectedIntoARight(
+        final List<Either<Object, Object>> collection) {
+      assertThat(collection.stream().collect(Either.collectorFoldingLeft()))
+          .isRight()
+          .extracting(Either::get)
+          .isEqualTo(
+              collection.stream()
+                  .filter(Predicate.not(Either::isLeft))
+                  .map(Either::get)
+                  .collect(Collectors.toList()));
+    }
+
+    @DisplayName("Only Streams with Lefts are collected into a Left")
+    @ParameterizedTest
+    @MethodSource("io.camunda.zeebe.util.EitherTest#collectionsWithLefts")
+    void onlyStreamsWithLeftsAreCollectedIntoALeft(final List<Either<Object, Object>> collection) {
+      assertThat(collection.stream().collect(Either.collectorFoldingLeft()))
+          .isLeft()
+          .extracting(Either::getLeft)
+          .isEqualTo(
+              collection.stream()
+                  .filter(Either::isLeft)
+                  .map(Either::getLeft)
+                  .collect(Collectors.toList())
+                  .get(0));
+    }
+  }
 }
