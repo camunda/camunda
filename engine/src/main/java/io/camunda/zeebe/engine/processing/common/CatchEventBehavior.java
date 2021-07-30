@@ -110,8 +110,8 @@ public final class CatchEventBehavior {
 
   private Either<Failure, EvalResult> evalExpressions(
       final ExecutableCatchEvent event, final BpmnElementContext context) {
-    return evaluateMessageName(event, context)
-        .map(name -> new EvalResult(event).messageName(name))
+    return Either.<Failure, EvalResult>right(new EvalResult(event))
+        .flatMap(result -> evaluateMessageName(event, context).map(result::messageName))
         .flatMap(result -> evaluateCorrelationKey(event, context).map(result::correlationKey))
         .flatMap(result -> evaluateTimer(event, context).map(result::timer));
   }
