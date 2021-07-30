@@ -237,22 +237,30 @@ public final class ExpressionProcessor {
       final Expression expression, final long scopeKey) {
     final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
     return evaluateExpressionAsEither(expression, scopeKey)
-        .flatMap(
-            result ->
-                typeCheck(result, expectedTypes, scopeKey)
-                    .mapLeft(
-                        failure ->
-                            new Failure(
-                                String.format(
-                                    "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
-                                    expression.getExpression(), result.getType()),
-                                ErrorType.EXTRACT_VALUE_ERROR,
-                                scopeKey)))
-        .map(
-            result ->
-                result.getType() == ResultType.NUMBER
-                    ? Long.toString(result.getNumber().longValue())
-                    : result.getString());
+        .flatMap(result -> typeCheckCorrelationKey(scopeKey, expectedTypes, result, expression))
+        .map(this::toStringFromStringOrNumber);
+  }
+
+  private Either<Failure, EvaluationResult> typeCheckCorrelationKey(
+      final long scopeKey,
+      final Set<ResultType> expectedTypes,
+      final EvaluationResult result,
+      final Expression expression) {
+    return typeCheck(result, expectedTypes, scopeKey)
+        .mapLeft(
+            failure ->
+                new Failure(
+                    String.format(
+                        "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
+                        expression.getExpression(), result.getType()),
+                    ErrorType.EXTRACT_VALUE_ERROR,
+                    scopeKey));
+  }
+
+  private String toStringFromStringOrNumber(final EvaluationResult result) {
+    return result.getType() == ResultType.NUMBER
+        ? Long.toString(result.getNumber().longValue())
+        : result.getString();
   }
 
   /**
