@@ -94,7 +94,7 @@ public final class CatchEventBehavior {
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage())
             .map(event -> evalExpressions(event, context))
-            .collect(Either.collector());
+            .collect(Either.collectorFoldingLeft());
 
     evaluationResults.ifRight(
         results -> {
@@ -102,10 +102,8 @@ public final class CatchEventBehavior {
           subscribeToTimerEvents(context, sideEffects, commandWriter, results);
         });
 
-    return evaluationResults
-        // we can only deal with the first failure, so it's enough to return that
-        .mapLeft(f -> f.get(0))
-        .map(r -> r.stream().map(EvalResult::event).collect(Collectors.toList()));
+    return evaluationResults.map(
+        r -> r.stream().map(EvalResult::event).collect(Collectors.toList()));
   }
 
   private Either<Failure, EvalResult> evalExpressions(
