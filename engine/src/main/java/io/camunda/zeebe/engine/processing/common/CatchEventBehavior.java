@@ -36,7 +36,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
@@ -84,8 +83,8 @@ public final class CatchEventBehavior {
     unsubscribeFromMessageEvents(context, sideEffects);
   }
 
-  /** @return either a failure or a list of the events it subscribed to */
-  public Either<Failure, List<ExecutableCatchEvent>> subscribeToEvents(
+  /** @return either a failure or nothing */
+  public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
       final SideEffects sideEffects,
@@ -102,8 +101,7 @@ public final class CatchEventBehavior {
           subscribeToTimerEvents(context, sideEffects, commandWriter, results);
         });
 
-    return evaluationResults.map(
-        r -> r.stream().map(EvalResult::event).collect(Collectors.toList()));
+    return evaluationResults.map(r -> null);
   }
 
   private Either<Failure, EvalResult> evalExpressions(

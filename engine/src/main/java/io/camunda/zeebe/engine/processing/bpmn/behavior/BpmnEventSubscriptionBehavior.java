@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 import java.util.Optional;
 
 public final class BpmnEventSubscriptionBehavior {
@@ -63,10 +61,9 @@ public final class BpmnEventSubscriptionBehavior {
     this.keyGenerator = keyGenerator;
   }
 
-  /** @return either a failure or a list of the events it subscribed to */
-  public <T extends ExecutableCatchEventSupplier>
-      Either<Failure, List<ExecutableCatchEvent>> subscribeToEvents(
-          final T element, final BpmnElementContext context) {
+  /** @return either a failure or nothing */
+  public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
+      final T element, final BpmnElementContext context) {
     return catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
   }
 
