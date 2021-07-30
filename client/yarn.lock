@@ -7633,10 +7633,10 @@ eslint-module-utils@^2.6.1:
     debug "^3.2.7"
     pkg-dir "^2.0.0"
 
-eslint-plugin-camunda-licensed@^0.4.3:
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-camunda-licensed/-/eslint-plugin-camunda-licensed-0.4.3.tgz#5564cb0ab85d4b69fcbe1b8aab09f2b00166af1c"
-  integrity sha512-vPhEoosQB67IlxcFrgjXT8kqtNGaciAgAbhx7fzzTmz2ceGTcrNjlRBJUseYehGtfeVwBCCDdntCNhV9e8oW7Q==
+eslint-plugin-camunda-licensed@^0.4.4:
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-camunda-licensed/-/eslint-plugin-camunda-licensed-0.4.4.tgz#fbb4dba5d21b24de49ffe48d27ee4380a6d72f57"
+  integrity sha512-5Sa5iDUiMyrlECO9PBIeiJDo+vjLXUpMAf1RdIp9ZOrglk+/BOOPL0eGPOKndUAex0IuHiOIKFljV5XFg3YEFQ==
   dependencies:
     eslint-plugin-license-header "^0.2.0"
 
