@@ -5,8 +5,8 @@
   "dependencies": {
     "@apollo/client": "^3.3.21",
     "@bpmn-io/form-js": "^0.2.4",
-    "@camunda-cloud/common-ui": "^0.0.15",
-    "@camunda-cloud/common-ui-react": "^0.0.15",
+    "@camunda-cloud/common-ui": "^0.0.17-rc2",
+    "@camunda-cloud/common-ui-react": "^0.0.17-rc2",
     "date-fns": "^2.23.0",
     "final-form": "^4.20.1",
     "final-form-arrays": "^3.0.2",

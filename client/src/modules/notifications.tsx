@@ -12,6 +12,7 @@ type Options = {
   headline: NotificationItem['headline'];
   description?: NotificationItem['description'];
   isDismissable?: NotificationItem['userDismissable'];
+  showCreationTime?: NotificationItem['showCreationTime'];
   navigation?: NotificationItem['navigation'];
   isGseNotification?: boolean;
 };
@@ -47,7 +48,14 @@ const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
 
   const displayNotification: DisplayNotificationFn = async (
     appearance,
-    {headline, description, isDismissable, navigation, isGseNotification},
+    {
+      headline,
+      description,
+      isDismissable,
+      navigation,
+      isGseNotification,
+      showCreationTime,
+    },
   ) => {
     if (isGseNotification) {
       setIsGseNotificationVisible(true);
@@ -59,6 +67,7 @@ const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
       appearance,
       userDismissable: isDismissable,
       navigation,
+      showCreationTime,
     });
   };
 

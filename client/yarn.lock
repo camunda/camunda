@@ -1403,17 +1403,17 @@
     "@bpmn-io/form-js-editor" "^0.2.4"
     "@bpmn-io/form-js-viewer" "^0.2.4"
 
-"@camunda-cloud/common-ui-react@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.15.tgz#a40b4c27f6aa13c2e8439da3393ec1fd5025491e"
-  integrity sha512-VAaKJI4qspMrn0Dhdc14JSuliP2pnpNe1CgNpj1OYecPJXHdhSrs3xoBi34u9X2m9DMy3GX6WxkzaolfbLnokQ==
+"@camunda-cloud/common-ui-react@^0.0.17-rc2":
+  version "0.0.17-rc2"
+  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.17-rc2.tgz#b408e6f3507bedf8e9f5897db5773ca4af7d1b5a"
+  integrity sha512-jisZCm71fKvuW1TQ3LHfeMVHZeQDH1IC8d3sply5mnM10UthPQt8zvHhVed/FmbYSCwMV+4rd9is1j/m+wXVfw==
   dependencies:
-    "@camunda-cloud/common-ui" "0.0.15"
+    "@camunda-cloud/common-ui" "0.0.17-rc2"
 
-"@camunda-cloud/common-ui@0.0.15", "@camunda-cloud/common-ui@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.15.tgz#584c49718e8bbf46706c07a1aa96a1da41024ee2"
-  integrity sha512-b8c/5KYmOY9A2pXCjOyZ+PIjGaptdR5U75PQstoftanT6WdZB99Q6KUfBBG07JqtEe4iXr6EMD/x8bd/1doFkA==
+"@camunda-cloud/common-ui@0.0.17-rc2", "@camunda-cloud/common-ui@^0.0.17-rc2":
+  version "0.0.17-rc2"
+  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.17-rc2.tgz#bd37a7cc34aa561e0eba90c4c6779ce80373fea7"
+  integrity sha512-76xbkiu0T1i5OOwUMx59cqX1Xo2RYAZfMwNm3wpV8qhqf0YUdRtE886CioTxmaRDr/US8oiz2XbLM8DIBcSLoQ==
 
 "@chromaui/localtunnel@^2.0.2":
   version "2.0.3"
