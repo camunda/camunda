@@ -34,9 +34,17 @@ public class BrokerActor {
               new StartPartitionManagerStep()));
 
   private ActorScheduler actorScheduler;
-  private final BrokerHealthCheckService healthCheckService;
+  private BrokerHealthCheckService healthCheckService;
   private ClusterServicesActor clusterServicesActor;
   private PartitionManagerActor partitionManagerActor;
+
+  /** Test Constructor * */
+  protected BrokerActor(final BrokerStartupContext context) {
+    actorScheduler = context.getActorScheduler();
+    healthCheckService = context.getHealthCheckService();
+    clusterServicesActor = context.getClusterServicesActor();
+    partitionManagerActor = context.getPartitionManagerActor();
+  }
 
   public BrokerActor(
       final SpringBrokerBridge springBrokerBridge,
@@ -85,10 +93,59 @@ public class BrokerActor {
         .thenApply(
             context -> {
               actorScheduler = null;
+              healthCheckService = null;
               clusterServicesActor = null;
               partitionManagerActor = null;
               return null;
             });
+  }
+
+  protected static final class BrokerStartupContext {
+    private final ActorScheduler actorScheduler;
+    private final BrokerHealthCheckService healthCheckService;
+    private final ClusterServicesActor clusterServicesActor;
+    private final PartitionManagerActor partitionManagerActor;
+
+    protected BrokerStartupContext(
+        final ActorScheduler actorScheduler,
+        final BrokerHealthCheckService healthCheckService,
+        final ClusterServicesActor clusterServicesActor,
+        final PartitionManagerActor partitionManagerActor) {
+      this.actorScheduler = actorScheduler;
+      this.healthCheckService = healthCheckService;
+      this.clusterServicesActor = clusterServicesActor;
+      this.partitionManagerActor = partitionManagerActor;
+    }
+
+    private ActorScheduler getActorScheduler() {
+      return actorScheduler;
+    }
+
+    public BrokerHealthCheckService getHealthCheckService() {
+      return healthCheckService;
+    }
+
+    private ClusterServicesActor getClusterServicesActor() {
+      return clusterServicesActor;
+    }
+
+    private PartitionManagerActor getPartitionManagerActor() {
+      return partitionManagerActor;
+    }
+
+    @Override
+    public String toString() {
+      return "BrokerStartupContext{"
+          + "actorScheduler="
+          + actorScheduler
+          + ", healthCheckService="
+          + healthCheckService
+          + ", clusterServicesActor="
+          + clusterServicesActor
+          + ", partitionManagerActor="
+          + partitionManagerActor
+          + '}';
+    }
   }
 
   private static final class StartActorSchedulerStep
@@ -180,54 +237,6 @@ public class BrokerActor {
     @Override
     public String getName() {
       return "Partition Manager";
-    }
-  }
-
-  private static final class BrokerStartupContext {
-    private final ActorScheduler actorScheduler;
-    private final BrokerHealthCheckService healthCheckService;
-    private final ClusterServicesActor clusterServicesActor;
-    private final PartitionManagerActor partitionManagerActor;
-
-    private BrokerStartupContext(
-        final ActorScheduler actorScheduler,
-        final BrokerHealthCheckService healthCheckService,
-        final ClusterServicesActor clusterServicesActor,
-        final PartitionManagerActor partitionManagerActor) {
-      this.actorScheduler = actorScheduler;
-      this.healthCheckService = healthCheckService;
-      this.clusterServicesActor = clusterServicesActor;
-      this.partitionManagerActor = partitionManagerActor;
-    }
-
-    private ActorScheduler getActorScheduler() {
-      return actorScheduler;
-    }
-
-    public BrokerHealthCheckService getHealthCheckService() {
-      return healthCheckService;
-    }
-
-    private ClusterServicesActor getClusterServicesActor() {
-      return clusterServicesActor;
-    }
-
-    private PartitionManagerActor getPartitionManagerActor() {
-      return partitionManagerActor;
-    }
-
-    @Override
-    public String toString() {
-      return "BrokerStartupContext{"
-          + "actorScheduler="
-          + actorScheduler
-          + ", healthCheckService="
-          + healthCheckService
-          + ", clusterServicesActor="
-          + clusterServicesActor
-          + ", partitionManagerActor="
-          + partitionManagerActor
-          + '}';
     }
   }
 }

@@ -12,7 +12,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,11 +35,12 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
 
   private final Int2ObjectHashMap<FileBasedSnapshotStore> partitionSnapshotStores =
       new Int2ObjectHashMap<>();
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulingService actorSchedulingService;
   private final int nodeId;
 
-  public FileBasedSnapshotStoreFactory(final ActorScheduler actorScheduler, final int nodeId) {
-    this.actorScheduler = actorScheduler;
+  public FileBasedSnapshotStoreFactory(
+      final ActorSchedulingService actorSchedulingService, final int nodeId) {
+    this.actorSchedulingService = actorSchedulingService;
     this.nodeId = nodeId;
   }
 
@@ -70,7 +71,7 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
             new SnapshotMetrics(Integer.toString(partitionId)),
             snapshotDirectory,
             pendingDirectory);
-    actorScheduler.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
+    actorSchedulingService.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
     return snapshotStore;
   }
 
