@@ -10,16 +10,16 @@ package io.camunda.zeebe.transport;
 import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 
 public final class TransportFactory {
 
   // we need to schedule the transports, but Actor is not an interface
   // which means we need to schedule in the factory otherwise we can return the transport interface
   // types
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulerImpl actorScheduler;
 
-  public TransportFactory(final ActorScheduler actorScheduler) {
+  public TransportFactory(final ActorSchedulerImpl actorScheduler) {
     this.actorScheduler = actorScheduler;
   }
 

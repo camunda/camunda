@@ -8,9 +8,10 @@
 package io.camunda.zeebe.util.sched.testing;
 
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
+import io.camunda.zeebe.util.sched.ActorSchedulerAgent;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorThreadFactory;
 import io.camunda.zeebe.util.sched.ActorThread;
 import io.camunda.zeebe.util.sched.ActorThreadGroup;
 import io.camunda.zeebe.util.sched.ActorTimerQueue;
@@ -23,7 +24,7 @@ import java.util.concurrent.Callable;
 import org.junit.rules.ExternalResource;
 
 public final class ControlledActorSchedulerRule extends ExternalResource {
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulerImpl actorScheduler;
   private final ControlledActorThread controlledActorTaskRunner;
   private final ControlledActorClock clock = new ControlledActorClock();
 
@@ -31,7 +32,7 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
     final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
     final ActorTimerQueue timerQueue = new ActorTimerQueue(clock, 1);
     final ActorSchedulerBuilder builder =
-        ActorScheduler.newActorScheduler()
+        ActorSchedulerImpl.newActorScheduler()
             .setActorClock(clock)
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(0)
@@ -56,7 +57,7 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
     return actorScheduler.submitActor(actor);
   }
 
-  public ActorScheduler get() {
+  public ActorSchedulerAgent get() {
     return actorScheduler;
   }
 

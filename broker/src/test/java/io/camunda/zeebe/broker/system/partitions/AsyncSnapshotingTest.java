@@ -25,7 +25,7 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -82,7 +82,7 @@ public final class AsyncSnapshotingTest {
     autoCloseableRule.manage(snapshotController);
     snapshotController = spy(snapshotController);
 
-    final ActorScheduler actorScheduler = actorSchedulerRule.get();
+    final ActorSchedulerImpl actorScheduler = actorSchedulerRule.get();
     createStreamProcessorControllerMock();
     createAsyncSnapshotDirector(actorScheduler);
   }
@@ -103,7 +103,7 @@ public final class AsyncSnapshotingTest {
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
   }
 
-  private void createAsyncSnapshotDirector(final ActorScheduler actorScheduler) {
+  private void createAsyncSnapshotDirector(final ActorSchedulerImpl actorScheduler) {
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));

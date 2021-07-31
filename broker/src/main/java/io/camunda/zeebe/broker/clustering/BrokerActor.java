@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerAgent;
 import io.camunda.zeebe.util.startup.AbstractStartupStep;
 import io.camunda.zeebe.util.startup.StartupProcess;
 import io.netty.util.NetUtil;
@@ -33,7 +33,7 @@ public class BrokerActor {
               new StartClusteringServicesStep(),
               new StartPartitionManagerStep()));
 
-  private ActorScheduler actorScheduler;
+  private ActorSchedulerAgent actorScheduler;
   private BrokerHealthCheckService healthCheckService;
   private ClusterServicesActor clusterServicesActor;
   private PartitionManagerActor partitionManagerActor;
@@ -101,13 +101,13 @@ public class BrokerActor {
   }
 
   protected static final class BrokerStartupContext {
-    private final ActorScheduler actorScheduler;
+    private final ActorSchedulerAgent actorScheduler;
     private final BrokerHealthCheckService healthCheckService;
     private final ClusterServicesActor clusterServicesActor;
     private final PartitionManagerActor partitionManagerActor;
 
     protected BrokerStartupContext(
-        final ActorScheduler actorScheduler,
+        final ActorSchedulerAgent actorScheduler,
         final BrokerHealthCheckService healthCheckService,
         final ClusterServicesActor clusterServicesActor,
         final PartitionManagerActor partitionManagerActor) {
@@ -117,7 +117,7 @@ public class BrokerActor {
       this.partitionManagerActor = partitionManagerActor;
     }
 
-    private ActorScheduler getActorScheduler() {
+    private ActorSchedulerAgent getActorScheduler() {
       return actorScheduler;
     }
 

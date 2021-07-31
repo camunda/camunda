@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.util.sched;
 
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorSchedulerBuilder;
 
 /** Thread group for the non-blocking, CPU bound, tasks. */
 public final class CpuThreadGroup extends ActorThreadGroup {

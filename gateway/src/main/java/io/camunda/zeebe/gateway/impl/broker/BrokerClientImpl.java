@@ -22,7 +22,8 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerAgent;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +38,7 @@ public final class BrokerClientImpl implements BrokerClient {
   private static final String ERROR_MSG_STOP_FAILED =
       "Failed to gracefully shutdown gateway broker client";
 
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulerAgent actorScheduler;
   private final BrokerTopologyManagerImpl topologyManager;
   private final boolean ownsActorScheduler;
   private final BrokerRequestManager requestManager;
@@ -64,7 +65,7 @@ public final class BrokerClientImpl implements BrokerClient {
         messagingService,
         membershipService,
         eventService,
-        ActorScheduler.newActorScheduler()
+        ActorSchedulerImpl.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
@@ -78,7 +79,7 @@ public final class BrokerClientImpl implements BrokerClient {
       final MessagingService messagingService,
       final ClusterMembershipService membershipService,
       final ClusterEventService eventService,
-      final ActorScheduler actorScheduler,
+      final ActorSchedulerImpl actorScheduler,
       final boolean ownsActorScheduler) {
     this.eventService = eventService;
     this.actorScheduler = actorScheduler;

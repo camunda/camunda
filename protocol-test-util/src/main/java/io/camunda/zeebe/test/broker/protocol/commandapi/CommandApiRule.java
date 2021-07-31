@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.transport.ClientTransport;
 import io.camunda.zeebe.transport.TransportFactory;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +43,7 @@ public final class CommandApiRule extends ExternalResource {
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  private ActorScheduler scheduler;
+  private ActorSchedulerImpl scheduler;
 
   public CommandApiRule(final Supplier<AtomixCluster> atomixSupplier) {
     nodeId = 0;
@@ -53,7 +53,7 @@ public final class CommandApiRule extends ExternalResource {
   @Override
   protected void before() {
     scheduler =
-        ActorScheduler.newActorScheduler()
+        ActorSchedulerImpl.newActorScheduler()
             .setCpuBoundActorThreadCount(1)
             .setActorClock(controlledActorClock)
             .build();

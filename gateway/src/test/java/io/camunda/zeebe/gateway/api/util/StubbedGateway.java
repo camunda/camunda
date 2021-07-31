@@ -13,7 +13,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -27,11 +27,11 @@ public final class StubbedGateway {
 
   private final StubbedBrokerClient brokerClient;
   private final ActivateJobsHandler activateJobsHandler;
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulerImpl actorScheduler;
   private Server server;
 
   public StubbedGateway(
-      final ActorScheduler actorScheduler,
+      final ActorSchedulerImpl actorScheduler,
       final StubbedBrokerClient brokerClient,
       final ActivateJobsHandler activateJobsHandler) {
     this.actorScheduler = actorScheduler;

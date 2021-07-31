@@ -43,7 +43,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.Loggers;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -71,7 +71,7 @@ public final class TestStreams {
 
   private final TemporaryFolder dataDirectory;
   private final AutoCloseableRule closeables;
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulerImpl actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
   private final Consumer<TypedRecord<?>> mockOnProcessedListener;
@@ -85,7 +85,7 @@ public final class TestStreams {
   public TestStreams(
       final TemporaryFolder dataDirectory,
       final AutoCloseableRule closeables,
-      final ActorScheduler actorScheduler) {
+      final ActorSchedulerImpl actorScheduler) {
     this.dataDirectory = dataDirectory;
     this.closeables = closeables;
     this.actorScheduler = actorScheduler;

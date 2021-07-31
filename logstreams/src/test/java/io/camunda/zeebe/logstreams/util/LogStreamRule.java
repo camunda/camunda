@@ -11,7 +11,7 @@ import io.atomix.raft.storage.RaftStorage.Builder;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.function.Consumer;
@@ -79,7 +79,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public void createLogStream() {
-    final ActorScheduler actorScheduler = actorSchedulerRule.get();
+    final ActorSchedulerImpl actorScheduler = actorSchedulerRule.get();
 
     if (logStorageRule == null) {
       logStorageRule = new AtomixLogStorageRule(temporaryFolder);

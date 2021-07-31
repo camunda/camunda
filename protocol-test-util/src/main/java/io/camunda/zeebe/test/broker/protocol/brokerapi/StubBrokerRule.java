@@ -19,7 +19,7 @@ import io.camunda.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -31,7 +31,7 @@ public final class StubBrokerRule extends ExternalResource {
   private static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
   private final int nodeId;
   private final InetSocketAddress socketAddress;
-  private ActorScheduler scheduler;
+  private ActorSchedulerImpl scheduler;
   private MsgPackHelper msgPackHelper;
   private final AtomicReference<Topology> currentTopology = new AtomicReference<>();
   private final ControlledActorClock clock = new ControlledActorClock();
@@ -54,7 +54,7 @@ public final class StubBrokerRule extends ExternalResource {
 
     final int numThreads = 2;
     scheduler =
-        ActorScheduler.newActorScheduler()
+        ActorSchedulerImpl.newActorScheduler()
             .setCpuBoundActorThreadCount(numThreads)
             .setActorClock(clock)
             .build();

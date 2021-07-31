@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import java.io.File;
 import java.nio.file.Path;
 import org.agrona.CloseHelper;
@@ -28,7 +28,7 @@ import org.agrona.CloseHelper;
  * container.
  */
 public final class ExporterContainerRuntime implements CloseableSilently {
-  private final ActorScheduler scheduler;
+  private final ActorSchedulerImpl scheduler;
   private final ExporterRepository repository;
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final RuntimeActor actor;
@@ -36,7 +36,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   private final ExporterMetrics metrics;
 
   public ExporterContainerRuntime(final Path storagePath) {
-    scheduler = ActorScheduler.newActorScheduler().build();
+    scheduler = ActorSchedulerImpl.newActorScheduler().build();
     scheduler.start();
 
     repository = new ExporterRepository();

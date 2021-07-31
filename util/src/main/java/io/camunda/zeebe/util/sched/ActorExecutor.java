@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.util.sched;
 
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;

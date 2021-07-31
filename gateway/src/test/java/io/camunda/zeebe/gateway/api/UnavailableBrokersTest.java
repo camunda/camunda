@@ -20,7 +20,7 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.grpc.Status.Code;
 import io.netty.util.NetUtil;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class UnavailableBrokersTest {
   static Gateway gateway;
   static AtomixCluster cluster;
-  static ActorScheduler actorScheduler;
+  static ActorSchedulerImpl actorScheduler;
   static ZeebeClient client;
 
   @BeforeAll
@@ -51,7 +51,7 @@ class UnavailableBrokersTest {
     cluster = AtomixCluster.builder().build();
     cluster.start();
 
-    actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler = ActorSchedulerImpl.newActorScheduler().build();
     actorScheduler.start();
 
     gateway =

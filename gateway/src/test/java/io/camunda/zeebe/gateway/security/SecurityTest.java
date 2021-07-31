@@ -12,7 +12,7 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Rule;
@@ -130,6 +130,6 @@ public final class SecurityTest {
         atomix.getMessagingService(),
         atomix.getMembershipService(),
         atomix.getEventService(),
-        ActorScheduler.newActorScheduler().build());
+        ActorSchedulerImpl.newActorScheduler().build());
   }
 }

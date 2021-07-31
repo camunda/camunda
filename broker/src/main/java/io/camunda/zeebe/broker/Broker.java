@@ -87,7 +87,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -144,7 +144,7 @@ public final class Broker implements AutoCloseable {
   private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
   private CommandApiService commandHandler;
-  private ActorScheduler scheduler;
+  private ActorSchedulerImpl scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private BrokerHealthCheckService healthCheckService;

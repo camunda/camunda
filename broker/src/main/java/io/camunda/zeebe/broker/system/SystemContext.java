@@ -14,7 +14,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Collections;
@@ -39,7 +39,7 @@ public final class SystemContext {
 
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
-  private ActorScheduler scheduler;
+  private ActorSchedulerImpl scheduler;
   private Duration stepTimeout;
 
   public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
@@ -145,13 +145,13 @@ public final class SystemContext {
     }
   }
 
-  private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
+  private ActorSchedulerImpl initScheduler(final ActorClock clock, final String brokerId) {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 
     final int cpuThreads = cfg.getCpuThreadCount();
     final int ioThreads = cfg.getIoThreadCount();
 
-    return ActorScheduler.newActorScheduler()
+    return ActorSchedulerImpl.newActorScheduler()
         .setActorClock(clock)
         .setCpuBoundActorThreadCount(cpuThreads)
         .setIoBoundActorThreadCount(ioThreads)
@@ -159,7 +159,7 @@ public final class SystemContext {
         .build();
   }
 
-  public ActorScheduler getScheduler() {
+  public ActorSchedulerImpl getScheduler() {
     return scheduler;
   }
 

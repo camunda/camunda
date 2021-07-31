@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.util.sched;
 
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorSchedulerBuilder;
 
 public final class IoThreadGroup extends ActorThreadGroup {
 

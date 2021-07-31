@@ -8,8 +8,8 @@
 package io.camunda.zeebe.util.sched.testing;
 
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import org.agrona.LangUtil;
@@ -22,7 +22,7 @@ public final class ActorSchedulerRule extends ExternalResource {
   private final ActorClock clock;
 
   private ActorSchedulerBuilder builder;
-  private ActorScheduler actorScheduler;
+  private ActorSchedulerImpl actorScheduler;
 
   public ActorSchedulerRule(final int numOfThreads, final ActorClock clock) {
     this(numOfThreads, 2, clock);
@@ -51,7 +51,7 @@ public final class ActorSchedulerRule extends ExternalResource {
   @Override
   public void before() {
     builder =
-        ActorScheduler.newActorScheduler()
+        ActorSchedulerImpl.newActorScheduler()
             .setCpuBoundActorThreadCount(numOfThreads)
             .setIoBoundActorThreadCount(numOfIoThreads)
             .setActorClock(clock);
@@ -64,7 +64,7 @@ public final class ActorSchedulerRule extends ExternalResource {
   public void after() {
     try {
       actorScheduler.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
     }
 
@@ -76,7 +76,7 @@ public final class ActorSchedulerRule extends ExternalResource {
     return actorScheduler.submitActor(actor);
   }
 
-  public ActorScheduler get() {
+  public ActorSchedulerImpl get() {
     return actorScheduler;
   }
 

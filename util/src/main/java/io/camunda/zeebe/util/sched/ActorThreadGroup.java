@@ -8,7 +8,7 @@
 package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.Loggers;
-import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl.ActorSchedulerBuilder;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 

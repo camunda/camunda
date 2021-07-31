@@ -22,7 +22,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.util.VersionUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Function;
@@ -39,7 +39,7 @@ public class StandaloneGateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulerImpl actorScheduler;
 
   public StandaloneGateway(
       final GatewayCfg gatewayCfg, final SpringGatewayBridge springGatewayBridge) {
@@ -96,9 +96,9 @@ public class StandaloneGateway {
     return atomix;
   }
 
-  private ActorScheduler createActorScheduler(final GatewayCfg configuration) {
-    final ActorScheduler actorScheduler =
-        ActorScheduler.newActorScheduler()
+  private ActorSchedulerImpl createActorScheduler(final GatewayCfg configuration) {
+    final ActorSchedulerImpl actorScheduler =
+        ActorSchedulerImpl.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setSchedulerName("gateway-scheduler")

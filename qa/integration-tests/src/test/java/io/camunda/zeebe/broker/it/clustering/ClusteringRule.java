@@ -52,7 +52,7 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulerImpl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -373,8 +373,8 @@ public final class ClusteringRule extends ExternalResource {
 
     atomixCluster.start().join();
 
-    final ActorScheduler actorScheduler =
-        ActorScheduler.newActorScheduler().setCpuBoundActorThreadCount(1).build();
+    final ActorSchedulerImpl actorScheduler =
+        ActorSchedulerImpl.newActorScheduler().setCpuBoundActorThreadCount(1).build();
 
     actorScheduler.start();
 

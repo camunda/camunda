@@ -14,11 +14,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
+public final class ActorSchedulerImpl
+    implements AutoCloseable, ActorSchedulingService, ActorSchedulerAgent {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
 
-  public ActorScheduler(final ActorSchedulerBuilder builder) {
+  public ActorSchedulerImpl(final ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
     actorTaskExecutor = builder.getActorExecutor();
   }
@@ -50,6 +51,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
    * @param actor the actor to submit
    * @param schedulingHints additional scheduling hint
    */
+  @Override
   public ActorFuture<Void> submitActor(final Actor actor, final int schedulingHints) {
     final ActorTask task = actor.actor.task;
 
@@ -63,6 +65,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     return startingFuture;
   }
 
+  @Override
   public void start() {
     if (state.compareAndSet(SchedulerState.NEW, SchedulerState.RUNNING)) {
       actorTaskExecutor.start();
@@ -71,6 +74,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
+  @Override
   public Future<Void> stop() {
     if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING)) {
 
@@ -202,12 +206,12 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
       }
     }
 
-    public ActorScheduler build() {
+    public ActorSchedulerImpl build() {
       initActorThreadFactory();
       initCpuBoundActorThreadGroup();
       initIoBoundActorThreadGroup();
       initActorExecutor();
-      return new ActorScheduler(this);
+      return new ActorSchedulerImpl(this);
     }
   }
 
