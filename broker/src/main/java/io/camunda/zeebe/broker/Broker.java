@@ -32,8 +32,8 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -97,6 +97,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -434,7 +435,7 @@ public final class Broker implements AutoCloseable {
 
             final var typedRecordProcessorsFactory =
                 createFactory(
-                    topologyManager,
+                    topologyManager::addTopologyPartitionListener,
                     brokerCfg.getCluster(),
                     clusterServices.getCommunicationService(),
                     clusterServices.getEventService(),
@@ -503,7 +504,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final TopologyManager topologyManager,
+      final Consumer<TopologyPartitionListener> partitionListenerConsumer,
       final ClusterCfg clusterCfg,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
@@ -515,14 +516,14 @@ public final class Broker implements AutoCloseable {
 
       final TopologyPartitionListenerImpl partitionListener =
           new TopologyPartitionListenerImpl(actor);
-      topologyManager.addTopologyPartitionListener(partitionListener);
+      partitionListenerConsumer.accept(partitionListener);
 
       final DeploymentDistributorImpl deploymentDistributor =
           new DeploymentDistributorImpl(
               communicationService, eventService, partitionListener, actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(communicationService, topologyManager, actor);
+          new PartitionCommandSenderImpl(communicationService, partitionListenerConsumer, actor);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
