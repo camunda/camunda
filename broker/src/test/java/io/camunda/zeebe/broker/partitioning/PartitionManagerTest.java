@@ -13,8 +13,10 @@ import static org.mockito.Mockito.mock;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.Environment;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +40,9 @@ public final class PartitionManagerTest {
     // when
     final var partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
+            mock(ActorSchedulingService.class),
             brokerConfig,
+            new BrokerInfo(1, "dummy"),
             mock(ClusterServicesImpl.class),
             mock(FileBasedSnapshotStoreFactory.class));
 
@@ -56,7 +60,9 @@ public final class PartitionManagerTest {
     // when
     final var partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
+            mock(ActorSchedulingService.class),
             brokerConfig,
+            new BrokerInfo(1, "dummy"),
             mock(ClusterServicesImpl.class),
             mock(FileBasedSnapshotStoreFactory.class));
     // then

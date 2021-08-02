@@ -32,7 +32,6 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -411,14 +410,11 @@ public final class Broker implements AutoCloseable {
     final var snapshotStoreFactory =
         new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
 
-    final var topologyManager =
-        new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
-    partitionListeners.add(topologyManager);
-    scheduleActor(topologyManager);
-
     partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
-            brokerCfg, clusterServices, snapshotStoreFactory);
+            scheduler, brokerCfg, localBroker, clusterServices, snapshotStoreFactory);
+
+    partitionListeners.add(partitionManager);
 
     partitionManager.start().join();
 
@@ -448,7 +444,7 @@ public final class Broker implements AutoCloseable {
 
             final var typedRecordProcessorsFactory =
                 createFactory(
-                    topologyManager::addTopologyPartitionListener,
+                    partitionManager::addTopologyPartitionListener,
                     brokerCfg.getCluster(),
                     clusterServices.getCommunicationService(),
                     clusterServices.getEventService(),
@@ -475,7 +471,7 @@ public final class Broker implements AutoCloseable {
                 new ZeebePartition(transitionContext, transitionBehavior);
             scheduleActor(zeebePartition);
             zeebePartition.addFailureListener(
-                new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));
+                new PartitionHealthBroadcaster(partitionId, partitionManager::onHealthChanged));
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
             diskSpaceUsageListeners.add(zeebePartition);
@@ -493,7 +489,6 @@ public final class Broker implements AutoCloseable {
       partitionManager.stop().join();
       partitionManager = null;
       // TODO shutdown snapshot store
-      topologyManager.close();
     };
   }
 
