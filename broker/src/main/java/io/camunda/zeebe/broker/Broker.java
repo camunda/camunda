@@ -141,7 +141,6 @@ public final class Broker implements AutoCloseable {
 
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
-  private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
   private CommandApiService commandHandler;
   private ActorScheduler scheduler;
@@ -236,7 +235,6 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     startContext.addStep("cluster services", () -> clusterServices.start().join());
-    startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
           "embedded gateway",
@@ -352,15 +350,6 @@ public final class Broker implements AutoCloseable {
         .join(brokerContext.getStepTimeout().toSeconds(), TimeUnit.SECONDS);
   }
 
-  private AutoCloseable topologyManagerStep(
-      final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
-    topologyManager =
-        new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker, clusterCfg);
-    partitionListeners.add(topologyManager);
-    scheduleActor(topologyManager);
-    return topologyManager;
-  }
-
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
     healthCheckService = new BrokerHealthCheckService(localBroker);
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
@@ -406,6 +395,12 @@ public final class Broker implements AutoCloseable {
       throws Exception {
     final var snapshotStoreFactory =
         new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
+
+    final var topologyManager =
+        new TopologyManagerImpl(
+            clusterServices.getMembershipService(), localBroker, brokerCfg.getCluster());
+    partitionListeners.add(topologyManager);
+    scheduleActor(topologyManager);
 
     partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
@@ -484,6 +479,7 @@ public final class Broker implements AutoCloseable {
       partitionManager.stop().join();
       partitionManager = null;
       // TODO shutdown snapshot store
+      topologyManager.close();
     };
   }
 
