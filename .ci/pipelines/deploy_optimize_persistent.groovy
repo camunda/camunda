@@ -92,7 +92,6 @@ def deploy() {
     kustomize cfg set . source jenkins
     kustomize cfg set . managed-by ${JENKINS_DOMAIN}
     kustomize cfg set . created-by ${BUILD_URL}
-    kustomize cfg list-setters .
     kubectl apply -k .
   """
 }
