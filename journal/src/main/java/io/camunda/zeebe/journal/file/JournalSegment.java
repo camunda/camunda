@@ -217,6 +217,9 @@ class JournalSegment implements AutoCloseable {
   }
 
   private void markForDeletion() {
+    if (markedForDeletion) {
+      return;
+    }
     writer.close();
     final var target = file.getFileMarkedForDeletion();
     try {
