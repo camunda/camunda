@@ -41,25 +41,32 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       new Object2NullableObjectHashMap<>();
 
   private final Path runtimeDirectory;
+
+  @SuppressWarnings("rawtypes")
   private final ZeebeDbFactory zeebeDbFactory;
+
+  @SuppressWarnings("rawtypes")
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
+
   private final AtomixRecordEntrySupplier entrySupplier;
 
   private final SnapshotReplicationMetrics metrics;
 
+  @SuppressWarnings("rawtypes")
   private ZeebeDb db;
+
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ReceivableSnapshotStore receivableSnapshotStore;
 
   public StateControllerImpl(
       final int partitionId,
-      final ZeebeDbFactory zeebeDbFactory,
+      @SuppressWarnings("rawtypes") final ZeebeDbFactory zeebeDbFactory,
       final ConstructableSnapshotStore constructableSnapshotStore,
       final ReceivableSnapshotStore receivableSnapshotStore,
       final Path runtimeDirectory,
       final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
-      final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
+      @SuppressWarnings("rawtypes") final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
     this.constructableSnapshotStore = constructableSnapshotStore;
     this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
@@ -97,7 +104,9 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
             snapshotIndexedEntry.term(),
             lowerBoundSnapshotPosition,
             exportedPosition);
+
     transientSnapshot.ifPresent(this::takeSnapshot);
+
     return transientSnapshot;
   }
 
@@ -134,6 +143,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public ZeebeDb openDb() {
     if (db == null) {
       db = zeebeDbFactory.createDb(runtimeDirectory.toFile());
@@ -151,8 +161,10 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   @Override
   public void close() throws Exception {
     if (db != null) {
-      db.close();
+      final var dbToClose = db;
       db = null;
+      dbToClose.close();
+
       LOG.debug("Closed database from '{}'.", runtimeDirectory);
     }
 
