@@ -3,8 +3,12 @@ kind: ConfigMap
 metadata:
   name: @BRANCH@-operate-camunda-cloud
   labels:
+    camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+    camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
     app: @BRANCH@-operate-camunda-cloud
     branch: @BRANCH@
+  annotations:
+    camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
 data:
   zeebe.cfg.toml: |
     [[exporters]]

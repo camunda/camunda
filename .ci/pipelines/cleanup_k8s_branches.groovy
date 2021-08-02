@@ -11,6 +11,10 @@ kind: Pod
 metadata:
   labels:
     agent: operate-ci-build
+    camunda.cloud/source: jenkins
+    camunda.cloud/managed-by: "${env.JENKINS_DOMAIN}"
+  annotations:
+    camunda.cloud/created-by: "${env.BUILD_URL}"
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
