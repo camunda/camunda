@@ -3,9 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
+package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance;
 
 import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 
 @EqualsAndHashCode
 public class RollingDateFilterDataDto extends DateFilterDataDto<RollingDateFilterStartDto> {

@@ -285,6 +285,18 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
+  public void removeFlowNodeFromActivityTable(final String processInstanceId,
+                                              final String flowNodeId) {
+    String sql = String.format("DELETE FROM %s " +
+                                 "WHERE PROC_INST_ID_ = ? " +
+                                 "AND %s = ?", ACTIVITY_INSTANCE_TABLE, ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, processInstanceId);
+    statement.setString(2, flowNodeId);
+    statement.executeUpdate();
+  }
+
   public void changeUserTaskAssigneeClaimOperationTimestamp(final String taskId,
                                                             final OffsetDateTime timestamp) throws SQLException {
     String sql = "UPDATE ACT_HI_IDENTITYLINK " +

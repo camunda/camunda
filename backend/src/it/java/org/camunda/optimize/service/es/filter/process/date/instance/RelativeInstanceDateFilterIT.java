@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter.process.date;
+package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.DateFilterUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -25,10 +25,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RollingDateFilterIT extends AbstractDateFilterIT {
+public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
 
-  @Test
-  public void testStartDateRollingLogic() {
+  @ParameterizedTest
+  @MethodSource("getRelativeSupportedFilterUnits")
+  public void testStartDateCurrentIntervalRelativeLogic(DateFilterUnit dateFilterUnit) {
     // given
     embeddedOptimizeExtension.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -46,63 +47,30 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
       createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        DateFilterUnit.DAYS,
-        1L,
+        dateFilterUnit,
+        0L,
         false,
-        DateFilterType.ROLLING
+        DateFilterType.RELATIVE
       );
 
     assertResults(processInstance, result, 1);
 
     // when
-    LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
+    if (dateFilterUnit.equals(DateFilterUnit.QUARTERS)) {
+      LocalDateUtil.setCurrentTime(OffsetDateTime.now()
+                                     .plus(3 * 2L, DateFilterUtil.unitOf(DateFilterUnit.MONTHS.getId())));
+    } else {
+      LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(2L, DateFilterUtil.unitOf(dateFilterUnit.getId())));
+    }
 
     //token has to be refreshed, as the old one expired already after moving the date
     result = createAndEvaluateReportWithStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
-      DateFilterUnit.DAYS,
-      1L,
+      dateFilterUnit,
+      0L,
       true,
-      DateFilterType.ROLLING
-    );
-
-    assertResults(processInstance, result, 0);
-  }
-
-  @Test
-  public void testEndDateRollingLogic() {
-    embeddedOptimizeExtension.reloadConfiguration();
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-
-    OffsetDateTime processInstanceEndTime =
-      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getEndTime();
-
-    importAllEngineEntitiesFromScratch();
-
-    LocalDateUtil.setCurrentTime(processInstanceEndTime);
-
-    //token has to be refreshed, as the old one expired already after moving the date
-    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
-      createAndEvaluateReportWithRollingEndDateFilter(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        DateFilterUnit.DAYS,
-        true
-      );
-
-    assertResults(processInstance, result, 1);
-
-    LocalDateUtil.setCurrentTime(processInstanceEndTime.plusDays(2L));
-
-    //token has to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReportWithRollingEndDateFilter(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion(),
-      DateFilterUnit.DAYS,
-      true
+      DateFilterType.RELATIVE
     );
 
     assertResults(processInstance, result, 0);
@@ -122,10 +90,7 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
       engineDto.getVersionAsString()
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .rollingStartDate()
-                           .start(1L, DateFilterUnit.DAYS)
-                           .add()
-                           .rollingEndDate()
+                           .relativeStartDate()
                            .start(1L, DateFilterUnit.DAYS)
                            .add()
                            .buildList());

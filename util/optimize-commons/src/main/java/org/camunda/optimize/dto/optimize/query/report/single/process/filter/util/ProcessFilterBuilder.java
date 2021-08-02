@@ -88,6 +88,30 @@ public class ProcessFilterBuilder {
     return FixedDateFilterBuilder.startDate(this);
   }
 
+  public FixedFlowNodeDateFilterBuilder fixedFlowNodeStartDate() {
+    return FixedFlowNodeDateFilterBuilder.startDate(this);
+  }
+
+  public FixedFlowNodeDateFilterBuilder fixedFlowNodeEndDate() {
+    return FixedFlowNodeDateFilterBuilder.endDate(this);
+  }
+
+  public RollingFlowNodeDateFilterBuilder rollingFlowNodeStartDate() {
+    return RollingFlowNodeDateFilterBuilder.startDate(this);
+  }
+
+  public RollingFlowNodeDateFilterBuilder rollingFlowNodeEndDate() {
+    return RollingFlowNodeDateFilterBuilder.endDate(this);
+  }
+
+  public RelativeFlowNodeDateFilterBuilder relativeFlowNodeStartDate() {
+    return RelativeFlowNodeDateFilterBuilder.startDate(this);
+  }
+
+  public RelativeFlowNodeDateFilterBuilder relativeFlowNodeEndDate() {
+    return RelativeFlowNodeDateFilterBuilder.endDate(this);
+  }
+
   public DurationFilterBuilder duration() {
     return DurationFilterBuilder.construct(this);
   }

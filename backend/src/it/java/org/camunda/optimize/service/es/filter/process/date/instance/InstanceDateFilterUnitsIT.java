@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter.process.date;
+package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
@@ -23,7 +23,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DateFilterUnitsIT extends AbstractDateFilterIT {
+public class InstanceDateFilterUnitsIT extends AbstractInstanceDateFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRollingSupportedFilterUnits")

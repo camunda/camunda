@@ -19,11 +19,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Inp
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
@@ -39,6 +46,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
@@ -140,8 +149,43 @@ public class ValidationHelper {
           CanceledFlowNodeFilterDto executingFlowNodeFilterDto = (CanceledFlowNodeFilterDto) filterDto;
           CanceledFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
           ensureNotEmpty("values", flowNodeFilterData.getValues());
+        } else if (filterDto instanceof FlowNodeStartDateFilterDto || filterDto instanceof FlowNodeEndDateFilterDto) {
+          @SuppressWarnings(UNCHECKED_CAST)
+          ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
+            (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
+          validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }
       }
+    }
+  }
+
+  private static void validateFlowNodeDateFilter(final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilter) {
+    FlowNodeDateFilterDataDto<?> flowNodeDateFilterDataDto = flowNodeDateFilter.getData();
+    if (DateFilterType.FIXED.equals(flowNodeDateFilterDataDto.getType())) {
+      ensureAtLeastOneNotNull(
+        "flowNode date filter start or end field",
+        flowNodeDateFilterDataDto.getStart(),
+        flowNodeDateFilterDataDto.getEnd()
+      );
+    } else {
+      ensureNotNull(DateFilterDataDto.Fields.start, flowNodeDateFilterDataDto.getStart());
+    }
+    if (flowNodeDateFilterDataDto.getStart() instanceof RollingDateFilterStartDto) {
+      final RollingDateFilterStartDto rollingStartDto =
+        (RollingDateFilterStartDto) flowNodeDateFilterDataDto.getStart();
+      ensureNotNull(RollingDateFilterStartDto.Fields.unit, rollingStartDto.getUnit());
+      ensureNotNull(RollingDateFilterStartDto.Fields.value, rollingStartDto.getValue());
+    } else if (flowNodeDateFilterDataDto.getStart() instanceof RelativeDateFilterStartDto) {
+      final RelativeDateFilterStartDto relativeStartDto =
+        (RelativeDateFilterStartDto) flowNodeDateFilterDataDto.getStart();
+      ensureNotNull(RelativeDateFilterStartDto.Fields.unit, relativeStartDto.getUnit());
+      ensureNotNull(RelativeDateFilterStartDto.Fields.value, relativeStartDto.getValue());
+    }
+    if (FilterApplicationLevel.INSTANCE.equals(flowNodeDateFilter.getFilterLevel())) {
+      ensureCollectionNotEmpty(
+        FlowNodeDateFilterDataDto.Fields.flowNodeIds,
+        flowNodeDateFilterDataDto.getFlowNodeIds()
+      );
     }
   }
 

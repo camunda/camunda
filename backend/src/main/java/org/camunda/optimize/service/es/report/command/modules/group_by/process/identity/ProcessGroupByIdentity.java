@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil;
+import org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -86,7 +86,7 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
               // version.
               FILTERED_USER_TASKS_AGGREGATION,
               ModelElementFilterQueryUtil.createInclusiveFlowNodeIdFilterQuery(
-                context.getReportData(), getUserTaskIds(context.getReportData())
+                context.getReportData(), getUserTaskIds(context.getReportData()), context.getFilterContext()
               )
             ).subAggregation(identityTermsAggregation)));
 

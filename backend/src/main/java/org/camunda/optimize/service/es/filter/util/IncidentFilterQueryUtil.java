@@ -28,7 +28,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createExecutedFlowNodeFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createExecutedFlowNodeFilterQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_STATUS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter.process.date;
+package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 
-public abstract class AbstractDateFilterIT extends AbstractFilterIT {
+public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());

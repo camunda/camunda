@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.filter;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.service.es.filter.util.DateFilterQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +18,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @RequiredArgsConstructor
 @Component
 public class EndDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
-  private final DateFilterQueryService dateFilterQueryService;
 
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<DateFilterDataDto<?>> filters,
                          final FilterContext filterContext) {
-    dateFilterQueryService.addFilters(query, filters, END_DATE, filterContext.getTimezone());
+    DateFilterQueryUtil.addFilters(query, filters, END_DATE, filterContext.getTimezone());
   }
 }

@@ -37,7 +37,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Susp
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil;
-import org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil;
+import org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -156,7 +156,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         query, extractInstanceFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), filterContext
       );
     }
-    addInstanceFilterForViewLevelMatching(query, filters, filterContext.isUserTaskReport());
+    addInstanceFilterForViewLevelMatching(query, filters, filterContext);
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -172,8 +172,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
 
   private void addInstanceFilterForViewLevelMatching(final BoolQueryBuilder query,
                                                      final List<ProcessFilterDto<?>> filters,
-                                                     final boolean isUserTaskReport) {
-    ModelElementFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters, isUserTaskReport)
+                                                     final FilterContext filterContext) {
+    ModelElementFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters, filterContext)
       .ifPresent(query::filter);
     IncidentFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
   }

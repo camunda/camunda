@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;

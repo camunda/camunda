@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter.process.date;
+package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -21,10 +21,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
-public class FixedDateFilterIT extends AbstractFilterIT {
+public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
   @Test
-  public void testGetHeatMapWithGteStartDateCriteria() {
+  public void filterWithGteStartDateCriteria() {
     // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
@@ -42,7 +42,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
         .add()
         .buildList();
     reportData.setFilter(fixedStartDateFilter);
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     assertThat(resultData).isEmpty();
@@ -66,7 +68,7 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithLteStartDateCriteria() {
+  public void filterWithLteStartDateCriteria() {
     // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
@@ -81,7 +83,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(start.plus(1, ChronoUnit.DAYS))
                            .add()
                            .buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(1);
@@ -110,7 +114,7 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithGteEndDateCriteria() {
+  public void filterWithGteEndDateCriteria() {
     // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
@@ -126,7 +130,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(end.plus(1, ChronoUnit.DAYS))
                            .add()
                            .buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(1);
@@ -155,7 +161,7 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithLteEndDateCriteria() {
+  public void filterWithLteEndDateCriteria() {
     // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
@@ -170,7 +176,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .end(null)
                            .add()
                            .buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(1);
@@ -188,7 +196,7 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithMixedDateCriteria() {
+  public void filterWithMixedDateCriteria() {
     // given
     ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
     HistoricProcessInstanceDto processInstance =
@@ -205,7 +213,9 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                            .buildList());
 
     // when
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     assertThat(resultData).hasSize(1);

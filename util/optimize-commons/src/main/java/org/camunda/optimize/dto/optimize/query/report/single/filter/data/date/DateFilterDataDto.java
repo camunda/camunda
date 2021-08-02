@@ -11,7 +11,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 
 import java.time.OffsetDateTime;
 
@@ -20,7 +24,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FI
 import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
 
 /**
- * Abstract class that contains a hidden "type" field to distinguish, which
+ * Abstract class that contains a hidden "type" field to distinguish which
  * filter type the jackson object mapper should transform the object to.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
@@ -33,6 +37,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FIL
 @Setter
 @EqualsAndHashCode
 @Accessors(chain = true)
+@FieldNameConstants
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected DateFilterType type;
