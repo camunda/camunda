@@ -62,7 +62,6 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
           {isDefinitionLimitReached && (
             <MessageBox type="warning">{t('common.definitionSelection.limitReached')}</MessageBox>
           )}
-          <MessageBox type="warning">{t('common.definitionSelection.viewLevelWarning')}</MessageBox>
           <Checklist
             allItems={availableDefinitions}
             selectedItems={selectedDefinitions}

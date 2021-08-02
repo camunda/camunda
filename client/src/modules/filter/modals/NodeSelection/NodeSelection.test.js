@@ -8,8 +8,11 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Modal, BPMNDiagram, Button} from 'components';
+import {loadProcessDefinitionXml} from 'services';
 
-import NodeSelection from './NodeSelection';
+import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+
+import {NodeSelection} from './NodeSelection';
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
@@ -36,12 +39,23 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   };
 });
 
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  loadProcessDefinitionXml: jest.fn().mockReturnValue('fooXml'),
+}));
+
+beforeEach(() => {
+  loadProcessDefinitionXml.mockClear();
+});
+
 const props = {
   close: jest.fn(),
   addFilter: jest.fn(),
-  xml: 'fooXml',
   data: [],
-  definitions: [{identifier: 'definition'}],
+  mightFail: (data, fn) => fn(data),
+  definitions: [
+    {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
+  ],
 };
 
 it('should contain a modal', () => {
@@ -50,8 +64,8 @@ it('should contain a modal', () => {
   expect(node.find(Modal)).toExist();
 });
 
-it('should display a diagram', () => {
-  const node = shallow(<NodeSelection {...props} />);
+it('should display a diagram', async () => {
+  const node = await shallow(<NodeSelection {...props} />);
 
   expect(node.find(BPMNDiagram).props().xml).toBe('fooXml');
 });
@@ -126,4 +140,27 @@ it('should deselect All nodes if deselectAll button is clicked', () => {
   node.find(Modal.Content).find(Button).at(1).simulate('click');
 
   expect(node.state().selectedNodes).toEqual([]);
+});
+
+it('should initially load xml', async () => {
+  await shallow(<NodeSelection {...props} />);
+
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('definitionKey', 'all', null);
+});
+
+it('should load new xml after changing definition', async () => {
+  const definitions = [
+    {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
+    {
+      identifier: 'otherDefinition',
+      key: 'otherDefinitionKey',
+      versions: ['1'],
+      tenantIds: ['marketing', 'sales'],
+    },
+  ];
+  const node = await shallow(<NodeSelection {...props} definitions={definitions} />);
+
+  await node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
+
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('otherDefinitionKey', '1', 'marketing');
 });

@@ -93,12 +93,6 @@ it('should disable gateway and EndEvent elements if no ProcDef selected', async 
   );
 });
 
-it('should pass the xml to the Filter component', async () => {
-  const node = await shallow(<BranchControlPanel {...data} />);
-  const filter = node.find('Filter');
-  expect(filter.find('[xml="aFooXml"]')).toExist();
-});
-
 it('should load the variable names and hand them to the filter if process definition changes', async () => {
   const node = shallow(<BranchControlPanel {...data} />);
   node.setProps({

@@ -153,7 +153,6 @@ export default withErrorHandling(
 
       const change = {
         definitions: {$splice: [[idx, 0, newDefinition]]},
-        filter: {$set: data.filter.filter(({filterLevel}) => filterLevel !== 'view')}, // view level filters not allowed for multi-definition reports
       };
       if (data.visualization === 'heat') {
         change.visualization = {$set: 'table'};
@@ -171,11 +170,7 @@ export default withErrorHandling(
       const data = this.props.report.data;
 
       const {definitions} = update(data, change);
-      change = {
-        ...change,
-        ...(await this.processDefinitionUpdate(definitions)),
-        filter: {$set: data.filter.filter(({filterLevel}) => filterLevel !== 'view')}, // view level filters not allowed for multi-definition reports
-      };
+      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
       change.configuration = change.configuration || {};
       if (data.definitions.length === 1) {
         // if we add the second definition, we need to make sure that it's not a heatmap report
@@ -487,7 +482,6 @@ export default withErrorHandling(
                 data={data.filter}
                 onChange={this.props.updateReport}
                 definitions={data.definitions}
-                xml={data.configuration.xml}
                 variables={variables}
               />
             </section>

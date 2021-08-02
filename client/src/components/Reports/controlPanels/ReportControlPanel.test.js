@@ -13,7 +13,6 @@ import {Button} from 'components';
 
 import {DefinitionList} from './DefinitionList';
 import ReportSelect from './ReportSelect';
-import AddDefinition from './AddDefinition';
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
@@ -635,25 +634,6 @@ describe('filter handling when changing definitions', () => {
     );
 
     await node.find(DefinitionList).prop('onRemove')(0);
-
-    expect(spy.mock.calls[0][0].filter).toEqual({
-      $set: [],
-    });
-  });
-
-  it('should remove existing view level filters when adding definitions', async () => {
-    const spy = jest.fn();
-    const node = shallow(
-      <ReportControlPanel
-        {...props}
-        report={update(report, {
-          data: {filter: {0: {appliedTo: {$set: ['def1']}, filterLevel: {$set: 'view'}}}},
-        })}
-        updateReport={spy}
-      />
-    );
-
-    await node.find(AddDefinition).prop('onAdd')([{}]);
 
     expect(spy.mock.calls[0][0].filter).toEqual({
       $set: [],

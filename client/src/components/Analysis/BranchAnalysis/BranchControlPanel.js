@@ -131,7 +131,6 @@ export class BranchControlPanel extends React.Component {
               onChange={({filter}) =>
                 this.props.onChange({filter: update(this.props.filter, filter)})
               }
-              xml={this.props.xml}
               definitions={definitions}
               filterLevel="instance"
               variables={this.state.variables}
