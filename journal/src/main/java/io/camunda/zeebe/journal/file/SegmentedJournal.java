@@ -155,7 +155,6 @@ public final class SegmentedJournal implements Journal {
           compactSegments.size());
       for (final JournalSegment segment : compactSegments.values()) {
         log.trace("{} - Deleting segment: {}", name, segment);
-        segment.close();
         segment.delete();
         journalMetrics.decSegmentCount();
       }
@@ -174,7 +173,6 @@ public final class SegmentedJournal implements Journal {
     try {
       journalIndex.clear();
       writer.reset(nextIndex);
-      resetHead(nextIndex);
     } finally {
       rwlock.unlockWrite(stamp);
     }
@@ -255,6 +253,9 @@ public final class SegmentedJournal implements Journal {
       journalMetrics.incSegmentCount();
     }
     journalMetrics.observeJournalOpenDuration(System.currentTimeMillis() - startTime);
+
+    // Delete files that were previously marked for deletion
+    deleteDeferredFiles();
   }
 
   /**
@@ -313,7 +314,6 @@ public final class SegmentedJournal implements Journal {
     assertOpen();
 
     for (final JournalSegment segment : segments.values()) {
-      segment.close();
       segment.delete();
       journalMetrics.decSegmentCount();
     }
@@ -419,7 +419,6 @@ public final class SegmentedJournal implements Journal {
   synchronized void removeSegment(final JournalSegment segment) {
     segments.remove(segment.index());
     journalMetrics.decSegmentCount();
-    segment.close();
     segment.delete();
     resetCurrentSegment();
   }
@@ -519,6 +518,29 @@ public final class SegmentedJournal implements Journal {
         files, Comparator.comparingInt(f -> JournalSegmentFile.getSegmentIdFromPath(f.getName())));
 
     return Arrays.asList(files);
+  }
+
+  private void deleteDeferredFiles() {
+    final File[] files =
+        directory.listFiles(
+            file -> file.isFile() && JournalSegmentFile.isDeletedSegmentFile(name, file.getName()));
+
+    if (files == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Could not list files in directory '%s'. Either the path doesn't point to a directory or an I/O error occurred.",
+              directory));
+    }
+
+    Arrays.stream(files)
+        .forEach(
+            file -> {
+              try {
+                Files.deleteIfExists(file.toPath());
+              } catch (final IOException e) {
+                log.warn("Could not delete file {} which is marked for deletion", file, e);
+              }
+            });
   }
 
   private JournalSegmentDescriptor readDescriptor(final File file) {
