@@ -8,7 +8,10 @@ metadata:
   namespace: optimize-persistent
   labels:
     app: optimize-persistent-config
-    camunda.cloud/managed-by: ci
+    camunda.cloud/source: "" # {"$openapi":"source"}
+    camunda.cloud/managed-by: "" # {"$openapi":"managed-by"}
+  annotations:
+    camunda.cloud/created-by: "" # {"$openapi":"created-by"}
 data:
 ######################## OPT ########################
   OptimizeLicense.txt: |
