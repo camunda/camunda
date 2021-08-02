@@ -36,7 +36,7 @@ public final class RecordVersionTest {
       VersionUtil.getVersion().replaceAll("-SNAPSHOT", "");
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomix);
+  private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomixCluster);
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 

@@ -14,14 +14,14 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
-import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -118,7 +118,8 @@ public final class ExpressionProcessor {
       final Expression expression, final long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      return Either.left(new Failure(result.getFailureMessage()));
+      return Either.left(
+          new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
     }
     switch (result.getType()) {
       case DURATION:
@@ -133,7 +134,9 @@ public final class ExpressionProcessor {
               new Failure(
                   String.format(
                       "Invalid duration format '%s' for expression '%s'",
-                      result.getString(), expression.getExpression())));
+                      result.getString(), expression.getExpression()),
+                  ErrorType.EXTRACT_VALUE_ERROR,
+                  scopeKey));
         }
       default:
         final var expected = List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
@@ -141,7 +144,9 @@ public final class ExpressionProcessor {
             new Failure(
                 String.format(
                     "Expected result of the expression '%s' to be one of '%s', but was '%s'",
-                    expression.getExpression(), expected, result.getType())));
+                    expression.getExpression(), expected, result.getType()),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
     }
   }
 
@@ -159,7 +164,8 @@ public final class ExpressionProcessor {
       final Expression expression, final Long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      return Either.left(new Failure(result.getFailureMessage()));
+      return Either.left(
+          new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
     }
     if (result.getType() == ResultType.DATE_TIME) {
       return Either.right(result.getDateTime());
@@ -172,7 +178,9 @@ public final class ExpressionProcessor {
             new Failure(
                 String.format(
                     "Invalid date-time format '%s' for expression '%s'",
-                    result.getString(), expression.getExpression())));
+                    result.getString(), expression.getExpression()),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
       }
     }
     final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
@@ -180,7 +188,9 @@ public final class ExpressionProcessor {
         new Failure(
             String.format(
                 "Expected result of the expression '%s' to be one of '%s', but was '%s'",
-                expression.getExpression(), expected, result.getType())));
+                expression.getExpression(), expected, result.getType()),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey));
   }
 
   /**
@@ -215,24 +225,42 @@ public final class ExpressionProcessor {
   }
 
   /**
-   * Evaluates the given expression and returns the result as String. If the evaluation fails or the
-   * result is not a string or number (the latter of which is automatically converted to a string),
-   * then an exception is thrown.
+   * Evaluates the given expression and returns the result as String. If the evaluation result is a
+   * number it is automatically converted to a string.
    *
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
-   * @return the evaluation result as String
-   * @throws MessageCorrelationKeyException if the evaluation fails or the result is not a string or
-   *     number
+   * @return either the evaluation result as String, or a failure if the evaluation fails
    */
-  public String evaluateMessageCorrelationKeyExpression(
+  public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
       final Expression expression, final long scopeKey) {
+    final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheckCorrelationKey(scopeKey, expectedTypes, result, expression))
+        .map(this::toStringFromStringOrNumber);
+  }
 
-    final var evaluationResult = evaluateExpression(expression, scopeKey);
+  private Either<Failure, EvaluationResult> typeCheckCorrelationKey(
+      final long scopeKey,
+      final Set<ResultType> expectedTypes,
+      final EvaluationResult result,
+      final Expression expression) {
+    return typeCheck(result, expectedTypes, scopeKey)
+        .mapLeft(
+            failure ->
+                new Failure(
+                    String.format(
+                        "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
+                        expression.getExpression(), result.getType()),
+                    ErrorType.EXTRACT_VALUE_ERROR,
+                    scopeKey));
+  }
 
-    final var resultHandler = new CorrelationKeyResultHandler(scopeKey);
-    return resultHandler.apply(evaluationResult);
+  private String toStringFromStringOrNumber(final EvaluationResult result) {
+    return result.getType() == ResultType.NUMBER
+        ? Long.toString(result.getNumber().longValue())
+        : result.getString();
   }
 
   /**
@@ -264,6 +292,24 @@ public final class ExpressionProcessor {
               scopeKey));
     }
     return Either.right(result);
+  }
+
+  private Either<Failure, EvaluationResult> typeCheck(
+      final EvaluationResult result,
+      final Collection<ResultType> expectedResultTypes,
+      final long scopeKey) {
+    return expectedResultTypes.stream()
+        .map(expected -> typeCheck(result, expected, scopeKey))
+        .filter(Either::isRight)
+        .findFirst()
+        .orElse(
+            Either.left(
+                new Failure(
+                    String.format(
+                        "Expected result of expression '%s' to be one of '%s', but was '%s'",
+                        result.getExpression(), expectedResultTypes, result.getType()),
+                    ErrorType.EXTRACT_VALUE_ERROR,
+                    scopeKey)));
   }
 
   private EvaluationResult evaluateExpression(
@@ -298,38 +344,6 @@ public final class ExpressionProcessor {
   public static final class EvaluationException extends RuntimeException {
     public EvaluationException(final String message) {
       super(message);
-    }
-  }
-
-  protected static final class CorrelationKeyResultHandler
-      implements Function<EvaluationResult, String> {
-
-    private final long variableScopeKey;
-
-    protected CorrelationKeyResultHandler(final long variableScopeKey) {
-      this.variableScopeKey = variableScopeKey;
-    }
-
-    @Override
-    public String apply(final EvaluationResult evaluationResult) {
-      if (evaluationResult.isFailure()) {
-        throw new MessageCorrelationKeyException(
-            variableScopeKey, evaluationResult.getFailureMessage());
-      }
-      if (evaluationResult.getType() == ResultType.STRING) {
-        return evaluationResult.getString();
-      } else if (evaluationResult.getType() == ResultType.NUMBER) {
-
-        final Number correlationKeyNumber = evaluationResult.getNumber();
-
-        return Long.toString(correlationKeyNumber.longValue());
-      } else {
-        final String failureMessage =
-            String.format(
-                "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
-                evaluationResult.getExpression(), evaluationResult.getType().toString());
-        throw new MessageCorrelationKeyException(variableScopeKey, failureMessage);
-      }
     }
   }
 

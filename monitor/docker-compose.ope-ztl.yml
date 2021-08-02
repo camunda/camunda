@@ -1,0 +1,93 @@
+version: '3.0'
+
+volumes:
+  grafana: { }
+  prometheus: { }
+
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    restart: always
+
+  elasticsearch_exporter:
+    image: justwatch/elasticsearch_exporter:1.1.0
+    container_name: elasticsearch_exporter
+    command: '--es.uri=http://elasticsearch:9200'
+    restart: always
+    ports:
+      - 9114:9114
+
+  zeebe:
+    image: camunda/zeebe:1.1.1
+    container_name: zeebe
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_NETWORK_HOST=zeebe
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
+      - ZEEBE_BROKER_GATEWAY_MONITORING_ENABLED=true
+    ports:
+      - 26500:26500
+      - 8000:8000
+      - 9600:9600
+    depends_on:
+      - elasticsearch
+    restart: always
+
+  tasklist:
+    image: camunda/tasklist:1.1.1
+    container_name: tasklist
+    ports:
+      - 8090:8090
+    environment:
+      - SERVER_PORT=8090
+      - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED=false
+      - CAMUNDA_TASKLIST_ARCHIVER_ROLLOVERINTERVAL=1m
+      - CAMUNDA_TASKLIST_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+      - GRAPHQL_PLAYGROUND_ENABLED=true
+      - GRAPHQL_PLAYGROUND_SETTINGS_REQUEST_CREDENTIALS=include
+    depends_on:
+      - elasticsearch
+      - zeebe
+    restart: always
+
+  operate:
+    image: camunda/operate:1.1.1
+    container_name: operate
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_CLUSTERNAME=docker-cluster
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ARCHIVER_ROLLOVERINTERVAL=1m
+      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+    depends_on:
+      - elasticsearch
+      - zeebe
+    restart: always

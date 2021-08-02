@@ -1,11 +1,18 @@
 global:
   scrape_interval:     5s
-  evaluation_interval: 5s 
+  evaluation_interval: 5s
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
          - targets: ['localhost:9090']
+
+  - job_name: 'zeebe'
+    static_configs:
+      - targets: ['zeebe:9600']
+        labels:
+          namespace: 'local'
+          pod: 'zeebe'
 
   - job_name: 'broker-1'
     static_configs:
@@ -27,3 +34,24 @@ scrape_configs:
         labels:
           namespace: 'local'
           pod: 'broker-3'
+
+  - job_name: "tasklist"
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["tasklist:8090"]
+        labels:
+          namespace: 'local'
+          pod: 'tasklist'
+
+  - job_name: "operate"
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["operate:8080"]
+        labels:
+          namespace: 'local'
+          pod: 'operate'
+
+  - job_name: "elasticsearch"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["elasticsearch_exporter:9114"]

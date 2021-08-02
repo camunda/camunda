@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -79,6 +80,7 @@ public final class TestStreams {
   private boolean snapshotWasTaken = false;
 
   private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
+  private ReplayMode replayMode = ReplayMode.UNTIL_END;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -107,6 +109,10 @@ public final class TestStreams {
     this.eventApplierFactory = eventApplierFactory;
   }
 
+  public void withReplayMode(final ReplayMode replayMode) {
+    this.replayMode = replayMode;
+  }
+
   public CommandResponseWriter getMockedResponseWriter() {
     return mockCommandResponseWriter;
   }
@@ -129,12 +135,12 @@ public final class TestStreams {
   }
 
   public SynchronousLogStream createLogStream(
-      final String name, final int partitionId, final ListLogStorage listLogStorage) {
+      final String name, final int partitionId, final ListLogStorage sharedStorage) {
     return createLogStream(
         name,
         partitionId,
-        listLogStorage,
-        logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
+        sharedStorage,
+        logStream -> sharedStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
   private SynchronousLogStream createLogStream(
@@ -252,6 +258,7 @@ public final class TestStreams {
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
             .eventApplierFactory(eventApplierFactory)
+            .replayMode(replayMode)
             .build();
     final var openFuture = streamProcessor.openAsync(false);
 

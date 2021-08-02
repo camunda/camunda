@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.exporter.stream;
 import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
+import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.time.Duration;
 import java.util.List;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -31,6 +34,7 @@ import org.junit.runners.model.Statement;
 
 public final class ExporterRule implements TestRule {
 
+  private static final int PARTITION_ID = 1;
   private static final int EXPORTER_PROCESSOR_ID = 101;
   private static final String PROCESSOR_NAME = "exporter";
   private static final String STREAM_NAME = "stream";
@@ -43,21 +47,40 @@ public final class ExporterRule implements TestRule {
   private final RuleChain chain;
 
   private final ZeebeDbFactory zeebeDbFactory;
+  private final ExporterMode exporterMode;
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
   private TestStreams streams;
+  private PartitionMessagingService partitionMessagingService = new SimplePartitionMessageService();
   private ExporterDirector director;
+  private Duration distributionInterval = Duration.ofSeconds(15);
 
-  public ExporterRule(final int partitionId) {
-    this(partitionId, DefaultZeebeDbFactory.defaultFactory());
-  }
+  private ExporterRule(final ExporterMode exporterMode) {
+    this.exporterMode = exporterMode;
+    final SetupRule rule = new SetupRule(PARTITION_ID);
 
-  public ExporterRule(final int partitionId, final ZeebeDbFactory dbFactory) {
-    final SetupRule rule = new SetupRule(partitionId);
-
-    zeebeDbFactory = dbFactory;
+    zeebeDbFactory = DefaultZeebeDbFactory.defaultFactory();
     chain =
         RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables).around(rule);
+  }
+
+  public static ExporterRule activeExporter() {
+    return new ExporterRule(ExporterMode.ACTIVE);
+  }
+
+  public static ExporterRule passiveExporter() {
+    return new ExporterRule(ExporterMode.PASSIVE);
+  }
+
+  public ExporterRule withPartitionMessageService(
+      final PartitionMessagingService partitionMessagingService) {
+    this.partitionMessagingService = partitionMessagingService;
+    return this;
+  }
+
+  public ExporterRule withDistributionInterval(final Duration distributionInterval) {
+    this.distributionInterval = distributionInterval;
+    return this;
   }
 
   @Override
@@ -65,7 +88,6 @@ public final class ExporterRule implements TestRule {
     return chain.apply(base, description);
   }
 
-  @SuppressWarnings("unchecked")
   public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
@@ -77,6 +99,9 @@ public final class ExporterRule implements TestRule {
             .name(PROCESSOR_NAME)
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(capturedZeebeDb)
+            .exporterMode(exporterMode)
+            .distributionInterval(distributionInterval)
+            .partitionMessagingService(partitionMessagingService)
             .descriptors(exporterDescriptors);
 
     director = new ExporterDirector(context, false);

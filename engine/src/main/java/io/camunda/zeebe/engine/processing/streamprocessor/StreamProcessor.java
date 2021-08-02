@@ -49,6 +49,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final Set<FailureListener> failureListeners = new HashSet<>();
+  private final StreamProcessorMetrics metrics;
 
   // log stream
   private final LogStream logStream;
@@ -69,8 +70,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
-  /** Recover future is completed after replay is done. */
-  private ActorFuture<Long> recoverFuture;
+  private ActorFuture<Long> replayCompletedFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -89,6 +89,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream = processingContext.getLogStream();
     partitionId = logStream.getPartitionId();
     actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
+    metrics = new StreamProcessorMetrics(partitionId);
   }
 
   public static StreamProcessorBuilder builder() {
@@ -110,7 +111,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   protected void onActorStarted() {
     try {
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
-      final long startTime = System.currentTimeMillis();
+      final long startTime = ActorClock.currentTimeMillis();
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
@@ -120,25 +121,33 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      final ReplayStateMachine replayStateMachine = new ReplayStateMachine(processingContext);
-
+      final var replayStateMachine = new ReplayStateMachine(processingContext);
       // disable writing to the log stream
       processingContext.disableLogStreamWriter();
 
-      recoverFuture = replayStateMachine.startRecover(snapshotPosition);
+      replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
+      if (processingContext.getReplayMode() == ReplayMode.CONTINUOUSLY) {
+        openFuture.complete(null);
+        replayCompletedFuture.onComplete(
+            (v, error) -> {
+              if (error != null) {
+                LOG.error("The replay of events failed.", error);
+                onFailure(error);
+              }
+            });
 
-      actor.runOnCompletion(
-          recoverFuture,
-          (lastReprocessedPosition, throwable) -> {
-            if (throwable != null) {
-              LOG.error("Unexpected error on recovery happens.", throwable);
-              onFailure(throwable);
-            } else {
-              onRecovered(lastReprocessedPosition);
-              new StreamProcessorMetrics(partitionId)
-                  .recoveryTime(System.currentTimeMillis() - startTime);
-            }
-          });
+      } else {
+        replayCompletedFuture.onComplete(
+            (lastReprocessedPosition, error) -> {
+              if (error != null) {
+                LOG.error("The replay of events failed.", error);
+                onFailure(error);
+              } else {
+                onRecovered(lastReprocessedPosition);
+                metrics.recoveryTime(ActorClock.currentTimeMillis() - startTime);
+              }
+            });
+      }
     } catch (final RuntimeException e) {
       onFailure(e);
     }
@@ -366,7 +375,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Void> pauseProcessing() {
     return actor.call(
         () ->
-            recoverFuture.onComplete(
+            replayCompletedFuture.onComplete(
                 (v, t) -> {
                   if (shouldProcess) {
                     setStateToPausedAndNotifyListeners();
@@ -384,7 +393,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public void resumeProcessing() {
     actor.call(
         () ->
-            recoverFuture.onComplete(
+            replayCompletedFuture.onComplete(
                 (v, t) -> {
                   if (!shouldProcess) {
                     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);

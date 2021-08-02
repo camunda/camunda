@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMes
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
@@ -87,7 +88,7 @@ public final class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
-  private final boolean explicitStart;
+
   private Consumer<String> jobsAvailableCallback = type -> {};
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -102,15 +103,14 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
 
   private EngineRule(final int partitionCount) {
-    this(partitionCount, false);
+    this(partitionCount, null);
   }
 
-  private EngineRule(final int partitionCount, final boolean explicitStart) {
+  private EngineRule(final int partitionCount, final ListLogStorage sharedStorage) {
     this.partitionCount = partitionCount;
-    this.explicitStart = explicitStart;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory());
+            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
   }
 
   public static EngineRule singlePartition() {
@@ -121,8 +121,8 @@ public final class EngineRule extends ExternalResource {
     return new EngineRule(partitionCount);
   }
 
-  public static EngineRule explicitStart() {
-    return new EngineRule(1, true);
+  public static EngineRule withSharedStorage(final ListLogStorage listLogStorage) {
+    return new EngineRule(1, listLogStorage);
   }
 
   @Override
@@ -136,9 +136,7 @@ public final class EngineRule extends ExternalResource {
   protected void before() {
     subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
 
-    if (!explicitStart) {
-      startProcessors();
-    }
+    startProcessors();
   }
 
   @Override
@@ -173,6 +171,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withOnSkippedCallback(final Consumer<LoggedEvent> onSkippedCallback) {
     this.onSkippedCallback = this.onSkippedCallback.andThen(onSkippedCallback);
+    return this;
+  }
+
+  public EngineRule withReplayMode(final ReplayMode replayMode) {
+    environmentRule.withReplayMode(replayMode);
     return this;
   }
 

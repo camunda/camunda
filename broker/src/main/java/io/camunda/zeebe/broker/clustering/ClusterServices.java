@@ -11,43 +11,14 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
-import io.atomix.core.Atomix;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
-import java.util.concurrent.CompletableFuture;
 
-public final class ClusterServices {
+public interface ClusterServices {
 
-  private final Atomix atomix;
+  MessagingService getMessagingService();
 
-  public ClusterServices(final Atomix atomix) {
-    this.atomix = atomix;
-  }
+  ClusterMembershipService getMembershipService();
 
-  public CompletableFuture<Void> start() {
-    return atomix.start();
-  }
+  ClusterEventService getEventService();
 
-  public CompletableFuture<Void> stop() {
-    return atomix.stop();
-  }
-
-  public MessagingService getMessagingService() {
-    return atomix.getMessagingService();
-  }
-
-  public ClusterMembershipService getMembershipService() {
-    return atomix.getMembershipService();
-  }
-
-  public ClusterEventService getEventService() {
-    return atomix.getEventService();
-  }
-
-  public ClusterCommunicationService getCommunicationService() {
-    return atomix.getCommunicationService();
-  }
-
-  public ManagedPartitionGroup getPartitionGroup() {
-    return atomix.getPartitionGroup();
-  }
+  ClusterCommunicationService getCommunicationService();
 }
