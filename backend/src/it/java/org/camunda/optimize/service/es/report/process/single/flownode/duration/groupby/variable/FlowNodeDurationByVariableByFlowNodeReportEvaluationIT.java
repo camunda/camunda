@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -51,7 +51,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -454,12 +455,12 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       .satisfies(
         entry -> {
           assertThat(entry.getValue())
-          .containsExactlyInAnyOrder(
-            new MapResultEntryDto(START_EVENT, 20.0, START_EVENT),
-            new MapResultEntryDto(SERVICE_TASK_ID_1, 20.0, SERVICE_TASK_ID_1),
-            new MapResultEntryDto(SERVICE_TASK_ID_2, 20.0, SERVICE_TASK_ID_2),
-            new MapResultEntryDto(END_EVENT, 20.0, END_EVENT)
-          );
+            .containsExactlyInAnyOrder(
+              new MapResultEntryDto(START_EVENT, 20.0, START_EVENT),
+              new MapResultEntryDto(SERVICE_TASK_ID_1, 20.0, SERVICE_TASK_ID_1),
+              new MapResultEntryDto(SERVICE_TASK_ID_2, 20.0, SERVICE_TASK_ID_2),
+              new MapResultEntryDto(END_EVENT, 20.0, END_EVENT)
+            );
         }
       );
   }
@@ -670,12 +671,12 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
   private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME},
         Map.of(USER_TASK_1, 2000.)
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
         Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
       ),
@@ -694,7 +695,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                          final String[] filterValues,
                                                                          final Map<String, Double> expectedResults) {
     // given
@@ -752,12 +753,12 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
   private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID},
         Map.of(USER_TASK_1, 2000.)
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
         Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
       ),
@@ -776,7 +777,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                final String[] filterValues,
                                                                                final Map<String, Double> expectedResults) {
     // given

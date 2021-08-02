@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -49,7 +50,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -703,7 +703,6 @@ public class CombinedReportHandlingIT extends AbstractIT {
     final ProcessInstanceEngineDto instanceWithAssignee =
       engineIntegrationExtension.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithAssignee(DEFAULT_USERNAME));
     engineIntegrationExtension.finishAllRunningUserTasks(instanceWithAssignee.getId());
-
     final String candidateGroupId = "candidateGroupId";
     final ProcessInstanceEngineDto instanceWithCandidateGroup =
       engineIntegrationExtension.deployAndStartProcess(BpmnModels.getUserTaskDiagramWithCandidateGroup(candidateGroupId));
@@ -718,7 +717,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // when assignee filter applied
     AdditionalProcessReportEvaluationFilterDto filterDto =
       new AdditionalProcessReportEvaluationFilterDto(
-        ProcessFilterBuilder.filter().assignee().operator(IN).id(DEFAULT_USERNAME).add().buildList());
+        ProcessFilterBuilder.filter().assignee().operator(MembershipFilterOperator.IN).id(DEFAULT_USERNAME).add().buildList());
     AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> filteredResult =
       reportClient.evaluateCombinedReportByIdWithAdditionalFilters(combinedReportId, filterDto);
 
@@ -749,7 +748,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when candidate group filter applied
     filterDto = new AdditionalProcessReportEvaluationFilterDto(
-      ProcessFilterBuilder.filter().candidateGroups().operator(IN).id(candidateGroupId).add().buildList());
+      ProcessFilterBuilder.filter().candidateGroups().operator(MembershipFilterOperator.IN).id(candidateGroupId).add().buildList());
     filteredResult = reportClient.evaluateCombinedReportByIdWithAdditionalFilters(combinedReportId, filterDto);
 
     // then

@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -55,8 +55,8 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.nonNull;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -931,7 +931,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                             final String[] filterValues,
                                                                             final Long expectedInstanceCount,
                                                                             final List<Tuple> expectedResult) {
@@ -990,7 +990,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
-  public void instanceLevelFilterByAssigneeOnlyIncludesUserTasksFromInstancesWithThatAssignee(final FilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyIncludesUserTasksFromInstancesWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                                               final String[] filterValues,
                                                                                               final Long expectedInstanceCount,
                                                                                               final List<Tuple> expectedResult) {
@@ -1059,7 +1059,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                         final String[] filterValues,
                                                                                         final Long expectedInstanceCount,
                                                                                         final List<Tuple> expectedResult) {
@@ -1117,7 +1117,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
-  public void instanceLevelFilterByCandidateGroupOnlyIncludesInstancesWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void instanceLevelFilterByCandidateGroupOnlyIncludesInstancesWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                              final String[] filterValues,
                                                                                              final Long expectedInstanceCount,
                                                                                              final List<Tuple> expectedResult) {

@@ -22,8 +22,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -69,7 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
@@ -247,7 +246,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // when filtering for usertasks with the assignee
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(IN, DEFAULT_USERNAME))
+      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(MembershipFilterOperator.IN, DEFAULT_USERNAME))
     ).getResult();
 
     // then only the usertask with the assignee is included
@@ -258,7 +257,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // when filtering for usertasks without the assignee
     result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(NOT_IN, DEFAULT_USERNAME))
+      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(MembershipFilterOperator.NOT_IN, DEFAULT_USERNAME))
     ).getResult();
 
     // then only the usertask without the assignee is included
@@ -282,7 +281,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // when filtering for usertasks with the candidate group
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(IN, candidateGroupId))
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(MembershipFilterOperator.IN, candidateGroupId))
     ).getResult();
 
     // then only the usertask with the candidate group is included
@@ -293,7 +292,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // when filtering for usertasks without the candidate group
     result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(NOT_IN, candidateGroupId))
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(MembershipFilterOperator.NOT_IN, candidateGroupId))
     ).getResult();
 
     // then only the usertask without the candidate group is included
@@ -311,13 +310,13 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     final String reportId =
-      createUserTaskReport(userTaskModel, instance, createAssigneeFilter(IN, otherUserId));
+      createUserTaskReport(userTaskModel, instance, createAssigneeFilter(MembershipFilterOperator.IN, otherUserId));
     importAllEngineEntitiesFromScratch();
 
     // when
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(IN, DEFAULT_USERNAME))
+      new AdditionalProcessReportEvaluationFilterDto(createAssigneeFilter(MembershipFilterOperator.IN, DEFAULT_USERNAME))
     ).getResult();
 
     // then the additional and report filters are combined with "and" and hence returns no results
@@ -337,13 +336,13 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     engineIntegrationExtension.completeUserTaskWithoutClaim(instance.getId());
     final String reportId =
-      createUserTaskReport(userTaskModel, instance, createCandidateGroupFilter(IN, otherGroupId));
+      createUserTaskReport(userTaskModel, instance, createCandidateGroupFilter(MembershipFilterOperator.IN, otherGroupId));
     importAllEngineEntitiesFromScratch();
 
     // when
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(IN, candidateGroupId))
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(MembershipFilterOperator.IN, candidateGroupId))
     ).getResult();
 
     // then the additional and report filters are combined with "and" and hence return no results
@@ -930,7 +929,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       .buildList();
   }
 
-  private List<ProcessFilterDto<?>> createAssigneeFilter(final FilterOperator operator,
+  private List<ProcessFilterDto<?>> createAssigneeFilter(final MembershipFilterOperator operator,
                                                          final String assigneeId) {
     return ProcessFilterBuilder.filter()
       .assignee()
@@ -941,7 +940,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       .buildList();
   }
 
-  private List<ProcessFilterDto<?>> createCandidateGroupFilter(final FilterOperator operator,
+  private List<ProcessFilterDto<?>> createCandidateGroupFilter(final MembershipFilterOperator operator,
                                                                final String assigneeId) {
     return ProcessFilterBuilder.filter()
       .candidateGroups()

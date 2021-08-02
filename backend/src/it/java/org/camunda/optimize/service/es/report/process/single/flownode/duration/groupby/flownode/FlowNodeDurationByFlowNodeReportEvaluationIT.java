@@ -14,8 +14,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -56,7 +56,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -920,46 +921,9 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
 
-  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{SECOND_USER},
-        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
-      ),
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(USER_TASK_2, 30.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      )
-    );
-  }
-
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                            final String[] filterValues,
                                                                            final List<Tuple> expectedResult) {
     // given
@@ -997,46 +961,9 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
-  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
-      ),
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(USER_TASK_2, 30.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      )
-    );
-  }
-
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                  final String[] filterValues,
                                                                                  final List<Tuple> expectedResult) {
     // given
@@ -1193,7 +1120,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     return createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
   }
 
-
   private long getExecutedFlowNodeCount(ReportResultResponseDto<List<MapResultEntryDto>> resultList) {
     return resultList.getFirstMeasureData()
       .stream()
@@ -1263,6 +1189,80 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
     return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN,
+        new String[]{SECOND_USER},
+        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
+      ),
+      Arguments.of(
+        IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_2, 30.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      )
+    );
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
+      ),
+      Arguments.of(
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_2, 30.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      )
+    );
   }
 
 }

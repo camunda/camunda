@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -49,6 +48,8 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 
 public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
   extends ModelElementDurationByModelElementDateReportEvaluationIT {
@@ -443,23 +444,19 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
   private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(
-        FilterOperator.IN,
+      Arguments.of(IN,
         new String[]{SECOND_USER},
         new Double[]{3000.}
       ),
-      Arguments.of(
-        FilterOperator.IN,
+      Arguments.of(IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
         new Double[]{1000., 2000., 3000., 4000.}
       ),
-      Arguments.of(
-        NOT_IN,
+      Arguments.of(NOT_IN,
         new String[]{SECOND_USER},
         new Double[]{1000., 2000., null, 4000.}
       ),
-      Arguments.of(
-        NOT_IN,
+      Arguments.of(NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
         new Double[]{1000., null, null, 4000.}
       )
@@ -468,7 +465,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                          final String[] filterValues,
                                                                          final Double[] expectedResults) {
     // given
@@ -517,23 +514,19 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
   private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(
-        FilterOperator.IN,
+      Arguments.of(IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         new Double[]{3000.}
       ),
-      Arguments.of(
-        FilterOperator.IN,
+      Arguments.of(IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
         new Double[]{1000., 2000., 3000., 4000.}
       ),
-      Arguments.of(
-        NOT_IN,
+      Arguments.of(NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         new Double[]{1000., 2000., null, 4000.}
       ),
-      Arguments.of(
-        NOT_IN,
+      Arguments.of(NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
         new Double[]{1000., null, null, 4000.}
       )
@@ -542,7 +535,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                final String[] filterValues,
                                                                                final Double[] expectedResults) {
     // given

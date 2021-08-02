@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -56,10 +57,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -174,7 +175,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       reportClient.evaluateHyperMapReportById(reportId);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
@@ -217,7 +218,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -255,7 +257,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -303,7 +306,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -350,7 +354,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -384,7 +389,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -429,7 +435,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
@@ -467,7 +474,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -497,7 +505,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -513,22 +522,24 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, 1L, Arrays.asList(
-        Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1.))),
+      Arguments.of(
+        IN, new String[]{SECOND_USER}, 1L, Arrays.asList(
+          Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1.))),
       Arguments.of(
         IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L, Arrays.asList(
           Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))),
       Arguments.of(
         NOT_IN, new String[]{SECOND_USER}, 1L, Arrays.asList(
           Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, null))),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void viewLevelFilterByAssigneeOnlyCountsUserTasksWithThatAssignee(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyCountsUserTasksWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                            final String[] filterValues,
                                                                            final Long expectedInstanceCount,
                                                                            final List<Tuple> expectedResult) {
@@ -554,7 +565,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -581,7 +593,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void instanceLevelFilterByAssigneeOnlyCountsUserTasksFromInstancesWithThatAssignee(final FilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyCountsUserTasksFromInstancesWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                                             final String[] filterValues,
                                                                                             final Long expectedInstanceCount,
                                                                                             final List<Tuple> expectedResult) {
@@ -607,7 +619,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -642,7 +655,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                        final String[] filterValues,
                                                                                        final Long expectedInstanceCount,
                                                                                        final List<Tuple> expectedResult) {
@@ -665,7 +678,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -698,7 +712,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksFromInstancesWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksFromInstancesWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                                         final String[] filterValues,
                                                                                                         final Long expectedInstanceCount,
                                                                                                         final List<Tuple> expectedResult) {
@@ -726,7 +740,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -781,7 +796,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .add()
       .buildList();
     reportData.setFilter(flowNodeDurationFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -813,7 +829,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -841,7 +858,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the single data point should be grouped by month
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -868,7 +886,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -903,7 +922,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       firstDefinition.getVersionAsString(),
       latestDefinition.getVersionAsString()
     ));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -935,7 +955,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -969,7 +990,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       firstDefinition.getVersionAsString(),
       latestDefinition.getVersionAsString()
     ));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off

@@ -13,7 +13,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -54,8 +54,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -438,7 +438,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyCountsThoseAssignees(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyCountsThoseAssignees(final MembershipFilterOperator filterOperator,
                                                                 final String[] filterValues,
                                                                 final Long expectedInstanceCount,
                                                                 final List<Tuple> expectedResult) {
@@ -491,7 +491,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
-  public void instanceLevelFilterByAssigneeOnlyCountsThoseAssigneesFromInstancesMatchingFilter(final FilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyCountsThoseAssigneesFromInstancesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                                final String[] filterValues,
                                                                                                final Long expectedInstanceCount,
                                                                                                final List<Tuple> expectedResult) {
@@ -545,7 +545,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final MembershipFilterOperator filterOperator,
                                                                                    final String[] filterValues,
                                                                                    final Long expectedInstanceCount,
                                                                                    final List<Tuple> expectedResult) {
@@ -602,7 +602,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
-  public void instanceLevelFilterByCandidateGroupOnlyCountsAssigneesFromInstancesWithThoseUserTasks(final FilterOperator filterOperator,
+  public void instanceLevelFilterByCandidateGroupOnlyCountsAssigneesFromInstancesWithThoseUserTasks(final MembershipFilterOperator filterOperator,
                                                                                                     final String[] filterValues,
                                                                                                     final Long expectedInstanceCount,
                                                                                                     final List<Tuple> expectedResult) {

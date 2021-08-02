@@ -13,7 +13,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -52,8 +52,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -174,7 +174,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent()
+    assertThat(MapResultUtil.getEntryForKey(
+      result.getFirstMeasureData(),
+      DISTRIBUTE_BY_IDENTITY_MISSING_KEY
+    )).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
@@ -235,7 +238,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(3);
@@ -246,7 +250,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID)).isPresent().get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent().get()
+    assertThat(MapResultUtil.getEntryForKey(
+      result.getFirstMeasureData(),
+      DISTRIBUTE_BY_IDENTITY_MISSING_KEY
+    )).isPresent().get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getInstanceCount()).isEqualTo(2L);
@@ -310,7 +317,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -341,7 +349,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -372,7 +381,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(3);
@@ -400,9 +410,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result1 = reportClient.evaluateMapReport(reportData1).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result1 = reportClient.evaluateMapReport(reportData1)
+      .getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result2 = reportClient.evaluateMapReport(reportData2).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result2 = reportClient.evaluateMapReport(reportData2)
+      .getResult();
 
     // then
     assertThat(result1.getFirstMeasureData()).hasSize(2);
@@ -422,7 +434,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
-    assertThat(MapResultUtil.getEntryForKey(result2.getFirstMeasureData(), DISTRIBUTE_BY_IDENTITY_MISSING_KEY)).isPresent()
+    assertThat(MapResultUtil.getEntryForKey(
+      result2.getFirstMeasureData(),
+      DISTRIBUTE_BY_IDENTITY_MISSING_KEY
+    )).isPresent()
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
@@ -455,7 +470,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).isEmpty();
@@ -481,7 +497,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyCountsCandidateGroupsFromThoseMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyCountsCandidateGroupsFromThoseMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                         final String[] filterValues,
                                                                                         final Long expectedInstanceCount,
                                                                                         final List<Tuple> expectedResult) {
@@ -508,7 +524,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -531,14 +548,15 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
         NOT_IN, new String[]{SECOND_USER}, 2L,
         Arrays.asList(Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))
       ),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
     );
   }
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
   public void instanceLevelFilterByAssigneeOnlyCountsCandidateGroupsFromInstancesMatchingFilter(
-    final FilterOperator filterOperator,
+    final MembershipFilterOperator filterOperator,
     final String[] filterValues,
     final Long expectedInstanceCount,
     final List<Tuple> expectedResult) {
@@ -567,7 +585,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -603,7 +622,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyCountsThoseCandidateGroups(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyCountsThoseCandidateGroups(final MembershipFilterOperator filterOperator,
                                                                             final String[] filterValues,
                                                                             final Long expectedInstanceCount,
                                                                             final List<Tuple> expectedResult) {
@@ -624,7 +643,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -659,7 +679,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
   public void instanceLevelFilterByCandidateGroupOnlyCountsThoseCandidateGroupsFromInstancesMatchingFilter(
-    final FilterOperator filterOperator,
+    final MembershipFilterOperator filterOperator,
     final String[] filterValues,
     final Long expectedInstanceCount,
     final List<Tuple> expectedResult) {
@@ -686,7 +706,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -756,7 +777,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(flowNodeStatusTestValues.processFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat((long) result.getFirstMeasureData().size()).isEqualTo(
@@ -766,7 +788,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(
         flowNodeStatusTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP_ID));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID)
+                 .map(MapResultEntryDto::getValue)
+                 .orElse(null))
       .isEqualTo(flowNodeStatusTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP_ID));
     assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.getExpectedInstanceCount());
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
@@ -799,7 +823,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(2);
@@ -836,7 +861,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(1);
@@ -863,7 +889,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getFirstMeasureData()).hasSize(1);

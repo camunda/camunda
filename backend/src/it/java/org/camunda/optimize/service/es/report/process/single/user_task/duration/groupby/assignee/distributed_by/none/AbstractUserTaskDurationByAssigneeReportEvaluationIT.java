@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -56,7 +56,8 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.nonNull;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -886,12 +887,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_USER},
         Collections.singletonList(Tuple.tuple(SECOND_USER, 10.))
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
@@ -902,7 +903,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                             final String[] filterValues,
                                                                             final List<Tuple> expectedResult) {
     // given
@@ -941,12 +942,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_USER}, 1L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
       Arguments.of(
-        FilterOperator.IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
+        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
       ),
       Arguments.of(
@@ -959,7 +960,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
-  public void instanceLevelFilterByAssigneeOnlyConsidersInstancesWithThatAssignee(final FilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyConsidersInstancesWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                                   final String[] filterValues,
                                                                                   final Long expectedInstanceCount,
                                                                                   final List<Tuple> expectedResultData) {
@@ -1005,12 +1006,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         Collections.singletonList(Tuple.tuple(SECOND_USER, 20.))
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 20.))
       ),
@@ -1025,7 +1026,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                         final String[] filterValues,
                                                                                         final List<Tuple> expectedResult) {
     // given
@@ -1066,11 +1067,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
       Arguments.of(
-        FilterOperator.IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
+        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
         Arrays.asList(Tuple.tuple(DEFAULT_USERNAME, 20.), Tuple.tuple(SECOND_USER, 10.))
       ),
       Arguments.of(
@@ -1088,7 +1089,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
-  public void instanceLevelFilterByCandidateGroupIncludesAllTasksForInstancesWithMatchingCandidateGroup(final FilterOperator filterOperator,
+  public void instanceLevelFilterByCandidateGroupIncludesAllTasksForInstancesWithMatchingCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                                         final String[] filterValues,
                                                                                                         final Long expectedInstanceCount,
                                                                                                         final List<Tuple> expectedResultData) {

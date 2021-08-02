@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -45,7 +46,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -265,7 +266,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .assignee()
-      .operator(IN)
+      .operator(MembershipFilterOperator.IN)
       .id(DEFAULT_USERNAME)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
@@ -298,7 +299,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .candidateGroups()
-      .operator(IN)
+      .operator(MembershipFilterOperator.IN)
       .id(CANDIDATE_GROUP_1)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()

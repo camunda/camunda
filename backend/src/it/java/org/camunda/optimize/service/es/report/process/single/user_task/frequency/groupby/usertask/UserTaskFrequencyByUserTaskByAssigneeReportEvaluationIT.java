@@ -14,7 +14,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -45,8 +45,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
@@ -61,6 +59,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 
 public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -482,19 +482,16 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
 
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(
-        IN, new String[]{SECOND_USER}, 1L,
+      Arguments.of(IN, new String[]{SECOND_USER}, 1L,
         ImmutableMap.builder().put(USER_TASK_2, Collections.singletonList(createSecondUserTriple(1.))).build()
       ),
-      Arguments.of(
-        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L,
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        NOT_IN, new String[]{SECOND_USER}, 1L,
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L,
         ImmutableMap.builder().put(USER_TASK_1, Lists.newArrayList(createDefaultUserTriple(1.))).build()
       ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyMap())
@@ -504,7 +501,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
   public void viewLevelFilterByAssigneeOnlyCountsUserTasksWithThatAssignee
-    (final FilterOperator filterOperator,
+    (final MembershipFilterOperator filterOperator,
      final String[] filterValues,
      final Long expectedInstanceCount,
      final Map<String, List<Triple<String, Double, String>>> expectedResult) {
@@ -551,22 +548,19 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
 
   public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(
-        IN, new String[]{SECOND_USER}, 1L,
+      Arguments.of(IN, new String[]{SECOND_USER}, 1L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
+      Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        NOT_IN, new String[]{SECOND_USER}, 2L,
+      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 2L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
@@ -584,7 +578,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
   public void instanceLevelFilterByAssigneeOnlyCountsUserTasksFromInstancesWithThatAssignee
-    (final FilterOperator filterOperator,
+    (final MembershipFilterOperator filterOperator,
      final String[] filterValues,
      final Long expectedInstanceCount,
      final Map<String, List<Triple<String, Double, String>>> expectedResult) {
@@ -629,21 +623,18 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
 
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         ImmutableMap.builder()
           .put(USER_TASK_2, Collections.singletonList(createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L,
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Collections.singletonList(createDefaultUserTriple(1.)))
           .build()
@@ -655,7 +646,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
   public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(
-    final FilterOperator filterOperator,
+    final MembershipFilterOperator filterOperator,
     final String[] filterValues,
     final Long expectedInstanceCount,
     final Map<String, List<Triple<String, Double, String>>> expectedResult) {
@@ -704,29 +695,25 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
 
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(
-        IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
+      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
+      Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
+      Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
           .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
           .build()
       ),
-      Arguments.of(
-        NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L,
+      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L,
         ImmutableMap.builder()
           .put(USER_TASK_1, Collections.emptyList())
           .put(USER_TASK_2, Collections.emptyList())
@@ -738,7 +725,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
   public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksFromInstancesWithThatCandidateGroup(
-    final FilterOperator filterOperator,
+    final MembershipFilterOperator filterOperator,
     final String[] filterValues,
     final Long expectedInstanceCount,
     final Map<String, List<Triple<String, Double, String>>> expectedResult) {

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -17,15 +17,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 
 public class IdentityLinkFilterBuilder {
 
-  private FilterOperator operator = IN;
-  private List<String> values = new ArrayList<>();
-  private Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator;
-  private ProcessFilterBuilder filterBuilder;
+  private MembershipFilterOperator operator = IN;
+  private final List<String> values = new ArrayList<>();
+  private final Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
   private IdentityLinkFilterBuilder(
@@ -53,7 +53,7 @@ public class IdentityLinkFilterBuilder {
     return this;
   }
 
-  public IdentityLinkFilterBuilder operator(FilterOperator operator) {
+  public IdentityLinkFilterBuilder operator(MembershipFilterOperator operator) {
     this.operator = operator;
     return this;
   }

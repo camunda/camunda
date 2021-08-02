@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
@@ -44,7 +45,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getDurationFilterScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
@@ -271,7 +271,7 @@ public abstract class ModelElementFilterQueryUtil {
       identityQuery.should(boolQuery().mustNot(existsQuery(nestedFieldReference(valueField))));
     }
 
-    if (NOT_IN.equals(identityFilter.getOperator())) {
+    if (MembershipFilterOperator.NOT_IN.equals(identityFilter.getOperator())) {
       return queryBuilder.mustNot(identityQuery);
     } else {
       return queryBuilder.must(identityQuery);
