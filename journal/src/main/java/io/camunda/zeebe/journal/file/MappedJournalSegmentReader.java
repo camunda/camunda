@@ -16,6 +16,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import com.google.common.base.Preconditions;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
@@ -43,11 +44,18 @@ class MappedJournalSegmentReader {
   }
 
   public boolean hasNext() {
+    checkSegmentOpen();
     // if the next entry exists the version would be non-zero
     return FrameUtil.hasValidVersion(buffer);
   }
 
+  private void checkSegmentOpen() {
+    Preconditions.checkState(
+        segment.isOpen(), "Segment is already closed. Reader must reset to a valid index.");
+  }
+
   public JournalRecord next() {
+    checkSegmentOpen();
     if (!hasNext()) {
       throw new NoSuchElementException();
     }
@@ -62,11 +70,13 @@ class MappedJournalSegmentReader {
   }
 
   public void reset() {
+    checkSegmentOpen();
     buffer.position(descriptorLength);
     currentIndex = segment.index() - 1;
   }
 
   public void seek(final long index) {
+    checkSegmentOpen();
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
 
