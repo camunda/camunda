@@ -69,7 +69,7 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
     }
 
     return new UpdateRequest()
-      .index(getProcessInstanceIndexAliasName(firstUserTaskInstance.getProcessDefinitionKey()))
+      .index(getProcessInstanceIndexAliasName(firstUserTaskInstance.getDefinitionKey()))
       .id(processInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
@@ -81,7 +81,7 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
                                                            final List<FlowNodeInstanceDto> userTaskInstances) {
     log.debug("Writing [{}] {} to ES.", userTaskInstances.size(), importItemName);
 
-    createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getProcessDefinitionKey);
+    createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getDefinitionKey);
 
     Map<String, List<FlowNodeInstanceDto>> userTaskToProcessInstance = new HashMap<>();
     for (FlowNodeInstanceDto userTask : userTaskInstances) {

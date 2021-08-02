@@ -163,15 +163,16 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
   }
 
   private FlowNodeInstanceDto createSkeletonFlowNodeInstance(final ZeebeProcessInstanceRecordDto zeebeProcessInstanceRecordDto) {
-    FlowNodeInstanceDto flowNodeInstanceDto = new FlowNodeInstanceDto();
-    flowNodeInstanceDto.setFlowNodeId(zeebeProcessInstanceRecordDto.getValue().getElementId());
-    flowNodeInstanceDto.setProcessInstanceId(
-      String.valueOf(zeebeProcessInstanceRecordDto.getValue().getProcessInstanceKey()));
-    flowNodeInstanceDto.setFlowNodeInstanceId(String.valueOf(zeebeProcessInstanceRecordDto.getKey()));
-    flowNodeInstanceDto.setFlowNodeType(
-      BpmnModelUtil.getFlowNodeTypeForBpmnElementType(zeebeProcessInstanceRecordDto.getValue().getBpmnElementType()));
-    flowNodeInstanceDto.setCanceled(false);
-    return flowNodeInstanceDto;
+    final ZeebeProcessInstanceDataDto zeebeInstanceRecord = zeebeProcessInstanceRecordDto.getValue();
+    return new FlowNodeInstanceDto(
+      String.valueOf(zeebeInstanceRecord.getProcessDefinitionKey()),
+      String.valueOf(zeebeInstanceRecord.getVersion()),
+      null,
+      String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
+      zeebeInstanceRecord.getElementId(),
+      BpmnModelUtil.getFlowNodeTypeForBpmnElementType(zeebeInstanceRecord.getBpmnElementType()),
+      String.valueOf(zeebeProcessInstanceRecordDto.getKey())
+    ).setCanceled(false);
   }
 
   private OffsetDateTime dateForTimestamp(final ZeebeProcessInstanceRecordDto zeebeRecord) {

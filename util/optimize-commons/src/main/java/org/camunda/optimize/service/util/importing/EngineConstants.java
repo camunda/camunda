@@ -82,6 +82,7 @@ public class EngineConstants {
 
   public static final String RESOURCE_TYPE = "resourceType";
   public static final int RESOURCE_TYPE_APPLICATION = 0;
+  public static final int RESOURCE_TYPE_DEPLOYMENT = 9;
   public static final int RESOURCE_TYPE_PROCESS_DEFINITION = 6;
   public static final int RESOURCE_TYPE_DECISION_DEFINITION = 10;
   public static final int RESOURCE_TYPE_USER = 1;

@@ -59,7 +59,8 @@ public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRo
       .map(CloudEventRequestDto::getId)
       .collect(Collectors.toList());
     assertEventInstanceContainsAllEventsOfIds(
-      getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete);
+      getSavedInstanceWithId(instance.getProcessInstanceId()), eventIdsToDelete
+    );
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()

@@ -16,7 +16,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.Test;
@@ -188,27 +187,26 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               endDateTime,
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
-
           assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedStartEventId)
-                .startDate(startDateTime)
-                .endDate(startDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("startEvent")
-                .flowNodeId(BPMN_START_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build(),
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedEndEventId)
-                .startDate(endDateTime)
-                .endDate(endDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("endEvent")
-                .flowNodeId(BPMN_END_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_START_EVENT_ID,
+                "startEvent",
+                ingestedStartEventId
+              ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_END_EVENT_ID,
+                "endEvent",
+                ingestedEndEventId
+                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
             );
         }
       );
@@ -369,24 +367,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
             ));
           assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedStartEventId)
-                .startDate(startDateTime)
-                .endDate(startDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("startEvent")
-                .flowNodeId(BPMN_START_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build(),
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedEndEventId)
-                .startDate(endDateTime)
-                .endDate(endDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("endEvent")
-                .flowNodeId(BPMN_END_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_START_EVENT_ID,
+                "startEvent",
+                ingestedStartEventId
+                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_END_EVENT_ID,
+                "endEvent",
+                ingestedEndEventId
+                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
             );
         }
       );
@@ -439,24 +437,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
           assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedStartEventId)
-                .startDate(startDateTime)
-                .endDate(startDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("startEvent")
-                .flowNodeId(BPMN_START_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build(),
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedEndEventId)
-                .startDate(endDateTime)
-                .endDate(endDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("endEvent")
-                .flowNodeId(BPMN_END_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_START_EVENT_ID,
+                "startEvent",
+                ingestedStartEventId
+                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_END_EVENT_ID,
+                "endEvent",
+                ingestedEndEventId
+                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
             );
         }
       );
@@ -511,24 +509,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
           assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedStartEventId)
-                .startDate(startDateTime)
-                .endDate(startDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("startEvent")
-                .flowNodeId(BPMN_START_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build(),
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedEndEventId)
-                .startDate(updatedEndDateTime)
-                .endDate(updatedEndDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("endEvent")
-                .flowNodeId(BPMN_END_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_START_EVENT_ID,
+                "startEvent",
+                ingestedStartEventId
+                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_END_EVENT_ID,
+                "endEvent",
+                ingestedEndEventId
+                ).setStartDate(updatedEndDateTime).setEndDate(updatedEndDateTime).setTotalDurationInMs(0L)
             );
         }
       );
@@ -574,17 +572,15 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
             ));
 
           assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedStartEventId)
-                .startDate(startDateTime)
-                .endDate(startDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("startEvent")
-                .flowNodeId(BPMN_START_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
-            );
+            .containsOnly(new FlowNodeInstanceDto(
+              eventProcessMappingId,
+              "1",
+              null,
+              processInstanceDto.getProcessInstanceId(),
+              BPMN_START_EVENT_ID,
+              "startEvent",
+              ingestedStartEventId
+              ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L));
         }
       );
   }
@@ -636,24 +632,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
           assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedStartEventId)
-                .startDate(startDateTime)
-                .endDate(startDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("startEvent")
-                .flowNodeId(BPMN_START_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build(),
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedEndEventId)
-                .startDate(endDateTime)
-                .endDate(endDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("endEvent")
-                .flowNodeId(BPMN_END_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_START_EVENT_ID,
+                "startEvent",
+                ingestedStartEventId
+                ).setStartDate(startDateTime).setEndDate(startDateTime).setTotalDurationInMs(0L),
+              new FlowNodeInstanceDto(
+                eventProcessMappingId,
+                "1",
+                null,
+                processInstanceDto.getProcessInstanceId(),
+                BPMN_END_EVENT_ID,
+                "endEvent",
+                ingestedEndEventId
+                ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L)
             );
         }
       );
@@ -697,17 +693,15 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
           assertThat(processInstanceDto.getFlowNodeInstances())
-            .containsOnly(
-              FlowNodeInstanceDto.builder()
-                .flowNodeInstanceId(ingestedEndEventId)
-                .startDate(endDateTime)
-                .endDate(endDateTime)
-                .totalDurationInMs(0L)
-                .flowNodeType("endEvent")
-                .flowNodeId(BPMN_END_EVENT_ID)
-                .processInstanceId(processInstanceDto.getProcessInstanceId())
-                .build()
-            );
+            .containsOnly(new FlowNodeInstanceDto(
+              eventProcessId,
+              "1",
+              null,
+              processInstanceDto.getProcessInstanceId(),
+              BPMN_END_EVENT_ID,
+              "endEvent",
+              ingestedEndEventId
+              ).setStartDate(endDateTime).setEndDate(endDateTime).setTotalDurationInMs(0L));
         });
   }
 

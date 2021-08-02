@@ -177,8 +177,8 @@ public abstract class AbstractUpgradeIT {
       .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain current schema version!"));
   }
 
-  protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping,
-                                                       int version) throws IOException {
+  @SneakyThrows
+  protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping, int version) {
     final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
     final Settings indexSettings = createIndexSettings(indexMapping);
@@ -191,7 +191,8 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
   }
 
-  protected void executeBulk(final String bulkPayload) throws IOException {
+  @SneakyThrows
+  protected void executeBulk(final String bulkPayload) {
     final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
     final HttpEntity entity = new NStringEntity(
       UpgradeUtil.readClasspathFileAsString(bulkPayload),

@@ -30,7 +30,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -86,42 +85,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(END_EVENT).get(0).getKey()))
-              .flowNodeId(END_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.END_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(END_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(END_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(END_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            createFlowNodeInstance(deployedInstance, exportedEvents, END_EVENT, BpmnElementType.END_EVENT)
           );
       });
   }
@@ -208,42 +173,18 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey()))
-              .flowNodeId(USER_TASK)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.USER_TASK))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)))
-              .endDate(null)
-              .totalDurationInMs(null)
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            new FlowNodeInstanceDto(
+              String.valueOf(deployedInstance.getProcessDefinitionKey()),
+              String.valueOf(deployedInstance.getVersion()),
+              null,
+              String.valueOf(deployedInstance.getProcessInstanceKey()),
+              USER_TASK,
+              BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.USER_TASK),
+              String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey())
+            )
+              .setStartDate(getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)))
+              .setCanceled(false)
           );
       });
   }
@@ -289,42 +230,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(SERVICE_TASK).get(0).getKey()))
-              .flowNodeId(SERVICE_TASK)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.SERVICE_TASK))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(SERVICE_TASK)))
-              .canceled(true)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            createFlowNodeInstance(deployedInstance, exportedEvents, SERVICE_TASK, BpmnElementType.SERVICE_TASK)
+              .setCanceled(true)
           );
       });
   }
@@ -368,60 +276,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(3)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(SERVICE_TASK).get(0).getKey()))
-              .flowNodeId(SERVICE_TASK)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.SERVICE_TASK))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(SERVICE_TASK)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(END_EVENT).get(0).getKey()))
-              .flowNodeId(END_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.END_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(END_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(END_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(END_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            createFlowNodeInstance(deployedInstance, exportedEvents, SERVICE_TASK, BpmnElementType.SERVICE_TASK),
+            createFlowNodeInstance(deployedInstance, exportedEvents, END_EVENT, BpmnElementType.END_EVENT)
           );
       });
   }
@@ -522,6 +379,25 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .filteredOn(flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals(SERVICE_TASK))
         .hasSizeGreaterThan(1));
+  }
+
+  private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
+                                                     final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
+                                                     final String eventId,
+                                                     final BpmnElementType eventType) {
+    return new FlowNodeInstanceDto(
+      String.valueOf(deployedInstance.getProcessDefinitionKey()),
+      String.valueOf(deployedInstance.getVersion()),
+      null,
+      String.valueOf(deployedInstance.getProcessInstanceKey()),
+      eventId,
+      BpmnModelUtil.getFlowNodeTypeForBpmnElementType(eventType),
+      String.valueOf(events.get(eventId).get(0).getKey())
+    )
+      .setStartDate(getExpectedStartDateForEvents(events.get(eventId)))
+      .setEndDate(getExpectedEndDateForEvents(events.get(eventId)))
+      .setTotalDurationInMs(getExpectedDurationForEvents(events.get(eventId)))
+      .setCanceled(false);
   }
 
   @SneakyThrows

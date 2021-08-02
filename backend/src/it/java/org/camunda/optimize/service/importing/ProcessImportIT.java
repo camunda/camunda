@@ -8,15 +8,11 @@ package org.camunda.optimize.service.importing;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -25,19 +21,13 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
-import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.metrics.ValueCount;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -77,14 +67,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT;
-import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
-import static org.camunda.optimize.util.BpmnModels.START_EVENT;
-import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.mockserver.model.HttpRequest.request;
 
 public class ProcessImportIT extends AbstractImportIT {
@@ -283,108 +267,6 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void canceledFlowNodesAreImportedWithCorrectValue() {
-    // given
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
-    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_1);
-
-    // when
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
-      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-      .containsExactlyInAnyOrder(
-        tuple(START_EVENT, false),
-        tuple(USER_TASK_1, true)
-      );
-  }
-
-  @Test
-  public void canceledFlowNodesAreUpdatedIfAlreadyImported() {
-    // given
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
-      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-      .containsExactlyInAnyOrder(
-        tuple(START_EVENT, false),
-        tuple(USER_TASK_1, false)
-      );
-
-    // when
-    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_1);
-    importAllEngineEntitiesFromLastIndex();
-
-    // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
-      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-      .containsExactlyInAnyOrder(
-        tuple(START_EVENT, false),
-        tuple(USER_TASK_1, true)
-      );
-  }
-
-  @Test
-  public void canceledFlowNodesByCanceledProcessInstanceAreUpdatedIfAlreadyImported() {
-    // given
-    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
-      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-      .containsExactlyInAnyOrder(
-        tuple(START_EVENT, false),
-        tuple(USER_TASK_1, false)
-      );
-
-    // when the process instance is canceled
-    engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
-    importAllEngineEntitiesFromLastIndex();
-
-    // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
-      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
-      .containsExactlyInAnyOrder(
-        tuple(START_EVENT, false),
-        tuple(USER_TASK_1, true)
-      );
-  }
-
-  @Test
-  public void flowNodesWithoutProcessDefinitionKeyCanBeImported() {
-    // given
-    deployAndStartSimpleServiceTask();
-    engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricFlowNodes();
-
-    // when
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
-      .extracting(FlowNodeInstanceDto::getFlowNodeId)
-      .containsExactlyInAnyOrder(START_EVENT, SERVICE_TASK, END_EVENT);
-  }
-
-  @Test
   public void importsAllDefinitionsEvenIfTotalAmountIsAboveMaxPageSize() {
     // given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionMaxPageSize(1);
@@ -522,25 +404,6 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void runningActivitiesAreNotSkippedDuringImport() {
-    // given
-    deployAndStartUserTaskProcess();
-    deployAndStartSimpleServiceTask();
-
-    // when
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-      assertThat(events).hasSize(3);
-    }
-  }
-
-  @Test
   public void processInstanceStateIsImported() {
     // given
     createStartAndCancelUserTaskProcess();
@@ -602,109 +465,6 @@ public class ProcessImportIT extends AbstractImportIT {
     );
   }
 
-  @Test
-  public void deletionOfProcessInstancesDoesNotDistortActivityInstanceImport() {
-    // given
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("aVariable", "aStringVariable");
-    ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstancesWithVariables(variables);
-
-    // when
-    variables.put("secondVar", "foo");
-    engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId(), variables);
-    variables.put("thirdVar", "bar");
-    engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId(), variables);
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
-    variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient
-      .getProcessVariableNames(variableRequestDto);
-
-    assertThat(variablesResponseDtos).hasSize(3);
-  }
-
-  @Test
-  public void importRunningAndCompletedHistoricActivityInstances() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
-
-    // when
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    SearchHit hit = idsResp.getHits().getAt(0);
-    List<?> events = (List<?>) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-    assertThat(events).hasSize(2);
-  }
-
-  @Test
-  public void completedActivitiesOverwriteRunningActivities() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
-
-    // when
-    importAllEngineEntitiesFromScratch();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    SearchHit hit = idsResp.getHits().getAt(0);
-    List<Map> events = (List) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-    boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
-    assertThat(allEventsHaveEndDate).isTrue();
-  }
-
-  @Test
-  public void runningActivitiesDoNotOverwriteCompletedActivities() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    HistoricActivityInstanceEngineDto startEvent =
-      engineIntegrationExtension.getHistoricActivityInstances()
-        .stream()
-        .filter(a -> START_EVENT.equals(a.getActivityName()))
-        .findFirst()
-        .get();
-    startEvent.setEndTime(null);
-    startEvent.setDurationInMillis(null);
-    embeddedOptimizeExtension.importRunningActivityInstance(Collections.singletonList(startEvent));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    SearchHit hit = idsResp.getHits().getAt(0);
-    List<Map> events = (List) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-    boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
-    assertThat(allEventsHaveEndDate).isTrue();
-  }
-
-  @Test
-  public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
-    // given
-    deployAndStartSimpleServiceTask();
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    embeddedOptimizeExtension.stopOptimize();
-    embeddedOptimizeExtension.startOptimize();
-    importAllEngineEntitiesFromScratch();
-
-    // then
-    assertThat(getImportedActivityCount()).isEqualTo(3L);
-  }
 
   @ParameterizedTest
   @MethodSource("engineErrors")
@@ -1087,33 +847,6 @@ public class ProcessImportIT extends AbstractImportIT {
   private void createStartAndCancelUserTaskProcess() {
     ProcessInstanceEngineDto processInstance = deployAndStartUserTaskProcess();
     engineIntegrationExtension.externallyTerminateProcessInstance(processInstance.getId());
-  }
-
-  private Long getImportedActivityCount() throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
-      .size(0)
-      .fetchSource(false)
-      .aggregation(
-        nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
-          .subAggregation(
-            count(FLOW_NODE_INSTANCES + "_count")
-              .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
-          )
-      );
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
-      .source(searchSourceBuilder);
-
-    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
-
-    Nested nested = response.getAggregations()
-      .get(FLOW_NODE_INSTANCES);
-    ValueCount countAggregator =
-      nested.getAggregations()
-        .get(FLOW_NODE_INSTANCES + "_count");
-    return countAggregator.getValue();
   }
 
   private void startTwoProcessInstancesWithSameEndTime() {

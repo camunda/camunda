@@ -137,7 +137,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   protected static final String[] NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE = new String[]{
     FlowNodeInstanceDto.Fields.canceled,
-    FlowNodeInstanceDto.Fields.processDefinitionKey,
+    FlowNodeInstanceDto.Fields.tenantId,
     FlowNodeInstanceDto.Fields.engine,
     FlowNodeInstanceDto.Fields.userTaskInstanceId,
     FlowNodeInstanceDto.Fields.dueDate,

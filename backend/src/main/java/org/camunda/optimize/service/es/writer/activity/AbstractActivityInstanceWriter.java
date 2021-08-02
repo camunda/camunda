@@ -113,19 +113,25 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
   protected abstract String createInlineUpdateScript();
 
   private List<FlowNodeInstanceDto> convertToFlowNodeInstanceDtos(List<FlowNodeEventDto> activityInstances) {
-    return activityInstances.stream()
-      .map(activity -> FlowNodeInstanceDto.builder()
-        .flowNodeInstanceId(activity.getId())
-        .flowNodeId(activity.getActivityId())
-        .userTaskInstanceId(activity.getTaskId())
-        .processInstanceId(activity.getProcessInstanceId())
-        .flowNodeType(activity.getActivityType())
-        .totalDurationInMs(activity.getDurationInMs())
-        .startDate(activity.getStartDate())
-        .endDate(activity.getEndDate())
-        .canceled(activity.getCanceled())
-        .build()
-      ).collect(Collectors.toList());
+    return activityInstances.stream().map(this::fromActivityInstance).collect(Collectors.toList());
+  }
+
+  public FlowNodeInstanceDto fromActivityInstance(final FlowNodeEventDto activityInstance) {
+    return new FlowNodeInstanceDto(
+      activityInstance.getProcessDefinitionKey(),
+      activityInstance.getProcessDefinitionVersion(),
+      activityInstance.getTenantId(),
+      activityInstance.getEngineAlias(),
+      activityInstance.getProcessInstanceId(),
+      activityInstance.getActivityId(),
+      activityInstance.getActivityType(),
+      activityInstance.getId(),
+      activityInstance.getTaskId()
+    )
+      .setTotalDurationInMs(activityInstance.getDurationInMs())
+      .setStartDate(activityInstance.getStartDate())
+      .setEndDate(activityInstance.getEndDate())
+      .setCanceled(activityInstance.getCanceled());
   }
 
 }

@@ -169,13 +169,15 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
         final EventCorrelationStateDto eventCorrelationStateDto = new EventCorrelationStateDto();
         processInstanceDto.getCorrelatedEventsById().put(eventId, eventCorrelationStateDto);
 
-        final FlowNodeInstanceDto flowNodeInstance = FlowNodeInstanceDto.builder()
-          .flowNodeInstanceId(eventId)
-          .flowNodeId(eventToFlowNodeMapping.getFlowNodeId())
-          .flowNodeType(eventToFlowNodeMapping.getFlowNodeType())
-          .processInstanceId(processInstanceDto.getProcessInstanceId())
-          .canceled(getCanceledState(eventDto).orElse(null))
-          .build();
+        final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto(
+          processInstanceDto.getProcessDefinitionKey(),
+          processInstanceDto.getProcessDefinitionVersion(),
+          processInstanceDto.getTenantId(),
+          processInstanceDto.getProcessInstanceId(),
+          eventToFlowNodeMapping.getFlowNodeId(),
+          eventToFlowNodeMapping.getFlowNodeType(),
+          eventId
+        ).setCanceled(getCanceledState(eventDto).orElse(null));
 
         final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()
           .get(eventToFlowNodeMapping.getFlowNodeId());

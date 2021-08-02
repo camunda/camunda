@@ -71,17 +71,16 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       final List<CandidateGroupOperationDto> candidateGroupOperations =
         mapToCandidateGroupOperationDtos(identityLinkLogEntryDtoList);
       userTaskInstances.add(
-        FlowNodeInstanceDto.builder()
-          .userTaskInstanceId(firstOperationEntry.getTaskId())
-          .processInstanceId(firstOperationEntry.getProcessInstanceId())
-          .processDefinitionKey(firstOperationEntry.getProcessDefinitionKey())
-          .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
-          .engine(firstOperationEntry.getEngine())
-          .assignee(extractAssignee(assigneeOperations))
-          .candidateGroups(extractCandidateGroups(candidateGroupOperations))
-          .assigneeOperations(assigneeOperations)
-          .candidateGroupOperations(candidateGroupOperations)
-          .build()
+        new FlowNodeInstanceDto(
+          firstOperationEntry.getProcessDefinitionKey(),
+          firstOperationEntry.getEngine(),
+          firstOperationEntry.getProcessInstanceId(),
+          firstOperationEntry.getTaskId()
+        )
+          .setAssignee(extractAssignee(assigneeOperations))
+          .setCandidateGroups(extractCandidateGroups(candidateGroupOperations))
+          .setAssigneeOperations(assigneeOperations)
+          .setCandidateGroupOperations(candidateGroupOperations)
       );
     }
 
@@ -91,7 +90,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       processInstanceIdToUserTasks.get(userTask.getProcessInstanceId()).add(userTask);
     }
 
-    createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getProcessDefinitionKey);
+    createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getDefinitionKey);
 
     return processInstanceIdToUserTasks.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()

@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -422,24 +420,14 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // when duplicate user tasks and tasks with same ID have been stored
     final FlowNodeInstanceDto userTaskInstanceDto = storedInstance.getUserTasks().get(0);
 
-    final FlowNodeInstanceDto sameIdTaskInstanceDto = FlowNodeInstanceDto.builder()
-      .flowNodeInstanceId(userTaskInstanceDto.getFlowNodeInstanceId())
-      .userTaskInstanceId(userTaskInstanceDto.getUserTaskInstanceId())
-      .processInstanceId(userTaskInstanceDto.getProcessInstanceId())
-      .engine(userTaskInstanceDto.getEngine())
-      .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
-      .build();
+    final FlowNodeInstanceDto sameIdTaskInstanceDto = new FlowNodeInstanceDto()
+      .setFlowNodeInstanceId(userTaskInstanceDto.getFlowNodeInstanceId())
+      .setFlowNodeType(userTaskInstanceDto.getFlowNodeType())
+      .setUserTaskInstanceId(userTaskInstanceDto.getUserTaskInstanceId());
     final List<FlowNodeInstanceDto> duplicateTaskList = Arrays.asList(
-      userTaskInstanceDto,
-      userTaskInstanceDto,
-      sameIdTaskInstanceDto
+      userTaskInstanceDto, userTaskInstanceDto, sameIdTaskInstanceDto
     );
     storedInstance.setFlowNodeInstances(duplicateTaskList);
-    embeddedOptimizeExtension.getElasticSearchSchemaManager()
-      .createIndexIfMissing(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
-        new ProcessInstanceIndex(storedInstance.getProcessDefinitionKey())
-      );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       getProcessInstanceIndexAliasName(storedInstance.getProcessDefinitionKey()),
       storedInstance.getProcessInstanceId(),

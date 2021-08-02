@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class RunningActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
@@ -81,6 +82,8 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
       ))
       .filter(activity -> activity.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 
@@ -97,23 +100,27 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
     return activityImportJob;
   }
 
-  private FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
-    return FlowNodeEventDto.builder()
-      .id(engineEntity.getId())
-      .activityId(engineEntity.getActivityId())
-      .activityName(engineEntity.getActivityName())
-      .timestamp(engineEntity.getStartTime())
-      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
-      .processDefinitionId(engineEntity.getProcessDefinitionId())
-      .processInstanceId(engineEntity.getProcessInstanceId())
-      .startDate(engineEntity.getStartTime())
-      .activityType(engineEntity.getActivityType())
-      .engineAlias(engineContext.getEngineAlias())
-      .tenantId(engineEntity.getTenantId())
-      .orderCounter(engineEntity.getSequenceCounter())
-      .canceled(engineEntity.getCanceled())
-      .taskId(engineEntity.getTaskId())
-      .build();
+  private Optional<FlowNodeEventDto> mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
+    return processDefinitionResolverService.getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
+      .map(definition -> new FlowNodeEventDto(
+        engineEntity.getId(),
+        engineEntity.getActivityId(),
+        engineEntity.getActivityType(),
+        engineEntity.getActivityName(),
+        engineEntity.getStartTime(),
+        definition.getId(),
+        definition.getKey(),
+        definition.getVersion(),
+        definition.getTenantId(),
+        engineContext.getEngineAlias(),
+        engineEntity.getProcessInstanceId(),
+        engineEntity.getStartTime(),
+        null,
+        null,
+        engineEntity.getSequenceCounter(),
+        engineEntity.getCanceled(),
+        engineEntity.getTaskId()
+      ));
   }
 
 }

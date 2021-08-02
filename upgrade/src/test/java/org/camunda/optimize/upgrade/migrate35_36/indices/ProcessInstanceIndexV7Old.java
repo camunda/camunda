@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate35_36.indices;
 
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -13,6 +13,8 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
+import org.camunda.optimize.service.es.schema.index.InstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -32,9 +34,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
-public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
+public class ProcessInstanceIndexV7Old extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 8;
+  public static final int VERSION = 7;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -60,10 +62,6 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String FLOW_NODE_END_DATE = FlowNodeInstanceDto.Fields.endDate;
   public static final String FLOW_NODE_CANCELED = FlowNodeInstanceDto.Fields.canceled;
   public static final String FLOW_NODE_TOTAL_DURATION = FlowNodeInstanceDto.Fields.totalDurationInMs;
-
-  public static final String FLOW_NODE_DEFINITION_KEY = FlowNodeInstanceDto.Fields.definitionKey;
-  public static final String FLOW_NODE_DEFINITION_VERSION = FlowNodeInstanceDto.Fields.definitionVersion;
-  public static final String FLOW_NODE_TENANT_ID = FlowNodeInstanceDto.Fields.tenantId;
 
   public static final String USER_TASK_INSTANCE_ID = FlowNodeInstanceDto.Fields.userTaskInstanceId;
   public static final String USER_TASK_DUE_DATE = FlowNodeInstanceDto.Fields.dueDate;
@@ -106,7 +104,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
   public static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;
 
-  public ProcessInstanceIndex(final String instanceIndexKey) {
+  public ProcessInstanceIndexV7Old(final String instanceIndexKey) {
     indexName = getIndexPrefix() + instanceIndexKey.toLowerCase();
   }
 
@@ -152,13 +150,13 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(PROCESS_INSTANCE_ID)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(BUSINESS_KEY)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(START_DATE)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
         .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(END_DATE)
@@ -193,7 +191,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .endObject()
       .startObject(INCIDENTS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
       .startObject("properties");
 
     addNestedIncidentField(newBuilder)
@@ -214,7 +212,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(FLOW_NODE_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(PROCESS_INSTANCE_ID_FOR_ACTIVITY)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
@@ -223,7 +221,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(FLOW_NODE_TOTAL_DURATION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
       .endObject()
       .startObject(FLOW_NODE_START_DATE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
@@ -235,15 +233,6 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .startObject(FLOW_NODE_CANCELED)
         .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
-      .endObject()
-      .startObject(FLOW_NODE_DEFINITION_KEY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(FLOW_NODE_DEFINITION_VERSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-      .endObject()
-      .startObject(FLOW_NODE_TENANT_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(USER_TASK_INSTANCE_ID)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
@@ -268,14 +257,14 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(USER_TASK_ASSIGNEE_OPERATIONS)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-       .startObject("properties");
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+      .startObject("properties");
 
     addAssigneeOperationProperties(builder)
       .endObject()
       .endObject()
       .startObject(USER_TASK_CANDIDATE_GROUP_OPERATIONS)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
       .startObject("properties");
 
     addCandidateGroupOperationProperties(builder)
@@ -314,10 +303,10 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
     // @formatter:off
     builder
       .startObject(ASSIGNEE_OPERATION_ID)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(ASSIGNEE_OPERATION_USER_ID)
-       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(ASSIGNEE_OPERATION_TYPE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)

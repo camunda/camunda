@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
@@ -22,6 +23,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.READ_H
 import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_AUTHORIZATION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DEPLOYMENT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
@@ -84,8 +86,16 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
 
   private void createRequiredAuthorizationsForBasicAuth() {
     AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_DEPLOYMENT);
+    authorizationDto.setPermissions(Collections.singletonList(READ_PERMISSION));
+    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(TEST_USERNAME);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
+
+    authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationDto.setPermissions(Collections.singletonList(READ_HISTORY_PERMISSION));
+    authorizationDto.setPermissions(List.of(READ_PERMISSION, READ_HISTORY_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);
@@ -93,7 +103,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_DECISION_DEFINITION);
-    authorizationDto.setPermissions(Collections.singletonList(READ_HISTORY_PERMISSION));
+    authorizationDto.setPermissions(List.of(READ_PERMISSION, READ_HISTORY_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);

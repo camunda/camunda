@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -19,11 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class CompletedActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
@@ -49,7 +50,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   @Override
   public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities,
                             Runnable importCompleteCallback) {
-    logger.trace("Importing completed activity instances from engine...");
+    log.trace("Importing completed activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -64,23 +65,16 @@ public class CompletedActivityInstanceImportService implements ImportService<His
     return elasticsearchImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
+  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob<?> elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto>
-                                                                       engineEntities) {
-    return engineEntities
-      .stream()
-      .map(activity -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
-        engineContext,
-        activity,
-        HistoricActivityInstanceEngineDto::getProcessDefinitionKey,
-        HistoricActivityInstanceEngineDto::getProcessDefinitionId,
-        HistoricActivityInstanceEngineDto::setProcessDefinitionKey
-      ))
-      .filter(activity -> activity.getProcessDefinitionKey() != null)
+  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(
+    final List<HistoricActivityInstanceEngineDto> engineEntities) {
+    return engineEntities.stream()
       .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 
@@ -97,25 +91,27 @@ public class CompletedActivityInstanceImportService implements ImportService<His
     return activityImportJob;
   }
 
-  private FlowNodeEventDto mapEngineEntityToOptimizeEntity(final HistoricActivityInstanceEngineDto engineEntity) {
-    return FlowNodeEventDto.builder()
-      .id(engineEntity.getId())
-      .activityId(engineEntity.getActivityId())
-      .taskId(engineEntity.getTaskId())
-      .activityName(engineEntity.getActivityName())
-      .timestamp(engineEntity.getStartTime())
-      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
-      .processDefinitionId(engineEntity.getProcessDefinitionId())
-      .processInstanceId(engineEntity.getProcessInstanceId())
-      .startDate(engineEntity.getStartTime())
-      .endDate(engineEntity.getEndTime())
-      .durationInMs(engineEntity.getDurationInMillis())
-      .activityType(engineEntity.getActivityType())
-      .engineAlias(engineContext.getEngineAlias())
-      .tenantId(engineEntity.getTenantId())
-      .orderCounter(engineEntity.getSequenceCounter())
-      .canceled(engineEntity.getCanceled())
-      .build();
+  private Optional<FlowNodeEventDto> mapEngineEntityToOptimizeEntity(final HistoricActivityInstanceEngineDto engineEntity) {
+    return processDefinitionResolverService.getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
+      .map(definition -> new FlowNodeEventDto(
+        engineEntity.getId(),
+        engineEntity.getActivityId(),
+        engineEntity.getActivityType(),
+        engineEntity.getActivityName(),
+        engineEntity.getStartTime(),
+        definition.getId(),
+        definition.getKey(),
+        definition.getVersion(),
+        definition.getTenantId(),
+        engineContext.getEngineAlias(),
+        engineEntity.getProcessInstanceId(),
+        engineEntity.getStartTime(),
+        engineEntity.getEndTime(),
+        engineEntity.getDurationInMillis(),
+        engineEntity.getSequenceCounter(),
+        engineEntity.getCanceled(),
+        engineEntity.getTaskId()
+      ));
   }
 
 }
