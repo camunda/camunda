@@ -14,11 +14,9 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.LogUtil;
-import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -41,20 +39,9 @@ public final class TopologyManagerImpl extends Actor
   private final String actorName;
 
   public TopologyManagerImpl(
-      final ClusterMembershipService membershipService,
-      final BrokerInfo localBroker,
-      final ClusterCfg clusterCfg) {
+      final ClusterMembershipService membershipService, final BrokerInfo localBroker) {
     this.membershipService = membershipService;
     this.localBroker = localBroker;
-    localBroker
-        .setClusterSize(clusterCfg.getClusterSize())
-        .setPartitionsCount(clusterCfg.getPartitionsCount())
-        .setReplicationFactor(clusterCfg.getReplicationFactor());
-
-    final String version = VersionUtil.getVersion();
-    if (version != null && !version.isBlank()) {
-      localBroker.setVersion(version);
-    }
 
     actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
   }

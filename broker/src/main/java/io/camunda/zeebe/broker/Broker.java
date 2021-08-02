@@ -40,7 +40,6 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
@@ -217,13 +216,7 @@ public final class Broker implements AutoCloseable {
 
   private StartProcess initStart() {
     final BrokerCfg brokerCfg = getConfig();
-    final NetworkCfg networkCfg = brokerCfg.getNetwork();
-
-    final ClusterCfg clusterCfg = brokerCfg.getCluster();
-    final BrokerInfo localBroker =
-        new BrokerInfo(
-            clusterCfg.getNodeId(),
-            NetUtil.toSocketAddressString(networkCfg.getCommandApi().getAdvertisedAddress()));
+    final BrokerInfo localBroker = createBrokerInfo(brokerCfg);
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
@@ -259,6 +252,27 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
+    final var clusterCfg = brokerCfg.getCluster();
+
+    final BrokerInfo result =
+        new BrokerInfo(
+            clusterCfg.getNodeId(),
+            NetUtil.toSocketAddressString(
+                brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
+
+    result
+        .setClusterSize(clusterCfg.getClusterSize())
+        .setPartitionsCount(clusterCfg.getPartitionsCount())
+        .setReplicationFactor(clusterCfg.getReplicationFactor());
+
+    final String version = VersionUtil.getVersion();
+    if (version != null && !version.isBlank()) {
+      result.setVersion(version);
+    }
+    return result;
   }
 
   private AutoCloseable addBrokerAdminService() {
@@ -398,8 +412,7 @@ public final class Broker implements AutoCloseable {
         new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
 
     final var topologyManager =
-        new TopologyManagerImpl(
-            clusterServices.getMembershipService(), localBroker, brokerCfg.getCluster());
+        new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
     partitionListeners.add(topologyManager);
     scheduleActor(topologyManager);
 
