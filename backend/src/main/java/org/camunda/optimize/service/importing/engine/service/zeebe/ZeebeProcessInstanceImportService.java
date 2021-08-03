@@ -152,6 +152,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     recordsForInstance.stream()
       .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType())
         && !TYPES_TO_IGNORE.contains(zeebeRecord.getValue().getBpmnElementType()))
+      .filter(zeebeRecord -> zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
       .forEach(processFlowNodeInstance -> {
         final long recordKey = processFlowNodeInstance.getKey();
         FlowNodeInstanceDto flowNodeForKey = flowNodeInstancesByRecordKey.getOrDefault(
@@ -179,7 +180,10 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
       null,
       String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
       zeebeInstanceRecord.getElementId(),
-      BpmnModelUtil.getFlowNodeTypeForBpmnElementType(zeebeInstanceRecord.getBpmnElementType()),
+      zeebeInstanceRecord.getBpmnElementType()
+        .getElementTypeName()
+        .orElseThrow(() -> new OptimizeRuntimeException(
+          "Cannot create flow node instances for records without element types")),
       String.valueOf(zeebeProcessInstanceRecordDto.getKey())
     ).setCanceled(false);
   }

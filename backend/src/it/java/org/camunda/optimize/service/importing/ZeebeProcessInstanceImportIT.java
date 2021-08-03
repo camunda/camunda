@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -37,17 +37,19 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSendTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 
 public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
-  private Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
+  private final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
     () -> new OptimizeIntegrationTestException("Cannot find exported event");
 
   @Test
@@ -180,7 +182,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
               null,
               String.valueOf(deployedInstance.getProcessInstanceKey()),
               USER_TASK,
-              BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.USER_TASK),
+              getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
               String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey())
             )
               .setStartDate(getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)))
@@ -381,6 +383,27 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         .hasSizeGreaterThan(1));
   }
 
+  @Test
+  public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
+    // given
+    deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
+
+    // when
+    waitUntilProcessInstanceEventsExported();
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(savedInstance -> assertThat(savedInstance.getFlowNodeInstances())
+        .hasSize(2)
+        .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
+        .containsExactlyInAnyOrder(
+          Tuple.tuple(START_EVENT, getBpmnElementTypeNameForType(BpmnElementType.START_EVENT)),
+          Tuple.tuple(SEND_TASK, getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))
+        ));
+  }
+
   private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
                                                      final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
                                                      final String eventId,
@@ -391,7 +414,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       null,
       String.valueOf(deployedInstance.getProcessInstanceKey()),
       eventId,
-      BpmnModelUtil.getFlowNodeTypeForBpmnElementType(eventType),
+      getBpmnElementTypeNameForType(eventType),
       String.valueOf(events.get(eventId).get(0).getKey())
     )
       .setStartDate(getExpectedStartDateForEvents(events.get(eventId)))
@@ -452,6 +475,11 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         event.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED))
       .findFirst().orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(endOfElement.getTimestamp()), ZoneId.systemDefault());
+  }
+
+  private String getBpmnElementTypeNameForType(final BpmnElementType type) {
+    return type.getElementTypeName()
+      .orElseThrow(() -> new OptimizeRuntimeException("Cannot find name for type: " + type));
   }
 
 }

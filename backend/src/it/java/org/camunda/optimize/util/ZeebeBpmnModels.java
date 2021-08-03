@@ -16,10 +16,11 @@ public class ZeebeBpmnModels {
 
   public static final String START_EVENT = "start";
   public static final String SERVICE_TASK = "service_task";
+  public static final String SEND_TASK = "send_task";
   public static final String USER_TASK = "user_task";
   public static final String END_EVENT = "end";
-  public static final String CONVERGING_GATEWAY = "converging_gateway";
-  public static final String DIVERGING_GATEWAY = "diverging_gateway";
+  private static final String CONVERGING_GATEWAY = "converging_gateway";
+  private static final String DIVERGING_GATEWAY = "diverging_gateway";
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
     return createStartEndProcess(processName, null);
@@ -65,6 +66,14 @@ public class ZeebeBpmnModels {
       .endEvent(END_EVENT)
       .moveToNode(DIVERGING_GATEWAY).condition("Do Loop", "=loop=true")
       .connectTo(CONVERGING_GATEWAY)
+      .done();
+  }
+
+  public static BpmnModelInstance createSendTaskProcess(final String processName) {
+    return Bpmn.createExecutableProcess()
+      .name(processName)
+      .startEvent(START_EVENT)
+      .sendTask(SEND_TASK).zeebeJobType(SEND_TASK)
       .done();
   }
 
