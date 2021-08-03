@@ -4,8 +4,12 @@ kind: ConfigMap
 metadata:
   name: '@BRANCH@-zeebe-tasklist-camunda-cloud'
   labels:
+    camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+    camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
     app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
     branch: '@BRANCH@'
+  annotations:
+    camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
 data:
   application.yml: |
     springfox.documentation.swagger.v2.path: /documentation

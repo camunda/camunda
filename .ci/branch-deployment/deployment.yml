@@ -4,9 +4,13 @@ kind: Deployment
 metadata:
   name: '@BRANCH@-zeebe-tasklist-camunda-cloud'
   labels:
+    camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+    camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
     app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
     branch: '@BRANCH@'
     changed: "@CHANGED@"
+  annotations:
+    camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -19,9 +23,13 @@ spec:
   template:
     metadata:
       labels:
+        camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+        camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
         app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
         branch: '@BRANCH@'
         changed: "@CHANGED@"
+      annotations:
+        camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
     spec:
       nodeSelector:
         cloud.google.com/gke-nodepool: services
