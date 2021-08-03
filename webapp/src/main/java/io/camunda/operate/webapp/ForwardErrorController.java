@@ -35,6 +35,9 @@ public class ForwardErrorController implements ErrorController {
   @RequestMapping(value = "/error")
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
     final String requestedURI = (String) request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+    if (requestedURI == null) {
+      return forwardToRootPage();
+    }
     if (isSSOProfile() && !requestedURI.equals(OperateURIs.LOGIN_RESOURCE) && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
@@ -47,12 +50,11 @@ public class ForwardErrorController implements ErrorController {
         modelAndView.setStatus(HttpStatus.valueOf(statusCode));
         return modelAndView;
       }
-      return forwardToRootPage(requestedURI);
+      return forwardToRootPage();
     }
   }
 
-  private ModelAndView forwardToRootPage(final String requestedURI) {
-    LOGGER.warn("Requested non existing path {}. Forward (on serverside) to /\"", requestedURI);
+  private ModelAndView forwardToRootPage() {
     final ModelAndView modelAndView = new ModelAndView("forward:/");
     // Is it really necessary to set status to OK (for frontend)?
     modelAndView.setStatus(HttpStatus.OK);
