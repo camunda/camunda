@@ -51,6 +51,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
   extends ModelElementFrequencyByModelElementDurationByModelElementIT {
@@ -204,17 +205,17 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_2, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Map.of(START_EVENT, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_3, 1.)
       )
     );
   }
@@ -228,7 +229,7 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -237,6 +238,7 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), 10.);
 
     importAllEngineEntitiesFromScratch();
@@ -260,10 +262,9 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
       .groupByContains("10.0")
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null))
       .doAssert(result);
     // @formatter:on
   }
@@ -279,17 +280,17 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_2, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_3, 1.)
       )
     );
   }
@@ -303,12 +304,13 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), 10.);
 
@@ -333,10 +335,9 @@ public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
       .groupByContains("10.0")
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null))
       .doAssert(result);
     // @formatter:on
   }

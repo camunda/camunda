@@ -630,17 +630,17 @@ public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends Abs
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_2, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Map.of(START_EVENT, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_3, 1.)
       )
     );
   }
@@ -654,13 +654,14 @@ public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends Abs
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessInstanceEngineDto processInstance =
-      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+      deployAndStartThreeUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance.getId()
     );
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -689,10 +690,9 @@ public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends Abs
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
       .groupByContains("1.00")
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null))
       .doAssert(result);
     // @formatter:on
   }
@@ -707,17 +707,17 @@ public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends Abs
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_2, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_3, 1.)
       )
     );
   }
@@ -731,10 +731,11 @@ public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends Abs
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessInstanceEngineDto processInstance =
-      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+      deployAndStartThreeUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
@@ -764,10 +765,9 @@ public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends Abs
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
       .groupByContains("1.00")
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null))
       .doAssert(result);
     // @formatter:on
   }

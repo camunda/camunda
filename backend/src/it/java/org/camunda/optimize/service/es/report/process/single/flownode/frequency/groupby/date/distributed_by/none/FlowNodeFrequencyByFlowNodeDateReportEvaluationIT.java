@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDateReportEvaluationIT;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,6 +35,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
   extends ModelElementFrequencyByModelElementDateReportEvaluationIT {
@@ -49,17 +51,15 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
         Arrays.asList(
-          Tuple.tuple("2021-01-01T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-02T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-03T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-04T00:00:00.000+0100", 1.)
-        ) // == USER_TASK_2
+        )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
         Arrays.asList(
-          Tuple.tuple("2021-01-01T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-02T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-03T00:00:00.000+0100", 0.),
           Tuple.tuple("2021-01-04T00:00:00.000+0100", 1.)
@@ -68,10 +68,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Arrays.asList(
-          Tuple.tuple("2021-01-01T00:00:00.000+0100", 1.),
-          Tuple.tuple("2021-01-02T00:00:00.000+0100", 0.),
-          Tuple.tuple("2021-01-03T00:00:00.000+0100", 0.),
+        Collections.singletonList(
           Tuple.tuple("2021-01-04T00:00:00.000+0100", 1.)
         )
       )
@@ -87,7 +84,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -96,11 +93,13 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     changeModelElementDate(processInstanceDto, START_EVENT, OffsetDateTime.parse("2021-01-01T10:00:00+01:00"));
     changeModelElementDate(processInstanceDto, USER_TASK_1, OffsetDateTime.parse("2021-01-02T10:00:00+01:00"));
     changeModelElementDate(processInstanceDto, USER_TASK_2, OffsetDateTime.parse("2021-01-03T10:00:00+01:00"));
-    changeModelElementDate(processInstanceDto, END_EVENT, OffsetDateTime.parse("2021-01-04T00:10:00+01:00"));
+    changeModelElementDate(processInstanceDto, USER_TASK_3, OffsetDateTime.parse("2021-01-04T10:00:00+01:00"));
+    changeModelElementDate(processInstanceDto, END_EVENT, OffsetDateTime.parse("2021-01-05T00:10:00+01:00"));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -130,7 +129,6 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
         Arrays.asList(
-          Tuple.tuple("2021-01-01T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-02T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-03T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-04T00:00:00.000+0100", 1.)
@@ -140,7 +138,6 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(
-          Tuple.tuple("2021-01-01T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-02T00:00:00.000+0100", 1.),
           Tuple.tuple("2021-01-03T00:00:00.000+0100", 0.),
           Tuple.tuple("2021-01-04T00:00:00.000+0100", 1.)
@@ -149,10 +146,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(
-          Tuple.tuple("2021-01-01T00:00:00.000+0100", 1.),
-          Tuple.tuple("2021-01-02T00:00:00.000+0100", 0.),
-          Tuple.tuple("2021-01-03T00:00:00.000+0100", 0.),
+        Collections.singletonList(
           Tuple.tuple("2021-01-04T00:00:00.000+0100", 1.)
         )
       )
@@ -168,18 +162,20 @@ public abstract class FlowNodeFrequencyByFlowNodeDateReportEvaluationIT
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     changeModelElementDate(processInstanceDto, START_EVENT, OffsetDateTime.parse("2021-01-01T10:00:00+01:00"));
     changeModelElementDate(processInstanceDto, USER_TASK_1, OffsetDateTime.parse("2021-01-02T10:00:00+01:00"));
     changeModelElementDate(processInstanceDto, USER_TASK_2, OffsetDateTime.parse("2021-01-03T10:00:00+01:00"));
-    changeModelElementDate(processInstanceDto, END_EVENT, OffsetDateTime.parse("2021-01-04T00:10:00+01:00"));
+    changeModelElementDate(processInstanceDto, USER_TASK_3, OffsetDateTime.parse("2021-01-04T10:00:00+01:00"));
+    changeModelElementDate(processInstanceDto, END_EVENT, OffsetDateTime.parse("2021-01-05T00:10:00+01:00"));
     importAllEngineEntitiesFromScratch();
 
     // when

@@ -30,7 +30,7 @@ public class AssigneeQueryFilter implements QueryFilter<IdentityLinkFilterDataDt
         filters.add(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            createAssigneeFilterQuery(assigneeFilter, filterContext.isUserTaskReport()),
+            createAssigneeFilterQuery(assigneeFilter),
             ScoreMode.None
           )
         );

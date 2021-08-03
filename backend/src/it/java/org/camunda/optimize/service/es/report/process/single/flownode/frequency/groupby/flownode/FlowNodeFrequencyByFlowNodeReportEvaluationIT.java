@@ -60,10 +60,10 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -769,21 +769,20 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
         Arrays.asList(
-          Tuple.tuple(START_EVENT, 1.),
           Tuple.tuple(USER_TASK_1, 1.),
           Tuple.tuple(USER_TASK_2, 1.),
-          Tuple.tuple(END_EVENT, 1.)
+          Tuple.tuple(USER_TASK_3, 1.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Arrays.asList(Tuple.tuple(START_EVENT, 1.), Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(END_EVENT, 1.))
+        Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_3, 1.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Arrays.asList(Tuple.tuple(START_EVENT, 1.), Tuple.tuple(END_EVENT, 1.))
+        Collections.singletonList(Tuple.tuple(USER_TASK_3, 1.))
       )
     );
   }
@@ -797,7 +796,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -806,7 +805,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
-
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -836,21 +835,20 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
         Arrays.asList(
-          Tuple.tuple(START_EVENT, 1.),
           Tuple.tuple(USER_TASK_1, 1.),
           Tuple.tuple(USER_TASK_2, 1.),
-          Tuple.tuple(END_EVENT, 1.)
+          Tuple.tuple(USER_TASK_3, 1.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(Tuple.tuple(START_EVENT, 1.), Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(END_EVENT, 1.))
+        Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_3, 1.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(Tuple.tuple(START_EVENT, 1.), Tuple.tuple(END_EVENT, 1.))
+        Collections.singletonList(Tuple.tuple(USER_TASK_3, 1.))
       )
     );
   }
@@ -864,11 +862,12 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();

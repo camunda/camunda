@@ -262,9 +262,8 @@ public class ModelElementFilterQueryUtil {
     return queryBuilder;
   }
 
-  public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
-                                                       final boolean isUserTaskReport) {
-    return createAssigneeFilterQuery(assigneeFilter, createFlowNodeTypeFilterQuery(isUserTaskReport));
+  public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
+    return createAssigneeFilterQuery(assigneeFilter, boolQuery());
   }
 
   private static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
@@ -272,9 +271,8 @@ public class ModelElementFilterQueryUtil {
     return createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE, queryBuilder);
   }
 
-  public static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter,
-                                                             final boolean isUserTaskReport) {
-    return createCandidateGroupFilterQuery(candidateGroupFilter, createFlowNodeTypeFilterQuery(isUserTaskReport));
+  public static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
+    return createCandidateGroupFilterQuery(candidateGroupFilter, boolQuery());
   }
 
   private static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter,
@@ -286,8 +284,9 @@ public class ModelElementFilterQueryUtil {
     );
   }
 
-  private static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData,
-                                                                final BoolQueryBuilder queryBuilder) {
+  private static QueryBuilder createFlowNodeDurationFilterQuery(
+    final FlowNodeDurationFiltersDataDto durationFilterData,
+    final BoolQueryBuilder queryBuilder) {
     queryBuilder.minimumShouldMatch(1);
     durationFilterData.forEach((flowNodeId, durationFilter) -> {
       final BoolQueryBuilder particularFlowNodeQuery = boolQuery()
@@ -319,6 +318,9 @@ public class ModelElementFilterQueryUtil {
       })
       .filter(Objects::nonNull)
       .collect(Collectors.toSet());
+
+    // identity filters should always only return flowNodes of type userTask
+    queryBuilder.must(createUserTaskFlowNodeTypeFilter());
 
     final BoolQueryBuilder identityQuery = boolQuery().minimumShouldMatch(1);
     if (!nonNullValues.isEmpty()) {

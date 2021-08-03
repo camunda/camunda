@@ -450,15 +450,15 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
       ),
       Arguments.of(IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        new Double[]{1000., 2000., 3000., 4000.}
+        new Double[]{2000., 3000., 4000.}
       ),
       Arguments.of(NOT_IN,
         new String[]{SECOND_USER},
-        new Double[]{1000., 2000., null, 4000.}
+        new Double[]{2000., null, 4000.}
       ),
       Arguments.of(NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        new Double[]{1000., null, null, 4000.}
+        new Double[]{4000.}
       )
     );
   }
@@ -472,7 +472,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -481,15 +481,18 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     changeModelElementDate(processInstanceDto, START_EVENT, now);
     changeModelElementDate(processInstanceDto, USER_TASK_1, now.plusDays(1));
     changeModelElementDate(processInstanceDto, USER_TASK_2, now.plusDays(2));
-    changeModelElementDate(processInstanceDto, END_EVENT, now.plusDays(3));
+    changeModelElementDate(processInstanceDto, USER_TASK_3, now.plusDays(3));
+    changeModelElementDate(processInstanceDto, END_EVENT, now.plusDays(4));
     changeDuration(processInstanceDto, START_EVENT, 1000.);
     changeDuration(processInstanceDto, USER_TASK_1, 2000.);
     changeDuration(processInstanceDto, USER_TASK_2, 3000.);
-    changeDuration(processInstanceDto, END_EVENT, 4000.);
+    changeDuration(processInstanceDto, USER_TASK_3, 4000.);
+    changeDuration(processInstanceDto, END_EVENT, 5000.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -520,15 +523,15 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
       ),
       Arguments.of(IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        new Double[]{1000., 2000., 3000., 4000.}
+        new Double[]{2000., 3000., 4000.}
       ),
       Arguments.of(NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        new Double[]{1000., 2000., null, 4000.}
+        new Double[]{2000., null, 4000.}
       ),
       Arguments.of(NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        new Double[]{1000., null, null, 4000.}
+        new Double[]{4000.}
       )
     );
   }
@@ -542,22 +545,25 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     final OffsetDateTime now = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     changeModelElementDate(processInstanceDto, START_EVENT, now);
     changeModelElementDate(processInstanceDto, USER_TASK_1, now.plusDays(1));
     changeModelElementDate(processInstanceDto, USER_TASK_2, now.plusDays(2));
-    changeModelElementDate(processInstanceDto, END_EVENT, now.plusDays(3));
+    changeModelElementDate(processInstanceDto, USER_TASK_3, now.plusDays(3));
+    changeModelElementDate(processInstanceDto, END_EVENT, now.plusDays(4));
     changeDuration(processInstanceDto, START_EVENT, 1000.);
     changeDuration(processInstanceDto, USER_TASK_1, 2000.);
     changeDuration(processInstanceDto, USER_TASK_2, 3000.);
-    changeDuration(processInstanceDto, END_EVENT, 4000.);
+    changeDuration(processInstanceDto, USER_TASK_3, 4000.);
+    changeDuration(processInstanceDto, END_EVENT, 5000.);
 
     importAllEngineEntitiesFromScratch();
 

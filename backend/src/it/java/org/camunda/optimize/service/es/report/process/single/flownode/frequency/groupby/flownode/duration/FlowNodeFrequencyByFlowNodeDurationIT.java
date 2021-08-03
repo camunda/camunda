@@ -35,6 +35,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequencyByModelElementDurationIT {
 
@@ -83,37 +84,41 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 0.)
+          Tuple.tuple("40.0", 0.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       )
     );
@@ -128,7 +133,7 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -137,10 +142,12 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), START_EVENT, 10.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_1, 20.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_2, 30.);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_3, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 50.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -173,37 +180,41 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 0.)
+          Tuple.tuple("40.0", 0.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       )
     );
@@ -218,18 +229,20 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), START_EVENT, 10.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_1, 20.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_2, 30.);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_3, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 50.);
 
     importAllEngineEntitiesFromScratch();
 

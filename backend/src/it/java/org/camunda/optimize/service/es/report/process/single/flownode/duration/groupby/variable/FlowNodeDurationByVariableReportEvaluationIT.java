@@ -498,17 +498,17 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        3250.
+        4000.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        3333.
+        4500.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        4000.
+        7000.
       )
     );
   }
@@ -521,7 +521,7 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
@@ -531,11 +531,13 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance.getId());
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_3, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 8000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -578,17 +580,17 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        3250.
+        4000.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        3333.
+        4500.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        4000.
+        7000.
       )
     );
   }
@@ -601,7 +603,7 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
@@ -609,11 +611,13 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_3, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 8000);
 
     importAllEngineEntitiesFromScratch();
 

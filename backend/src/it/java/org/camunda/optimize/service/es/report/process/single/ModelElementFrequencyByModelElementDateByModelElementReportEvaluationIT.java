@@ -34,6 +34,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public abstract class ModelElementFrequencyByModelElementDateByModelElementReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -53,7 +54,8 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -81,7 +83,8 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -98,7 +101,8 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -203,6 +207,22 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
         .name(USER_TASK_1_NAME)
       .userTask(USER_TASK_2)
         .name(USER_TASK_2_NAME)
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  protected ProcessDefinitionEngineDto deployThreeUserTasksDefinition() {
+    // @formatter:off
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1)
+        .name(USER_TASK_1_NAME)
+      .userTask(USER_TASK_2)
+        .name(USER_TASK_2_NAME)
+      .userTask(USER_TASK_3)
+        .name(USER_TASK_3_NAME)
       .endEvent(END_EVENT)
       .done();
     // @formatter:on

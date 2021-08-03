@@ -615,15 +615,15 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       ),
       Arguments.of(IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_2, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(NOT_IN,
         new String[]{SECOND_USER},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Map.of(START_EVENT, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_3, 1.)
       )
     );
   }
@@ -637,7 +637,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -646,6 +646,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -671,10 +672,9 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null), END_EVENT)
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null), START_EVENT)
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null), USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null), USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null), USER_TASK_3_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -687,15 +687,15 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       ),
       Arguments.of(IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_2, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_1, 1., USER_TASK_3, 1.)
       ),
       Arguments.of(NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1., END_EVENT, 1.)
+        Map.of(USER_TASK_3, 1.)
       )
     );
   }
@@ -709,11 +709,12 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
@@ -740,10 +741,9 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null), END_EVENT)
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null), START_EVENT)
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null), USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null), USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null), USER_TASK_3_NAME)
       .doAssert(result);
     // @formatter:on
   }

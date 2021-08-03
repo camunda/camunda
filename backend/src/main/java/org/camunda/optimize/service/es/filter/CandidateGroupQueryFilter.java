@@ -30,7 +30,7 @@ public class CandidateGroupQueryFilter implements QueryFilter<IdentityLinkFilter
         filters.add(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            createCandidateGroupFilterQuery(candidateGroupFilter, filterContext.isUserTaskReport()),
+            createCandidateGroupFilterQuery(candidateGroupFilter),
             ScoreMode.None
           )
         );

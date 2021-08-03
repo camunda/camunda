@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.report.process.single;
 
 import com.google.common.collect.ImmutableList;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -49,6 +51,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -425,6 +428,10 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
 
   protected ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+  }
+
+  protected ProcessDefinitionEngineDto deployThreeUserTasksDefinition() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
   }
 
   private long getExecutedFlowNodeCount(ReportResultResponseDto<List<MapResultEntryDto>> resultList) {

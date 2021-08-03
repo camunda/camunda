@@ -188,6 +188,22 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
+  protected ProcessDefinitionEngineDto deployThreeUserTasksDefinition() {
+    // @formatter:off
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK_1)
+        .name(USER_TASK_1_NAME)
+      .userTask(USER_TASK_2)
+        .name(USER_TASK_2_NAME)
+      .userTask(USER_TASK_3)
+        .name(USER_TASK_3_NAME)
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
   protected String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
     return groupedByDateAsString(referenceDate, ChronoUnit.DAYS);
   }

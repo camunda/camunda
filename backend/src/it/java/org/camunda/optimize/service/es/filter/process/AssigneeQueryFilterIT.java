@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.es.filter.process;
 
-import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +19,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
-import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 
 public class AssigneeQueryFilterIT extends AbstractFilterIT {
@@ -129,14 +125,10 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
       DEFAULT_PASSWORD,
       processInstance1.getId()
     );
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      processInstance1.getId()
-    );
 
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance1.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -151,20 +143,11 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
 
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataResult =
       evaluateReportWithFilter(processDefinition, assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
-      evaluateUserTaskReportWithFilter(processDefinition, assigneeFilter);
 
-    // then raw data report has both instances (because unassigned flowNodes exist on both)
+    // then
     assertThat(rawDataResult.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
-    // and userTask report has only the instance that has not yet reached the second userTask
-    // (because unassigned userTasks only exist on processInstance2)
-    assertThat(userTaskResult.getInstanceCount()).isEqualTo(1L);
-    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(2L);
-    assertThat(userTaskResult.getData())
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 1.0), Tuple.tuple(USER_TASK_2, null));
+      .containsExactlyInAnyOrder(processInstance2.getId());
   }
 
   @Test
@@ -186,6 +169,7 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
 
     final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance3.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -202,19 +186,11 @@ public class AssigneeQueryFilterIT extends AbstractFilterIT {
       processDefinition,
       assigneeFilter
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
-      evaluateUserTaskReportWithFilter(processDefinition, assigneeFilter);
 
-    // then rawData report has all instances (because flowNodes with no assignee exist on both instances)
+    // then
     assertThat(rawDataResult.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId(), processInstance3.getId());
-    // and userTask report does not have the instance where the only userTask is assigned to secondUser
-    assertThat(userTaskResult.getInstanceCount()).isEqualTo(2L);
-    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(userTaskResult.getData())
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 2.0));
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance3.getId());
   }
 
   @Test

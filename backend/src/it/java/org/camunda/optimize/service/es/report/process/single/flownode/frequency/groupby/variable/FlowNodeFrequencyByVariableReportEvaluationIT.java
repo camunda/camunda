@@ -463,17 +463,17 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        4.
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
         3.
       ),
       Arguments.of(
         NOT_IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        new String[]{SECOND_USER},
         2.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        1.
       )
     );
   }
@@ -486,7 +486,7 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
@@ -496,6 +496,7 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -538,17 +539,17 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        4.
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP_ID},
         3.
       ),
       Arguments.of(
         NOT_IN,
-        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
         2.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        1.
       )
     );
   }
@@ -561,13 +562,14 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
