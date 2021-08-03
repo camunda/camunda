@@ -22,6 +22,7 @@ import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
 import {useNotifications} from 'modules/notifications';
+import {useRoles} from 'modules/hooks/useRoles';
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -67,6 +68,8 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
       processDefinitionId,
     },
   });
+  const {hasPermission} = useRoles(['edit']);
+
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<FormJSViewer | null>(null);
@@ -86,7 +89,9 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   const [isFormValid, setIsFormValid] = useState(false);
   const canCompleteTask =
     userData?.currentUser.username === assignee?.username &&
-    taskState === 'CREATED';
+    taskState === 'CREATED' &&
+    hasPermission;
+
   const {removeFormReference} = useRemoveFormReference(task);
   const {displayNotification} = useNotifications();
 

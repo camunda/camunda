@@ -13,6 +13,7 @@ describe('getUserDisplayName', () => {
         firstname: 'firstname',
         lastname: 'lastname',
         username: 'username',
+        roles: ['view', 'edit'],
         __typename: 'User',
       }),
     ).toBe('firstname lastname');
@@ -22,6 +23,7 @@ describe('getUserDisplayName', () => {
         firstname: 'firstname',
         lastname: null,
         username: 'username',
+        roles: ['view', 'edit'],
         __typename: 'User',
       }),
     ).toBe('firstname');
@@ -31,6 +33,7 @@ describe('getUserDisplayName', () => {
         firstname: null,
         lastname: 'lastname',
         username: 'username',
+        roles: ['view', 'edit'],
         __typename: 'User',
       }),
     ).toBe('lastname');
@@ -40,6 +43,7 @@ describe('getUserDisplayName', () => {
         firstname: null,
         lastname: null,
         username: 'username',
+        roles: ['view', 'edit'],
         __typename: 'User',
       }),
     ).toBe('username');

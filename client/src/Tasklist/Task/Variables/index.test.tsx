@@ -11,7 +11,12 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {
+  mockGetCurrentUser,
+  mockGetCurrentRestrictedUser,
+  GetCurrentUser,
+  GET_CURRENT_USER,
+} from 'modules/queries/get-current-user';
 import {
   mockGetTaskVariables,
   mockGetTaskEmptyVariables,
@@ -22,7 +27,7 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
 import userEvent from '@testing-library/user-event';
-import {ApolloProvider} from '@apollo/client';
+import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql} from 'msw';
@@ -347,6 +352,42 @@ describe('<Variables />', () => {
         },
       ]),
     );
+  });
+
+  it('should not be able to change variable, add variable and complete task if user has no permission', async () => {
+    const UserName = () => {
+      const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+
+      return <div>{data?.currentUser.firstname}</div>;
+    };
+
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
+    const mockOnSubmit = jest.fn();
+
+    render(
+      <>
+        <UserName />
+        <Variables task={claimedTask()} onSubmit={mockOnSubmit} />
+      </>,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByText('Demo')).toBeInTheDocument();
+    expect(await screen.findByText(/myVar/)).toBeInTheDocument();
+
+    expect(screen.queryByText('Add Variable')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('myVar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/complete task/i)).not.toBeInTheDocument();
   });
 
   it('should add new variable and complete task', async () => {

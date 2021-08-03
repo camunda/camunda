@@ -10,7 +10,39 @@ const currentUser: User = {
   username: 'demo',
   firstname: 'Demo',
   lastname: 'User',
+  roles: ['view', 'edit'],
   __typename: 'User',
 };
 
-export {currentUser};
+const currentRestrictedUser: User = {
+  username: 'demo',
+  firstname: 'Demo',
+  lastname: 'User',
+  roles: ['view'],
+  __typename: 'User',
+};
+
+const currentUserWithUnknownRole: User = {
+  username: 'demo',
+  firstname: 'Demo',
+  lastname: 'User',
+  // @ts-ignore
+  roles: ['unknown'],
+  __typename: 'User',
+};
+
+const currentUserWithOutRole: User = {
+  username: 'demo',
+  firstname: 'Demo',
+  lastname: 'User',
+  // @ts-ignore
+  roles: [],
+  __typename: 'User',
+};
+
+export {
+  currentUser,
+  currentRestrictedUser,
+  currentUserWithOutRole,
+  currentUserWithUnknownRole,
+};

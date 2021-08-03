@@ -4,10 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+type NonEmptyArray<T> = [T, ...T[]];
+
+type Roles = NonEmptyArray<'view' | 'edit'>;
+
 type User = Readonly<{
   username: string;
   firstname: string | null;
   lastname: string | null;
+  roles: Roles;
   __typename: string;
 }>;
 
@@ -44,4 +49,4 @@ type Form = Readonly<{
   schema: string;
 }>;
 
-export type {User, Variable, Task, TaskState, Form};
+export type {User, Variable, Task, TaskState, Form, Roles};

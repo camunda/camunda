@@ -25,6 +25,11 @@ function createApolloClient({
       typePolicies: {
         Query: {
           fields: {
+            currentUser: {
+              read(user) {
+                return {...user, roles: user?.roles ?? ['view', 'edit']};
+              },
+            },
             tasks: {
               keyArgs: false,
               merge(existing, incoming, {args}) {

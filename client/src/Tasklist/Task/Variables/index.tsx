@@ -55,6 +55,7 @@ import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useTaskVariables} from 'modules/queries/get-task-variables';
 import {LoadingTextarea} from './LoadingTextarea';
+import {useRoles} from 'modules/hooks/useRoles';
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
@@ -63,6 +64,7 @@ type Props = {
 
 const Variables: React.FC<Props> = ({onSubmit, task}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
+  const {hasPermission} = useRoles(['edit']);
   const {data: userData, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const {
     variables,
@@ -78,7 +80,8 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
   const {assignee, taskState} = task;
   const canCompleteTask =
     userData?.currentUser.username === assignee?.username &&
-    taskState === 'CREATED';
+    taskState === 'CREATED' &&
+    hasPermission;
 
   const isVariableDirty = (
     name: undefined | FieldState<string>,

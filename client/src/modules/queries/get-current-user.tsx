@@ -7,7 +7,12 @@
 import {gql} from '@apollo/client';
 
 import {User} from 'modules/types';
-import {currentUser} from 'modules/mock-schema/mocks/current-user';
+import {
+  currentUser,
+  currentRestrictedUser,
+  currentUserWithUnknownRole,
+  currentUserWithOutRole,
+} from 'modules/mock-schema/mocks/current-user';
 
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {
@@ -15,6 +20,7 @@ const GET_CURRENT_USER = gql`
       firstname
       lastname
       username
+      roles @client
     }
   }
 `;
@@ -30,9 +36,48 @@ const mockGetCurrentUser = {
   },
 } as const;
 
+const mockGetCurrentRestrictedUser = {
+  request: {
+    query: GET_CURRENT_USER,
+  },
+  result: {
+    data: {
+      currentUser: currentRestrictedUser,
+    },
+  },
+} as const;
+
+const mockGetCurrentUserWithUnknownRole = {
+  request: {
+    query: GET_CURRENT_USER,
+  },
+  result: {
+    data: {
+      currentUser: currentUserWithUnknownRole,
+    },
+  },
+} as const;
+
+const mockGetCurrentUserWithoutRole = {
+  request: {
+    query: GET_CURRENT_USER,
+  },
+  result: {
+    data: {
+      currentUser: currentUserWithOutRole,
+    },
+  },
+} as const;
+
 interface GetCurrentUser {
   currentUser: User;
 }
 
 export type {GetCurrentUser};
-export {GET_CURRENT_USER, mockGetCurrentUser};
+export {
+  GET_CURRENT_USER,
+  mockGetCurrentUser,
+  mockGetCurrentRestrictedUser,
+  mockGetCurrentUserWithUnknownRole,
+  mockGetCurrentUserWithoutRole,
+};

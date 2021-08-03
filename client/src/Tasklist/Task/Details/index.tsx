@@ -34,6 +34,7 @@ import {useNotifications} from 'modules/notifications';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
+import {Restricted} from 'modules/components/Restricted';
 
 import {
   GET_CURRENT_USER,
@@ -175,20 +176,24 @@ const Details: React.FC = () => {
               <Assignee data-testid="assignee-task-details">
                 {getUserDisplayName(assignee)}
                 {taskState === TaskStates.Created && (
-                  <ClaimButton
-                    variant="small"
-                    type="button"
-                    onClick={() => handleClick()}
-                  >
-                    {assignee ? 'Unclaim' : 'Claim'}
-                  </ClaimButton>
+                  <Restricted scopes={['edit']}>
+                    <ClaimButton
+                      variant="small"
+                      type="button"
+                      onClick={() => handleClick()}
+                    >
+                      {assignee ? 'Unclaim' : 'Claim'}
+                    </ClaimButton>
+                  </Restricted>
                 )}
               </Assignee>
               {!assignee && (
-                <Hint>
-                  <Info />
-                  Claim the Task to start working on it
-                </Hint>
+                <Restricted scopes={['edit']}>
+                  <Hint>
+                    <Info />
+                    Claim the Task to start working on it
+                  </Hint>
+                </Restricted>
               )}
             </AssigneeTD>
           </TR>

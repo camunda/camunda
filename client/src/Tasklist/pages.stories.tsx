@@ -12,7 +12,10 @@ import {MemoryRouter, Route} from 'react-router-dom';
 import {Tasklist} from './index';
 import {Pages} from 'modules/constants/pages';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {
+  mockGetCurrentUser,
+  mockGetCurrentRestrictedUser,
+} from 'modules/queries/get-current-user';
 import {
   mockGetEmptyTasks,
   mockGetAllOpenTasks,
@@ -236,6 +239,25 @@ const UnclaimedWithPrefilledForm: React.FC = () => {
   );
 };
 
+const UnclaimedWithNoEditPermission: React.FC = () => {
+  return (
+    <Wrapper
+      mocks={[
+        mockGetCurrentRestrictedUser,
+        mockGetUnclaimed,
+        mockGetTaskUnclaimedWithForm(),
+        mockGetSelectedVariables(),
+        mockGetForm,
+        mockGetUnclaimed,
+        mockGetUnclaimed,
+      ]}
+      initialEntries={['/0?filter=unclaimed']}
+    >
+      <Tasklist />
+    </Wrapper>
+  );
+};
+
 const ClaimedWithForm: React.FC = () => {
   return (
     <Wrapper
@@ -272,6 +294,24 @@ const ClaimedWithPrefilledForm: React.FC = () => {
   );
 };
 
+const ClaimedWithNoEditPermission: React.FC = () => {
+  return (
+    <Wrapper
+      mocks={[
+        mockGetCurrentRestrictedUser,
+        mockGetAllOpenTasks(),
+        mockGetTaskClaimedWithForm(),
+        mockGetSelectedVariables(),
+        mockGetForm,
+        mockGetAllOpenTasks(),
+      ]}
+      initialEntries={['/0']}
+    >
+      <Tasklist />
+    </Wrapper>
+  );
+};
+
 export {
   EmptyPage,
   AllOpenTasks,
@@ -285,6 +325,8 @@ export {
   ClaimedWithVariables,
   UnclaimedWithForm,
   UnclaimedWithPrefilledForm,
+  UnclaimedWithNoEditPermission,
   ClaimedWithForm,
   ClaimedWithPrefilledForm,
+  ClaimedWithNoEditPermission,
 };

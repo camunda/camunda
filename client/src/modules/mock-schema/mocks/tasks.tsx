@@ -35,6 +35,7 @@ const tasks: ReadonlyArray<Task> = [
       username: 'mustermann',
       firstname: 'Otto',
       lastname: 'Mustermann',
+      roles: ['view', 'edit'],
       __typename: 'User',
     },
     variables: [
