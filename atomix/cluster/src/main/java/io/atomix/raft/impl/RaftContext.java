@@ -31,6 +31,7 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.RaftThreadContextFactory;
+import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
@@ -102,6 +103,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommittedEntryListener> committedEntryListeners =
+      new CopyOnWriteArraySet<>();
+  private final Set<SnapshotReplicationListener> snapshotReplicationListeners =
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
@@ -423,6 +426,36 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       replicationMetrics.setCommitIndex(commitIndex);
     }
     return previousCommitIndex;
+  }
+
+  /**
+   * Adds a new snapshot replication listener, which will be notified before and after a new
+   * snapshot is received from a leader. Note that it will be called on the Raft thread, and hence
+   * should not perform any heavy computation.
+   *
+   * @param snapshotReplicationListener the listener to add
+   */
+  public void addSnapshotReplicationListener(
+      final SnapshotReplicationListener snapshotReplicationListener) {
+    snapshotReplicationListeners.add(snapshotReplicationListener);
+  }
+
+  /**
+   * Removes registered snapshot replication listener
+   *
+   * @param snapshotReplicationListener the listener to remove
+   */
+  public void removeSnapshotReplicationListener(
+      final SnapshotReplicationListener snapshotReplicationListener) {
+    snapshotReplicationListeners.remove(snapshotReplicationListener);
+  }
+
+  public void notifySnapshotReplicationStarted() {
+    snapshotReplicationListeners.forEach(SnapshotReplicationListener::onSnapshotReplicationStarted);
+  }
+
+  public void notifySnapshotReplicationCompleted() {
+    snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(role.role(), term));
   }
 
   /**
