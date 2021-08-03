@@ -23,7 +23,7 @@ import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
-import io.camunda.operate.zeebeimport.v1_0.processors.IncidentZeebeRecordProcessor;
+import io.camunda.operate.zeebeimport.v1_2.processors.IncidentZeebeRecordProcessor;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;

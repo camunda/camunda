@@ -6,6 +6,7 @@
 package io.camunda.operate.zeebeimport.severalversions;
 
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.testcontainers.images.PullPolicy.alwaysPull;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeBrokerContainer;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.images.ImagePullPolicy;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -54,6 +56,9 @@ public class TestContainerUtil {
         .withFileSystemBind(dataFolderPath, "/usr/local/zeebe/data")
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
         .withNetwork(getNetwork());
+    if (version.equals("SNAPSHOT")) {
+      broker.withImagePullPolicy(alwaysPull());
+    }
     addConfig(broker, version);
     broker.start();
 

@@ -8,7 +8,7 @@ package io.camunda.operate.util.apps.retry_after_failure;
 import java.util.HashSet;
 import java.util.Set;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.zeebeimport.v1_0.processors.ElasticsearchBulkProcessor;
+import io.camunda.operate.zeebeimport.v1_2.processors.ElasticsearchBulkProcessor;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebe.ImportValueType;
 import org.springframework.context.annotation.Bean;
