@@ -24,6 +24,7 @@ import {showError} from 'notifications';
 
 import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
+import GroupBy from './GroupBy';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
@@ -414,19 +415,14 @@ export default withErrorHandling(
                     </Button>
                   </li>
                 )}
-                <li className="select">
-                  <span className="label">{t(`report.groupBy.label`)}</span>
-                  <ReportSelect
-                    type="process"
-                    field="groupBy"
-                    value={data.groupBy}
-                    report={this.props.report}
-                    variables={{variable: variables}}
-                    disabled={!key || !data.view}
-                    onChange={(newValue) => this.updateReport('groupBy', newValue)}
-                    previous={[data.view]}
-                  />
-                </li>
+                <GroupBy
+                  type="process"
+                  value={data.groupBy}
+                  report={this.props.report}
+                  variables={{variable: variables}}
+                  onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                  view={data.view}
+                />
                 <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
                 {isDurationHeatmap(data) && (
                   <li className="select">

@@ -249,6 +249,7 @@
     "downloadCSV": "Download CSV",
     "measure": "Measure",
     "addMeasure": "Add measure",
+    "addGrouping": "Add grouping",
     "displayName": "Display Name",
     "displayNamePlaceholder": "Add optional display name",
     "noSources": "No Data Sources",
@@ -463,7 +464,6 @@
         "work": "Work",
         "total": "Total"
       },
-      "userTaskDistributedBy": "Distribution",
       "colorPicker": {
         "legend": "Color"
       },

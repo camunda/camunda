@@ -264,12 +264,9 @@ test('should only enable valid combinations for process instance count grouped b
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('None').hasClass('disabled')).notOk();
   await t.expect(e.option('Start Date').hasClass('disabled')).notOk();
   await t.expect(e.option('Variable').hasClass('disabled')).notOk();
   await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
-
-  await t.click(e.option('None'));
 
   await t.click(e.visualizationDropdown);
 
@@ -618,7 +615,6 @@ test('should only enable valid combinations for user task', async (t) => {
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('None').hasClass('disabled')).ok();
   await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
   await t.expect(e.option('User Task').hasClass('disabled')).notOk();
   await t.expect(e.option('Assignee').hasClass('disabled')).notOk();

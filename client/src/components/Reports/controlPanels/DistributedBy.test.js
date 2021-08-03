@@ -181,3 +181,29 @@ it('should invoke onChange with correct start date configuration', () => {
     true
   );
 });
+
+it('should have a button to reset the distribution', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <DistributedBy
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      report={{
+        data: {
+          ...data,
+          distributedBy: {type: 'assignee', value: null},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+  runLastEffect();
+
+  node.find('.removeGrouping').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith(
+    {
+      distributedBy: {$set: {type: 'none', value: null}},
+    },
+    true
+  );
+});

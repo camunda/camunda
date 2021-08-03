@@ -184,7 +184,7 @@ export default class Dropdown extends React.Component {
           disabled={disabled}
           id={id ? id + '-button' : undefined}
         >
-          {label}
+          <span>{label}</span>
           <Icon type="down" className="downIcon" />
         </Button>
         <div

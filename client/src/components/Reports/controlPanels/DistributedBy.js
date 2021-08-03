@@ -5,8 +5,9 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import classnames from 'classnames';
 
-import {Select} from 'components';
+import {Select, Button, Icon} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -39,13 +40,17 @@ export function DistributedBy({
   }, [view, groupBy, mightFail, key, versions, tenantIds, setVariables]);
 
   if (canDistributeData(view, groupBy)) {
+    const value = getValue(distributedBy);
+    const hasDistribution = value !== 'none';
+
     return (
-      <li className="DistributedBy">
-        <span className="label">{t('report.config.userTaskDistributedBy')}</span>
+      <li className="DistributedBy GroupBy">
+        <span className="label">{t('common.and')}</span>
         <Select
-          className="ReportSelect"
+          className={classnames('ReportSelect', {hasNoGrouping: !hasDistribution})}
           key={variables.length}
-          value={getValue(distributedBy)}
+          value={value}
+          label={!hasDistribution && '+ Add grouping'}
           onChange={(value) => {
             const change = {distributedBy: {$set: {type: value, value: null}}};
 
@@ -66,9 +71,16 @@ export function DistributedBy({
             onChange(change, true);
           }}
         >
-          <Select.Option value="none">{t('common.none')}</Select.Option>
           {getOptionsFor(view.entity, groupBy.type, variables)}
         </Select>
+        {hasDistribution && (
+          <Button
+            className="removeGrouping"
+            onClick={() => onChange({distributedBy: {$set: {type: 'none', value: null}}}, true)}
+          >
+            <Icon type="close-small" />
+          </Button>
+        )}
       </li>
     );
   }

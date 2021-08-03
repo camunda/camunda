@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {DefinitionSelection, Button} from 'components';
 
 import {DecisionControlPanel} from './DecisionControlPanel';
+import GroupBy from './GroupBy';
 import ReportSelect from './ReportSelect';
 
 import {loadInputVariables, loadOutputVariables} from 'services';
@@ -82,25 +83,16 @@ it('should call the provided updateReport property function when a setting chang
   expect(spy).toHaveBeenCalled();
 });
 
-it('should disable the groupBy Select if view is not selected', () => {
-  const node = shallow(
-    <DecisionControlPanel {...props} report={{...report, data: {...report.data, view: ''}}} />
-  );
-
-  expect(node.find(ReportSelect).at(1)).toBeDisabled();
-});
-
-it('should not disable the groupBy and visualization Selects if view is selected', () => {
+it('should not disable visualization Select if view is selected', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
   expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
-  expect(node.find(ReportSelect).at(2)).not.toBeDisabled();
 });
 
 it('should include variables in the groupby options', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
-  const groupbyDropdown = node.find(ReportSelect).at(1);
+  const groupbyDropdown = node.find(GroupBy);
 
   expect(groupbyDropdown.prop('variables')).toBeDefined();
 });

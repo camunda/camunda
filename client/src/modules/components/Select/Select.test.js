@@ -7,6 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Dropdown} from 'components';
+
 import Select from './Select';
 
 it('should render without crashing', () => {
@@ -73,4 +75,10 @@ it('should select submenu option onClick and set checked property on the submenu
   expect(node.find('Submenu').props().checked).toBeTruthy();
   expect(node.find('Option').props().checked).toBeTruthy();
   expect(node.find('Dropdown').prop('label')).toBe('submenu : Option One');
+});
+
+it('should allow a custom label', () => {
+  const node = shallow(<Select label="Custom Select Label" />);
+
+  expect(node.find(Dropdown).prop('label')).toBe('Custom Select Label');
 });

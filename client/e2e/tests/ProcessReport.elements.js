@@ -85,7 +85,7 @@ export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child'
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
-export const distributedBySelect = Selector('.label').withText('Distribution').nextSibling();
+export const distributedBySelect = Selector('.DistributedBy .Select');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');

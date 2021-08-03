@@ -19,6 +19,7 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
+import GroupBy from './GroupBy';
 import ReportSelect from './ReportSelect';
 
 const {decision: decisionConfig} = reportConfig;
@@ -195,27 +196,26 @@ export class DecisionControlPanel extends React.Component {
               </span>
             </Button>
             <ul>
-              {['view', 'groupBy'].map((field, idx, fields) => {
-                const previous = fields
-                  .filter((prev, prevIdx) => prevIdx < idx)
-                  .map((prev) => data[prev]);
-
-                return (
-                  <li className="select" key={field}>
-                    <span className="label">{t(`report.${field}.label`)}</span>
-                    <ReportSelect
-                      type="decision"
-                      field={field}
-                      report={this.props.report}
-                      value={data[field]}
-                      variables={this.state.variables}
-                      previous={previous}
-                      disabled={!key || previous.some((entry) => !entry)}
-                      onChange={(newValue) => this.updateReport(field, newValue)}
-                    />
-                  </li>
-                );
-              })}
+              <li className="select">
+                <span className="label">{t(`report.view.label`)}</span>
+                <ReportSelect
+                  type="decision"
+                  field="view"
+                  report={this.props.report}
+                  value={data.view}
+                  variables={this.state.variables}
+                  disabled={!key}
+                  onChange={(newValue) => this.updateReport('view', newValue)}
+                />
+              </li>
+              <GroupBy
+                type="decision"
+                value={data.groupBy}
+                report={this.props.report}
+                variables={this.state.variables}
+                onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                view={data.view}
+              />
             </ul>
           </section>
           <section className={classnames('filter', {hidden: !showFilter})}>
