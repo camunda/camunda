@@ -45,10 +45,10 @@ spec:
       resources:
         limits:
           cpu: 2
-          memory: 2Gi
+          memory: 4Gi
         requests:
           cpu: 2
-          memory: 2Gi
+          memory: 4Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
       env:
