@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporter implements Exporter {
 
@@ -25,7 +26,7 @@ public class ElasticsearchExporter implements Exporter {
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
 
-  private Logger log;
+  private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private Controller controller;
 
   private ElasticsearchExporterConfiguration configuration;
