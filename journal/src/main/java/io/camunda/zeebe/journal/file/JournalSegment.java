@@ -48,7 +48,8 @@ class JournalSegment implements AutoCloseable {
   private final Set<MappedJournalSegmentReader> readers = Sets.newConcurrentHashSet();
   private boolean open = true;
   private final MappedByteBuffer buffer;
-  private boolean markedForDeletion = false;
+  // This need to be volatile because both the writer and the readers access it concurrently
+  private volatile boolean markedForDeletion = false;
 
   public JournalSegment(
       final JournalSegmentFile file,
@@ -159,6 +160,9 @@ class JournalSegment implements AutoCloseable {
    */
   void onReaderClosed(final MappedJournalSegmentReader reader) {
     readers.remove(reader);
+    // When multiple readers are closed simultaneously, both readers might try to delete the file.
+    // This is ok, as safeDelete is idempotent. Hence we keep it simple, and doesn't add more
+    // concurrency control.
     if (markedForDeletion && readers.isEmpty()) {
       safeDelete();
     }
@@ -190,6 +194,9 @@ class JournalSegment implements AutoCloseable {
   public void delete() {
     open = false;
     markForDeletion();
+    if (readers.isEmpty()) {
+      safeDelete();
+    }
   }
 
   private void safeDelete() {
