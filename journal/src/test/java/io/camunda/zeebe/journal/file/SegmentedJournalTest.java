@@ -540,18 +540,6 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldReaderThrowExceptionWhenAccessingDeletedSegment() {
-    // given
-    final var journal = openJournal(2);
-    journal.append(data);
-    final var reader = journal.openReader();
-    journal.reset(100);
-
-    // when - then
-    assertThatThrownBy(reader::next).isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
   void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() {
     // given
     final var journal = openJournal(2);

@@ -191,7 +191,7 @@ class JournalTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenResetWhileReading() {
+  void shouldNotReadAfterJournalResetWithoutReaderReset() {
     // given
     final var reader = journal.openReader();
     long asqn = 1;
@@ -203,14 +203,10 @@ class JournalTest {
 
     // when
     journal.reset(2);
+    journal.append(asqn++, data);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
-    final var record = journal.append(asqn, data);
-    assertThat(record.index()).isEqualTo(2);
-
-    // then
-    assertThatThrownBy(() -> reader.hasNext()).isInstanceOf(IllegalStateException.class);
+    assertThat(reader.hasNext()).isFalse();
   }
 
   @Test
