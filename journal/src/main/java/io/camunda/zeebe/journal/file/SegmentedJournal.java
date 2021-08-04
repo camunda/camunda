@@ -33,9 +33,11 @@ import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -254,7 +256,9 @@ public final class SegmentedJournal implements Journal {
     }
     journalMetrics.observeJournalOpenDuration(System.currentTimeMillis() - startTime);
 
-    // Delete files that were previously marked for deletion
+    // Delete files that were previously marked for deletion but did not get deleted because the
+    // node was stopped. It is safe to delete it now since there are no readers opened for these
+    // segments.
     deleteDeferredFiles();
   }
 
@@ -521,26 +525,27 @@ public final class SegmentedJournal implements Journal {
   }
 
   private void deleteDeferredFiles() {
-    final File[] files =
-        directory.listFiles(
-            file -> file.isFile() && JournalSegmentFile.isDeletedSegmentFile(name, file.getName()));
-
-    if (files == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Could not list files in directory '%s'. Either the path doesn't point to a directory or an I/O error occurred.",
-              directory));
+    try (final DirectoryStream<Path> segmentsToDelete =
+        Files.newDirectoryStream(
+            directory.toPath(),
+            path -> JournalSegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
+      segmentsToDelete.forEach(
+          segmentFileToDelete -> {
+            try {
+              Files.deleteIfExists(segmentFileToDelete);
+            } catch (final IOException e) {
+              log.warn(
+                  "Could not delete file {} which is marked for deletion. This can result in unnecessary disk usage.",
+                  segmentFileToDelete,
+                  e);
+            }
+          });
+    } catch (final IOException e) {
+      log.warn(
+          "Could not delete segment files marked for deletion in {}. This can result in unnecessary disk usage.",
+          directory.toPath(),
+          e);
     }
-
-    Arrays.stream(files)
-        .forEach(
-            file -> {
-              try {
-                Files.deleteIfExists(file.toPath());
-              } catch (final IOException e) {
-                log.warn("Could not delete file {} which is marked for deletion", file, e);
-              }
-            });
   }
 
   private JournalSegmentDescriptor readDescriptor(final File file) {
