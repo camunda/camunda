@@ -122,6 +122,13 @@ public class AuthenticationTest {
     final ResponseEntity<String> response = get(ROOT, cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThatClientConfigContains("\"canLogout\": false");
+  }
+
+  private void assertThatClientConfigContains(final String text) {
+    final ResponseEntity<String> clientConfigContent =
+        testRestTemplate.getForEntity("/client-config.js", String.class);
+    assertThat(clientConfigContent.getBody()).contains(text);
   }
 
   @Test

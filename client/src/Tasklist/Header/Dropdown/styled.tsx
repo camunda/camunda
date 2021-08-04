@@ -27,6 +27,11 @@ const Button = styled.button<ButtonProps>`
 
 const LabelWrapper = styled.div`
   margin-right: 8px;
+  color: ${({theme}) => theme.colors.ui06};
+  background: none;
+  font-family: IBM Plex Sans;
+  font-size: 15px;
+  font-weight: 600;
 `;
 
 const Menu = styled.ul`

@@ -88,6 +88,30 @@ describe('<Dropdown />', () => {
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 
+  it('should hide logout button', async () => {
+    Object.defineProperty(window.clientConfig, 'canLogout', {
+      value: false,
+    });
+
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+
+    render(<Dropdown />, {
+      wrapper: Wrapper,
+    });
+
+    fireEvent.click(await screen.findByText('Demo User'));
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByText('Logout')).not.toBeInTheDocument();
+
+    Object.defineProperty(window.clientConfig, 'canLogout', {
+      value: true,
+    });
+  });
+
   it('should hide the menu after the option is clicked', async () => {
     mockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {

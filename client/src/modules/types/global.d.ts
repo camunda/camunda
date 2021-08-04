@@ -9,6 +9,7 @@ export declare global {
     clientConfig?: {
       isEnterprise?: boolean;
       contextPath?: string;
+      canLogout?: boolean;
     };
   }
 }

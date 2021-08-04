@@ -46,31 +46,39 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen}) => {
     return null;
   }
 
+  if (window.clientConfig?.canLogout) {
+    return (
+      <Container ref={dropdownRef}>
+        <Button
+          onKeyDown={handleKeyPress}
+          onClick={() => {
+            setIsOpen(!isOpen);
+          }}
+        >
+          <LabelWrapper>{getUserDisplayName(data.currentUser)}</LabelWrapper>
+          <Icon data-testid="dropdown-icon" />
+        </Button>
+
+        {isOpen && (
+          <Menu>
+            <Option
+              onClick={() => {
+                login.handleLogout();
+                setIsOpen(false);
+              }}
+              onKeyDown={handleKeyPress}
+            >
+              Logout
+            </Option>
+          </Menu>
+        )}
+      </Container>
+    );
+  }
+
   return (
     <Container ref={dropdownRef}>
-      <Button
-        onKeyDown={handleKeyPress}
-        onClick={() => {
-          setIsOpen(!isOpen);
-        }}
-      >
-        <LabelWrapper>{getUserDisplayName(data.currentUser)}</LabelWrapper>
-        <Icon data-testid="dropdown-icon" />
-      </Button>
-
-      {isOpen && (
-        <Menu>
-          <Option
-            onClick={() => {
-              login.handleLogout();
-              setIsOpen(false);
-            }}
-            onKeyDown={handleKeyPress}
-          >
-            Logout
-          </Option>
-        </Menu>
-      )}
+      <LabelWrapper>{getUserDisplayName(data.currentUser)}</LabelWrapper>
     </Container>
   );
 };

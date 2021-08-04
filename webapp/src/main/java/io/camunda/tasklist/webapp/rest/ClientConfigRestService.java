@@ -6,8 +6,11 @@
 package io.camunda.tasklist.webapp.rest;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
+import java.util.Arrays;
 import javax.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,10 +23,14 @@ public class ClientConfigRestService {
 
   @Autowired private ServletContext context;
 
+  @Autowired private Environment environment;
+
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
+    final boolean canLogout =
+        !Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.SSO_AUTH_PROFILE);
     return String.format(
-        "window.clientConfig = { \"isEnterprise\": %s, \"contextPath\": \"%s\" };",
-        tasklistProperties.isEnterprise(), context.getContextPath());
+        "window.clientConfig = { \"isEnterprise\": %s, \"contextPath\": \"%s\", \"canLogout\": %b };",
+        tasklistProperties.isEnterprise(), context.getContextPath(), canLogout);
   }
 }

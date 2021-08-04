@@ -67,7 +67,7 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
   }
 
   @Test
-  public void shouldSetCookieAndCSRFToken() {
+  public void testLoginSuccess() {
     // given
     // when
     final ResponseEntity<Void> response = login(USERNAME, PASSWORD);
@@ -75,6 +75,7 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThatCookiesAreSet(response, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatClientConfigContains("\"canLogout\": true");
   }
 
   @Test
@@ -206,5 +207,11 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
   @Override
   public TestRestTemplate getTestRestTemplate() {
     return testRestTemplate;
+  }
+
+  private void assertThatClientConfigContains(final String text) {
+    final ResponseEntity<String> clientConfigContent =
+        testRestTemplate.getForEntity("/client-config.js", String.class);
+    assertThat(clientConfigContent.getBody()).contains(text);
   }
 }

@@ -12,7 +12,7 @@ import '@testing-library/jest-dom/extend-expect';
 import {clearClientCache} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 
-beforeAll(() =>
+beforeAll(() => {
   mockServer.listen({
     onUnhandledRequest(req) {
       console.error(
@@ -21,8 +21,15 @@ beforeAll(() =>
         req.url.href,
       );
     },
-  }),
-);
+  });
+
+  Object.defineProperty(window, 'clientConfig', {
+    value: {
+      ...window.clientConfig,
+      canLogout: true,
+    },
+  });
+});
 beforeEach(async () => {
   await clearClientCache();
 });
