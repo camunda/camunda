@@ -227,6 +227,7 @@ public class ExecutedFlowNodeInstanceLevelFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter()
       .executedFlowNodes()
       .id(USER_TASK_2)
+      .inOperator()
       .add()
       .executedFlowNodes()
       .id(END_EVENT)

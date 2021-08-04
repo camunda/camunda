@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.filter;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -14,8 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -42,7 +41,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
 
   private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDataDto flowNodeFilter) {
     BoolQueryBuilder boolQueryBuilder = boolQuery();
-    if (IN.equals(flowNodeFilter.getOperator())) {
+    if (MembershipFilterOperator.IN == flowNodeFilter.getOperator()) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
           nestedQuery(
@@ -52,7 +51,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
           )
         );
       }
-    } else if (NOT_IN.equals(flowNodeFilter.getOperator())) {
+    } else if (MembershipFilterOperator.NOT_IN == flowNodeFilter.getOperator()) {
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
           nestedQuery(

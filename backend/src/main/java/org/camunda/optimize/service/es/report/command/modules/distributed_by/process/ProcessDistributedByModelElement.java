@@ -38,7 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
@@ -117,7 +117,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
         && FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .map(ExecutedFlowNodeFilterDto.class::cast)
       .map(ExecutedFlowNodeFilterDto::getData)
-      .filter(data -> NOT_IN.equals(data.getOperator()))
+      .filter(data -> NOT_IN == data.getOperator())
       .flatMap(data -> data.getValues().stream())
       .collect(toSet());
 
