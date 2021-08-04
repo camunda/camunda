@@ -149,7 +149,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   @Override
   public CompletableFuture<Void> stop() {
-    return server.shutdown();
+    return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
   }
 
   private void initServer() {
@@ -233,6 +233,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     }
   }
 
+  @Override
   public void removeFailureListener(final FailureListener listener) {
     deferredFailureListeners.remove(listener);
     server.removeFailureListener(listener);
