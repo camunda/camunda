@@ -145,8 +145,11 @@ class JournalSegment implements AutoCloseable {
    */
   MappedJournalSegmentReader createReader() {
     checkOpen();
-    return new MappedJournalSegmentReader(
-        buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
+    final MappedJournalSegmentReader reader =
+        new MappedJournalSegmentReader(
+            buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
+    readers.add(reader);
+    return reader;
   }
 
   private MappedJournalSegmentWriter createWriter(final long lastWrittenIndex) {
