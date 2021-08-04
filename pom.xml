@@ -29,7 +29,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <version.zeebe>1.2.0-alpha1</version.zeebe>
-    <version.iam>1.2.0-ALPHA0</version.iam>
+    <version.iam>1.2.0-alpha1</version.iam>
     <version.log4j>2.13.3</version.log4j>
     <version.elasticsearch>7.13.4</version.elasticsearch>
     <version.spring.boot>2.5.3</version.spring.boot>
