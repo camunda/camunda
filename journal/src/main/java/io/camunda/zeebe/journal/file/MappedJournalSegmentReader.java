@@ -44,18 +44,17 @@ class MappedJournalSegmentReader {
   }
 
   public boolean hasNext() {
-    checkSegmentOpen();
+    if (!segment.isOpen()) {
+      // When the segment has been deleted concurrently, we do not want to allow the readers to
+      // continue reading from this segment.
+      return false;
+    }
+
     // if the next entry exists the version would be non-zero
     return FrameUtil.hasValidVersion(buffer);
   }
 
-  private void checkSegmentOpen() {
-    Preconditions.checkState(
-        segment.isOpen(), "Segment is already closed. Reader must reset to a valid index.");
-  }
-
   public JournalRecord next() {
-    checkSegmentOpen();
     if (!hasNext()) {
       throw new NoSuchElementException();
     }
@@ -70,7 +69,6 @@ class MappedJournalSegmentReader {
   }
 
   public void reset() {
-    checkSegmentOpen();
     buffer.position(descriptorLength);
     currentIndex = segment.index() - 1;
   }
@@ -99,5 +97,10 @@ class MappedJournalSegmentReader {
 
   long getNextIndex() {
     return currentIndex + 1;
+  }
+
+  private void checkSegmentOpen() {
+    Preconditions.checkState(
+        segment.isOpen(), "Segment is already closed. Reader must reset to a valid index.");
   }
 }
