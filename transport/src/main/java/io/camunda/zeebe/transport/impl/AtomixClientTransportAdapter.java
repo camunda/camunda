@@ -98,6 +98,15 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
+    if (!messagingService.isRunning()) {
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Messaging service is not running.");
+      }
+      requestContext.completeExceptionally(
+          new IllegalStateException("Messaging service is not running."));
+      return;
+    }
+
     final var calculateTimeout = requestContext.calculateTimeout();
     if (calculateTimeout.toMillis() <= 0L) {
       if (LOG.isTraceEnabled()) {
