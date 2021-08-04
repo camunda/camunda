@@ -12185,10 +12185,10 @@ msw-storybook-addon@^1.2.0:
   dependencies:
     "@storybook/addons" "^6.0.0"
 
-msw@^0.33.1:
-  version "0.33.1"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.33.1.tgz#945e7b3356867d8c6e404ca4ec5596dca1f2c497"
-  integrity sha512-qeap85aInKCnoFb2Lsulnaw6LXaXHCyBeuajh8iLXiGM9uGaW/CVwr1XXiCHBY1PuHR+3H9kYEgbu2m8IaHwvA==
+msw@^0.33.2:
+  version "0.33.2"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.33.2.tgz#f16b8ead1d1203fbb4c0bd17131dff7f4c38f0a1"
+  integrity sha512-h7/Jrx3DR+eEY4IbJELL7sb1nWXCee/yW9zBmglIRgkjQvty9QrmBAlxcjwrqoBldQe2tRKVnn4PJ0HEZeNADA==
   dependencies:
     "@mswjs/cookies" "^0.1.6"
     "@mswjs/interceptors" "^0.12.3"
