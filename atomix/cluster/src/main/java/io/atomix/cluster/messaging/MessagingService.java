@@ -218,4 +218,11 @@ public interface MessagingService {
    * @param type message type
    */
   void unregisterHandler(String type);
+
+  /**
+   * Returns a boolean value indicating whether the managed object is running.
+   *
+   * @return Indicates whether the managed object is running.
+   */
+  boolean isRunning();
 }
