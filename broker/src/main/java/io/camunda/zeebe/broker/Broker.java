@@ -32,15 +32,13 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
@@ -97,6 +95,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -141,7 +140,6 @@ public final class Broker implements AutoCloseable {
 
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
-  private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
   private CommandApiService commandHandler;
   private ActorScheduler scheduler;
@@ -217,13 +215,7 @@ public final class Broker implements AutoCloseable {
 
   private StartProcess initStart() {
     final BrokerCfg brokerCfg = getConfig();
-    final NetworkCfg networkCfg = brokerCfg.getNetwork();
-
-    final ClusterCfg clusterCfg = brokerCfg.getCluster();
-    final BrokerInfo localBroker =
-        new BrokerInfo(
-            clusterCfg.getNodeId(),
-            NetUtil.toSocketAddressString(networkCfg.getCommandApi().getAdvertisedAddress()));
+    final BrokerInfo localBroker = createBrokerInfo(brokerCfg);
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
@@ -236,7 +228,6 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     startContext.addStep("cluster services", () -> clusterServices.start().join());
-    startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
           "embedded gateway",
@@ -260,6 +251,27 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
+    final var clusterCfg = brokerCfg.getCluster();
+
+    final BrokerInfo result =
+        new BrokerInfo(
+            clusterCfg.getNodeId(),
+            NetUtil.toSocketAddressString(
+                brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
+
+    result
+        .setClusterSize(clusterCfg.getClusterSize())
+        .setPartitionsCount(clusterCfg.getPartitionsCount())
+        .setReplicationFactor(clusterCfg.getReplicationFactor());
+
+    final String version = VersionUtil.getVersion();
+    if (version != null && !version.isBlank()) {
+      result.setVersion(version);
+    }
+    return result;
   }
 
   private AutoCloseable addBrokerAdminService() {
@@ -352,15 +364,6 @@ public final class Broker implements AutoCloseable {
         .join(brokerContext.getStepTimeout().toSeconds(), TimeUnit.SECONDS);
   }
 
-  private AutoCloseable topologyManagerStep(
-      final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
-    topologyManager =
-        new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker, clusterCfg);
-    partitionListeners.add(topologyManager);
-    scheduleActor(topologyManager);
-    return topologyManager;
-  }
-
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
     healthCheckService = new BrokerHealthCheckService(localBroker);
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
@@ -409,7 +412,9 @@ public final class Broker implements AutoCloseable {
 
     partitionManager =
         PartitionManagerFactory.fromBrokerConfiguration(
-            brokerCfg, clusterServices, snapshotStoreFactory);
+            scheduler, brokerCfg, localBroker, clusterServices, snapshotStoreFactory);
+
+    partitionListeners.add(partitionManager);
 
     partitionManager.start().join();
 
@@ -439,7 +444,7 @@ public final class Broker implements AutoCloseable {
 
             final var typedRecordProcessorsFactory =
                 createFactory(
-                    topologyManager,
+                    partitionManager::addTopologyPartitionListener,
                     brokerCfg.getCluster(),
                     clusterServices.getCommunicationService(),
                     clusterServices.getEventService(),
@@ -466,7 +471,7 @@ public final class Broker implements AutoCloseable {
                 new ZeebePartition(transitionContext, transitionBehavior);
             scheduleActor(zeebePartition);
             zeebePartition.addFailureListener(
-                new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));
+                new PartitionHealthBroadcaster(partitionId, partitionManager::onHealthChanged));
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
             diskSpaceUsageListeners.add(zeebePartition);
@@ -507,7 +512,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final TopologyManager topologyManager,
+      final Consumer<TopologyPartitionListener> partitionListenerConsumer,
       final ClusterCfg clusterCfg,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
@@ -519,14 +524,14 @@ public final class Broker implements AutoCloseable {
 
       final TopologyPartitionListenerImpl partitionListener =
           new TopologyPartitionListenerImpl(actor);
-      topologyManager.addTopologyPartitionListener(partitionListener);
+      partitionListenerConsumer.accept(partitionListener);
 
       final DeploymentDistributorImpl deploymentDistributor =
           new DeploymentDistributorImpl(
               communicationService, eventService, partitionListener, actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(communicationService, topologyManager, actor);
+          new PartitionCommandSenderImpl(communicationService, partitionListenerConsumer, actor);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
