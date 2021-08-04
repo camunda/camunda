@@ -500,6 +500,24 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldDeleteSegmentFileImmediatelyWhenThereAreNoReaders() {
+    // given
+    final var journal = openJournal(2);
+    journal.append(data);
+
+    // when
+    journal.reset(100);
+
+    // then
+    final File logDirectory = directory.resolve("data").toFile();
+    assertThat(logDirectory)
+        .isDirectoryNotContaining(
+            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(
+            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+  }
+
+  @Test
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
     final var journal = openJournal(2);
