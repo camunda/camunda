@@ -8,14 +8,11 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
-import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
@@ -30,7 +27,6 @@ import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
@@ -48,17 +44,12 @@ import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentReques
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
-import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
@@ -77,7 +68,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.LogUtil;
@@ -96,7 +86,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class Broker implements AutoCloseable {
@@ -405,14 +394,18 @@ public final class Broker implements AutoCloseable {
     return managementRequestHandler;
   }
 
-  private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker)
-      throws Exception {
-    final var snapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
-
+  private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
     partitionManager =
-        PartitionManagerFactory.fromBrokerConfiguration(
-            scheduler, brokerCfg, localBroker, clusterServices, snapshotStoreFactory);
+        new PartitionManagerImpl(
+            scheduler,
+            brokerCfg,
+            localBroker,
+            clusterServices,
+            healthCheckService,
+            managementRequestHandler.getPushDeploymentRequestHandler(),
+            diskSpaceUsageListeners::add,
+            partitionListeners,
+            commandHandler);
 
     partitionListeners.add(partitionManager);
 
@@ -420,72 +413,7 @@ public final class Broker implements AutoCloseable {
 
     healthCheckService.registerPartitionManager(partitionManager);
 
-    final ManagedPartitionGroup partitionGroup = partitionManager.getPartitionGroup();
-
-    final MemberId nodeId = clusterServices.getMembershipService().getLocalMember().id();
-
-    final List<RaftPartition> owningPartitions =
-        partitionGroup.getPartitionsWithMember(nodeId).stream()
-            .map(RaftPartition.class::cast)
-            .collect(Collectors.toList());
-
-    final StartProcess partitionStartProcess = new StartProcess("Broker-" + nodeId + " partitions");
-
-    for (final RaftPartition owningPartition : owningPartitions) {
-      final var partitionId = owningPartition.id().id();
-      partitionStartProcess.addStep(
-          "partition " + partitionId,
-          () -> {
-            final var messagingService =
-                new AtomixPartitionMessagingService(
-                    clusterServices.getCommunicationService(),
-                    clusterServices.getMembershipService(),
-                    owningPartition.members());
-
-            final var typedRecordProcessorsFactory =
-                createFactory(
-                    partitionManager::addTopologyPartitionListener,
-                    brokerCfg.getCluster(),
-                    clusterServices.getCommunicationService(),
-                    clusterServices.getEventService(),
-                    managementRequestHandler);
-
-            final PartitionBoostrapAndTransitionContextImpl transitionContext =
-                new PartitionBoostrapAndTransitionContextImpl(
-                    localBroker.getNodeId(),
-                    owningPartition,
-                    partitionListeners,
-                    messagingService,
-                    scheduler,
-                    brokerCfg,
-                    () -> commandHandler.newCommandResponseWriter(),
-                    () -> commandHandler.getOnProcessedListener(partitionId),
-                    snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
-                    snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
-                    typedRecordProcessorsFactory,
-                    buildExporterRepository(brokerCfg),
-                    new PartitionProcessingState(owningPartition));
-            final PartitionTransitionImpl transitionBehavior =
-                new PartitionTransitionImpl(transitionContext, LEADER_STEPS, FOLLOWER_STEPS);
-            final ZeebePartition zeebePartition =
-                new ZeebePartition(transitionContext, transitionBehavior);
-            scheduleActor(zeebePartition);
-            zeebePartition.addFailureListener(
-                new PartitionHealthBroadcaster(partitionId, partitionManager::onHealthChanged));
-            healthCheckService.registerMonitoredPartition(
-                owningPartition.id().id(), zeebePartition);
-            diskSpaceUsageListeners.add(zeebePartition);
-            partitions.add(zeebePartition);
-            return () -> {
-              healthCheckService.removeMonitoredPartition(partitionId);
-              zeebePartition.close();
-            };
-          });
-    }
-
-    final var partitionClosable = partitionStartProcess.start();
     return () -> {
-      partitionClosable.close();
       partitionManager.stop().join();
       partitionManager = null;
       // TODO shutdown snapshot store

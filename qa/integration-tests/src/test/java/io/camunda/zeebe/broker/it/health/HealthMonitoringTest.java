@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.time.Duration;
 import org.awaitility.Awaitility;
@@ -42,7 +42,7 @@ public class HealthMonitoringTest {
                 .getPartitionManager()
                 .getPartitionGroup()
                 .getPartition(
-                    PartitionId.from(PartitionManagerFactory.GROUP_NAME, START_PARTITION_ID));
+                    PartitionId.from(PartitionManagerImpl.GROUP_NAME, START_PARTITION_ID));
     raftPartition.getServer().stop();
 
     // then

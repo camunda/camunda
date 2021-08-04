@@ -22,6 +22,9 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.io.File;
@@ -281,10 +284,14 @@ public final class RaftRolesTest {
       final var partitionManager =
           new PartitionManagerImpl(
               mock(ActorSchedulingService.class),
+              new BrokerCfg(),
               new BrokerInfo(0, "dummy"),
-              partitionGroup,
-              atomix.getMembershipService(),
-              atomix.getCommunicationService());
+              new ClusterServicesImpl(atomix),
+              mock(BrokerHealthCheckService.class),
+              null,
+              null,
+              null,
+              null);
 
       partitionManager.getPartitionGroup().getPartitions().forEach(partitionConsumer);
 
