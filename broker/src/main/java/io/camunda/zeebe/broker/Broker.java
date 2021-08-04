@@ -49,7 +49,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
-import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
@@ -138,7 +137,6 @@ public final class Broker implements AutoCloseable {
   private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private final List<ZeebePartition> partitions = new ArrayList<>();
   private BrokerAdminService brokerAdminService;
   private PartitionManagerImpl partitionManager;
 
@@ -264,7 +262,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable addBrokerAdminService() {
-    final var adminService = new BrokerAdminServiceImpl(partitions);
+    final var adminService = new BrokerAdminServiceImpl(partitionManager.getPartitions());
     scheduleActor(adminService);
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
@@ -406,8 +404,6 @@ public final class Broker implements AutoCloseable {
             diskSpaceUsageListeners::add,
             partitionListeners,
             commandHandler);
-
-    partitionListeners.add(partitionManager);
 
     partitionManager.start().join();
 

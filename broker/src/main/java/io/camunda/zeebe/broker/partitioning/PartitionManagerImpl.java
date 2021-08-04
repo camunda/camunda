@@ -74,13 +74,11 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -88,8 +86,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartitionManagerImpl
-    implements PartitionManager, TopologyManager, PartitionListener {
+public final class PartitionManagerImpl implements PartitionManager, TopologyManager {
 
   public static final String GROUP_NAME = "raft-partition";
 
@@ -131,11 +128,18 @@ public final class PartitionManagerImpl
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private ManagedPartitionService partitionService;
-  private ManagedPartitionGroup partitionGroup;
+  private RaftPartitionGroup partitionGroup;
   private TopologyManagerImpl topologyManager;
 
   private final List<ZeebePartition> partitions = new ArrayList<>();
   private final Consumer<DiskSpaceUsageListener> diskSpaceUsageListenerRegistry;
+  private final BrokerCfg brokerCfg;
+  private final BrokerInfo localBroker;
+  private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
+  private final PushDeploymentRequestHandler deploymentRequestHandler;
+  private final List<PartitionListener> partitionListeners;
+  private final ClusterServices clusterServices;
+  private final CommandApiService commandHApiService;
 
   public PartitionManagerImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -148,16 +152,19 @@ public final class PartitionManagerImpl
       final List<PartitionListener> partitionListeners,
       final CommandApiService commandHApiService) {
 
-    final var snapshotStoreFactory =
+    snapshotStoreFactory =
         new FileBasedSnapshotStoreFactory(actorSchedulingService, localBroker.getNodeId());
 
-    final var partitionGroup = buildRaftPartitionGroup(brokerCfg, snapshotStoreFactory);
-
+    this.brokerCfg = brokerCfg;
+    this.localBroker = localBroker;
     this.actorSchedulingService = actorSchedulingService;
+    this.clusterServices = clusterServices;
     this.healthCheckService = healthCheckService;
+    this.deploymentRequestHandler = deploymentRequestHandler;
     this.diskSpaceUsageListenerRegistry = diskSpaceUsageListenerRegistry;
+    this.commandHApiService = commandHApiService;
 
-    this.partitionGroup = Objects.requireNonNull(partitionGroup);
+    partitionGroup = buildRaftPartitionGroup(brokerCfg, snapshotStoreFactory);
 
     final var membershipService = clusterServices.getMembershipService();
     final var communicationService = clusterServices.getCommunicationService();
@@ -166,7 +173,23 @@ public final class PartitionManagerImpl
     partitionService = buildPartitionService(membershipService, communicationService);
 
     topologyManager = new TopologyManagerImpl(membershipService, localBroker);
+    partitionListeners.add(topologyManager);
 
+    this.partitionListeners = partitionListeners;
+  }
+
+  private void constructPartitions(
+      final ActorSchedulingService actorSchedulingService,
+      final BrokerCfg brokerCfg,
+      final BrokerInfo localBroker,
+      final PushDeploymentRequestHandler deploymentRequestHandler,
+      final List<PartitionListener> partitionListeners,
+      final CommandApiService commandHApiService,
+      final FileBasedSnapshotStoreFactory snapshotStoreFactory,
+      final RaftPartitionGroup partitionGroup,
+      final ClusterMembershipService membershipService,
+      final ClusterCommunicationService communicationService,
+      final ClusterEventService eventService) {
     final MemberId nodeId = membershipService.getLocalMember().id();
 
     final List<RaftPartition> owningPartitions =
@@ -347,6 +370,25 @@ public final class PartitionManagerImpl
         .start()
         .thenApply(
             ps -> {
+              LOGGER.info("Starting partitions");
+
+              final var membershipService = clusterServices.getMembershipService();
+              final var communicationService = clusterServices.getCommunicationService();
+              final var eventService = clusterServices.getEventService();
+
+              constructPartitions(
+                  actorSchedulingService,
+                  brokerCfg,
+                  localBroker,
+                  deploymentRequestHandler,
+                  partitionListeners,
+                  commandHApiService,
+                  snapshotStoreFactory,
+                  partitionGroup,
+                  membershipService,
+                  communicationService,
+                  eventService);
+
               final var futures =
                   partitions.stream()
                       .map(partition -> CompletableFuture.runAsync(() -> startPartition(partition)))
@@ -421,22 +463,6 @@ public final class PartitionManagerImpl
     return "PartitionManagerImpl{" + "partitionGroup=" + partitionGroup + '}';
   }
 
-  @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return topologyManager.onBecomingFollower(partitionId, term);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
-    return topologyManager.onBecomingLeader(partitionId, term, logStream);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    return topologyManager.onBecomingInactive(partitionId, term);
-  }
-
   public void onHealthChanged(final int i, final HealthStatus healthStatus) {
     topologyManager.onHealthChanged(i, healthStatus);
   }
@@ -505,5 +531,9 @@ public final class PartitionManagerImpl
     }
 
     return exporterRepository;
+  }
+
+  public List<ZeebePartition> getPartitions() {
+    return partitions;
   }
 }

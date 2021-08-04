@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import java.util.ArrayList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public final class PartitionManagerTest {
+public final class PartitionManagerImplTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private Environment environment;
 
@@ -42,7 +43,6 @@ public final class PartitionManagerTest {
     environment = new Environment();
 
     when(mockClusterServices.getMembershipService()).thenReturn(mockMembershipService);
-    when(mockMembershipService.getLocalMember()).thenReturn(mockMember);
   }
 
   @Test
@@ -61,7 +61,7 @@ public final class PartitionManagerTest {
             mock(BrokerHealthCheckService.class),
             null,
             null,
-            null,
+            new ArrayList<>(),
             null);
 
     // then
@@ -85,7 +85,7 @@ public final class PartitionManagerTest {
             mock(BrokerHealthCheckService.class),
             null,
             null,
-            null,
+            new ArrayList<>(),
             null);
     // then
     final var config = getPartitionGroupConfig(partitionManager);

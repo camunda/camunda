@@ -147,7 +147,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
     return actor.call(
         () -> {
-          if (!allPartitionsInstalled) {
+          if (!allPartitionsInstalled && partitionInstallStatus != null) {
             partitionInstallStatus.put(partitionId, true);
             allPartitionsInstalled = !partitionInstallStatus.containsValue(false);
 

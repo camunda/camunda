@@ -11,22 +11,17 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.AtomixClusterRule;
 import io.atomix.cluster.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
+import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -281,21 +276,13 @@ public final class RaftRolesTest {
     try {
       atomix = atomixFuture.get();
 
-      final var partitionManager =
-          new PartitionManagerImpl(
-              mock(ActorSchedulingService.class),
-              new BrokerCfg(),
-              new BrokerInfo(0, "dummy"),
-              new ClusterServicesImpl(atomix),
-              mock(BrokerHealthCheckService.class),
-              null,
-              null,
-              null,
-              null);
+      final var partitionService =
+          new DefaultPartitionService(
+              atomix.getMembershipService(), atomix.getCommunicationService(), partitionGroup);
 
-      partitionManager.getPartitionGroup().getPartitions().forEach(partitionConsumer);
+      partitionGroup.getPartitions().forEach(partitionConsumer);
 
-      return partitionManager.start();
+      return partitionService.start().thenApply(ps -> null);
     } catch (final InterruptedException | ExecutionException e) {
       LangUtil.rethrowUnchecked(e);
       // won't be executed
