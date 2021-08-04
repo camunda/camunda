@@ -36,11 +36,6 @@ public class ElasticsearchUserReader implements UserReader {
   }
 
   @Override
-  public String getCurrentUserId() {
-    return getCurrentUser().getUsername();
-  }
-
-  @Override
   public String getCurrentOrganizationId() {
     return DEFAULT_ORGANIZATION;
   }
@@ -48,9 +43,5 @@ public class ElasticsearchUserReader implements UserReader {
   @Override
   public List<UserDTO> getUsersByUsernames(List<String> usernames) {
     return UserDTO.createFrom(userStorage.getUsersByUsernames(usernames));
-  }
-
-  private Authentication getAuthentication() {
-    return SecurityContextHolder.getContext().getAuthentication();
   }
 }

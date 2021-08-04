@@ -87,7 +87,6 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   protected void setCurrentUser(UserDTO user) {
     Mockito.when(userReader.getCurrentUser()).thenReturn(user);
     Mockito.when(userReader.getUsersByUsernames(any())).thenReturn(List.of(user));
-    Mockito.when(userReader.getCurrentUserId()).thenReturn(user.getUsername() + "-id");
     final String organisation =
         user.getUsername().equals("demo")
             ? UserReader.DEFAULT_ORGANIZATION

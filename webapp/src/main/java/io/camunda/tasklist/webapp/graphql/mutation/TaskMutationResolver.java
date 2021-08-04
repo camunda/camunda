@@ -132,7 +132,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     return new String[] {
       TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
       TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
-      TAG_KEY_USER_ID, userReader.getCurrentUserId(),
+      TAG_KEY_USER_ID, userReader.getCurrentUser().getUsername(),
       TAG_KEY_ORGANIZATION_ID, userReader.getCurrentOrganizationId()
     };
   }

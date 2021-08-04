@@ -17,8 +17,6 @@ public interface UserReader {
 
   UserDTO getCurrentUser();
 
-  String getCurrentUserId();
-
   String getCurrentOrganizationId();
 
   List<UserDTO> getUsersByUsernames(List<String> usernames);

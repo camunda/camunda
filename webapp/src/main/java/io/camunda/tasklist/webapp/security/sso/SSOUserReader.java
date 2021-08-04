@@ -39,17 +39,8 @@ public class SSOUserReader implements UserReader {
   }
 
   @Override
-  public String getCurrentUserId() {
-    return getAuthentication().getPrincipal().toString();
-  }
-
-  @Override
   public String getCurrentOrganizationId() {
     return tasklistProperties.getAuth0().getOrganization();
-  }
-
-  private TokenAuthentication getAuthentication() {
-    return (TokenAuthentication) SecurityContextHolder.getContext().getAuthentication();
   }
 
   @Override
