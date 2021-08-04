@@ -21,6 +21,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -528,6 +529,7 @@ public class ProcessImportIT extends AbstractImportIT {
         " Make sure you have configured an authorized user", DEFAULT_ENGINE_ALIAS));
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<String> tenants() {
     return Stream.of("someTenant", DEFAULT_TENANT);
   }

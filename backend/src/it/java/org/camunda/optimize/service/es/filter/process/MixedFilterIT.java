@@ -27,6 +27,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -598,6 +599,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     return processReportDataDto;
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<List<ProcessFilterDto<?>>> invalidFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
@@ -607,6 +609,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<List<ProcessFilterDto<?>>> validFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
@@ -663,6 +666,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<ProcessReportDataType> reportTypesToEvaluate() {
     return Stream.of(
       COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,

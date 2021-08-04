@@ -26,7 +26,7 @@ public class ProcessDefinitionFetcher extends DefinitionFetcher<ProcessDefinitio
 
   @Override
   protected GenericType<List<ProcessDefinitionEngineDto>> getResponseType() {
-    return new GenericType<List<ProcessDefinitionEngineDto>>() {
+    return new GenericType<>() {
     };
   }
 

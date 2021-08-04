@@ -345,7 +345,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public void startDecisionInstance(String decisionDefinitionId) {
-    engineClient.startDecisionInstance(decisionDefinitionId, new HashMap<String, Object>() {{
+    engineClient.startDecisionInstance(decisionDefinitionId, new HashMap<>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
