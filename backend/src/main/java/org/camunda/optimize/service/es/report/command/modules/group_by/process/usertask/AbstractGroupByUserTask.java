@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.elasticsearch.action.search.SearchResponse;
@@ -32,6 +33,8 @@ public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
   private static final String FLOW_NODE_AGGREGATION = "flowNodes";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
+  protected final DefinitionService definitionService;
+
   protected NestedAggregationBuilder createFilteredUserTaskAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                        final AggregationBuilder subAggregation) {
     final FilterAggregationBuilder filteredUserTaskAggregation =
@@ -39,9 +42,8 @@ public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
         .subAggregation(
           filter(
             FILTERED_USER_TASKS_AGGREGATION,
-            createModelElementAggregationFilter(context.getReportData(), context.getFilterContext())
-          )
-            .subAggregation(subAggregation)
+            createModelElementAggregationFilter(context.getReportData(), context.getFilterContext(), definitionService)
+          ).subAggregation(subAggregation)
         );
 
     // sibling aggregation next to filtered userTask agg for distributedByPart for retrieval of all keys that

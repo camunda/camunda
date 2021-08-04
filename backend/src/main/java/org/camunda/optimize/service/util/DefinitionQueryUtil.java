@@ -72,12 +72,13 @@ public class DefinitionQueryUtil {
     } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
       query.must(termsQuery(type.getDefinitionVersionFieldName(), definitionVersions));
     } else if (definitionVersions.isEmpty()) {
-      query.mustNot(existsQuery(type.getDefinitionVersionFieldName()));
+      // if no version is set just return empty results
+      query.mustNot(matchAllQuery());
     }
     return query;
   }
 
-  private static QueryBuilder createTenantIdQuery(final String tenantField, final List<String> tenantIds) {
+  public static QueryBuilder createTenantIdQuery(final String tenantField, final List<String> tenantIds) {
     final AtomicBoolean includeNotDefinedTenant = new AtomicBoolean(false);
     final List<String> tenantIdTerms = tenantIds.stream()
       .peek(id -> {

@@ -527,7 +527,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // To create specific tenant instances with a shared def, start instance on noneTenant and update tenantID after
     ProcessInstanceEngineDto instance1 = engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
-    engineDatabaseExtension.changeProcessInstanceTenantId(instance1.getId(), tenantId1);
+    engineDatabaseExtension.changeProcessInstanceAndActivitiesTenantId(instance1.getId(), tenantId1);
 
     changeActivityDuration(instance1, 10.);
 

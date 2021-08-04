@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByOutputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
 import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
@@ -28,8 +29,9 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
 
-  public DecisionGroupByOutputVariable(final VariableAggregationService variableAggregationService) {
-    super(variableAggregationService);
+  public DecisionGroupByOutputVariable(final VariableAggregationService variableAggregationService,
+                                       final DefinitionService definitionService) {
+    super(variableAggregationService, definitionService);
   }
 
   private DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {

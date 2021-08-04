@@ -32,7 +32,9 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -176,6 +178,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   public boolean isUserTaskReport() {
     return nonNull(view) && ProcessViewEntity.USER_TASK.equals(view.getEntity());
+  }
+
+  @JsonIgnore
+  public Map<String, List<ProcessFilterDto<?>>> groupFiltersByDefinitionIdentifier() {
+    final Map<String, List<ProcessFilterDto<?>>> filterByDefinition = new HashMap<>();
+    getFilter().forEach(filterDto -> filterDto.getAppliedTo().forEach(
+      definitionIdentifier -> filterByDefinition.computeIfAbsent(definitionIdentifier, key -> new ArrayList<>())
+        .add(filterDto)
+    ));
+    return filterByDefinition;
   }
 
   private boolean isGroupByCombinable(final ProcessReportDataDto that) {

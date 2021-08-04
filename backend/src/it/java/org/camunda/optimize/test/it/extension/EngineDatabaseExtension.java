@@ -544,16 +544,25 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
-  public void changeProcessInstanceTenantId(final String processInstanceId,
+  public void changeProcessInstanceAndActivitiesTenantId(final String processInstanceId,
                                             final String newTenantId) throws SQLException {
-    String sql = "UPDATE ACT_HI_PROCINST " +
+    final String instanceSql = "UPDATE ACT_HI_PROCINST " +
       "SET TENANT_ID_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setString(1, newTenantId);
-    statement.setString(2, processInstanceId);
-    statement.executeUpdate();
+    final PreparedStatement instanceStatement = connection.prepareStatement(handleDatabaseSyntax(instanceSql));
+    instanceStatement.setString(1, newTenantId);
+    instanceStatement.setString(2, processInstanceId);
+    instanceStatement.executeUpdate();
+
+    final String activitySql = "UPDATE ACT_HI_ACTINST " +
+      "SET TENANT_ID_ = ? WHERE " +
+      "PROC_INST_ID_ = ?";
+    final PreparedStatement activityStatement = connection.prepareStatement(handleDatabaseSyntax(activitySql));
+    activityStatement.setString(1, newTenantId);
+    activityStatement.setString(2, processInstanceId);
+    activityStatement.executeUpdate();
     connection.commit();
+    // not caring about updating user task instances here as the tenantId from them is not used
   }
 
   public List<String> getDecisionInstanceIdsWithEvaluationDateEqualTo(OffsetDateTime evaluationDateTime)

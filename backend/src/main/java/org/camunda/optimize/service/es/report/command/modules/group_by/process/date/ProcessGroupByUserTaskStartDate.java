@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -23,8 +24,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 public class ProcessGroupByUserTaskStartDate extends ProcessGroupByUserTaskDate {
 
   public ProcessGroupByUserTaskStartDate(final DateAggregationService dateAggregationService,
-                                         final MinMaxStatsService minMaxStatsService) {
-    super(dateAggregationService, minMaxStatsService);
+                                         final MinMaxStatsService minMaxStatsService,
+                                         final DefinitionService definitionService) {
+    super(dateAggregationService, minMaxStatsService, definitionService);
   }
 
   @Override

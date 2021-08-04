@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
@@ -27,6 +28,7 @@ public class IdentityLinkFilterBuilder {
   private final Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator;
   private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
+  private List<String> appliedTo;
 
   private IdentityLinkFilterBuilder(
     ProcessFilterBuilder processFilterBuilder,
@@ -73,10 +75,20 @@ public class IdentityLinkFilterBuilder {
     return this;
   }
 
+  public IdentityLinkFilterBuilder appliedTo(final String appliedTo) {
+    return appliedTo(List.of(appliedTo));
+  }
+
+  public IdentityLinkFilterBuilder appliedTo(final List<String> appliedTo) {
+    this.appliedTo = appliedTo;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
     final ProcessFilterDto<IdentityLinkFilterDataDto> filter =
       filterCreator.apply(new IdentityLinkFilterDataDto(operator, values));
     filter.setFilterLevel(filterLevel);
+    Optional.ofNullable(appliedTo).ifPresent(value -> filter.setAppliedTo(appliedTo));
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

@@ -28,7 +28,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_D
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 
-public class MultiDefinitionFilterIT extends AbstractFilterIT {
+public class MultiDefinitionInstanceFilterIT extends AbstractFilterIT {
 
   private static final String DEFINITION_KEY_1 = "key1";
   private static final String DEFINITION_IDENTIFIER_1 = "id1";

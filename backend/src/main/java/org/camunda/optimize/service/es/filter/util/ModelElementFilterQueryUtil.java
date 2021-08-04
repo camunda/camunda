@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -27,9 +28,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.elasticsearch.common.TriFunction;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
@@ -39,6 +42,7 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,20 +55,27 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getDurationFilterScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TENANT_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_MI_BODY;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -142,17 +153,67 @@ public class ModelElementFilterQueryUtil {
     return Optional.empty();
   }
 
-  public static BoolQueryBuilder createModelElementAggregationFilter(final ProcessReportDataDto reportDataDto,
-                                                                     final FilterContext filterContext) {
-    final BoolQueryBuilder filterBoolQuery = createFlowNodeTypeFilterQuery(reportDataDto);
-    addFlowNodeStatusFilter(filterBoolQuery, reportDataDto);
-    addAssigneeFilter(filterBoolQuery, reportDataDto);
-    addCandidateGroupFilter(filterBoolQuery, reportDataDto);
-    addFlowNodeDurationFilter(filterBoolQuery, reportDataDto);
-    addFlowNodeIdFilter(filterBoolQuery, reportDataDto);
-    addFlowNodeStartDateFilter(filterBoolQuery, reportDataDto, filterContext.getTimezone());
-    addFlowNodeEndDateFilter(filterBoolQuery, reportDataDto, filterContext.getTimezone());
+  public static BoolQueryBuilder createModelElementAggregationFilter(final ProcessReportDataDto reportData,
+                                                                     final FilterContext filterContext,
+                                                                     final DefinitionService definitionService) {
+    final BoolQueryBuilder filterBoolQuery = createFlowNodeTypeFilterQuery(reportData)
+      .minimumShouldMatch(1);
+    final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition = reportData.groupFiltersByDefinitionIdentifier();
+    reportData.getDefinitions().forEach(definitionDto -> {
+      final BoolQueryBuilder flowNodeDefinitionQuery = boolQuery().must(
+        createFlowNodeDefinitionQuery(
+          definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds(), definitionService
+        ));
+      addModelElementFilters(
+        flowNodeDefinitionQuery,
+        filterContext,
+        filtersByDefinition.getOrDefault(definitionDto.getIdentifier(), Collections.emptyList())
+      );
+      filterBoolQuery.should(flowNodeDefinitionQuery);
+    });
+
+    addModelElementFilters(
+      filterBoolQuery,
+      filterContext,
+      filtersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList())
+    );
     return filterBoolQuery;
+  }
+
+  private static QueryBuilder createFlowNodeDefinitionQuery(final String definitionKey,
+                                                            final List<String> definitionVersions,
+                                                            final List<String> tenantIds,
+                                                            final DefinitionService definitionService) {
+    final BoolQueryBuilder query = boolQuery();
+    query.filter(DefinitionQueryUtil.createTenantIdQuery(nestedFieldReference(FLOW_NODE_TENANT_ID), tenantIds));
+    query.filter(termQuery(nestedFieldReference(FLOW_NODE_DEFINITION_KEY), definitionKey));
+    if (isDefinitionVersionSetToLatest(definitionVersions)) {
+      query.filter(termsQuery(
+        nestedFieldReference(FLOW_NODE_DEFINITION_VERSION),
+        definitionService.getLatestVersionToKey(DefinitionType.PROCESS, definitionKey)
+      ));
+    } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
+      query.filter(termsQuery(nestedFieldReference(FLOW_NODE_DEFINITION_VERSION), definitionVersions));
+    } else if (definitionVersions.isEmpty()) {
+      // if no version is set just return empty results
+      query.mustNot(matchAllQuery());
+    }
+    return query;
+  }
+
+  private static void addModelElementFilters(final BoolQueryBuilder filterBoolQuery,
+                                             final FilterContext filterContext,
+                                             final List<ProcessFilterDto<?>> filters) {
+    if (filters.isEmpty()) {
+      return;
+    }
+    addFlowNodeStatusFilter(filterBoolQuery, filters);
+    addFlowNodeDurationFilter(filterBoolQuery, filters);
+    addFlowNodeIdFilter(filterBoolQuery, filters);
+    addFlowNodeStartDateFilter(filterBoolQuery, filterContext.getTimezone(), filters);
+    addFlowNodeEndDateFilter(filterBoolQuery, filterContext.getTimezone(), filters);
+    addAssigneeFilter(filterBoolQuery, filters);
+    addCandidateGroupFilter(filterBoolQuery, filters);
   }
 
   public static BoolQueryBuilder createUserTaskFlowNodeTypeFilter() {
@@ -165,9 +226,10 @@ public class ModelElementFilterQueryUtil {
 
   public static BoolQueryBuilder createInclusiveFlowNodeIdFilterQuery(final ProcessReportDataDto reportDataDto,
                                                                       final Set<String> flowNodeIds,
-                                                                      final FilterContext filterContext) {
+                                                                      final FilterContext filterContext,
+                                                                      final DefinitionService definitionService) {
     return createExecutedFlowNodeFilterQuery(
-      createModelElementAggregationFilter(reportDataDto, filterContext),
+      createModelElementAggregationFilter(reportDataDto, filterContext, definitionService),
       nestedFieldReference(FLOW_NODE_ID),
       new ArrayList<>(flowNodeIds),
       IN
@@ -337,26 +399,25 @@ public class ModelElementFilterQueryUtil {
   }
 
   private static void addFlowNodeStatusFilter(final BoolQueryBuilder boolQuery,
-                                              final ProcessReportDataDto reportDataDto) {
-    reportDataDto.getFilter().stream()
+                                              final List<ProcessFilterDto<?>> filters) {
+    filters.stream()
       .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .filter(filter -> FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES.containsKey(filter.getClass()))
       .forEach(filter -> boolQuery.filter(
-        FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES.get(filter.getClass()).apply(boolQuery())));
+        FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES.get(filter.getClass()).apply(boolQuery())
+      ));
   }
 
   private static void addFlowNodeDurationFilter(final BoolQueryBuilder boolQuery,
-                                                final ProcessReportDataDto reportDataDto) {
-    findAllViewLevelFiltersOfType(
-      reportDataDto.getFilter(),
-      FlowNodeDurationFilterDto.class
-    ).map(ProcessFilterDto::getData)
+                                                final List<ProcessFilterDto<?>> filters) {
+    findAllViewLevelFiltersOfType(filters, FlowNodeDurationFilterDto.class)
+      .map(ProcessFilterDto::getData)
       .forEach(durationFilterData -> boolQuery.filter(createFlowNodeDurationFilterQuery(durationFilterData)));
   }
 
   private static void addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                        final ProcessReportDataDto reportDataDto) {
-    findAllViewLevelFiltersOfType(reportDataDto.getFilter(), AssigneeFilterDto.class)
+                                        final List<ProcessFilterDto<?>> filters) {
+    findAllViewLevelFiltersOfType(filters, AssigneeFilterDto.class)
       .map(ProcessFilterDto::getData)
       .forEach(assigneeFilterData -> userTaskFilterBoolQuery.filter(createAssigneeFilterQuery(
         assigneeFilterData,
@@ -365,8 +426,8 @@ public class ModelElementFilterQueryUtil {
   }
 
   private static void addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                              final ProcessReportDataDto reportDataDto) {
-    findAllViewLevelFiltersOfType(reportDataDto.getFilter(), CandidateGroupFilterDto.class)
+                                              final List<ProcessFilterDto<?>> filters) {
+    findAllViewLevelFiltersOfType(filters, CandidateGroupFilterDto.class)
       .map(ProcessFilterDto::getData)
       .forEach(candidateFilterData -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(
         candidateFilterData,
@@ -375,11 +436,9 @@ public class ModelElementFilterQueryUtil {
   }
 
   public static void addFlowNodeIdFilter(final BoolQueryBuilder boolQuery,
-                                         final ProcessReportDataDto reportDataDto) {
-    findAllViewLevelFiltersOfType(
-      reportDataDto.getFilter(),
-      ExecutedFlowNodeFilterDto.class
-    ).map(ProcessFilterDto::getData)
+                                         final List<ProcessFilterDto<?>> filters) {
+    findAllViewLevelFiltersOfType(filters, ExecutedFlowNodeFilterDto.class)
+      .map(ProcessFilterDto::getData)
       .forEach(executedFlowNodeFilterData -> boolQuery.filter(createExecutedFlowNodeFilterQuery(
         executedFlowNodeFilterData,
         boolQuery()
@@ -387,12 +446,10 @@ public class ModelElementFilterQueryUtil {
   }
 
   public static void addFlowNodeStartDateFilter(final BoolQueryBuilder boolQuery,
-                                                final ProcessReportDataDto reportDataDto,
-                                                final ZoneId timezone) {
-    findAllViewLevelFiltersOfType(
-      reportDataDto.getFilter(),
-      FlowNodeStartDateFilterDto.class
-    ).map(ProcessFilterDto::getData)
+                                                final ZoneId timezone,
+                                                final List<ProcessFilterDto<?>> filters) {
+    findAllViewLevelFiltersOfType(filters, FlowNodeStartDateFilterDto.class)
+      .map(ProcessFilterDto::getData)
       .forEach(flowNodeStartDateFilterData -> createFlowNodeStartDateFilterQuery(
         flowNodeStartDateFilterData,
         timezone,
@@ -401,12 +458,10 @@ public class ModelElementFilterQueryUtil {
   }
 
   public static void addFlowNodeEndDateFilter(final BoolQueryBuilder boolQuery,
-                                              final ProcessReportDataDto reportDataDto,
-                                              final ZoneId timezone) {
-    findAllViewLevelFiltersOfType(
-      reportDataDto.getFilter(),
-      FlowNodeEndDateFilterDto.class
-    ).map(ProcessFilterDto::getData)
+                                              final ZoneId timezone,
+                                              final List<ProcessFilterDto<?>> filters) {
+    findAllViewLevelFiltersOfType(filters, FlowNodeEndDateFilterDto.class)
+      .map(ProcessFilterDto::getData)
       .forEach(flowNodeEndDateFilterData -> createFlowNodeEndDateFilterQuery(
         flowNodeEndDateFilterData,
         timezone,

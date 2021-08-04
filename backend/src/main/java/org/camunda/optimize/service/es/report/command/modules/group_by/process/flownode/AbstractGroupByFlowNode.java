@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.elasticsearch.action.search.SearchResponse;
@@ -26,6 +27,12 @@ public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
   private static final String FLOW_NODES_AGGREGATION = "flowNodes";
   private static final String FILTERED_FLOW_NODES_AGGREGATION = "filteredFlowNodes";
 
+  protected final DefinitionService definitionService;
+
+  protected AbstractGroupByFlowNode(final DefinitionService definitionService) {
+    this.definitionService = definitionService;
+  }
+
   protected AggregationBuilder createFilteredFlowNodeAggregation(
     final ExecutionContext<ProcessReportDataDto> context,
     final AggregationBuilder subAggregation) {
@@ -33,7 +40,7 @@ public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
       .subAggregation(
         filter(
           FILTERED_FLOW_NODES_AGGREGATION,
-          createModelElementAggregationFilter(context.getReportData(), context.getFilterContext())
+          createModelElementAggregationFilter(context.getReportData(), context.getFilterContext(), definitionService)
         )
           .subAggregation(subAggregation)
       );

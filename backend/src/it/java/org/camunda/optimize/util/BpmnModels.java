@@ -97,6 +97,11 @@ public class BpmnModels {
     return getDoubleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, USER_TASK_1, USER_TASK_2);
   }
 
+  public static BpmnModelInstance getDoubleUserTaskDiagram(String procDefKey, String userTask1Name, String userTask2Name) {
+    return getDoubleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, userTask1Name, userTask2Name);
+
+  }
+
   public static BpmnModelInstance getDoubleUserTaskDiagram(String procDefKey, String startEventName,
                                                            String endEventName, String userTask1Name,
                                                            String userTask2Name) {

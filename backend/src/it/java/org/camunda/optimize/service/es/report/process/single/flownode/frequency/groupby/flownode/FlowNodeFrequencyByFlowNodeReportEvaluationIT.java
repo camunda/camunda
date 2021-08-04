@@ -227,7 +227,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // To create specific tenant instances with a shared def, start instance on noneTenant and update tenantID after
     ProcessInstanceEngineDto instance1 = engineIntegrationExtension
       .deployAndStartProcess(getSimpleBpmnDiagram(definitionKey), noneTenantId);
-    engineDatabaseExtension.changeProcessInstanceTenantId(instance1.getId(), tenantId1);
+    engineDatabaseExtension.changeProcessInstanceAndActivitiesTenantId(instance1.getId(), tenantId1);
 
     importAllEngineEntitiesFromScratch();
 

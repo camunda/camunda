@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -40,14 +39,18 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "userTaskIds";
 
   private final ConfigurationService configurationService;
-  private final DefinitionService definitionService;
+
+  public ProcessGroupByUserTask(final ConfigurationService configurationService,
+                                final DefinitionService definitionService) {
+    super(definitionService);
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

@@ -112,7 +112,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
         definition.getId(),
         definition.getKey(),
         definition.getVersion(),
-        definition.getTenantId(),
+        engineEntity.getTenantId(),
         engineContext.getEngineAlias(),
         engineEntity.getProcessInstanceId(),
         engineEntity.getStartTime(),

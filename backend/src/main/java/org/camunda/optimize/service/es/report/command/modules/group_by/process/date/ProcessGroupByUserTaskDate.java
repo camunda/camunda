@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
@@ -19,14 +20,17 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @Slf4j
 public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByModelElementDate {
 
+  private final DefinitionService definitionService;
+
   ProcessGroupByUserTaskDate(final DateAggregationService dateAggregationService,
-                             final MinMaxStatsService minMaxStatsService) {
+                             final MinMaxStatsService minMaxStatsService, final DefinitionService definitionService) {
     super(dateAggregationService, minMaxStatsService);
+    this.definitionService = definitionService;
   }
 
   @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
-    return createModelElementAggregationFilter(context.getReportData(), context.getFilterContext());
+    return createModelElementAggregationFilter(context.getReportData(), context.getFilterContext(), definitionService);
   }
 
   protected QueryBuilder getModelElementTypeFilterQuery() {

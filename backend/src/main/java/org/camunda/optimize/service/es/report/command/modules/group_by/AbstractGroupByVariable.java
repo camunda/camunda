@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -68,6 +69,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   public static final String FILTERED_FLOW_NODE_AGGREGATION = "filteredFlowNodeAggregation";
 
   private final VariableAggregationService variableAggregationService;
+  private final DefinitionService definitionService;
 
   protected abstract String getVariableName(final ExecutionContext<Data> context);
 
@@ -162,7 +164,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       // Nest the distributed by part to ensure the aggregation is on flownode level
       final FilterAggregationBuilder filterAggregationBuilder = filter(
         FILTERED_FLOW_NODE_AGGREGATION,
-        createModelElementAggregationFilter((ProcessReportDataDto) context.getReportData(), context.getFilterContext())
+        createModelElementAggregationFilter(
+          (ProcessReportDataDto) context.getReportData(), context.getFilterContext(), definitionService
+        )
       );
       distributedByPart.createAggregations(context).forEach(filterAggregationBuilder::subAggregation);
       return Collections.singletonList(

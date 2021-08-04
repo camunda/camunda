@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
 import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
@@ -27,8 +28,9 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessReportDataDto> {
 
-  public ProcessGroupByVariable(final VariableAggregationService variableAggregationService) {
-    super(variableAggregationService);
+  public ProcessGroupByVariable(final VariableAggregationService variableAggregationService,
+                                final DefinitionService definitionService) {
+    super(variableAggregationService, definitionService);
   }
 
   private VariableGroupByValueDto getVariableGroupByDto(final ExecutionContext<ProcessReportDataDto> context) {

@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -33,13 +33,20 @@ import java.util.Optional;
 import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
 
   private final MinMaxStatsService minMaxStatsService;
   private final DurationAggregationService durationAggregationService;
+
+  public ProcessGroupByUserTaskDuration(final MinMaxStatsService minMaxStatsService,
+                                        final DurationAggregationService durationAggregationService,
+                                        final DefinitionService definitionService) {
+    super(definitionService);
+    this.minMaxStatsService = minMaxStatsService;
+    this.durationAggregationService = durationAggregationService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

@@ -72,7 +72,8 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
         createInclusiveFlowNodeIdFilterQuery(
           context.getReportData(),
           getUserTaskIds(context.getReportData()),
-          context.getFilterContext()
+          context.getFilterContext(),
+          definitionService
         )
       ).subAggregation(identityTermsAggregation)
     );
