@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RaftPartitionGroupFactory {
+final class RaftPartitionGroupFactory {
 
   protected RaftPartitionGroup buildRaftPartitionGroup(
       final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
