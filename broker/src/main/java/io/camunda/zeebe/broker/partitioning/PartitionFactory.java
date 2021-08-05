@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
@@ -47,8 +46,6 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -58,7 +55,6 @@ import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 final class PartitionFactory {
@@ -137,90 +133,43 @@ final class PartitionFactory {
             .map(RaftPartition.class::cast)
             .collect(Collectors.toList());
 
-    final TypedRecordProcessorsFactory typedRecordProcessorsFactory =
-        buildTypedRecordProcessorsFactory(partitionListenerConsumer);
+    final var typedRecordProcessorsFactory =
+        createFactory(
+            partitionListenerConsumer,
+            localBroker,
+            communicationService,
+            eventService,
+            deploymentRequestHandler);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
 
       final PartitionBoostrapAndTransitionContextImpl transitionContext =
-          buildTransitionContext(
+          new PartitionBoostrapAndTransitionContextImpl(
+              localBroker.getNodeId(),
+              owningPartition,
+              partitionListeners,
+              new AtomixPartitionMessagingService(
+                  communicationService, membershipService, owningPartition.members()),
               actorSchedulingService,
               brokerCfg,
-              localBroker,
-              partitionListeners,
               () -> commandHApiService.newCommandResponseWriter(),
               () -> commandHApiService.getOnProcessedListener(partitionId),
-              membershipService,
-              communicationService,
-              snapshotStoreFactory,
+              snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
+              snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
               typedRecordProcessorsFactory,
               exporterRepository,
-              owningPartition,
-              partitionId);
+              new PartitionProcessingState(owningPartition));
+
       final PartitionTransitionImpl transitionBehavior =
           new PartitionTransitionImpl(transitionContext, LEADER_STEPS, FOLLOWER_STEPS);
+
       final ZeebePartition zeebePartition =
           new ZeebePartition(transitionContext, transitionBehavior);
       partitions.add(zeebePartition);
     }
 
     return partitions;
-  }
-
-  private PartitionBoostrapAndTransitionContextImpl buildTransitionContext(
-      final ActorSchedulingService actorSchedulingService,
-      final BrokerCfg brokerCfg,
-      final BrokerInfo localBroker,
-      final List<PartitionListener> partitionListeners,
-      final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
-      final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
-      final ClusterMembershipService membershipService,
-      final ClusterCommunicationService communicationService,
-      final FileBasedSnapshotStoreFactory snapshotStoreFactory,
-      final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
-      final ExporterRepository exporterRepository,
-      final RaftPartition owningPartition,
-      final Integer partitionId) {
-    final PartitionBoostrapAndTransitionContextImpl transitionContext =
-        new PartitionBoostrapAndTransitionContextImpl(
-            localBroker.getNodeId(),
-            owningPartition,
-            partitionListeners,
-            buildPartitionMessagingService(
-                membershipService, communicationService, owningPartition),
-            actorSchedulingService,
-            brokerCfg,
-            commandResponseWriterSupplier,
-            onProcessedListenerSupplier,
-            snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
-            snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
-            typedRecordProcessorsFactory,
-            exporterRepository,
-            new PartitionProcessingState(owningPartition));
-    return transitionContext;
-  }
-
-  private TypedRecordProcessorsFactory buildTypedRecordProcessorsFactory(
-      final Consumer<TopologyPartitionListener> partitionListenerConsumer) {
-    final var typedRecordProcessorsFactory =
-        createFactory(
-            partitionListenerConsumer,
-            localBroker,
-            clusterServices.getCommunicationService(),
-            clusterServices.getEventService(),
-            deploymentRequestHandler);
-    return typedRecordProcessorsFactory;
-  }
-
-  private AtomixPartitionMessagingService buildPartitionMessagingService(
-      final ClusterMembershipService membershipService,
-      final ClusterCommunicationService communicationService,
-      final RaftPartition owningPartition) {
-    final var messagingService =
-        new AtomixPartitionMessagingService(
-            communicationService, membershipService, owningPartition.members());
-    return messagingService;
   }
 
   private TypedRecordProcessorsFactory createFactory(
