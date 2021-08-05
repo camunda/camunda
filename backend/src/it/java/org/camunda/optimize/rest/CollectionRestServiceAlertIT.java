@@ -115,6 +115,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
     // when
     collectionClient.deleteCollection(collectionId);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
 
