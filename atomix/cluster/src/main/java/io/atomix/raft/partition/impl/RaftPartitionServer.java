@@ -262,17 +262,16 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
    * @see
    *     io.atomix.raft.impl.RaftContext#addSnapshotReplicationListener(SnapshotReplicationListener)
    */
-  public void addSnapshotReplicationListener(final SnapshotReplicationListener logResetListener) {
-    server.getContext().addSnapshotReplicationListener(logResetListener);
+  public void addSnapshotReplicationListener(final SnapshotReplicationListener listener) {
+    server.getContext().addSnapshotReplicationListener(listener);
   }
 
   /**
    * @see
    *     io.atomix.raft.impl.RaftContext#removeSnapshotReplicationListener(SnapshotReplicationListener)
    */
-  public void removeSnapshotReplicationListener(
-      final SnapshotReplicationListener logResetListener) {
-    server.getContext().removeSnapshotReplicationListener(logResetListener);
+  public void removeSnapshotReplicationListener(final SnapshotReplicationListener listener) {
+    server.getContext().removeSnapshotReplicationListener(listener);
   }
 
   public PersistedSnapshotStore getPersistedSnapshotStore() {
