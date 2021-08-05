@@ -3,6 +3,11 @@ kind: Elasticsearch
 metadata:
   name: elasticsearch
   namespace: optimize-persistent
+  labels:
+    camunda.cloud/source: "" # {"$openapi":"source"}
+    camunda.cloud/managed-by: "" # {"$openapi":"managed-by"}
+  annotations:
+    camunda.cloud/created-by: "" # {"$openapi":"created-by"}
 spec:
   version: 7.8.0
   nodeSets:
@@ -14,7 +19,10 @@ spec:
       metadata:
         labels:
           name: elasticsearch
-          camunda.cloud/managed-by: ci
+          camunda.cloud/source: "" # {"$openapi":"source"}
+          camunda.cloud/managed-by: "" # {"$openapi":"managed-by"}
+        annotations:
+          camunda.cloud/created-by: "" # {"$openapi":"created-by"}
       spec:
         initContainers:
         - name: sysctl
