@@ -15,6 +15,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -62,7 +63,8 @@ public final class PartitionManagerImplTest {
             null,
             null,
             new ArrayList<>(),
-            null);
+            null,
+            mock(ExporterRepository.class));
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -86,7 +88,8 @@ public final class PartitionManagerImplTest {
             null,
             null,
             new ArrayList<>(),
-            null);
+            null,
+            mock(ExporterRepository.class));
     // then
     final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();

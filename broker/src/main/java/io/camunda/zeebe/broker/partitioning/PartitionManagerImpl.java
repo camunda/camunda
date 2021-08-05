@@ -23,8 +23,6 @@ import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
-import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
-import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -140,6 +138,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final List<PartitionListener> partitionListeners;
   private final ClusterServices clusterServices;
   private final CommandApiService commandHApiService;
+  private final ExporterRepository exporterRepository;
 
   public PartitionManagerImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -150,7 +149,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final PushDeploymentRequestHandler deploymentRequestHandler,
       final Consumer<DiskSpaceUsageListener> diskSpaceUsageListenerRegistry,
       final List<PartitionListener> partitionListeners,
-      final CommandApiService commandHApiService) {
+      final CommandApiService commandHApiService,
+      final ExporterRepository exporterRepository) {
 
     snapshotStoreFactory =
         new FileBasedSnapshotStoreFactory(actorSchedulingService, localBroker.getNodeId());
@@ -163,6 +163,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.deploymentRequestHandler = deploymentRequestHandler;
     this.diskSpaceUsageListenerRegistry = diskSpaceUsageListenerRegistry;
     this.commandHApiService = commandHApiService;
+    this.exporterRepository = exporterRepository;
 
     partitionGroup = buildRaftPartitionGroup(brokerCfg, snapshotStoreFactory);
 
@@ -200,8 +201,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     final TypedRecordProcessorsFactory typedRecordProcessorsFactory =
         buildTypedRecordProcessorsFactory(
             localBroker, deploymentRequestHandler, communicationService, eventService);
-
-    final var exporterRepository = buildExporterRepository(brokerCfg);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -512,25 +511,6 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
           deploymentRequestHandler,
           jobsAvailableNotification::onJobsAvailable);
     };
-  }
-
-  private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
-    final ExporterRepository exporterRepository = new ExporterRepository();
-    final var exporterEntries = cfg.getExporters().entrySet();
-
-    // load and validate exporters
-    for (final var exporterEntry : exporterEntries) {
-      final var id = exporterEntry.getKey();
-      final var exporterCfg = exporterEntry.getValue();
-      try {
-        exporterRepository.load(id, exporterCfg);
-      } catch (final ExporterLoadException | ExporterJarLoadException e) {
-        throw new IllegalStateException(
-            "Failed to load exporter with configuration: " + exporterCfg, e);
-      }
-    }
-
-    return exporterRepository;
   }
 
   public List<ZeebePartition> getPartitions() {
