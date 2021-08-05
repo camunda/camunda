@@ -7,10 +7,17 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.atomix.primitive.partition.ManagedPartitionGroup;
+import java.util.concurrent.CompletableFuture;
 
-public interface PartitionManager {
+public interface PartitionAdminAccess {
 
-  @Deprecated
-  ManagedPartitionGroup getPartitionGroup();
+  CompletableFuture<Void> takeSnapshots();
+
+  CompletableFuture<Void> pauseExporting();
+
+  CompletableFuture<Void> resumeExporting();
+
+  CompletableFuture<Void> pauseProcessing();
+
+  CompletableFuture<Void> resumeProcessing();
 }
