@@ -23,6 +23,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
@@ -46,6 +47,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final StreamProcessor streamProcessor;
   private final String actorName;
   private final Set<FailureListener> listeners = new HashSet<>();
+  private final BooleanSupplier isLastWrittenPositionCommitted;
 
   private Long lastWrittenEventPosition;
   private TransientSnapshot pendingSnapshot;
@@ -55,17 +57,65 @@ public final class AsyncSnapshotDirector extends Actor
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
   private long commitPosition;
 
-  public AsyncSnapshotDirector(
+  private AsyncSnapshotDirector(
       final int nodeId,
       final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
-      final Duration snapshotRate) {
+      final Duration snapshotRate,
+      final boolean replayMode) {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     actorName = buildActorName(nodeId, "SnapshotDirector", partitionId);
+    if (replayMode) {
+      isLastWrittenPositionCommitted = () -> true;
+    } else {
+      isLastWrittenPositionCommitted = () -> lastWrittenEventPosition <= commitPosition;
+    }
+  }
+
+  /**
+   * Create an AsyncSnapshotDirector that can take snapshot when the Streamprocessor is in
+   * continuous replay mode.
+   *
+   * @param nodeId id of this broker
+   * @param partitionId partition id
+   * @param streamProcessor stream processor for the partition
+   * @param stateController state controller that manages state
+   * @param snapshotRate rate at which the snapshot is taken
+   * @return snapshot director
+   */
+  public static AsyncSnapshotDirector ofReplayMode(
+      final int nodeId,
+      final int partitionId,
+      final StreamProcessor streamProcessor,
+      final StateController stateController,
+      final Duration snapshotRate) {
+    return new AsyncSnapshotDirector(
+        nodeId, partitionId, streamProcessor, stateController, snapshotRate, true);
+  }
+
+  /**
+   * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in
+   * processing mode
+   *
+   * @param nodeId id of this broker
+   * @param partitionId partition id
+   * @param streamProcessor stream processor for the partition
+   * @param stateController state controller that manages state
+   * @param snapshotRate rate at which the snapshot is taken
+   * @return snapshot director
+   */
+  public static AsyncSnapshotDirector ofProcessingMode(
+      final int nodeId,
+      final int partitionId,
+      final StreamProcessor streamProcessor,
+      final StateController stateController,
+      final Duration snapshotRate) {
+    return new AsyncSnapshotDirector(
+        nodeId, partitionId, streamProcessor, stateController, snapshotRate, false);
   }
 
   @Override
@@ -230,7 +280,7 @@ public final class AsyncSnapshotDirector extends Actor
   private void persistSnapshotIfLastWrittenPositionCommitted() {
     if (pendingSnapshot != null
         && lastWrittenEventPosition != null
-        && commitPosition >= lastWrittenEventPosition
+        && isLastWrittenPositionCommitted.getAsBoolean()
         && !persistingSnapshot) {
       persistingSnapshot = true;
 
