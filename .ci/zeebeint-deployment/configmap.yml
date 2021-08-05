@@ -6,6 +6,10 @@ metadata:
   labels:
     app: "@BRANCH@-optimize-camunda-cloud"
     branch: "@BRANCH@"
+    camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+    camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
+  annotations:
+    camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
 data:
 ######################## OPT ########################
   OptimizeLicense.txt: |
