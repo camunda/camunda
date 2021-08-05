@@ -19,7 +19,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.atomix.raft.RaftServer.Role;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,6 +47,6 @@ public class SnapshotReplicationListenerTest {
     // then
     verify(snapshotReplicationListener, timeout(1000L).times(1)).onSnapshotReplicationStarted();
     verify(snapshotReplicationListener, timeout(1000L).times(1))
-        .onSnapshotReplicationCompleted(Role.FOLLOWER, follower.getTerm());
+        .onSnapshotReplicationCompleted(follower.getTerm());
   }
 }

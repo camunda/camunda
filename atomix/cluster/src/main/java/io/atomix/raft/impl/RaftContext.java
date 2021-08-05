@@ -455,7 +455,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public void notifySnapshotReplicationCompleted() {
-    snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(role.role(), term));
+    snapshotReplicationListeners.forEach(l -> l.onSnapshotReplicationCompleted(term));
   }
 
   /**

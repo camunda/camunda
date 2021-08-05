@@ -16,8 +16,6 @@
  */
 package io.atomix.raft;
 
-import io.atomix.raft.RaftServer.Role;
-
 /**
  * Listener which will be invoked when a new snapshot is received by this follower from a leader.
  * When a new snapshot is received via raft replication, the log will be reset and all entries in
@@ -47,8 +45,7 @@ public interface SnapshotReplicationListener {
    * complete either a new snapshot is committed or the snapshot replication is aborted. // If a new
    * snapshot has been committed, the log will be empty.
    *
-   * @param role the current raft role of this member
    * @param term the current term
    */
-  void onSnapshotReplicationCompleted(Role role, long term);
+  void onSnapshotReplicationCompleted(long term);
 }
