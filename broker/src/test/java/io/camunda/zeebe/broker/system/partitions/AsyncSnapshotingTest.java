@@ -25,7 +25,6 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,9 +82,7 @@ public final class AsyncSnapshotingTest {
     autoCloseableRule.manage(snapshotController);
     snapshotController = spy(snapshotController);
 
-    final ActorScheduler actorScheduler = actorSchedulerRule.get();
     createStreamProcessorControllerMock();
-    createAsyncSnapshotDirector(actorScheduler);
   }
 
   private void setCommitPosition(final long commitPosition) {
@@ -103,16 +101,24 @@ public final class AsyncSnapshotingTest {
         .thenReturn(CompletableActorFuture.completed(99L), CompletableActorFuture.completed(100L));
   }
 
-  private void createAsyncSnapshotDirector(final ActorScheduler actorScheduler) {
+  private void createAsyncSnapshotDirectorOfProcessingMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofProcessingMode(
             0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
-    actorScheduler.submitActor(asyncSnapshotDirector).join();
+    actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
+  }
+
+  private void createAsyncSnapshotDirectorOfReplayMode() {
+    asyncSnapshotDirector =
+        AsyncSnapshotDirector.ofReplayMode(
+            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+    actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
   @Test
   public void shouldValidSnapshotWhenCommitPositionGreaterEquals() {
     // given
+    createAsyncSnapshotDirectorOfProcessingMode();
     clock.addTime(Duration.ofMinutes(1));
 
     // when
@@ -126,6 +132,7 @@ public final class AsyncSnapshotingTest {
   @Test
   public void shouldTakeSnapshotsOneByOne() {
     // given
+    createAsyncSnapshotDirectorOfProcessingMode();
     clock.addTime(Duration.ofMinutes(1));
     setCommitPosition(99L);
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
@@ -157,6 +164,7 @@ public final class AsyncSnapshotingTest {
   @Test
   public void shouldSucceedToTakeSnapshotOnNextIntervalWhenLastWritePosRetrievingFailed() {
     // given
+    createAsyncSnapshotDirectorOfProcessingMode();
     final long lastProcessedPosition = 25L;
     final long lastWrittenPosition = 26L;
     final long commitPosition = 100L;
@@ -184,6 +192,7 @@ public final class AsyncSnapshotingTest {
   @Test
   public void shouldSucceedToTakeSnapshotOnNextIntervalWhenLastProcessedPosRetrievingFailed() {
     // given
+    createAsyncSnapshotDirectorOfProcessingMode();
     final long lastProcessedPosition = 25L;
     final long lastWrittenPosition = 26L;
     final long commitPosition = 100L;
@@ -206,5 +215,16 @@ public final class AsyncSnapshotingTest {
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldPersistSnapshotWithoutWaitingForCommitWhenInReplayMode() {
+    // when
+    createAsyncSnapshotDirectorOfReplayMode();
+    asyncSnapshotDirector.forceSnapshot();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
   }
 }
