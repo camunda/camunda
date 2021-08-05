@@ -51,13 +51,14 @@ import org.slf4j.Logger;
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
 
-  private final SnapshotReplicationMetrics snapshotReplicationMetrics;
+  private static final Runnable NO_ONGOING_SNAPSHOT_REPLICATION = () -> {};
 
+  private final SnapshotReplicationMetrics snapshotReplicationMetrics;
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
   private PersistedSnapshotListener snapshotListener;
   private ByteBuffer nextPendingSnapshotChunkId;
-  private Runnable resetOngoingSnapshotReplication = () -> {};
+  private Runnable resetOngoingSnapshotReplication = NO_ONGOING_SNAPSHOT_REPLICATION;
 
   public PassiveRole(final RaftContext context) {
     super(context);
@@ -365,7 +366,7 @@ public class PassiveRole extends InactiveRole {
     // Listeners should be notified whether snapshot is committed or aborted. Otherwise they can
     // wait for ever.
     raft.notifySnapshotReplicationCompleted();
-    resetOngoingSnapshotReplication = () -> {};
+    resetOngoingSnapshotReplication = NO_ONGOING_SNAPSHOT_REPLICATION;
   }
 
   private void setNextExpected(final ByteBuffer nextChunkId) {
