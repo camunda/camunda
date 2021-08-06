@@ -25,7 +25,6 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -44,8 +43,7 @@ public final class AsyncSnapshotingTest {
   private final TemporaryFolder tempFolderRule = new TemporaryFolder();
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
-  private final ControlledActorClock clock = new ControlledActorClock();
-  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   @Rule
   public final RuleChain chain =
@@ -119,7 +117,7 @@ public final class AsyncSnapshotingTest {
   public void shouldValidSnapshotWhenCommitPositionGreaterEquals() {
     // given
     createAsyncSnapshotDirectorOfProcessingMode();
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
 
     // when
     setCommitPosition(100L);
@@ -133,12 +131,12 @@ public final class AsyncSnapshotingTest {
   public void shouldTakeSnapshotsOneByOne() {
     // given
     createAsyncSnapshotDirectorOfProcessingMode();
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(99L);
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
 
     // when
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(100L);
 
     // then
@@ -176,13 +174,13 @@ public final class AsyncSnapshotingTest {
             CompletableActorFuture.completedExceptionally(
                 new RuntimeException("getLastWrittenPositionAsync fails")));
     setCommitPosition(commitPosition);
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
     verify(mockStreamProcessor, timeout(5000).times(1)).getLastWrittenPositionAsync();
 
     // when
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
 
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
@@ -203,13 +201,13 @@ public final class AsyncSnapshotingTest {
                 new RuntimeException("getLastProcessedPositionAsync fails")));
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
     verify(mockStreamProcessor, timeout(5000).times(1)).getLastProcessedPositionAsync();
 
     // when
     when(mockStreamProcessor.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    clock.addTime(Duration.ofMinutes(1));
+    asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(commitPosition);
 
     // then
