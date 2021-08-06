@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Stack;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -92,7 +93,7 @@ public final class StartupProcess<CONTEXT> {
     if (shutdownFuture != null) {
       logger.info("Aborting startup process because shutdown was called");
       startupFuture.completeExceptionally(
-          new RuntimeException("Aborting startup process because shutdown was called"));
+          new CancellationException("Aborting startup process because shutdown was called"));
     } else if (stepsToStart.isEmpty()) {
       startupFuture.complete(context);
       logger.info("Finished startup process");
