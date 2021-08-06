@@ -123,8 +123,8 @@ public final class AsyncSnapshotingTest {
     setCommitPosition(100L);
 
     // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
   }
 
   @Test
@@ -133,7 +133,8 @@ public final class AsyncSnapshotingTest {
     createAsyncSnapshotDirectorOfProcessingMode();
     asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(99L);
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
 
     // when
     asyncSnapshotDirector.forceSnapshot();
@@ -183,8 +184,9 @@ public final class AsyncSnapshotingTest {
     asyncSnapshotDirector.forceSnapshot();
 
     // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+    ;
   }
 
   @Test
@@ -211,8 +213,8 @@ public final class AsyncSnapshotingTest {
     setCommitPosition(commitPosition);
 
     // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
+    Awaitility.await()
+        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
   }
 
   @Test
