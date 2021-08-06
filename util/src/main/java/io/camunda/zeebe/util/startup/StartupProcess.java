@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.util.startup;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Stack;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -43,7 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class StartupProcess<CONTEXT> {
 
-  private final List<StartupStep<CONTEXT>> steps;
+  private final Deque<StartupStep<CONTEXT>> steps;
   private final String processName;
   private final Logger logger;
 
@@ -52,7 +54,7 @@ public final class StartupProcess<CONTEXT> {
   private CompletableFuture<CONTEXT> shutdownFuture;
 
   public StartupProcess(final String processName, final List<StartupStep<CONTEXT>> steps) {
-    this.steps = Collections.unmodifiableList(Objects.requireNonNull(steps));
+    this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
 
     this.processName = processName != null ? processName : "Undefined process";
     logger =
@@ -74,7 +76,7 @@ public final class StartupProcess<CONTEXT> {
     startupCalled = true;
 
     final var startupFuture = new CompletableFuture<CONTEXT>();
-    final var stepsToStart = new ArrayList<>(steps);
+    final var stepsToStart = new ArrayDeque<>(steps);
 
     logger.info("Starting startup process");
     proceedWithStartup(stepsToStart, context, startupFuture);
@@ -82,8 +84,8 @@ public final class StartupProcess<CONTEXT> {
     return startupFuture;
   }
 
-  private void proceedWithStartup(
-      final ArrayList<StartupStep<CONTEXT>> stepsToStart,
+  private synchronized void proceedWithStartup(
+      final Queue<StartupStep<CONTEXT>> stepsToStart,
       final CONTEXT context,
       final CompletableFuture<CONTEXT> startupFuture) {
     if (shutdownFuture != null) {
@@ -94,7 +96,7 @@ public final class StartupProcess<CONTEXT> {
       startupFuture.complete(context);
       logger.info("Finished startup process");
     } else {
-      final var stepToStart = stepsToStart.remove(0);
+      final var stepToStart = stepsToStart.poll();
       startedSteps.push(stepToStart);
 
       logCurrentStep("Startup", stepToStart);
@@ -120,9 +122,6 @@ public final class StartupProcess<CONTEXT> {
    */
   public synchronized CompletableFuture<CONTEXT> shutdown(final CONTEXT context) {
     logger.debug("Shutdown was called with context: " + context);
-    if (!startupCalled) {
-      throw new IllegalStateException("shutdown(...) can only be called after startup(...)");
-    }
     if (shutdownFuture == null) {
       logger.info("Starting shutdown process");
       shutdownFuture = new CompletableFuture<>();
@@ -182,9 +181,6 @@ public final class StartupProcess<CONTEXT> {
   }
 
   private void logCurrentStep(final String process, final StartupStep<CONTEXT> step) {
-    final int currentStepIndex = steps.indexOf(step) + 1;
-    final int numberOfSteps = steps.size();
-    logger.info(
-        process + " (stage " + currentStepIndex + "/" + numberOfSteps + ") " + step.getName());
+    logger.info(process + " " + step.getName());
   }
 }

@@ -247,17 +247,6 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldThrowIllegalStateExceptionWhenShutdownIsCalledBeforeStartup() {
-      // given
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, Collections.emptyList());
-
-      // when + then
-      assertThatThrownBy(() -> sut.shutdown(SHUTDOWN_CONTEXT))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessage("shutdown(...) can only be called after startup(...)");
-    }
-
-    @Test
     public void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
       // given
       final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, Collections.emptyList());

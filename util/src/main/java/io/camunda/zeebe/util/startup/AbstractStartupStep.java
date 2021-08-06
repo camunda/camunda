@@ -50,29 +50,38 @@ public abstract class AbstractStartupStep<CONTEXT> implements StartupStep<CONTEX
     if (shutdownFuture == null) {
       // check if startup has completed
       if (startupFuture.isDone()) {
-        shutdownFuture = callGuardedMethod(context);
+        shutdownFuture = handleShutdownGuarded(context);
       } else {
         // if it has not, chain shutdown to startup so that it will run immediately afterwards
-        shutdownFuture =
-            startupFuture.handle(
-                (contextReturnedByStartup, startupError) -> {
-                  /* Here we figure out which context object to use. If we were called while shutdown
-                   * was running, and shutdown completed successfully, we use the context returned
-                   * by startup, because it is the most recent one.
-                   * If startup completed exceptionally, we use the context we were called with,
-                   * because it represents the last consistent state before the error occurred
-                   */
-                  final var contextToUSe =
-                      startupError == null ? contextReturnedByStartup : context;
-                  return callGuardedMethod(contextToUSe).join();
-                });
+        shutdownFuture = new CompletableFuture<>();
+
+        startupFuture.whenComplete(
+            (contextReturnedByStartup, startupError) -> {
+              /* Here we figure out which context object to use. If we were called while shutdown
+               * was running, and shutdown completed successfully, we use the context returned
+               * by startup, because it is the most recent one.
+               * If startup completed exceptionally, we use the context we were called with,
+               * because it represents the last consistent state before the error occurred
+               */
+              final var contextToUse = startupError == null ? contextReturnedByStartup : context;
+
+              handleShutdownGuarded(contextToUse)
+                  .whenComplete(
+                      (shutdownContext, shutdownError) -> {
+                        if (shutdownError != null) {
+                          shutdownFuture.completeExceptionally(shutdownError);
+                        } else {
+                          shutdownFuture.complete(shutdownContext);
+                        }
+                      });
+            });
       }
     }
 
     return shutdownFuture;
   }
 
-  private CompletableFuture<CONTEXT> callGuardedMethod(final CONTEXT context) {
+  private CompletableFuture<CONTEXT> handleShutdownGuarded(final CONTEXT context) {
     final var result = shutdownGuarded(context);
 
     if (result == null) {
