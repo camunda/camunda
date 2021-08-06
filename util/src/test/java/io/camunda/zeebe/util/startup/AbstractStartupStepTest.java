@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 
-public class AbstractStartupStepTest {
+class AbstractStartupStepTest {
 
   private static final Object STARTUP_CONTEXT =
       new Object() {
@@ -36,7 +36,7 @@ public class AbstractStartupStepTest {
       };
 
   @Test
-  public void shouldThrowIllegalStateExceptionWhenShutdownIsCalledBeforeStartup() {
+  void shouldThrowIllegalStateExceptionWhenShutdownIsCalledBeforeStartup() {
     // given
     final var sut = new AutomaticStartupStep();
 
@@ -47,7 +47,7 @@ public class AbstractStartupStepTest {
   }
 
   @Test
-  public void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
+  void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
     // given
     final var sut = new AutomaticStartupStep();
 
@@ -60,7 +60,7 @@ public class AbstractStartupStepTest {
   }
 
   @Test
-  public void shouldPerformShutdownOnlyOnceIfShutdownIsCalledMultipleTimes() {
+  void shouldPerformShutdownOnlyOnceIfShutdownIsCalledMultipleTimes() {
     // given
     final var sut = new InvocationCountingStartupStep();
 
@@ -74,7 +74,7 @@ public class AbstractStartupStepTest {
   }
 
   @Test
-  public void shouldCompleteWithIllegalStateExceptionIfImplementationReturnsNullFromStartup() {
+  void shouldCompleteWithIllegalStateExceptionIfImplementationReturnsNullFromStartup() {
     // given
     final var sut = new SabotagedStartupStep(true, false);
 
@@ -90,7 +90,7 @@ public class AbstractStartupStepTest {
   }
 
   @Test
-  public void shouldCompleteWithIllegalStateExceptionIfImplementationReturnsNullFromShutdown() {
+  void shouldCompleteWithIllegalStateExceptionIfImplementationReturnsNullFromShutdown() {
     // given
     final var sut = new SabotagedStartupStep(false, true);
 
@@ -107,9 +107,8 @@ public class AbstractStartupStepTest {
   }
 
   @Test
-  public void
-      shouldPerformShutdownImmediatelyAfterStartupCompletedSuccessfullyIfStartupIsStillRunning()
-          throws ExecutionException, InterruptedException, TimeoutException {
+  void shouldPerformShutdownImmediatelyAfterStartupCompletedSuccessfullyIfStartupIsStillRunning()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     final var startupCountdownLatch = new CountDownLatch(1);
 
@@ -139,9 +138,8 @@ public class AbstractStartupStepTest {
   }
 
   @Test
-  public void
-      shouldPerformShutdownImmediatelyAfterStartupCompletedExceptionallyIfStartupIsStillRunning()
-          throws ExecutionException, InterruptedException, TimeoutException {
+  void shouldPerformShutdownImmediatelyAfterStartupCompletedExceptionallyIfStartupIsStillRunning()
+      throws ExecutionException, InterruptedException, TimeoutException {
     // given
     final var startupCountdownLatch = new CountDownLatch(1);
     final var sut = new WaitingStartupStep(startupCountdownLatch, true);
@@ -173,7 +171,7 @@ public class AbstractStartupStepTest {
     assertThat(shutdownFuture).isCompletedWithValue(SHUTDOWN_CONTEXT);
   }
 
-  public static final class InvocationCountingStartupStep extends AbstractStartupStep<Object> {
+  static final class InvocationCountingStartupStep extends AbstractStartupStep<Object> {
 
     private int startupInvocationCounter = 0;
     private int shutdownInvocationCounter = 0;
@@ -190,11 +188,11 @@ public class AbstractStartupStepTest {
       return CompletableFuture.completedFuture(o);
     }
 
-    public int getStartupInvocationCounter() {
+    int getStartupInvocationCounter() {
       return startupInvocationCounter;
     }
 
-    public int getShutdownInvocationCounter() {
+    int getShutdownInvocationCounter() {
       return shutdownInvocationCounter;
     }
 

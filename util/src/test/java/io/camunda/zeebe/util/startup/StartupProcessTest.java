@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class StartupProcessTest {
+class StartupProcessTest {
 
   private static final String DEFAULT_PROCESS_NAME = "TEST-PROCESS";
 
@@ -53,7 +53,7 @@ public class StartupProcessTest {
       };
 
   @Nested
-  public class MainUseCase {
+  class MainUseCase {
 
     private static final String INPUT_STEP1 = "inputStep1";
     private static final String INPUT_STEP2 = "inputStep2";
@@ -67,7 +67,7 @@ public class StartupProcessTest {
     private StartupStep mockStep2;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
       mockStep1 = mock(StartupStep.class);
       mockStep2 = mock(StartupStep.class);
 
@@ -76,7 +76,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldCallStartupStepsInOrder() {
+    void shouldCallStartupStepsInOrder() {
       // given
       when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
@@ -93,7 +93,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldCallShutdownStepsInReverseOrder() {
+    void shouldCallShutdownStepsInReverseOrder() {
       // given
       when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
       when(mockStep1.shutdown(SHUTDOWN_CONTEXT)).thenReturn(completedFuture(SHUTDOWN_CONTEXT));
@@ -113,7 +113,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldCallSubsequentStartupStepWithResultOfPreviousStep() {
+    void shouldCallSubsequentStartupStepWithResultOfPreviousStep() {
       // given
       when(mockStep1.startup(INPUT_STEP1)).thenReturn(completedFuture(RESULT_STEP1));
       when(mockStep2.startup(RESULT_STEP1)).thenReturn(completedFuture(RESULT_STEP2));
@@ -132,7 +132,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldCallSubsequentShutdownStepWithResultOfPreviousStep() {
+    void shouldCallSubsequentShutdownStepWithResultOfPreviousStep() {
       // given
       when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
@@ -155,7 +155,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldAbortStartupIfOneStepThrewAnException() {
+    void shouldAbortStartupIfOneStepThrewAnException() {
       // given
       final var testException = new Exception("TEST_EXCEPTION");
 
@@ -178,7 +178,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldContinueShutdownEvenIfStepsThrowExceptions() {
+    void shouldContinueShutdownEvenIfStepsThrowExceptions() {
       // given
       when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
@@ -206,7 +206,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldAbortOngoingStartupWhenShutdownIsCalled() {
+    void shouldAbortOngoingStartupWhenShutdownIsCalled() {
       // given
       final var step1CountdownLatch = new CountDownLatch(1);
       final var step1 = new WaitingStartupStep(step1CountdownLatch, false);
@@ -237,17 +237,17 @@ public class StartupProcessTest {
   }
 
   @Nested
-  public class IllegalStatesAndArguments {
+  class IllegalStatesAndArguments {
 
     @Test
-    public void shouldThrowNPEWhenCalledWithNoSteps() {
+    void shouldThrowNPEWhenCalledWithNoSteps() {
       // when + then
       assertThatThrownBy(() -> new StartupProcess<>(DEFAULT_PROCESS_NAME, null))
           .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
+    void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
       // given
       final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, Collections.emptyList());
 
@@ -260,7 +260,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldPerformShutdownOnlyOnceIfShutdownIsCalledMultipleTimes() {
+    void shouldPerformShutdownOnlyOnceIfShutdownIsCalledMultipleTimes() {
       // given
       final var step = new InvocationCountingStartupStep();
       final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, singletonList(step));
@@ -276,13 +276,13 @@ public class StartupProcessTest {
   }
 
   @Nested
-  public class EmptyList {
+  class EmptyList {
 
     private final StartupProcess<Object> sut =
         new StartupProcess<>(DEFAULT_PROCESS_NAME, Collections.emptyList());
 
     @Test
-    public void shouldReturnContextImmediatelyOnStartup() {
+    void shouldReturnContextImmediatelyOnStartup() {
       // when
       final var startupFuture = sut.startup(STARTUP_CONTEXT);
 
@@ -291,7 +291,7 @@ public class StartupProcessTest {
     }
 
     @Test
-    public void shouldReturnContextImmediatelyOnShutdown() {
+    void shouldReturnContextImmediatelyOnShutdown() {
       // given
       sut.startup(STARTUP_CONTEXT).join();
 

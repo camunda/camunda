@@ -68,10 +68,12 @@ public abstract class AbstractStartupStep<CONTEXT> implements StartupStep<CONTEX
               handleShutdownGuarded(contextToUse)
                   .whenComplete(
                       (shutdownContext, shutdownError) -> {
-                        if (shutdownError != null) {
-                          shutdownFuture.completeExceptionally(shutdownError);
-                        } else {
-                          shutdownFuture.complete(shutdownContext);
+                        synchronized (this) {
+                          if (shutdownError != null) {
+                            shutdownFuture.completeExceptionally(shutdownError);
+                          } else {
+                            shutdownFuture.complete(shutdownContext);
+                          }
                         }
                       });
             });
