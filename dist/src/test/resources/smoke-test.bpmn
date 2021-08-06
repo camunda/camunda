@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0458nzx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.9.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="1.0.0">
+  <bpmn:process id="smoke-test" name="Smoke Test" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_0tk5d8z</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0tk5d8z" sourceRef="StartEvent_1" targetRef="Event_15u997m" />
+    <bpmn:serviceTask id="Activity_04fbaz8" name="Send Message">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="smoke-test-send-message" retries="0" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0o977kc</bpmn:incoming>
+      <bpmn:outgoing>Flow_1epcv7w</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1epcv7w" sourceRef="Activity_04fbaz8" targetRef="Event_0x24hq3" />
+    <bpmn:intermediateCatchEvent id="Event_0x24hq3" name="Catch message">
+      <bpmn:incoming>Flow_1epcv7w</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qwvdo9</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1077u8g" messageRef="Message_0jezhfn" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="Event_1ygliht" name="End">
+      <bpmn:incoming>Flow_0qwvdo9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0qwvdo9" sourceRef="Event_0x24hq3" targetRef="Event_1ygliht" />
+    <bpmn:sequenceFlow id="Flow_0o977kc" sourceRef="Event_15u997m" targetRef="Activity_04fbaz8" />
+    <bpmn:intermediateCatchEvent id="Event_15u997m" name="Wait a second">
+      <bpmn:incoming>Flow_0tk5d8z</bpmn:incoming>
+      <bpmn:outgoing>Flow_0o977kc</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_02h42z3">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_0jezhfn" name="smoke-test-message">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="smoke-test">
+      <bpmndi:BPMNEdge id="Flow_0o977kc_di" bpmnElement="Flow_0o977kc">
+        <di:waypoint x="278" y="117" />
+        <di:waypoint x="320" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qwvdo9_di" bpmnElement="Flow_0qwvdo9">
+        <di:waypoint x="518" y="117" />
+        <di:waypoint x="562" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1epcv7w_di" bpmnElement="Flow_1epcv7w">
+        <di:waypoint x="420" y="117" />
+        <di:waypoint x="482" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tk5d8z_di" bpmnElement="Flow_0tk5d8z">
+        <di:waypoint x="188" y="117" />
+        <di:waypoint x="242" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="142" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04p29y7_di" bpmnElement="Activity_04fbaz8">
+        <dc:Bounds x="320" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0vkqsul_di" bpmnElement="Event_0x24hq3">
+        <dc:Bounds x="482" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="461" y="142" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ygliht_di" bpmnElement="Event_1ygliht">
+        <dc:Bounds x="562" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="570" y="142" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1cdt34i_di" bpmnElement="Event_15u997m">
+        <dc:Bounds x="242" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="225" y="142" width="70" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

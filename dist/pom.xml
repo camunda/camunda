@@ -142,6 +142,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
   <build>
     <finalName>camunda-cloud-zeebe-${project.version}</finalName>
@@ -246,6 +252,57 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>smoke-test</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <!-- prevent forking otherwise zeebe test listner is not found in classpath -->
+              <forkMode>never</forkMode>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>com.bazaarvoice.maven.plugins</groupId>
+            <artifactId>process-exec-maven-plugin</artifactId>
+            <version>0.7</version>
+            <executions>
+                <!--Start process broker-->
+                <execution>
+                    <id>start-zeebe</id>
+                    <phase>pre-integration-test</phase>
+                    <goals>
+                        <goal>start</goal>
+                    </goals>
+                    <configuration>
+                        <name>Zeebe</name>
+                        <healthcheckUrl>http://localhost:9600/actuator/health</healthcheckUrl>
+                        <arguments>
+                            <argument>java</argument>
+                            <argument>-cp</argument>
+                            <argument>${basedir}/target/camunda-cloud-zeebe/lib/*</argument>
+                            <argument>io.camunda.zeebe.broker.StandaloneBroker</argument>
+                        </arguments>
+                    </configuration>
+                </execution>
+                <!--Stop all processes in reverse order-->
+                <execution>
+                    <id>stop-all</id>
+                    <phase>post-integration-test</phase>
+                    <goals>
+                        <goal>stop-all</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
 
