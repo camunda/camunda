@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -135,29 +134,19 @@ public final class AsyncSnapshotingTest {
     setCommitPosition(99L);
     Awaitility.await()
         .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+    final PersistedSnapshot oldSnapshot = persistedSnapshotStore.getLatestSnapshot().orElseThrow();
 
     // when
     asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(100L);
 
     // then
-    awaitSnapshot(100);
-    assertThat(persistedSnapshotStore.getLatestSnapshot())
-        .get()
-        .extracting(PersistedSnapshot::getIndex)
-        .isEqualTo(100L);
-  }
-
-  private void awaitSnapshot(final int index) {
-    waitUntil(
-        () -> {
-          final var optSnapshot = persistedSnapshotStore.getLatestSnapshot();
-          if (optSnapshot.isPresent()) {
-            final var snapshot = optSnapshot.get();
-            return snapshot.getIndex() == index;
-          }
-          return false;
-        });
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(persistedSnapshotStore.getCurrentSnapshotIndex())
+                    .describedAs("New snapshot is taken")
+                    .isGreaterThan(oldSnapshot.getIndex()));
   }
 
   @Test
@@ -186,7 +175,6 @@ public final class AsyncSnapshotingTest {
     // then
     Awaitility.await()
         .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
-    ;
   }
 
   @Test
