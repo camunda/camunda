@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.engine.state.EventApplier;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -106,6 +108,37 @@ public final class StreamProcessorReplayModeTest {
     assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPROCESSING);
   }
 
+  @Test
+  public void shouldUpdateLastProcessedAndWrittenPositionOnReplay() {
+    // given
+    startStreamProcessor(replayContinuously);
+
+    // when
+    final var commandPosition = replayContinuously.writeCommand(ACTIVATE_ELEMENT, RECORD);
+    final var eventPosition =
+        replayContinuously.writeEvent(
+            ELEMENT_ACTIVATING, RECORD, event -> event.sourceRecordPosition(commandPosition));
+
+    // then
+    verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var lastProcessedPosition = getLastProcessedPosition(replayContinuously);
+              final var lastWrittenPosition = getLastWrittenPosition(replayContinuously);
+
+              assertThat(lastProcessedPosition)
+                  .describedAs(
+                      "Expected the position of the command to be the last processed position")
+                  .isEqualTo(commandPosition);
+
+              assertThat(lastWrittenPosition)
+                  .describedAs("Expected the position of the event to be the last written position")
+                  .isEqualTo(eventPosition);
+            });
+  }
+
   private void startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
     streamProcessorRule
         .withEventApplierFactory(zeebeState -> eventApplier)
@@ -116,6 +149,18 @@ public final class StreamProcessorReplayModeTest {
   }
 
   private Phase getCurrentPhase(final StreamProcessorRule streamProcessorRule) {
-    return streamProcessorRule.getStreamProcessor(PARTITION_ID).getCurrentPhase().join();
+    return getStreamProcessor(streamProcessorRule).getCurrentPhase().join();
+  }
+
+  private Long getLastProcessedPosition(final StreamProcessorRule streamProcessorRule) {
+    return getStreamProcessor(streamProcessorRule).getLastProcessedPositionAsync().join();
+  }
+
+  private Long getLastWrittenPosition(final StreamProcessorRule streamProcessorRule) {
+    return getStreamProcessor(streamProcessorRule).getLastWrittenPositionAsync().join();
+  }
+
+  private StreamProcessor getStreamProcessor(final StreamProcessorRule streamProcessorRule) {
+    return streamProcessorRule.getStreamProcessor(PARTITION_ID);
   }
 }
