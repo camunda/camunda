@@ -75,13 +75,18 @@ test('Navigate to called and parent instances', async (t) => {
     .expect(withinInstanceHeader.getByText('Call Activity Process').exists)
     .ok();
 
-  const withinDiagram = within(screen.queryByTestId('diagram'));
+  await t.click(
+    within(screen.queryByTestId('diagram')).queryByText('Call Activity')
+  );
+
+  const withinPopover = within(screen.queryByTestId('popover'));
 
   await t
-    .click(withinDiagram.queryByText('Call Activity'))
-    .expect(withinDiagram.queryByText(/calledProcessInstanceId/).exists)
+    .expect(withinPopover.queryByText(/Called Instance/).exists)
     .ok()
-    .click(withinDiagram.getByRole('link', {name: /view called instance/i}));
+    .click(
+      withinPopover.getByRole('link', {name: /view called process instance/i})
+    );
 
   await t
     .expect(withinInstanceHeader.queryByText(calledProcessInstanceId).exists)

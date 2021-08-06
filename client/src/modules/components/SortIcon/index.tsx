@@ -15,7 +15,7 @@ type Props = {
   disabled?: boolean;
 };
 
-export default function SortIcon(props: Props) {
+function SortIcon(props: Props) {
   return (
     <Styled.SortIcon {...props} data-testid={`${props.sortOrder}-icon`}>
       {props.sortOrder === SORT_ORDER.ASC ? (
@@ -29,3 +29,5 @@ export default function SortIcon(props: Props) {
 SortIcon.defaultProps = {
   disabled: false,
 };
+
+export default SortIcon;

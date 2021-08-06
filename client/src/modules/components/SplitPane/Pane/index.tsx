@@ -28,7 +28,7 @@ type OwnProps = {
 
 type Props = OwnProps & typeof Pane.defaultProps;
 
-export default class Pane extends React.Component<Props> {
+class Pane extends React.Component<Props> {
   static Header: any;
   static Body: any;
   static Footer: any;
@@ -154,3 +154,5 @@ Pane.Footer = function PaneFooter(props: any) {
   const {expandState} = useContext(paneContext) || {expandState: 'DEFAULT'};
   return <Styled.Footer {...props} expandState={expandState} />;
 };
+
+export default Pane;

@@ -8,7 +8,7 @@ import React from 'react';
 
 import * as Styled from './styled';
 
-export default class Table extends React.Component<{}> {
+class Table extends React.Component<{}> {
   static THead: any;
   static TBody: any;
   static TH: any;
@@ -39,3 +39,5 @@ Table.TR = function TR(props: any) {
 Table.TD = function TD(props: any) {
   return <Styled.TD {...props} />;
 };
+
+export default Table;

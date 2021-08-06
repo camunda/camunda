@@ -179,15 +179,6 @@ const theme = Object.freeze({
         icons: {
           color: LIGHT_COLORS.ui02,
         },
-        codeLine: {
-          color: rgba(SEMANTIC_COLORS.white, 0.9),
-          before: {
-            color: SEMANTIC_COLORS.white,
-          },
-        },
-        linesSeparator: {
-          backgroundColor: DARK_COLORS.ui02,
-        },
         variablesTable: {
           tr: {
             borderColor: DARK_COLORS.ui04,
@@ -521,15 +512,6 @@ const theme = Object.freeze({
               backgroundColor: DARK_COLORS.ui04,
               color: SEMANTIC_COLORS.white,
               borderColor: DARK_COLORS.ui06,
-            },
-            codeLine: {
-              color: rgba(SEMANTIC_COLORS.white, 0.9),
-              before: {
-                color: SEMANTIC_COLORS.white,
-              },
-            },
-            linesSeparator: {
-              backgroundColor: DARK_COLORS.ui02,
             },
           },
           statisticOverlay: {
@@ -895,9 +877,6 @@ const theme = Object.freeze({
         },
       },
       variables: {
-        codeLine: {
-          before: 0.5,
-        },
         variablesTable: {
           tr: 0.7,
         },
@@ -948,11 +927,6 @@ const theme = Object.freeze({
           },
         },
         copyright: 0.7,
-        diagram: {
-          popoverOverlay: {
-            codeLine: 0.5,
-          },
-        },
         iconButton: {
           icon: {
             default: {
@@ -1165,15 +1139,6 @@ const theme = Object.freeze({
         },
         icons: {
           color: DARK_COLORS.ui04,
-        },
-        codeLine: {
-          color: LIGHT_COLORS.ui06,
-          before: {
-            color: LIGHT_COLORS.ui06,
-          },
-        },
-        linesSeparator: {
-          backgroundColor: LIGHT_COLORS.ui05,
         },
         variablesTable: {
           tr: {
@@ -1508,15 +1473,6 @@ const theme = Object.freeze({
               backgroundColor: LIGHT_COLORS.ui02,
               color: LIGHT_COLORS.ui06,
               borderColor: LIGHT_COLORS.ui05,
-            },
-            codeLine: {
-              color: LIGHT_COLORS.ui06,
-              before: {
-                color: LIGHT_COLORS.ui06,
-              },
-            },
-            linesSeparator: {
-              backgroundColor: LIGHT_COLORS.ui05,
             },
           },
           statisticOverlay: {
@@ -1881,9 +1837,6 @@ const theme = Object.freeze({
         },
       },
       variables: {
-        codeLine: {
-          before: 0.65,
-        },
         variablesTable: {
           tr: 1,
         },
@@ -1934,11 +1887,6 @@ const theme = Object.freeze({
           },
         },
         copyright: 0.9,
-        diagram: {
-          popoverOverlay: {
-            codeLine: 0.65,
-          },
-        },
         iconButton: {
           icon: {
             default: {

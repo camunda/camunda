@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {computed} from 'mobx';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {observer} from 'mobx-react';
@@ -33,6 +33,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     state: {flowNodes},
   } = flowNodeStatesStore;
 
+  const [isIncidentBarOpen, setIncidentBarOpen] = useState(false);
   const {processInstanceId} = useInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
 
@@ -86,7 +87,11 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
         {status === 'fetched' && (
           <>
             {instance?.state === 'INCIDENT' && (
-              <IncidentsWrapper expandState={expandState} />
+              <IncidentsWrapper
+                expandState={expandState}
+                isOpen={isIncidentBarOpen}
+                onClick={() => setIncidentBarOpen(!isIncidentBarOpen)}
+              />
             )}
             {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
             {diagramModel?.definitions && (
@@ -104,6 +109,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
                 flowNodeStateOverlays={flowNodeStateOverlays.get()}
                 // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
                 definitions={diagramModel.definitions}
+                isIncidentBarOpen={isIncidentBarOpen}
               />
             )}
           </>

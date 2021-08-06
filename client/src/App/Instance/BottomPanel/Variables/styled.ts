@@ -287,51 +287,6 @@ const ModalBody = styled(Modal.Body)`
   }
 `;
 
-const CodeLine = styled.p`
-  ${({theme}) => {
-    const colors = theme.colors.variables.codeLine;
-    const opacity = theme.opacity.variables.codeLine;
-
-    return css`
-      margin: 3px;
-      margin-left: 0;
-      line-height: 14px;
-      color: ${colors.color};
-      font-family: IBM Plex Mono;
-      font-size: 14px;
-
-      &:before {
-        font-size: 12px;
-        box-sizing: border-box;
-        text-align: right;
-        counter-increment: line;
-        content: counter(line);
-        color: ${colors.before.color};
-        display: inline-block;
-        width: 35px;
-        opacity: ${opacity.before};
-        padding-right: 11px;
-        -webkit-user-select: none;
-      }
-    `;
-  }}
-`;
-
-const LinesSeparator = styled.span`
-  ${({theme}) => {
-    const colors = theme.colors.variables.linesSeparator;
-
-    return css`
-      position: absolute;
-      top: 0;
-      left: 33px;
-      height: 100%;
-      width: 1px;
-      background-color: ${colors.backgroundColor};
-    `;
-  }}
-`;
-
 const EmptyPanel = styled(EmptyPanelComponent)`
   position: absolute;
   top: 19px;
@@ -419,8 +374,6 @@ export {
   EditIcon,
   ModalIcon,
   ModalBody,
-  CodeLine,
-  LinesSeparator,
   EmptyPanel,
   Button,
   Plus,

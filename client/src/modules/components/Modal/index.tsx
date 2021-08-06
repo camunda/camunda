@@ -38,7 +38,7 @@ type ModalProps = {
   preventKeyboardEvents?: boolean;
 };
 
-export default class Modal extends React.Component<ModalProps> {
+class Modal extends React.Component<ModalProps> {
   static Header: any;
   static Body = Styled.ModalBody;
   static BodyText = Styled.ModalBodyText;
@@ -262,3 +262,4 @@ Modal.PrimaryButton = withModal(ModalPrimaryButton);
 Modal.SecondaryButton = withModal(ModalSecondaryButton);
 
 export {SIZES} from './constants';
+export default Modal;

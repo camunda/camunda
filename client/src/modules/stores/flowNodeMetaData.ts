@@ -38,6 +38,7 @@ type InstanceMetaData = {
   jobType: string | null;
   jobWorker: string | null;
   calledProcessInstanceId: string | null;
+  calledProcessDefinitionName: string | null;
 };
 
 type Breadcrumb = {flowNodeId: string; flowNodeType: string};
@@ -150,7 +151,8 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
               incidentErrorType:
                 incidentErrorType === null
                   ? null
-                  : incidentsStore.getIncidentType(flowNodeInstanceId),
+                  : incidentsStore.getIncidentType(flowNodeInstanceId) ||
+                    incidentErrorType,
             };
           }
 

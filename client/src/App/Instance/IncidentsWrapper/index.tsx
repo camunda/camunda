@@ -19,13 +19,13 @@ import * as Styled from './styled';
 
 type Props = {
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
+  isOpen: boolean;
+  onClick?: () => void;
 };
 
 const IncidentsWrapper: React.FC<Props> = observer(function (props) {
-  const {expandState} = props;
+  const {expandState, isOpen, onClick} = props;
   const {incidents, flowNodes, errorTypes} = incidentsStore;
-
-  const [isOpen, setIsOpen] = useState(false);
 
   const [selectedFlowNodes, setSelectedFlowNodes] = useState<string[]>([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState<string[]>([]);
@@ -66,7 +66,7 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
   }
 
   function handleToggle() {
-    !isInTransition && setIsOpen(!isOpen);
+    !isInTransition && onClick?.();
   }
 
   function handleSelection(

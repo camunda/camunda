@@ -55,10 +55,12 @@ type Props = {
     canceled?: number;
   }[];
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
+  isIncidentBarOpen?: boolean;
 };
 
 type State = {
   isViewerLoaded: boolean;
+  isViewboxChanging: boolean;
 };
 
 class Diagram extends React.PureComponent<Props, State> {
@@ -67,6 +69,7 @@ class Diagram extends React.PureComponent<Props, State> {
 
   state = {
     isViewerLoaded: false,
+    isViewboxChanging: false,
   };
 
   componentDidMount() {
@@ -144,6 +147,8 @@ class Diagram extends React.PureComponent<Props, State> {
     if (this.props.expandState !== EXPAND_STATE.COLLAPSED) {
       this.handleZoomReset();
     }
+
+    this.addViewboxListeners();
 
     if (this.props.selectableFlowNodes) {
       this.props.onFlowNodeSelection && this.addElementClickListeners();
@@ -336,6 +341,18 @@ class Diagram extends React.PureComponent<Props, State> {
     eventBus.on('element.click', this.handleElementClick);
   };
 
+  addViewboxListeners = () => {
+    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
+    const eventBus = this.Viewer.get('eventBus');
+    eventBus.on('canvas.viewbox.changing', () => {
+      this.setState({isViewboxChanging: true});
+    });
+
+    eventBus.on('canvas.viewbox.changed', () => {
+      this.setState({isViewboxChanging: false});
+    });
+  };
+
   // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'args' implicitly has an 'any[]' ty... Remove this comment to see the full error message
   handleOverlayAdd = (...args) => {
     const viewer = this.Viewer;
@@ -403,14 +420,16 @@ class Diagram extends React.PureComponent<Props, State> {
         {selectedFlowNodeId &&
           this.state.isViewerLoaded &&
           this.Viewer &&
-          this.containerRef.current && (
+          !this.state.isViewboxChanging &&
+          this.props.expandState !== 'COLLAPSED' &&
+          !this.props.isIncidentBarOpen && (
             <PopoverOverlay
-              diagramContainer={this.containerRef.current}
-              // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-              flowNode={this.Viewer.get('elementRegistry').getGraphics(
-                this.props.selectedFlowNodeId
-              )}
-              {...overlayProps}
+              selectedFlowNodeRef={
+                // @ts-expect-error
+                this.Viewer.get('elementRegistry').getGraphics(
+                  selectedFlowNodeId
+                )
+              }
             />
           )}
         {this.renderFlowNodeStateOverlays(overlayProps)}

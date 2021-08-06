@@ -19,7 +19,26 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import userEvent from '@testing-library/user-event';
 
+jest.mock('react-transition-group', () => {
+  const FakeTransition = jest.fn(({children}) => children);
+  const FakeCSSTransition = jest.fn((props) =>
+    props.in ? <FakeTransition>{props.children}</FakeTransition> : null
+  );
+
+  return {
+    CSSTransition: FakeCSSTransition,
+    Transition: FakeTransition,
+    TransitionGroup: jest.fn(({children}) => {
+      return children.map((transition: any) => {
+        const completedTransition = {...transition};
+        completedTransition.props = {...transition.props, in: true};
+        return completedTransition;
+      });
+    }),
+  };
+});
 jest.mock('modules/utils/bpmn');
 jest.mock('./InstanceHeader', () => {
   return {
@@ -147,5 +166,27 @@ describe('TopPanel', () => {
     expect(
       await screen.findByText('Diagram could not be fetched')
     ).toBeInTheDocument();
+  });
+
+  it('should toggle incident bar', async () => {
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
+
+    currentInstanceStore.init('instance_with_incident');
+    await singleInstanceDiagramStore.fetchProcessXml('1');
+
+    expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
+
+    userEvent.click(await screen.findByTitle('View 1 Incident in Instance 1'));
+
+    expect(screen.getByText('Incident type:')).toBeInTheDocument();
+    expect(screen.getByText('Flow Node:')).toBeInTheDocument();
+
+    userEvent.click(await screen.findByTitle('View 1 Incident in Instance 1'));
+
+    expect(screen.queryByText('Incident type:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
   });
 });

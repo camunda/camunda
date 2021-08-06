@@ -90,7 +90,7 @@ test('Instance with an incident - history panel', async (t) => {
     .click(within(screen.queryByTestId('diagram')).queryByText(/Task A/))
     .expect(
       within(screen.queryByTestId('popover')).queryByText(
-        'To view metadata for any of these, select one instance in the Instance History.'
+        /To view details for any of these,.*select one Instance in the Instance History./
       ).exists
     )
     .ok()
@@ -154,15 +154,15 @@ test('Instance with an incident - diagram', async (t) => {
 
   const withinPopopver = within(screen.queryByTestId('popover'));
   await t
-    .expect(withinPopopver.queryByText(/flowNodeInstanceId/).exists)
+    .expect(withinPopopver.queryByText(/Flow Node Instance Id/).exists)
     .ok()
-    .expect(withinPopopver.queryByText(/startDate/).exists)
+    .expect(withinPopopver.queryByText(/Start Date/).exists)
     .ok()
-    .expect(withinPopopver.queryByText(/endDate/).exists)
+    .expect(withinPopopver.queryByText(/End Date/).exists)
     .ok()
-    .expect(withinPopopver.queryByText(/incidentErrorType/).exists)
+    .expect(withinPopopver.queryByText(/Type/).exists)
     .ok()
-    .expect(withinPopopver.queryByText(/incidentErrorMessage/).exists)
+    .expect(withinPopopver.queryByText(/Error Message/).exists)
     .ok();
 
   await t.click(

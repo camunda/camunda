@@ -12,13 +12,20 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
 import {PopoverOverlay} from './';
-import {createInstance, mockIncidents} from 'modules/testUtils';
+import {
+  createInstance,
+  mockIncidents,
+  mockCallActivityProcessXML,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router';
 import {incidentsStore} from 'modules/stores/incidents';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 
-const FLOW_NODE_ID = 'startEvent';
+const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
+const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
 const FLOW_NODE_INSTANCE_ID = '2251799813699889';
 
 const Wrapper: React.FC = ({children}) => {
@@ -36,9 +43,9 @@ const completedFlowNodeMetaData = {
   instanceCount: null,
   breadcrumb: [],
   instanceMetadata: {
-    flowNodeId: FLOW_NODE_ID,
+    flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
     flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-    flowNodeType: 'START_EVENT',
+    flowNodeType: 'TASK_CALL_ACTIVITY',
     startDate: '2021-03-26T09:50:22.457+0000',
     endDate: '2021-03-26T11:00:00.000+0000',
     incidentErrorType: null,
@@ -50,6 +57,7 @@ const completedFlowNodeMetaData = {
     jobDeadline: '2021-03-26T10:00:00.000+0000',
     jobCustomHeaders: null,
     calledProcessInstanceId: '229843728748927482',
+    calledProcessDefinitionName: 'Called Process',
   },
 };
 
@@ -74,43 +82,26 @@ const incidentFlowNodeMetaData = {
     jobDeadline: null,
     jobCustomHeaders: null,
     calledProcessInstanceId: null,
+    calledProcessDefinitionName: null,
   },
 };
 
-jest.mock('./getPopoverPosition', () => ({
-  getPopoverPosition: () => ({
-    overlay: {
-      top: 0,
-      left: 0,
-    },
-    side: 'TOP',
-  }),
-}));
-
 const renderPopover = () => {
-  const {container} = render(<div />);
+  const {container} = render(<svg />);
 
-  const PopoverlayProps = {
-    onOverlayAdd: (
-      id: string,
-      type: string,
-      overlay: {html: HTMLDivElement}
-    ) => {
-      container.appendChild(overlay.html);
-    },
-    onOverlayClear: () => {},
-    isViewerLoaded: true,
-    diagramContainer: document.createElement('div'),
-    flowNode: document.createElementNS('http://www.w3.org/2000/svg', 'svg'),
-  };
-
-  render(<PopoverOverlay {...PopoverlayProps} />, {wrapper: Wrapper});
+  render(
+    <PopoverOverlay selectedFlowNodeRef={container.querySelector('svg')} />,
+    {
+      wrapper: Wrapper,
+    }
+  );
 };
 
 describe('PopoverOverlay', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
+    singleInstanceDiagramStore.init();
   });
 
   afterEach(() => {
@@ -118,10 +109,14 @@ describe('PopoverOverlay', () => {
     flowNodeSelectionStore.reset();
     currentInstanceStore.reset();
     incidentsStore.reset();
+    singleInstanceDiagramStore.reset();
   });
 
   it('should render meta data for incident flow node', async () => {
     mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      ),
       rest.post(
         `/api/process-instances/${FLOW_NODE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(incidentFlowNodeMetaData))
@@ -143,52 +138,50 @@ describe('PopoverOverlay', () => {
 
     renderPopover();
 
-    await screen.findByText(/flowNodeInstanceId/);
-    expect(screen.getByText(/jobId/)).toBeInTheDocument();
-    expect(screen.getByText(/startDate/)).toBeInTheDocument();
-    expect(screen.getByText(/endDate/)).toBeInTheDocument();
-    expect(screen.getByText(/incidentErrorType/)).toBeInTheDocument();
-    expect(screen.getByText(/incidentErrorMessage/)).toBeInTheDocument();
-    expect(screen.getByText(/calledProcessInstanceId/)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Show more metadata'})
-    ).toBeInTheDocument();
+    await screen.findByText(/Flow Node Instance Id/);
+    expect(screen.getByText(/Start Date/)).toBeInTheDocument();
+    expect(screen.getByText(/End Date/)).toBeInTheDocument();
+    expect(screen.getByText(/Type/)).toBeInTheDocument();
+    expect(screen.getByText(/Error Message/)).toBeInTheDocument();
+    expect(screen.getByText(/View/)).toBeInTheDocument();
+    expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
 
-    const {incidentErrorMessage, jobId, flowNodeInstanceId} =
+    const {incidentErrorMessage, flowNodeInstanceId} =
       incidentFlowNodeMetaData.instanceMetadata;
 
     expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
-    expect(screen.getByText(jobId)).toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText('No more retries left')).toBeInTheDocument();
     expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
-    expect(screen.getByText('None')).toBeInTheDocument();
   });
 
   it('should render meta data for completed flow node', async () => {
     mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      ),
       rest.post(
-        `/api/process-instances/${FLOW_NODE_ID}/flow-node-metadata`,
+        `/api/process-instances/${CALL_ACTIVITY_FLOW_NODE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
       )
     );
     currentInstanceStore.setCurrentInstance(
       createInstance({
-        id: FLOW_NODE_ID,
+        id: CALL_ACTIVITY_FLOW_NODE_ID,
         state: 'ACTIVE',
       })
     );
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+    });
 
     renderPopover();
 
-    await screen.findByText(/flowNodeInstanceId/);
-    expect(screen.getByText(/startDate/)).toBeInTheDocument();
-    expect(screen.getByText(/endDate/)).toBeInTheDocument();
-    expect(screen.getByText(/calledProcessInstanceId/)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Show more metadata'})
-    ).toBeInTheDocument();
+    await screen.findByText(/Flow Node Instance Id/);
+    expect(screen.getByText(/Start Date/)).toBeInTheDocument();
+    expect(screen.getByText(/End Date/)).toBeInTheDocument();
+    expect(screen.getByText(/Called Instance/)).toBeInTheDocument();
+    expect(screen.getByText(/View/)).toBeInTheDocument();
 
     expect(
       screen.getByText(
@@ -198,49 +191,55 @@ describe('PopoverOverlay', () => {
     expect(screen.getAllByText(MOCK_TIMESTAMP)).toHaveLength(2);
     expect(
       screen.getByText(
-        completedFlowNodeMetaData.instanceMetadata.calledProcessInstanceId
+        `Called Process - ${completedFlowNodeMetaData.instanceMetadata.calledProcessInstanceId}`
       )
     ).toBeInTheDocument();
 
-    expect(screen.queryByText(/jobId/)).not.toBeInTheDocument();
     expect(screen.queryByText(/incidentErrorType/)).not.toBeInTheDocument();
     expect(screen.queryByText(/incidentErrorMessage/)).not.toBeInTheDocument();
   });
 
   it('should render meta data modal', async () => {
     mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      ),
       rest.post(
-        `/api/process-instances/${FLOW_NODE_ID}/flow-node-metadata`,
+        `/api/process-instances/${CALL_ACTIVITY_FLOW_NODE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
       )
     );
     currentInstanceStore.setCurrentInstance(
       createInstance({
-        id: FLOW_NODE_ID,
+        id: CALL_ACTIVITY_FLOW_NODE_ID,
         state: 'ACTIVE',
       })
     );
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+    });
 
     renderPopover();
 
-    await screen.findByText(/flowNodeInstanceId/);
+    await screen.findByText(/Flow Node Instance Id/);
 
-    userEvent.click(screen.getByRole('button', {name: 'Show more metadata'}));
+    userEvent.click(screen.getByText(/View/));
 
     expect(
-      screen.getByText(/Flow Node "startEvent" Metadata/)
+      screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'Close Modal'})
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/"flowNodeId": "startEvent"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"flowNodeId": "Activity_0zqism7"/)
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/"flowNodeInstanceId": "2251799813699889"/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/"flowNodeType": "START_EVENT"/)
+      screen.getByText(/"flowNodeType": "TASK_CALL_ACTIVITY"/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"startDate": "2018-12-12 00:00:00"/)

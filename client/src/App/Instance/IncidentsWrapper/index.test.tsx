@@ -72,7 +72,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the IncidentsBanner', () => {
-    render(<IncidentsWrapper {...testData.props.default} />, {
+    render(<IncidentsWrapper {...testData.props.default} isOpen={true} />, {
       wrapper: Wrapper,
     });
 
@@ -81,19 +81,8 @@ describe('IncidentsWrapper', () => {
     ).toBeInTheDocument();
   });
 
-  it('should toggle the IncidentsOverlay when clicking on the IncidentsBanner', () => {
-    render(<IncidentsWrapper {...testData.props.default} />, {
-      wrapper: Wrapper,
-    });
-    expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();
-    expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
-    userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
-    expect(screen.getByText('Incident type:')).toBeInTheDocument();
-    expect(screen.getByText('Flow Node:')).toBeInTheDocument();
-  });
-
   it('should render the table', () => {
-    render(<IncidentsWrapper {...testData.props.default} />, {
+    render(<IncidentsWrapper {...testData.props.default} isOpen={true} />, {
       wrapper: Wrapper,
     });
     userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
@@ -109,7 +98,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the filters', () => {
-    render(<IncidentsWrapper {...testData.props.default} />, {
+    render(<IncidentsWrapper {...testData.props.default} isOpen={true} />, {
       wrapper: Wrapper,
     });
     userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
@@ -133,9 +122,12 @@ describe('IncidentsWrapper', () => {
   describe('Filtering', () => {
     let rerender: any;
     beforeEach(() => {
-      const wrapper = render(<IncidentsWrapper {...testData.props.default} />, {
-        wrapper: Wrapper,
-      });
+      const wrapper = render(
+        <IncidentsWrapper {...testData.props.default} isOpen={true} />,
+        {
+          wrapper: Wrapper,
+        }
+      );
       rerender = wrapper.rerender;
       userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
     });
@@ -238,7 +230,7 @@ describe('IncidentsWrapper', () => {
 
       await incidentsStore.fetchIncidents('1');
 
-      rerender(<IncidentsWrapper {...testData.props.default} />);
+      rerender(<IncidentsWrapper {...testData.props.default} isOpen={true} />);
 
       expect(
         flowNodeFilters.queryByText(/^flowNodeId_exclusiveGateway/)
