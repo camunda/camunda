@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -43,10 +44,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -216,8 +216,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertReportWithIncompatibleFilters(reportType, result);
   }
 
-  @Disabled("Disabled as there currently are no incompatible duration viewLevel filters. " +
-    "To be adjusted with OPT-5349 and OPT-5350")
+  @Disabled // Disabled as there currently are no incompatible duration viewLevel filters. To be adjusted with OPT-5349 and OPT-5350
   @ParameterizedTest
   @MethodSource("reportTypesToEvaluate")
   public void testIncompatibleCombinationOfViewLevelFlowNodeDurationFilters(final ProcessReportDataType reportType) {
@@ -646,7 +645,7 @@ public class MixedFilterIT extends AbstractFilterIT {
         .filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
         .duration()
-        .operator(GREATER_THAN)
+        .operator(ComparisonOperator.GREATER_THAN)
         .unit(DurationFilterUnit.HOURS)
         .value(10L)
         .filterLevel(levelToApply)
@@ -659,7 +658,7 @@ public class MixedFilterIT extends AbstractFilterIT {
         .flowNodeDuration()
         .flowNode(
           "someId",
-          DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L).operator(GREATER_THAN).build()
+          DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L).operator(ComparisonOperator.GREATER_THAN).build()
         ).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().candidateGroups().id("someId").filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().assignee().id("someId").filterLevel(levelToApply).add().buildList()
