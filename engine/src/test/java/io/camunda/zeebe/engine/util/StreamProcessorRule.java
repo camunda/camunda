@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -65,7 +65,7 @@ public final class StreamProcessorRule implements TestRule {
   private TestStreams streams;
   private StreamProcessingComposite streamProcessingComposite;
   private ListLogStorage sharedStorage = null;
-  private ReplayMode replayMode = ReplayMode.UNTIL_END;
+  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -127,8 +127,8 @@ public final class StreamProcessorRule implements TestRule {
     return this;
   }
 
-  public StreamProcessorRule withReplayMode(final ReplayMode replayMode) {
-    this.replayMode = replayMode;
+  public StreamProcessorRule withReplayMode(final StreamProcessorMode streamProcessorMode) {
+    this.streamProcessorMode = streamProcessorMode;
     return this;
   }
 
@@ -324,7 +324,7 @@ public final class StreamProcessorRule implements TestRule {
     @Override
     protected void before() {
       streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
-      streams.withReplayMode(replayMode);
+      streams.withReplayMode(streamProcessorMode);
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {

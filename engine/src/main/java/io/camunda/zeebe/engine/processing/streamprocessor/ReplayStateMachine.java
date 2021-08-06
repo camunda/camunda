@@ -73,7 +73,7 @@ public final class ReplayStateMachine {
 
   private ActorFuture<Long> recoveryFuture;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private final ReplayMode replayMode;
+  private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
 
   private State currentState = State.AWAIT_RECORD;
@@ -92,7 +92,7 @@ public final class ReplayStateMachine {
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
-    replayMode = context.getReplayMode();
+    streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
   }
 
@@ -115,11 +115,11 @@ public final class ReplayStateMachine {
     LOG.info(
         "Processor starts replay of events. [snapshot-position: {}, replay-mode: {}]",
         snapshotPosition,
-        replayMode);
+        streamProcessorMode);
 
     replayNextEvent();
 
-    if (replayMode == ReplayMode.CONTINUOUSLY) {
+    if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       logStream.registerRecordAvailableListener(this::recordAvailable);
     }
 
@@ -148,7 +148,7 @@ public final class ReplayStateMachine {
         currentEvent = logStreamReader.next();
         replayEvent(currentEvent);
 
-      } else if (replayMode == ReplayMode.UNTIL_END) {
+      } else if (streamProcessorMode == StreamProcessorMode.PROCESSING) {
         onRecordsReplayed();
 
       } else {

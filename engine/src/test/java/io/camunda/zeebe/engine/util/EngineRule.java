@@ -19,9 +19,9 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMes
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -174,8 +174,8 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withReplayMode(final ReplayMode replayMode) {
-    environmentRule.withReplayMode(replayMode);
+  public EngineRule withReplayMode(final StreamProcessorMode streamProcessorMode) {
+    environmentRule.withReplayMode(streamProcessorMode);
     return this;
   }
 

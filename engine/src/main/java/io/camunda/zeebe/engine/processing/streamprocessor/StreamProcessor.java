@@ -127,7 +127,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       processingContext.disableLogStreamWriter();
 
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
-      if (processingContext.getReplayMode() == ReplayMode.CONTINUOUSLY) {
+      if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
         openFuture.complete(null);
         replayCompletedFuture.onComplete(
             (v, error) -> {
