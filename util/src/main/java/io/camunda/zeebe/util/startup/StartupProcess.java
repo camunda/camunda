@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Stack;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +106,10 @@ public final class StartupProcess<CONTEXT> {
           .whenComplete(
               (contextReturnedByStep, error) -> {
                 if (error != null) {
-                  logger.warn("Aborting startup process due to exception.", error);
+                  logger.warn(
+                      "Aborting startup process due to exception during stage "
+                          + stepToStart.getName(),
+                      error);
                   startupFuture.completeExceptionally(error);
                 } else {
                   proceedWithStartup(stepsToStart, contextReturnedByStep, startupFuture);
@@ -136,7 +140,7 @@ public final class StartupProcess<CONTEXT> {
   private void proceedWithShutdown(
       final CONTEXT context,
       final CompletableFuture<CONTEXT> shutdownFuture,
-      final List<Throwable> collectedExceptions) {
+      final List<ShutdownExceptionRecord> collectedExceptions) {
     if (startedSteps.isEmpty()) {
       completeShutdownFuture(context, shutdownFuture, collectedExceptions);
     } else {
@@ -149,7 +153,7 @@ public final class StartupProcess<CONTEXT> {
               (contextReturnedByShutdown, error) -> {
                 final CONTEXT contextToUse;
                 if (error != null) {
-                  collectedExceptions.add(error);
+                  collectedExceptions.add(new ShutdownExceptionRecord(stepToShutdown, error));
                   contextToUse = context;
                 } else {
                   contextToUse = contextReturnedByShutdown;
@@ -163,24 +167,52 @@ public final class StartupProcess<CONTEXT> {
   private void completeShutdownFuture(
       final CONTEXT context,
       final CompletableFuture<CONTEXT> shutdownFuture,
-      final List<Throwable> collectedExceptions) {
+      final List<ShutdownExceptionRecord> collectedExceptions) {
     if (collectedExceptions.isEmpty()) {
       shutdownFuture.complete(context);
       logger.info("Finished shutdown process");
     } else {
       final Throwable exception;
       if (collectedExceptions.size() == 1) {
-        exception = collectedExceptions.get(0);
+        exception = collectedExceptions.get(0).getException();
       } else {
-        exception = new Exception("Exceptions occurred during shutdown");
-        collectedExceptions.forEach(exception::addSuppressed);
+        final var details =
+            collectedExceptions.stream()
+                .map(entry -> entry.getStep().getName() + " " + entry.getException().getMessage())
+                .collect(Collectors.joining("\n"));
+        exception =
+            new Exception(
+                "Exceptions occurred during shutdown: \n"
+                    + details
+                    + "\nSee suppressed exceptions for more detail.");
+        collectedExceptions.stream()
+            .map(ShutdownExceptionRecord::getException)
+            .forEach(exception::addSuppressed);
       }
       shutdownFuture.completeExceptionally(exception);
-      logger.warn("Finished shutdown process with exception.", exception);
+      logger.warn("Finished shutdown process with exception:", exception);
     }
   }
 
   private void logCurrentStep(final String process, final StartupStep<CONTEXT> step) {
     logger.info(process + " " + step.getName());
+  }
+
+  private static final class ShutdownExceptionRecord {
+    private final StartupStep<?> step;
+    private final Throwable exception;
+
+    private ShutdownExceptionRecord(final StartupStep<?> step, final Throwable exception) {
+      this.step = step;
+      this.exception = exception;
+    }
+
+    private StartupStep<?> getStep() {
+      return step;
+    }
+
+    public Throwable getException() {
+      return exception;
+    }
   }
 }
