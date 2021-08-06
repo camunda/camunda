@@ -130,29 +130,38 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   @Override
   public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
+    checkState();
     return updateBrokerReadyStatus(partitionId);
   }
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
       final int partitionId, final long term, final LogStream logStream) {
+    checkState();
     return updateBrokerReadyStatus(partitionId);
   }
 
   @Override
   public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    checkState();
     return CompletableActorFuture.completed(null);
+  }
+
+  private void checkState() {
+    if (partitionInstallStatus == null) {
+      throw new IllegalStateException("PartitionInstallStatus must not be null.");
+    }
   }
 
   private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
     return actor.call(
         () -> {
-          if (!allPartitionsInstalled && partitionInstallStatus != null) {
+          if (!allPartitionsInstalled) {
             partitionInstallStatus.put(partitionId, true);
             allPartitionsInstalled = !partitionInstallStatus.containsValue(false);
 
             if (allPartitionsInstalled) {
-              LOG.debug("All partitions are installed. Broker is ready!");
+              LOG.info("All partitions are installed. Broker is ready!");
             }
           }
         });
