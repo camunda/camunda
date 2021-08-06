@@ -174,8 +174,8 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withReplayMode(final StreamProcessorMode streamProcessorMode) {
-    environmentRule.withReplayMode(streamProcessorMode);
+  public EngineRule withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
+    environmentRule.withStreamProcessorMode(streamProcessorMode);
     return this;
   }
 

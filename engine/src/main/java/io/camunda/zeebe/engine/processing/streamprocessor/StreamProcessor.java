@@ -334,7 +334,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Long> getLastProcessedPositionAsync() {
     return actor.call(
         () -> {
-          if (processingContext.getReplayMode() == ReplayMode.CONTINUOUSLY) {
+          if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
             return replayStateMachine.getLastSourceEventPosition();
           } else {
             return processingStateMachine.getLastSuccessfulProcessedEventPosition();
@@ -345,7 +345,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(
         () -> {
-          if (processingContext.getReplayMode() == ReplayMode.CONTINUOUSLY) {
+          if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
             return replayStateMachine.getLastReplayedEventPosition();
           } else {
             return processingStateMachine.getLastWrittenEventPosition();

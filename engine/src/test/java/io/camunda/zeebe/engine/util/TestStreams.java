@@ -109,7 +109,7 @@ public final class TestStreams {
     this.eventApplierFactory = eventApplierFactory;
   }
 
-  public void withReplayMode(final StreamProcessorMode streamProcessorMode) {
+  public void withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
     this.streamProcessorMode = streamProcessorMode;
   }
 
@@ -258,7 +258,7 @@ public final class TestStreams {
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
             .eventApplierFactory(eventApplierFactory)
-            .replayMode(streamProcessorMode)
+            .streamProcessorMode(streamProcessorMode)
             .build();
     final var openFuture = streamProcessor.openAsync(false);
 

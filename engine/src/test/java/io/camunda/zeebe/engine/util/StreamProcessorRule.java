@@ -127,7 +127,8 @@ public final class StreamProcessorRule implements TestRule {
     return this;
   }
 
-  public StreamProcessorRule withReplayMode(final StreamProcessorMode streamProcessorMode) {
+  public StreamProcessorRule withStreamProcessorMode(
+      final StreamProcessorMode streamProcessorMode) {
     this.streamProcessorMode = streamProcessorMode;
     return this;
   }
@@ -324,7 +325,7 @@ public final class StreamProcessorRule implements TestRule {
     @Override
     protected void before() {
       streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
-      streams.withReplayMode(streamProcessorMode);
+      streams.withStreamProcessorMode(streamProcessorMode);
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {

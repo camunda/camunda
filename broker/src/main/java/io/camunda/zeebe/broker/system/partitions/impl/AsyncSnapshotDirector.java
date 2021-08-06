@@ -11,6 +11,7 @@ import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -63,13 +64,13 @@ public final class AsyncSnapshotDirector extends Actor
       final StreamProcessor streamProcessor,
       final StateController stateController,
       final Duration snapshotRate,
-      final boolean replayMode) {
+      final StreamProcessorMode streamProcessorMode) {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     actorName = buildActorName(nodeId, "SnapshotDirector", partitionId);
-    if (replayMode) {
+    if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       isLastWrittenPositionCommitted = () -> true;
     } else {
       isLastWrittenPositionCommitted = () -> lastWrittenEventPosition <= commitPosition;
@@ -94,7 +95,12 @@ public final class AsyncSnapshotDirector extends Actor
       final StateController stateController,
       final Duration snapshotRate) {
     return new AsyncSnapshotDirector(
-        nodeId, partitionId, streamProcessor, stateController, snapshotRate, true);
+        nodeId,
+        partitionId,
+        streamProcessor,
+        stateController,
+        snapshotRate,
+        StreamProcessorMode.REPLAY);
   }
 
   /**
@@ -115,7 +121,12 @@ public final class AsyncSnapshotDirector extends Actor
       final StateController stateController,
       final Duration snapshotRate) {
     return new AsyncSnapshotDirector(
-        nodeId, partitionId, streamProcessor, stateController, snapshotRate, false);
+        nodeId,
+        partitionId,
+        streamProcessor,
+        stateController,
+        snapshotRate,
+        StreamProcessorMode.PROCESSING);
   }
 
   @Override
