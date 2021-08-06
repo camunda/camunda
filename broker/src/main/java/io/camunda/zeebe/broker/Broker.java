@@ -347,8 +347,6 @@ public final class Broker implements AutoCloseable {
 
     partitionManager.start().join();
 
-    healthCheckService.registerPartitionManager(partitionManager);
-
     return () -> {
       partitionManager.stop().join();
       partitionManager = null;

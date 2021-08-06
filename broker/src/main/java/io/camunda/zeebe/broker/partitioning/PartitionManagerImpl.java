@@ -120,6 +120,12 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
         .start()
         .thenApply(
             ps -> {
+              LOGGER.info("Registering Partition Manager");
+
+              /* this must be called here; it must be called after the members of the partition have been
+              populated which happens during start of bootstrap manager and before the partitions are registered */
+              healthCheckService.registerPartitionManager(this);
+
               LOGGER.info("Starting partitions");
 
               final var partitionFactory =
@@ -131,7 +137,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       commandHApiService,
                       snapshotStoreFactory,
                       clusterServices,
-                      exporterRepository);
+                      exporterRepository,
+                      healthCheckService);
 
               partitions.addAll(
                   partitionFactory.constructPartitions(
@@ -149,10 +156,10 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   private void startPartition(final ZeebePartition zeebePartition) {
+
     actorSchedulingService.submitActor(zeebePartition).join();
     zeebePartition.addFailureListener(
         new PartitionHealthBroadcaster(zeebePartition.getPartitionId(), this::onHealthChanged));
-    healthCheckService.registerMonitoredPartition(zeebePartition.getPartitionId(), zeebePartition);
     diskSpaceUsageListenerRegistry.accept(zeebePartition);
   }
 

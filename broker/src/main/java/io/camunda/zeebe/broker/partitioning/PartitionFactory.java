@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
@@ -97,6 +98,7 @@ final class PartitionFactory {
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
+  private final BrokerHealthCheckService healthCheckService;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -106,7 +108,8 @@ final class PartitionFactory {
       final CommandApiService commandHApiService,
       final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
-      final ExporterRepository exporterRepository) {
+      final ExporterRepository exporterRepository,
+      final BrokerHealthCheckService healthCheckService) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -115,6 +118,7 @@ final class PartitionFactory {
     this.snapshotStoreFactory = snapshotStoreFactory;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
+    this.healthCheckService = healthCheckService;
   }
 
   protected List<ZeebePartition> constructPartitions(
@@ -166,6 +170,9 @@ final class PartitionFactory {
 
       final ZeebePartition zeebePartition =
           new ZeebePartition(transitionContext, transitionBehavior);
+
+      healthCheckService.registerMonitoredPartition(
+          zeebePartition.getPartitionId(), zeebePartition);
       partitions.add(zeebePartition);
     }
 
