@@ -69,13 +69,6 @@
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
-        <configuration>
-          <analysisConfigurationFiles>
-            <configurationFile>
-              <path>revapi.json</path>
-            </configurationFile>
-          </analysisConfigurationFiles>
-        </configuration>
       </plugin>
     </plugins>
   </build>

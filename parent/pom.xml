@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.11.0</version.agrona>
+    <version.agrona>1.12.0</version.agrona>
     <version.animal-sniffer>1.20</version.animal-sniffer>
     <version.assertj>3.20.2</version.assertj>
     <version.awaitility>4.1.0</version.awaitility>
@@ -796,7 +796,11 @@
             <expandProperties>true</expandProperties>
             <!-- allows us to pre-defined ignored-changes, even when missing -->
             <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
-            <analysisConfigurationFiles combine.children="append">
+            <analysisConfigurationFiles>
+              <!-- look for an optional relative configuration file -->
+              <configurationFile>
+                <path>revapi.json</path>
+              </configurationFile>
               <!-- uses the default configuration file packaged in build-tools -->
               <configurationFile>
                 <resource>revapi/revapi.json</resource>
@@ -811,6 +815,16 @@
               different branches which need to compare to different versions
               -->
             <oldVersion>${backwards.compat.version}</oldVersion>
+            <pipelineConfiguration>
+              <transformBlocks>
+                <!-- always execute the various differences plugins first which can exclude some
+                     differences for the semantic version checker -->
+                <block>
+                  <item>revapi.differences</item>
+                  <item>revapi.versions</item>
+                </block>
+              </transformBlocks>
+            </pipelineConfiguration>
           </configuration>
         </plugin>
 
