@@ -1,95 +1,13 @@
 [
   {
     "extension": "revapi.filter",
+    "justification": "Ignore everything not included in the module itself",
     "configuration": {
-      "justification": "We expose certain external types on purpose, and for these, we can relax the compatibility guarantees.",
-      "elements": {
-        "exclude": [
-          {
-            "matcher": "java-package",
-            "match": "/org\\.assertj(\\..*)?/"
-          },
-          {
-            "matcher": "java-package",
-            "match": "io.camunda.zeebe.broker.system.configuration"
-          }
+      "archives": {
+        "include": [
+          "io\\.camunda:zeebe-test:.*"
         ]
       }
-    }
-  },
-  {
-    "extension": "revapi.filter",
-    "configuration": {
-      "justification": "The client API is already checked in the module itself.",
-      "elements": {
-        "exclude": [
-          {
-            "matcher": "java-package",
-            "match": "io.camunda.zeebe.client"
-          }
-        ]
-      }
-    }
-  },
-  {
-    "extension": "revapi.differences",
-    "configuration": {
-      "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
-      "ignore": true,
-      "differences": [
-        {
-          "code": "java.method.removed",
-          "old": "method io.camunda.zeebe.util.sched.future.ActorFuture<java.lang.Long> io.camunda.zeebe.logstreams.log.LogStream::getCommitPositionAsync()",
-          "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
-          "package": "io.camunda.zeebe.logstreams.log",
-          "classQualifiedName": "io.camunda.zeebe.logstreams.log.LogStream",
-          "classSimpleName": "LogStream",
-          "methodName": "getCommitPositionAsync",
-          "elementKind": "method",
-          "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
-          "oldArchiveRole": "supplementary",
-          "breaksSemanticVersioning": "true"
-        },
-        {
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.logstreams.log.LogStream::setCommitPosition(long)",
-          "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
-          "package": "io.camunda.zeebe.logstreams.log",
-          "classQualifiedName": "io.camunda.zeebe.logstreams.log.LogStream",
-          "classSimpleName": "LogStream",
-          "methodName": "setCommitPosition",
-          "elementKind": "method",
-          "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
-          "oldArchiveRole": "supplementary",
-          "breaksSemanticVersioning": "true"
-        },
-        {
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.logstreams.log.LogStream::registerOnCommitPositionUpdatedCondition(io.camunda.zeebe.util.sched.ActorCondition)",
-          "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
-          "package": "io.camunda.zeebe.logstreams.log",
-          "classQualifiedName": "io.camunda.zeebe.logstreams.log.LogStream",
-          "classSimpleName": "LogStream",
-          "methodName": "registerOnCommitPositionUpdatedCondition",
-          "elementKind": "method",
-          "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
-          "oldArchiveRole": "supplementary",
-          "breaksSemanticVersioning": "true"
-        },
-        {
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.logstreams.log.LogStream::removeOnCommitPositionUpdatedCondition(io.camunda.zeebe.util.sched.ActorCondition)",
-          "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
-          "package": "io.camunda.zeebe.logstreams.log",
-          "classQualifiedName": "io.camunda.zeebe.logstreams.log.LogStream",
-          "classSimpleName": "LogStream",
-          "methodName": "removeOnCommitPositionUpdatedCondition",
-          "elementKind": "method",
-          "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
-          "oldArchiveRole": "supplementary",
-          "breaksSemanticVersioning": "true"
-        }
-      ]
     }
   }
 ]
