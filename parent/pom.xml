@@ -121,7 +121,7 @@
     <plugin.version.shade>3.2.4</plugin.version.shade>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
-    <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
+    <plugin.version.enforcer>3.0.0</plugin.version.enforcer>
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
     <plugin.version.spotbugs>4.3.0</plugin.version.spotbugs>
     <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
