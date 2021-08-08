@@ -102,6 +102,9 @@
     <version.byte-buddy>1.11.12</version.byte-buddy>
     <version.revapi>0.24.4</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
+    <version.javax-servlet>2.5</version.javax-servlet>
+    <version.jsr305>3.0.2</version.jsr305>
+    <version.osgi-core>6.0.0</version.osgi-core>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -718,6 +721,24 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${version.commons-io}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.servlet</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>${version.javax-servlet}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>${version.osgi-core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>${version.jsr305}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
