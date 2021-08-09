@@ -176,12 +176,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.maxAppendsPerFollower = maxAppendsPerFollower;
     cluster = new RaftClusterContext(localMemberId, this);
 
-    // Register protocol listeners.
-    registerHandlers(protocol);
-
     raftRoleMetrics = new RaftRoleMetrics(name);
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
+
+    // Register protocol listeners.
+    registerHandlers(protocol);
     started = true;
   }
 
