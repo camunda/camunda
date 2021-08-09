@@ -81,7 +81,7 @@ final class PartitionFactory {
           new LogStoragePartitionStep(Role.LEADER),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
-          new StreamProcessorPartitionStep(),
+          new StreamProcessorPartitionStep(Role.LEADER),
           new SnapshotDirectorPartitionStep(),
           new RocksDbMetricExporterPartitionStep(),
           new ExporterDirectorPartitionStep());

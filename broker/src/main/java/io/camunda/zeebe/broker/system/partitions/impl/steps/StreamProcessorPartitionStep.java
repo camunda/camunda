@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -17,6 +19,12 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class StreamProcessorPartitionStep implements PartitionStep {
+
+  private final Role role;
+
+  public StreamProcessorPartitionStep(final Role role) {
+    this.role = role;
+  }
 
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
@@ -64,6 +72,8 @@ public class StreamProcessorPartitionStep implements PartitionStep {
 
   private StreamProcessor createStreamProcessor(
       final PartitionStartupAndTransitionContextImpl state) {
+    final StreamProcessorMode streamProcessorMode =
+        role == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
     return StreamProcessor.builder()
         .logStream(state.getLogStream())
         .actorSchedulingService(state.getActorSchedulingService())
@@ -80,6 +90,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
                   .getTypedRecordProcessorsFactory()
                   .createTypedStreamProcessor(actor, zeebeState, processingContext);
             })
+        .streamProcessorMode(streamProcessorMode)
         .build();
   }
 }
