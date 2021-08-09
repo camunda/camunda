@@ -49,7 +49,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private Consumer<TypedRecord<?>> onProcessedListener = record -> {};
   private Consumer<LoggedEvent> onSkippedListener = record -> {};
   private int maxFragmentSize;
-  private ReplayMode replayMode = ReplayMode.UNTIL_END;
+  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
   public ProcessingContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -132,8 +132,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext replayMode(final ReplayMode replayMode) {
-    this.replayMode = replayMode;
+  public ProcessingContext processorMode(final StreamProcessorMode streamProcessorMode) {
+    this.streamProcessorMode = streamProcessorMode;
     return this;
   }
 
@@ -224,7 +224,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     streamWriterProxy.wrap(noopTypedStreamWriter);
   }
 
-  public ReplayMode getReplayMode() {
-    return replayMode;
+  public StreamProcessorMode getProcessorMode() {
+    return streamProcessorMode;
   }
 }

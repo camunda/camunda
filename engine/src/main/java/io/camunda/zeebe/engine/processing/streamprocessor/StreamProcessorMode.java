@@ -7,16 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-public enum ReplayMode {
+public enum StreamProcessorMode {
   /**
-   * Normal replay mode, which is used on Leader side. After the replay the processing normally
-   * starts.
+   * When in PROCESSING mode, stream processor first replays existing events, and then switch to
+   * processing commands. This is the mode used by the leader.
    */
-  UNTIL_END,
+  PROCESSING,
 
   /**
-   * Continuously means it will never stop the replay mode, all new events are replayed and commands
-   * are ignored.
+   * When in REPLAY mode, all events are replayed and commands are never processed. This is the mode
+   * used in followers.
    */
-  CONTINUOUSLY
+  REPLAY
 }

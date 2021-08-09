@@ -35,33 +35,37 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private static final ReplicationContext INVALID_SNAPSHOT = new ReplicationContext(null, -1, null);
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
 
-  private final int partitionId;
-
   private final SnapshotReplication replication;
   private final Map<String, ReplicationContext> receivedSnapshots =
       new Object2NullableObjectHashMap<>();
 
   private final Path runtimeDirectory;
+
+  @SuppressWarnings("rawtypes")
   private final ZeebeDbFactory zeebeDbFactory;
+
+  @SuppressWarnings("rawtypes")
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
+
   private final AtomixRecordEntrySupplier entrySupplier;
 
   private final SnapshotReplicationMetrics metrics;
 
+  @SuppressWarnings("rawtypes")
   private ZeebeDb db;
+
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ReceivableSnapshotStore receivableSnapshotStore;
 
   public StateControllerImpl(
       final int partitionId,
-      final ZeebeDbFactory zeebeDbFactory,
+      @SuppressWarnings("rawtypes") final ZeebeDbFactory zeebeDbFactory,
       final ConstructableSnapshotStore constructableSnapshotStore,
       final ReceivableSnapshotStore receivableSnapshotStore,
       final Path runtimeDirectory,
       final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
-      final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
-    this.partitionId = partitionId;
+      @SuppressWarnings("rawtypes") final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
     this.constructableSnapshotStore = constructableSnapshotStore;
     this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
@@ -101,18 +105,15 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
             snapshotIndexedEntry.term(),
             lowerBoundSnapshotPosition,
             exportedPosition);
+
     transientSnapshot.ifPresent(this::takeSnapshot);
+
     return transientSnapshot;
   }
 
   @Override
   public void consumeReplicatedSnapshots() {
     replication.consume(this::consumeSnapshotChunk);
-  }
-
-  @Override
-  public void stopConsumeReplicatedSnapshots() {
-    replication.stopConsuming();
   }
 
   @Override
@@ -143,6 +144,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public ZeebeDb openDb() {
     if (db == null) {
       db = zeebeDbFactory.createDb(runtimeDirectory.toFile());
@@ -158,10 +160,17 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   }
 
   @Override
+  public void stopConsumeReplicatedSnapshots() {
+    replication.stopConsuming();
+  }
+
+  @Override
   public void close() throws Exception {
     if (db != null) {
-      db.close();
+      final var dbToClose = db;
       db = null;
+      dbToClose.close();
+
       LOG.debug("Closed database from '{}'.", runtimeDirectory);
     }
 

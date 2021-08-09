@@ -15,8 +15,10 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.logstreams.impl.log.ZeebeEntryValidator;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
@@ -28,13 +30,17 @@ public class PartitionManagerFactory {
   public static final String GROUP_NAME = "raft-partition";
 
   public static PartitionManagerImpl fromBrokerConfiguration(
+      final ActorSchedulingService actorSchedulingService,
       final BrokerCfg configuration,
+      final BrokerInfo localBroker,
       final ClusterServices clusterServices,
       final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final var partitionGroup = buildRaftPartitionGroup(configuration, snapshotStoreFactory);
 
     return new PartitionManagerImpl(
+        actorSchedulingService,
+        localBroker,
         partitionGroup,
         clusterServices.getMembershipService(),
         clusterServices.getCommunicationService());

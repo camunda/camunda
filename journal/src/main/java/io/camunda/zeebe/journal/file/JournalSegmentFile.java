@@ -19,6 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Segment file utility.
@@ -27,10 +28,14 @@ import java.io.File;
  */
 final class JournalSegmentFile {
 
+  private static int deletedFileIndex = 0;
   private static final char PART_SEPARATOR = '-';
   private static final char EXTENSION_SEPARATOR = '.';
   private static final String EXTENSION = "log";
+  private static final String DELETE_EXTENSION = "deleted";
+  private static final char DELETE_EXTENSION_SEPARATOR = '_';
   private final File file;
+  private Path fileMarkedForDeletion;
 
   /** @throws IllegalArgumentException if {@code file} is not a valid segment file */
   JournalSegmentFile(final File file) {
@@ -111,5 +116,27 @@ final class JournalSegmentFile {
 
   public String name() {
     return file.getName();
+  }
+
+  public Path getFileMarkedForDeletion() {
+    if (fileMarkedForDeletion == null) {
+      final String renamedFileName =
+          String.format(
+              "%s%c%d-%s",
+              file.getName(), DELETE_EXTENSION_SEPARATOR, deletedFileIndex++, DELETE_EXTENSION);
+      fileMarkedForDeletion = Path.of(file.getParent(), renamedFileName);
+    }
+    return fileMarkedForDeletion;
+  }
+
+  public static boolean isDeletedSegmentFile(final String journalName, final String fileName) {
+    checkNotNull(journalName, "journalName cannot be null");
+    checkNotNull(fileName, "fileName cannot be null");
+
+    if (!fileName.endsWith(DELETE_EXTENSION)) {
+      return false;
+    }
+    final var deleteExtensionIndex = fileName.lastIndexOf(DELETE_EXTENSION_SEPARATOR);
+    return isSegmentFile(journalName, fileName.substring(0, deleteExtensionIndex));
   }
 }

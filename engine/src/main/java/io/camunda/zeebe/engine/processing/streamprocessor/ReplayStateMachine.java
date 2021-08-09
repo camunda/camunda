@@ -65,14 +65,15 @@ public final class ReplayStateMachine {
 
   private final BooleanSupplier abortCondition;
   // current iteration
-  private long lastSourceEventPosition;
+  private long lastSourceEventPosition = StreamProcessor.UNSET_POSITION;
   private long snapshotPosition;
   private long highestRecordKey = -1L;
-  private long lastReadRecordPosition;
+  private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
+  private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
 
   private ActorFuture<Long> recoveryFuture;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private final ReplayMode replayMode;
+  private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
 
   private State currentState = State.AWAIT_RECORD;
@@ -91,7 +92,7 @@ public final class ReplayStateMachine {
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
-    replayMode = context.getReplayMode();
+    streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
   }
 
@@ -114,11 +115,11 @@ public final class ReplayStateMachine {
     LOG.info(
         "Processor starts replay of events. [snapshot-position: {}, replay-mode: {}]",
         snapshotPosition,
-        replayMode);
+        streamProcessorMode);
 
     replayNextEvent();
 
-    if (replayMode == ReplayMode.CONTINUOUSLY) {
+    if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       logStream.registerRecordAvailableListener(this::recordAvailable);
     }
 
@@ -147,7 +148,7 @@ public final class ReplayStateMachine {
         currentEvent = logStreamReader.next();
         replayEvent(currentEvent);
 
-      } else if (replayMode == ReplayMode.UNTIL_END) {
+      } else if (streamProcessorMode == StreamProcessorMode.PROCESSING) {
         onRecordsReplayed();
 
       } else {
@@ -272,8 +273,9 @@ public final class ReplayStateMachine {
           if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
             eventApplier.applyState(
                 currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+            lastReplayedEventPosition = currentEvent.getPosition();
           }
-          lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
+          lastProcessedPositionState.markAsProcessed(currentEvent.getSourceRecordPosition());
         });
 
     return true;
@@ -290,6 +292,14 @@ public final class ReplayStateMachine {
     zeebeDbTransaction.commit();
     zeebeDbTransaction = null;
     return true;
+  }
+
+  public long getLastSourceEventPosition() {
+    return lastSourceEventPosition;
+  }
+
+  public long getLastReplayedEventPosition() {
+    return lastReplayedEventPosition;
   }
 
   private enum State {

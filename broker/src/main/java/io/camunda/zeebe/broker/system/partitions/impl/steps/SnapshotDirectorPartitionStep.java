@@ -21,7 +21,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
 
     final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
     final var director =
-        new AsyncSnapshotDirector(
+        AsyncSnapshotDirector.ofProcessingMode(
             context.getNodeId(),
             context.getPartitionId(),
             context.getStreamProcessor(),

@@ -63,6 +63,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private LogStreamReader logStreamReader;
   private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
+  private ReplayStateMachine replayStateMachine;
 
   private volatile Phase phase = Phase.REPROCESSING;
 
@@ -121,12 +122,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      final var replayStateMachine = new ReplayStateMachine(processingContext);
+      replayStateMachine = new ReplayStateMachine(processingContext);
       // disable writing to the log stream
       processingContext.disableLogStreamWriter();
 
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
-      if (processingContext.getReplayMode() == ReplayMode.CONTINUOUSLY) {
+      if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
         openFuture.complete(null);
         replayCompletedFuture.onComplete(
             (v, error) -> {
@@ -331,11 +332,25 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   public ActorFuture<Long> getLastProcessedPositionAsync() {
-    return actor.call(processingStateMachine::getLastSuccessfulProcessedEventPosition);
+    return actor.call(
+        () -> {
+          if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
+            return replayStateMachine.getLastSourceEventPosition();
+          } else {
+            return processingStateMachine.getLastSuccessfulProcessedEventPosition();
+          }
+        });
   }
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {
-    return actor.call(processingStateMachine::getLastWrittenEventPosition);
+    return actor.call(
+        () -> {
+          if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
+            return replayStateMachine.getLastReplayedEventPosition();
+          } else {
+            return processingStateMachine.getLastWrittenEventPosition();
+          }
+        });
   }
 
   @Override
