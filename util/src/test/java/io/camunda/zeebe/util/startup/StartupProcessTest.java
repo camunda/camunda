@@ -34,8 +34,6 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings({"rawtypes", "unchecked"})
 class StartupProcessTest {
 
-  private static final String DEFAULT_PROCESS_NAME = "TEST-PROCESS";
-
   private static final Object STARTUP_CONTEXT =
       new Object() {
         @Override
@@ -81,7 +79,7 @@ class StartupProcessTest {
       when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(mockStep1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
 
       // when
       sut.startup(STARTUP_CONTEXT).join();
@@ -100,7 +98,7 @@ class StartupProcessTest {
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
       when(mockStep2.shutdown(SHUTDOWN_CONTEXT)).thenReturn(completedFuture(SHUTDOWN_CONTEXT));
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(mockStep1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
       sut.startup(STARTUP_CONTEXT).join();
 
       // when
@@ -118,7 +116,7 @@ class StartupProcessTest {
       when(mockStep1.startup(INPUT_STEP1)).thenReturn(completedFuture(RESULT_STEP1));
       when(mockStep2.startup(RESULT_STEP1)).thenReturn(completedFuture(RESULT_STEP2));
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(mockStep1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
 
       // when
       final var actualResult = sut.startup(INPUT_STEP1).join();
@@ -140,7 +138,7 @@ class StartupProcessTest {
       when(mockStep2.shutdown(INPUT_STEP2)).thenReturn(completedFuture(RESULT_STEP2));
       when(mockStep1.shutdown(RESULT_STEP2)).thenReturn(completedFuture(RESULT_STEP1));
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(mockStep1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
       sut.startup(STARTUP_CONTEXT).join();
 
       // when
@@ -162,7 +160,7 @@ class StartupProcessTest {
       when(mockStep1.startup(STARTUP_CONTEXT)).thenReturn(failedFuture(testException));
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(mockStep1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
 
       // when
       final var actualResult = sut.startup(STARTUP_CONTEXT);
@@ -186,7 +184,7 @@ class StartupProcessTest {
       when(mockStep1.shutdown(SHUTDOWN_CONTEXT)).thenReturn(failedFuture(testException1));
       when(mockStep2.shutdown(SHUTDOWN_CONTEXT)).thenReturn(failedFuture(testException2));
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(mockStep1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
       sut.startup(STARTUP_CONTEXT).join();
 
       // when
@@ -211,7 +209,7 @@ class StartupProcessTest {
       final var step1CountdownLatch = new CountDownLatch(1);
       final var step1 = new WaitingStartupStep(step1CountdownLatch, false);
 
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, List.of(step1, mockStep2));
+      final var sut = new StartupProcess<>(List.of(step1, mockStep2));
 
       // when
       final var startupFuture = sut.startup(STARTUP_CONTEXT);
@@ -242,14 +240,20 @@ class StartupProcessTest {
     @Test
     void shouldThrowNPEWhenCalledWithNoSteps() {
       // when + then
-      assertThatThrownBy(() -> new StartupProcess<>(DEFAULT_PROCESS_NAME, null))
+      assertThatThrownBy(() -> new StartupProcess<>(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void shouldThrowNPEWhenCalledWithNoLogger() {
+      // when + then
+      assertThatThrownBy(() -> new StartupProcess<>(null, Collections.emptyList()))
           .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
       // given
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, Collections.emptyList());
+      final var sut = new StartupProcess<>(Collections.emptyList());
 
       // when + then
       sut.startup(STARTUP_CONTEXT).join();
@@ -263,7 +267,7 @@ class StartupProcessTest {
     void shouldPerformShutdownOnlyOnceIfShutdownIsCalledMultipleTimes() {
       // given
       final var step = new InvocationCountingStartupStep();
-      final var sut = new StartupProcess<>(DEFAULT_PROCESS_NAME, singletonList(step));
+      final var sut = new StartupProcess<>(singletonList(step));
 
       // when
       sut.startup(STARTUP_CONTEXT).join();
@@ -278,8 +282,7 @@ class StartupProcessTest {
   @Nested
   class EmptyList {
 
-    private final StartupProcess<Object> sut =
-        new StartupProcess<>(DEFAULT_PROCESS_NAME, Collections.emptyList());
+    private final StartupProcess<Object> sut = new StartupProcess<>(Collections.emptyList());
 
     @Test
     void shouldReturnContextImmediatelyOnStartup() {

@@ -48,20 +48,31 @@ import org.slf4j.LoggerFactory;
 public final class StartupProcess<CONTEXT> {
 
   private final Deque<StartupStep<CONTEXT>> steps;
-  private final String processName;
   private final Logger logger;
 
   private boolean startupCalled = false;
   private final Stack<StartupStep<CONTEXT>> startedSteps = new Stack<>();
   private CompletableFuture<CONTEXT> shutdownFuture;
 
-  public StartupProcess(final String processName, final List<StartupStep<CONTEXT>> steps) {
-    this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
+  /**
+   * Constructs the startup process
+   *
+   * @param steps the steps to execute; must not be {@code null}
+   */
+  public StartupProcess(final List<StartupStep<CONTEXT>> steps) {
+    this(LoggerFactory.getLogger("io.camunda.zeebe.util.startup"), steps);
+  }
 
-    this.processName = processName != null ? processName : "Undefined process";
-    logger =
-        LoggerFactory.getLogger(
-            "io.camunda.zeebe.util.startup.StartupProcess(" + this.processName + ")");
+  /**
+   * Constructs the startup process
+   *
+   * @param logger the logger to use for messages related to the startup process; must not be {@code
+   *     null}
+   * @param steps the steps to execute; must not be {@code null}
+   */
+  public StartupProcess(final Logger logger, final List<StartupStep<CONTEXT>> steps) {
+    this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
+    this.logger = Objects.requireNonNull(logger);
   }
 
   /**
