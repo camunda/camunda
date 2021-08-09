@@ -64,17 +64,11 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private JournalRecord unsafeNext() throws NoSuchElementException {
-    if (!currentReader.hasNext()) {
-      final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
-      if (nextSegment != null && nextSegment.index() == getNextIndex()) {
-        replaceCurrentSegment(nextSegment);
-        return currentReader.next();
-      } else {
-        throw new NoSuchElementException();
-      }
-    } else {
-      return currentReader.next();
+    if (!unsafeHasNext()) {
+      throw new NoSuchElementException();
     }
+
+    return currentReader.next();
   }
 
   @Override
@@ -220,6 +214,12 @@ class SegmentedJournalReader implements JournalReader {
 
   private boolean unsafeHasNext() {
     if (!currentReader.hasNext()) {
+      if (!currentSegment.isOpen()) {
+        // When the segment has been deleted concurrently, we do not want to allow the readers to
+        // read further until the reader is reset.
+        return false;
+      }
+
       final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
       if (nextSegment != null && nextSegment.index() == getNextIndex()) {
         replaceCurrentSegment(nextSegment);

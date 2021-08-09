@@ -16,6 +16,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import com.google.common.base.Preconditions;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
@@ -43,6 +44,12 @@ class MappedJournalSegmentReader {
   }
 
   public boolean hasNext() {
+    if (!segment.isOpen()) {
+      // When the segment has been deleted concurrently, we do not want to allow the readers to
+      // continue reading from this segment.
+      return false;
+    }
+
     // if the next entry exists the version would be non-zero
     return FrameUtil.hasValidVersion(buffer);
   }
@@ -67,6 +74,7 @@ class MappedJournalSegmentReader {
   }
 
   public void seek(final long index) {
+    checkSegmentOpen();
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
 
@@ -89,5 +97,10 @@ class MappedJournalSegmentReader {
 
   long getNextIndex() {
     return currentIndex + 1;
+  }
+
+  private void checkSegmentOpen() {
+    Preconditions.checkState(
+        segment.isOpen(), "Segment is already closed. Reader must reset to a valid index.");
   }
 }

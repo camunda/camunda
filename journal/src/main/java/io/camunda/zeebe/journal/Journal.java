@@ -73,6 +73,9 @@ public interface Journal extends AutoCloseable {
    * Delete all records in the journal and reset the next index to nextIndex. The following calls to
    * {@link Journal#append(long, DirectBuffer)} will append at index nextIndex.
    *
+   * <p>After this operation, all readers must be reset explicitly. The readers that are not reset
+   * will return false for {@link JournalReader#hasNext()}, cannot read any record.
+   *
    * @param nextIndex the next index of the journal.
    */
   void reset(long nextIndex);

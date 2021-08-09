@@ -17,8 +17,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -80,7 +80,7 @@ public final class TestStreams {
   private boolean snapshotWasTaken = false;
 
   private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
-  private ReplayMode replayMode = ReplayMode.UNTIL_END;
+  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -109,8 +109,8 @@ public final class TestStreams {
     this.eventApplierFactory = eventApplierFactory;
   }
 
-  public void withReplayMode(final ReplayMode replayMode) {
-    this.replayMode = replayMode;
+  public void withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
+    this.streamProcessorMode = streamProcessorMode;
   }
 
   public CommandResponseWriter getMockedResponseWriter() {
@@ -258,7 +258,7 @@ public final class TestStreams {
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
             .eventApplierFactory(eventApplierFactory)
-            .replayMode(replayMode)
+            .streamProcessorMode(streamProcessorMode)
             .build();
     final var openFuture = streamProcessor.openAsync(false);
 

@@ -25,7 +25,8 @@ public class ContinuouslyReplayTest {
 
   @Rule
   public final EngineRule replay =
-      EngineRule.withSharedStorage(sharedStorage).withReplayMode(ReplayMode.CONTINUOUSLY);
+      EngineRule.withSharedStorage(sharedStorage)
+          .withStreamProcessorMode(StreamProcessorMode.REPLAY);
 
   @Rule public final EngineRule processing = EngineRule.withSharedStorage(sharedStorage);
 

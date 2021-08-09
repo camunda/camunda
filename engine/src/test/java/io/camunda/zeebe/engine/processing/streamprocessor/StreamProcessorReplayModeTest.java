@@ -46,11 +46,11 @@ public final class StreamProcessorReplayModeTest {
 
   @Rule
   public final StreamProcessorRule replayUntilEnd =
-      new StreamProcessorRule(PARTITION_ID).withReplayMode(ReplayMode.UNTIL_END);
+      new StreamProcessorRule(PARTITION_ID).withStreamProcessorMode(StreamProcessorMode.PROCESSING);
 
   @Rule
   public final StreamProcessorRule replayContinuously =
-      new StreamProcessorRule(PARTITION_ID).withReplayMode(ReplayMode.CONTINUOUSLY);
+      new StreamProcessorRule(PARTITION_ID).withStreamProcessorMode(StreamProcessorMode.REPLAY);
 
   @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 

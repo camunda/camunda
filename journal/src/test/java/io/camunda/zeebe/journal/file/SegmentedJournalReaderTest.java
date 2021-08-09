@@ -108,6 +108,35 @@ class SegmentedJournalReaderTest {
     }
   }
 
+  @Test
+  void shouldNotReadWhenAccessingDeletedSegment() {
+    // given
+    journal.append(data);
+    final var reader = journal.openReader();
+
+    // when
+    journal.reset(100);
+
+    // then
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldReadAfterReset() {
+    // given
+    journal.append(data);
+    final var reader = journal.openReader();
+    final int resetIndex = 100;
+    journal.reset(resetIndex);
+    journal.append(data);
+
+    // when
+    reader.seekToFirst();
+
+    // then
+    assertThat(reader.next().index()).isEqualTo(resetIndex);
+  }
+
   private int getSerializedSize(final DirectBuffer data) {
     final var record = new RecordData(Long.MAX_VALUE, Long.MAX_VALUE, data);
     final var serializer = new SBESerializer();
