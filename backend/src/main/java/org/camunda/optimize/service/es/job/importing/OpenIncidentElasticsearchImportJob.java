@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,18 +18,25 @@ import java.util.List;
 public class OpenIncidentElasticsearchImportJob extends ElasticsearchImportJob<IncidentDto> {
 
   private final OpenIncidentWriter openIncidentWriter;
+  private final ConfigurationService configurationService;
 
-  public OpenIncidentElasticsearchImportJob(OpenIncidentWriter openIncidentWriter,
-                                            Runnable callback) {
+  public OpenIncidentElasticsearchImportJob(final OpenIncidentWriter openIncidentWriter,
+                                            final ConfigurationService configurationService,
+                                            final Runnable callback) {
     super(callback);
     this.openIncidentWriter = openIncidentWriter;
+    this.configurationService = configurationService;
   }
 
   @Override
   protected void persistEntities(List<IncidentDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests =
       new ArrayList<>(openIncidentWriter.generateIncidentImports(newOptimizeEntities));
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Open incidents", importRequests);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      "Open incidents",
+      importRequests,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
   }
 
 }

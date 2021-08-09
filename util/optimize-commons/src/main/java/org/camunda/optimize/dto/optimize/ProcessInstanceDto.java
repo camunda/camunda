@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;

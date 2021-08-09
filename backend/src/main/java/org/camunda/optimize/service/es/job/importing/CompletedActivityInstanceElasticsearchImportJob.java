@@ -11,6 +11,7 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,13 +20,16 @@ public class CompletedActivityInstanceElasticsearchImportJob extends Elasticsear
 
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventImportService;
+  private final ConfigurationService configurationService;
 
   public CompletedActivityInstanceElasticsearchImportJob(CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                          CamundaEventImportService camundaEventImportService,
+                                                         ConfigurationService configurationService,
                                                          Runnable callback) {
     super(callback);
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -33,7 +37,11 @@ public class CompletedActivityInstanceElasticsearchImportJob extends Elasticsear
     final List<ImportRequestDto> importRequests = new ArrayList<>();
     importRequests.addAll(completedActivityInstanceWriter.generateActivityInstanceImports(newOptimizeEntities));
     importRequests.addAll(camundaEventImportService.generateCompletedCamundaActivityEventsImports(newOptimizeEntities));
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Completed activity instances", importRequests);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      "Completed activity instances",
+      importRequests,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
   }
 
 }

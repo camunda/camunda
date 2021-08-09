@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariabl
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIdentityFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -461,18 +461,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         if (hasNullData) {
           throw new BadRequestException("Identity Dashboard filters require additional data");
         }
-        final boolean hasIncompatibleOperators = byClass.getValue().stream()
-          .anyMatch(filter -> !FilterOperator.isEqualsOperation(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()));
-        if (hasIncompatibleOperators) {
-          throw new BadRequestException(String.format(
-            "%s with incompatible operator detected. Identity filters should only use 'in' or 'not in'.",
-            byClass.getKey()
-          )
-          );
-        }
 
         final long inCount = byClass.getValue().stream()
-          .filter(filter -> FilterOperator.IN.equals(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()))
+          .filter(filter -> MembershipFilterOperator.IN.equals(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()))
           .count();
         if (inCount > 1) {
           throw new BadRequestException(String.format(
@@ -485,7 +476,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         }
 
         final long notInCount = byClass.getValue().stream()
-          .filter(filter -> FilterOperator.NOT_IN.equals(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()))
+          .filter(filter -> MembershipFilterOperator.NOT_IN.equals(((DashboardIdentityFilterDataDto) filter.getData()).getOperator()))
           .count();
         if (notInCount > 1) {
           throw new BadRequestException(String.format(

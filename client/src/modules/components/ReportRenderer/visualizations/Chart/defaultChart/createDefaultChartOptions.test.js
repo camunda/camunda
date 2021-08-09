@@ -45,7 +45,7 @@ it('should create dataset option for pie reports', () => {
     isDark: false,
   });
   expect(options).toEqual({
-    backgroundColor: ['#aec7e9', '#f68077'],
+    backgroundColor: ['#aec7e9', '#6391d2'],
     borderColor: '#fff',
     borderWidth: undefined,
   });

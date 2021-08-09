@@ -121,3 +121,5 @@ export const sectionToggle = (sectionName) =>
     .withText(new RegExp(sectionName, 'i')) // we are using CSS text-transform uppercase, which is handled inconsistently across browsers: https://github.com/DevExpress/testcafe/issues/3335
     .find('.sectionToggle');
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
+export const addDefinitionButton = Selector('.AddDefinition');
+export const definitionEntry = (name) => Selector('.Checklist .label').withText(name);

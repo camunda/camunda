@@ -11,10 +11,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionOutputVariableQueryFilter extends DecisionVariableQueryFilter {
 
-  public DecisionOutputVariableQueryFilter(final DateFilterQueryService dateFilterQueryService) {
-    super(dateFilterQueryService);
-  }
-
   @Override
   String getVariablePath() {
     return DecisionInstanceIndex.OUTPUTS;

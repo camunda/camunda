@@ -5,30 +5,40 @@
  */
 package org.camunda.optimize.service.importing;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.importing.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.service.es.reader.PositionBasedImportIndexReader;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler.BEGINNING_OF_TIME;
 
+@Getter
 @RequiredArgsConstructor
-@Data
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class PositionBasedImportIndexHandler
   implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
 
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private long persistedPositionOfLastEntity = 0;
   private long pendingPositionOfLastEntity = 0;
-  protected int partitionId;
+  protected ZeebeDataSourceDto dataSource;
+
+  @Autowired
+  private PositionBasedImportIndexReader positionBasedImportIndexReader;
 
   @Override
   public PositionBasedImportIndexDto getIndexStateDto() {
     PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
-    indexToStore.setPartitionId(partitionId);
+    indexToStore.setDataSourceDto(dataSource);
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
@@ -37,13 +47,21 @@ public abstract class PositionBasedImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    // readIndexFromElasticsearch();
+    final Optional<PositionBasedImportIndexDto> dto = positionBasedImportIndexReader
+      .getImportIndex(getElasticsearchDocID(), dataSource);
+    if (dto.isPresent()) {
+      PositionBasedImportIndexDto loadedImportIndex = dto.get();
+      updateLastPersistedEntityPosition(loadedImportIndex.getPositionOfLastEntity());
+      updatePendingLastEntityPosition(loadedImportIndex.getPositionOfLastEntity());
+      updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
+    }
   }
 
   @Override
   public void resetImportIndex() {
     lastImportExecutionTimestamp = BEGINNING_OF_TIME;
     persistedPositionOfLastEntity = 0;
+    pendingPositionOfLastEntity = 0;
   }
 
   @Override

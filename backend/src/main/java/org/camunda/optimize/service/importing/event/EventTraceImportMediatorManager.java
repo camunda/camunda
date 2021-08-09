@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMediatorFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -39,6 +40,7 @@ public class EventTraceImportMediatorManager implements ConfigurationReloadable 
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
+    mediators.values().forEach(BackoffImportMediator::shutdown);
     mediators.clear();
   }
 

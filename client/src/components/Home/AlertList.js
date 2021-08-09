@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter} from 'components';
+import {Button, EntityList, Deleter, BulkDeleter} from 'components';
 import {showError} from 'notifications';
 import {formatters, loadReports, isDurationReport} from 'services';
 import {withErrorHandling} from 'HOC';
@@ -128,12 +128,7 @@ export default withErrorHandling(
               t('common.condition'),
               t('alert.recipient'),
             ]}
-            bulkActions={[
-              {
-                type: 'delete',
-                action: removeAlerts,
-              },
-            ]}
+            bulkActions={[<BulkDeleter deleteEntities={removeAlerts} />]}
             onChange={this.loadAlerts}
             data={
               !isLoading &&

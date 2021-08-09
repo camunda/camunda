@@ -5,10 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -46,19 +44,16 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(createVariableUpdateEngineImportMediator(engineContext));
+    return List.of(createVariableUpdateEngineImportMediator(engineContext));
   }
 
   public VariableUpdateEngineImportMediator createVariableUpdateEngineImportMediator(
     final EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new VariableUpdateEngineImportMediator(
-      importIndexHandlerRegistry.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias()),
+      importIndexHandlerRegistry.getVariableUpdateInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
       new VariableUpdateInstanceImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         variableImportAdapterProvider,
         variableWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),

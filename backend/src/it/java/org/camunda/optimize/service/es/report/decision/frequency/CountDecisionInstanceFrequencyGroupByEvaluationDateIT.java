@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;

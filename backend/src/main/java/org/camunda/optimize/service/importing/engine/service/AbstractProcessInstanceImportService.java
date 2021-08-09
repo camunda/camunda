@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
@@ -13,6 +12,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,6 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
-@AllArgsConstructor
 public abstract class AbstractProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -28,6 +27,20 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
   protected final EngineContext engineContext;
   protected final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  protected final ConfigurationService configurationService;
+
+  public AbstractProcessInstanceImportService(final ConfigurationService configurationService,
+                                              final EngineContext engineContext,
+                                              final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
+                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
+    this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
+  }
 
   protected abstract ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
     List<ProcessInstanceDto> processInstances,

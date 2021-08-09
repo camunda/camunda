@@ -53,9 +53,9 @@ afterEach(() => {
 });
 
 it('should create a startDate filter on zoom interaction', () => {
-  chart.options.onHover({offsetX: 20});
+  chart.options.onHover({native: {offsetX: 20}});
   simulateEvent(chart.canvas, 'mousedown', {offsetX: 20});
-  chart.options.onHover({offsetX: 70});
+  chart.options.onHover({native: {offsetX: 70}});
   simulateEvent(chart.canvas, 'mousemove', {offsetX: 70, movementX: 50});
   simulateEvent(chart.canvas, 'mouseup');
 

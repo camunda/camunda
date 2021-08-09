@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -47,10 +48,14 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
   );
   private static final String IMPORT_ITEM_NAME = "running process instances";
 
+  private final ConfigurationService configurationService;
+
   public RunningProcessInstanceWriter(final OptimizeElasticsearchClient esClient,
                                       final ObjectMapper objectMapper,
-                                      final ElasticSearchSchemaManager elasticSearchSchemaManager) {
+                                      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+                                      final ConfigurationService configurationService) {
     super(esClient, elasticSearchSchemaManager, objectMapper);
+    this.configurationService = configurationService;
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(List<ProcessInstanceDto> processInstanceDtos) {
@@ -79,7 +84,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
       .collect(toList());
     createInstanceIndicesIfMissing(processInstanceDtos, ProcessInstanceDto::getProcessDefinitionKey);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       IMPORT_ITEM_NAME,
       processInstanceDtoToUpdateList,
@@ -88,7 +93,8 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
         dto,
         createUpdateStateScript(dto.getState()),
         objectMapper
-      )
+      ),
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

@@ -23,11 +23,18 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
+import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.rollover.Condition;
 import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -47,19 +54,26 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.GetAliasesResponse;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
+import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.client.indices.rollover.RolloverRequest;
 import org.elasticsearch.client.indices.rollover.RolloverResponse;
+import org.elasticsearch.client.tasks.TaskSubmissionResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.context.ApplicationContext;
@@ -129,7 +143,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   }
 
   public final RestClient getLowLevelClient() {
-    return getHighLevelClient().getLowLevelClient();
+    return highLevelClient.getLowLevelClient();
   }
 
   public final BulkResponse bulk(final BulkRequest bulkRequest) throws IOException {
@@ -255,11 +269,67 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   public void refresh(final RefreshRequest refreshRequest) {
     applyIndexPrefixes(refreshRequest);
     try {
-      getHighLevelClient().indices().refresh(refreshRequest, requestOptions());
+      highLevelClient.indices().refresh(refreshRequest, requestOptions());
     } catch (IOException e) {
       log.error("Could not refresh Optimize indexes!", e);
       throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
     }
+  }
+
+  public String getElasticsearchVersion() throws IOException {
+    return highLevelClient.info(requestOptions()).getVersion().getNumber();
+  }
+
+  public void createIndex(final CreateIndexRequest request) throws IOException {
+    highLevelClient.indices().create(request, requestOptions());
+  }
+
+  public void createMapping(final PutMappingRequest request) throws IOException {
+    highLevelClient.indices().putMapping(request, requestOptions());
+  }
+
+  public void updateSettings(final UpdateSettingsRequest request) throws IOException {
+    highLevelClient.indices().putSettings(request, requestOptions());
+  }
+
+  public void createTemplate(final PutIndexTemplateRequest request) throws IOException {
+    highLevelClient.indices().putTemplate(request, requestOptions());
+  }
+
+  public GetSettingsResponse getIndexSettings() throws IOException {
+    return highLevelClient.indices().getSettings(
+      new GetSettingsRequest().indices(getIndexNameService().getIndexPrefix() + "*"),
+      requestOptions()
+    );
+  }
+
+  public ClusterHealthResponse getClusterHealth(final ClusterHealthRequest request) throws IOException {
+    return highLevelClient.cluster().health(request, requestOptions());
+  }
+
+  public TaskSubmissionResponse submitReindexTask(final ReindexRequest request) throws IOException {
+    return highLevelClient.submitReindexTask(request, requestOptions());
+  }
+
+  public TaskSubmissionResponse submitUpdateTask(final UpdateByQueryRequest request) throws IOException {
+    return highLevelClient.submitUpdateByQueryTask(request, requestOptions());
+  }
+
+  public TaskSubmissionResponse submitDeleteTask(final DeleteByQueryRequest request) throws IOException {
+    return highLevelClient.submitDeleteByQueryTask(request, requestOptions());
+  }
+
+  public ListTasksResponse getTaskList(final ListTasksRequest request) throws IOException {
+    return highLevelClient.tasks().list(request, requestOptions());
+  }
+
+  public long countWithoutPrefix(final CountRequest request) throws IOException {
+    return highLevelClient.count(request, requestOptions()).getCount();
+  }
+
+  public Response performRequest(final Request request) throws IOException {
+    request.setOptions(requestOptions());
+    return getLowLevelClient().performRequest(request);
   }
 
   /**

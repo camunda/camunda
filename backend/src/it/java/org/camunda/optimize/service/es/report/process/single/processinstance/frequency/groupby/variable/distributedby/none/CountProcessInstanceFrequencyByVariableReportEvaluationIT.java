@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -27,17 +28,26 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.metrics.ValueCount;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -60,7 +70,16 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -598,7 +617,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put(varName, -10.0);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
 
-    variables.put(varName,  8.0);
+    variables.put(varName, 8.0);
     engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
     variables.put(varName, 20.0);
@@ -954,7 +973,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     importAllEngineEntitiesFromScratch();
 
-    assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount("testVar")).isEqualTo(2);
+    assertThat(getVariableInstanceCount("testVar")).isEqualTo(2);
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -1348,6 +1367,49 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     reportDataDto.getConfiguration().getCustomBucket().setBaseline(baseline);
     reportDataDto.getConfiguration().getCustomBucket().setBucketSize(groupByNumberVariableBucketSize);
     return reportDataDto;
+  }
+
+  private Integer getVariableInstanceCount(String variableName) {
+    final QueryBuilder query = nestedQuery(
+      VARIABLES,
+      boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
+      ScoreMode.None
+    );
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
+      .source(searchSourceBuilder);
+
+    String VARIABLE_COUNT_AGGREGATION = VARIABLES + "_count";
+    String NESTED_VARIABLE_AGGREGATION = "nestedAggregation";
+    searchSourceBuilder.aggregation(
+      nested(
+        NESTED_VARIABLE_AGGREGATION,
+        VARIABLES
+      )
+        .subAggregation(
+          count(VARIABLE_COUNT_AGGREGATION)
+            .field(getNestedVariableIdField())
+        )
+    );
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
+    } catch (IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException(
+        "Cannot evaluate variable instance count in process instance indices.",
+        e
+      );
+    }
+
+    Nested nestedAgg = searchResponse.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
+    ValueCount countAggregator = nestedAgg.getAggregations().get(VARIABLE_COUNT_AGGREGATION);
+    return Long.valueOf(countAggregator.getValue()).intValue();
   }
 
 }

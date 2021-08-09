@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
-import org.camunda.optimize.dto.optimize.DataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;

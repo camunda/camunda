@@ -63,7 +63,7 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
           try {
             Thread.sleep(sleepTime);
           } catch (InterruptedException exception) {
-            //
+            Thread.currentThread().interrupt();
           }
         }
       } while (!success);

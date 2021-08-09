@@ -6,9 +6,10 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DataSourceDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
-import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
+import org.camunda.optimize.dto.optimize.SchedulerConfig;
+import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,7 +44,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   private final List<AbstractEngineImportMediatorFactory> engineMediatorFactories;
   private final List<AbstractZeebeImportMediatorFactory> zeebeMediatorFactories;
 
-  private List<AbstractImportScheduler<? extends DataSourceDto>> importSchedulers = new ArrayList<>();
+  private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers = new ArrayList<>();
 
   public ImportSchedulerManagerService(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                        final BeanFactory beanFactory,
@@ -61,14 +63,14 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
   @PreDestroy
   public synchronized void shutdown() {
-    for (AbstractImportScheduler<? extends DataSourceDto> oldScheduler : importSchedulers) {
+    for (AbstractImportScheduler<? extends SchedulerConfig> oldScheduler : importSchedulers) {
       oldScheduler.stopImportScheduling();
       oldScheduler.shutdown();
     }
   }
 
   public synchronized void startSchedulers() {
-    for (AbstractImportScheduler<? extends DataSourceDto> scheduler : importSchedulers) {
+    for (AbstractImportScheduler<? extends SchedulerConfig> scheduler : importSchedulers) {
       if (configurationService.isImportEnabled(scheduler.getDataImportSourceDto())) {
         scheduler.startImportScheduling();
       } else {
@@ -80,7 +82,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   }
 
   public synchronized void stopSchedulers() {
-    for (AbstractImportScheduler<? extends DataSourceDto> scheduler : importSchedulers) {
+    for (AbstractImportScheduler<? extends SchedulerConfig> scheduler : importSchedulers) {
       scheduler.stopImportScheduling();
     }
   }
@@ -100,7 +102,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
       .collect(Collectors.toList());
   }
 
-  public ZeebeImportScheduler getZeebeImportScheduler() {
+  public Optional<ZeebeImportScheduler> getZeebeImportScheduler() {
     final List<ZeebeImportScheduler> zeebeSchedulers = importSchedulers
       .stream()
       .filter(ZeebeImportScheduler.class::isInstance)
@@ -109,7 +111,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     if (zeebeSchedulers.size() > 1) {
       throw new IllegalStateException("There should only be a single Zeebe Import Scheduler");
     }
-    return zeebeSchedulers.get(0);
+    return zeebeSchedulers.stream().findFirst();
   }
 
   public void subscribeImportObserver(final StatusNotifier job) {
@@ -127,7 +129,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   }
 
   private synchronized void initSchedulers() {
-    final List<AbstractImportScheduler<? extends DataSourceDto>> schedulers = new ArrayList<>();
+    final List<AbstractImportScheduler<? extends SchedulerConfig>> schedulers = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         final List<ImportMediator> mediators = createEngineMediatorList(engineContext);
@@ -146,11 +148,11 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
       final List<ImportMediator> zeebeMediatorList = new ArrayList<>();
       // We create a separate mediator for each Zeebe partition configured
       for (int partitionId = 1; partitionId <= zeebeConfig.getPartitionCount(); partitionId++) {
-        zeebeMediatorList.addAll(createZeebeMediatorList(partitionId));
+        zeebeMediatorList.addAll(createZeebeMediatorList(new ZeebeDataSourceDto(zeebeConfig.getName(), partitionId)));
       }
       ZeebeImportScheduler zeebeImportScheduler = new ZeebeImportScheduler(
         zeebeMediatorList,
-        new ZeebeDataSourceDto(zeebeConfig.getName(), zeebeConfig.getPartitionCount())
+        new ZeebeConfigDto(zeebeConfig.getName(), zeebeConfig.getPartitionCount())
       );
       schedulers.add(zeebeImportScheduler);
     }
@@ -167,21 +169,20 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     engineMediatorFactories.stream()
       .map(factory -> factory.createMediators(engineContext))
       .forEach(mediators::addAll);
-
     mediators.sort(Comparator.comparing(ImportMediator::getRank));
-
     return mediators;
   }
 
-  private List<ImportMediator> createZeebeMediatorList(final int partitionId) {
+  private List<ImportMediator> createZeebeMediatorList(final ZeebeDataSourceDto zeebeDataSourceDto) {
     final List<ImportMediator> mediators = new ArrayList<>();
     importIndexHandlerRegistry.register(
-      partitionId,
-      beanFactory.getBean(ZeebeImportIndexHandlerProvider.class, partitionId)
+      zeebeDataSourceDto.getPartitionId(),
+      beanFactory.getBean(ZeebeImportIndexHandlerProvider.class, zeebeDataSourceDto)
     );
     zeebeMediatorFactories.stream()
-      .map(factory -> factory.createMediators(partitionId))
+      .map(factory -> factory.createMediators(zeebeDataSourceDto))
       .forEach(mediators::addAll);
+    mediators.sort(Comparator.comparing(ImportMediator::getRank));
     return mediators;
   }
 

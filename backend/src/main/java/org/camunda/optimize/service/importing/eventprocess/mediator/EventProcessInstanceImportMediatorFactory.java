@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDt
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
@@ -85,13 +84,9 @@ public class EventProcessInstanceImportMediatorFactory {
   }
 
   private EventProcessInstanceImportService createEventProcessInstanceImportService(final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
-      configurationService
-    );
-    elasticsearchImportJobExecutor.startExecutingImportJobs();
     return new EventProcessInstanceImportService(
+      configurationService,
       eventProcessPublishStateDto,
-      elasticsearchImportJobExecutor,
       eventProcessInstanceWriterFactory.createEventProcessInstanceWriter(eventProcessPublishStateDto)
     );
   }

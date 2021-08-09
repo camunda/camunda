@@ -26,6 +26,9 @@ export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
       borderWidth: 2,
       renderArea: isBelowTarget ? 'bottom' : 'top',
       isTarget: true,
+      datalabels: {
+        display: false,
+      },
     },
     normalLineOptions: {
       borderColor: color,

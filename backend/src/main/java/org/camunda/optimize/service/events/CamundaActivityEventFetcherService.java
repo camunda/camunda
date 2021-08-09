@@ -7,7 +7,7 @@ package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;

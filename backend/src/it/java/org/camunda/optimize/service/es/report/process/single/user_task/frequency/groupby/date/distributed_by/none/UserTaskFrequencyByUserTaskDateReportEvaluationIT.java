@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -33,10 +34,10 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -56,7 +57,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyCountsUserTasksWithThatAssignee(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyCountsUserTasksWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                            final String[] filterValues,
                                                                            final Long expectedInstanceCount,
                                                                            final Double expectedUserTaskCount) {
@@ -82,7 +83,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -106,7 +108,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
-  public void instanceLevelFilterByAssigneeOnlyCountsUserTasksFromInstancesWithThatAssignee(final FilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyCountsUserTasksFromInstancesWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                                             final String[] filterValues,
                                                                                             final Long expectedInstanceCount,
                                                                                             final Double expectedUserTaskCount) {
@@ -132,7 +134,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -156,7 +159,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                        final String[] filterValues,
                                                                                        final Long expectedInstanceCount,
                                                                                        final Double expectedUserTaskCount) {
@@ -179,7 +182,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
       .filter().candidateGroups().ids(filterValues).operator(filterOperator).
         filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -203,7 +207,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
 
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
-  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksFromInstancesWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksFromInstancesWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                                         final String[] filterValues,
                                                                                                         final Long expectedInstanceCount,
                                                                                                         final Double expectedUserTaskCount) {
@@ -231,7 +235,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
       .filter().candidateGroups().ids(filterValues).operator(filterOperator).
         filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -285,7 +290,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
       .add()
       .buildList();
     reportData.setFilter(flowNodeDurationFilter);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -309,7 +315,8 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then the single data point should be grouped by month
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();

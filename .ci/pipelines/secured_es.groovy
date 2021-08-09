@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
 String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
@@ -230,12 +230,7 @@ pipeline {
   }
   post{
     always {
-      // Retrigger the build if the slave disconnected
-      script {
-          if (agentDisconnected()) {
-           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
+      retriggerBuildIfDisconnected()
     }
   }
 }

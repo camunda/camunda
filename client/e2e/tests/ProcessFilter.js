@@ -443,3 +443,45 @@ test('select which flow nodes to show from the configuration', async (t) => {
 
   await t.expect(Report.nodeTableCell('Assign Approver Group').exists).notOk();
 });
+
+test('multi definition filters', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+  await u.selectReportDefinition(t, 'Book Request One Tenant', 'All');
+  await u.selectReportDefinition(t, 'Embedded Subprocess', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.expect(Report.reportRenderer.visible).ok();
+
+  await t.click(Report.sectionToggle('Filters'));
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Process Instance State'));
+
+  await t.click(Report.modalOption('Running'));
+  await t.click(Filter.removeButtonFor('All included processes'));
+  await t.click(Filter.multiSelect);
+  await t.click(Filter.multiSelectOption('Hiring Demo 5 Tenants'));
+  await t.click(Filter.multiSelectOption('Book Request One Tenant'));
+
+  await t.click(Report.primaryModalButton);
+
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.expect(Report.controlPanel.textContent).contains('Applied to: 2 Processes');
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Flow Node'));
+
+  await t.click(Filter.typeahead);
+  await t.click(Filter.typeaheadOption('Embedded Subprocess'));
+
+  await t.click(Report.flowNode('Task_0th4ivq'));
+  await t.click(Report.flowNode('Task_1q83i19'));
+
+  await t.click(Report.primaryModalButton);
+
+  await t.expect(Report.reportRenderer.visible).ok();
+
+  await t.expect(Report.controlPanel.textContent).contains('Assess Credit Worthiness');
+  await t.expect(Report.controlPanel.textContent).contains('Register Application');
+});

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
@@ -13,6 +14,9 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventProcessIT {
 
@@ -69,6 +73,14 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
       .type(type)
       .time(timestamp)
       .build();
+  }
+
+  protected void assertThatEventsHaveBeenDeleted(final List<EventDto> allSavedEventsBeforeDelete,
+                                               final List<String> expectedDeletedEvenIds) {
+    assertThat(getAllStoredEvents())
+      .hasSize(allSavedEventsBeforeDelete.size() - expectedDeletedEvenIds.size())
+      .extracting(EventDto::getId)
+      .doesNotContainAnyElementsOf(expectedDeletedEvenIds);
   }
 
 }

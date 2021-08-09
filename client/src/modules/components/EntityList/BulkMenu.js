@@ -4,19 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 
-import {Dropdown, Deleter} from 'components';
+import {Dropdown} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
 
-export function BulkMenu({bulkActions, selectedEntries, onChange, mightFail}) {
+export default function BulkMenu({bulkActions, selectedEntries, onChange}) {
   const bulkRef = useRef();
   const selectionMode = selectedEntries.length > 0;
-  const [action, setAction] = useState(null);
-  const [conflict, setConflict] = useState(false);
-  const deleteAction = bulkActions.find((action) => action.type === 'delete');
 
   // remove the primary state of the main button when bulk actions button exists
   useEffect(() => {
@@ -32,11 +27,6 @@ export function BulkMenu({bulkActions, selectedEntries, onChange, mightFail}) {
     }
   }, [selectionMode]);
 
-  function reset() {
-    setConflict(false);
-    setAction(null);
-  }
-
   return (
     <div ref={bulkRef} className="BulkMenu">
       {selectionMode && (
@@ -47,45 +37,15 @@ export function BulkMenu({bulkActions, selectedEntries, onChange, mightFail}) {
             'common.itemSelected.' + (selectedEntries.length > 1 ? 'label-plural' : 'label')
           )}`}
         >
-          {deleteAction && (
-            <Dropdown.Option onClick={() => setAction(deleteAction)}>
-              {t('common.delete')}
-            </Dropdown.Option>
+          {React.Children.map(bulkActions, (child, idx) =>
+            React.cloneElement(child, {
+              key: idx,
+              onDelete: onChange,
+              selectedEntries,
+            })
           )}
         </Dropdown>
       )}
-
-      <Deleter
-        type="items"
-        entity={action?.type === 'delete' && selectedEntries}
-        deleteEntity={() =>
-          mightFail(
-            action.action(selectedEntries),
-            () => {
-              reset();
-              onChange();
-            },
-            showError
-          )
-        }
-        onClose={reset}
-        deleteButtonText={t('common.delete')}
-        descriptionText={
-          <>
-            {conflict && (
-              <>
-                {action.conflictMessage}
-                <br /> <br />
-              </>
-            )}
-            {t('common.deleter.areYouSureSelected')}
-          </>
-        }
-        checkConflicts={action?.checkConflicts}
-        onConflict={() => setConflict(true)}
-      />
     </div>
   );
 }
-
-export default withErrorHandling(BulkMenu);

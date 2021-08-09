@@ -43,8 +43,8 @@ Object {
       "yAxisID": "axis-0",
     },
     Object {
-      "backgroundColor": "#f68077",
-      "borderColor": "#f68077",
+      "backgroundColor": "#6391d2",
+      "borderColor": "#6391d2",
       "borderWidth": 2,
       "data": Array [
         175824,
@@ -53,7 +53,7 @@ Object {
       "fill": false,
       "formatter": [Function],
       "label": "Duration - Avg",
-      "legendColor": "#f68077",
+      "legendColor": "#6391d2",
       "yAxisID": "axis-1",
     },
   ],

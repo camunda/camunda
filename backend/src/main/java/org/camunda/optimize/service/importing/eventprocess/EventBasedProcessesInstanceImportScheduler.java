@@ -132,6 +132,7 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
+      Thread.currentThread().interrupt();
     }
   }
 

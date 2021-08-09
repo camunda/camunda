@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;

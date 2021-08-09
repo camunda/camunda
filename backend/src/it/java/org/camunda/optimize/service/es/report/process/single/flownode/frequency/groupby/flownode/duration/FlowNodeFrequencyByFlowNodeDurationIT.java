@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -29,11 +29,13 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequencyByModelElementDurationIT {
 
@@ -76,43 +78,47 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
   private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_USER},
         Arrays.asList(
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 0.)
+          Tuple.tuple("40.0", 0.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       )
     );
@@ -120,14 +126,14 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                            final String[] filterValues,
                                                                            final List<Tuple> expectedResult) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -136,10 +142,12 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), START_EVENT, 10.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_1, 20.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_2, 30.);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_3, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 50.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -166,43 +174,47 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
   private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 0.)
+          Tuple.tuple("40.0", 0.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 1.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
         Arrays.asList(
-          Tuple.tuple("10.0", 1.),
+          Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 0.),
-          Tuple.tuple("40.0", 1.)
+          Tuple.tuple("40.0", 1.),
+          Tuple.tuple("50.0", 0.)
         )
       )
     );
@@ -210,25 +222,27 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                  final String[] filterValues,
                                                                                  final List<Tuple> expectedResult) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), START_EVENT, 10.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_1, 20.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_2, 30.);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_3, 40.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), END_EVENT, 50.);
 
     importAllEngineEntitiesFromScratch();
 

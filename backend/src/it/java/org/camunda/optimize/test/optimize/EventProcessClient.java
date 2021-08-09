@@ -313,27 +313,35 @@ public class EventProcessClient {
   }
 
   public ProcessInstanceDto createEventInstanceWithEvents(List<CloudEventRequestDto> eventsToInclude) {
+    final String definitionKey = IdGenerator.getNextId();
+    final String definitionVersion = "1";
     return EventProcessInstanceDto.builder()
       .processInstanceId(IdGenerator.getNextId())
-      .processDefinitionKey(IdGenerator.getNextId())
-      .processDefinitionVersion("1")
+      .processDefinitionKey(definitionKey)
+      .processDefinitionVersion(definitionVersion)
       .endDate(LocalDateUtil.getCurrentDateTime().minusMinutes(1L))
       .endDate(LocalDateUtil.getCurrentDateTime())
       .duration(60000L)
       .state(ProcessInstanceConstants.COMPLETED_STATE)
       .variables(Collections.emptyList())
       .incidents(Collections.emptyList())
-      .flowNodeInstances(eventsToInclude.stream()
-                           .map(ingestedEvent -> FlowNodeInstanceDto.builder()
-                             .flowNodeInstanceId(ingestedEvent.getId())
-                             .flowNodeId(IdGenerator.getNextId())
-                             .processInstanceId(ingestedEvent.getTraceid())
-                             .startDate(LocalDateUtil.getCurrentDateTime().minusSeconds(30L))
-                             .endDate(LocalDateUtil.getCurrentDateTime().minusSeconds(10L))
-                             .totalDurationInMs(0L)
-                             .flowNodeType("startEvent")
-                             .build()
-                           ).collect(Collectors.toList()))
+      .flowNodeInstances(
+        eventsToInclude.stream().map(
+          ingestedEvent ->
+            new FlowNodeInstanceDto(
+              definitionKey,
+              definitionVersion,
+              null,
+              ingestedEvent.getTraceid(),
+              IdGenerator.getNextId(),
+              "startEvent",
+              ingestedEvent.getId()
+              )
+              .setStartDate(LocalDateUtil.getCurrentDateTime().minusSeconds(30L))
+              .setEndDate(LocalDateUtil.getCurrentDateTime().minusSeconds(10L))
+              .setTotalDurationInMs(0L)
+        ).collect(Collectors.toList())
+      )
       .build();
   }
 

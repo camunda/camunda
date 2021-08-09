@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.zeebe.handler;
 
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -16,8 +17,8 @@ public class ZeebeProcessInstanceImportIndexHandler extends PositionBasedImportI
 
   private static final String ZEEBE_PROC_INST_IMPORT_INDEX_DOC_ID = "zeebeProcessInstanceImportIndex";
 
-  public ZeebeProcessInstanceImportIndexHandler(final int partitionId) {
-    this.partitionId = partitionId;
+  public ZeebeProcessInstanceImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
+    this.dataSource = dataSourceDto;
   }
 
   @Override

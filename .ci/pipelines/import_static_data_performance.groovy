@@ -3,7 +3,7 @@
 // https://github.com/camunda/jenkins-global-shared-library
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
 def static NODE_POOL() { return "agents-n1-standard-8-netssd-stable" }
 
@@ -70,7 +70,7 @@ pipeline {
   environment {
     NEXUS = credentials("camunda-nexus")
     REGISTRY = credentials('repository-camunda-cloud')
-    NAMESPACE = "${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+    NAMESPACE = "optimize-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
   }
 
   options {
@@ -136,7 +136,7 @@ pipeline {
                 echo "NUMBER_OF_VARIABLES"
                 test "\$NUMBER_OF_VARIABLES" = "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
                 echo "NUMBER_OF_USER_TASKS"
-                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true                
+                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
                 echo "NUMBER_OF_INCOMPLETE_USER_TASKS"
                 test "\$NUMBER_OF_INCOMPLETE_USER_TASKS" = "0" || error=true
 
@@ -153,18 +153,13 @@ pipeline {
 
   post {
     changed {
-      sendNotification(currentBuild.result, null, null, [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendEmailNotification()
     }
     always {
       container('gcloud') {
         sh("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
       }
-      // Retrigger the build if the slave disconnected
-      script {
-        if (agentDisconnected()) {
-          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
+      retriggerBuildIfDisconnected()
     }
   }
 }

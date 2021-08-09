@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;

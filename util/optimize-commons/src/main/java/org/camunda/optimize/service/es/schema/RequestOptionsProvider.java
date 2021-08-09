@@ -30,15 +30,16 @@ public class RequestOptionsProvider {
   }
 
   public RequestOptions getRequestOptions() {
+    final RequestOptions requestOptions = RequestOptions.DEFAULT;
     if (!customHeaderSuppliers.isEmpty()) {
-      final RequestOptions.Builder requestOptionsBuilder = RequestOptions.DEFAULT.toBuilder();
+      final RequestOptions.Builder requestOptionsBuilder = requestOptions.toBuilder();
       customHeaderSuppliers.forEach(headerFunction -> {
         final CustomHeader customHeader = headerFunction.get();
         requestOptionsBuilder.addHeader(customHeader.getHeader(), customHeader.getValue());
       });
       return requestOptionsBuilder.build();
     } else {
-      return RequestOptions.DEFAULT;
+      return requestOptions;
     }
   }
 

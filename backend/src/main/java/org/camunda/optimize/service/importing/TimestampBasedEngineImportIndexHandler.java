@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -39,7 +39,14 @@ public abstract class TimestampBasedEngineImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    readIndexFromElasticsearch();
+    final Optional<TimestampBasedImportIndexDto> dto = importIndexReader
+      .getImportIndex(getElasticsearchDocID(), getEngineAlias());
+    if (dto.isPresent()) {
+      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
+      updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
+      updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
+      updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
+    }
   }
 
   /**
@@ -55,17 +62,6 @@ public abstract class TimestampBasedEngineImportIndexHandler
   @Override
   protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
     this.lastImportExecutionTimestamp = timestamp;
-  }
-
-  private void readIndexFromElasticsearch() {
-    final Optional<TimestampBasedImportIndexDto> dto = importIndexReader
-      .getImportIndex(getElasticsearchDocID(), getEngineAlias());
-    if (dto.isPresent()) {
-      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
-      updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
-      updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
-      updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
-    }
   }
 
 }

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -37,15 +36,18 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
 
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
 
-  private final DefinitionService definitionService;
   private final ConfigurationService configurationService;
+
+  public ProcessGroupByFlowNode(final ConfigurationService configurationService, final DefinitionService definitionService) {
+    super(definitionService);
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

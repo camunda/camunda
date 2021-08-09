@@ -14,8 +14,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -56,7 +56,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
@@ -67,6 +68,7 @@ import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateEx
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -525,7 +527,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // To create specific tenant instances with a shared def, start instance on noneTenant and update tenantID after
     ProcessInstanceEngineDto instance1 = engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
-    engineDatabaseExtension.changeProcessInstanceTenantId(instance1.getId(), tenantId1);
+    engineDatabaseExtension.changeProcessInstanceAndActivitiesTenantId(instance1.getId(), tenantId1);
 
     changeActivityDuration(instance1, 10.);
 
@@ -920,52 +922,15 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
 
-  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{SECOND_USER},
-        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
-      ),
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(USER_TASK_2, 30.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      )
-    );
-  }
-
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                            final String[] filterValues,
                                                                            final List<Tuple> expectedResult) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(
@@ -974,10 +939,13 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
+
     changeActivityDuration(processInstanceDto, START_EVENT, 10.);
     changeActivityDuration(processInstanceDto, USER_TASK_1, 20.);
     changeActivityDuration(processInstanceDto, USER_TASK_2, 30.);
-    changeActivityDuration(processInstanceDto, END_EVENT, 40.);
+    changeActivityDuration(processInstanceDto, USER_TASK_3, 40.);
+    changeActivityDuration(processInstanceDto, END_EVENT, 50.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -997,62 +965,27 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
-  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
-      ),
-      Arguments.of(
-        FilterOperator.IN,
-        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(USER_TASK_2, 30.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(USER_TASK_1, 20.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(
-          Tuple.tuple(START_EVENT, 10.),
-          Tuple.tuple(END_EVENT, 40.)
-        )
-      )
-    );
-  }
-
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                  final String[] filterValues,
                                                                                  final List<Tuple> expectedResult) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
     changeActivityDuration(processInstanceDto, START_EVENT, 10.);
     changeActivityDuration(processInstanceDto, USER_TASK_1, 20.);
     changeActivityDuration(processInstanceDto, USER_TASK_2, 30.);
-    changeActivityDuration(processInstanceDto, END_EVENT, 40.);
+    changeActivityDuration(processInstanceDto, USER_TASK_3, 40.);
+    changeActivityDuration(processInstanceDto, END_EVENT, 50.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -1189,10 +1122,13 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
+  private ProcessDefinitionEngineDto deployThreeUserTasksDefinition() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getTripleUserTaskDiagram());
+  }
+
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
     return createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
   }
-
 
   private long getExecutedFlowNodeCount(ReportResultResponseDto<List<MapResultEntryDto>> resultList) {
     return resultList.getFirstMeasureData()
@@ -1263,6 +1199,74 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
     return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN,
+        new String[]{SECOND_USER},
+        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
+      ),
+      Arguments.of(
+        IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        List.of(
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_2, 30.),
+          Tuple.tuple(USER_TASK_3, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        List.of(
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_3, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Collections.singletonList(
+          Tuple.tuple(USER_TASK_3, 40.)
+        )
+      )
+    );
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
+      ),
+      Arguments.of(
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        List.of(
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_2, 30.),
+          Tuple.tuple(USER_TASK_3, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        List.of(
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_3, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Collections.singletonList(
+          Tuple.tuple(USER_TASK_3, 40.)
+        )
+      )
+    );
   }
 
 }

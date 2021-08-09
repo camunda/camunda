@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitio
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -38,7 +39,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -265,7 +265,7 @@ public class ElasticSearchSchemaManager {
     );
     request.settings(indexSettings);
     request.mapping(mapping.getSource());
-    esClient.getHighLevelClient().indices().create(request, esClient.requestOptions());
+    esClient.createIndex(request);
   }
 
   private void createOptimizeIndexWithWriteAliasFromTemplate(final OptimizeElasticsearchClient esClient,
@@ -277,7 +277,7 @@ public class ElasticSearchSchemaManager {
       createIndexRequest.alias(new Alias(aliasName).writeIndex(true));
     }
     try {
-      esClient.getHighLevelClient().indices().create(createIndexRequest, esClient.requestOptions());
+      esClient.createIndex(createIndexRequest);
     } catch (IOException e) {
       String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
@@ -298,9 +298,8 @@ public class ElasticSearchSchemaManager {
       .patterns(Collections.singletonList(
         indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)
       ));
-
     try {
-      esClient.getHighLevelClient().indices().putTemplate(templateRequest, esClient.requestOptions());
+      esClient.createTemplate(templateRequest);
     } catch (Exception e) {
       final String message = String.format("Could not create or update template %s.", templateName);
       throw new OptimizeRuntimeException(message, e);
@@ -331,7 +330,7 @@ public class ElasticSearchSchemaManager {
       .forEach(templateRequest::alias);
 
     try {
-      esClient.getHighLevelClient().indices().putTemplate(templateRequest, esClient.requestOptions());
+      esClient.createTemplate(templateRequest);
     } catch (IOException e) {
       String message = String.format("Could not create or update template %s", templateName);
       log.warn(message, e);
@@ -350,10 +349,7 @@ public class ElasticSearchSchemaManager {
   private void unblockIndices(final OptimizeElasticsearchClient esClient) {
     final boolean indexBlocked;
     try {
-      final GetSettingsResponse settingsResponse = esClient.getHighLevelClient().indices().getSettings(
-        new GetSettingsRequest().indices(esClient.getIndexNameService().getIndexPrefix() + "*"),
-        esClient.requestOptions()
-      );
+      final GetSettingsResponse settingsResponse = esClient.getIndexSettings();
       indexBlocked = Streams.stream(settingsResponse.getIndexToSettings().valuesIt())
         .anyMatch(settings -> settings.getAsBoolean(INDEX_READ_ONLY_SETTING, false));
     } catch (IOException e) {
@@ -368,7 +364,7 @@ public class ElasticSearchSchemaManager {
       );
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
-        esClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, esClient.requestOptions());
+        esClient.updateSettings(updateSettingsRequest);
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Could not unblock Elasticsearch indices!", e);
       }
@@ -400,7 +396,7 @@ public class ElasticSearchSchemaManager {
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
       updateSettingsRequest.indices(indexName);
       updateSettingsRequest.settings(indexSettings);
-      esClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, esClient.requestOptions());
+      esClient.updateSettings(updateSettingsRequest);
     } catch (IOException e) {
       String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
@@ -409,7 +405,7 @@ public class ElasticSearchSchemaManager {
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
       putMappingRequest.source(indexMapping.getSource());
-      esClient.getHighLevelClient().indices().putMapping(putMappingRequest, esClient.requestOptions());
+      esClient.createMapping(putMappingRequest);
     } catch (IOException e) {
       String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
@@ -448,6 +444,7 @@ public class ElasticSearchSchemaManager {
       new EventProcessPublishStateIndex(),
       new ImportIndexIndex(),
       new TimestampBasedImportIndex(),
+      new PositionBasedImportIndex(),
       new CombinedReportIndex(),
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex()

@@ -14,13 +14,14 @@ import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -28,6 +29,7 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -60,7 +62,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     assertThat(metadata).isPresent();
 
     final TelemetryDataDto expectedTelemetry = createExpectedTelemetryWithLicenseKey(
-      elasticSearchIntegrationTestExtension.getEsVersion(),
+      getEsVersion(),
       metadata.get().getInstallationId(),
       getLicense()
     );
@@ -339,6 +341,19 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   private String getLicense() {
     return embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).getOptimizeLicense();
+  }
+
+  private String getEsVersion() {
+    try {
+      final OptimizeElasticsearchClient optimizeElasticClient =
+        elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      return optimizeElasticClient.getHighLevelClient()
+        .info(optimizeElasticClient.requestOptions())
+        .getVersion()
+        .getNumber();
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not retrieve elasticsearch version.", e);
+    }
   }
 
 }

@@ -14,27 +14,31 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningUserTaskElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
-
 @Slf4j
 public class RunningUserTaskInstanceImportService implements ImportService<HistoricUserTaskInstanceDto> {
+
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
-  public RunningUserTaskInstanceImportService(final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
-                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public RunningUserTaskInstanceImportService(final ConfigurationService configurationService,
+                                              final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                               final EngineContext engineContext,
                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -79,6 +83,7 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
                                                                                    Runnable callback) {
     final RunningUserTaskElasticsearchImportJob importJob = new RunningUserTaskElasticsearchImportJob(
       runningUserTaskInstanceWriter,
+      configurationService,
       callback
     );
     importJob.setEntitiesToImport(userTasks);
@@ -86,22 +91,21 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   }
 
   private FlowNodeInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
-    return FlowNodeInstanceDto.builder()
-      .userTaskInstanceId(engineEntity.getId())
-      .flowNodeId(engineEntity.getTaskDefinitionKey())
-      .flowNodeInstanceId(engineEntity.getActivityInstanceId())
-      .processInstanceId(engineEntity.getProcessInstanceId())
-      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
-      .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
-      .engine(engineContext.getEngineAlias())
-      .startDate(engineEntity.getStartTime())
-      .dueDate(engineEntity.getDue())
-      .deleteReason(engineEntity.getDeleteReason())
+    return new FlowNodeInstanceDto(
+      engineEntity.getProcessDefinitionKey(),
+      engineContext.getEngineAlias(),
+      engineEntity.getProcessInstanceId(),
+      engineEntity.getTaskDefinitionKey(),
+      engineEntity.getActivityInstanceId(),
+      engineEntity.getId()
+    )
+      .setStartDate(engineEntity.getStartTime())
+      .setDueDate(engineEntity.getDue())
+      .setDeleteReason(engineEntity.getDeleteReason())
       // HistoricUserTaskInstanceDto does not have a bool canceled field. To avoid having to parse the deleteReason,
       // canceled defaults to false and writers do not overwrite existing canceled states.
       // The completedActivityInstanceWriter will overwrite the correct state.
-      .canceled(false)
-      .build();
+      .setCanceled(false);
   }
 
 }

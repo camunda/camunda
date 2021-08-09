@@ -67,7 +67,7 @@
       > .Popover > .buttonWrapper .Button {
         opacity: 0;
 
-        &:focus {
+        &.focus-visible {
           opacity: 1;
         }
       }

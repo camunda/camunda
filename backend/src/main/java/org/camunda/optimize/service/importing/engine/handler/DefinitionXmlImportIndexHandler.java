@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;

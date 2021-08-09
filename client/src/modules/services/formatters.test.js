@@ -371,6 +371,7 @@ it('should show nice ticks for duration formats on the y axis', () => {
   const maxValue = 7 * 24 * 60 * 60 * 1000;
 
   const config = createDurationFormattingOptions(0, maxValue);
+  config.getLabelForValue = (v) => v + '';
 
   expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
   expect(config.callback(3 * 24 * 60 * 60 * 1000)).toBe('3d');

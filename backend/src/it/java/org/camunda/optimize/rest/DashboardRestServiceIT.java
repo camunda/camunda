@@ -34,11 +34,12 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVa
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
@@ -687,20 +688,20 @@ public class DashboardRestServiceIT extends AbstractIT {
         createDashboardVariableFilter(VariableType.DOUBLE, "doubleVar", IN, Arrays.asList("1", "2"), true)
       ),
       Arrays.asList(
-        createDashboardAssigneeFilter(Collections.emptyList(), IN, false),
-        createDashboardCandidateGroupFilter(Collections.emptyList(), NOT_IN, true)
+        createDashboardAssigneeFilter(Collections.emptyList(), MembershipFilterOperator.IN, false),
+        createDashboardCandidateGroupFilter(Collections.emptyList(), MembershipFilterOperator.NOT_IN, true)
       ),
       Arrays.asList(
-        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, false),
-        createDashboardAssigneeFilter(Arrays.asList("Donna", "Clara"), NOT_IN, true)
+        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, false),
+        createDashboardAssigneeFilter(Arrays.asList("Donna", "Clara"), MembershipFilterOperator.NOT_IN, true)
       ),
       Arrays.asList(
-        createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), IN, true),
-        createDashboardCandidateGroupFilter(Arrays.asList("Ood", "Judoon"), NOT_IN, false)
+        createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), MembershipFilterOperator.IN, true),
+        createDashboardCandidateGroupFilter(Arrays.asList("Ood", "Judoon"), MembershipFilterOperator.NOT_IN, false)
       ),
       Arrays.asList(
-        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, true),
-        createDashboardCandidateGroupFilter(Arrays.asList("Ood", "Judoon"), NOT_IN, true)
+        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, true),
+        createDashboardCandidateGroupFilter(Arrays.asList("Ood", "Judoon"), MembershipFilterOperator.NOT_IN, true)
       ),
       Arrays.asList(
         createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar"),
@@ -724,8 +725,8 @@ public class DashboardRestServiceIT extends AbstractIT {
           Collections.singletonList("foo"),
           false
         ),
-        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, false),
-        createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), IN, false),
+        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, false),
+        createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), MembershipFilterOperator.IN, false),
         createDashboardStartDateFilterWithDefaultValues(null),
         createDashboardEndDateFilterWithDefaultValues(null),
         createDashboardStateFilterWithDefaultValues(null)
@@ -750,8 +751,8 @@ public class DashboardRestServiceIT extends AbstractIT {
           Collections.singletonList("foo"),
           false
         ),
-        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, true),
-        createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), IN, true),
+        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, true),
+        createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), MembershipFilterOperator.IN, true),
         createDashboardStartDateFilterWithDefaultValues(null),
         createDashboardEndDateFilterWithDefaultValues(null),
         createDashboardStateFilterWithDefaultValues(null)
@@ -786,10 +787,10 @@ public class DashboardRestServiceIT extends AbstractIT {
             OffsetDateTime.parse("2021-06-05T18:00:00+02:00"),
             OffsetDateTime.parse("2021-06-06T18:00:00+02:00")
           )),
-        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, true, Collections.singletonList("Martha")),
+        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, true, Collections.singletonList("Martha")),
         createDashboardCandidateGroupFilter(
           Arrays.asList("Cybermen", "Daleks"),
-          NOT_IN,
+          MembershipFilterOperator.NOT_IN,
           true,
           Arrays.asList("Cybermen", "Daleks")
         )
@@ -822,14 +823,13 @@ public class DashboardRestServiceIT extends AbstractIT {
       Collections.singletonList(new DashboardVariableFilterDto()),
       Collections.singletonList(new DashboardAssigneeFilterDto()),
       Collections.singletonList(new DashboardCandidateGroupFilterDto()),
-      Collections.singletonList(createDashboardAssigneeFilter(Collections.emptyList(), CONTAINS, false)),
       Arrays.asList(
-        createDashboardAssigneeFilter(Collections.emptyList(), IN, false),
-        createDashboardAssigneeFilter(Collections.emptyList(), IN, true)
+        createDashboardAssigneeFilter(Collections.emptyList(), MembershipFilterOperator.IN, false),
+        createDashboardAssigneeFilter(Collections.emptyList(), MembershipFilterOperator.IN, true)
       ),
       Arrays.asList(
-        createDashboardCandidateGroupFilter(Collections.emptyList(), NOT_IN, false),
-        createDashboardCandidateGroupFilter(Collections.emptyList(), NOT_IN, true)
+        createDashboardCandidateGroupFilter(Collections.emptyList(), MembershipFilterOperator.NOT_IN, false),
+        createDashboardCandidateGroupFilter(Collections.emptyList(), MembershipFilterOperator.NOT_IN, true)
       ),
       Arrays.asList(
         new DashboardStartDateFilterDto(),
@@ -1054,13 +1054,13 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   private static DashboardFilterDto<?> createDashboardAssigneeFilter(final List<String> assigneeNames,
-                                                                     final FilterOperator filterOperator,
+                                                                     final MembershipFilterOperator filterOperator,
                                                                      final boolean allowCustomValues) {
     return createDashboardAssigneeFilter(assigneeNames, filterOperator, allowCustomValues, null);
   }
 
   private static DashboardFilterDto<?> createDashboardAssigneeFilter(final List<String> assigneeNames,
-                                                                     final FilterOperator filterOperator,
+                                                                     final MembershipFilterOperator filterOperator,
                                                                      final boolean allowCustomValues,
                                                                      final List<String> defaultValues) {
     final DashboardAssigneeFilterDto assigneeFilter = new DashboardAssigneeFilterDto();
@@ -1074,13 +1074,13 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   private static DashboardFilterDto<?> createDashboardCandidateGroupFilter(final List<String> candidateGroupNames,
-                                                                           final FilterOperator filterOperator,
+                                                                           final MembershipFilterOperator filterOperator,
                                                                            final boolean allowCustomValues) {
     return createDashboardCandidateGroupFilter(candidateGroupNames, filterOperator, allowCustomValues, null);
   }
 
   private static DashboardFilterDto<?> createDashboardCandidateGroupFilter(final List<String> candidateGroupNames,
-                                                                           final FilterOperator filterOperator,
+                                                                           final MembershipFilterOperator filterOperator,
                                                                            final boolean allowCustomValues,
                                                                            final List<String> defaultValues) {
     final DashboardCandidateGroupFilterDto candidateGroupFilter = new DashboardCandidateGroupFilterDto();

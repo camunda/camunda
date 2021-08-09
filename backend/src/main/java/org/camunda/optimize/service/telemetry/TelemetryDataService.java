@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.springframework.stereotype.Component;
 
@@ -89,15 +90,13 @@ public class TelemetryDataService {
   }
 
   private DatabaseDto getDatabaseData() {
-    String esVersion = INFORMATION_UNAVAILABLE_STRING;
-
+    String esVersion = null;
     try {
-      esVersion = esClient.getHighLevelClient().info(esClient.requestOptions()).getVersion().getNumber();
+      esVersion = esClient.getElasticsearchVersion();
     } catch (IOException e) {
       log.info("Failed to retrieve Elasticsearch version for telemetry data.");
     }
-
-    return DatabaseDto.builder().version(esVersion).build();
+    return DatabaseDto.builder().version(Optional.ofNullable(esVersion).orElse(INFORMATION_UNAVAILABLE_STRING)).build();
   }
 
   private LicenseKeyDto getLicenseKeyData() {

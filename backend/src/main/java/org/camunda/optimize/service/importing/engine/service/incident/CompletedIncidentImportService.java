@@ -8,11 +8,11 @@ package org.camunda.optimize.service.importing.engine.service.incident;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedIncidentElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
@@ -21,22 +21,18 @@ public class CompletedIncidentImportService extends AbstractIncidentImportServic
 
   private final CompletedIncidentWriter completedIncidentWriter;
 
-  public CompletedIncidentImportService(final CompletedIncidentWriter completedIncidentWriter,
-                                        final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public CompletedIncidentImportService(final ConfigurationService configurationService,
+                                        final CompletedIncidentWriter completedIncidentWriter,
                                         final EngineContext engineContext,
                                         final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(
-      elasticsearchImportJobExecutor,
-      engineContext,
-      processDefinitionResolverService
-    );
+    super(configurationService, engineContext, processDefinitionResolverService);
     this.completedIncidentWriter = completedIncidentWriter;
   }
 
   protected ElasticsearchImportJob<IncidentDto> createElasticsearchImportJob(List<IncidentDto> incidents,
                                                                              Runnable callback) {
     CompletedIncidentElasticsearchImportJob incidentImportJob =
-      new CompletedIncidentElasticsearchImportJob(completedIncidentWriter, callback);
+      new CompletedIncidentElasticsearchImportJob(completedIncidentWriter, configurationService, callback);
     incidentImportJob.setEntitiesToImport(incidents);
     return incidentImportJob;
   }

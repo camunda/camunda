@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter} from 'components';
+import {Button, EntityList, Deleter, BulkDeleter} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
@@ -77,10 +77,11 @@ export default withErrorHandling(
               )
             }
             bulkActions={[
-              {
-                type: 'delete',
-                action: (selectedUsers) => removeUsers(collection, selectedUsers),
-              },
+              <BulkDeleter
+                deleteEntities={async (selectedUsers) =>
+                  await removeUsers(collection, selectedUsers)
+                }
+              />,
             ]}
             onChange={this.updateList}
             empty={t('common.notFound')}

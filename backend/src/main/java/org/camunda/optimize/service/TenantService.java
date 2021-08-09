@@ -70,7 +70,8 @@ public class TenantService implements ConfigurationReloadable {
       .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
         userId,
         IdentityType.USER,
-        tenantDto.getId()
+        tenantDto.getId(),
+        tenantDto.getEngine()
       ))
       .collect(toList());
   }

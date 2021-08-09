@@ -7,11 +7,10 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.TenantWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.TenantFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.TenantImportMediator;
 import org.camunda.optimize.service.importing.engine.service.TenantImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -40,13 +39,10 @@ public class TenantImportMediatorFactory extends AbstractEngineImportMediatorFac
 
   public TenantImportMediator createTenantImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new TenantImportMediator(
       importIndexHandlerRegistry.getTenantImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(TenantFetcher.class, engineContext),
-      new TenantImportService(elasticsearchImportJobExecutor, engineContext, tenantWriter),
+      new TenantImportService(configurationService, engineContext, tenantWriter),
       configurationService,
       new BackoffCalculator(configurationService)
     );

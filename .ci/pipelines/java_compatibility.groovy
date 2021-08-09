@@ -5,7 +5,7 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
-def static OPENJDK_MAVEN_DOCKER_IMAGE(String imageTagSuffix) { return "maven:3.6.3-${imageTagSuffix}" }
+def static OPENJDK_MAVEN_DOCKER_IMAGE(String imageTagSuffix) { return "maven:3.8.1-${imageTagSuffix}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}" }
 
@@ -42,16 +42,16 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 4
+        value: 6
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 6
-        memory: 8Gi
+        memory: 12Gi
       requests:
         cpu: 6
-        memory: 8Gi
+        memory: 12Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     imagePullPolicy: Always
@@ -78,13 +78,20 @@ spec:
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
     - name: ES_JAVA_OPTS
-      value: "-Xms1g -Xmx1g"
+      value: "-Xms2g -Xmx2g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
       value: single-node
+    - name: http.port
+      value: 9200
     - name: bootstrap.memory_lock
       value: true
+    # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+    # internally make usage of scroll contexts this lead to hits on the scroll limit.
+    # Thus this increased scroll context limit.
+    - name: search.max_open_scroll_context
+      value: 1000
     securityContext:
       privileged: true
       capabilities:
@@ -149,43 +156,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("jdk-11-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("OpenJDK 14 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-JDK14_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("jdk-14"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("OpenJDK 15 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-JDK15_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-15"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-11-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -203,7 +174,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK16_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-16"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-16-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -239,15 +210,10 @@ pipeline {
 
   post {
     changed {
-      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendEmailNotification()
     }
     always {
-      // Retrigger the build if the slave disconnected
-      script {
-        if (agentDisconnected()) {
-          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
+      retriggerBuildIfDisconnected()
     }
   }
 }

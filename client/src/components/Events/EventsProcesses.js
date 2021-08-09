@@ -8,7 +8,7 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
 
-import {EntityList, Deleter, Dropdown} from 'components';
+import {EntityList, BulkDeleter, Deleter, Dropdown} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
@@ -139,12 +139,7 @@ export class EventsProcesses extends React.Component {
               <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
             </Dropdown>
           }
-          bulkActions={[
-            {
-              type: 'delete',
-              action: deleteProcesses,
-            },
-          ]}
+          bulkActions={[<BulkDeleter deleteEntities={deleteProcesses} />]}
           onChange={this.loadList}
           columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
           data={

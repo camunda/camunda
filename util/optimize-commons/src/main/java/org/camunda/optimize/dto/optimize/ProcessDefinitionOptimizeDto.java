@@ -11,11 +11,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @AllArgsConstructor
 @Data
@@ -75,6 +79,15 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     return flowNodeData == null
       ? new ArrayList<>()
       : flowNodeData;
+  }
+
+  @JsonIgnore
+  public final List<FlowNodeDataDto> getUserTaskData() {
+    return flowNodeData == null
+      ? List.of()
+      : flowNodeData.stream()
+      .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getType()))
+      .collect(toList());
   }
 
   public Map<String, String> getUserTaskNames() {

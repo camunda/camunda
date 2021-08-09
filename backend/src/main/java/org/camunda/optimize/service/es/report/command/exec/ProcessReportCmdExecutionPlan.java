@@ -23,9 +23,7 @@ import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,7 +57,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
 
     final ProcessReportDataDto reportData = context.getReportData();
-    final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition = groupFiltersByDefinitionIdentifier(reportData);
+    final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition = reportData.groupFiltersByDefinitionIdentifier();
     final BoolQueryBuilder multiDefinitionFilterQuery = boolQuery().minimumShouldMatch(1);
     reportData.getDefinitions().forEach(definitionDto -> {
       final BoolQueryBuilder definitionQuery = createDefinitionQuery(definitionDto);
@@ -113,15 +111,6 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
       new ProcessInstanceIndex(definitionDto.getKey()),
       processDefinitionReader::getLatestVersionToKey
     );
-  }
-
-  private Map<String, List<ProcessFilterDto<?>>> groupFiltersByDefinitionIdentifier(final ProcessReportDataDto reportData) {
-    final Map<String, List<ProcessFilterDto<?>>> filterByDefinition = new HashMap<>();
-    reportData.getFilter().forEach(filterDto -> filterDto.getAppliedTo().forEach(
-      definitionIdentifier -> filterByDefinition.computeIfAbsent(definitionIdentifier, key -> new ArrayList<>())
-        .add(filterDto)
-    ));
-    return filterByDefinition;
   }
 
 }

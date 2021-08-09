@@ -6,9 +6,9 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
@@ -126,10 +126,11 @@ public class AnalysisRestServiceIT extends AbstractIT {
   }
 
   private List<FlowNodeInstanceDto> createEventList(String[] activityIds) {
-    List<FlowNodeInstanceDto> events = new ArrayList<>(activityIds.length);
+    final List<FlowNodeInstanceDto> events = new ArrayList<>(activityIds.length);
     for (String activityId : activityIds) {
-      FlowNodeInstanceDto event = FlowNodeInstanceDto.builder().flowNodeId(activityId).build();
-      events.add(event);
+      FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
+      flowNodeInstance.setFlowNodeId(activityId);
+      events.add(flowNodeInstance);
     }
     return events;
   }

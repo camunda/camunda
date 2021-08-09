@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
-import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -21,6 +19,7 @@ import java.util.List;
 
 @Component
 public class StoreIndexesEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+
   private final ImportIndexWriter importIndexWriter;
 
   public StoreIndexesEngineImportMediatorFactory(final BeanFactory beanFactory,
@@ -33,20 +32,12 @@ public class StoreIndexesEngineImportMediatorFactory extends AbstractEngineImpor
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(createStoreIndexImportMediator(engineContext));
-  }
-
-  public StoreIndexesEngineImportMediator createStoreIndexImportMediator(
-    EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
-    return new StoreIndexesEngineImportMediator(
+    return List.of(new StoreIndexesEngineImportMediator(
       importIndexHandlerRegistry,
-      new StoreIndexesEngineImportService(importIndexWriter, elasticsearchImportJobExecutor),
+      new StoreIndexesEngineImportService(configurationService, importIndexWriter),
       engineContext,
       configurationService
-    );
+    ));
   }
 
 }

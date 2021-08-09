@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.process.mapping;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -23,8 +24,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 public class ProcessGroupByFlowNodeStartDate extends ProcessGroupByFlowNodeDate {
 
   public ProcessGroupByFlowNodeStartDate(final DateAggregationService dateAggregationService,
-                                         final MinMaxStatsService minMaxStatsService) {
-    super(dateAggregationService, minMaxStatsService);
+                                         final MinMaxStatsService minMaxStatsService,
+                                         final DefinitionService definitionService) {
+    super(dateAggregationService, minMaxStatsService, definitionService);
   }
 
   @Override

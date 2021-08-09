@@ -4,7 +4,8 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
+
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
 static String gCloudAndMavenAgent() {
   return """
@@ -66,7 +67,7 @@ pipeline {
 
   environment {
     NEXUS = credentials("camunda-nexus")
-    NAMESPACE = "cluster-test-${env.BUILD_ID}"
+    NAMESPACE = "optimize-cluster-test-${env.BUILD_ID}"
   }
 
   options {
@@ -85,7 +86,7 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
-          sh ("""
+          sh("""
                 # install jq
                 apk add --no-cache jq gettext
                 # kubectl
@@ -95,7 +96,7 @@ pipeline {
             """)
         }
         container('maven') {
-          sh ("""apt-get update && apt-get install -y jq netcat""")
+          sh("""apt-get update && apt-get install -y jq netcat""")
         }
       }
     }
@@ -107,7 +108,7 @@ pipeline {
                 mvn -B -Pclustering-tests verify -pl qa/clustering-tests -s \$MAVEN_SETTINGS_XML \
                   -Doptimize.importing.host=optimize-import.${NAMESPACE} -Doptimize.importing.port=8090 \
                   -Doptimize.notImporting.host=optimize-no-import.${NAMESPACE} -Doptimize.notImporting.port=8090 \
-                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn 
+                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
             """)
           }
         }
@@ -117,18 +118,13 @@ pipeline {
 
   post {
     changed {
-      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendEmailNotification()
     }
     always {
       container('gcloud') {
-        sh ("bash .ci/podSpecs/clusterTests/kill.sh \"${NAMESPACE}\"")
+        sh("bash .ci/podSpecs/clusterTests/kill.sh \"${NAMESPACE}\"")
       }
-        // Retrigger the build if the slave disconnected
-        script {
-          if (agentDisconnected()) {
-            build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
+      retriggerBuildIfDisconnected()
     }
   }
 }

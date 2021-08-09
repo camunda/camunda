@@ -7,7 +7,7 @@ exports[`should create two Charts 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Of all <b>3 instances</b> that passed the Gateway <i>g</i>",
+        "__html": "Of all <b>3 instances</b> that passed the Gateway <i class=\\"gatewayName\\"></i>",
       }
     }
   />
@@ -15,7 +15,7 @@ exports[`should create two Charts 1`] = `
     <li
       dangerouslySetInnerHTML={
         Object {
-          "__html": "<b>1</b> (33%) took the  <i>a</i> branch, <b>3</b> (300%) of those then continued to reach the end event <i>e</i>",
+          "__html": "<b>1</b> (33%) took the <i class=\\"branchName\\"></i> branch, <b>3</b> (300%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
         }
       }
       key="a"
@@ -23,7 +23,7 @@ exports[`should create two Charts 1`] = `
     <li
       dangerouslySetInnerHTML={
         Object {
-          "__html": "<b>2</b> (67%) took the  <i>b</i> branch, <b>2</b> (100%) of those then continued to reach the end event <i>e</i>",
+          "__html": "<b>2</b> (67%) took the <i class=\\"branchName\\"></i> branch, <b>2</b> (100%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
         }
       }
       key="b"
@@ -32,7 +32,7 @@ exports[`should create two Charts 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Distribution of Instances at the Gateway <i>g</i>:",
+        "__html": "Distribution of Instances at the Gateway <i class=\\"gatewayName\\"></i>:",
       }
     }
   />
@@ -44,7 +44,7 @@ exports[`should create two Charts 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Probability to reach the end event <i>e</i> after taking a branch:",
+        "__html": "Probability to reach the end event <i class=\\"endEventName\\"></i> after taking a branch:",
       }
     }
   />
@@ -95,7 +95,7 @@ exports[`should show a summary after loading is complete 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Of all <b>3 instances</b> that passed the Gateway <i>g</i>",
+        "__html": "Of all <b>3 instances</b> that passed the Gateway <i class=\\"gatewayName\\"></i>",
       }
     }
   />
@@ -103,7 +103,7 @@ exports[`should show a summary after loading is complete 1`] = `
     <li
       dangerouslySetInnerHTML={
         Object {
-          "__html": "<b>1</b> (33%) took the  <i>testLabel</i> branch, <b>3</b> (300%) of those then continued to reach the end event <i>e</i>",
+          "__html": "<b>1</b> (33%) took the <i class=\\"branchName\\"></i> branch, <b>3</b> (300%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
         }
       }
       key="testLabel"
@@ -111,7 +111,7 @@ exports[`should show a summary after loading is complete 1`] = `
     <li
       dangerouslySetInnerHTML={
         Object {
-          "__html": "<b>2</b> (67%) took the  <i>bar</i> branch, <b>2</b> (100%) of those then continued to reach the end event <i>e</i>",
+          "__html": "<b>2</b> (67%) took the <i class=\\"branchName\\"></i> branch, <b>2</b> (100%) of those then continued to reach the end event <i class=\\"endEventName\\"></i>",
         }
       }
       key="bar"
@@ -120,7 +120,7 @@ exports[`should show a summary after loading is complete 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Distribution of Instances at the Gateway <i>g</i>:",
+        "__html": "Distribution of Instances at the Gateway <i class=\\"gatewayName\\"></i>:",
       }
     }
   />
@@ -132,7 +132,7 @@ exports[`should show a summary after loading is complete 1`] = `
   <p
     dangerouslySetInnerHTML={
       Object {
-        "__html": "Probability to reach the end event <i>e</i> after taking a branch:",
+        "__html": "Probability to reach the end event <i class=\\"endEventName\\"></i> after taking a branch:",
       }
     }
   />

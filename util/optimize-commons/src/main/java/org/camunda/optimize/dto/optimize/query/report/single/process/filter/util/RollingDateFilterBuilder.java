@@ -7,8 +7,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.uti
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Star
 
 public class RollingDateFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private RollingDateFilterStartDto start;
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;

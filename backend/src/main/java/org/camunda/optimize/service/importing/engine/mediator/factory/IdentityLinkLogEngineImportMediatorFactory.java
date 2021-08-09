@@ -5,10 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -45,22 +43,18 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return configurationService.isImportUserTaskWorkerDataEnabled() ?
-      ImmutableList.of(createIdentityLinkLogEngineImportMediator(engineContext))
-      : Collections.emptyList();
+      List.of(createIdentityLinkLogEngineImportMediator(engineContext)) : Collections.emptyList();
   }
 
   private IdentityLinkLogEngineImportMediator createIdentityLinkLogEngineImportMediator(
     final EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new IdentityLinkLogEngineImportMediator(
       importIndexHandlerRegistry.getIdentityLinkImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(IdentityLinkLogInstanceFetcher.class, engineContext),
       new IdentityLinkLogImportService(
+        configurationService,
         identityLinkLogWriter,
         assigneeCandidateGroupService,
-        elasticsearchImportJobExecutor,
         engineContext,
         processDefinitionResolverService
       ),

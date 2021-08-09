@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.job.importing.UserOperationLogElasticsear
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,13 +33,15 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ProcessInstanceResolverService processInstanceResolverService;
 
-  public UserOperationLogImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public UserOperationLogImportService(final ConfigurationService configurationService,
                                        final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                        final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler,
                                        final ProcessDefinitionResolverService processDefinitionResolverService,
                                        final ProcessInstanceResolverService processInstanceResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.runningProcessInstanceImportIndexHandler = runningProcessInstanceImportIndexHandler;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.processInstanceResolverService = processInstanceResolverService;

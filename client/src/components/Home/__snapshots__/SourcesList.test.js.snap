@@ -8,12 +8,11 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     action={false}
     bulkActions={
       Array [
-        Object {
-          "action": [Function],
-          "checkConflicts": [Function],
-          "conflictMessage": "Removing Data Sources deletes all associated Reports and their Alerts.",
-          "type": "delete",
-        },
+        <BulkDeleterErrorHandler
+          checkConflicts={[Function]}
+          conflictMessage="Removing Data Sources deletes all associated Reports and their Alerts."
+          deleteEntities={[Function]}
+        />,
       ]
     }
     columns={
@@ -142,12 +141,11 @@ exports[`should match snapshot 1`] = `
     }
     bulkActions={
       Array [
-        Object {
-          "action": [Function],
-          "checkConflicts": [Function],
-          "conflictMessage": "Removing Data Sources deletes all associated Reports and their Alerts.",
-          "type": "delete",
-        },
+        <BulkDeleterErrorHandler
+          checkConflicts={[Function]}
+          conflictMessage="Removing Data Sources deletes all associated Reports and their Alerts."
+          deleteEntities={[Function]}
+        />,
       ]
     }
     columns={

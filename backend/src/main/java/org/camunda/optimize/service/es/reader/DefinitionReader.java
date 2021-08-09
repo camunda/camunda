@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.camunda.optimize.dto.optimize.DataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;

@@ -73,21 +73,29 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
 
   private boolean importNextPageRetryOnError(final CompletableFuture<Void> importCompleteCallback) {
     Boolean result = null;
-    while (result == null) {
-      try {
-        result = importNextPage(() -> importCompleteCallback.complete(null));
-      } catch (final Exception e) {
-        if (errorBackoffCalculator.isMaximumBackoffReached()) {
-          // if max back-off is reached abort retrying and return true to indicate there is new data
-          logger.error("Was not able to import next page and reached max backoff, aborting this run.", e);
-          importCompleteCallback.complete(null);
-          result = true;
-        } else {
-          long timeToSleep = errorBackoffCalculator.calculateSleepTime();
-          logger.error("Was not able to import next page, retrying after sleeping for {}ms.", timeToSleep, e);
-          sleep(timeToSleep);
+    try {
+      while (result == null) {
+        try {
+          result = importNextPage(() -> importCompleteCallback.complete(null));
+        } catch (IllegalStateException e) {
+          throw e;
+        } catch (final Exception e) {
+          if (errorBackoffCalculator.isMaximumBackoffReached()) {
+            // if max back-off is reached abort retrying and return true to indicate there is new data
+            logger.error("Was not able to import next page and reached max backoff, aborting this run.", e);
+            importCompleteCallback.complete(null);
+            result = true;
+          } else {
+            long timeToSleep = errorBackoffCalculator.calculateSleepTime();
+            logger.error("Was not able to import next page, retrying after sleeping for {}ms.", timeToSleep, e);
+            Thread.sleep(timeToSleep);
+          }
         }
       }
+    } catch (InterruptedException e) {
+      logger.warn("Was interrupted while importing next page.", e);
+      Thread.currentThread().interrupt();
+      return false;
     }
     errorBackoffCalculator.resetBackoff();
 
@@ -103,15 +111,6 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
     }
     final long sleepTime = idleBackoffCalculator.calculateSleepTime();
     logger.debug("Was not able to produce a new job, sleeping for [{}] ms", sleepTime);
-  }
-
-  private void sleep(final long timeToSleep) {
-    try {
-      Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
-      logger.error("Was interrupted from sleep.", e);
-      Thread.currentThread().interrupt();
-    }
   }
 
 }

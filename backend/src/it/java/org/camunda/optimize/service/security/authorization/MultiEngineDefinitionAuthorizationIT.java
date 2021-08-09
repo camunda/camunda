@@ -7,37 +7,43 @@ package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
-import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpError;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT {
-
-  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void grantGlobalAccessForAllDefinitionsAccessByAllEngines(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -53,9 +59,9 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
   public void grantGlobalAccessForAllDefinitionsByOnlyOneEngine(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -73,14 +79,14 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    secondAuthorizationClient.revokeAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    secondaryEngineAuthorizationClient.revokeAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -98,13 +104,13 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    defaultAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -122,15 +128,15 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    defaultAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    secondAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
-    secondAuthorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    secondaryEngineAuthorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
       getDefinitionKeySecondEngine(definitionResourceType),
       definitionResourceType
     );
@@ -151,12 +157,12 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    secondAuthorizationClient.grantSingleResourceAuthorizationForKermitGroup(
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.grantSingleResourceAuthorizationForKermitGroup(
       getDefinitionKeySecondEngine(definitionResourceType),
       definitionResourceType
     );
@@ -177,14 +183,14 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    defaultAuthorizationClient.revokeAllResourceAuthorizationsForKermit(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.revokeAllResourceAuthorizationsForKermit(definitionResourceType);
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    secondAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -202,11 +208,11 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -224,15 +230,15 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.grantSingleResourceAuthorizationForKermitGroup(
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.grantSingleResourceAuthorizationForKermitGroup(
       getDefinitionKeyDefaultEngine(definitionResourceType),
       definitionResourceType
     );
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -250,18 +256,18 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // given
     addSecondEngineToConfiguration();
 
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    defaultAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
-    defaultAuthorizationClient.revokeSingleResourceAuthorizationsForKermit(
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    defaultEngineAuthorizationClient.revokeSingleResourceAuthorizationsForKermit(
       getDefinitionKeyDefaultEngine(definitionResourceType),
       definitionResourceType
     );
 
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    secondAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    secondaryEngineAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -280,14 +286,22 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     addSecondEngineToConfiguration();
 
     final String tenantId1 = "tenant1";
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
-    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    defaultEngineAuthorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER,
+      tenantId1,
+      RESOURCE_TYPE_TENANT
+    );
 
     final String tenantId2 = "tenant2";
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    secondAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
-    secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    secondaryEngineAuthorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER,
+      tenantId2,
+      RESOURCE_TYPE_TENANT
+    );
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -305,12 +319,16 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     addSecondEngineToConfiguration();
 
     final String tenantId1 = "tenant1";
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
-    defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    defaultEngineAuthorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER,
+      tenantId1,
+      RESOURCE_TYPE_TENANT
+    );
 
     final String tenantId2 = "tenant2";
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -320,6 +338,47 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // then
     assertThat(definitions).hasSize(1);
     assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
+  }
+
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void globalTenantGrantByOneEngineWhenOtherEngineIsDownOnlyReturnsDefinitionTenantsOfAvailableEngine(int definitionResourceType) {
+    // given
+    addSecondEngineToConfiguration();
+
+    final String tenantId1 = "tenant1";
+    setDefaultEngineDefaultTenant(new DefaultTenant(tenantId1));
+    defaultEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    defaultEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+
+    final String tenantId2 = "tenant2";
+    setSecondEngineDefaultTenant(new DefaultTenant(tenantId2));
+    secondaryEngineAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondaryEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
+    // kermit has all tenants auth from second engine, still should not be able to access tenant1 as it belongs to
+    // the other engine
+    secondaryEngineAuthorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_TENANT);
+
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    deployStartAndImportSameDefinitionForAllEngines(definitionResourceType);
+
+    // ensure connections to default engine fail
+    final ClientAndServer defaultEngineMock = useAndGetEngineMockServer();
+    defaultEngineMock.when(request(engineIntegrationExtension.getEnginePath() + WILDCARD_SUB_PATH))
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    final List<TenantResponseDto> tenants = resolveDefinitionTenantsByTypeKeyAndVersionsAsKermit(
+      definitionResourceType, getDefinitionKeyDefaultEngine(definitionResourceType)
+    );
+
+    // then
+    assertThat(tenants).extracting(TenantResponseDto::getId).containsExactly(tenantId2);
+    defaultEngineMock.verify(
+      request(engineIntegrationExtension.getEnginePath() + WILDCARD_SUB_PATH),
+      VerificationTimes.atLeast(1)
+    );
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {
@@ -361,5 +420,34 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
       .buildGetDecisionDefinitionsRequest()
       .withUserAuthentication(name, password)
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  private List<TenantResponseDto> resolveDefinitionTenantsByTypeKeyAndVersionsAsKermit(
+    final int resourceType,
+    final String key) {
+    return definitionClient.resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
+      RESOURCE_TYPE_PROCESS_DEFINITION == resourceType ? DefinitionType.PROCESS : DefinitionType.DECISION,
+      key,
+      Collections.singletonList(ALL_VERSIONS),
+      KERMIT_USER,
+      KERMIT_USER
+    );
+  }
+
+  protected void deployStartAndImportSameDefinitionForAllEngines(final int definitionResourceType) {
+    switch (definitionResourceType) {
+      case RESOURCE_TYPE_PROCESS_DEFINITION:
+        deployAndStartProcessOnDefaultEngine(PROCESS_KEY_1, null);
+        deployAndStartProcessOnSecondEngine(PROCESS_KEY_1, null);
+        break;
+      case RESOURCE_TYPE_DECISION_DEFINITION:
+        deployAndStartDecisionDefinitionOnDefaultEngine(DECISION_KEY_1, null);
+        deployAndStartDecisionDefinitionOnSecondEngine(DECISION_KEY_1, null);
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
+    }
+
+    importAllEngineEntitiesFromScratch();
   }
 }

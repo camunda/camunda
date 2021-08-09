@@ -14,10 +14,12 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class RunningActivityInstanceImportService implements ImportService<HistoricActivityInstanceEngineDto> {
@@ -29,17 +31,21 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
   public RunningActivityInstanceImportService(final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                               final CamundaEventImportService camundaEventService,
-                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               final EngineContext engineContext,
+                                              final ConfigurationService configurationService,
                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -77,34 +83,45 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
       ))
       .filter(activity -> activity.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
                                                                                 Runnable callback) {
     RunningActivityInstanceElasticsearchImportJob activityImportJob =
-      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, camundaEventService, callback);
+      new RunningActivityInstanceElasticsearchImportJob(
+        runningActivityInstanceWriter,
+        camundaEventService,
+        configurationService,
+        callback
+      );
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }
 
-  private FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
-    return FlowNodeEventDto.builder()
-      .id(engineEntity.getId())
-      .activityId(engineEntity.getActivityId())
-      .activityName(engineEntity.getActivityName())
-      .timestamp(engineEntity.getStartTime())
-      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
-      .processDefinitionId(engineEntity.getProcessDefinitionId())
-      .processInstanceId(engineEntity.getProcessInstanceId())
-      .startDate(engineEntity.getStartTime())
-      .activityType(engineEntity.getActivityType())
-      .engineAlias(engineContext.getEngineAlias())
-      .tenantId(engineEntity.getTenantId())
-      .orderCounter(engineEntity.getSequenceCounter())
-      .canceled(engineEntity.getCanceled())
-      .taskId(engineEntity.getTaskId())
-      .build();
+  private Optional<FlowNodeEventDto> mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
+    return processDefinitionResolverService.getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
+      .map(definition -> new FlowNodeEventDto(
+        engineEntity.getId(),
+        engineEntity.getActivityId(),
+        engineEntity.getActivityType(),
+        engineEntity.getActivityName(),
+        engineEntity.getStartTime(),
+        definition.getId(),
+        definition.getKey(),
+        definition.getVersion(),
+        engineEntity.getTenantId(),
+        engineContext.getEngineAlias(),
+        engineEntity.getProcessInstanceId(),
+        engineEntity.getStartTime(),
+        null,
+        null,
+        engineEntity.getSequenceCounter(),
+        engineEntity.getCanceled(),
+        engineEntity.getTaskId()
+      ));
   }
 
 }

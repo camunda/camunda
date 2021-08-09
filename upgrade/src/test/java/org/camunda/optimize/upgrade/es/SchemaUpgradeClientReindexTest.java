@@ -22,10 +22,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuild
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.tasks.TaskId;
@@ -48,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -67,10 +63,6 @@ public class SchemaUpgradeClientReindexTest {
   private ElasticSearchSchemaManager schemaManager;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, lenient = true)
   private OptimizeElasticsearchClient elasticsearchClient;
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS, lenient = true)
-  private RestHighLevelClient highLevelRestClient;
-  @Mock
-  private RestClient lowLevelRestClient;
   @Mock
   private ConfigurationService configurationService;
   @Mock
@@ -85,10 +77,7 @@ public class SchemaUpgradeClientReindexTest {
 
   @BeforeEach
   public void init() {
-    when(elasticsearchClient.getHighLevelClient()).thenReturn(highLevelRestClient);
     when(elasticsearchClient.getIndexNameService()).thenReturn(indexNameService);
-    when(elasticsearchClient.requestOptions()).thenReturn(RequestOptions.DEFAULT);
-    when(highLevelRestClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
     this.underTest = createSchemaUpgradeClient(
       schemaManager, metadataService, configurationService, elasticsearchClient
     );
@@ -101,15 +90,9 @@ public class SchemaUpgradeClientReindexTest {
     final String index2 = "index2";
     final String taskId = "12345";
 
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(1L);
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(0L);
-    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask())
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index1))).thenReturn(1L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index2))).thenReturn(0L);
+    when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).getTask())
       .thenReturn(taskId);
 
     // the first task response is in progress, the second is successfully complete
@@ -121,7 +104,7 @@ public class SchemaUpgradeClientReindexTest {
       .doesNotThrowAnyException();
 
     // and reindex was executed
-    verify(highLevelRestClient).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+    verify(elasticsearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
   @Test
@@ -133,16 +116,10 @@ public class SchemaUpgradeClientReindexTest {
     final int numericTaskId = 12345;
     final String taskId = nodeId + ":" + numericTaskId;
 
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(1L);
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(0L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index1))).thenReturn(1L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index2))).thenReturn(0L);
     final TaskInfo taskInfo = mock(TaskInfo.class);
-    when(highLevelRestClient.tasks().list(any(ListTasksRequest.class), eq(RequestOptions.DEFAULT)).getTasks())
+    when(elasticsearchClient.getTaskList(any(ListTasksRequest.class)).getTasks())
       .thenReturn(ImmutableList.of(taskInfo));
     when(taskInfo.getTaskId()).thenReturn(new TaskId(nodeId, numericTaskId));
     when(taskInfo.getDescription()).thenReturn(index1 + index2);
@@ -161,7 +138,7 @@ public class SchemaUpgradeClientReindexTest {
     );
 
     // and reindex was never submitted
-    verify(highLevelRestClient, never()).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+    verify(elasticsearchClient, never()).submitReindexTask(any(ReindexRequest.class));
   }
 
   @Test
@@ -170,14 +147,8 @@ public class SchemaUpgradeClientReindexTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(1L);
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(1L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index1))).thenReturn(1L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index2))).thenReturn(1L);
 
     // when
     assertThatCode(() -> underTest.reindex(index1, index2))
@@ -190,7 +161,7 @@ public class SchemaUpgradeClientReindexTest {
     );
 
     // and reindex was never submitted
-    verify(highLevelRestClient, never()).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+    verify(elasticsearchClient, never()).submitReindexTask(any(ReindexRequest.class));
   }
 
   @Test
@@ -199,15 +170,9 @@ public class SchemaUpgradeClientReindexTest {
     final String index1 = "index1";
     final String index2 = "index2";
 
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(1L);
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(0L);
-    given(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index1))).thenReturn(1L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index2))).thenReturn(0L);
+    given(elasticsearchClient.submitReindexTask(any(ReindexRequest.class))
             .getTask()).willAnswer(invocation -> {
       throw new IOException();
     });
@@ -218,7 +183,7 @@ public class SchemaUpgradeClientReindexTest {
       .isInstanceOf(UpgradeRuntimeException.class);
 
     // and reindex was submitted
-    verify(highLevelRestClient).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+    verify(elasticsearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
   @Test
@@ -228,16 +193,9 @@ public class SchemaUpgradeClientReindexTest {
     final String index2 = "index2";
     final String taskId = "12345";
 
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index1)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(1L);
-    when(
-      elasticsearchClient.getHighLevelClient()
-        .count(eq(new CountRequest(index2)), eq(RequestOptions.DEFAULT)).getCount()
-    ).thenReturn(0L);
-    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
-           .getTask()).thenReturn(taskId);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index1))).thenReturn(1L);
+    when(elasticsearchClient.countWithoutPrefix(new CountRequest(index2))).thenReturn(0L);
+    when(elasticsearchClient.submitReindexTask(any(ReindexRequest.class)).getTask()).thenReturn(taskId);
 
     // the task status response contains an error when checking for status
     final TaskResponse taskResponseWithError = new TaskResponse(
@@ -266,7 +224,7 @@ public class SchemaUpgradeClientReindexTest {
       .hasMessage(taskResponseWithError.getError().toString());
 
     // and reindex was submitted
-    verify(highLevelRestClient).submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT));
+    verify(elasticsearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
   @SneakyThrows
@@ -289,7 +247,7 @@ public class SchemaUpgradeClientReindexTest {
 
   @SneakyThrows
   private OngoingStubbing<Response> whenReindexStatusRequest(final String taskId) {
-    return when(lowLevelRestClient.performRequest(
+    return when(elasticsearchClient.performRequest(
       argThat(argument ->
                 argument != null
                   && argument.getMethod().equals(HttpGet.METHOD_NAME)

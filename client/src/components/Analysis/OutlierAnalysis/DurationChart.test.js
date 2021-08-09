@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Chart from 'chart.js';
+import {Chart} from 'chart.js';
 import DurationChart from './DurationChart';
 
 const data = [
@@ -41,7 +41,7 @@ it('should format tooltip durations', () => {
   shallow(<DurationChart data={data} />);
 
   const durationInMs = 1020;
-  expect(Chart.mock.calls[0][1].options.tooltips.callbacks.label({xLabel: durationInMs})).toContain(
-    'formatted ' + durationInMs
-  );
+  expect(
+    Chart.mock.calls[0][1].options.plugins.tooltip.callbacks.label({label: durationInMs})
+  ).toContain('formatted ' + durationInMs);
 });

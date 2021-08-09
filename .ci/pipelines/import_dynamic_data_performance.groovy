@@ -6,18 +6,20 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-physsd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
+}
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
-    return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
+  return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
 }
 
 static String mavenElasticsearchAgent(env, postgresVersion = '9.6-alpine', esVersion, cambpmVersion) {
-    return """
+  return """
 metadata:
   labels:
     agent: optimize-ci-build
@@ -171,77 +173,72 @@ spec:
 }
 
 pipeline {
-    agent none
-    environment {
-        NEXUS = credentials("camunda-nexus")
-    }
+  agent none
+  environment {
+    NEXUS = credentials("camunda-nexus")
+  }
 
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timestamps()
-        timeout(time: 45, unit: 'MINUTES')
-    }
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    timestamps()
+    timeout(time: 45, unit: 'MINUTES')
+  }
 
-    stages {
-        stage('Prepare') {
-            agent {
-                kubernetes {
-                    cloud 'optimize-ci'
-                    label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-                    defaultContainer 'jnlp'
-                    yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
-                }
-            }
-            steps {
-                optimizeCloneGitRepo(params.BRANCH)
-                setBuildEnvVars()
-            }
+  stages {
+    stage('Prepare') {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml plainMavenAgent(NODE_POOL(), MAVEN_DOCKER_IMAGE())
         }
-        stage('Performance') {
-            agent {
-                kubernetes {
-                    cloud 'optimize-ci'
-                    label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-                    defaultContainer 'jnlp'
-                    yaml mavenElasticsearchAgent(env, params.POSTGRES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
-                }
-            }
-            steps {
-                optimizeCloneGitRepo(params.BRANCH)
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh 'mvn -T\$LIMITS_CPU -pl backend,qa/data-generation -am -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
-                        sh 'mvn -Plive-data-import-performance-test -f qa/import-performance-tests/pom.xml -s $MAVEN_SETTINGS_XML clean test -B'
-                    }
-                }
-            }
-            post {
-                always {
-                    container('maven') {
-                        sh 'curl localhost:9200/_cat/indices?v'
-                        sh('''#!/bin/bash -ex
+      }
+      steps {
+        optimizeCloneGitRepo(params.BRANCH)
+        setBuildEnvVars()
+      }
+    }
+    stage('Performance') {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml mavenElasticsearchAgent(env, params.POSTGRES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
+        }
+      }
+      steps {
+        optimizeCloneGitRepo(params.BRANCH)
+        container('maven') {
+          configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh 'mvn -T\$LIMITS_CPU -pl backend,qa/data-generation -am -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
+            sh 'mvn -Plive-data-import-performance-test -f qa/import-performance-tests/pom.xml -s $MAVEN_SETTINGS_XML clean test -B'
+          }
+        }
+      }
+      post {
+        always {
+          container('maven') {
+            sh 'curl localhost:9200/_cat/indices?v'
+            sh('''#!/bin/bash -ex
                           cp -R --parents /es-storage/logs /cambpm-storage .
                           chown -R 10000:1000 ./{es-storage,cambpm-storage}
                         ''')
-                        archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
-                    }
-                }
-            }
+            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
+          }
         }
+      }
     }
+  }
 
-    post {
-        changed {
-            sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
-        }
-        always {
-            // Retrigger the build if the slave disconnected
-            script {
-                if (agentDisconnected()) {
-                    build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-                }
-            }
-        }
+  post {
+    changed {
+      sendEmailNotification()
     }
+    always {
+      retriggerBuildIfDisconnected()
+    }
+  }
 }
 

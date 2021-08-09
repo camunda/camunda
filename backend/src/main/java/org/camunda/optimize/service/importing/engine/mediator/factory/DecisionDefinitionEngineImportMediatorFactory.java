@@ -7,13 +7,12 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionImportService;
@@ -57,14 +56,11 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
 
   public DecisionDefinitionEngineImportMediator createDecisionDefinitionEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new DecisionDefinitionEngineImportMediator(
       importIndexHandlerRegistry.getDecisionDefinitionImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(DecisionDefinitionFetcher.class, engineContext),
       new DecisionDefinitionImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         engineContext,
         decisionDefinitionWriter,
         decisionDefinitionResolverService
@@ -76,14 +72,11 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
 
   public DecisionDefinitionXmlEngineImportMediator createDecisionDefinitionXmlEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new DecisionDefinitionXmlEngineImportMediator(
       importIndexHandlerRegistry.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext),
       new DecisionDefinitionXmlImportService(
-        elasticsearchImportJobExecutor,
+        configurationService,
         engineContext,
         decisionDefinitionXmlWriter,
         decisionDefinitionResolverService

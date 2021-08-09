@@ -7,11 +7,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {loadCorrelationData} from './service';
-
 import {getDiagramElementsBetween} from 'services';
 
-import ChartRenderer from 'chart.js';
+import {loadCorrelationData} from './service';
 
 import Statistics from './Statistics';
 
@@ -42,12 +40,6 @@ jest.mock('services', () => {
     getDiagramElementsBetween: jest.fn().mockReturnValue([]),
   };
 });
-
-jest.mock('chart.js', () =>
-  jest.fn().mockImplementation(() => {
-    return {destroy: jest.fn()};
-  })
-);
 
 const initialProps = {
   config: {
@@ -107,8 +99,6 @@ it('should load updated correlation when selection or configuration changes', as
 });
 
 it('should create two Charts', async () => {
-  ChartRenderer.mockClear();
-
   const node = shallow(<Statistics {...initialProps} />);
 
   node.setProps(props);

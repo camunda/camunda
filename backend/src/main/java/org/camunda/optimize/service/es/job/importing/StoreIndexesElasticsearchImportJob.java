@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
-import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 

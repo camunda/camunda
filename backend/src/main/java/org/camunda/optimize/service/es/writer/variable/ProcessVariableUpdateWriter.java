@@ -9,10 +9,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -145,7 +145,8 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     ElasticsearchWriterUtil.doBulkRequest(
       esClient,
       bulkRequest,
-      getProcessInstanceIndexAliasName(processDefinitionKey)
+      getProcessInstanceIndexAliasName(processDefinitionKey),
+      false
     );
   }
 

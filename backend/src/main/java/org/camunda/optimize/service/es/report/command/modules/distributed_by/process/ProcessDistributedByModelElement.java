@@ -8,8 +8,11 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.service.DefinitionService;
@@ -35,8 +38,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @RequiredArgsConstructor
 public abstract class ProcessDistributedByModelElement extends ProcessDistributedByPart {
@@ -62,58 +66,75 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
                                                   final Aggregations aggregations,
                                                   final ExecutionContext<ProcessReportDataDto> context) {
     final Terms byModelElementAggregation = aggregations.get(MODEL_ELEMENT_ID_TERMS_AGGREGATION);
-    final Map<String, String> modelElementNames = getModelElementNames(context.getReportData());
+    final Map<String, FlowNodeDataDto> modelElementData = getModelElementData(context.getReportData());
     final List<DistributedByResult> distributedByModelElements = new ArrayList<>();
     for (Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
       final ViewResult viewResult = viewPart.retrieveResult(response, modelElementBucket.getAggregations(), context);
       final String modelElementKey = modelElementBucket.getKeyAsString();
-      if (modelElementNames.containsKey(modelElementKey)) {
-        String label = modelElementNames.get(modelElementKey);
+      if (modelElementData.containsKey(modelElementKey)) {
+        String label = modelElementData.get(modelElementKey).getName();
         distributedByModelElements.add(createDistributedByResult(modelElementKey, label, viewResult));
-        modelElementNames.remove(modelElementKey);
+        modelElementData.remove(modelElementKey);
       }
     }
-    addMissingDistributions(modelElementNames, distributedByModelElements, context);
+    addMissingDistributions(modelElementData, distributedByModelElements, context);
     return distributedByModelElements;
   }
 
-  private void addMissingDistributions(final Map<String, String> modelElementNames,
+  private void addMissingDistributions(final Map<String, FlowNodeDataDto> modelElementNames,
                                        final List<DistributedByResult> distributedByModelElements,
                                        final ExecutionContext<ProcessReportDataDto> context) {
-    final Set<String> excludedFlowNodes = context.getReportData()
-      .getFilter()
-      .stream()
-      .filter(filter -> filter instanceof ExecutedFlowNodeFilterDto
-        && FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-      .map(ExecutedFlowNodeFilterDto.class::cast)
-      .map(ExecutedFlowNodeFilterDto::getData)
-      .filter(data -> NOT_IN.equals(data.getOperator()))
-      .flatMap(data -> data.getValues().stream())
-      .collect(toSet());
-
-    // If view level executedFlowNodeFilter exist, we can filter the distributedBy buckets accordingly and only
-    // enrich those which have not been excluded by the filter. Otherwise, enrich result with all missing modelElements.
+    final Set<String> excludedFlowNodes = getExcludedFlowNodes(context.getReportData(), modelElementNames);
+    // Only enrich distrBy buckets with flowNodes not excluded by executedFlowNode- or identityFilters
     modelElementNames.keySet()
       .stream()
       .filter(key -> !excludedFlowNodes.contains(key))
       .forEach(key -> distributedByModelElements.add(
         DistributedByResult.createDistributedByResult(
-          key, modelElementNames.get(key), getViewPart().createEmptyResult(context)
+          key, modelElementNames.get(key).getName(), getViewPart().createEmptyResult(context)
         )));
   }
 
-  private Map<String, String> getModelElementNames(final ProcessReportDataDto reportData) {
+  private Map<String, FlowNodeDataDto> getModelElementData(final ProcessReportDataDto reportData) {
     return reportData.getDefinitions().stream()
       .map(definitionDto -> definitionService.getDefinition(
         DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
       ))
       .filter(Optional::isPresent)
       .map(Optional::get)
-      .map(this::extractModelElementNames)
+      .map(this::extractModelElementData)
       .map(Map::entrySet)
       .flatMap(Collection::stream)
       // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
       .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+  }
+
+  private Set<String> getExcludedFlowNodes(final ProcessReportDataDto reportData,
+                                           final Map<String, FlowNodeDataDto> modelElementNames) {
+    Set<String> excludedFlowNodes = reportData.getFilter()
+      .stream()
+      .filter(filter -> filter instanceof ExecutedFlowNodeFilterDto
+        && FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
+      .map(ExecutedFlowNodeFilterDto.class::cast)
+      .map(ExecutedFlowNodeFilterDto::getData)
+      .filter(data -> NOT_IN == data.getOperator())
+      .flatMap(data -> data.getValues().stream())
+      .collect(toSet());
+
+    if (containsIdentityFilters(reportData)) {
+      // Exclude all FlowNodes which are not of type userTask if any identityFilters are applied
+      excludedFlowNodes.addAll(modelElementNames.values().stream()
+                                 .filter(flowNode -> !FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getType()))
+                                 .map(FlowNodeDataDto::getId)
+                                 .collect(toSet()));
+    }
+    return excludedFlowNodes;
+  }
+
+  private boolean containsIdentityFilters(final ProcessReportDataDto reportData) {
+    return reportData.getFilter()
+      .stream()
+      .anyMatch(filter -> filter instanceof AssigneeFilterDto || filter instanceof CandidateGroupFilterDto);
   }
 
   @Override
@@ -123,7 +144,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   protected abstract String getModelElementIdPath();
 
-  protected abstract Map<String, String> extractModelElementNames(DefinitionOptimizeResponseDto def);
+  protected abstract Map<String, FlowNodeDataDto> extractModelElementData(DefinitionOptimizeResponseDto def);
 
   protected abstract ProcessDistributedByDto getDistributedBy();
 

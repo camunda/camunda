@@ -12,7 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -57,8 +57,8 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -138,7 +138,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
@@ -218,7 +218,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -264,7 +265,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -309,7 +311,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -342,7 +345,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -389,7 +393,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // we need to do the first assert here so that every loop has access to the the groupByAdder
@@ -431,7 +436,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -460,7 +466,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
@@ -483,7 +490,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -505,16 +513,22 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       Arguments.of(
         IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L, Arrays.asList(
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
-      Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L, Collections.singletonList(
-        Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.))),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN, new String[]{SECOND_USER}, 1L, Collections.singletonList(
+          Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.))),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void viewLevelFilterByAssigneeOnlyCountsUserTaskWithThatAssignee(final FilterOperator filterOperator,
+  public void viewLevelFilterByAssigneeOnlyCountsUserTaskWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                           final String[] filterValues,
                                                                           final Long expectedInstanceCount,
                                                                           final List<Tuple> expectedResult) {
@@ -542,7 +556,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -562,14 +576,19 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
       Arguments.of(NOT_IN, new String[]{SECOND_USER}, 2L, Arrays.asList(
         Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyList())
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        0L,
+        Collections.emptyList()
+      )
     );
   }
 
   @ParameterizedTest
   @MethodSource("instanceLevelAssigneeFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void instanceLevelFilterByAssigneeOnlyCountsUserTaskFromInstancesWithThatAssignee(final FilterOperator filterOperator,
+  public void instanceLevelFilterByAssigneeOnlyCountsUserTaskFromInstancesWithThatAssignee(final MembershipFilterOperator filterOperator,
                                                                                            final String[] filterValues,
                                                                                            final Long expectedInstanceCount,
                                                                                            final List<Tuple> expectedResult) {
@@ -599,7 +618,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -615,8 +634,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
         IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
           Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
       Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
-          Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        1L,
+        Arrays.asList(
+          Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))
+      ),
       Arguments.of(
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Collections.singletonList(
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.))),
@@ -632,7 +655,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void viewLevelFilterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                        final String[] filterValues,
                                                                                        final Long expectedInstanceCount,
                                                                                        final List<Tuple> expectedResult) {
@@ -652,7 +675,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -668,8 +691,12 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
         IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L, Arrays.asList(
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 1.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
       Arguments.of(
-        IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
-          Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
+        IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        2L,
+        Arrays.asList(
+          Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))
+      ),
       Arguments.of(
         NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L, Arrays.asList(
           Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, 3.), Tuple.tuple(SECOND_CANDIDATE_GROUP_ID, 1.))),
@@ -685,7 +712,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
   @ParameterizedTest
   @MethodSource("instanceLevelCandidateGroupFilterScenarios")
   @SuppressWarnings(UNCHECKED_CAST)
-  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksForInstancesWithThatCandidateGroup(final FilterOperator filterOperator,
+  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTasksForInstancesWithThatCandidateGroup(final MembershipFilterOperator filterOperator,
                                                                                                        final String[] filterValues,
                                                                                                        final Long expectedInstanceCount,
                                                                                                        final List<Tuple> expectedResult) {
@@ -710,7 +737,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -743,7 +771,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -775,7 +804,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -800,7 +830,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -819,7 +850,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the single data point should be grouped by month
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -846,7 +878,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersions(definitionVersionsThatSpanMultipleDefinitions);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -879,7 +912,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersions(definitionVersionsThatSpanMultipleDefinitions);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -901,7 +935,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       "1",
       AggregateByDateUnit.DAY
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(actualResult.getFirstMeasureData()).isEmpty();

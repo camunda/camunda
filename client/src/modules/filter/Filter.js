@@ -189,7 +189,6 @@ export default class Filter extends React.Component {
               </Tooltip>
             </div>
             <ViewFilters
-              definitions={definitions}
               processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
               openNewFilterModal={this.openNewFilterModal('view')}
             />
@@ -212,7 +211,6 @@ export default class Filter extends React.Component {
           definitions={definitions}
           addFilter={this.addFilter}
           close={this.closeModal}
-          xml={this.props.xml}
           filterType={newFilterType}
           config={this.getFilterConfig(newFilterType)}
         />
@@ -221,7 +219,6 @@ export default class Filter extends React.Component {
           addFilter={this.editFilter}
           filterData={editFilter}
           close={this.closeModal}
-          xml={this.props.xml}
           filterType={editFilter?.type}
           config={this.getFilterConfig(editFilter?.type)}
         />

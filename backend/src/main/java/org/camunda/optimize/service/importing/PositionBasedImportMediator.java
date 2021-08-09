@@ -99,8 +99,7 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
     if (!entitiesNextPage.isEmpty()) {
       final long currentPageLastEntityPosition = entitiesNextPage.get(entitiesNextPage.size() - 1).getPosition();
       importService.executeImport(entitiesNextPage, () -> {
-        importIndexHandler.updateLastPersistedEntityPosition(
-          entitiesNextPage.get(entitiesNextPage.size() - 1).getPosition());
+        importIndexHandler.updateLastPersistedEntityPosition(currentPageLastEntityPosition);
         importCompleteCallback.run();
       });
       importIndexHandler.updatePendingLastEntityPosition(currentPageLastEntityPosition);

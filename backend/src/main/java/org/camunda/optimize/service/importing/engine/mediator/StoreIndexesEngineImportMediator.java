@@ -6,21 +6,20 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
-import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -29,24 +28,19 @@ import java.util.stream.Stream;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class StoreIndexesEngineImportMediator implements ImportMediator {
-  protected EngineContext engineContext;
-  private ConfigurationService configurationService;
-  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
-  private StoreIndexesEngineImportService importService;
-  private OffsetDateTime dateUntilJobCreationIsBlocked;
+public class StoreIndexesEngineImportMediator
+  extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService> implements ImportMediator {
 
+  protected EngineContext engineContext;
+  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   public StoreIndexesEngineImportMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                           final StoreIndexesEngineImportService importService,
                                           final EngineContext engineContext,
                                           final ConfigurationService configurationService) {
-    this.configurationService = configurationService;
+    super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
-    this.dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
-    this.importService = importService;
     this.engineContext = engineContext;
-    this.configurationService = configurationService;
   }
 
   @Override
@@ -60,58 +54,20 @@ public class StoreIndexesEngineImportMediator implements ImportMediator {
           createStreamForHandlers(importIndexHandlerRegistry.getTimestampEngineBasedHandlers(engineContext.getEngineAlias()))
         )
         .map(EngineImportIndexHandler::getIndexStateDto)
-        .filter(indexStateDto -> indexStateDto instanceof ImportIndexDto)
-        .map(indexStateDto -> (ImportIndexDto) indexStateDto)
+        .filter(Objects::nonNull)
+        .map(ImportIndexDto.class::cast)
         .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
     } catch (Exception e) {
-      log.error("Could not execute import for storing index information!", e);
+      log.error("Could not execute import for storing engine index information!", e);
       importCompleted.complete(null);
     }
     return importCompleted;
   }
 
-  @Override
-  public long getBackoffTimeInMs() {
-    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
-    backoffTime = Math.max(0, backoffTime);
-    return backoffTime;
-  }
-
-  @Override
-  public void resetBackoff() {
-    this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
-  }
-
-  @Override
-  public boolean canImport() {
-    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
-  }
-
-  @Override
-  public boolean hasPendingImportJobs() {
-    return importService.hasPendingImportJobs();
-  }
-
-  @Override
-  public void shutdown() {
-    importService.shutdown();
-  }
-
-  @Override
-  public MediatorRank getRank() {
-    return MediatorRank.IMPORT_META_DATA;
-  }
-
-  private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
-    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
-  }
-
   private <T extends EngineImportIndexHandler> Stream<T> createStreamForHandlers(List<T> handlers) {
-    return Optional.ofNullable(handlers)
-      .map(Collection::stream)
-      .orElseGet(Stream::empty);
+    return Optional.ofNullable(handlers).stream().flatMap(Collection::stream);
   }
 
 }

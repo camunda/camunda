@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,15 +38,22 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
 
   protected <DTOS> DTOS fetchWithRetry(Supplier<DTOS> fetchFunction) {
     DTOS result = null;
-    while (result == null) {
-      try {
-        result = fetchFunction.get();
-      } catch (Exception exception) {
-        logError(exception);
-        long timeToSleep = backoffCalculator.calculateSleepTime();
-        logDebugSleepInformation(timeToSleep);
-        sleep(timeToSleep);
+    try {
+      while (result == null) {
+        try {
+          result = fetchFunction.get();
+        } catch (IllegalStateException e) {
+          throw e;
+        } catch (Exception exception) {
+          logError(exception);
+          long timeToSleep = backoffCalculator.calculateSleepTime();
+          logDebugSleepInformation(timeToSleep);
+          Thread.sleep(timeToSleep);
+        }
       }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new OptimizeRuntimeException("Was interrupted while fetching.", e);
     }
     backoffCalculator.resetBackoff();
     return result;
@@ -53,29 +61,28 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
 
   protected List<ENG> fetchWithRetryIgnoreClientError(Supplier<List<ENG>> fetchFunction) {
     List<ENG> result = null;
-    while (result == null) {
-      try {
-        result = fetchFunction.get();
-      } catch (ClientErrorException ex) {
-        logger.warn("ClientError on fetching entity: {}", ex.getMessage(), ex);
-        result = new ArrayList<>();
-      } catch (Exception ex) {
-        logError(ex);
-        long timeToSleep = backoffCalculator.calculateSleepTime();
-        logDebugSleepInformation(timeToSleep);
-        sleep(timeToSleep);
+    try {
+      while (result == null) {
+        try {
+          result = fetchFunction.get();
+        } catch (ClientErrorException ex) {
+          logger.warn("ClientError on fetching entity: {}", ex.getMessage(), ex);
+          result = new ArrayList<>();
+        } catch (IllegalStateException e) {
+          throw e;
+        } catch (Exception ex) {
+          logError(ex);
+          long timeToSleep = backoffCalculator.calculateSleepTime();
+          logDebugSleepInformation(timeToSleep);
+          Thread.sleep(timeToSleep);
+        }
       }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new OptimizeRuntimeException("Was interrupted while fetching.", e);
     }
     backoffCalculator.resetBackoff();
     return result;
-  }
-
-  private void sleep(long timeToSleep) {
-    try {
-      Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
-      logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
-    }
   }
 
   private void logDebugSleepInformation(long sleepTime) {

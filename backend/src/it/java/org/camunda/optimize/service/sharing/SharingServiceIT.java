@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -42,7 +43,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
@@ -1091,7 +1092,7 @@ public class SharingServiceIT extends AbstractSharingIT {
         .stringType()
         .name("variableName")
         .values(Collections.singletonList("variableValue"))
-        .operator(IN)
+        .operator(FilterOperator.IN)
         .add()
         .buildList());
   }

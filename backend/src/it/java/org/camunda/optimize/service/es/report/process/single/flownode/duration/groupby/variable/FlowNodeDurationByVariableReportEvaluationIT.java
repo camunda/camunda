@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -46,7 +46,8 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -490,37 +491,37 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
   private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_USER},
         3000.
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        3250.
+        4000.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        3333.
+        4500.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        4000.
+        7000.
       )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                          final String[] filterValues,
                                                                          final Double expectedResult) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
@@ -530,11 +531,13 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance.getId());
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_3, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 8000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -570,37 +573,37 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
   private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
         3000.
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        3250.
+        4000.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        3333.
+        4500.
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        4000.
+        7000.
       )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                final String[] filterValues,
                                                                                final Double expectedResult) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
@@ -608,11 +611,13 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_3, 7000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 8000);
 
     importAllEngineEntitiesFromScratch();
 

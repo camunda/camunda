@@ -35,6 +35,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishSt
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -90,6 +91,7 @@ public class MappingMetadataUtil {
       new EventProcessPublishStateIndex(),
       new ImportIndexIndex(),
       new TimestampBasedImportIndex(),
+      new PositionBasedImportIndex(),
       new CombinedReportIndex(),
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex()

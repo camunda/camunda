@@ -13,12 +13,15 @@ import {withErrorHandling} from 'HOC';
 import {getCollection} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import debouncePromise from 'debouncePromise';
 
 import TenantPopover from './TenantPopover';
 import VersionPopover from './VersionPopover';
 import {loadDefinitions, loadVersions, loadTenants} from './service';
 
 import './DefinitionSelection.scss';
+
+const debounceRequest = debouncePromise();
 
 export class DefinitionSelection extends React.Component {
   constructor(props) {
@@ -28,6 +31,15 @@ export class DefinitionSelection extends React.Component {
       availableDefinitions: null,
       availableVersions: null,
       availableTenants: null,
+      isLoadingVersions: false,
+      isLoadingTenants: false,
+      selection: {
+        key: props.definitionKey,
+        versions: props.versions || [],
+        tenantIds: props.tenants || [],
+        name: '',
+        identifier: 'definition',
+      },
       selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
     };
   }
@@ -90,36 +102,56 @@ export class DefinitionSelection extends React.Component {
   };
 
   changeDefinition = async (key) => {
-    const {definitionKey, onChange} = this.props;
+    const {key: definitionKey} = this.state.selection;
+    const {onChange} = this.props;
 
     if (definitionKey === key) {
       return;
     }
 
-    const availableVersions = await this.loadVersions(key);
-    const latestVersion = [availableVersions[0].version];
+    this.setState({isLoadingVersions: true, isLoadingTenants: true});
 
-    const availableTenants = await this.loadTenants(key, latestVersion);
+    const {availableVersions, availableTenants, latestVersion} = await debounceRequest(async () => {
+      const availableVersions = await this.loadVersions(key);
+      const latestVersion = [availableVersions[0].version];
 
-    this.setState({availableVersions, availableTenants, selectedSpecificVersions: latestVersion});
+      const availableTenants = await this.loadTenants(key, latestVersion);
 
-    onChange({
+      return {availableVersions, availableTenants, latestVersion};
+    });
+
+    const newSelection = {
       key,
       versions: latestVersion,
       tenantIds: availableTenants.map(({id}) => id),
       name: this.getName(key),
       identifier: 'definition', // this component only allows selection of a single definition, so we keep the identifier static
+    };
+
+    this.setState({
+      availableVersions,
+      availableTenants,
+      selectedSpecificVersions: latestVersion,
+      selection: newSelection,
+      isLoadingVersions: false,
+      isLoadingTenants: false,
     });
+
+    onChange(newSelection);
   };
 
   changeVersions = async (versions) => {
-    const {definitionKey, onChange, tenants} = this.props;
+    const {onChange} = this.props;
+    const {selection} = this.state;
+    const {key: definitionKey, tenantIds: tenants} = selection;
 
     if (this.isSpecificVersion(versions)) {
       this.setState({selectedSpecificVersions: versions});
     }
 
-    const availableTenants = await this.loadTenants(definitionKey, versions);
+    this.setState({isLoadingTenants: true, selection: {...selection, versions}});
+
+    const availableTenants = await debounceRequest(this.loadTenants, 0, definitionKey, versions);
 
     // remove previously deselected tenants from the available tenants of the new version
     const prevTenants = this.state.availableTenants;
@@ -130,31 +162,33 @@ export class DefinitionSelection extends React.Component {
       ?.map(({id}) => id)
       .filter((tenant) => !deselectedTenants?.includes(tenant));
 
-    this.setState({availableTenants});
-
-    onChange({
+    const newSelection = {
       key: definitionKey,
       versions,
       tenantIds,
       name: this.getName(definitionKey),
       identifier: 'definition',
-    });
+    };
+
+    this.setState({availableTenants, selection: newSelection, isLoadingTenants: false});
+
+    onChange(newSelection);
   };
 
   changeTenants = (tenantSelection) => {
-    const {definitionKey, versions} = this.props;
-    this.props.onChange({
-      key: definitionKey,
-      versions: versions,
+    const newSelection = {
+      ...this.state.selection,
       tenantIds: tenantSelection,
-      name: this.getName(definitionKey),
-      identifier: 'definition',
-    });
+    };
+
+    this.setState({selection: newSelection});
+    this.props.onChange(newSelection);
   };
 
-  hasDefinition = () => this.props.definitionKey;
+  hasDefinition = () => this.state.selection.key;
   hasTenants = () => {
-    if (this.props.definitionKey && this.props.versions) {
+    const {key, versions} = this.state.selection;
+    if (key && versions) {
       const tenants = this.getAvailableTenants();
       return tenants?.length > 1;
     }
@@ -164,15 +198,16 @@ export class DefinitionSelection extends React.Component {
   getName = (key) => this.getDefinitionObject(key).name;
   getDefinitionObject = (key) => this.state.availableDefinitions.find((def) => def.key === key);
   getAvailableVersions = () => this.state.availableVersions;
-  getSelectedVersions = () => this.props.versions || [];
+  getSelectedVersions = () => this.state.selection.versions || [];
   getAvailableTenants = () => this.state.availableTenants;
-  getSelectedTenants = () => this.props.tenants;
+  getSelectedTenants = () => this.state.selection.tenantIds;
 
   isSpecificVersion = (versions) => versions && versions[0] !== 'latest' && versions[0] !== 'all';
   canRenderDiagram = () => this.props.renderDiagram && this.props.xml;
 
   createTitle = () => {
-    const {definitionKey, versions, type} = this.props;
+    const {key: definitionKey, versions} = this.state.selection;
+    const {type} = this.props;
 
     if (definitionKey && versions && this.getAvailableTenants()) {
       const availableTenants = this.getAvailableTenants();
@@ -215,11 +250,17 @@ export class DefinitionSelection extends React.Component {
   };
 
   render() {
-    const {availableDefinitions, selectedSpecificVersions} = this.state;
+    const {
+      availableDefinitions,
+      selectedSpecificVersions,
+      selection,
+      isLoadingVersions,
+      isLoadingTenants,
+    } = this.state;
     const {expanded, type, disableDefinition} = this.props;
     const collectionId = getCollection(this.props.location.pathname);
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
-    const selectedKey = this.props.definitionKey;
+    const selectedKey = selection.key;
     const versions = this.getSelectedVersions();
     const displayVersionWarning = versions.length > 1 || versions[0] === 'all';
 
@@ -266,7 +307,7 @@ export class DefinitionSelection extends React.Component {
               <div className="version entry">
                 <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover
-                  disabled={!this.hasDefinition()}
+                  disabled={isLoadingVersions || !this.hasDefinition()}
                   versions={this.getAvailableVersions()}
                   selected={this.getSelectedVersions()}
                   selectedSpecificVersions={selectedSpecificVersions}
@@ -276,6 +317,7 @@ export class DefinitionSelection extends React.Component {
               <div className="tenant entry">
                 <Labeled label={t('common.tenant.label')} />
                 <TenantPopover
+                  disabled={isLoadingTenants}
                   tenants={this.getAvailableTenants()}
                   selected={this.getSelectedTenants()}
                   onChange={this.changeTenants}

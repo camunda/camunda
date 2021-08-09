@@ -218,12 +218,10 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
       evaluateUserTaskReportWithFilter(processDefinition, candidateGroupFilter);
 
-    // then raw data report has both instances (because flowNodes without candidateGroups exist on both)
+    // then raw data and userTask reports only include those flowNodes which have userTasks without candidateGroups
     assertThat(rawDataResult.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
-    // and userTask report has only the instance that has not yet reached the second userTask
-    // (because userTasks without candidateGroups only exist on processInstance2)
+      .containsExactlyInAnyOrder(processInstance2.getId());
     assertThat(userTaskResult.getInstanceCount()).isEqualTo(1L);
     assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(userTaskResult.getData())
@@ -247,6 +245,7 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
 
     final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
@@ -266,20 +265,11 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       processDefinition,
       candidateGroupFilter
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
-      evaluateUserTaskReportWithFilter(processDefinition, candidateGroupFilter);
 
-    // then rawData report has all instances (because flowNodes with no candidateGroup exist on both instances)
+    // then
     assertThat(result.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId(), processInstance3.getId());
-    // and userTask report only has 2 instances because processInstance3 only has a userTask with a candidateGroup
-    // that does not match the filter
-    assertThat(userTaskResult.getInstanceCount()).isEqualTo(2L);
-    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(userTaskResult.getData())
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 2.0));
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance3.getId());
   }
 
   @Test
@@ -335,13 +325,13 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP3);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
     final ProcessInstanceEngineDto unexpectedProcessInstance = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP3);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(unexpectedProcessInstance.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -362,20 +352,11 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       processDefinition,
       candidateGroupFilter
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
-      evaluateUserTaskReportWithFilter(processDefinition, candidateGroupFilter);
 
-    // then raw data report has both instances (because flowNodes without candidateGroups exist on both)
+    // then
     assertThat(rawDataResult.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
-    // and userTask report has only the instance that has not yet reached the second userTask
-    // (because userTasks without candidateGroups only exist on processInstance2)
-    assertThat(userTaskResult.getInstanceCount()).isEqualTo(1L);
-    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(userTaskResult.getData())
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 1.0));
   }
 
   @Test

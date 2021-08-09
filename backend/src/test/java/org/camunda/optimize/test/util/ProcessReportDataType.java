@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 public enum ProcessReportDataType {
 
   RAW_DATA,
-  
   PROC_INST_DUR_GROUP_BY_NONE,
   PROC_INST_DUR_GROUP_BY_NONE_WITH_PART,
   PROC_INST_DUR_GROUP_BY_START_DATE,
@@ -107,7 +106,8 @@ public enum ProcessReportDataType {
   public static List<ProcessReportDataType> allDateReports() {
     return Arrays.stream(
       ProcessReportDataType.values())
-      .filter(type -> type.name().toLowerCase().contains("_date"))
+      .filter(type -> type.name().toLowerCase().endsWith("start_date") ||
+        type.name().toLowerCase().endsWith("end_date"))
       .collect(Collectors.toList()
       );
   }

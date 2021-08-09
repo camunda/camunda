@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -55,17 +54,11 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
 
   private CompletedIncidentEngineImportMediator createCompletedIncidentEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new CompletedIncidentEngineImportMediator(
       importIndexHandlerRegistry.getCompletedIncidentImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(CompletedIncidentFetcher.class, engineContext),
       new CompletedIncidentImportService(
-        completedIncidentWriter,
-        elasticsearchImportJobExecutor,
-        engineContext,
-        processDefinitionResolverService
+        configurationService, completedIncidentWriter, engineContext, processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -74,17 +67,11 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
 
   private OpenIncidentEngineImportMediator createOpenIncidentEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new OpenIncidentEngineImportMediator(
       importIndexHandlerRegistry.getOpenIncidentImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(OpenIncidentFetcher.class, engineContext),
       new OpenIncidentImportService(
-        openIncidentWriter,
-        elasticsearchImportJobExecutor,
-        engineContext,
-        processDefinitionResolverService
+        configurationService, openIncidentWriter, engineContext, processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

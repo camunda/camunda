@@ -11,15 +11,17 @@ const Chart = jest.fn(() => {
 });
 
 Chart.defaults = {
-  global: {
+  font: {
     defaultFontFamily: '',
   },
+  set: jest.fn(),
 };
 
-Chart.controllers = {
-  line: {
-    extend: jest.fn(),
-  },
-};
+Chart.register = jest.fn();
+const registerables = [];
 
-export default Chart;
+class LineController {
+  constructor(...args) {}
+}
+
+export {Chart, registerables, LineController};

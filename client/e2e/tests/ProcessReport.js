@@ -123,12 +123,6 @@ test('version selection', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.definitionEditor);
-
-  await t.takeElementScreenshot(
-    e.definitionSelectionDialog,
-    'process/single-report/report-processDefinitionSelection.png'
-  );
-
   await t.click(e.versionPopover);
   await t.click(e.versionAll);
 
@@ -952,4 +946,32 @@ test('distributed multi-measure reports', async (t) => {
   await t.expect(e.reportRenderer.textContent).contains('Count');
   await t.expect(e.reportRenderer.textContent).contains('Duration');
   await t.expect(e.reportRenderer.textContent).contains('Misc');
+});
+
+test('multi-definition report', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  const singleDefinitionInstances = +(await e.reportNumber.textContent);
+
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+
+  const multiDefinitionInstances = +(await e.reportNumber.textContent);
+
+  await t.expect(multiDefinitionInstances > singleDefinitionInstances).ok();
+
+  await t.click(e.addDefinitionButton);
+  await t.click(e.definitionEntry('Book Request One Tenant'));
+  await t.click(e.definitionEntry('Book Request with no business key'));
+
+  await t.resizeWindow(1650, 700);
+
+  await t.takeElementScreenshot(
+    e.modalContainer,
+    'process/single-report/report-processDefinitionSelection.png'
+  );
+
+  await t.maximizeWindow();
 });

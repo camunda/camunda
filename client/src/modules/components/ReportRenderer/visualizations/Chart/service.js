@@ -9,32 +9,37 @@ import {t} from 'translation';
 
 import {getColorFor} from './colorsUtils';
 
-export function formatTooltip(
-  {index, datasetIndex},
-  {datasets},
-  {alwaysShowAbsolute, alwaysShowRelative},
+export function formatTooltip({
+  dataset,
+  dataIndex,
+  configuration: {alwaysShowAbsolute, alwaysShowRelative},
   formatter,
-  totalInstanceCount,
-  hideRelative
-) {
-  if (datasets[datasetIndex].isTarget) {
+  instanceCount,
+  isDuration,
+  showLabel,
+}) {
+  if (dataset.isTarget) {
     return;
   }
 
-  return getTooltipText(
-    datasets[datasetIndex].data[index],
-    formatter,
-    totalInstanceCount,
-    alwaysShowAbsolute,
-    alwaysShowRelative,
-    hideRelative
+  const label = showLabel && dataset.label ? dataset.label + ': ' : '';
+
+  return (
+    label +
+    getTooltipText(
+      dataset.data[dataIndex],
+      formatter,
+      instanceCount,
+      alwaysShowAbsolute,
+      alwaysShowRelative,
+      isDuration
+    )
   );
 }
 
-export function getTooltipLabelColor(tooltipItem, chart, type) {
-  const datasetOptions = chart.data.datasets[tooltipItem.datasetIndex];
+export function getTooltipLabelColor({dataIndex, dataset}, type) {
   if (type === 'pie') {
-    const color = datasetOptions.backgroundColor[tooltipItem.index];
+    const color = dataset.backgroundColor[dataIndex];
     return {
       borderColor: color,
       backgroundColor: color,
@@ -42,15 +47,15 @@ export function getTooltipLabelColor(tooltipItem, chart, type) {
   }
 
   return {
-    borderColor: datasetOptions.legendColor,
-    backgroundColor: datasetOptions.legendColor,
+    borderColor: dataset.legendColor,
+    backgroundColor: dataset.legendColor,
   };
 }
 
 export function drawHorizentalLine(chart) {
   if (chart.options.lineAt >= 0 && chart.options.lineAt !== false) {
-    const ctx = chart.chart.ctx;
-    const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
+    const ctx = chart.ctx;
+    const xAxe = chart.scales['xAxes'];
     const lineAt = calculateLinePosition(chart);
 
     ctx.save();
@@ -66,7 +71,7 @@ export function drawHorizentalLine(chart) {
 }
 
 export function calculateLinePosition(chart) {
-  const yAxis = chart.scales[chart.options.scales.yAxes[0].id];
+  const yAxis = chart.scales['axis-0'];
 
   return (1 - chart.options.lineAt / yAxis.max) * yAxis.height + yAxis.top;
 }

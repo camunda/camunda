@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -45,9 +45,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -463,30 +463,30 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        4.
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
         3.
       ),
       Arguments.of(
         NOT_IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        new String[]{SECOND_USER},
         2.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        1.
       )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                          final String[] filterValues,
                                                                          final Double expectedResult) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
@@ -496,6 +496,7 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -538,36 +539,37 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        4.
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP_ID},
         3.
       ),
       Arguments.of(
         NOT_IN,
-        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
         2.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        1.
       )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                final String[] filterValues,
                                                                                final Double expectedResult) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
-    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+    final ProcessInstanceEngineDto processInstance = deployAndStartThreeUserTasksDefinition(Collections.singletonMap(
       "doubleVar",
       1.0
     ));
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();

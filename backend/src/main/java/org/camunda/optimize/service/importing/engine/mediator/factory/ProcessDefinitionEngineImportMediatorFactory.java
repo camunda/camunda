@@ -7,13 +7,12 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionImportService;
@@ -54,17 +53,11 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
 
   private ProcessDefinitionEngineImportMediator createProcessDefinitionEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new ProcessDefinitionEngineImportMediator(
       importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext),
       new ProcessDefinitionImportService(
-        elasticsearchImportJobExecutor,
-        engineContext,
-        processDefinitionWriter,
-        processDefinitionResolverService
+        configurationService, engineContext, processDefinitionWriter, processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -73,17 +66,10 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
 
   private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new ProcessDefinitionXmlEngineImportMediator(
       importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext),
-      new ProcessDefinitionXmlImportService(
-        elasticsearchImportJobExecutor,
-        engineContext,
-        processDefinitionXmlWriter
-      ),
+      new ProcessDefinitionXmlImportService(configurationService, engineContext, processDefinitionXmlWriter),
       configurationService,
       new BackoffCalculator(configurationService)
     );

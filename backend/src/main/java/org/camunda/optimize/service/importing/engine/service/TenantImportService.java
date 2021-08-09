@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -14,16 +13,26 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.TenantElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.TenantWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
 @Slf4j
 public class TenantImportService implements ImportService<TenantEngineDto> {
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final TenantWriter tenantWriter;
+
+  public TenantImportService(final ConfigurationService configurationService,
+                             final EngineContext engineContext,
+                             final TenantWriter tenantWriter) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.tenantWriter = tenantWriter;
+  }
 
   @Override
   public void executeImport(final List<TenantEngineDto> pageOfEngineEntities, final Runnable importCompleteCallback) {

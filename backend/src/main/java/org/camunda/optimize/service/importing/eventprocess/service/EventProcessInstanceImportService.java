@@ -36,6 +36,7 @@ import org.camunda.optimize.service.es.job.importing.EventProcessInstanceElastic
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -74,17 +75,18 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private final Map<String, EventToFlowNodeMapping> eventMappingIdToEventMapping;
   private final BpmnModelInstance bpmnModelInstance;
 
-  public EventProcessInstanceImportService(final EventProcessPublishStateDto eventProcessPublishStateDto,
-                                           final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public EventProcessInstanceImportService(final ConfigurationService configurationService,
+                                           final EventProcessPublishStateDto eventProcessPublishStateDto,
                                            final EventProcessInstanceWriter eventProcessInstanceWriter) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.eventProcessPublishStateDto = eventProcessPublishStateDto;
     this.bpmnModelInstance = parseBpmnModel(eventProcessPublishStateDto.getXml());
     this.eventMappingIdToEventMapping = extractMappingByEventIdentifier(eventProcessPublishStateDto, bpmnModelInstance);
     this.eventProcessInstanceWriter = eventProcessInstanceWriter;
     this.eventProcessInstanceWriter.setGatewayLookup(buildGatewayLookup(
-      eventProcessPublishStateDto,
-      bpmnModelInstance
+      eventProcessPublishStateDto, bpmnModelInstance
     ));
   }
 
@@ -169,13 +171,15 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
         final EventCorrelationStateDto eventCorrelationStateDto = new EventCorrelationStateDto();
         processInstanceDto.getCorrelatedEventsById().put(eventId, eventCorrelationStateDto);
 
-        final FlowNodeInstanceDto flowNodeInstance = FlowNodeInstanceDto.builder()
-          .flowNodeInstanceId(eventId)
-          .flowNodeId(eventToFlowNodeMapping.getFlowNodeId())
-          .flowNodeType(eventToFlowNodeMapping.getFlowNodeType())
-          .processInstanceId(processInstanceDto.getProcessInstanceId())
-          .canceled(getCanceledState(eventDto).orElse(null))
-          .build();
+        final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto(
+          processInstanceDto.getProcessDefinitionKey(),
+          processInstanceDto.getProcessDefinitionVersion(),
+          processInstanceDto.getTenantId(),
+          processInstanceDto.getProcessInstanceId(),
+          eventToFlowNodeMapping.getFlowNodeId(),
+          eventToFlowNodeMapping.getFlowNodeType(),
+          eventId
+        ).setCanceled(getCanceledState(eventDto).orElse(null));
 
         final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()
           .get(eventToFlowNodeMapping.getFlowNodeId());

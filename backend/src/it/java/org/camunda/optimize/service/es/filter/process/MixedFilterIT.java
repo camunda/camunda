@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -26,6 +27,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,10 +47,11 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
@@ -213,7 +216,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertReportWithIncompatibleFilters(reportType, result);
   }
 
-  @Disabled // Disabled as there currently are no incompatible duration viewLevel filters. To be adjusted with OPT-5349 and OPT-5350
+  @Disabled("Disabled as there currently are no incompatible duration viewLevel filters. " +
+    "To be adjusted with OPT-5349 and OPT-5350")
   @ParameterizedTest
   @MethodSource("reportTypesToEvaluate")
   public void testIncompatibleCombinationOfViewLevelFlowNodeDurationFilters(final ProcessReportDataType reportType) {
@@ -265,7 +269,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .assignee()
-      .operator(IN)
+      .operator(MembershipFilterOperator.IN)
       .id(DEFAULT_USERNAME)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
@@ -298,7 +302,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .candidateGroups()
-      .operator(IN)
+      .operator(MembershipFilterOperator.IN)
       .id(CANDIDATE_GROUP_1)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
@@ -340,6 +344,129 @@ public class MixedFilterIT extends AbstractFilterIT {
 
     // then
     assertReportWithIncompatibleFilters(reportType, result);
+  }
+
+  @ParameterizedTest
+  @MethodSource("reportTypesToEvaluate")
+  public void testIncompatibleCombinationOfViewLevelFlowNodeDateFilters(final ProcessReportDataType reportType) {
+    // given
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getDoubleUserTaskDiagram());
+    ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
+      .filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(now)
+      .end(now)
+      .add()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(now.minusDays(1))
+      .end(now.minusDays(1))
+      .add()
+      .buildList();
+    ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertReportWithIncompatibleFilters(reportType, result);
+
+    // when
+    filterList = ProcessFilterBuilder
+      .filter()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(1L, DateFilterUnit.YEARS)
+      .add()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(1L, DateFilterUnit.WEEKS)
+      .add()
+      .buildList();
+    result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertReportWithIncompatibleFilters(reportType, result);
+  }
+
+  @ParameterizedTest
+  @MethodSource("reportTypesToEvaluate")
+  public void viewLevelFlowNodeDateFilterCombinations(final ProcessReportDataType reportType) {
+    // given
+    final OffsetDateTime now = OffsetDateTime.parse("2021-05-05T00:00:00+02:00");
+    dateFreezer().dateToFreeze(now).freezeDateAndReturn();
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getDoubleUserTaskDiagram());
+    ProcessInstanceEngineDto instance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance1.getId());
+    engineDatabaseExtension.changeAllFlowNodeStartDates(instance1.getId(), now.minusDays(1));
+
+    ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance2.getId());
+    engineDatabaseExtension.changeAllFlowNodeStartDates(instance2.getId(), now.minusDays(6));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
+      .filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(now.minusDays(2))
+      .end(now)
+      .add()
+      .rollingFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(1L, DateFilterUnit.DAYS)
+      .add()
+      .buildList();
+    ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+
+    // when
+    filterList = ProcessFilterBuilder
+      .filter()
+      .rollingFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(1L, DateFilterUnit.WEEKS)
+      .add()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(1L, DateFilterUnit.WEEKS)
+      .add()
+      .buildList();
+    result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+
+
+    // when
+    filterList = ProcessFilterBuilder
+      .filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(now.minusDays(2))
+      .end(now)
+      .add()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(3L, DateFilterUnit.DAYS)
+      .add()
+      .buildList();
+    result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
@@ -472,6 +599,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     return processReportDataDto;
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<List<ProcessFilterDto<?>>> invalidFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
@@ -481,6 +609,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<List<ProcessFilterDto<?>>> validFilters() {
     return Stream.concat(
       buildFilters(FilterApplicationLevel.INSTANCE)
@@ -537,6 +666,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<ProcessReportDataType> reportTypesToEvaluate() {
     return Stream.of(
       COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,

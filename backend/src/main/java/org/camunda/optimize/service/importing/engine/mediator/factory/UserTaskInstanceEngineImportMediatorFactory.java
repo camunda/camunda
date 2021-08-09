@@ -5,9 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -46,7 +44,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(
+    return List.of(
       createRunningUserTaskInstanceEngineImportMediator(engineContext),
       createCompletedUserTaskInstanceEngineImportMediator(engineContext)
     );
@@ -54,17 +52,11 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   public RunningUserTaskInstanceEngineImportMediator createRunningUserTaskInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new RunningUserTaskInstanceEngineImportMediator(
       importIndexHandlerRegistry.getRunningUserTaskInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(RunningUserTaskInstanceFetcher.class, engineContext),
       new RunningUserTaskInstanceImportService(
-        runningUserTaskInstanceWriter,
-        elasticsearchImportJobExecutor,
-        engineContext,
-        processDefinitionResolverService
+        configurationService, runningUserTaskInstanceWriter, engineContext, processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -73,17 +65,11 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   public CompletedUserTaskEngineImportMediator createCompletedUserTaskInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new CompletedUserTaskEngineImportMediator(
       importIndexHandlerRegistry.getCompletedUserTaskInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(CompletedUserTaskInstanceFetcher.class, engineContext),
       new CompletedUserTaskInstanceImportService(
-        completedUserTaskInstanceWriter,
-        elasticsearchImportJobExecutor,
-        engineContext,
-        processDefinitionResolverService
+        configurationService, completedUserTaskInstanceWriter, engineContext, processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

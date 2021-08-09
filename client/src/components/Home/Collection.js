@@ -12,7 +12,7 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
-import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
+import {Icon, Dropdown, EntityList, Deleter, BulkDeleter, Tooltip} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 
@@ -189,12 +189,11 @@ export class Collection extends React.Component {
                 )
               }
               bulkActions={[
-                {
-                  type: 'delete',
-                  action: async (selected) => await removeEntities(selected, collection),
-                  checkConflicts: async (selected) => await checkConflicts(selected, collection),
-                  conflictMessage: t('common.deleter.affectedMessage.bulk.report'),
-                },
+                <BulkDeleter
+                  deleteEntities={async (selected) => await removeEntities(selected, collection)}
+                  checkConflicts={async (selected) => await checkConflicts(selected, collection)}
+                  conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                />,
               ]}
               empty={t('home.empty')}
               isLoading={isLoading}

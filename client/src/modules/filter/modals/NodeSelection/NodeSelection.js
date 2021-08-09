@@ -8,40 +8,73 @@ import React from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {Modal, Button, BPMNDiagram, ClickBehavior} from 'components';
+import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
+
+import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 
 import './NodeSelection.scss';
 
-export default class NodeSelection extends React.Component {
+export class NodeSelection extends React.Component {
   state = {
     allFlowNodes: [],
     selectedNodes: [],
+    applyTo: null,
+    xml: null,
   };
 
-  async componentDidMount() {
-    const viewer = new Viewer();
-    await viewer.importXML(this.props.xml);
+  componentDidMount() {
+    const validDefinitions = this.props.definitions.filter(
+      (definition) => definition.versions.length && definition.tenantIds.length
+    );
 
-    const flowNodes = new Set();
-    viewer
-      .get('elementRegistry')
-      .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
-      .map((element) => element.businessObject)
-      .forEach((element) => flowNodes.add(element.id));
-    const allFlowNodes = Array.from(flowNodes);
-
-    let preExistingValues;
-    if (this.props.filterData?.data.values) {
-      preExistingValues = allFlowNodes.filter(
-        (id) => !this.props.filterData?.data.values.includes(id)
-      );
-    }
-
-    this.setState({
-      allFlowNodes,
-      selectedNodes: preExistingValues || allFlowNodes,
-    });
+    this.updateXml(
+      validDefinitions.find(({identifier}) => this.props.filterData?.appliedTo[0] === identifier) ||
+        validDefinitions[0],
+      this.props.filterData
+    );
   }
+
+  async componentDidUpdate(prevProps, prevState) {
+    if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
+      this.setState({selectedNodes: []});
+      await this.updateXml(this.state.applyTo);
+    }
+  }
+
+  updateXml = (applyTo, filterData) => {
+    this.setState({xml: null});
+    return this.props.mightFail(
+      loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
+      async (xml) => {
+        const viewer = new Viewer();
+        await viewer.importXML(xml);
+
+        const flowNodes = new Set();
+        viewer
+          .get('elementRegistry')
+          .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
+          .map((element) => element.businessObject)
+          .forEach((element) => flowNodes.add(element.id));
+        const allFlowNodes = Array.from(flowNodes);
+
+        let preExistingValues;
+        if (filterData?.data.values) {
+          preExistingValues = allFlowNodes.filter((id) => !filterData?.data.values.includes(id));
+        }
+
+        this.setState({
+          allFlowNodes,
+          selectedNodes: preExistingValues || allFlowNodes,
+          xml,
+          applyTo,
+        });
+      },
+      showError
+    );
+  };
 
   toggleNode = (toggledNode) => {
     this.setState(({selectedNodes}) => {
@@ -54,12 +87,12 @@ export default class NodeSelection extends React.Component {
   };
 
   createFilter = () => {
-    const {allFlowNodes, selectedNodes} = this.state;
+    const {allFlowNodes, selectedNodes, applyTo} = this.state;
 
     this.props.addFilter({
       type: 'executedFlowNodes',
       data: {operator: 'not in', values: allFlowNodes.filter((id) => !selectedNodes.includes(id))},
-      appliedTo: [this.props.definitions[0].identifier],
+      appliedTo: [applyTo.identifier],
     });
   };
 
@@ -86,16 +119,24 @@ export default class NodeSelection extends React.Component {
   };
 
   render() {
+    const {close, filterData, definitions} = this.props;
+    const {applyTo, xml} = this.state;
+
     return (
       <Modal
         open
-        onClose={this.props.close}
+        onClose={close}
         onConfirm={this.isValidSelection() ? this.createFilter : undefined}
         className="NodeSelection"
         size="max"
       >
         <Modal.Header>{t('common.filter.types.flowNodeSelection')}</Modal.Header>
         <Modal.Content className="modalContent">
+          <FilterSingleDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo}
+            setApplyTo={(applyTo) => this.setState({applyTo})}
+          />
           <div className="diagramActions">
             <Button disabled={false} onClick={this.selectAll}>
               {t('common.selectAll')}
@@ -104,25 +145,29 @@ export default class NodeSelection extends React.Component {
               {t('common.deselectAll')}
             </Button>
           </div>
-          <div className="diagramContainer">
-            <BPMNDiagram xml={this.props.xml}>
-              <ClickBehavior
-                onClick={this.toggleNode}
-                selectedNodes={this.state.selectedNodes}
-                nodeTypes={['FlowNode']}
-              />
-            </BPMNDiagram>
-          </div>
+          {xml && (
+            <div className="diagramContainer">
+              <BPMNDiagram xml={xml}>
+                <ClickBehavior
+                  onClick={this.toggleNode}
+                  selectedNodes={this.state.selectedNodes}
+                  nodeTypes={['FlowNode']}
+                />
+              </BPMNDiagram>
+            </div>
+          )}
         </Modal.Content>
         <Modal.Actions>
-          <Button main onClick={this.props.close}>
+          <Button main onClick={close}>
             {t('common.cancel')}
           </Button>
           <Button main primary disabled={!this.isValidSelection()} onClick={this.createFilter}>
-            {this.props.filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
+            {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>
     );
   }
 }
+
+export default withErrorHandling(NodeSelection);

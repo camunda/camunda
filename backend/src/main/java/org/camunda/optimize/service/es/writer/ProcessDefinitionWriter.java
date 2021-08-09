@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -19,6 +21,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
@@ -51,9 +54,13 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     Collections.emptyMap()
   );
 
+  private final ConfigurationService configurationService;
+
   public ProcessDefinitionWriter(final OptimizeElasticsearchClient esClient,
-                                 final ObjectMapper objectMapper) {
+                                 final ObjectMapper objectMapper,
+                                 final ConfigurationService configurationService) {
     super(objectMapper, esClient);
+    this.configurationService = configurationService;
   }
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
@@ -62,34 +69,46 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
   }
 
   public boolean markRedeployedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> importedDefinitions) {
-    final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
-    final Set<String> processDefIds = new HashSet<>();
-    importedDefinitions
-      .forEach(definition -> {
-        final BoolQueryBuilder matchingDefinitionQuery = boolQuery()
-          .must(termQuery(PROCESS_DEFINITION_KEY, definition.getKey()))
-          .must(termQuery(PROCESS_DEFINITION_VERSION, definition.getVersion()))
-          .mustNot(termQuery(PROCESS_DEFINITION_ID, definition.getId()));
-        processDefIds.add(definition.getId());
-        if (definition.getTenantId() != null) {
-          matchingDefinitionQuery.must(termQuery(DecisionDefinitionIndex.TENANT_ID, definition.getTenantId()));
-        } else {
-          matchingDefinitionQuery.mustNot(existsQuery(DecisionDefinitionIndex.TENANT_ID));
+    final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
+    // We must partition this into batches to avoid the maximum ES boolQuery clause limit being reached
+    Lists.partition(importedDefinitions, 1000)
+      .forEach(
+        partition -> {
+          final BoolQueryBuilder definitionsToDeleteQuery = boolQuery();
+          final Set<String> processDefIds = new HashSet<>();
+          partition
+            .forEach(definition -> {
+              final BoolQueryBuilder matchingDefinitionQuery = boolQuery()
+                .must(termQuery(PROCESS_DEFINITION_KEY, definition.getKey()))
+                .must(termQuery(PROCESS_DEFINITION_VERSION, definition.getVersion()))
+                .mustNot(termQuery(PROCESS_DEFINITION_ID, definition.getId()));
+              processDefIds.add(definition.getId());
+              if (definition.getTenantId() != null) {
+                matchingDefinitionQuery.must(termQuery(
+                  DecisionDefinitionIndex.TENANT_ID,
+                  definition.getTenantId()
+                ));
+              } else {
+                matchingDefinitionQuery.mustNot(existsQuery(DecisionDefinitionIndex.TENANT_ID));
+              }
+              definitionsToDeleteQuery.should(matchingDefinitionQuery);
+            });
+          final boolean deleted = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+            esClient,
+            String.format("%d process definitions", processDefIds.size()),
+            MARK_AS_DELETED_SCRIPT,
+            definitionsToDeleteQuery,
+            PROCESS_DEFINITION_INDEX_NAME
+          );
+          if (deleted && !definitionsUpdated.get()) {
+            definitionsUpdated.set(true);
+          }
         }
-        definitionsToDeleteQuery.should(matchingDefinitionQuery);
-      });
-
-    final boolean definitionsUpdated = ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-      esClient,
-      String.format("%d process definitions", processDefIds.size()),
-      MARK_AS_DELETED_SCRIPT,
-      definitionsToDeleteQuery,
-      PROCESS_DEFINITION_INDEX_NAME
-    );
-    if (definitionsUpdated) {
+      );
+    if (definitionsUpdated.get()) {
       log.debug("Marked old definitions with new deployments as deleted");
     }
-    return definitionsUpdated;
+    return definitionsUpdated.get();
   }
 
   @Override
@@ -101,11 +120,12 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       procDefs,
-      this::addImportProcessDefinitionToRequest
+      this::addImportProcessDefinitionToRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 }

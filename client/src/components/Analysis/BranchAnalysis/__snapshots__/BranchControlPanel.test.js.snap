@@ -59,7 +59,6 @@ exports[`should display a sentence to describe what the user can do on this page
         filterLevel="instance"
         onChange={[Function]}
         variables={null}
-        xml={null}
       />
     </li>
   </ul>

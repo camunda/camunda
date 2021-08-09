@@ -6,16 +6,16 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
@@ -24,18 +24,13 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final CamundaEventImportService camundaEventService;
 
-  public RunningProcessInstanceImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public RunningProcessInstanceImportService(final ConfigurationService configurationService,
                                              final EngineContext engineContext,
                                              final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                              final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                              final CamundaEventImportService camundaEventService,
                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(
-      elasticsearchImportJobExecutor,
-      engineContext,
-      businessKeyImportAdapterProvider,
-      processDefinitionResolverService
-    );
+    super(configurationService, engineContext, businessKeyImportAdapterProvider, processDefinitionResolverService);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
@@ -45,7 +40,12 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
     final List<ProcessInstanceDto> processInstances,
     final Runnable callback) {
     RunningProcessInstanceElasticsearchImportJob importJob =
-      new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter, camundaEventService, callback);
+      new RunningProcessInstanceElasticsearchImportJob(
+        runningProcessInstanceWriter,
+        camundaEventService,
+        configurationService,
+        callback
+      );
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

@@ -5,9 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -49,7 +47,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   @Override
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
-    return ImmutableList.of(
+    return List.of(
       createCompletedActivityInstanceEngineImportMediator(engineContext),
       createRunningActivityInstanceEngineImportMediator(engineContext)
     );
@@ -57,8 +55,6 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   private CompletedActivityInstanceEngineImportMediator createCompletedActivityInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
 
     return new CompletedActivityInstanceEngineImportMediator(
       importIndexHandlerRegistry.getCompletedActivityInstanceImportIndexHandler(engineContext.getEngineAlias()),
@@ -66,8 +62,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
       new CompletedActivityInstanceImportService(
         completedActivityInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        elasticsearchImportJobExecutor,
         engineContext,
+        configurationService,
         processDefinitionResolverService
       ),
       configurationService,
@@ -77,17 +73,14 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
 
   private RunningActivityInstanceEngineImportMediator createRunningActivityInstanceEngineImportMediator(
     EngineContext engineContext) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return new RunningActivityInstanceEngineImportMediator(
       importIndexHandlerRegistry.getRunningActivityInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(RunningActivityInstanceFetcher.class, engineContext),
       new RunningActivityInstanceImportService(
         runningActivityInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        elasticsearchImportJobExecutor,
         engineContext,
+        configurationService,
         processDefinitionResolverService
       ),
       configurationService,

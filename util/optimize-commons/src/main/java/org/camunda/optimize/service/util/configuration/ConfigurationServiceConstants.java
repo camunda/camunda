@@ -29,6 +29,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
 
   public static final String IMPORT_CURRENT_TIME_BACKOFF_MILLISECONDS = "$.import.currentTimeBackoffMilliseconds";
+  public static final String IMPORT_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED = "$.import.skipDataAfterNestedDocLimitReached";
   public static final String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.maxPageSize";
   public static final String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
   public static final String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";

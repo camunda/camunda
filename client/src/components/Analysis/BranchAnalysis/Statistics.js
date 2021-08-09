@@ -6,7 +6,7 @@
 
 import React from 'react';
 import equal from 'fast-deep-equal';
-import ChartRenderer from 'chart.js';
+import {Chart as ChartRenderer} from 'chart.js';
 
 import {loadCorrelationData} from './service';
 
@@ -24,6 +24,8 @@ export default class Statistics extends React.Component {
       data: null,
       flowNodeNames: null,
     };
+
+    this.rootRef = React.createRef();
   }
 
   loadFlowNodeNames = () => {
@@ -47,8 +49,6 @@ export default class Statistics extends React.Component {
         (prev, key) => prev + this.state.data.followingNodes[key].activityCount,
         0
       );
-      const gatewayName = this.props.gateway.name || this.props.gateway.id;
-      const endEventName = this.props.endEvent.name || this.props.endEvent.id;
 
       if (!totalGateway) {
         return (
@@ -59,10 +59,10 @@ export default class Statistics extends React.Component {
       }
 
       return (
-        <div className="Statistics">
+        <div className="Statistics" ref={this.rootRef}>
           <p
             dangerouslySetInnerHTML={{
-              __html: t('analysis.gatewayInstances', {totalGateway, gatewayName}),
+              __html: t('analysis.gatewayInstances', {totalGateway}),
             }}
           />
           <ul>
@@ -77,23 +77,19 @@ export default class Statistics extends React.Component {
                     __html: t('analysis.branchDistribution', {
                       count,
                       branchPercentage: Math.round((count / totalGateway) * 100) || 0,
-                      key,
                       reached,
                       reachedEndPercentage: Math.round((reached / count) * 100) || 0,
-                      endEventName,
                     }),
                   }}
                 />
               );
             })}
           </ul>
-          <p dangerouslySetInnerHTML={{__html: t('analysis.gatewayDistribution', {gatewayName})}} />
+          <p dangerouslySetInnerHTML={{__html: t('analysis.gatewayDistribution')}} />
           <div className="diagram-container">
             <canvas ref={(node) => (this.absoluteChartRef = node)} />
           </div>
-          <p
-            dangerouslySetInnerHTML={{__html: t('analysis.endEventProbability', {endEventName})}}
-          />
+          <p dangerouslySetInnerHTML={{__html: t('analysis.endEventProbability')}} />
           <div className="diagram-container">
             <canvas ref={(node) => (this.relativeChartRef = node)} />
           </div>
@@ -117,6 +113,8 @@ export default class Statistics extends React.Component {
   }
 
   async componentDidUpdate(prevProps) {
+    this.fillFlownodeNames();
+
     const procDefChanged =
       prevProps.config.processDefinitionKey !== this.props.config.processDefinitionKey ||
       !equal(
@@ -140,6 +138,26 @@ export default class Statistics extends React.Component {
       this.createCharts();
     }
   }
+
+  fillFlownodeNames = () => {
+    const container = this.rootRef.current;
+
+    if (container) {
+      const gatewayName = this.props.gateway.name || this.props.gateway.id;
+      const endEventName = this.props.endEvent.name || this.props.endEvent.id;
+      const branchNames = Object.keys(this.state.data.followingNodes);
+
+      container
+        .querySelectorAll('.gatewayName')
+        .forEach((node) => (node.textContent = gatewayName));
+      container
+        .querySelectorAll('.endEventName')
+        .forEach((node) => (node.textContent = endEventName));
+      container
+        .querySelectorAll('.branchName')
+        .forEach((node, i) => (node.textContent = branchNames[i]));
+    }
+  };
 
   createCharts = () => {
     if (this.relativeChartRef && this.absoluteChartRef) {
@@ -216,7 +234,7 @@ export default class Statistics extends React.Component {
     let isInside = false;
     const {viewer} = this.props;
     return new ChartRenderer(node, {
-      type: 'horizontalBar',
+      type: 'bar',
       data: {
         labels: Object.keys(this.state.data.followingNodes),
         datasets: [
@@ -232,13 +250,15 @@ export default class Statistics extends React.Component {
         responsive: true,
         animation: false,
         maintainAspectRatio: false,
-        legend: {
-          display: false,
-        },
-        tooltips: {
-          callbacks: {
-            label: ({index, datasetIndex}, {datasets}) =>
-              datasets[datasetIndex].data[index] + labelSuffix,
+        indexAxis: 'y',
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: ({dataset, dataIndex}) => dataset.data[dataIndex] + labelSuffix,
+            },
           },
         },
         hover: {

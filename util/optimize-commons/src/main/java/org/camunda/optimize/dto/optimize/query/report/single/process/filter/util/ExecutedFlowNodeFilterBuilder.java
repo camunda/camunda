@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
@@ -13,16 +13,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import java.util.Optional;
 
 public class ExecutedFlowNodeFilterBuilder {
 
-  private FilterOperator operator = IN;
+  private MembershipFilterOperator membershipFilterOperator = MembershipFilterOperator.IN;
   private final List<String> values = new ArrayList<>();
   private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
+  private List<String> appliedTo;
 
   private ExecutedFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
@@ -38,17 +37,17 @@ public class ExecutedFlowNodeFilterBuilder {
   }
 
   public ExecutedFlowNodeFilterBuilder inOperator() {
-    operator = IN;
+    membershipFilterOperator = MembershipFilterOperator.IN;
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder operator(FilterOperator operator) {
-    this.operator = operator;
+  public ExecutedFlowNodeFilterBuilder operator(MembershipFilterOperator membershipFilterOperator) {
+    this.membershipFilterOperator = membershipFilterOperator;
     return this;
   }
 
   public ExecutedFlowNodeFilterBuilder notInOperator() {
-    operator = NOT_IN;
+    membershipFilterOperator = MembershipFilterOperator.NOT_IN;
     return this;
   }
 
@@ -62,13 +61,23 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
+  public ExecutedFlowNodeFilterBuilder appliedTo(final String appliedTo) {
+    return appliedTo(List.of(appliedTo));
+  }
+
+  public ExecutedFlowNodeFilterBuilder appliedTo(final List<String> appliedTo) {
+    this.appliedTo = appliedTo;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
     ExecutedFlowNodeFilterDataDto dataDto = new ExecutedFlowNodeFilterDataDto();
-    dataDto.setOperator(operator);
+    dataDto.setOperator(membershipFilterOperator);
     dataDto.setValues(new ArrayList<>(values));
     ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
     executedFlowNodeFilterDto.setData(dataDto);
     executedFlowNodeFilterDto.setFilterLevel(filterLevel);
+    Optional.ofNullable(appliedTo).ifPresent(value -> executedFlowNodeFilterDto.setAppliedTo(appliedTo));
     filterBuilder.addFilter(executedFlowNodeFilterDto);
     return filterBuilder;
   }

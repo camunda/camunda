@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;

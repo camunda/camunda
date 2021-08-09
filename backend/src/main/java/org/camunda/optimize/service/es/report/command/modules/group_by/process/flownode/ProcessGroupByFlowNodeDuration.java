@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode;
 
-import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -33,13 +33,20 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
 
   private final MinMaxStatsService minMaxStatsService;
   private final DurationAggregationService durationAggregationService;
+
+  public ProcessGroupByFlowNodeDuration(final MinMaxStatsService minMaxStatsService,
+                                        final DurationAggregationService durationAggregationService,
+                                        final DefinitionService definitionService) {
+    super(definitionService);
+    this.minMaxStatsService = minMaxStatsService;
+    this.durationAggregationService = durationAggregationService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

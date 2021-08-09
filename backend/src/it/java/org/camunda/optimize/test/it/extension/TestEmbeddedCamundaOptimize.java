@@ -13,7 +13,6 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
@@ -140,10 +139,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   protected ApplicationContext getApplicationContext() {
     return testOptimizeInstance.getOptimizeApplicationContext();
-  }
-
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return getApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
   }
 
   public ConfigurationService getConfigurationService() {

@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 
 import java.util.List;
@@ -24,14 +24,14 @@ public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
   protected boolean allowCustomValues;
   protected List<String> defaultValues;
 
-  public DashboardIdentityFilterDataDto(final FilterOperator operator,
+  public DashboardIdentityFilterDataDto(final MembershipFilterOperator operator,
                                         final List<String> values,
                                         final boolean allowCustomValues) {
     super(operator, values);
     this.allowCustomValues = allowCustomValues;
   }
 
-  public DashboardIdentityFilterDataDto(final FilterOperator operator,
+  public DashboardIdentityFilterDataDto(final MembershipFilterOperator operator,
                                         final List<String> values,
                                         final boolean allowCustomValues,
                                         final List<String> defaultValues) {

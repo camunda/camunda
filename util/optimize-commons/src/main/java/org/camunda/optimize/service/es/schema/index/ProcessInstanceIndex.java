@@ -34,7 +34,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 7;
+  public static final int VERSION = 8;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -60,6 +60,10 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String FLOW_NODE_END_DATE = FlowNodeInstanceDto.Fields.endDate;
   public static final String FLOW_NODE_CANCELED = FlowNodeInstanceDto.Fields.canceled;
   public static final String FLOW_NODE_TOTAL_DURATION = FlowNodeInstanceDto.Fields.totalDurationInMs;
+
+  public static final String FLOW_NODE_DEFINITION_KEY = FlowNodeInstanceDto.Fields.definitionKey;
+  public static final String FLOW_NODE_DEFINITION_VERSION = FlowNodeInstanceDto.Fields.definitionVersion;
+  public static final String FLOW_NODE_TENANT_ID = FlowNodeInstanceDto.Fields.tenantId;
 
   public static final String USER_TASK_INSTANCE_ID = FlowNodeInstanceDto.Fields.userTaskInstanceId;
   public static final String USER_TASK_DUE_DATE = FlowNodeInstanceDto.Fields.dueDate;
@@ -137,7 +141,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   @Override
   public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =  builder
+    XContentBuilder newBuilder = builder
       .startObject(PROCESS_DEFINITION_KEY)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
@@ -231,6 +235,15 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .startObject(FLOW_NODE_CANCELED)
         .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
+      .endObject()
+      .startObject(FLOW_NODE_DEFINITION_KEY)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(FLOW_NODE_DEFINITION_VERSION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(FLOW_NODE_TENANT_ID)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(USER_TASK_INSTANCE_ID)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)

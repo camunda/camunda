@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 
 import java.io.Serializable;
 

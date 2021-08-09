@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -26,14 +27,18 @@ public abstract class AbstractIncidentImportService implements ImportService<His
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
+  protected final ConfigurationService configurationService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  protected AbstractIncidentImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  protected AbstractIncidentImportService(final ConfigurationService configurationService,
                                           final EngineContext engineContext,
                                           final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override

@@ -12,7 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -43,8 +43,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
@@ -139,7 +139,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -175,7 +175,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
 
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -213,7 +213,8 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -306,7 +307,8 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -360,7 +362,8 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -398,8 +401,10 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult1 = reportClient.evaluateHyperMapReport(
+      reportData1).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult2 = reportClient.evaluateHyperMapReport(
+      reportData2).getResult();
 
     // then
     // @formatter:off
@@ -440,7 +445,8 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getInstanceCount(), is((long) selectedTenants.size()));
@@ -452,10 +458,207 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getFirstMeasureData().size(), is(0));
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelFilterByAssigneeOnlyCountsUserTaskWithThatAssignee(
+    final MembershipFilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    reportData.setFilter(assigneeFilter);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
+
+    // then
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(1)
+      .measure(ViewProperty.FREQUENCY);
+    expectedResult.forEach((userTaskId, distributionResults) -> {
+      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
+      distributionResults.forEach(
+        candidateGroupAndCount -> groupByAdder.distributedByContains(
+          candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
+        )
+      );
+      groupByAdder.add();
+    });
+    hyperMapAsserter.doAssert(actualResult);
+  }
+
+  @ParameterizedTest
+  @MethodSource("instanceLevelAssigneeFilterScenarios")
+  public void instanceLevelFilterByAssigneeOnlyCountsUserTaskFromInstancesWithThatAssignee(
+    final MembershipFilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    reportData.setFilter(assigneeFilter);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
+
+    // then
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(2)
+      .measure(ViewProperty.FREQUENCY);
+    expectedResult.forEach((userTaskId, distributionResults) -> {
+      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
+      distributionResults.forEach(
+        candidateGroupAndCount -> groupByAdder.distributedByContains(
+          candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
+        )
+      );
+      groupByAdder.add();
+    });
+    hyperMapAsserter.doAssert(actualResult);
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelFilterByCandidateGroupOnlyCountsUserTaskWithThatCandidateGroup(
+    final MembershipFilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
+    reportData.setFilter(candidateGroupFilter);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
+
+    // then
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(1)
+      .measure(ViewProperty.FREQUENCY);
+    expectedResult.forEach((userTaskId, distributionResults) -> {
+      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
+      distributionResults.forEach(
+        candidateGroupAndCount ->
+          groupByAdder.distributedByContains(
+            candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
+          )
+      );
+      groupByAdder.add();
+    });
+    hyperMapAsserter.doAssert(actualResult);
+  }
+
+  @ParameterizedTest
+  @MethodSource("instanceLevelCandidateGroupFilterScenarios")
+  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTaskFromInstancesWithThatCandidateGroup(
+    final MembershipFilterOperator filterOperator,
+    final String[] filterValues,
+    final Long expectedInstanceCount,
+    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
+    reportData.setFilter(candidateGroupFilter);
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
+
+    // then
+    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
+      .processInstanceCount(expectedInstanceCount)
+      .processInstanceCountWithoutFilters(2)
+      .measure(ViewProperty.FREQUENCY);
+    expectedResult.forEach((userTaskId, distributionResults) -> {
+      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
+      distributionResults.forEach(
+        candidateGroupAndCount -> groupByAdder.distributedByContains(
+          candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
+        )
+      );
+      groupByAdder.add();
+    });
+    hyperMapAsserter.doAssert(actualResult);
   }
 
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
@@ -488,56 +691,6 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
       Arguments.of(
         NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyMap())
     );
-  }
-
-  @ParameterizedTest
-  @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelFilterByAssigneeOnlyCountsUserTaskWithThatAssignee(
-    final FilterOperator filterOperator,
-    final String[] filterValues,
-    final Long expectedInstanceCount,
-    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
-    // given
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
-    );
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
-      .filter().assignee().ids(filterValues).operator(filterOperator)
-      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
-    reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(1)
-      .measure(ViewProperty.FREQUENCY);
-    expectedResult.forEach((userTaskId, distributionResults) -> {
-      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
-      distributionResults.forEach(
-        candidateGroupAndCount -> groupByAdder.distributedByContains(
-          candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
-        )
-      );
-      groupByAdder.add();
-    });
-    hyperMapAsserter.doAssert(actualResult);
   }
 
   public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
@@ -585,58 +738,6 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
     );
   }
 
-  @ParameterizedTest
-  @MethodSource("instanceLevelAssigneeFilterScenarios")
-  public void instanceLevelFilterByAssigneeOnlyCountsUserTaskFromInstancesWithThatAssignee(
-    final FilterOperator filterOperator,
-    final String[] filterValues,
-    final Long expectedInstanceCount,
-    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
-    // given
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
-      .filter().assignee().ids(filterValues).operator(filterOperator)
-      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
-    reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2)
-      .measure(ViewProperty.FREQUENCY);
-    expectedResult.forEach((userTaskId, distributionResults) -> {
-      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
-      distributionResults.forEach(
-        candidateGroupAndCount -> groupByAdder.distributedByContains(
-          candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
-        )
-      );
-      groupByAdder.add();
-    });
-    hyperMapAsserter.doAssert(actualResult);
-  }
-
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
@@ -671,49 +772,6 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
         Collections.emptyMap()
       )
     );
-  }
-
-  @ParameterizedTest
-  @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelFilterByCandidateGroupOnlyCountsUserTaskWithThatCandidateGroup(
-    final FilterOperator filterOperator,
-    final String[] filterValues,
-    final Long expectedInstanceCount,
-    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
-      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
-      .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
-    reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(1)
-      .measure(ViewProperty.FREQUENCY);
-    expectedResult.forEach((userTaskId, distributionResults) -> {
-      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
-      distributionResults.forEach(
-        candidateGroupAndCount ->
-          groupByAdder.distributedByContains(
-            candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
-          )
-      );
-      groupByAdder.add();
-    });
-    hyperMapAsserter.doAssert(actualResult);
   }
 
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
@@ -751,60 +809,15 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
           )
           .build()
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L,
-                   ImmutableMap.builder()
-                     .put(USER_TASK_1, Collections.emptyList())
-                     .put(USER_TASK_2, Collections.emptyList())
-                     .build()
+      Arguments.of(
+        NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        ImmutableMap.builder()
+          .put(USER_TASK_1, Collections.emptyList())
+          .put(USER_TASK_2, Collections.emptyList())
+          .build()
       )
     );
-  }
-
-  @ParameterizedTest
-  @MethodSource("instanceLevelCandidateGroupFilterScenarios")
-  public void instanceLevelFilterByCandidateGroupOnlyCountsUserTaskFromInstancesWithThatCandidateGroup(
-    final FilterOperator filterOperator,
-    final String[] filterValues,
-    final Long expectedInstanceCount,
-    final Map<String, List<Triple<String, Double, String>>> expectedResult) {
-    // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReport(processDefinition);
-    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
-      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
-      .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
-    reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(expectedInstanceCount)
-      .processInstanceCountWithoutFilters(2)
-      .measure(ViewProperty.FREQUENCY);
-    expectedResult.forEach((userTaskId, distributionResults) -> {
-      final HyperMapAsserter.GroupByAdder groupByAdder = hyperMapAsserter.groupByContains(userTaskId);
-      distributionResults.forEach(
-        candidateGroupAndCount -> groupByAdder.distributedByContains(
-          candidateGroupAndCount.getLeft(), candidateGroupAndCount.getMiddle(), candidateGroupAndCount.getRight()
-        )
-      );
-      groupByAdder.add();
-    });
-    hyperMapAsserter.doAssert(actualResult);
   }
 
   private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {

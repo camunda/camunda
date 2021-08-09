@@ -93,6 +93,10 @@ public class DefinitionService implements ConfigurationReloadable {
     latestDecisionDefinitionCache.invalidateAll();
   }
 
+  public String getLatestVersionToKey(final DefinitionType type, final String key) {
+    return definitionReader.getLatestVersionToKey(type, key);
+  }
+
   public Optional<DefinitionResponseDto> getDefinitionWithAvailableTenants(final DefinitionType type,
                                                                            final String key,
                                                                            final String userId) {

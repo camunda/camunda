@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -51,7 +51,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -454,12 +455,12 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       .satisfies(
         entry -> {
           assertThat(entry.getValue())
-          .containsExactlyInAnyOrder(
-            new MapResultEntryDto(START_EVENT, 20.0, START_EVENT),
-            new MapResultEntryDto(SERVICE_TASK_ID_1, 20.0, SERVICE_TASK_ID_1),
-            new MapResultEntryDto(SERVICE_TASK_ID_2, 20.0, SERVICE_TASK_ID_2),
-            new MapResultEntryDto(END_EVENT, 20.0, END_EVENT)
-          );
+            .containsExactlyInAnyOrder(
+              new MapResultEntryDto(START_EVENT, 20.0, START_EVENT),
+              new MapResultEntryDto(SERVICE_TASK_ID_1, 20.0, SERVICE_TASK_ID_1),
+              new MapResultEntryDto(SERVICE_TASK_ID_2, 20.0, SERVICE_TASK_ID_2),
+              new MapResultEntryDto(END_EVENT, 20.0, END_EVENT)
+            );
         }
       );
   }
@@ -670,49 +671,51 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
   private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME},
         Map.of(USER_TASK_1, 2000.)
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
+        Map.of(USER_TASK_1, 2000., USER_TASK_2, 3000., USER_TASK_3, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
+        Map.of(USER_TASK_1, 2000., USER_TASK_3, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
+        Map.of(USER_TASK_3, 4000.)
       )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelAssigneeFilterScenarios")
-  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                          final String[] filterValues,
                                                                          final Map<String, Double> expectedResults) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessInstanceEngineDto processInstance =
-      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+      deployAndStartThreeUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance.getId()
     );
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
     );
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstance.getId());
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 4000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_3, 4000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 5000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -741,10 +744,9 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
       .groupByContains("1.00")
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null))
       .doAssert(result);
     // @formatter:on
   }
@@ -752,47 +754,49 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
   private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID},
         Map.of(USER_TASK_1, 2000.)
       ),
       Arguments.of(
-        FilterOperator.IN,
+        IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
+        Map.of(USER_TASK_1, 2000., USER_TASK_2, 3000., USER_TASK_3, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
+        Map.of(USER_TASK_1, 2000., USER_TASK_3, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
+        Map.of(USER_TASK_3, 4000.)
       )
     );
   }
 
   @ParameterizedTest
   @MethodSource("viewLevelCandidateGroupFilterScenarios")
-  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final MembershipFilterOperator filterOperator,
                                                                                final String[] filterValues,
                                                                                final Map<String, Double> expectedResults) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessInstanceEngineDto processInstance =
-      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+      deployAndStartThreeUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
     engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 4000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_3, 4000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 5000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -821,10 +825,9 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
       .groupByContains("1.00")
-        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
-        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
         .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
         .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+        .distributedByContains(USER_TASK_3, expectedResults.getOrDefault(USER_TASK_3, null))
       .doAssert(result);
     // @formatter:on
   }

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricIdentityLinkLogDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
@@ -17,6 +16,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class IdentityLinkLogImportService implements ImportService<HistoricIdentityLinkLogDto> {
-  private static final Set<IdentityLinkLogType> SUPPORTED_TYPES = ImmutableSet.of(
+  private static final Set<IdentityLinkLogType> SUPPORTED_TYPES = Set.of(
     IdentityLinkLogType.ASSIGNEE, IdentityLinkLogType.CANDIDATE
   );
 
@@ -34,17 +34,21 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   private final IdentityLinkLogWriter identityLinkLogWriter;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
-  public IdentityLinkLogImportService(final IdentityLinkLogWriter identityLinkLogWriter,
+  public IdentityLinkLogImportService(final ConfigurationService configurationService,
+                                      final IdentityLinkLogWriter identityLinkLogWriter,
                                       final AssigneeCandidateGroupService assigneeCandidateGroupService,
-                                      final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                       final EngineContext engineContext,
                                       final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.engineContext = engineContext;
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.identityLinkLogWriter = identityLinkLogWriter;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -92,7 +96,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     final List<IdentityLinkLogEntryDto> identityLinkLogs,
     final Runnable callback) {
     final IdentityLinkLogImportJob importJob = new IdentityLinkLogImportJob(
-      identityLinkLogWriter, assigneeCandidateGroupService, callback
+      identityLinkLogWriter, assigneeCandidateGroupService, configurationService, callback
     );
     importJob.setEntitiesToImport(identityLinkLogs);
     return importJob;

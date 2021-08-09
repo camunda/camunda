@@ -117,6 +117,7 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
+      Thread.currentThread().interrupt();
     }
   }
 

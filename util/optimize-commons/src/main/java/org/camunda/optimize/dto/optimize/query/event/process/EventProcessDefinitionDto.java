@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.camunda.optimize.dto.optimize.EventsDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EventsDataSourceDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 

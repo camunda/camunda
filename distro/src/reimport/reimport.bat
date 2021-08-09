@@ -12,6 +12,7 @@
 
 set BASEDIR=%~dp0
 cd "%BASEDIR%"
+set PLUGIN_DIR=%BASEDIR%\..\plugin
 
 :: now set the path to java
 IF DEFINED JAVA_HOME (

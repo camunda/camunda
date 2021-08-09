@@ -5,17 +5,17 @@
  */
 package org.camunda.optimize.service.importing.engine.service.definition;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.Comparator;
 import java.util.List;
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
-@AllArgsConstructor
 @Slf4j
 public class DecisionDefinitionImportService implements ImportService<DecisionDefinitionEngineDto> {
 
@@ -32,6 +31,18 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   private final EngineContext engineContext;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
+
+  public DecisionDefinitionImportService(final ConfigurationService configurationService,
+                                         final EngineContext engineContext,
+                                         final DecisionDefinitionWriter decisionDefinitionWriter,
+                                         final DecisionDefinitionResolverService decisionDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.decisionDefinitionWriter = decisionDefinitionWriter;
+    this.decisionDefinitionResolverService = decisionDefinitionResolverService;
+  }
 
   @Override
   public void executeImport(final List<DecisionDefinitionEngineDto> pageOfEngineEntities,

@@ -7,53 +7,61 @@ Object {
       "top": 0,
     },
   },
-  "legend": Object {
-    "display": false,
-    "labels": Object {
-      "boxWidth": 12,
-    },
-    "onClick": [Function],
-  },
   "lineAt": undefined,
+  "plugins": Object {
+    "legend": Object {
+      "display": false,
+      "labels": Object {
+        "boxWidth": 12,
+        "color": "#666",
+      },
+      "onClick": [Function],
+    },
+  },
   "scales": Object {
-    "xAxes": Array [
-      Object {
-        "gridLines": Object {
-          "color": "rgba(0,0,0,0.1)",
-        },
-        "scaleLabel": Object {
-          "display": false,
-          "fontStyle": "bold",
-          "labelString": undefined,
-        },
-        "stacked": undefined,
-        "ticks": Object {
-          "autoSkip": undefined,
-          "callback": [Function],
-          "fontColor": "#666",
-        },
+    "axis-0": Object {
+      "axis": "y",
+      "grid": Object {
+        "color": "rgba(0,0,0,0.1)",
       },
-    ],
-    "yAxes": Array [
-      Object {
-        "gridLines": Object {
-          "color": "rgba(0,0,0,0.1)",
-        },
-        "id": "axis-0",
-        "scaleLabel": Object {
-          "display": false,
-          "fontStyle": "bold",
-          "labelString": undefined,
-        },
-        "ticks": Object {
-          "beginAtZero": true,
-          "fontColor": "#666",
-          "suggestedMax": undefined,
-        },
+      "id": "axis-0",
+      "suggestedMax": undefined,
+      "ticks": Object {
+        "beginAtZero": true,
+        "color": "#666",
       },
-    ],
+      "title": Object {
+        "color": "#666",
+        "display": false,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": undefined,
+      },
+    },
+    "xAxes": Object {
+      "axis": "x",
+      "grid": Object {
+        "color": "rgba(0,0,0,0.1)",
+      },
+      "stacked": undefined,
+      "ticks": Object {
+        "autoSkip": undefined,
+        "callback": [Function],
+        "color": "#666",
+      },
+      "title": Object {
+        "color": "#666",
+        "display": false,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": undefined,
+      },
+    },
   },
   "spanGaps": true,
+  "tension": 0.4,
 }
 `;
 
@@ -65,81 +73,93 @@ Object {
       "top": 0,
     },
   },
-  "legend": Object {
-    "display": true,
-    "labels": Object {
-      "boxWidth": 12,
-    },
-    "onClick": [Function],
-  },
   "lineAt": undefined,
   "maintainAspectRatio": false,
-  "responsive": true,
-  "scales": Object {
-    "xAxes": Array [
-      Object {
-        "gridLines": Object {
-          "color": "rgba(0,0,0,0.1)",
-        },
-        "scaleLabel": Object {
-          "display": false,
-          "fontStyle": "bold",
-          "labelString": undefined,
-        },
-        "stacked": false,
-        "ticks": Object {
-          "autoSkip": false,
-          "callback": [Function],
-          "fontColor": "#666",
-        },
+  "plugins": Object {
+    "datalabels": Object {
+      "display": undefined,
+      "formatter": [Function],
+    },
+    "legend": Object {
+      "display": true,
+      "labels": Object {
+        "boxWidth": 12,
+        "color": "#666",
       },
-    ],
-    "yAxes": Array [
-      Object {
-        "gridLines": Object {
-          "color": "rgba(0,0,0,0.1)",
-        },
-        "id": "axis-0",
-        "scaleLabel": Object {
-          "display": true,
-          "fontStyle": "bold",
-          "labelString": "Flow Node Count",
-        },
-        "ticks": Object {
-          "beginAtZero": true,
-          "fontColor": "#666",
-          "suggestedMax": undefined,
-        },
+      "onClick": [Function],
+    },
+    "tooltip": Object {
+      "callbacks": Object {
+        "label": [Function],
+        "labelColor": [Function],
       },
-      Object {
-        "gridLines": Object {
-          "drawOnChartArea": false,
-        },
-        "id": "axis-1",
-        "position": "right",
-        "scaleLabel": Object {
-          "display": true,
-          "fontStyle": "bold",
-          "labelString": "Flow Node Duration",
-        },
-        "ticks": Object {
-          "beginAtZero": true,
-          "callback": [Function],
-          "fontColor": "#666",
-          "stepSize": 1000,
-          "suggestedMax": undefined,
-        },
-      },
-    ],
-  },
-  "showAllTooltips": undefined,
-  "spanGaps": true,
-  "tooltips": Object {
-    "callbacks": Object {
-      "label": [Function],
-      "labelColor": [Function],
+      "enabled": true,
     },
   },
+  "responsive": true,
+  "scales": Object {
+    "axis-0": Object {
+      "axis": "y",
+      "grid": Object {
+        "color": "rgba(0,0,0,0.1)",
+      },
+      "id": "axis-0",
+      "suggestedMax": undefined,
+      "ticks": Object {
+        "beginAtZero": true,
+        "color": "#666",
+      },
+      "title": Object {
+        "display": true,
+        "text": "Flow Node Count",
+      },
+    },
+    "axis-1": Object {
+      "axis": "y",
+      "grid": Object {
+        "drawOnChartArea": false,
+      },
+      "id": "axis-1",
+      "position": "right",
+      "suggestedMax": undefined,
+      "ticks": Object {
+        "beginAtZero": true,
+        "callback": [Function],
+        "color": "#666",
+        "stepSize": 1000,
+      },
+      "title": Object {
+        "color": "#666",
+        "display": true,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": "Flow Node Duration",
+      },
+    },
+    "xAxes": Object {
+      "axis": "x",
+      "grid": Object {
+        "color": "rgba(0,0,0,0.1)",
+      },
+      "stacked": false,
+      "ticks": Object {
+        "autoSkip": false,
+        "callback": [Function],
+        "color": "#666",
+      },
+      "title": Object {
+        "color": "#666",
+        "display": false,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": undefined,
+      },
+    },
+  },
+  "spanGaps": true,
+  "tension": 0.4,
 }
 `;
 
@@ -147,21 +167,28 @@ exports[`should create default chart options 1`] = `
 Object {
   "animation": false,
   "emptyBackgroundColor": "#efefef",
-  "legend": Object {
-    "display": true,
-    "labels": Object {
-      "fontColor": "#666",
-    },
-  },
   "maintainAspectRatio": false,
-  "responsive": true,
-  "showAllTooltips": undefined,
-  "tooltips": Object {
-    "callbacks": Object {
-      "label": [Function],
-      "labelColor": [Function],
-      "title": [Function],
+  "plugins": Object {
+    "datalabels": Object {
+      "align": "start",
+      "display": undefined,
+      "formatter": [Function],
+    },
+    "legend": Object {
+      "display": true,
+      "labels": Object {
+        "color": "#666",
+      },
+    },
+    "tooltip": Object {
+      "callbacks": Object {
+        "label": [Function],
+        "labelColor": [Function],
+        "title": [Function],
+      },
+      "enabled": true,
     },
   },
+  "responsive": true,
 }
 `;

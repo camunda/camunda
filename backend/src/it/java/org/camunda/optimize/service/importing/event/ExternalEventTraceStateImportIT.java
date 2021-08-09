@@ -33,13 +33,12 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
     // then
     assertThat(
-      elasticSearchIntegrationTestExtension
-        .getDocumentCountOf(new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())
-    ).isEqualTo(0);
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName()))
+      .isZero();
     assertThat(
       elasticSearchIntegrationTestExtension
         .getDocumentCountOf(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())
-    ).isEqualTo(0);
+    ).isZero();
   }
 
   @Test
@@ -464,7 +463,8 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
   }
 
   @Test
-  public void processMultipleBatchOfEventsAcrossMultipleTraces_sameTimestampEventsGetOrderedCorrectly() throws IOException {
+  public void processMultipleBatchOfEventsAcrossMultipleTraces_sameTimestampEventsGetOrderedCorrectly() throws
+                                                                                                        IOException {
     // given
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
@@ -573,7 +573,8 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
   }
 
   private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(CloudEventRequestDto sourceEventDto,
-                                                                        CloudEventRequestDto targetEventDto, long count) {
+                                                                        CloudEventRequestDto targetEventDto,
+                                                                        long count) {
     EventTypeDto sourceEvent = Optional.ofNullable(sourceEventDto)
       .map(source -> EventTypeDto.builder()
         .eventName(source.getType())

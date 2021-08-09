@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -13,36 +14,36 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
-
+@Slf4j
 public class CompletedUserTaskInstanceImportService implements ImportService<HistoricUserTaskInstanceDto> {
-  private static final Logger logger = LoggerFactory.getLogger(CompletedUserTaskInstanceImportService.class);
-
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final ConfigurationService configurationService;
 
-  public CompletedUserTaskInstanceImportService(final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
-                                                final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+  public CompletedUserTaskInstanceImportService(final ConfigurationService configurationService,
+                                                final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
                                                 final EngineContext engineContext,
                                                 final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
     this.engineContext = engineContext;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
+    this.configurationService = configurationService;
   }
 
   @Override
   public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities,
                             Runnable importCompleteCallback) {
-    logger.trace("Importing completed user task entities from engine...");
+    log.trace("Importing completed user task entities from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -78,9 +79,10 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   }
 
   private ElasticsearchImportJob<FlowNodeInstanceDto> createElasticsearchImportJob(final List<FlowNodeInstanceDto> userTasks,
-                                                                                   Runnable callback) {
+                                                                                   final Runnable callback) {
     final CompletedUserTasksElasticsearchImportJob importJob = new CompletedUserTasksElasticsearchImportJob(
       completedProcessInstanceWriter,
+      configurationService,
       callback
     );
     importJob.setEntitiesToImport(userTasks);
@@ -88,24 +90,23 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   }
 
   private FlowNodeInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
-    return FlowNodeInstanceDto.builder()
-      .flowNodeId(engineEntity.getTaskDefinitionKey())
-      .flowNodeInstanceId(engineEntity.getActivityInstanceId())
-      .userTaskInstanceId(engineEntity.getId())
-      .processInstanceId(engineEntity.getProcessInstanceId())
-      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
-      .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
-      .engine(engineContext.getEngineAlias())
-      .startDate(engineEntity.getStartTime())
-      .endDate(engineEntity.getEndTime())
-      .dueDate(engineEntity.getDue())
-      .deleteReason(engineEntity.getDeleteReason())
-      .totalDurationInMs(engineEntity.getDuration())
+    return new FlowNodeInstanceDto(
+      engineEntity.getProcessDefinitionKey(),
+      engineContext.getEngineAlias(),
+      engineEntity.getProcessInstanceId(),
+      engineEntity.getTaskDefinitionKey(),
+      engineEntity.getActivityInstanceId(),
+      engineEntity.getId()
+    )
+      .setTotalDurationInMs(engineEntity.getDuration())
+      .setStartDate(engineEntity.getStartTime())
+      .setEndDate(engineEntity.getEndTime())
+      .setDueDate(engineEntity.getDue())
+      .setDeleteReason(engineEntity.getDeleteReason())
       // HistoricUserTaskInstanceDto does not have a bool canceled field. To avoid having to parse the deleteReason,
       // canceled defaults to false and writers do not overwrite existing canceled states.
       // The completedActivityInstanceWriter will overwrite the correct state.
-      .canceled(false)
-      .build();
+      .setCanceled(false);
   }
 
 }

@@ -11,21 +11,25 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob<ProcessVariableDto> {
 
-  private ProcessVariableUpdateWriter variableWriter;
-  private CamundaEventImportService camundaEventImportService;
+  private final ProcessVariableUpdateWriter variableWriter;
+  private final CamundaEventImportService camundaEventImportService;
+  private final ConfigurationService configurationService;
 
-  public VariableUpdateElasticsearchImportJob(ProcessVariableUpdateWriter variableWriter,
-                                              CamundaEventImportService camundaEventImportService,
-                                              Runnable callback) {
+  public VariableUpdateElasticsearchImportJob(final ProcessVariableUpdateWriter variableWriter,
+                                              final CamundaEventImportService camundaEventImportService,
+                                              final ConfigurationService configurationService,
+                                              final Runnable callback) {
     super(callback);
     this.variableWriter = variableWriter;
     this.camundaEventImportService = camundaEventImportService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -33,7 +37,11 @@ public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob
     List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(variableWriter.generateVariableUpdateImports(variableUpdates));
     importBulks.addAll(camundaEventImportService.generateVariableUpdateImports(variableUpdates));
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk("Variable updates", importBulks);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      "Variable updates",
+      importBulks,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
   }
 
 }

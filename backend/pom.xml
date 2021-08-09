@@ -5,19 +5,18 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.0</version>
+    <version>3.6.0</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.42.v20210604</jetty.version>
+    <jetty.version>9.4.43.v20210629</jetty.version>
     <jersey.version>2.34</jersey.version>
     <spring.security.version>5.5.1</spring.security.version>
     <it.test.excludedGroups />
     <test.forkCount />
 
-    <argLine>-Xms512m -Xmx1024m</argLine>
     <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
@@ -266,7 +265,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.4</version>
+      <version>5.5.1</version>
     </dependency>
 
     <!-- Utilities -->
@@ -301,7 +300,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.10.0</version>
+      <version>2.11.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

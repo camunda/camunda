@@ -29,40 +29,45 @@ Object {
 exports[`should create correct chart options 1`] = `
 Object {
   "animation": false,
-  "legend": Object {
-    "display": false,
-  },
   "maintainAspectRatio": false,
+  "plugins": Object {
+    "legend": Object {
+      "display": false,
+    },
+    "tooltip": Object {
+      "callbacks": Object {
+        "label": [Function],
+        "title": [Function],
+      },
+      "filter": [Function],
+      "intersect": false,
+      "mode": "x",
+    },
+  },
   "responsive": true,
   "scales": Object {
-    "xAxes": Array [
-      Object {
-        "scaleLabel": Object {
-          "display": true,
-          "fontStyle": "bold",
-          "labelString": "Duration",
+    "xAxis": Object {
+      "ticks": Object {},
+      "title": Object {
+        "display": true,
+        "font": Object {
+          "weight": "bold",
         },
-        "ticks": Object {},
+        "text": "Duration",
       },
-    ],
-    "yAxes": Array [
-      Object {
-        "scaleLabel": Object {
-          "display": true,
-          "fontStyle": "bold",
-          "labelString": "Instance Count",
-        },
-      },
-    ],
-  },
-  "tooltips": Object {
-    "callbacks": Object {
-      "label": [Function],
-      "title": [Function],
     },
-    "filter": [Function],
-    "intersect": false,
-    "mode": "x",
+    "yAxis": Object {
+      "ticks": Object {
+        "callback": [Function],
+      },
+      "title": Object {
+        "display": true,
+        "font": Object {
+          "weight": "bold",
+        },
+        "text": "Instance Count",
+      },
+    },
   },
 }
 `;

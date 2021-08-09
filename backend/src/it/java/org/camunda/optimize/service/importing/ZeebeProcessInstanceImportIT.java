@@ -11,7 +11,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -20,14 +19,10 @@ import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.service.util.BpmnModelUtil;
-import org.camunda.optimize.service.util.importing.ZeebeConstants;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -35,28 +30,26 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSendTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
-  private Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
+  private final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
     () -> new OptimizeIntegrationTestException("Cannot find exported event");
 
   @Test
@@ -67,7 +60,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -79,7 +72,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -94,42 +87,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(END_EVENT).get(0).getKey()))
-              .flowNodeId(END_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.END_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(END_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(END_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(END_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            createFlowNodeInstance(deployedInstance, exportedEvents, END_EVENT, BpmnElementType.END_EVENT)
           );
       });
   }
@@ -142,7 +101,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -153,7 +112,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromLastIndex();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -168,7 +127,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when we increase the page size
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(10);
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then we get the rest of the process data
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -191,7 +150,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -203,7 +162,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -216,42 +175,18 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey()))
-              .flowNodeId(USER_TASK)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.USER_TASK))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)))
-              .endDate(null)
-              .totalDurationInMs(null)
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            new FlowNodeInstanceDto(
+              String.valueOf(deployedInstance.getProcessDefinitionKey()),
+              String.valueOf(deployedInstance.getVersion()),
+              null,
+              String.valueOf(deployedInstance.getProcessInstanceKey()),
+              USER_TASK,
+              getBpmnElementTypeNameForType(BpmnElementType.USER_TASK),
+              String.valueOf(exportedEvents.get(USER_TASK).get(0).getKey())
+            )
+              .setStartDate(getExpectedStartDateForEvents(exportedEvents.get(USER_TASK)))
+              .setCanceled(false)
           );
       });
   }
@@ -270,7 +205,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(6);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -282,7 +217,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -297,42 +232,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(SERVICE_TASK).get(0).getKey()))
-              .flowNodeId(SERVICE_TASK)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.SERVICE_TASK))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(SERVICE_TASK)))
-              .canceled(true)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            createFlowNodeInstance(deployedInstance, exportedEvents, SERVICE_TASK, BpmnElementType.SERVICE_TASK)
+              .setCanceled(true)
           );
       });
   }
@@ -349,7 +251,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
     waitUntilMinimumProcessInstanceEventsExportedCount(5);
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -361,7 +263,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -376,60 +278,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(3)
           .containsExactlyInAnyOrder(
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(START_EVENT).get(0).getKey()))
-              .flowNodeId(START_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.START_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(START_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(START_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(START_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(SERVICE_TASK).get(0).getKey()))
-              .flowNodeId(SERVICE_TASK)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.SERVICE_TASK))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(SERVICE_TASK)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(SERVICE_TASK)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build(),
-            FlowNodeInstanceDto.builder()
-              .flowNodeInstanceId(String.valueOf(exportedEvents.get(END_EVENT).get(0).getKey()))
-              .flowNodeId(END_EVENT)
-              .flowNodeType(BpmnModelUtil.getFlowNodeTypeForBpmnElementType(BpmnElementType.END_EVENT))
-              .processInstanceId(String.valueOf(deployedInstance.getProcessInstanceKey()))
-              .startDate(getExpectedStartDateForEvents(exportedEvents.get(END_EVENT)))
-              .endDate(getExpectedEndDateForEvents(exportedEvents.get(END_EVENT)))
-              .totalDurationInMs(getExpectedDurationForEvents(exportedEvents.get(END_EVENT)))
-              .canceled(false)
-              // we always expect these fields to be null or empty for zeebe flow node instances
-              .userTaskInstanceId(null)
-              .idleDurationInMs(null)
-              .workDurationInMs(null)
-              .dueDate(null)
-              .deleteReason(null)
-              .assigneeOperations(Collections.emptyList())
-              .candidateGroupOperations(Collections.emptyList())
-              .build()
+            createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
+            createFlowNodeInstance(deployedInstance, exportedEvents, SERVICE_TASK, BpmnElementType.SERVICE_TASK),
+            createFlowNodeInstance(deployedInstance, exportedEvents, END_EVENT, BpmnElementType.END_EVENT)
           );
       });
   }
@@ -445,8 +296,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
 
     // when
-    waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -470,8 +322,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         zeebeExtension.deployProcess(createStartEndProcess("secondProcess")).getBpmnProcessId());
 
     // when
-    waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -494,8 +347,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -519,7 +373,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -527,6 +381,46 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .filteredOn(flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals(SERVICE_TASK))
         .hasSizeGreaterThan(1));
+  }
+
+  @Test
+  public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
+    // given
+    deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
+
+    // when
+    waitUntilProcessInstanceEventsExported();
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(savedInstance -> assertThat(savedInstance.getFlowNodeInstances())
+        .hasSize(2)
+        .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
+        .containsExactlyInAnyOrder(
+          Tuple.tuple(START_EVENT, getBpmnElementTypeNameForType(BpmnElementType.START_EVENT)),
+          Tuple.tuple(SEND_TASK, getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))
+        ));
+  }
+
+  private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
+                                                     final Map<String, List<ZeebeProcessInstanceRecordDto>> events,
+                                                     final String eventId,
+                                                     final BpmnElementType eventType) {
+    return new FlowNodeInstanceDto(
+      String.valueOf(deployedInstance.getProcessDefinitionKey()),
+      String.valueOf(deployedInstance.getVersion()),
+      null,
+      String.valueOf(deployedInstance.getProcessInstanceKey()),
+      eventId,
+      getBpmnElementTypeNameForType(eventType),
+      String.valueOf(events.get(eventId).get(0).getKey())
+    )
+      .setStartDate(getExpectedStartDateForEvents(events.get(eventId)))
+      .setEndDate(getExpectedEndDateForEvents(events.get(eventId)))
+      .setTotalDurationInMs(getExpectedDurationForEvents(events.get(eventId)))
+      .setCanceled(false);
   }
 
   @SneakyThrows
@@ -553,32 +447,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   @SneakyThrows
   private void waitUntilProcessInstanceEventsExported() {
     waitUntilMinimumProcessInstanceEventsExportedCount(1);
-  }
-
-  @SneakyThrows
-  private void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
-    final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    Awaitility.given().ignoreExceptions()
-      .await()
-      .timeout(5, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .indices()
-          .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
-      ).isTrue());
-    final CountRequest definitionCountRequest = new CountRequest(expectedIndex).query(getQueryForProcessableEvents());
-    Awaitility.given().ignoreExceptions()
-      .await()
-      .timeout(10, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .count(definitionCountRequest, esClient.requestOptions())
-          .getCount())
-        .isGreaterThanOrEqualTo(minExportedEventCount));
   }
 
   private long getExpectedDurationForEvents(final List<ZeebeProcessInstanceRecordDto> eventsForElement) {
@@ -609,13 +477,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(endOfElement.getTimestamp()), ZoneId.systemDefault());
   }
 
-  private BoolQueryBuilder getQueryForProcessableEvents() {
-    return boolQuery().must(termsQuery(
-      ZeebeProcessInstanceRecordDto.Fields.intent,
-      ProcessInstanceIntent.ELEMENT_ACTIVATING,
-      ProcessInstanceIntent.ELEMENT_COMPLETED,
-      ProcessInstanceIntent.ELEMENT_TERMINATED
-    ));
+  private String getBpmnElementTypeNameForType(final BpmnElementType type) {
+    return type.getElementTypeName()
+      .orElseThrow(() -> new OptimizeRuntimeException("Cannot find name for type: " + type));
   }
 
 }

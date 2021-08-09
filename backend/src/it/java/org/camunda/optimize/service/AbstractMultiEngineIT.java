@@ -113,8 +113,16 @@ public class AbstractMultiEngineIT extends AbstractIT {
 
   protected void deployAndStartDecisionDefinitionForAllEngines(final String decisionKey1, final String decisionKey2,
                                                                final String tenantId1, final String tenantId2) {
-    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey1), tenantId1);
+    deployAndStartDecisionDefinitionOnDefaultEngine(decisionKey1, tenantId1);
+    deployAndStartDecisionDefinitionOnSecondEngine(decisionKey2, tenantId2);
+  }
+
+  protected void deployAndStartDecisionDefinitionOnSecondEngine(final String decisionKey2, final String tenantId2) {
     secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey2), tenantId2);
+  }
+
+  protected void deployAndStartDecisionDefinitionOnDefaultEngine(final String decisionKey1, final String tenantId1) {
+    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey1), tenantId1);
   }
 
   protected void deployAndStartProcessDefinitionForAllEngines() {

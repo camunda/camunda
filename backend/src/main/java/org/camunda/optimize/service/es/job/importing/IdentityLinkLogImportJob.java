@@ -14,6 +14,7 @@ import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 import java.util.Objects;
@@ -23,21 +24,30 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class IdentityLinkLogImportJob extends ElasticsearchImportJob<IdentityLinkLogEntryDto> {
+
   private final IdentityLinkLogWriter identityLinkLogWriter;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  private final ConfigurationService configurationService;
 
   public IdentityLinkLogImportJob(final IdentityLinkLogWriter identityLinkLogWriter,
                                   final AssigneeCandidateGroupService assigneeCandidateGroupService,
+                                  final ConfigurationService configurationService,
                                   final Runnable callback) {
     super(callback);
     this.identityLinkLogWriter = identityLinkLogWriter;
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.configurationService = configurationService;
   }
 
   @Override
   protected void persistEntities(final List<IdentityLinkLogEntryDto> newOptimizeEntities) {
-    final List<ImportRequestDto> importRequests = identityLinkLogWriter.generateIdentityLinkLogImports(newOptimizeEntities);
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk("identity link logs", importRequests);
+    final List<ImportRequestDto> importRequests = identityLinkLogWriter.generateIdentityLinkLogImports(
+      newOptimizeEntities);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      "identity link logs",
+      importRequests,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
+    );
     try {
       assigneeCandidateGroupService.addIdentitiesIfNotPresent(mapToIdentityDtos(newOptimizeEntities));
     } catch (final Exception e) {

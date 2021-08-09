@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DataSourceDto;
+import org.camunda.optimize.dto.optimize.SchedulerConfig;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
-public abstract class AbstractImportScheduler<T extends DataSourceDto> extends AbstractScheduledService {
+public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends AbstractScheduledService {
 
   protected final List<ImportMediator> importMediators;
   @Getter
@@ -82,6 +82,9 @@ public abstract class AbstractImportScheduler<T extends DataSourceDto> extends A
       .map(mediator -> {
         try {
           return mediator.runImport();
+        } catch (IllegalStateException e) {
+          log.warn("Got into illegal state, will abort import round.", e);
+          throw e;
         } catch (Exception e) {
           log.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
           return CompletableFuture.completedFuture(null);

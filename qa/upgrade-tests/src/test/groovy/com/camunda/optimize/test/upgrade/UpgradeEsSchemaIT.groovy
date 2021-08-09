@@ -88,7 +88,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
               .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS))
       assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES))
               .as("Process Instance FlowNodeInstance Count is not as expected")
-              .isEqualTo(getFlowNodeInstanceCount(oldElasticClient))
+              .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES))
       assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
               .as("Process Instance FlowNode Variable Count is not as expected")
               .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
@@ -125,16 +125,6 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       newElasticClient.close()
       oldOptimize.stop()
       newOptimize.stop()
-    }
-  }
-
-  // TODO adjust this to FLOW_NODE_INSTANCES only after 3.5.0 release
-  private long getFlowNodeInstanceCount(ElasticClient oldElasticClient) {
-    def eventCount = oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, "events")
-    if (eventCount == 0) {
-      return oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES)
-    } else {
-      return eventCount
     }
   }
 

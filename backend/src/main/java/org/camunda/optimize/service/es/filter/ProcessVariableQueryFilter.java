@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.filter.util.DateFilterQueryUtil;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
@@ -53,7 +54,6 @@ import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 @Component
 public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
   implements QueryFilter<VariableFilterDataDto<?>> {
-  private final DateFilterQueryService dateFilterQueryService;
 
   @Override
   public void addFilters(final BoolQueryBuilder query,
@@ -275,7 +275,7 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
     final BoolQueryBuilder dateValueFilterQuery = boolQuery()
       .must(termsQuery(getNestedVariableNameField(), dto.getName()))
       .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
-    dateFilterQueryService.addFilters(
+    DateFilterQueryUtil.addFilters(
       dateValueFilterQuery,
       Collections.singletonList(dto.getData()),
       getVariableValueFieldForType(dto.getType()),

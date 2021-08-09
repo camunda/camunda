@@ -18,6 +18,10 @@ public abstract class AbstractScheduledService {
     return this.scheduledTrigger != null;
   }
 
+  protected String getName() {
+    return getClass().getSimpleName() + "-";
+  }
+
   protected abstract void run();
 
   protected abstract Trigger createScheduleTrigger();
@@ -26,6 +30,9 @@ public abstract class AbstractScheduledService {
     boolean wasScheduled = false;
     if (this.taskScheduler == null) {
       this.taskScheduler = new ThreadPoolTaskScheduler();
+      this.taskScheduler.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+      this.taskScheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+      this.taskScheduler.setThreadNamePrefix(getName());
       this.taskScheduler.initialize();
       wasScheduled = true;
     }

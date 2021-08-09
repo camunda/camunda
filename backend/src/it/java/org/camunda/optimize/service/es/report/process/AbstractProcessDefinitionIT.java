@@ -57,9 +57,9 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
@@ -72,8 +72,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String DEFAULT_VARIABLE_VALUE = "bar";
   protected static final String USER_TASK_1 = "userTask1";
   protected static final String USER_TASK_2 = "userTask2";
+  protected static final String USER_TASK_3 = "userTask3";
   protected static final String USER_TASK_1_NAME = "userTask1Name";
   protected static final String USER_TASK_2_NAME = "userTask2Name";
+  protected static final String USER_TASK_3_NAME = "userTask3Name";
 
   protected static final String FIRST_CANDIDATE_GROUP_ID = "firstGroup";
   protected static final String FIRST_CANDIDATE_GROUP_NAME = "The Crew";
@@ -150,8 +152,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartTwoUserTasksDefinition(final Map<String, Object> variables) {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(getDoubleUserTaskDiagram(), variables);
+  protected ProcessInstanceEngineDto deployAndStartThreeUserTasksDefinition(final Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(getTripleUserTaskDiagram(), variables);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

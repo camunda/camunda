@@ -22,6 +22,7 @@ public class BpmnModels {
   public static final String END_EVENT_NAME = "endEventName";
   public static final String USER_TASK_1 = "userTask1";
   public static final String USER_TASK_2 = "userTask2";
+  public static final String USER_TASK_3 = "userTask3";
   public static final String SERVICE_TASK = "serviceTask";
 
   public static final String DEFAULT_PROCESS_ID = "aProcess";
@@ -96,6 +97,11 @@ public class BpmnModels {
     return getDoubleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, USER_TASK_1, USER_TASK_2);
   }
 
+  public static BpmnModelInstance getDoubleUserTaskDiagram(String procDefKey, String userTask1Name, String userTask2Name) {
+    return getDoubleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, userTask1Name, userTask2Name);
+
+  }
+
   public static BpmnModelInstance getDoubleUserTaskDiagram(String procDefKey, String startEventName,
                                                            String endEventName, String userTask1Name,
                                                            String userTask2Name) {
@@ -104,6 +110,27 @@ public class BpmnModels {
       .startEvent(startEventName)
       .userTask(userTask1Name)
       .userTask(userTask2Name)
+      .endEvent(endEventName)
+      .done();
+  }
+
+  public static BpmnModelInstance getTripleUserTaskDiagram() {
+    return getTripleUserTaskDiagram(DEFAULT_PROCESS_ID);
+  }
+
+  public static BpmnModelInstance getTripleUserTaskDiagram(String procDefKey) {
+    return getTripleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, USER_TASK_1, USER_TASK_2, USER_TASK_3);
+  }
+
+  public static BpmnModelInstance getTripleUserTaskDiagram(final String procDefKey, final String startEventName,
+                                                           final String endEventName, final String userTask1Name,
+                                                           final String userTask2Name, final String userTask3Name) {
+    return Bpmn.createExecutableProcess(procDefKey)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(startEventName)
+      .userTask(userTask1Name)
+      .userTask(userTask2Name)
+      .userTask(userTask3Name)
       .endEvent(endEventName)
       .done();
   }

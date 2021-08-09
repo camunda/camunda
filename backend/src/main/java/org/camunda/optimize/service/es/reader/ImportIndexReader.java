@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;

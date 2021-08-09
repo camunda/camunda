@@ -10,12 +10,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
-import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -36,6 +37,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_B
 public class ImportIndexWriter {
 
   private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
@@ -43,11 +45,12 @@ public class ImportIndexWriter {
     String importItemName = "import index information";
     log.debug("Writing [{}] {} to ES.", importIndexDtos.size(), importItemName);
 
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       importIndexDtos,
-      this::addImportIndexRequest
+      this::addImportIndexRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

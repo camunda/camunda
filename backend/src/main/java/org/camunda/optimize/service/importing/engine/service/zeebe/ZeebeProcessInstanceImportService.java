@@ -7,11 +7,10 @@ package org.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
@@ -22,6 +21,7 @@ import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -39,7 +39,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
-@AllArgsConstructor
 @Slf4j
 public class ZeebeProcessInstanceImportService implements ImportService<ZeebeProcessInstanceRecordDto> {
 
@@ -49,8 +48,19 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ZeebeProcessInstanceWriter processInstanceWriter;
-  private final String zeebeName;
+  private final ConfigurationService configurationService;
   private final int partitionId;
+
+  public ZeebeProcessInstanceImportService(final ConfigurationService configurationService,
+                                           final ZeebeProcessInstanceWriter processInstanceWriter,
+                                           final int partitionId) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.processInstanceWriter = processInstanceWriter;
+    this.partitionId = partitionId;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void executeImport(final List<ZeebeProcessInstanceRecordDto> zeebeProcessInstanceRecords,
@@ -101,7 +111,10 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     processInstanceDto.setProcessDefinitionId(String.valueOf(firstRecordValue.getProcessDefinitionKey()));
     processInstanceDto.setProcessDefinitionKey(firstRecordValue.getBpmnProcessId());
     processInstanceDto.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
-    processInstanceDto.setDataSource(new ZeebeDataSourceDto(zeebeName, partitionId));
+    processInstanceDto.setDataSource(new ZeebeDataSourceDto(
+      configurationService.getConfiguredZeebe().getName(),
+      partitionId
+    ));
     // We don't currently store variables or incidents for zeebe process instances
     processInstanceDto.setIncidents(Collections.emptyList());
     processInstanceDto.setVariables(Collections.emptyList());
@@ -139,6 +152,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     recordsForInstance.stream()
       .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType())
         && !TYPES_TO_IGNORE.contains(zeebeRecord.getValue().getBpmnElementType()))
+      .filter(zeebeRecord -> zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
       .forEach(processFlowNodeInstance -> {
         final long recordKey = processFlowNodeInstance.getKey();
         FlowNodeInstanceDto flowNodeForKey = flowNodeInstancesByRecordKey.getOrDefault(
@@ -159,15 +173,19 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
   }
 
   private FlowNodeInstanceDto createSkeletonFlowNodeInstance(final ZeebeProcessInstanceRecordDto zeebeProcessInstanceRecordDto) {
-    FlowNodeInstanceDto flowNodeInstanceDto = new FlowNodeInstanceDto();
-    flowNodeInstanceDto.setFlowNodeId(zeebeProcessInstanceRecordDto.getValue().getElementId());
-    flowNodeInstanceDto.setProcessInstanceId(
-      String.valueOf(zeebeProcessInstanceRecordDto.getValue().getProcessInstanceKey()));
-    flowNodeInstanceDto.setFlowNodeInstanceId(String.valueOf(zeebeProcessInstanceRecordDto.getKey()));
-    flowNodeInstanceDto.setFlowNodeType(
-      BpmnModelUtil.getFlowNodeTypeForBpmnElementType(zeebeProcessInstanceRecordDto.getValue().getBpmnElementType()));
-    flowNodeInstanceDto.setCanceled(false);
-    return flowNodeInstanceDto;
+    final ZeebeProcessInstanceDataDto zeebeInstanceRecord = zeebeProcessInstanceRecordDto.getValue();
+    return new FlowNodeInstanceDto(
+      String.valueOf(zeebeInstanceRecord.getProcessDefinitionKey()),
+      String.valueOf(zeebeInstanceRecord.getVersion()),
+      null,
+      String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
+      zeebeInstanceRecord.getElementId(),
+      zeebeInstanceRecord.getBpmnElementType()
+        .getElementTypeName()
+        .orElseThrow(() -> new OptimizeRuntimeException(
+          "Cannot create flow node instances for records without element types")),
+      String.valueOf(zeebeProcessInstanceRecordDto.getKey())
+    ).setCanceled(false);
   }
 
   private OffsetDateTime dateForTimestamp(final ZeebeProcessInstanceRecordDto zeebeRecord) {
@@ -185,7 +203,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     final List<ProcessInstanceDto> processDefinitions,
     final Runnable importCompleteCallback) {
     ZeebeProcessInstanceElasticsearchImportJob procDefImportJob = new ZeebeProcessInstanceElasticsearchImportJob(
-      processInstanceWriter, importCompleteCallback
+      processInstanceWriter, configurationService, importCompleteCallback
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;

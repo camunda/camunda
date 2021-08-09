@@ -5,17 +5,17 @@
  */
 package org.camunda.optimize.service.importing.engine.service.definition;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.Comparator;
 import java.util.List;
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 
-@AllArgsConstructor
 @Slf4j
 public class ProcessDefinitionImportService implements ImportService<ProcessDefinitionEngineDto> {
 
@@ -32,6 +31,18 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   private final EngineContext engineContext;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+
+  public ProcessDefinitionImportService(final ConfigurationService configurationService,
+                                        final EngineContext engineContext,
+                                        final ProcessDefinitionWriter processDefinitionWriter,
+                                        final ProcessDefinitionResolverService processDefinitionResolverService) {
+    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+      getClass().getSimpleName(), configurationService
+    );
+    this.engineContext = engineContext;
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
+  }
 
   @Override
   public void executeImport(final List<ProcessDefinitionEngineDto> pageOfEngineEntities,

@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.assertj.core.util.Maps;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
@@ -22,7 +22,6 @@ import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;

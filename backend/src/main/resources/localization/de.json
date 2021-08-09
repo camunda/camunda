@@ -682,10 +682,10 @@
     },
     "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, ein Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
     "noInstances": "Keine Instanzen im aktuellen Filter haben das ausgewählte Gateway passiert.",
-    "gatewayInstances": "Von allen <b>{totalGateway} Instanzen</b>, die das Gateway <i>{gatewayName}</i> passiert haben",
-    "branchDistribution": "<b>{count}</b> nahmen ({branchPercentage}%) den <i>{key}</i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i>{endEventName}</i>",
-    "gatewayDistribution": "Verteilung von Instanzen am Gateway <i>{gatewayName}</i>:",
-    "endEventProbability": "Wahrscheinlichkeit, das Endereignis <i>{endEventName}</i> zu erreichen bei diesem Verlauf:",
+    "gatewayInstances": "Von allen <b>{totalGateway} Instanzen</b>, die das Gateway <i class=\"gatewayName\"></i> passiert haben",
+    "branchDistribution": "<b>{count}</b> nahmen ({branchPercentage}%) den <i class=\"branchName\"></i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i class=\"endEventName\"></i>",
+    "gatewayDistribution": "Verteilung von Instanzen am Gateway <i class=\"gatewayName\"></i>:",
+    "endEventProbability": "Wahrscheinlichkeit, das Endereignis <i class=\"endEventName\"></i> zu erreichen bei diesem Verlauf:",
     "tooltip": {
       "totalInstances": "Prozessinstanzen insgesamt",
       "reachedEnd": "Prozessinstanzen, die diesen Stand erreicht haben",
@@ -861,8 +861,7 @@
       },
       "tooltip": {
         "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
-        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten.",
-        "disabledView": "Berichte mit mehreren Definitionen unterstützen keine Prozessknoten-Daten Filter."
+        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
       },
       "state": {
         "modalPretext": {
@@ -1064,7 +1063,6 @@
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",
       "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
-      "viewLevelWarning": "Berichte mit mehreren Definitionen unterstützen keine Prozessknoten-Daten Filter. Existierende Prozessknoten-Daten Filter werden entfernt.",
       "select": {
         "process": "Prozess auswählen",
         "decision": "Entscheidung auswählen"

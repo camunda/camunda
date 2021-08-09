@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -23,23 +24,29 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 @Component
 @Slf4j
 public class ProcessDefinitionXmlWriter extends AbstractProcessDefinitionWriter {
+
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
     FLOW_NODE_DATA, USER_TASK_NAMES, PROCESS_DEFINITION_XML
   );
 
+  private final ConfigurationService configurationService;
+
   public ProcessDefinitionXmlWriter(final OptimizeElasticsearchClient esClient,
+                                    final ConfigurationService configurationService,
                                     final ObjectMapper objectMapper) {
     super(objectMapper, esClient);
+    this.configurationService = configurationService;
   }
 
   public void importProcessDefinitionXmls(List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
     String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", processDefinitionOptimizeDtos.size(), importItemName);
-    ElasticsearchWriterUtil.doBulkRequestWithList(
+    ElasticsearchWriterUtil.doImportBulkRequestWithList(
       esClient,
       importItemName,
       processDefinitionOptimizeDtos,
-      (request, dto) -> addImportProcessDefinitionToRequest(request, dto)
+      this::addImportProcessDefinitionToRequest,
+      configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
 

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createCanceledFlowNodesOnlyFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createCanceledFlowNodesOnlyFilterQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;

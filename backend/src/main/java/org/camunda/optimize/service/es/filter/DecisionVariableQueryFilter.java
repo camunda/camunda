@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.filter.util.DateFilterQueryUtil;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DecisionVariableHelper;
@@ -51,8 +52,6 @@ import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryFilter
   implements QueryFilter<VariableFilterDataDto<?>> {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final DateFilterQueryService dateFilterQueryService;
 
   abstract String getVariablePath();
 
@@ -281,7 +280,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
 
     final BoolQueryBuilder dateValueFilterQuery = boolQuery()
       .must(termQuery(getVariableIdField(), getVariableId(dto)));
-    dateFilterQueryService.addFilters(
+    DateFilterQueryUtil.addFilters(
       dateValueFilterQuery,
       Collections.singletonList(dto.getData()),
       getVariableValueFieldForType(dto.getType()),
