@@ -7,60 +7,39 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import static io.camunda.zeebe.util.Either.left;
-import static io.camunda.zeebe.util.Either.right;
-
-import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class LogStreamPartitionStep implements PartitionStep {
-  private static final String WRONG_TERM_ERROR_MSG =
-      "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'AtomixLogStoragePartitionStep' on partition %d.";
-
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
-    final var logStorageOrException = buildAtomixLogStorage(context);
+    final var logStorage = context.getLogStorage();
+    buildLogstream(context, logStorage)
+        .onComplete(
+            ((logStream, err) -> {
+              if (err == null) {
+                context.setLogStream(logStream);
 
-    if (logStorageOrException.isRight()) {
-      final var logStorage = logStorageOrException.get();
-      buildLogstream(context, logStorage)
-          .onComplete(
-              ((logStream, err) -> {
-                if (err == null) {
-                  context.setLogStorage(logStorage);
-                  context.setLogStream(logStream);
-
-                  context
-                      .getComponentHealthMonitor()
-                      .registerComponent(logStream.getLogName(), logStream);
-                  openFuture.complete(null);
-                } else {
-                  openFuture.completeExceptionally(err);
-                }
-              }));
-    } else {
-      openFuture.completeExceptionally(logStorageOrException.getLeft());
-    }
+                context
+                    .getComponentHealthMonitor()
+                    .registerComponent(logStream.getLogName(), logStream);
+                openFuture.complete(null);
+              } else {
+                openFuture.completeExceptionally(err);
+              }
+            }));
 
     return openFuture;
   }
 
   @Override
   public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
-    final var logStorage = context.getLogStorage();
-    if (logStorage != null) {
-      context.getRaftPartition().getServer().removeCommitListener(logStorage);
-      context.setLogStorage(null);
-    }
     context.getComponentHealthMonitor().removeComponent(context.getLogStream().getLogName());
     final ActorFuture<Void> future = context.getLogStream().closeAsync();
     context.setLogStream(null);
@@ -70,44 +49,6 @@ public class LogStreamPartitionStep implements PartitionStep {
   @Override
   public String getName() {
     return "logstream";
-  }
-
-  private Either<Exception, AtomixLogStorage> buildAtomixLogStorage(
-      final PartitionStartupAndTransitionContextImpl context) {
-
-    final var server = context.getRaftPartition().getServer();
-
-    final var appenderOptional = server.getAppender();
-    return appenderOptional
-        .map(logAppender -> checkAndCreateAtomixLogStorage(context, server, logAppender))
-        .orElseGet(
-            () ->
-                left(
-                    new IllegalStateException(
-                        "Not leader of partition " + context.getPartitionId())));
-  }
-
-  private Either<Exception, AtomixLogStorage> checkAndCreateAtomixLogStorage(
-      final PartitionStartupAndTransitionContextImpl context,
-      final RaftPartitionServer server,
-      final ZeebeLogAppender logAppender) {
-    final var raftTerm = server.getTerm();
-
-    if (raftTerm != context.getCurrentTerm()) {
-      return left(buildWrongTermException(context, raftTerm));
-    } else {
-      final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
-      server.addCommitListener(logStorage);
-
-      return right(logStorage);
-    }
-  }
-
-  private IllegalStateException buildWrongTermException(
-      final PartitionStartupAndTransitionContextImpl context, final long raftTerm) {
-    return new IllegalStateException(
-        String.format(
-            WRONG_TERM_ERROR_MSG, context.getCurrentTerm(), raftTerm, context.getPartitionId()));
   }
 
   private ActorFuture<LogStream> buildLogstream(
