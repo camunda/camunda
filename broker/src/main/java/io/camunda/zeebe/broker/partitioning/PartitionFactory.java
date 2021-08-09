@@ -84,7 +84,7 @@ final class PartitionFactory {
           new StreamProcessorPartitionStep(Role.LEADER),
           new SnapshotDirectorPartitionStep(Role.LEADER),
           new RocksDbMetricExporterPartitionStep(),
-          new ExporterDirectorPartitionStep());
+          new ExporterDirectorPartitionStep(Role.LEADER));
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
           PartitionStepMigrationHelper.fromStartupStep(

@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.util.sched.Actor;
@@ -18,10 +20,18 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
+  private final Role role;
+
+  public ExporterDirectorPartitionStep(final Role role) {
+    this.role = role;
+  }
+
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final var exporterDescriptors = context.getExporterRepository().getExporters().values();
 
+    final ExporterMode exporterMode =
+        role == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
@@ -29,7 +39,8 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
             .partitionMessagingService(context.getMessagingService())
-            .descriptors(exporterDescriptors);
+            .descriptors(exporterDescriptors)
+            .exporterMode(exporterMode);
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
     context.setExporterDirector(director);
