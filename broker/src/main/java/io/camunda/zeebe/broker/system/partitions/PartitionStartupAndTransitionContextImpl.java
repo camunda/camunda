@@ -64,7 +64,6 @@ public class PartitionStartupAndTransitionContextImpl
 
   private StreamProcessor streamProcessor;
   private LogStream logStream;
-  private SnapshotReplication snapshotReplication;
   private StateControllerImpl stateController;
   private LogDeletionService logDeletionService;
   private AsyncSnapshotDirector snapshotDirector;
@@ -170,16 +169,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setComponentHealthMonitor(final HealthMonitor criticalComponentsHealthMonitor) {
     this.criticalComponentsHealthMonitor = criticalComponentsHealthMonitor;
-  }
-
-  @Override
-  public SnapshotReplication getSnapshotReplication() {
-    return snapshotReplication;
-  }
-
-  @Override
-  public void setSnapshotReplication(final SnapshotReplication snapshotReplication) {
-    this.snapshotReplication = snapshotReplication;
   }
 
   @Override

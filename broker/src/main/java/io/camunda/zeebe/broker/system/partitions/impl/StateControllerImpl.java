@@ -8,36 +8,24 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
-import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
-import io.camunda.zeebe.snapshots.ReceivedSnapshot;
-import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.ToLongFunction;
-import org.agrona.collections.Object2NullableObjectHashMap;
 import org.slf4j.Logger;
 
 /** Controls how snapshot/recovery operations are performed */
-public class StateControllerImpl implements StateController, PersistedSnapshotListener {
+public class StateControllerImpl implements StateController {
 
-  private static final ReplicationContext INVALID_SNAPSHOT = new ReplicationContext(null, -1, null);
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
-
-  private final SnapshotReplication replication;
-  private final Map<String, ReplicationContext> receivedSnapshots =
-      new Object2NullableObjectHashMap<>();
 
   private final Path runtimeDirectory;
 
@@ -48,8 +36,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
 
   private final AtomixRecordEntrySupplier entrySupplier;
-
-  private final SnapshotReplicationMetrics metrics;
 
   @SuppressWarnings("rawtypes")
   private ZeebeDb db;
@@ -63,7 +49,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       final ConstructableSnapshotStore constructableSnapshotStore,
       final ReceivableSnapshotStore receivableSnapshotStore,
       final Path runtimeDirectory,
-      final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
       @SuppressWarnings("rawtypes") final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
     this.constructableSnapshotStore = constructableSnapshotStore;
@@ -72,8 +57,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     this.zeebeDbFactory = zeebeDbFactory;
     this.exporterPositionSupplier = exporterPositionSupplier;
     this.entrySupplier = entrySupplier;
-    this.replication = replication;
-    metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
   }
 
   @Override
@@ -109,11 +92,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     transientSnapshot.ifPresent(this::takeSnapshot);
 
     return transientSnapshot;
-  }
-
-  @Override
-  public void consumeReplicatedSnapshots() {
-    replication.consume(this::consumeSnapshotChunk);
   }
 
   @Override
@@ -160,11 +138,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   }
 
   @Override
-  public void stopConsumeReplicatedSnapshots() {
-    replication.stopConsuming();
-  }
-
-  @Override
   public void close() throws Exception {
     if (db != null) {
       final var dbToClose = db;
@@ -201,109 +174,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
         });
   }
 
-  @Override
-  public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
-    LOG.debug("Start replicating new snapshot {}", newPersistedSnapshot.getId());
-    // replicate snapshots when new snapshot was committed
-    try (final var snapshotChunkReader = newPersistedSnapshot.newChunkReader()) {
-      while (snapshotChunkReader.hasNext()) {
-        final var snapshotChunk = snapshotChunkReader.next();
-        replication.replicate(snapshotChunk);
-      }
-    }
-  }
-
-  /**
-   * This is called by the snapshot replication implementation on each snapshot chunk
-   *
-   * @param snapshotChunk the chunk to consume
-   */
-  private void consumeSnapshotChunk(final SnapshotChunk snapshotChunk) {
-    final String snapshotId = snapshotChunk.getSnapshotId();
-    final String chunkName = snapshotChunk.getChunkName();
-
-    final ReplicationContext context =
-        receivedSnapshots.computeIfAbsent(
-            snapshotId,
-            id -> {
-              final var startTimestamp = System.currentTimeMillis();
-              final ReceivedSnapshot transientSnapshot =
-                  receivableSnapshotStore.newReceivedSnapshot(snapshotChunk.getSnapshotId());
-              LOG.debug(
-                  "Started receiving new snapshot {} with {} chunks.",
-                  transientSnapshot.snapshotId(),
-                  snapshotChunk.getTotalCount());
-              return newReplication(startTimestamp, transientSnapshot);
-            });
-    if (context == INVALID_SNAPSHOT) {
-      LOG.trace(
-          "Ignore snapshot chunk {}, because snapshot {} is marked as invalid.",
-          chunkName,
-          snapshotId);
-      return;
-    }
-
-    try {
-      context.apply(snapshotChunk);
-      validateWhenReceivedAllChunks(snapshotChunk, context);
-    } catch (final Exception e) {
-      LOG.warn(
-          "Unexpected error on writing the received snapshot chunk {}, marking snapshot {} as invalid",
-          snapshotChunk,
-          snapshotId,
-          e);
-      markSnapshotAsInvalid(context, snapshotChunk);
-    }
-  }
-
-  private void markSnapshotAsInvalid(
-      final ReplicationContext replicationContext, final SnapshotChunk chunk) {
-    LOG.debug("Abort snapshot {} and mark it as invalid.", chunk.getSnapshotId());
-    replicationContext.abort();
-    receivedSnapshots.put(chunk.getSnapshotId(), INVALID_SNAPSHOT);
-  }
-
-  private void validateWhenReceivedAllChunks(
-      final SnapshotChunk snapshotChunk, final ReplicationContext context) {
-    final int totalChunkCount = snapshotChunk.getTotalCount();
-
-    if (context.incrementCount() == totalChunkCount) {
-      LOG.debug(
-          "Received all snapshot chunks ({}/{}) of snapshot {}. Committing snapshot.",
-          context.getChunkCount(),
-          totalChunkCount,
-          snapshotChunk.getSnapshotId());
-      if (!tryToMarkSnapshotAsValid(snapshotChunk, context)) {
-        LOG.debug("Failed to commit snapshot {}", snapshotChunk.getSnapshotId());
-      }
-    } else {
-      LOG.trace(
-          "Waiting for more snapshot chunks of snapshot {}, currently have {}/{}",
-          snapshotChunk.getSnapshotId(),
-          context.getChunkCount(),
-          totalChunkCount);
-    }
-  }
-
-  private boolean tryToMarkSnapshotAsValid(
-      final SnapshotChunk snapshotChunk, final ReplicationContext context) {
-    try {
-      context.persist();
-    } catch (final Exception exception) {
-      markSnapshotAsInvalid(context, snapshotChunk);
-      LOG.warn("Unexpected error on persisting received snapshot.", exception);
-      return false;
-    } finally {
-      receivedSnapshots.remove(snapshotChunk.getSnapshotId());
-    }
-    return true;
-  }
-
-  private ReplicationContext newReplication(
-      final long startTimestamp, final ReceivedSnapshot transientSnapshot) {
-    return new ReplicationContext(metrics, startTimestamp, transientSnapshot);
-  }
-
   private long determineSnapshotPosition(
       final long lowerBoundSnapshotPosition, final long exportedPosition) {
     final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
@@ -313,56 +183,5 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
         lowerBoundSnapshotPosition,
         snapshotPosition);
     return snapshotPosition;
-  }
-
-  private static final class ReplicationContext {
-
-    private final long startTimestamp;
-    private final ReceivedSnapshot receivedSnapshot;
-    private final SnapshotReplicationMetrics metrics;
-    private long chunkCount;
-
-    ReplicationContext(
-        final SnapshotReplicationMetrics metrics,
-        final long startTimestamp,
-        final ReceivedSnapshot receivedSnapshot) {
-      this.metrics = metrics;
-      if (metrics != null) {
-        metrics.incrementCount();
-      }
-      this.startTimestamp = startTimestamp;
-      chunkCount = 0L;
-      this.receivedSnapshot = receivedSnapshot;
-    }
-
-    long incrementCount() {
-      return ++chunkCount;
-    }
-
-    long getChunkCount() {
-      return chunkCount;
-    }
-
-    void abort() {
-      try {
-        receivedSnapshot.abort();
-      } finally {
-        metrics.decrementCount();
-      }
-    }
-
-    void persist() {
-      try {
-        receivedSnapshot.persist();
-      } finally {
-        final var end = System.currentTimeMillis();
-        metrics.decrementCount();
-        metrics.observeDuration(end - startTimestamp);
-      }
-    }
-
-    public void apply(final SnapshotChunk snapshotChunk) {
-      receivedSnapshot.apply(snapshotChunk).join();
-    }
   }
 }

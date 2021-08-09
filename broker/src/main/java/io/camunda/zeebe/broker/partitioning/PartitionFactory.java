@@ -27,7 +27,6 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -40,9 +39,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionS
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -63,20 +60,15 @@ import java.util.stream.Collectors;
 final class PartitionFactory {
   // preparation for future steps
   // will be executed in the order they are defined in this list
-  private static final List<PartitionStartupStep> STARTUP_STEPS =
-      List.of(new SnapshotReplicationPartitionStartupStep());
+  private static final List<PartitionStartupStep> STARTUP_STEPS = List.of();
 
   // will probably be executed in parallel
-  private static final List<PartitionTransitionStep> TRANSITION_STEPS =
-      List.of(new StoragePartitionTransitionStep());
+  private static final List<PartitionTransitionStep> TRANSITION_STEPS = List.of();
   // preparation for future step
 
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromStartupStep(
-              new SnapshotReplicationPartitionStartupStep()),
           new StateControllerPartitionStep(),
-          PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep(),
           new LogStoragePartitionStep(Role.LEADER),
           new LogStreamPartitionStep(),
@@ -87,10 +79,7 @@ final class PartitionFactory {
           new ExporterDirectorPartitionStep(Role.LEADER));
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromStartupStep(
-              new SnapshotReplicationPartitionStartupStep()),
           new StateControllerPartitionStep(),
-          PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep(),
           new LogStoragePartitionStep(Role.FOLLOWER),
           new LogStreamPartitionStep(),

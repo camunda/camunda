@@ -75,11 +75,6 @@ public interface PartitionStartupContext {
 
   void setComponentHealthMonitor(final HealthMonitor healthMonitor);
 
-  // created during partition bootstrap
-  SnapshotReplication getSnapshotReplication();
-
-  void setSnapshotReplication(final SnapshotReplication replication);
-
   StateControllerImpl getStateController();
 
   void setStateController(final StateControllerImpl stateController);
