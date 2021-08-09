@@ -143,6 +143,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
+
+    raftRoleMetrics = new RaftRoleMetrics(name);
+
     log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
@@ -191,13 +194,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
 
-    // Register protocol listeners.
-    registerHandlers(protocol);
-
-    raftRoleMetrics = new RaftRoleMetrics(name);
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
     lastHeartbeat = System.currentTimeMillis();
+
+    // Register protocol listeners.
+    registerHandlers(protocol);
     started = true;
   }
 

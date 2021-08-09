@@ -275,7 +275,7 @@ public final class ReplayStateMachine {
                 currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
             lastReplayedEventPosition = currentEvent.getPosition();
           }
-          lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
+          lastProcessedPositionState.markAsProcessed(currentEvent.getSourceRecordPosition());
         });
 
     return true;

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.util.RecordToWrite.command;
 import static io.camunda.zeebe.engine.util.RecordToWrite.event;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -137,6 +138,27 @@ public final class StreamProcessorReplayModeTest {
                   .describedAs("Expected the position of the event to be the last written position")
                   .isEqualTo(eventPosition);
             });
+  }
+
+  @Test
+  public void shouldSetLastProcessedPositionOnStateToSourcePosition() {
+    // given
+    startStreamProcessor(replayContinuously);
+
+    // when
+    final var commandPosition = replayContinuously.writeCommand(ACTIVATE_ELEMENT, RECORD);
+    replayContinuously.writeEvent(
+        ELEMENT_ACTIVATING, RECORD, event -> event.sourceRecordPosition(commandPosition));
+
+    verify(eventApplier, TIMEOUT).applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+
+    Awaitility.await()
+        .until(() -> getLastProcessedPosition(replayContinuously), isEqual(commandPosition));
+
+    // then
+    assertThat(replayContinuously.getLastSuccessfulProcessedRecordPosition())
+        .describedAs("Last processed position in the state must be the last source position")
+        .isEqualTo(commandPosition);
   }
 
   private void startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
