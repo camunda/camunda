@@ -20,10 +20,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.util.startup.AbstractStartupStepTest.InvocationCountingStartupStep;
-import io.camunda.zeebe.util.startup.AbstractStartupStepTest.WaitingStartupStep;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import org.assertj.core.api.Assertions;
@@ -49,6 +48,81 @@ class StartupProcessTest {
           return "shutdownContext";
         }
       };
+
+  static final class InvocationCountingStartupStep implements StartupStep<Object> {
+
+    private int startupInvocationCounter = 0;
+    private int shutdownInvocationCounter = 0;
+
+    int getStartupInvocationCounter() {
+      return startupInvocationCounter;
+    }
+
+    int getShutdownInvocationCounter() {
+      return shutdownInvocationCounter;
+    }
+
+    @Override
+    public String getName() {
+      return "InvocationCountingStartupStep";
+    }
+
+    @Override
+    public CompletableFuture<Object> startup(final Object o) {
+      startupInvocationCounter++;
+      return completedFuture(o);
+    }
+
+    @Override
+    public CompletableFuture<Object> shutdown(final Object o) {
+      shutdownInvocationCounter++;
+      return completedFuture(o);
+    }
+  }
+
+  static final class WaitingStartupStep implements StartupStep<Object> {
+
+    private final CountDownLatch startupCountdownLatch;
+    private final boolean completeWithException;
+
+    WaitingStartupStep(
+        final CountDownLatch startupCountdownLatch, final boolean completeWithException) {
+      this.startupCountdownLatch = startupCountdownLatch;
+      this.completeWithException = completeWithException;
+    }
+
+    @Override
+    public String getName() {
+      return "WaitingStartupStep";
+    }
+
+    @Override
+    public CompletableFuture<Object> startup(final Object o) {
+      final var startupFuture = new CompletableFuture<>();
+      final var startupThread =
+          new Thread(
+              () -> {
+                try {
+                  startupCountdownLatch.await();
+                } catch (final InterruptedException e) {
+                  e.printStackTrace();
+                } finally {
+                  if (!completeWithException) {
+                    startupFuture.complete(o);
+                  } else {
+                    startupFuture.completeExceptionally(new Throwable("completed exceptionally"));
+                  }
+                }
+              });
+      startupThread.start();
+      return startupFuture;
+    }
+
+    @Override
+    public CompletableFuture<Object> shutdown(final Object o) {
+      return completedFuture(o);
+    }
+  }
 
   @Nested
   class MainUseCase {
@@ -224,13 +298,7 @@ class StartupProcessTest {
       await().until(shutdownFuture::isDone);
 
       assertThat(startupFuture).isCompletedExceptionally();
-
-      /* we expect the startup context of the last successful startup step here, not the shutdown
-       * context passed to the shutdown method; the reason is that internally the shutdown will wait
-       * for the current startup step to complete. If it completes without exception, it will
-       * use the result of the startup step as context assuming it has the most up to date information
-       */
-      assertThat(shutdownFuture).isCompletedWithValue(STARTUP_CONTEXT);
+      assertThat(shutdownFuture).isCompletedWithValue(SHUTDOWN_CONTEXT);
     }
   }
 
