@@ -30,7 +30,7 @@ import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface PartitionBootstrapContext {
+public interface PartitionStartupContext {
 
   // provided by application-wide dependencies
   BrokerCfg getBrokerCfg();
