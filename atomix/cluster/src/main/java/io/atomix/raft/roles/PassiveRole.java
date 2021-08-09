@@ -51,14 +51,11 @@ import org.slf4j.Logger;
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
 
-  private static final Runnable NO_ONGOING_SNAPSHOT_REPLICATION = () -> {};
-
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
   private PersistedSnapshotListener snapshotListener;
   private ByteBuffer nextPendingSnapshotChunkId;
-  private Runnable resetOngoingSnapshotReplication = NO_ONGOING_SNAPSHOT_REPLICATION;
 
   public PassiveRole(final RaftContext context) {
     super(context);
@@ -229,7 +226,6 @@ public class PassiveRole extends InactiveRole {
       // When all chunks of the snapshot is received the log will be reset. Hence notify the
       // listeners in advance so that they can close all consumers of the log.
       raft.notifySnapshotReplicationStarted();
-      resetOngoingSnapshotReplication = this::onSnapshotReceiveCompletedOrAborted;
     } else {
       // fail the request if this is not the expected next chunk
       if (!isExpectedChunk(request.chunkId())) {
@@ -360,13 +356,9 @@ public class PassiveRole extends InactiveRole {
   }
 
   private void onSnapshotReceiveCompletedOrAborted() {
-    if (pendingSnapshot != null) {
-      pendingSnapshot.abort();
-    }
     // Listeners should be notified whether snapshot is committed or aborted. Otherwise they can
     // wait for ever.
     raft.notifySnapshotReplicationCompleted();
-    resetOngoingSnapshotReplication = NO_ONGOING_SNAPSHOT_REPLICATION;
   }
 
   private void setNextExpected(final ByteBuffer nextChunkId) {
@@ -378,8 +370,8 @@ public class PassiveRole extends InactiveRole {
   }
 
   private void abortPendingSnapshots() {
-    setNextExpected(null);
     if (pendingSnapshot != null) {
+      setNextExpected(null);
       log.info("Rolling back snapshot {}", pendingSnapshot);
       try {
         pendingSnapshot.abort();
@@ -413,7 +405,7 @@ public class PassiveRole extends InactiveRole {
 
     // If a snapshot replication was ongoing, reset it. Otherwise SnapshotReplicationListeners will
     // wait for ever for the snapshot to be received.
-    resetOngoingSnapshotReplication.run();
+    abortPendingSnapshots();
     return future;
   }
 
