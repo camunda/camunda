@@ -529,21 +529,22 @@ public final class SegmentedJournal implements Journal {
         Files.newDirectoryStream(
             directory.toPath(),
             path -> JournalSegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
-      segmentsToDelete.forEach(
-          segmentFileToDelete -> {
-            try {
-              Files.deleteIfExists(segmentFileToDelete);
-            } catch (final IOException e) {
-              log.warn(
-                  "Could not delete file {} which is marked for deletion. This can result in unnecessary disk usage.",
-                  segmentFileToDelete,
-                  e);
-            }
-          });
+      segmentsToDelete.forEach(this::deleteDeferredFile);
     } catch (final IOException e) {
       log.warn(
           "Could not delete segment files marked for deletion in {}. This can result in unnecessary disk usage.",
           directory.toPath(),
+          e);
+    }
+  }
+
+  private void deleteDeferredFile(final Path segmentFileToDelete) {
+    try {
+      Files.deleteIfExists(segmentFileToDelete);
+    } catch (final IOException e) {
+      log.warn(
+          "Could not delete file {} which is marked for deletion. This can result in unnecessary disk usage.",
+          segmentFileToDelete,
           e);
     }
   }
