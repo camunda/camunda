@@ -1,5 +1,13 @@
-package io.camunda.zeebe.util;
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.util.startup;
 
+import io.camunda.zeebe.util.Either;
 import java.util.function.Consumer;
 
 /**
@@ -40,7 +48,7 @@ public interface StartupStep<CONTEXT> {
    * @param context the startup context at the start of this step
    * @param callback callback that receives the modified startup context at the end of this step
    */
-  void startup(final CONTEXT context, Consumer<Either<Throwable, CONTEXT>> callback);
+  void startup(final CONTEXT context, final Consumer<Either<Throwable, CONTEXT>> callback);
 
   /**
    * Executes the shutdown logic
@@ -48,5 +56,5 @@ public interface StartupStep<CONTEXT> {
    * @param context the shutdown context at the start of this step
    * @param callback callback that receives the modified shutdown context at the end of this step
    */
-  void shutdown(final CONTEXT context, Consumer<Either<Throwable, CONTEXT>> callback);
+  void shutdown(final CONTEXT context, final Consumer<Either<Throwable, CONTEXT>> callback);
 }

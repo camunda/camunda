@@ -8,8 +8,11 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 @Deprecated
 public class PartitionStepMigrationHelper {
@@ -32,13 +35,13 @@ public class PartitionStepMigrationHelper {
 
     @Override
     public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
-      return wrapInVoidFuture(bootstrapStep.open(context));
+      return wrapInVoidFuture(bootstrapStep::startup, context);
     }
 
     @Override
     public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
 
-      return wrapInVoidFuture(bootstrapStep.close(context));
+      return wrapInVoidFuture(bootstrapStep::shutdown, context);
     }
 
     @Override
@@ -47,18 +50,18 @@ public class PartitionStepMigrationHelper {
     }
 
     private ActorFuture<Void> wrapInVoidFuture(
-        final ActorFuture<PartitionStartupContext> wrappable) {
+        final BiConsumer<
+                PartitionStartupContext, Consumer<Either<Throwable, PartitionStartupContext>>>
+            wrappable,
+        final PartitionStartupContext context) {
       final var result = new CompletableActorFuture<Void>();
 
-      wrappable.onComplete(
-          (success, error) -> {
-            if (error != null) {
-              result.completeExceptionally(error);
-            } else {
-              result.complete(null);
-            }
+      wrappable.accept(
+          context,
+          either -> {
+            either.ifRightOrLeft(
+                returnedContext -> result.complete(null), result::completeExceptionally);
           });
-
       return result;
     }
   }

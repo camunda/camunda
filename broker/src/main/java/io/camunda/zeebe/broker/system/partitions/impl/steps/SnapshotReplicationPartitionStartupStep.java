@@ -13,44 +13,55 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.StateReplication;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.Either;
+import java.util.function.Consumer;
 
 public class SnapshotReplicationPartitionStartupStep implements PartitionStartupStep {
 
   @Override
-  public ActorFuture<PartitionStartupContext> open(final PartitionStartupContext context) {
-    final SnapshotReplication replication =
-        shouldReplicateSnapshots(context)
-            ? new StateReplication(
-                context.getMessagingService(), context.getPartitionId(), context.getNodeId())
-            : new NoneSnapshotReplication();
-
-    context.setSnapshotReplication(replication);
-    return CompletableActorFuture.completed(null);
+  public String getName() {
+    return "SnapshotReplication";
   }
 
   @Override
-  public ActorFuture<PartitionStartupContext> close(final PartitionStartupContext context) {
+  public void startup(
+      final PartitionStartupContext context,
+      final Consumer<Either<Throwable, PartitionStartupContext>> callback) {
+
+    try {
+      final SnapshotReplication replication =
+          shouldReplicateSnapshots(context)
+              ? new StateReplication(
+                  context.getMessagingService(), context.getPartitionId(), context.getNodeId())
+              : new NoneSnapshotReplication();
+
+      context.setSnapshotReplication(replication);
+      callback.accept(Either.right(context));
+    } catch (final Throwable t) {
+      callback.accept(Either.left(t));
+    }
+  }
+
+  @Override
+  public void shutdown(
+      final PartitionStartupContext context,
+      final Consumer<Either<Throwable, PartitionStartupContext>> callback) {
+
     try {
       if (context.getSnapshotReplication() != null) {
         context.getSnapshotReplication().close();
       }
-    } catch (final Exception e) {
+
+      callback.accept(Either.right(context));
+    } catch (final Throwable t) {
       Loggers.SYSTEM_LOGGER.error(
           "Unexpected error closing state replication for partition {}",
           context.getPartitionId(),
-          e);
+          t);
+      callback.accept(Either.left(t));
     } finally {
       context.setSnapshotReplication(null);
     }
-
-    return CompletableActorFuture.completed(null);
-  }
-
-  @Override
-  public String getName() {
-    return "SnapshotReplication";
   }
 
   private boolean shouldReplicateSnapshots(final PartitionStartupContext state) {
