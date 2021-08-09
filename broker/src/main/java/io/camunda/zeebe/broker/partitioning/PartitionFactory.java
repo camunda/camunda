@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -77,7 +78,7 @@ final class PartitionFactory {
           new StateControllerPartitionStep(),
           PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep(),
-          new LogStoragePartitionStep(),
+          new LogStoragePartitionStep(Role.LEADER),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import static io.camunda.zeebe.util.Either.left;
 import static io.camunda.zeebe.util.Either.right;
 
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -18,10 +19,17 @@ import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.nio.ByteBuffer;
 
 public class LogStoragePartitionStep implements PartitionStep {
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'AtomixLogStoragePartitionStep' on partition %d.";
+
+  private final Role role;
+
+  public LogStoragePartitionStep(final Role role) {
+    this.role = role;
+  }
 
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
@@ -60,6 +68,25 @@ public class LogStoragePartitionStep implements PartitionStep {
       final PartitionStartupAndTransitionContextImpl context) {
     final var server = context.getRaftPartition().getServer();
 
+    if (role == Role.LEADER) {
+      return createWritableLogStorage(context, server);
+    } else {
+      return createReadOnlyStorage(server);
+    }
+  }
+
+  private Either<Exception, AtomixLogStorage> createReadOnlyStorage(
+      final RaftPartitionServer server) {
+
+    return right(
+        new AtomixLogStorage(
+            server::openReader,
+            // Prevent followers from writing new events
+            new LogAppenderForReadOnlyStorage()));
+  }
+
+  private Either<Exception, AtomixLogStorage> createWritableLogStorage(
+      final PartitionStartupAndTransitionContextImpl context, final RaftPartitionServer server) {
     final var appenderOptional = server.getAppender();
     return appenderOptional
         .map(logAppender -> checkAndCreateAtomixLogStorage(context, server, logAppender))
@@ -89,5 +116,16 @@ public class LogStoragePartitionStep implements PartitionStep {
     return new IllegalStateException(
         String.format(
             WRONG_TERM_ERROR_MSG, context.getCurrentTerm(), raftTerm, context.getPartitionId()));
+  }
+
+  private static class LogAppenderForReadOnlyStorage implements ZeebeLogAppender {
+    @Override
+    public void appendEntry(
+        final long lowestPosition,
+        final long highestPosition,
+        final ByteBuffer data,
+        final AppendListener appendListener) {
+      throw new UnsupportedOperationException("Read only storage");
+    }
   }
 }
