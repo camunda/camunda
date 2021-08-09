@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
@@ -15,20 +17,23 @@ import java.time.Duration;
 
 public class SnapshotDirectorPartitionStep implements PartitionStep {
 
+  private final Role role;
+
+  public SnapshotDirectorPartitionStep(final Role role) {
+    this.role = role;
+  }
+
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final var server = context.getRaftPartition().getServer();
 
     final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
-    final var director =
-        AsyncSnapshotDirector.ofProcessingMode(
-            context.getNodeId(),
-            context.getPartitionId(),
-            context.getStreamProcessor(),
-            context.getSnapshotController(),
-            snapshotPeriod);
-
-    server.addCommittedEntryListener(director);
+    final AsyncSnapshotDirector director;
+    if (role == Role.LEADER) {
+      director = createSnapshotDirectorOfLeader(context, server, snapshotPeriod);
+    } else {
+      director = createSnapshotDirectorOfFollower(context, snapshotPeriod);
+    }
 
     context.setSnapshotDirector(director);
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
@@ -48,5 +53,35 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
   @Override
   public String getName() {
     return "AsyncSnapshotDirector";
+  }
+
+  private AsyncSnapshotDirector createSnapshotDirectorOfLeader(
+      final PartitionStartupAndTransitionContextImpl context,
+      final RaftPartitionServer server,
+      final Duration snapshotPeriod) {
+    final var director =
+        AsyncSnapshotDirector.ofProcessingMode(
+            context.getNodeId(),
+            context.getPartitionId(),
+            context.getStreamProcessor(),
+            context.getSnapshotController(),
+            snapshotPeriod);
+
+    server.addCommittedEntryListener(director);
+    return director;
+  }
+
+  private AsyncSnapshotDirector createSnapshotDirectorOfFollower(
+      final PartitionStartupAndTransitionContextImpl context, final Duration snapshotPeriod) {
+
+    final var director =
+        AsyncSnapshotDirector.ofReplayMode(
+            context.getNodeId(),
+            context.getPartitionId(),
+            context.getStreamProcessor(),
+            context.getSnapshotController(),
+            snapshotPeriod);
+
+    return director;
   }
 }
