@@ -91,7 +91,14 @@ final class PartitionFactory {
               new SnapshotReplicationPartitionStartupStep()),
           new StateControllerPartitionStep(),
           PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
-          new LogDeletionPartitionStep());
+          new LogDeletionPartitionStep(),
+          new LogStoragePartitionStep(Role.FOLLOWER),
+          new LogStreamPartitionStep(),
+          new ZeebeDbPartitionStep(),
+          new StreamProcessorPartitionStep(Role.FOLLOWER),
+          new SnapshotDirectorPartitionStep(Role.FOLLOWER),
+          new RocksDbMetricExporterPartitionStep(),
+          new ExporterDirectorPartitionStep(Role.FOLLOWER));
 
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
