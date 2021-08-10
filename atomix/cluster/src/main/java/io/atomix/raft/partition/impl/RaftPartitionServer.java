@@ -26,6 +26,7 @@ import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
@@ -256,6 +257,22 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   /** @see io.atomix.raft.impl.RaftContext#addCommittedEntryListener(RaftCommittedEntryListener) */
   public void addCommittedEntryListener(final RaftCommittedEntryListener commitListener) {
     server.getContext().addCommittedEntryListener(commitListener);
+  }
+
+  /**
+   * @see
+   *     io.atomix.raft.impl.RaftContext#addSnapshotReplicationListener(SnapshotReplicationListener)
+   */
+  public void addSnapshotReplicationListener(final SnapshotReplicationListener listener) {
+    server.getContext().addSnapshotReplicationListener(listener);
+  }
+
+  /**
+   * @see
+   *     io.atomix.raft.impl.RaftContext#removeSnapshotReplicationListener(SnapshotReplicationListener)
+   */
+  public void removeSnapshotReplicationListener(final SnapshotReplicationListener listener) {
+    server.getContext().removeSnapshotReplicationListener(listener);
   }
 
   public PersistedSnapshotStore getPersistedSnapshotStore() {

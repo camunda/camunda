@@ -52,7 +52,6 @@ import org.slf4j.Logger;
 public class PassiveRole extends InactiveRole {
 
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
-
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
   private PersistedSnapshotListener snapshotListener;
@@ -223,6 +222,10 @@ public class PassiveRole extends InactiveRole {
       log.info("Started receiving new snapshot {} from {}", pendingSnapshot, request.leader());
       pendingSnapshotStartTimestamp = System.currentTimeMillis();
       snapshotReplicationMetrics.incrementCount();
+
+      // When all chunks of the snapshot is received the log will be reset. Hence notify the
+      // listeners in advance so that they can close all consumers of the log.
+      raft.notifySnapshotReplicationStarted();
     } else {
       // fail the request if this is not the expected next chunk
       if (!isExpectedChunk(request.chunkId())) {
@@ -283,6 +286,7 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshotStartTimestamp = 0L;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
+      onSnapshotReceiveCompletedOrAborted();
     } else {
       setNextExpected(request.nextChunkId());
     }
@@ -351,6 +355,12 @@ public class PassiveRole extends InactiveRole {
                 .build()));
   }
 
+  private void onSnapshotReceiveCompletedOrAborted() {
+    // Listeners should be notified whether snapshot is committed or aborted. Otherwise they can
+    // wait for ever.
+    raft.notifySnapshotReplicationCompleted();
+  }
+
   private void setNextExpected(final ByteBuffer nextChunkId) {
     nextPendingSnapshotChunkId = nextChunkId;
   }
@@ -360,8 +370,8 @@ public class PassiveRole extends InactiveRole {
   }
 
   private void abortPendingSnapshots() {
-    setNextExpected(null);
     if (pendingSnapshot != null) {
+      setNextExpected(null);
       log.info("Rolling back snapshot {}", pendingSnapshot);
       try {
         pendingSnapshot.abort();
@@ -372,6 +382,7 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshotStartTimestamp = 0L;
 
       snapshotReplicationMetrics.decrementCount();
+      onSnapshotReceiveCompletedOrAborted();
     }
   }
 
@@ -391,6 +402,10 @@ public class PassiveRole extends InactiveRole {
 
     // Append the entries to the log.
     appendEntries(request, future);
+
+    // If a snapshot replication was ongoing, reset it. Otherwise SnapshotReplicationListeners will
+    // wait for ever for the snapshot to be received.
+    abortPendingSnapshots();
     return future;
   }
 
