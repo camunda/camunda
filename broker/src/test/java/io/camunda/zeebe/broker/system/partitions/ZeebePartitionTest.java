@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -52,6 +53,7 @@ public class ZeebePartitionTest {
     raft = mock(RaftPartition.class);
     when(raft.id()).thenReturn(new PartitionId("", 0));
     when(raft.getRole()).thenReturn(Role.INACTIVE);
+    when(raft.getServer()).thenReturn(mock(RaftPartitionServer.class));
 
     healthMonitor = mock(CriticalComponentsHealthMonitor.class);
 
