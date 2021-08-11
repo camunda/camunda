@@ -56,7 +56,7 @@
   "devDependencies": {
     "@storybook/addon-actions": "^6.3.6",
     "@storybook/preset-create-react-app": "^3.1.6",
-    "@storybook/react": "^6.3.6",
+    "@storybook/react": "^6.3.7",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^11.2.7",
     "@testing-library/react-hooks": "^7.0.1",
