@@ -1257,7 +1257,7 @@
                   <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                   <dep>org.junit.jupiter:junit-jupiter-engine</dep>
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
-                  <dep>org.codehaus.plexus:plexus-utils:jar:1.1</dep>
+                  <dep>org.codehaus.plexus:plexus-utils</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
