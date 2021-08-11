@@ -3,6 +3,7 @@ ARG APP_ENV=prod
 # Building builder image
 FROM alpine:latest as builder
 ARG DISTBALL
+ARG TARGETARCH
 
 ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
     TMP_DIR=/tmp/zeebe \
@@ -10,12 +11,12 @@ ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
 
 COPY ${DISTBALL} ${TMP_ARCHIVE}
 
-RUN mkdir -p ${TMP_DIR} && \
-    tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR} && \
-    # already create volume dir to later have correct rights
-    mkdir ${TMP_DIR}/data
+RUN mkdir -p ${TMP_DIR}
+RUN tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR}
+# already create volume dir to later have correct rights
+RUN mkdir ${TMP_DIR}/data
 
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini ${TMP_DIR}/bin/tini
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini-${TARGETARCH} ${TMP_DIR}/bin/tini
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/
 RUN chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
