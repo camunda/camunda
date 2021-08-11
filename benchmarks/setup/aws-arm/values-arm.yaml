@@ -1,0 +1,99 @@
+# Default values for zeebe-cluster-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  elasticsearch:
+    host: "elasticsearch-master"
+    port: 9200
+  zeebe: "{{ .Release.Name }}-zeebe"
+
+image:
+  repository: deepthidevaki/zeebe
+  tag: 1.2.0-alpha1
+  pullPolicy: IfNotPresent
+
+clusterSize: "3"
+partitionCount: "3"
+replicationFactor: "3"
+cpuThreadCount: "2"
+ioThreadCount: "2"
+pvcSize: "10Gi"
+pvcAccessModes: [ "ReadWriteOnce" ]
+env: []
+logLevel: info
+
+gateway:
+  replicas: 1
+  logLevel: info
+  env: []
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+    maxUnavailable:
+  resources:  {}
+  nodeSelector:
+      beta.kubernetes.io/arch: arm64
+
+elasticsearch:
+  enabled: true
+  imageTag: 7.13.2
+
+kibana:
+  enabled: false
+  imageTag: 7.13.2
+
+prometheus:
+  enabled: false
+  servicemonitor:
+    enabled: false
+
+JavaOpts: >-
+  -XX:MaxRAMPercentage=25.0
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/usr/local/zeebe/data
+  -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+  -XX:+ExitOnOutOfMemoryError
+
+labels:
+  app: zeebe
+serviceType: ClusterIP
+serviceHttpPort: 9600
+serviceGatewayPort: 26500
+serviceCommandPort: 26501
+serviceInternalPort: 26502
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: 1000m
+    memory: 4Gi
+probePath: /ready
+readinessProbe:
+  failureThreshold: 1
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 1
+podDisruptionBudget:
+  enabled: false
+  minAvailable:
+  maxUnavailable: 1
+
+nodeSelector:
+    beta.kubernetes.io/arch: arm64
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/component
+          operator: In
+          values:
+          - broker
+      topologyKey: "kubernetes.io/hostname"
+
+tolerations: []
+
+affinity: {}
