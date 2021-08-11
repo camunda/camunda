@@ -24,7 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ActorControl {
+public class ActorControl implements ConcurrencyControl {
   final ActorTask task;
   private final Actor actor;
 
@@ -248,6 +248,7 @@ public class ActorControl {
    * @param callback the callback that handle the future's result. The throwable is <code>null
    *     </code> when the future is completed successfully.
    */
+  @Override
   public <T> void runOnCompletion(
       final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
     ensureCalledFromWithinActor("runOnCompletion(...)");
