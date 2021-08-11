@@ -48,7 +48,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> currentTransitionFuture;
 
   public ZeebePartition(
-      final PartitionBoostrapAndTransitionContextImpl transitionContext,
+      final PartitionStartupAndTransitionContextImpl transitionContext,
       final PartitionTransition transition) {
     context = transitionContext.getPartitionContext();
     this.transition = transition;

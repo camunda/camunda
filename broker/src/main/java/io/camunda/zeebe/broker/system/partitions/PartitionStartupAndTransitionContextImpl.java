@@ -42,8 +42,8 @@ import java.util.stream.Collectors;
  * transition to the role of the partition
  */
 @Deprecated // will be split up according to interfaces
-public class PartitionBoostrapAndTransitionContextImpl
-    implements PartitionContext, PartitionBootstrapContext, PartitionTransitionContext {
+public class PartitionStartupAndTransitionContextImpl
+    implements PartitionContext, PartitionStartupContext, PartitionTransitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -78,7 +78,7 @@ public class PartitionBoostrapAndTransitionContextImpl
   private long currentTerm;
   private Role currentRole;
 
-  public PartitionBoostrapAndTransitionContextImpl(
+  public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
@@ -268,7 +268,7 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public PartitionBoostrapAndTransitionContextImpl createTransitionContext() {
+  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
     return this;
   }
 
