@@ -31,14 +31,15 @@ public class PartitionStepMigrationHelper {
     }
 
     @Override
+    /** Must be called from an actor */
     public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
-      return wrapInVoidFuture(startupStep.open(context));
+      return wrapInVoidFuture(startupStep.startup(context));
     }
 
     @Override
+    /** Must be called from an actor */
     public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
-
-      return wrapInVoidFuture(startupStep.close(context));
+      return wrapInVoidFuture(startupStep.shutdown(context));
     }
 
     @Override

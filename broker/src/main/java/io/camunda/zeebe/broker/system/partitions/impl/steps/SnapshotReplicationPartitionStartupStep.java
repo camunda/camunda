@@ -19,7 +19,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 public class SnapshotReplicationPartitionStartupStep implements PartitionStartupStep {
 
   @Override
-  public ActorFuture<PartitionStartupContext> open(final PartitionStartupContext context) {
+  public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final SnapshotReplication replication =
         shouldReplicateSnapshots(context)
             ? new StateReplication(
@@ -27,11 +27,11 @@ public class SnapshotReplicationPartitionStartupStep implements PartitionStartup
             : new NoneSnapshotReplication();
 
     context.setSnapshotReplication(replication);
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
-  public ActorFuture<PartitionStartupContext> close(final PartitionStartupContext context) {
+  public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
     try {
       if (context.getSnapshotReplication() != null) {
         context.getSnapshotReplication().close();
@@ -45,7 +45,7 @@ public class SnapshotReplicationPartitionStartupStep implements PartitionStartup
       context.setSnapshotReplication(null);
     }
 
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
