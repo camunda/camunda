@@ -8,6 +8,7 @@
 package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.function.BiConsumer;
 
 /**
@@ -25,5 +26,10 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   @Override
   public void submit(final Runnable action) {
     action.run();
+  }
+
+  @Override
+  public <V> ActorFuture<V> createFuture() {
+    return new TestActorFuture<>();
   }
 }

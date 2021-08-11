@@ -11,14 +11,12 @@ import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +66,6 @@ public final class StartupProcess<CONTEXT> {
   private final Deque<StartupStep<CONTEXT>> steps;
   private final Deque<StartupStep<CONTEXT>> startedSteps = new ArrayDeque<>();
 
-  private Supplier<ActorFuture<CONTEXT>> futureProvider = CompletableActorFuture::new;
-
   private boolean startupCalled = false;
   private ActorFuture<CONTEXT> shutdownFuture;
   private ActorFuture<CONTEXT> startupFuture;
@@ -105,7 +101,7 @@ public final class StartupProcess<CONTEXT> {
   public ActorFuture<CONTEXT> startup(
       final ConcurrencyControl concurrencyControl, final CONTEXT context) {
 
-    final var result = futureProvider.get();
+    final var result = concurrencyControl.<CONTEXT>createFuture();
     concurrencyControl.submit(() -> startupSynchronized(concurrencyControl, context, result));
 
     return result;
@@ -119,14 +115,10 @@ public final class StartupProcess<CONTEXT> {
    */
   public ActorFuture<CONTEXT> shutdown(
       final ConcurrencyControl concurrencyControl, final CONTEXT context) {
-    final var result = futureProvider.get();
+    final var result = concurrencyControl.<CONTEXT>createFuture();
     concurrencyControl.submit(() -> shutdownSynchronized(concurrencyControl, context, result));
 
     return result;
-  }
-
-  void overrideFutureProviderForTest(final Supplier<ActorFuture<CONTEXT>> futureProvider) {
-    this.futureProvider = futureProvider;
   }
 
   private void startupSynchronized(

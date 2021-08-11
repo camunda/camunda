@@ -8,6 +8,7 @@
 package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BiConsumer;
 
 /**
@@ -31,4 +32,14 @@ public interface ConcurrencyControl {
    * @param action action to be invoked
    */
   void submit(final Runnable action);
+
+  /**
+   * Create a new future object
+   *
+   * @param <V> value type of future
+   * @return new future object
+   */
+  default <V> ActorFuture<V> createFuture() {
+    return new CompletableActorFuture<>();
+  }
 }

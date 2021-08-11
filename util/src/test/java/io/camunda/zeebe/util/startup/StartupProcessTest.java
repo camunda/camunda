@@ -157,7 +157,6 @@ class StartupProcessTest {
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
 
       final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       // when
       sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
@@ -177,7 +176,6 @@ class StartupProcessTest {
       when(mockStep2.shutdown(SHUTDOWN_CONTEXT)).thenReturn(completedFuture(SHUTDOWN_CONTEXT));
 
       final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
 
@@ -197,7 +195,6 @@ class StartupProcessTest {
       when(mockStep2.startup(RESULT_STEP1)).thenReturn(completedFuture(RESULT_STEP2));
 
       final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       // when
       final var actualResult = sut.startup(TEST_CONCURRENCY_CONTROL, INPUT_STEP1).join();
@@ -220,7 +217,6 @@ class StartupProcessTest {
       when(mockStep1.shutdown(RESULT_STEP2)).thenReturn(completedFuture(RESULT_STEP1));
 
       final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
 
@@ -244,7 +240,6 @@ class StartupProcessTest {
       when(mockStep2.startup(STARTUP_CONTEXT)).thenReturn(completedFuture(STARTUP_CONTEXT));
 
       final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       // when
       final var actualResult = sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT);
@@ -270,7 +265,6 @@ class StartupProcessTest {
       when(mockStep2.shutdown(SHUTDOWN_CONTEXT)).thenReturn(failedFuture(testException2));
 
       final var sut = new StartupProcess<>(List.of(mockStep1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
 
@@ -296,7 +290,6 @@ class StartupProcessTest {
       final var step1 = new WaitingStartupStep(step1CountdownLatch, false);
 
       final var sut = new StartupProcess<>(List.of(step1, mockStep2));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       // when
       final var startupFuture = sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT);
@@ -335,7 +328,6 @@ class StartupProcessTest {
     void shouldThrowIllegalStateIfStartupIsCalledMoreThanOnce() {
       // given
       final var sut = new StartupProcess<>(Collections.emptyList());
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       // when + then
       sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
@@ -350,7 +342,6 @@ class StartupProcessTest {
       // given
       final var step = new InvocationCountingStartupStep();
       final var sut = new StartupProcess<>(singletonList(step));
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
 
       // when
       sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT).join();
@@ -366,11 +357,6 @@ class StartupProcessTest {
   class EmptyList {
 
     private final StartupProcess<Object> sut = new StartupProcess<>(Collections.emptyList());
-
-    @BeforeEach
-    void setUp() {
-      sut.overrideFutureProviderForTest(TestActorFuture::new);
-    }
 
     @Test
     void shouldReturnContextImmediatelyOnStartup() {
