@@ -19,6 +19,17 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
       <Dropdown.Option onClick={openNewFilterModal('flowNodeStatus')}>
         {t('common.filter.types.flowNodeStatus')}
       </Dropdown.Option>
+      <Dropdown.Submenu
+        disabled={processDefinitionIsNotSelected}
+        label={t('common.filter.types.flowNodeDate')}
+      >
+        <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
+          {t('common.filter.types.startDate')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={openNewFilterModal('flowNodeEndDate')}>
+          {t('common.filter.types.endDate')}
+        </Dropdown.Option>
+      </Dropdown.Submenu>
       <Dropdown.Option onClick={openNewFilterModal('incident')}>
         {t('common.filter.types.incident')}
       </Dropdown.Option>

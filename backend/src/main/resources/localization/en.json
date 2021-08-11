@@ -752,6 +752,7 @@
     "selected": "Selected",
     "documentation": "documentation",
     "open": "Open",
+    "for": "for",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
@@ -930,7 +931,10 @@
         "openIncident": "Open Incidents",
         "resolvedIncident": "Resolved Incidents",
         "flowNodeStatus": "Flow Node State",
-        "flowNodeSelection": "Flow Node Selection"
+        "flowNodeSelection": "Flow Node Selection",
+        "flowNodeDate": "Flow Node date",
+        "flowNodeStartDate": "Flow Node start date",
+        "flowNodeEndDate": "Flow Node end date"
       },
       "list": {
         "appliedTo": "Applied to",
@@ -1034,6 +1038,14 @@
           "canceledFlowNodes": "Canceled Flow Nodes",
           "executingFlowNodes": "Running Flow Nodes"
         }
+      },
+      "nodeDateModal": {
+        "info": {
+          "instance": "Only display Instances where at least one of the selected Flow Nodes...",
+          "view": "Only display data from Flow Nodes which..."
+        },
+        "started": "Started",
+        "ended": "Ended"
       },
       "assigneeModal": {
         "includeOnly": "Include only",

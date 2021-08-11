@@ -752,6 +752,7 @@
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
     "open": "Öffnen",
+    "for": "für",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -930,7 +931,10 @@
         "openIncident": "mit offenen Zwischenfällen",
         "resolvedIncident": "mit gelösten Zwischenfällen",
         "flowNodeStatus": "Prozessknoten-Status",
-        "flowNodeSelection": "Prozessknotenauswahl"
+        "flowNodeSelection": "Prozessknotenauswahl",
+        "flowNodeDate": "Prozessknoten-Datum",
+        "flowNodeStartDate": "Prozessknoten Startdatum",
+        "flowNodeEndDate": "Prozessknoten Enddatum"
       },
       "list": {
         "appliedTo": "Angewendet auf",
@@ -1034,6 +1038,14 @@
           "canceledFlowNodes": "Abgebrochene Prozessknoten",
           "executingFlowNodes": "Laufende Prozessknoten"
         }
+      },
+      "nodeDateModal": {
+        "info": {
+          "instance": "Nur Anzeigeninstanzen, in denen mindestens einer der ausgewählten Prozessknoten ...",
+          "view": "Nur Daten von Prozessknoten anzeigen, die ..."
+        },
+        "started": "Gestartet",
+        "ended": "Abgeschlossen"
       },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",

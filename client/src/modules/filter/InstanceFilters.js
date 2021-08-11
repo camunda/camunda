@@ -30,6 +30,17 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
           {t('common.filter.types.endDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
+      <Dropdown.Submenu
+        disabled={processDefinitionIsNotSelected}
+        label={t('common.filter.types.flowNodeDate')}
+      >
+        <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
+          {t('common.filter.types.startDate')}
+        </Dropdown.Option>
+        <Dropdown.Option onClick={openNewFilterModal('flowNodeEndDate')}>
+          {t('common.filter.types.endDate')}
+        </Dropdown.Option>
+      </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.duration')}>
         <Dropdown.Option onClick={openNewFilterModal('processInstanceDuration')}>
           {t('common.filter.types.instance')}

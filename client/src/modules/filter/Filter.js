@@ -19,6 +19,7 @@ import {
   NodeDuration,
   StateFilter,
   NodeSelection,
+  NodeDateFilter,
 } from './modals';
 import FilterList from './FilterList';
 import {loadValues, filterSameTypeExistingFilters} from './service';
@@ -56,6 +57,9 @@ export default class Filter extends React.Component {
       case 'startDate':
       case 'endDate':
         return DateFilter;
+      case 'flowNodeStartDate':
+      case 'flowNodeEndDate':
+        return NodeDateFilter;
       case 'variable':
         return VariableFilter;
       case 'processInstanceDuration':
@@ -141,7 +145,7 @@ export default class Filter extends React.Component {
 
   render() {
     const {filterLevel, data, definitions} = this.props;
-    const {newFilterType, editFilter} = this.state;
+    const {newFilterType, editFilter, newFilterLevel} = this.state;
 
     const FilterModal = this.getFilterModal(newFilterType);
     const EditFilterModal = this.getFilterModal(editFilter ? editFilter.type : null);
@@ -153,6 +157,8 @@ export default class Filter extends React.Component {
     const filters = data.filter(
       ({filterLevel}) => filterLevel === this.props.filterLevel || displayAllFilters
     );
+
+    const modalFilterLevel = newFilterLevel || editFilter?.filterLevel;
 
     return (
       <div className="Filter">
@@ -213,6 +219,7 @@ export default class Filter extends React.Component {
           close={this.closeModal}
           filterType={newFilterType}
           config={this.getFilterConfig(newFilterType)}
+          filterLevel={modalFilterLevel}
         />
         <EditFilterModal
           definitions={definitions}
@@ -221,6 +228,7 @@ export default class Filter extends React.Component {
           close={this.closeModal}
           filterType={editFilter?.type}
           config={this.getFilterConfig(editFilter?.type)}
+          filterLevel={modalFilterLevel}
         />
       </div>
     );

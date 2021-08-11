@@ -345,3 +345,26 @@ describe('apply to handling', () => {
     expect(node.find('.appliedTo')).not.toExist();
   });
 });
+
+it('should display node date filter preview', () => {
+  const filterData = {
+    flowNodeIds: ['flowNode'],
+    value: 0,
+    unit: 'days',
+  };
+
+  const data = [
+    {
+      type: 'flowNodeStartDate',
+      filterLevel: 'instance',
+      data: filterData,
+      appliedTo: ['definition'],
+    },
+  ];
+
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
+
+  expect(node.find('DateFilterPreview').prop('filter')).toEqual(filterData);
+  expect(node.find('.content')).toIncludeText('flow node name');
+});
