@@ -14,6 +14,22 @@ import java.util.function.BiConsumer;
 /**
  * Test implementation of {@code ConcurrencyControl}. The main goal is to use this in tests without
  * starting the actor scheduler.
+ *
+ * <p>The fact that this is used in tests without actor scheduler also means that its behavior
+ * differs from a {@code ConcurrencyControl} implementations based on the actor scheduler. The
+ * differences are as follows:
+ *
+ * <ul>
+ *   <li>Callables, runaables passed to its methods are called immediately, synchronously on the
+ *       current thread (as opposed to the actor scheduler which would schedule them to run deferred
+ *       and asynchronous - from the point of view of the caller)
+ *   <li>Works best in conjunction with {@code TestActorFuture} returned by this class
+ * </ul>
+ *
+ * Due to these limitations this implementation is ideal for unit tests. <br>
+ * However, precaution is deserved to not rely only on unit tests alone. Developers are advised to
+ * accompany unit tests with integration/acceptance tests which do use the actor scheduler in order
+ * to test the dynamic scheduling behavior.
  */
 public class TestConcurrencyControl implements ConcurrencyControl {
 

@@ -77,7 +77,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void block(final ActorTask onCompletion) {
-    throw new IllegalStateException("Not yet implemented");
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override
@@ -110,12 +110,12 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    throw new IllegalStateException("Not yet implemented");
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override
   public boolean isCancelled() {
-    throw new IllegalStateException("Not yet implemented");
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override

@@ -31,9 +31,14 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 class StartupProcessTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(StartupProcessTest.class);
+
   private static final Object STARTUP_CONTEXT =
       new Object() {
         @Override
@@ -51,81 +56,6 @@ class StartupProcessTest {
       };
 
   private static final ConcurrencyControl TEST_CONCURRENCY_CONTROL = new TestConcurrencyControl();
-
-  static final class InvocationCountingStartupStep implements StartupStep<Object> {
-
-    private int startupInvocationCounter = 0;
-    private int shutdownInvocationCounter = 0;
-
-    int getStartupInvocationCounter() {
-      return startupInvocationCounter;
-    }
-
-    int getShutdownInvocationCounter() {
-      return shutdownInvocationCounter;
-    }
-
-    @Override
-    public String getName() {
-      return "InvocationCountingStartupStep";
-    }
-
-    @Override
-    public ActorFuture<Object> startup(final Object o) {
-      startupInvocationCounter++;
-      return completedFuture(o);
-    }
-
-    @Override
-    public ActorFuture<Object> shutdown(final Object o) {
-      shutdownInvocationCounter++;
-      return completedFuture(o);
-    }
-  }
-
-  static final class WaitingStartupStep implements StartupStep<Object> {
-
-    private final CountDownLatch startupCountdownLatch;
-    private final boolean completeWithException;
-
-    WaitingStartupStep(
-        final CountDownLatch startupCountdownLatch, final boolean completeWithException) {
-      this.startupCountdownLatch = startupCountdownLatch;
-      this.completeWithException = completeWithException;
-    }
-
-    @Override
-    public String getName() {
-      return "WaitingStartupStep";
-    }
-
-    @Override
-    public ActorFuture<Object> startup(final Object o) {
-      final var startupFuture = new TestActorFuture<>();
-      final var startupThread =
-          new Thread(
-              () -> {
-                try {
-                  startupCountdownLatch.await();
-                } catch (final InterruptedException e) {
-                  e.printStackTrace();
-                } finally {
-                  if (!completeWithException) {
-                    startupFuture.complete(o);
-                  } else {
-                    startupFuture.completeExceptionally(new Throwable("completed exceptionally"));
-                  }
-                }
-              });
-      startupThread.start();
-      return startupFuture;
-    }
-
-    @Override
-    public ActorFuture<Object> shutdown(final Object o) {
-      return completedFuture(o);
-    }
-  }
 
   @Nested
   class MainUseCase {
@@ -377,6 +307,81 @@ class StartupProcessTest {
 
       // then
       assertThat(shutdownFuture.join()).isSameAs(SHUTDOWN_CONTEXT);
+    }
+  }
+
+  private final class WaitingStartupStep implements StartupStep<Object> {
+
+    private final CountDownLatch startupCountdownLatch;
+    private final boolean completeWithException;
+
+    WaitingStartupStep(
+        final CountDownLatch startupCountdownLatch, final boolean completeWithException) {
+      this.startupCountdownLatch = startupCountdownLatch;
+      this.completeWithException = completeWithException;
+    }
+
+    @Override
+    public String getName() {
+      return "WaitingStartupStep";
+    }
+
+    @Override
+    public ActorFuture<Object> startup(final Object o) {
+      final var startupFuture = new TestActorFuture<>();
+      final var startupThread =
+          new Thread(
+              () -> {
+                try {
+                  startupCountdownLatch.await();
+                } catch (final InterruptedException e) {
+                  LOGGER.error(e.getMessage(), e);
+                } finally {
+                  if (!completeWithException) {
+                    startupFuture.complete(o);
+                  } else {
+                    startupFuture.completeExceptionally(new Throwable("completed exceptionally"));
+                  }
+                }
+              });
+      startupThread.start();
+      return startupFuture;
+    }
+
+    @Override
+    public ActorFuture<Object> shutdown(final Object o) {
+      return completedFuture(o);
+    }
+  }
+
+  private final class InvocationCountingStartupStep implements StartupStep<Object> {
+
+    private int startupInvocationCounter = 0;
+    private int shutdownInvocationCounter = 0;
+
+    int getStartupInvocationCounter() {
+      return startupInvocationCounter;
+    }
+
+    int getShutdownInvocationCounter() {
+      return shutdownInvocationCounter;
+    }
+
+    @Override
+    public String getName() {
+      return "InvocationCountingStartupStep";
+    }
+
+    @Override
+    public ActorFuture<Object> startup(final Object o) {
+      startupInvocationCounter++;
+      return completedFuture(o);
+    }
+
+    @Override
+    public ActorFuture<Object> shutdown(final Object o) {
+      shutdownInvocationCounter++;
+      return completedFuture(o);
     }
   }
 }

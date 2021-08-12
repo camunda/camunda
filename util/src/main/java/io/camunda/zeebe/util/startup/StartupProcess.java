@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
 public final class StartupProcess<CONTEXT> {
 
   private final Logger logger;
-  private final Deque<StartupStep<CONTEXT>> steps;
+  private final Queue<StartupStep<CONTEXT>> steps;
   private final Deque<StartupStep<CONTEXT>> startedSteps = new ArrayDeque<>();
 
   private boolean startupCalled = false;
@@ -76,7 +76,7 @@ public final class StartupProcess<CONTEXT> {
    * @param steps the steps to execute; must not be {@code null}
    */
   public StartupProcess(final List<StartupStep<CONTEXT>> steps) {
-    this(LoggerFactory.getLogger("io.camunda.zeebe.util.startup"), steps);
+    this(LoggerFactory.getLogger(StartupProcess.class), steps);
   }
 
   /**
@@ -125,7 +125,7 @@ public final class StartupProcess<CONTEXT> {
       final ConcurrencyControl concurrencyControl,
       final CONTEXT context,
       final ActorFuture<CONTEXT> startupFuture) {
-    logger.debug("Startup was called with context: " + context);
+    logger.debug("Startup was called with context: {}", context);
     if (startupCalled) {
       throw new IllegalStateException("startup(...) must only be called once");
     }
@@ -137,7 +137,6 @@ public final class StartupProcess<CONTEXT> {
 
     final var stepsToStart = new ArrayDeque<>(steps);
 
-    logger.info("Starting startup process");
     proceedWithStartupSynchronized(concurrencyControl, stepsToStart, context, startupFuture);
   }
 
@@ -148,7 +147,7 @@ public final class StartupProcess<CONTEXT> {
       final ActorFuture<CONTEXT> startupFuture) {
     if (stepsToStart.isEmpty()) {
       startupFuture.complete(context);
-      logger.info("Finished startup process");
+      logger.debug("Finished startup process");
     } else if (shutdownFuture != null) {
       logger.info("Aborting startup process because shutdown was called");
       startupFuture.completeExceptionally(
@@ -190,9 +189,8 @@ public final class StartupProcess<CONTEXT> {
       final ConcurrencyControl concurrencyControl,
       final CONTEXT context,
       final ActorFuture<CONTEXT> resultFuture) {
-    logger.debug("Shutdown was called with context: " + context);
+    logger.debug("Shutdown was called with context: {}", context);
     if (shutdownFuture == null) {
-      logger.info("Starting shutdown process");
       shutdownFuture = resultFuture;
 
       if (startupFuture != null) {
@@ -261,7 +259,7 @@ public final class StartupProcess<CONTEXT> {
       final List<StartupProcessStepException> collectedExceptions) {
     if (collectedExceptions.isEmpty()) {
       shutdownFuture.complete(context);
-      logger.info("Finished shutdown process");
+      logger.debug("Finished shutdown process");
     } else {
       final var umbrellaException =
           aggregateExceptionsSynchronized("Shutdown", collectedExceptions);
