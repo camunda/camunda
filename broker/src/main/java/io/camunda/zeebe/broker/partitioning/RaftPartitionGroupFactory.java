@@ -24,7 +24,7 @@ import java.util.List;
 
 final class RaftPartitionGroupFactory {
 
-  protected RaftPartitionGroup buildRaftPartitionGroup(
+  RaftPartitionGroup buildRaftPartitionGroup(
       final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final DataCfg dataConfiguration = configuration.getData();

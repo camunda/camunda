@@ -121,7 +121,7 @@ final class PartitionFactory {
     this.healthCheckService = healthCheckService;
   }
 
-  protected List<ZeebePartition> constructPartitions(
+  List<ZeebePartition> constructPartitions(
       final RaftPartitionGroup partitionGroup,
       final List<PartitionListener> partitionListeners,
       final Consumer<TopologyPartitionListener> partitionListenerConsumer) {

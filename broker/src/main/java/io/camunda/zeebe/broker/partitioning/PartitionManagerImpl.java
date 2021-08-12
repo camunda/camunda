@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +40,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
   public static final String GROUP_NAME = "raft-partition";
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger("io.camunda.zeebe.broker.partitioning");
+  private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
 
-  protected volatile CompletableFuture<Void> closeFuture;
+  private volatile CompletableFuture<Void> closeFuture;
   private final BrokerHealthCheckService healthCheckService;
   private final ActorSchedulingService actorSchedulingService;
   private ManagedPartitionService partitionService;
@@ -59,7 +57,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final PushDeploymentRequestHandler deploymentRequestHandler;
   private final List<PartitionListener> partitionListeners;
   private final ClusterServices clusterServices;
-  private final CommandApiService commandHApiService;
+  private final CommandApiService commandApiService;
   private final ExporterRepository exporterRepository;
 
   public PartitionManagerImpl(
@@ -71,7 +69,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final PushDeploymentRequestHandler deploymentRequestHandler,
       final Consumer<DiskSpaceUsageListener> diskSpaceUsageListenerRegistry,
       final List<PartitionListener> partitionListeners,
-      final CommandApiService commandHApiService,
+      final CommandApiService commandApiService,
       final ExporterRepository exporterRepository) {
 
     snapshotStoreFactory =
@@ -84,7 +82,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.healthCheckService = healthCheckService;
     this.deploymentRequestHandler = deploymentRequestHandler;
     this.diskSpaceUsageListenerRegistry = diskSpaceUsageListenerRegistry;
-    this.commandHApiService = commandHApiService;
+    this.commandApiService = commandApiService;
     this.exporterRepository = exporterRepository;
 
     partitionGroup =
@@ -109,9 +107,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
   public CompletableFuture<Void> start() {
     if (closeFuture != null) {
-      return Futures.exceptionalFuture(
-          new IllegalStateException(
-              "PartitionManager " + (closeFuture.isDone() ? "shutdown" : "shutting down")));
+      return Futures.exceptionalFuture(new IllegalStateException("PartitionManager is closed"));
     }
 
     actorSchedulingService.submitActor(topologyManager);
@@ -134,7 +130,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       brokerCfg,
                       localBroker,
                       deploymentRequestHandler,
-                      commandHApiService,
+                      commandApiService,
                       snapshotStoreFactory,
                       clusterServices,
                       exporterRepository,
@@ -147,10 +143,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
               final var futures =
                   partitions.stream()
                       .map(partition -> CompletableFuture.runAsync(() -> startPartition(partition)))
-                      .collect(Collectors.toList());
+                      .toArray(CompletableFuture[]::new);
 
-              CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
-                  .join();
+              CompletableFuture.allOf(futures).join();
               return null;
             });
   }
@@ -195,9 +190,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     final var futures =
         partitions.stream()
             .map(partition -> CompletableFuture.runAsync(() -> stopPartition(partition)))
-            .collect(Collectors.toList());
+            .toArray(CompletableFuture[]::new);
 
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).join();
+    CompletableFuture.allOf(futures).join();
   }
 
   private void stopPartition(final ZeebePartition partition) {
