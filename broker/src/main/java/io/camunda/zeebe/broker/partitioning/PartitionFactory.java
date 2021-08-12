@@ -23,8 +23,8 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerIm
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
-import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
@@ -38,7 +38,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartition
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
@@ -61,8 +61,8 @@ import java.util.stream.Collectors;
 final class PartitionFactory {
   // preparation for future steps
   // will be executed in the order they are defined in this list
-  private static final List<PartitionBootstrapStep> BOOTSTRAP_STEPS =
-      List.of(new SnapshotReplicationPartitionBootstrapStep());
+  private static final List<PartitionStartupStep> STARTUP_STEPS =
+      List.of(new SnapshotReplicationPartitionStartupStep());
 
   // will probably be executed in parallel
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
@@ -71,8 +71,8 @@ final class PartitionFactory {
 
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromBootstrapStep(
-              new SnapshotReplicationPartitionBootstrapStep()),
+          PartitionStepMigrationHelper.fromStartupStep(
+              new SnapshotReplicationPartitionStartupStep()),
           new StateControllerPartitionStep(),
           PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep(),
@@ -84,8 +84,8 @@ final class PartitionFactory {
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromBootstrapStep(
-              new SnapshotReplicationPartitionBootstrapStep()),
+          PartitionStepMigrationHelper.fromStartupStep(
+              new SnapshotReplicationPartitionStartupStep()),
           new StateControllerPartitionStep(),
           PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep());
@@ -148,8 +148,8 @@ final class PartitionFactory {
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
 
-      final PartitionBoostrapAndTransitionContextImpl transitionContext =
-          new PartitionBoostrapAndTransitionContextImpl(
+      final PartitionStartupAndTransitionContextImpl transitionContext =
+          new PartitionStartupAndTransitionContextImpl(
               localBroker.getNodeId(),
               owningPartition,
               partitionListeners,

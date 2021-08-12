@@ -14,35 +14,41 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 @Deprecated
 public class PartitionStepMigrationHelper {
 
-  public static PartitionStep fromBootstrapStep(final PartitionBootstrapStep bootstrapStep) {
-    return new WrappedPartitionBootstrapStep(bootstrapStep);
+  public static PartitionStep fromStartupStep(final PartitionStartupStep startupStep) {
+    return new WrappedPartitionStartupStep(startupStep);
   }
 
   public static PartitionStep fromTransitionStep(final PartitionTransitionStep transitionStep) {
     return new WrappedPartitionTransitionStep(transitionStep);
   }
 
-  private static class WrappedPartitionBootstrapStep implements PartitionStep {
+  private static class WrappedPartitionStartupStep implements PartitionStep {
 
-    private final PartitionBootstrapStep bootstrapStep;
+    private final PartitionStartupStep startupStep;
 
-    public WrappedPartitionBootstrapStep(final PartitionBootstrapStep bootstrapStep) {
-      this.bootstrapStep = bootstrapStep;
+    public WrappedPartitionStartupStep(final PartitionStartupStep startupStep) {
+      this.startupStep = startupStep;
     }
 
     @Override
-    public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
-      return wrapInVoidFuture(bootstrapStep.open(context));
+    /** Must be called from an actor */
+    public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
+      return wrapInVoidFuture(startupStep.startup(context));
     }
 
     @Override
-    public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
+    /** Must be called from an actor */
+    public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
+      return wrapInVoidFuture(startupStep.shutdown(context));
+    }
 
-      return wrapInVoidFuture(bootstrapStep.close(context));
+    @Override
+    public String getName() {
+      return startupStep.getName();
     }
 
     private ActorFuture<Void> wrapInVoidFuture(
-        final ActorFuture<PartitionBootstrapContext> wrappable) {
+        final ActorFuture<PartitionStartupContext> wrappable) {
       final var result = new CompletableActorFuture<Void>();
 
       wrappable.onComplete(
@@ -56,11 +62,6 @@ public class PartitionStepMigrationHelper {
 
       return result;
     }
-
-    @Override
-    public String getName() {
-      return bootstrapStep.getName();
-    }
   }
 
   private static class WrappedPartitionTransitionStep implements PartitionStep {
@@ -72,13 +73,13 @@ public class PartitionStepMigrationHelper {
     }
 
     @Override
-    public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
+    public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
       return transitionStep.transitionTo(
           context, context.getRaftPartition().term(), context.getRaftPartition().getRole());
     }
 
     @Override
-    public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
+    public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
       return transitionStep.transitionTo(context, context.getRaftPartition().term(), Role.INACTIVE);
     }
 

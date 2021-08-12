@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -16,7 +16,7 @@ import java.time.Duration;
 public class SnapshotDirectorPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
+  public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final var server = context.getRaftPartition().getServer();
 
     final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
@@ -37,7 +37,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
+  public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
     final var director = context.getSnapshotDirector();
     context.getComponentHealthMonitor().removeComponent(director.getName());
     final ActorFuture<Void> future = director.closeAsync();
