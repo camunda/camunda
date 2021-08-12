@@ -12,7 +12,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,10 +35,11 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
 
   private final Int2ObjectHashMap<FileBasedSnapshotStore> partitionSnapshotStores =
       new Int2ObjectHashMap<>();
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulingService actorScheduler;
   private final int nodeId;
 
-  public FileBasedSnapshotStoreFactory(final ActorScheduler actorScheduler, final int nodeId) {
+  public FileBasedSnapshotStoreFactory(
+      final ActorSchedulingService actorScheduler, final int nodeId) {
     this.actorScheduler = actorScheduler;
     this.nodeId = nodeId;
   }

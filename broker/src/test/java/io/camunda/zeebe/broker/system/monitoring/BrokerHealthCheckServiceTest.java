@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -34,5 +35,21 @@ public class BrokerHealthCheckServiceTest {
     assertThat(healthyActual).isFalse();
     assertThat(startedActual).isFalse();
     assertThat(readyActual).isFalse();
+  }
+
+  @Test
+  public void shouldThrowIllegalStateExceptionIfStatusIsUpdatedBeforePartitionsAreKnown() {
+    // given
+    final var brokerInfo = mock(BrokerInfo.class);
+    final var healthCheckService = new BrokerHealthCheckService(brokerInfo);
+
+    // when + then
+
+    assertThatThrownBy(() -> healthCheckService.onBecomingInactive(0, 0))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> healthCheckService.onBecomingFollower(0, 0))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> healthCheckService.onBecomingLeader(0, 0, null))
+        .isInstanceOf(IllegalStateException.class);
   }
 }

@@ -9,26 +9,41 @@ package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import java.util.ArrayList;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
-public final class PartitionManagerTest {
+@RunWith(MockitoJUnitRunner.class)
+public final class PartitionManagerImplTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private Environment environment;
+
+  @Mock private ClusterServices mockClusterServices;
+  @Mock private ClusterMembershipService mockMembershipService;
+  @Mock private Member mockMember;
 
   @Before
   public void setUp() {
     environment = new Environment();
+
+    when(mockClusterServices.getMembershipService()).thenReturn(mockMembershipService);
   }
 
   @Test
@@ -39,12 +54,17 @@ public final class PartitionManagerTest {
 
     // when
     final var partitionManager =
-        PartitionManagerFactory.fromBrokerConfiguration(
+        new PartitionManagerImpl(
             mock(ActorSchedulingService.class),
             brokerConfig,
             new BrokerInfo(1, "dummy"),
-            mock(ClusterServicesImpl.class),
-            mock(FileBasedSnapshotStoreFactory.class));
+            mockClusterServices,
+            mock(BrokerHealthCheckService.class),
+            null,
+            null,
+            new ArrayList<>(),
+            null,
+            mock(ExporterRepository.class));
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -59,12 +79,17 @@ public final class PartitionManagerTest {
 
     // when
     final var partitionManager =
-        PartitionManagerFactory.fromBrokerConfiguration(
+        new PartitionManagerImpl(
             mock(ActorSchedulingService.class),
             brokerConfig,
             new BrokerInfo(1, "dummy"),
-            mock(ClusterServicesImpl.class),
-            mock(FileBasedSnapshotStoreFactory.class));
+            mockClusterServices,
+            mock(BrokerHealthCheckService.class),
+            null,
+            null,
+            new ArrayList<>(),
+            null,
+            mock(ExporterRepository.class));
     // then
     final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();

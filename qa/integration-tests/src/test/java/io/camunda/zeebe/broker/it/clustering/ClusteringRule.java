@@ -29,7 +29,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
@@ -93,7 +93,7 @@ public final class ClusteringRule extends ExternalResource {
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH =
-      PartitionManagerFactory.GROUP_NAME + "/partitions/1";
+      PartitionManagerImpl.GROUP_NAME + "/partitions/1";
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();

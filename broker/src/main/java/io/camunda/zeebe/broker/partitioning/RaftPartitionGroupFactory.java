@@ -9,44 +9,22 @@ package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroup.Builder;
-import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.logstreams.impl.log.ZeebeEntryValidator;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PartitionManagerFactory {
+final class RaftPartitionGroupFactory {
 
-  public static final String GROUP_NAME = "raft-partition";
-
-  public static PartitionManagerImpl fromBrokerConfiguration(
-      final ActorSchedulingService actorSchedulingService,
-      final BrokerCfg configuration,
-      final BrokerInfo localBroker,
-      final ClusterServices clusterServices,
-      final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
-
-    final var partitionGroup = buildRaftPartitionGroup(configuration, snapshotStoreFactory);
-
-    return new PartitionManagerImpl(
-        actorSchedulingService,
-        localBroker,
-        partitionGroup,
-        clusterServices.getMembershipService(),
-        clusterServices.getCommunicationService());
-  }
-
-  private static RaftPartitionGroup buildRaftPartitionGroup(
+  RaftPartitionGroup buildRaftPartitionGroup(
       final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final DataCfg dataConfiguration = configuration.getData();
@@ -58,7 +36,7 @@ public class PartitionManagerFactory {
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final var raftDataDirectory = rootPath.resolve(GROUP_NAME);
+    final var raftDataDirectory = rootPath.resolve(PartitionManagerImpl.GROUP_NAME);
 
     try {
       FileUtil.ensureDirectoryExists(raftDataDirectory);
@@ -72,7 +50,7 @@ public class PartitionManagerFactory {
     final NetworkCfg networkCfg = configuration.getNetwork();
 
     final Builder partitionGroupBuilder =
-        RaftPartitionGroup.builder(GROUP_NAME)
+        RaftPartitionGroup.builder(PartitionManagerImpl.GROUP_NAME)
             .withNumPartitions(clusterCfg.getPartitionsCount())
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
@@ -101,7 +79,7 @@ public class PartitionManagerFactory {
     return partitionGroupBuilder.build();
   }
 
-  private static List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
     final int clusterSize = clusterCfg.getClusterSize();
     // node ids are always 0 to clusterSize - 1
     final List<String> members = new ArrayList<>();
