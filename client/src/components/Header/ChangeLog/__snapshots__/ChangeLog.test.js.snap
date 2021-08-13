@@ -20,11 +20,9 @@ exports[`show match snapshot 1`] = `
        
     </Component>
     <Component>
-      <ReactMarkdown
-        transformLinkUri={[Function]}
-      >
+      <reactMarkdown>
         #hello world
-      </ReactMarkdown>
+      </reactMarkdown>
     </Component>
     <Component>
       <ForwardRef(Button)
