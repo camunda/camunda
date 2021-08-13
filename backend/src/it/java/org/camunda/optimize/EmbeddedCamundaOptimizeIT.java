@@ -67,6 +67,7 @@ public class EmbeddedCamundaOptimizeIT extends AbstractIT {
         && !thread.getName().contains("WebSocketClient")
         && !thread.getName().contains("Keep-Alive-Timer")
         && !thread.getName().contains("MockServer")
+        && !thread.getName().contains("globalEventExecutor")
       )
       .collect(Collectors.toSet());
   }
