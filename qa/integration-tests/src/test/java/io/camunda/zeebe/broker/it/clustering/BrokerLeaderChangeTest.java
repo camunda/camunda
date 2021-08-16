@@ -29,9 +29,17 @@ import org.junit.rules.Timeout;
 // FIXME: rewrite tests now that leader election is not controllable
 public final class BrokerLeaderChangeTest {
   public static final String JOB_TYPE = "testTask";
+  private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
 
   public final Timeout testTimeout = Timeout.seconds(120);
-  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
+  public final ClusteringRule clusteringRule =
+      new ClusteringRule(
+          1,
+          3,
+          3,
+          config -> {
+            config.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+          });
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -76,6 +84,29 @@ public final class BrokerLeaderChangeTest {
     jobCompleter.waitForJobCompletion();
 
     jobCompleter.close();
+  }
+
+  @Test
+  public void shouldBecomeLeaderAfterSnapshot() {
+    // given
+    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
+
+    final long jobKey = clientRule.createSingleJob(JOB_TYPE);
+    triggerSnapshot();
+
+    // when
+    clusteringRule.getBrokers().forEach(broker -> clusteringRule.waitForSnapshotAtBroker(broker));
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
+    final JobCompleter jobCompleter = new JobCompleter(jobKey);
+
+    // then
+    jobCompleter.waitForJobCompletion();
+
+    jobCompleter.close();
+  }
+
+  private void triggerSnapshot() {
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 
   @Test
