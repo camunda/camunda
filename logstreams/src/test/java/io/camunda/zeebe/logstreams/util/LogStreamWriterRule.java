@@ -82,6 +82,11 @@ public final class LogStreamWriterRule extends ExternalResource {
     return position;
   }
 
+  public LogStreamWriterRule sourceEventPosition(final long sourceEventPosition) {
+    logStreamWriter.sourceRecordPosition(sourceEventPosition);
+    return this;
+  }
+
   private long writeEventInternal(final Consumer<LogEntryBuilder> writer) {
     long position;
     do {
