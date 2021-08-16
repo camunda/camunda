@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.camunda.zeebe.broker.logstreams.AtomixLogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
-import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
 public class LogDeletionPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
+  public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final LogCompactor logCompactor =
         new AtomixLogCompactor(context.getRaftPartition().getServer());
     final LogDeletionService deletionService =
@@ -33,7 +33,7 @@ public class LogDeletionPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
+  public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
     final ActorFuture<Void> future = context.getLogDeletionService().closeAsync();
     context.setLogDeletionService(null);
     return future;

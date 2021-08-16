@@ -8,18 +8,18 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
-import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.StateReplication;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class SnapshotReplicationPartitionBootstrapStep implements PartitionBootstrapStep {
+public class SnapshotReplicationPartitionStartupStep implements PartitionStartupStep {
 
   @Override
-  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
+  public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final SnapshotReplication replication =
         shouldReplicateSnapshots(context)
             ? new StateReplication(
@@ -27,11 +27,11 @@ public class SnapshotReplicationPartitionBootstrapStep implements PartitionBoots
             : new NoneSnapshotReplication();
 
     context.setSnapshotReplication(replication);
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
-  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
+  public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
     try {
       if (context.getSnapshotReplication() != null) {
         context.getSnapshotReplication().close();
@@ -45,7 +45,7 @@ public class SnapshotReplicationPartitionBootstrapStep implements PartitionBoots
       context.setSnapshotReplication(null);
     }
 
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
@@ -53,7 +53,7 @@ public class SnapshotReplicationPartitionBootstrapStep implements PartitionBoots
     return "SnapshotReplication";
   }
 
-  private boolean shouldReplicateSnapshots(final PartitionBootstrapContext state) {
+  private boolean shouldReplicateSnapshots(final PartitionStartupContext state) {
     return state.getBrokerCfg().getCluster().getReplicationFactor() > 1;
   }
 }

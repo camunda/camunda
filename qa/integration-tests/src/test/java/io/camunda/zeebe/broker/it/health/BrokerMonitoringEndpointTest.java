@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.it.health;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.restassured.builder.RequestSpecBuilder;
@@ -18,6 +19,7 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
+import java.util.concurrent.TimeUnit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,31 +72,22 @@ public final class BrokerMonitoringEndpointTest {
 
   @Test
   public void shouldGetReadyStatus() {
-    given()
-        .spec(brokerServerSpec)
-        .when()
-        .get("ready")
-        .then() //
-        .statusCode(204);
+    await("Ready Status")
+        .atMost(60, TimeUnit.SECONDS)
+        .until(() -> given().spec(brokerServerSpec).when().get("ready").statusCode() == 204);
   }
 
   @Test
   public void shouldGetHealthStatus() {
-    given()
-        .spec(brokerServerSpec)
-        .when()
-        .get("health")
-        .then() //
-        .statusCode(204);
+    await("Health Status")
+        .atMost(60, TimeUnit.SECONDS)
+        .until(() -> given().spec(brokerServerSpec).when().get("health").statusCode() == 204);
   }
 
   @Test
   public void shouldGetStartupStatus() {
-    given()
-        .spec(brokerServerSpec)
-        .when()
-        .get("startup")
-        .then() //
-        .statusCode(204);
+    await("Startup Status")
+        .atMost(60, TimeUnit.SECONDS)
+        .until(() -> given().spec(brokerServerSpec).when().get("startup").statusCode() == 204);
   }
 }
