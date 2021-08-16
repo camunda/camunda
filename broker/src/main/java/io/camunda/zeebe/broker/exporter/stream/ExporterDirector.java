@@ -167,9 +167,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           new ExporterPositionsDistributionService(
               state::setPosition, partitionMessagingService, exporterPositionsTopic);
 
-      if (exporterMode == ExporterMode.ACTIVE) {
-        initActiveExportingMode();
-      }
+      // Initialize containers irrespective of if it is Active or Passive mode
+      initContainers();
     } catch (final Exception e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
@@ -183,7 +182,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     if (exporterMode == ExporterMode.ACTIVE) {
       startActiveExportingMode();
     } else { // PASSIVE, we consume the messages and set it in our state
-      exporterDistributionService.subscribeForExporterPositions(actor::submit);
+      startPassiveExportingMode();
     }
   }
 
@@ -202,7 +201,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorCloseRequested() {
     isOpened.set(false);
-    containers.forEach(ExporterContainer::close);
+    if (exporterMode == ExporterMode.ACTIVE) {
+      containers.forEach(ExporterContainer::close);
+    }
   }
 
   @Override
@@ -230,7 +231,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
   }
 
-  private void initActiveExportingMode() throws Exception {
+  private void initContainers() throws Exception {
     for (final ExporterContainer container : containers) {
       container.initContainer(actor, metrics, state);
       container.configureExporter();
@@ -302,6 +303,19 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
       actor.runAtFixedRate(distributionInterval, this::distributeExporterPositions);
 
+    } else {
+      actor.close();
+    }
+  }
+
+  private void startPassiveExportingMode() {
+    // Only initialize the positions, do not open and start exporting
+    for (final ExporterContainer container : containers) {
+      container.initPosition();
+    }
+
+    if (state.hasExporters()) {
+      exporterDistributionService.subscribeForExporterPositions(actor::submit);
     } else {
       actor.close();
     }
