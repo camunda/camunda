@@ -41,7 +41,7 @@ export default function HyperReportRenderer({report, ...rest}) {
           type: 'map',
           data: measure.data.map((datapoint) => ({
             ...datapoint,
-            value: datapoint.value.find((data) => data.key === key).value,
+            value: datapoint.value.find((data) => data.key === key)?.value,
           })),
         })),
       },
