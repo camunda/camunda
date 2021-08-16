@@ -502,7 +502,7 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /master|prototype_zeebeint/ || CHANGE_BRANCH ==~ /master|prototype_zeebeint/ }
+              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
@@ -536,18 +536,6 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage('Deploy to K8s') {
-      when {
-        expression {
-          getBranchName() ==~ /prototype_zeebeint/
-        }
-      }
-      steps {
-        build job: '/deploy-optimize-zeebeint-to-k8s', parameters: [
-          string(name: 'BRANCH', value: getBranchName()),
-        ]
       }
     }
   }
@@ -587,7 +575,7 @@ String getImageTag() {
 }
 
 String getBranchName() {
-  return (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'prototype_zeebeint') ? env.BRANCH_NAME : env.CHANGE_BRANCH
+  return (env.BRANCH_NAME == 'master') ? env.BRANCH_NAME : env.CHANGE_BRANCH
 }
 
 void integrationTestSteps(String engineVersion = 'latest') {
