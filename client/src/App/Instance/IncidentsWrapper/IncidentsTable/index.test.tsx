@@ -7,13 +7,17 @@
 import React from 'react';
 import {IncidentsTable} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createIncident} from 'modules/testUtils';
+import {createIncident, mockCallActivityProcessXML} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {authenticationStore} from 'modules/stores/authentication';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {mockServer} from 'modules/mock-server/node';
+import {rest} from 'msw';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
@@ -26,6 +30,11 @@ const mockProps = {
       errorMessage: shortError,
       flowNodeName: 'Task A',
       flowNodeInstanceId: 'flowNodeInstanceIdA',
+      rootCauseInstance: {
+        instanceId: '111111111111111111',
+        processDefinitionId: 'calledInstance',
+        processDefinitionName: 'Called Instance',
+      },
     }),
     createIncident({
       errorType: 'Error B',
@@ -63,7 +72,14 @@ describe('IncidentsTable', () => {
     authenticationStore.reset();
   });
 
-  it('should render the right column headers', () => {
+  it('should render the right column headers', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      )
+    );
+    await singleInstanceDiagramStore.fetchProcessXml('1');
+
     render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
 
     expect(screen.getByText('Incident Type')).toBeInTheDocument();
@@ -72,6 +88,9 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Creation Time')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
+    if (IS_NEXT_INCIDENTS) {
+      expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
+    }
   });
 
   it('should render the right column headers for restricted user', () => {
@@ -85,9 +104,19 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Creation Time')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.queryByText('Operations')).not.toBeInTheDocument();
+    if (IS_NEXT_INCIDENTS) {
+      expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
+    }
   });
 
-  it('should render incident details', () => {
+  it('should render incident details', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      )
+    );
+    await singleInstanceDiagramStore.fetchProcessXml('1');
+
     render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
     let withinRow = within(
       screen.getByTestId(`tr-incident-${mockProps.incidents[0].id}`)
@@ -110,10 +139,20 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(mockProps.incidents[0].errorMessage)
     ).toBeInTheDocument();
-    expect(
-      withinRow.getByRole('button', {name: 'Retry Incident'})
-    ).toBeInTheDocument();
-
+    if (IS_NEXT_INCIDENTS) {
+      expect(
+        withinRow.getByRole('link', {
+          name: /view root cause instance/i,
+        })
+      ).toBeInTheDocument();
+      expect(
+        withinRow.queryByRole('button', {name: 'Retry Incident'})
+      ).not.toBeInTheDocument();
+    } else {
+      expect(
+        withinRow.getByRole('button', {name: 'Retry Incident'})
+      ).toBeInTheDocument();
+    }
     withinRow = within(
       screen.getByTestId(`tr-incident-${mockProps.incidents[1].id}`)
     );
@@ -164,6 +203,13 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(mockProps.incidents[0].errorMessage)
     ).toBeInTheDocument();
+    if (IS_NEXT_INCIDENTS) {
+      expect(
+        withinRow.getByRole('link', {
+          name: /view root cause instance/i,
+        })
+      ).toBeInTheDocument();
+    }
     expect(
       withinRow.queryByRole('button', {name: 'Retry Incident'})
     ).not.toBeInTheDocument();
@@ -191,6 +237,13 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.queryByRole('button', {name: 'Retry Incident'})
     ).not.toBeInTheDocument();
+    if (IS_NEXT_INCIDENTS) {
+      expect(
+        withinRow.queryByRole('link', {
+          name: /view root cause instance/i,
+        })
+      ).not.toBeInTheDocument();
+    }
   });
 
   it('should display -- for jobId', () => {

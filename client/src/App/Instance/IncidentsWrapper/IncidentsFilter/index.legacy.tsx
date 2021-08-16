@@ -9,14 +9,18 @@ import Pill from 'modules/components/Pill';
 
 import Option from 'modules/components/Dropdown/Option';
 import * as Styled from './styled';
-import {incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore} from 'modules/stores/incidents.legacy';
 import {observer} from 'mobx-react';
+
+const splitArray = (arr: any, size = 5) => {
+  return [[...arr.slice(0, size)], [...arr.slice(size)]];
+};
 
 type Props = {
   selectedErrorTypes?: string[];
   selectedFlowNodes?: string[];
-  onFlowNodeSelect: (flowNodeId: string) => void;
-  onErrorTypeSelect: (errorTypeId: string) => void;
+  onFlowNodeSelect: (...args: unknown[]) => void;
+  onErrorTypeSelect: (...args: unknown[]) => void;
   onClearAll: () => void;
 };
 
@@ -29,8 +33,8 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
 }) {
   const {flowNodes, errorTypes} = incidentsStore;
 
-  const moreErrorTypes = errorTypes.slice(5);
-  const moreFlowNodes = flowNodes.slice(5);
+  const groupedFlowNodes = splitArray([...flowNodes.values()]);
+  const groupedErrorTypes = splitArray([...errorTypes.values()]);
 
   return (
     <Styled.FiltersWrapper>
@@ -39,36 +43,40 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
           <Styled.FilterRow>
             <Styled.Label>Incident type:</Styled.Label>
             <Styled.Ul data-testid="incidents-by-errorType">
-              {errorTypes.slice(0, 4).map(({id, count, name}) => {
+              {groupedErrorTypes[0].map((item) => {
                 return (
-                  <li key={id}>
+                  <li key={item.errorType}>
                     <Pill
-                      data-testid={id}
+                      data-testid={item.errorType}
                       type="FILTER"
-                      count={count}
-                      isActive={selectedErrorTypes?.includes(id)}
-                      onClick={() => onErrorTypeSelect(id)}
+                      count={item.count}
+                      isActive={selectedErrorTypes?.includes(item.errorType)}
+                      onClick={() => onErrorTypeSelect(item.errorType)}
                     >
-                      {name}
+                      {item.errorType}
                     </Pill>
                   </li>
                 );
               })}
-              {moreErrorTypes.length > 0 && (
+              {Boolean(groupedErrorTypes[1].length) && (
                 <li>
-                  <Styled.MoreDropdown label={`${moreErrorTypes.length} more`}>
-                    {moreErrorTypes.map(({id, count, name}) => {
+                  <Styled.MoreDropdown
+                    label={`${groupedErrorTypes[1].length} more`}
+                  >
+                    {groupedErrorTypes[1].map((item) => {
                       return (
-                        <Option key={id}>
+                        <Option key={item.errorType}>
                           <Pill
-                            data-testid={id}
+                            data-testid={item.errorType}
                             type="FILTER"
-                            count={count}
-                            isActive={selectedErrorTypes?.includes(id)}
-                            onClick={() => onErrorTypeSelect(id)}
+                            count={item.count}
+                            isActive={selectedErrorTypes?.includes(
+                              item.errorType
+                            )}
+                            onClick={() => onErrorTypeSelect(item.errorType)}
                             grow
                           >
-                            {name}
+                            {item.errorType}
                           </Pill>
                         </Option>
                       );
@@ -81,35 +89,39 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
           <Styled.FilterRow>
             <Styled.Label>Flow Node:</Styled.Label>
             <Styled.Ul data-testid="incidents-by-flowNode">
-              {flowNodes.slice(0, 4).map(({id, name, count}) => {
+              {groupedFlowNodes[0].map((item) => {
                 return (
-                  <li key={id}>
+                  <li key={item.flowNodeId}>
                     <Pill
-                      data-testid={id}
+                      data-testid={item.flowNodeId}
                       type="FILTER"
-                      count={count}
-                      isActive={selectedFlowNodes?.includes(id)}
-                      onClick={() => onFlowNodeSelect(id)}
+                      count={item.count}
+                      isActive={selectedFlowNodes?.includes(item.flowNodeId)}
+                      onClick={() => onFlowNodeSelect(item.flowNodeId)}
                     >
-                      {name}
+                      {item.flowNodeName}
                     </Pill>
                   </li>
                 );
               })}
-              {moreFlowNodes.length > 0 && (
+              {Boolean(groupedFlowNodes[1].length) && (
                 <li>
-                  <Styled.MoreDropdown label={`${moreFlowNodes.length} more`}>
-                    {moreFlowNodes.map(({id, name, count}) => {
+                  <Styled.MoreDropdown
+                    label={`${groupedFlowNodes[1].length} more`}
+                  >
+                    {groupedFlowNodes[1].map((item) => {
                       return (
-                        <Option key={id}>
+                        <Option key={item.flowNodeId}>
                           <Pill
                             type="FILTER"
-                            count={count}
-                            isActive={selectedFlowNodes?.includes(id)}
+                            count={item.count}
+                            isActive={selectedFlowNodes?.includes(
+                              item.flowNodeId
+                            )}
                             grow={true}
-                            onClick={() => onFlowNodeSelect(id)}
+                            onClick={() => onFlowNodeSelect(item.flowNodeId)}
                           >
-                            {name}
+                            {item.flowNodeName}
                           </Pill>
                         </Option>
                       );

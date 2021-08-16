@@ -117,6 +117,10 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
     return this.state.nodeMetaDataMap?.[flowNodeId];
   };
 
+  getFlowNodeName = (flowNodeId: string) => {
+    return this.getMetaData(flowNodeId)?.name || flowNodeId;
+  };
+
   get areDiagramDefinitionsAvailable() {
     const {status, diagramModel} = this.state;
 

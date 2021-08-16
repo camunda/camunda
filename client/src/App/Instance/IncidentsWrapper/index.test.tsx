@@ -8,14 +8,32 @@ import React from 'react';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {IncidentsWrapper} from './index';
+import {IncidentsWrapper as IncidentsWrapperNext} from './index';
+import {IncidentsWrapper as IncidentsWrapperLegacy} from './index.legacy';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {testData, mockIncidents, mockResolvedIncidents} from './index.setup';
+import {
+  mockIncidentWrapperProps,
+  mockIncidents,
+  mockIncidentsLegacy,
+  mockResolvedIncidents,
+  mockResolvedIncidentsLegacy,
+} from './index.setup';
+
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore as incidentsStoreNext} from 'modules/stores/incidents';
+import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
+
+const incidentsStore = IS_NEXT_INCIDENTS
+  ? incidentsStoreNext
+  : incidentsStoreLegacy;
+
+const IncidentsWrapper = IS_NEXT_INCIDENTS
+  ? IncidentsWrapperNext
+  : IncidentsWrapperLegacy;
 
 jest.mock('modules/components/IncidentOperation', () => {
   return {
@@ -60,11 +78,13 @@ const Wrapper = ({children}: Props) => {
   );
 };
 
-describe('IncidentsWrapper', () => {
+describe('IncidentsFilter', () => {
   beforeEach(async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(
+          ctx.json(IS_NEXT_INCIDENTS ? mockIncidents : mockIncidentsLegacy)
+        )
       )
     );
 
@@ -72,7 +92,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the IncidentsBanner', () => {
-    render(<IncidentsWrapper {...testData.props.default} isOpen={true} />, {
+    render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
       wrapper: Wrapper,
     });
 
@@ -82,7 +102,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the table', () => {
-    render(<IncidentsWrapper {...testData.props.default} isOpen={true} />, {
+    render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
       wrapper: Wrapper,
     });
     userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
@@ -98,7 +118,7 @@ describe('IncidentsWrapper', () => {
   });
 
   it('should render the filters', () => {
-    render(<IncidentsWrapper {...testData.props.default} isOpen={true} />, {
+    render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
       wrapper: Wrapper,
     });
     userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
@@ -123,7 +143,7 @@ describe('IncidentsWrapper', () => {
     let rerender: any;
     beforeEach(() => {
       const wrapper = render(
-        <IncidentsWrapper {...testData.props.default} isOpen={true} />,
+        <IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />,
         {
           wrapper: Wrapper,
         }
@@ -224,13 +244,22 @@ describe('IncidentsWrapper', () => {
       mockServer.use(
         rest.get(
           '/api/process-instances/:instanceId/incidents',
-          (_, res, ctx) => res.once(ctx.json(mockResolvedIncidents))
+          (_, res, ctx) =>
+            res.once(
+              ctx.json(
+                IS_NEXT_INCIDENTS
+                  ? mockResolvedIncidents
+                  : mockResolvedIncidentsLegacy
+              )
+            )
         )
       );
 
       await incidentsStore.fetchIncidents('1');
 
-      rerender(<IncidentsWrapper {...testData.props.default} isOpen={true} />);
+      rerender(
+        <IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />
+      );
 
       expect(
         flowNodeFilters.queryByText(/^flowNodeId_exclusiveGateway/)

@@ -21,10 +21,18 @@ import {ErrorMessageModal} from './ErrorMessageModal';
 
 import * as Styled from './styled';
 import {Restricted} from 'modules/components/Restricted';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {incidentsStore} from 'modules/stores/incidents';
+import {Link} from 'modules/components/Link';
+import {Locations} from 'modules/routes';
+
 const {THead, TBody, TR, TD} = Table;
 
 type Props = {
   incidents: unknown[];
+  // TODO: when removing IS_NEXT_INCIDENTS, change this to:
+  // incidents: typeof incidentsStore.incidents;
 };
 
 const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
@@ -42,17 +50,22 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     setModalTitle(null);
   };
 
-  const handleMoreButtonClick = (incident: any, e: any) => {
-    e.stopPropagation();
-
+  const handleMoreButtonClick = (
+    errorMessage: string,
+    flowNodeName: string
+  ) => {
     setIsModalVisible(true);
-    setModalContent(incident.errorMessage);
-    setModalTitle(`Flow Node "${incident.flowNodeName}" Error`);
+    setModalContent(errorMessage);
+    setModalTitle(`Flow Node "${flowNodeName}" Error`);
   };
 
-  const sortedIncidents = sortData(incidents, sortBy, sortOrder);
-  const isJobIdPresent = (sortedIncidents: any) =>
-    !Boolean(sortedIncidents.find((item: any) => Boolean(item.jobId)));
+  const sortedIncidents: typeof incidentsStore.incidents = sortData(
+    incidents,
+    sortBy,
+    sortOrder
+  );
+
+  const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
 
   return (
     <>
@@ -78,7 +91,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
               <ColumnHeader
                 sortKey="jobId"
                 label="Job Id"
-                disabled={isJobIdPresent(sortedIncidents)}
+                disabled={!isJobIdPresent}
                 table="instance"
               />
             </Styled.TH>
@@ -92,6 +105,12 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
             <Styled.TH>
               <ColumnHeader label="Error Message" />
             </Styled.TH>
+            {IS_NEXT_INCIDENTS &&
+              singleInstanceDiagramStore.hasCalledInstances && (
+                <Styled.TH>
+                  <ColumnHeader label="Root Cause Instance" />
+                </Styled.TH>
+              )}
             <Restricted scopes={['edit']}>
               <Styled.TH>
                 <ColumnHeader label="Operations" />
@@ -102,7 +121,13 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
 
         <TBody>
           <TransitionGroup component={null}>
-            {sortedIncidents.map((incident: any, index: any) => {
+            {sortedIncidents.map((incident, index: number) => {
+              const {rootCauseInstance} = incident;
+              const areOperationsVisible = IS_NEXT_INCIDENTS
+                ? rootCauseInstance === null ||
+                  rootCauseInstance.instanceId === processInstanceId
+                : true;
+
               const isSelected = flowNodeSelectionStore.isSelected({
                 flowNodeId: incident.flowNodeId,
                 flowNodeInstanceId: incident.flowNodeInstanceId,
@@ -151,21 +176,50 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                         {incident.errorMessage.length >= 58 && (
                           <Button
                             size="small"
-                            // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
-                            onClick={handleMoreButtonClick.bind(this, incident)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleMoreButtonClick(
+                                incident.errorMessage,
+                                incident.flowNodeName
+                              );
+                            }}
                           >
                             More...
                           </Button>
                         )}
                       </Styled.Flex>
                     </TD>
+                    {IS_NEXT_INCIDENTS &&
+                      singleInstanceDiagramStore.hasCalledInstances &&
+                      rootCauseInstance !== null && (
+                        <TD>
+                          {rootCauseInstance.instanceId ===
+                          processInstanceId ? (
+                            '--'
+                          ) : (
+                            <Link
+                              to={(location) =>
+                                Locations.instance(
+                                  rootCauseInstance.instanceId,
+                                  location
+                                )
+                              }
+                              title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                            >
+                              {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                            </Link>
+                          )}
+                        </TD>
+                      )}
                     <Restricted scopes={['edit']}>
                       <TD>
-                        <IncidentOperation
-                          instanceId={processInstanceId}
-                          incident={incident}
-                          showSpinner={incident.hasActiveOperation}
-                        />
+                        {areOperationsVisible && (
+                          <IncidentOperation
+                            instanceId={processInstanceId}
+                            incident={incident}
+                            showSpinner={incident.hasActiveOperation}
+                          />
+                        )}
                       </TD>
                     </Restricted>
                   </Styled.IncidentTR>

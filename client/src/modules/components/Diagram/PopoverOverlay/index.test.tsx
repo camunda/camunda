@@ -14,10 +14,10 @@ import {mockServer} from 'modules/mock-server/node';
 import {PopoverOverlay} from './';
 import {
   createInstance,
-  mockIncidents,
   mockCallActivityProcessXML,
   mockProcessXML,
 } from 'modules/testUtils';
+import {mockIncidents} from 'modules/mocks/incidents';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router';

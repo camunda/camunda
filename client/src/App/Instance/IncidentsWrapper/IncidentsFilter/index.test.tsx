@@ -4,7 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IncidentsFilter} from './index';
+import {IncidentsFilter as IncidentsFilterNext} from './index';
+import {IncidentsFilter as IncidentsFilterLegacy} from './index.legacy';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -13,26 +14,43 @@ import {
   selectedErrorPillProps,
   mockIncidents,
   mockIncidentsWithManyErrors,
+  mockIncidentsLegacy,
+  mockIncidentsWithManyErrorsLegacy,
 } from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
+
+const {reset, fetchIncidents} = IS_NEXT_INCIDENTS
+  ? incidentsStore
+  : incidentsStoreLegacy;
+
+const IncidentsFilter = IS_NEXT_INCIDENTS
+  ? IncidentsFilterNext
+  : IncidentsFilterLegacy;
 
 describe('IncidentsFilter', () => {
   afterAll(() => {
-    incidentsStore.reset();
+    reset();
   });
+
   it('should render pills by incident type', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(
+          ctx.json(IS_NEXT_INCIDENTS ? mockIncidents : mockIncidentsLegacy)
+        )
       )
     );
 
-    await incidentsStore.fetchIncidents('1');
+    await fetchIncidents('1');
 
-    render(<IncidentsFilter {...defaultProps} />, {wrapper: ThemeProvider});
+    render(<IncidentsFilter {...defaultProps} />, {
+      wrapper: ThemeProvider,
+    });
 
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
     expect(
@@ -46,12 +64,16 @@ describe('IncidentsFilter', () => {
   it('should render pills by flow node', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(
+          ctx.json(IS_NEXT_INCIDENTS ? mockIncidents : mockIncidentsLegacy)
+        )
       )
     );
-    await incidentsStore.fetchIncidents('1');
+    await fetchIncidents('1');
 
-    render(<IncidentsFilter {...defaultProps} />, {wrapper: ThemeProvider});
+    render(<IncidentsFilter {...defaultProps} />, {
+      wrapper: ThemeProvider,
+    });
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'flowNodeId_exclusiveGateway 1'})
@@ -64,12 +86,20 @@ describe('IncidentsFilter', () => {
   it('should show a more button', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsWithManyErrors))
+        res.once(
+          ctx.json(
+            IS_NEXT_INCIDENTS
+              ? mockIncidentsWithManyErrors
+              : mockIncidentsWithManyErrorsLegacy
+          )
+        )
       )
     );
-    await incidentsStore.fetchIncidents('1');
+    await fetchIncidents('1');
 
-    render(<IncidentsFilter {...defaultProps} />, {wrapper: ThemeProvider});
+    render(<IncidentsFilter {...defaultProps} />, {
+      wrapper: ThemeProvider,
+    });
     expect(
       screen.queryByRole('button', {name: 'error type 6 1'})
     ).not.toBeInTheDocument();
@@ -84,10 +114,12 @@ describe('IncidentsFilter', () => {
   it('should disable/enable clear all button depending on selected pills', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(
+          ctx.json(IS_NEXT_INCIDENTS ? mockIncidents : mockIncidentsLegacy)
+        )
       )
     );
-    await incidentsStore.fetchIncidents('1');
+    await fetchIncidents('1');
 
     const {rerender} = render(<IncidentsFilter {...defaultProps} />, {
       wrapper: ThemeProvider,

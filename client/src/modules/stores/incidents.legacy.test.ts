@@ -4,13 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {incidentsStore} from './incidents';
+import {incidentsStore} from './incidents.legacy';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {createInstance} from 'modules/testUtils';
-import {mockIncidents} from 'modules/mocks/incidents';
+import {mockIncidentsLegacy} from 'modules/mocks/incidents';
 
 describe('stores/incidents', () => {
   afterEach(() => {
@@ -20,7 +20,7 @@ describe('stores/incidents', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(ctx.json(mockIncidentsLegacy))
       )
     );
   });
@@ -34,12 +34,12 @@ describe('stores/incidents', () => {
     incidentsStore.init();
 
     await waitFor(() =>
-      expect(incidentsStore.state.response).toEqual(mockIncidents)
+      expect(incidentsStore.state.response).toEqual(mockIncidentsLegacy)
     );
 
     mockServer.use(
       rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(ctx.json({...mockIncidents, count: 2}))
+        res.once(ctx.json({...mockIncidentsLegacy, count: 2}))
       )
     );
 
@@ -47,14 +47,14 @@ describe('stores/incidents', () => {
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
-        ...mockIncidents,
+        ...mockIncidentsLegacy,
         count: 2,
       })
     );
 
     mockServer.use(
       rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
-        res.once(ctx.json({...mockIncidents, count: 3}))
+        res.once(ctx.json({...mockIncidentsLegacy, count: 3}))
       )
     );
 
@@ -62,7 +62,7 @@ describe('stores/incidents', () => {
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
-        ...mockIncidents,
+        ...mockIncidentsLegacy,
         count: 3,
       })
     );
@@ -77,7 +77,7 @@ describe('stores/incidents', () => {
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
-        ...mockIncidents,
+        ...mockIncidentsLegacy,
         count: 3,
       })
     );
@@ -90,8 +90,8 @@ describe('stores/incidents', () => {
     expect(incidentsStore.state.response).toEqual(null);
     expect(incidentsStore.state.isLoaded).toBe(false);
 
-    incidentsStore.setIncidents(mockIncidents);
-    expect(incidentsStore.state.response).toEqual(mockIncidents);
+    incidentsStore.setIncidents(mockIncidentsLegacy);
+    expect(incidentsStore.state.response).toEqual(mockIncidentsLegacy);
     expect(incidentsStore.state.isLoaded).toBe(true);
 
     incidentsStore.reset();
@@ -101,7 +101,7 @@ describe('stores/incidents', () => {
 
   it('should get incidents', async () => {
     expect(incidentsStore.incidents).toEqual([]);
-    incidentsStore.setIncidents(mockIncidents);
+    incidentsStore.setIncidents(mockIncidentsLegacy);
 
     expect(incidentsStore.incidents).toEqual([
       {
@@ -120,32 +120,29 @@ describe('stores/incidents', () => {
   });
 
   it('should get flowNodes', async () => {
-    incidentsStore.setIncidents(mockIncidents);
+    expect(incidentsStore.flowNodes).toEqual(new Map());
+    incidentsStore.setIncidents(mockIncidentsLegacy);
 
-    expect(incidentsStore.flowNodes).toEqual([
-      {
-        id: 'Task_162x79i',
-        name: 'Task_162x79i',
-        count: 1,
-      },
-    ]);
+    expect(incidentsStore.flowNodes.get('Task_162x79i')).toEqual({
+      flowNodeId: 'Task_162x79i',
+      flowNodeName: 'Task_162x79i',
+      count: 1,
+    });
   });
 
   it('should get errorTypes', async () => {
-    incidentsStore.setIncidents(mockIncidents);
+    expect(incidentsStore.errorTypes).toEqual(new Map());
+    incidentsStore.setIncidents(mockIncidentsLegacy);
 
-    expect(incidentsStore.errorTypes).toEqual([
-      {
-        id: 'NO_MORE_RETRIES',
-        type: 'No more retries left',
-        count: 1,
-      },
-    ]);
+    expect(incidentsStore.errorTypes.get('No more retries left')).toEqual({
+      errorType: 'No more retries left',
+      count: 1,
+    });
   });
 
   it('should get incidentsCount', async () => {
     expect(incidentsStore.incidentsCount).toBe(0);
-    incidentsStore.setIncidents(mockIncidents);
+    incidentsStore.setIncidents(mockIncidentsLegacy);
 
     expect(incidentsStore.incidentsCount).toBe(1);
   });
@@ -166,14 +163,14 @@ describe('stores/incidents', () => {
     incidentsStore.init();
 
     await waitFor(() =>
-      expect(incidentsStore.state.response).toEqual(mockIncidents)
+      expect(incidentsStore.state.response).toEqual(mockIncidentsLegacy)
     );
 
     mockServer.use(
       rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
         res.once(
           ctx.json({
-            ...mockIncidents,
+            ...mockIncidentsLegacy,
             count: 3,
           })
         )
@@ -184,7 +181,7 @@ describe('stores/incidents', () => {
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
-        ...mockIncidents,
+        ...mockIncidentsLegacy,
         count: 3,
       })
     );

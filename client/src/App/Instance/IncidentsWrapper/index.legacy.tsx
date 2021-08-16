@@ -5,12 +5,14 @@
  */
 
 import React, {useState, useEffect, useMemo} from 'react';
+import {isEqual} from 'lodash';
 
 import {IncidentsBanner} from './IncidentsBanner';
 import IncidentsOverlay from './IncidentsOverlay';
 import {IncidentsTable} from './IncidentsTable';
-import {IncidentsFilter} from './IncidentsFilter';
-import {Incident, incidentsStore} from 'modules/stores/incidents';
+import {IncidentsFilter} from './IncidentsFilter/index.legacy';
+import usePrevious from 'modules/hooks/usePrevious';
+import {incidentsStore} from 'modules/stores/incidents.legacy';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -23,12 +25,14 @@ type Props = {
 
 const IncidentsWrapper: React.FC<Props> = observer(function (props) {
   const {expandState, isOpen, onClick} = props;
-  const {incidents} = incidentsStore;
+  const {incidents, flowNodes, errorTypes} = incidentsStore;
 
   const [selectedFlowNodes, setSelectedFlowNodes] = useState<string[]>([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState<string[]>([]);
   const [isInTransition, setIsInTransition] = useState(false);
 
+  const prevErrorTypes = usePrevious(errorTypes);
+  const prevFlowNodes = usePrevious(flowNodes);
   useEffect(() => {
     incidentsStore.init();
 
@@ -37,16 +41,40 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
     };
   }, []);
 
+  useEffect(() => {
+    if (didFiltersChange(prevErrorTypes, errorTypes)) {
+      setSelectedErrorTypes(updateFilters(selectedErrorTypes, errorTypes));
+    }
+  }, [prevErrorTypes, errorTypes, selectedErrorTypes]);
+
+  useEffect(() => {
+    if (didFiltersChange(prevFlowNodes, flowNodes)) {
+      setSelectedFlowNodes(updateFilters(selectedFlowNodes, flowNodes));
+    }
+  }, [prevFlowNodes, flowNodes, selectedFlowNodes]);
+
+  function didFiltersChange(previous: any, current: any) {
+    return previous && !isEqual([...current.keys()], [...previous.keys()]);
+  }
+
+  function updateFilters(previous: any, current: any) {
+    return previous.reduce(
+      (updatedFilters: any, element: any) =>
+        !!current.get(element) ? [...updatedFilters, element] : updatedFilters,
+      []
+    );
+  }
+
   function handleToggle() {
     !isInTransition && onClick?.();
   }
 
   function handleSelection(
-    selectedFilters: string[],
-    updateFilterState: (filterList: string[]) => void,
-    id: string
+    selectedFilters: any,
+    updateFilterState: any,
+    id: any
   ) {
-    let index = selectedFilters.findIndex((item) => item === id);
+    let index = selectedFilters.findIndex((item: any) => item === id);
     let list = [...selectedFilters];
     if (index === -1) {
       list.push(id);
@@ -56,11 +84,11 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
     updateFilterState(list);
   }
 
-  const handleErrorTypeSelect = (errorId: string) => {
+  const handleErrorTypeSelect = (errorId: any) => {
     handleSelection(selectedErrorTypes, setSelectedErrorTypes, errorId);
   };
 
-  const handleFlowNodeSelect = (flowNodeId: string) => {
+  const handleFlowNodeSelect = (flowNodeId: any) => {
     handleSelection(selectedFlowNodes, setSelectedFlowNodes, flowNodeId);
   };
 
@@ -77,23 +105,23 @@ const IncidentsWrapper: React.FC<Props> = observer(function (props) {
       return incidents;
     }
 
-    const isSelected = (incident: Incident) => {
+    const isSelected = (item: any) => {
       if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
         return (
-          selectedFlowNodes.includes(incident.flowNodeId) &&
-          selectedErrorTypes.includes(incident.errorType)
+          selectedFlowNodes.includes(item.flowNodeId) &&
+          selectedErrorTypes.includes(item.errorType)
         );
       }
       if (hasSelectedErrorTypes) {
-        return selectedErrorTypes.includes(incident.errorType);
+        return selectedErrorTypes.includes(item.errorType);
       }
 
       if (hasSelectedFlowNodes) {
-        return selectedFlowNodes.includes(incident.flowNodeId);
+        return selectedFlowNodes.includes(item.flowNodeId);
       }
     };
 
-    return [...incidents].filter((incident) => isSelected(incident));
+    return [...incidents].filter((item) => isSelected(item));
   }, [incidents, selectedErrorTypes, selectedFlowNodes]);
 
   if (incidentsStore.incidentsCount === 0) {

@@ -55,7 +55,7 @@ type Props = {
     canceled?: number;
   }[];
   expandState?: 'DEFAULT' | 'EXPANDED' | 'COLLAPSED';
-  isIncidentBarOpen?: boolean;
+  hidePopover?: boolean;
 };
 
 type State = {
@@ -422,7 +422,7 @@ class Diagram extends React.PureComponent<Props, State> {
           this.Viewer &&
           !this.state.isViewboxChanging &&
           this.props.expandState !== 'COLLAPSED' &&
-          !this.props.isIncidentBarOpen && (
+          !this.props.hidePopover && (
             <PopoverOverlay
               selectedFlowNodeRef={
                 // @ts-expect-error

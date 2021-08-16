@@ -16,15 +16,15 @@ import {
 import {fetchProcessInstanceIncidents} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {mapify} from './mappers';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type FlowNode = {
-  id: string;
+  flowNodeId: string;
   count: number;
 };
 type ErrorType = {
-  id: string;
-  name: string;
+  errorType: string;
   count: number;
 };
 type Incident = {
@@ -37,11 +37,6 @@ type Incident = {
   creationTime: string;
   hasActiveOperation: boolean;
   lastOperation: null | unknown;
-  rootCauseInstance: null | {
-    instanceId: string;
-    processDefinitionId: string;
-    processDefinitionName: string;
-  };
 };
 type Response = {
   count: number;
@@ -49,7 +44,6 @@ type Response = {
   errorTypes: ErrorType[];
   flowNodes: FlowNode[];
 };
-
 type State = {
   response: null | Response;
   isLoaded: boolean;
@@ -144,27 +138,38 @@ class Incidents extends NetworkReconnectionHandler {
     if (this.state.response === null) {
       return [];
     }
-    return this.state.response.incidents.map((incident) => ({
-      ...incident,
-      flowNodeName: singleInstanceDiagramStore.getFlowNodeName(
+    return this.state.response.incidents.map((incident) => {
+      const metaData = singleInstanceDiagramStore.getMetaData(
         incident.flowNodeId
-      ),
-    }));
+      );
+      return {
+        ...incident,
+        flowNodeName: metaData?.name || incident.flowNodeId,
+      };
+    });
   }
 
   get flowNodes() {
-    if (this.state.response === null) {
-      return [];
-    }
-
-    return this.state.response.flowNodes.map((flowNode) => ({
-      ...flowNode,
-      name: singleInstanceDiagramStore.getFlowNodeName(flowNode.id),
-    }));
+    return this.state.response === null
+      ? new Map()
+      : mapify(
+          this.state.response.flowNodes.map((flowNode) => {
+            const metaData = singleInstanceDiagramStore.getMetaData(
+              flowNode.flowNodeId
+            );
+            return {
+              ...flowNode,
+              flowNodeName: metaData?.name || flowNode.flowNodeId,
+            };
+          }),
+          'flowNodeId'
+        );
   }
 
   get errorTypes() {
-    return this.state.response?.errorTypes || [];
+    return this.state.response === null
+      ? new Map()
+      : mapify(this.state.response.errorTypes, 'errorType');
   }
 
   get incidentsCount() {
@@ -173,4 +178,3 @@ class Incidents extends NetworkReconnectionHandler {
 }
 
 export const incidentsStore = new Incidents();
-export type {Incident};

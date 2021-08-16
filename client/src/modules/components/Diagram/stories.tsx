@@ -62,7 +62,7 @@ const Diagram = ({flowNodeId}: {flowNodeId: string}) => {
               selectableFlowNodes={[flowNodeId]}
               expandState={'DEFAULT'}
               definitions={diagram.definitions}
-              isIncidentBarOpen={false}
+              hidePopover={false}
               selectedFlowNodeId={flowNodeId}
             />
           </Container>

@@ -9,8 +9,10 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {EXPAND_STATE} from 'modules/constants';
 import * as Styled from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
 import {observer} from 'mobx-react';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 type Props = {
   onClick: () => void;
@@ -21,7 +23,9 @@ type Props = {
 const IncidentsBanner: React.FC<Props> = observer(
   ({onClick, isOpen, expandState}) => {
     const {processInstanceId} = useInstancePageParams();
-    const {incidentsCount} = incidentsStore;
+    const {incidentsCount} = IS_NEXT_INCIDENTS
+      ? incidentsStore
+      : incidentsStoreLegacy;
 
     const errorMessage = `There ${
       incidentsCount === 1 ? 'is' : 'are'

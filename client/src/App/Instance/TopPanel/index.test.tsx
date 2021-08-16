@@ -12,7 +12,11 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockSequenceFlows, mockIncidents} from './index.setup';
+import {
+  mockSequenceFlows,
+  mockIncidents,
+  mockIncidentsLegacy,
+} from './index.setup';
 import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -20,6 +24,7 @@ import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import userEvent from '@testing-library/user-event';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -90,7 +95,9 @@ describe('TopPanel', () => {
         )
       ),
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(
+          ctx.json(IS_NEXT_INCIDENTS ? mockIncidents : mockIncidentsLegacy)
+        )
       ),
       rest.get(
         '/api/process-instances/:instanceId/sequence-flows',

@@ -18,8 +18,10 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import Diagram from 'modules/components/Diagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
+import {IncidentsWrapper as IncidentsWrapperLegacy} from '../IncidentsWrapper/index.legacy';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 type Props = {
   incidents?: unknown;
@@ -86,13 +88,20 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
         )}
         {status === 'fetched' && (
           <>
-            {instance?.state === 'INCIDENT' && (
-              <IncidentsWrapper
-                expandState={expandState}
-                isOpen={isIncidentBarOpen}
-                onClick={() => setIncidentBarOpen(!isIncidentBarOpen)}
-              />
-            )}
+            {instance?.state === 'INCIDENT' &&
+              (IS_NEXT_INCIDENTS ? (
+                <IncidentsWrapper
+                  expandState={expandState}
+                  isOpen={isIncidentBarOpen}
+                  onClick={() => setIncidentBarOpen(!isIncidentBarOpen)}
+                />
+              ) : (
+                <IncidentsWrapperLegacy
+                  expandState={expandState}
+                  isOpen={isIncidentBarOpen}
+                  onClick={() => setIncidentBarOpen(!isIncidentBarOpen)}
+                />
+              ))}
             {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
             {diagramModel?.definitions && (
               <Diagram
@@ -109,7 +118,7 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
                 flowNodeStateOverlays={flowNodeStateOverlays.get()}
                 // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
                 definitions={diagramModel.definitions}
-                isIncidentBarOpen={isIncidentBarOpen}
+                hidePopover={isIncidentBarOpen}
               />
             )}
           </>
