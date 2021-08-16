@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -59,13 +61,15 @@ import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
   protected static final OffsetDateTime DATE_1 = OffsetDateTime.parse("2019-05-09T00:00:00+02:00");
   protected static final OffsetDateTime DATE_2 = OffsetDateTime.parse("2021-06-07T00:00:00+02:00");
-  private static final String DEF_KEY = "defKey";
+  protected static final String DEF_KEY = "defKey";
   private static final String DATE_1_STRING = "2019-05-09T00:00:00.000+0200";
   private static final String INSTANCE_1_START_DURATION_STRING = "10.0";
   private static final String INSTANCE_1_USER_TASK_1_DURATION_STRING = "20.0";
@@ -79,9 +83,11 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
   protected abstract void updateFlowNodeDate(final String instanceId, final String flowNodeId,
                                              final OffsetDateTime newDate);
 
-  protected abstract List<ProcessFilterDto<?>> createDateFilterForDate1();
+  protected abstract List<ProcessFilterDto<?>> createViewLevelDateFilterForDate1();
 
-  protected abstract List<ProcessFilterDto<?>> createDateFilterForDate2();
+  protected abstract List<ProcessFilterDto<?>> createInstanceLevelDateFilterForDate1(final List<String> flowNodeIds);
+
+  protected abstract List<ProcessFilterDto<?>> createViewLevelDateFilterForDate2();
 
   protected abstract List<ProcessFilterDto<?>> createInvalidFilter();
 
@@ -89,8 +95,8 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("flowNodeAndUserTaskMapReportTypeAndExpectedResults")
-  public void viewLevelFilter_filtersFlowNodes(final ProcessReportDataType reportType,
-                                               final List<Tuple> expectedResults) {
+  public void viewLevel_filtersFlowNodes(final ProcessReportDataType reportType,
+                                         final List<Tuple> expectedResults) {
     // given
     setupInstanceData();
 
@@ -99,7 +105,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto =
       evaluateReportWithFlowNodeDateFilter(
         reportType,
-        createDateFilterForDate1()
+        createViewLevelDateFilterForDate1()
       );
 
     // then
@@ -113,7 +119,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("flowNodeAndUserTaskMapReportTypeAndExpectedResults")
-  public void viewLevelFilters_filtersInstances(final ProcessReportDataType reportType) {
+  public void viewLevel_filtersInstances(final ProcessReportDataType reportType) {
     // given
     setupInstanceData();
 
@@ -121,7 +127,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto =
       evaluateReportWithFlowNodeDateFilter(
         reportType,
-        createDateFilterForDate2()
+        createViewLevelDateFilterForDate2()
       );
 
     // then
@@ -130,7 +136,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void viewLevelFilter_filtersInstances_nonFlowNodeReport() {
+  public void viewLevel_filtersInstances_nonFlowNodeReport() {
     // given
     setupInstanceData();
 
@@ -138,7 +144,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto =
       evaluateReportWithFlowNodeDateFilter(
         ProcessReportDataType.RAW_DATA,
-        createDateFilterForDate2()
+        createViewLevelDateFilterForDate2()
       );
 
     // then
@@ -147,13 +153,13 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void viewLevelFilter_distributedReport() {
+  public void viewLevel_distributedReport() {
     // given
     setupInstanceData();
 
     // when
     final ProcessReportDataDto reportData =
-      buildReportData(FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_FLOW_NODE, createDateFilterForDate2());
+      buildReportData(FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_FLOW_NODE, createViewLevelDateFilterForDate2());
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
       reportClient.evaluateHyperMapReport(reportData).getResult();
 
@@ -177,7 +183,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void viewLevelFilter_evaluateSavedReport_differentDateFilters() {
+  public void viewLevel_evaluateSavedReport_differentDateFilters() {
     // given
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(DEF_KEY));
@@ -187,15 +193,22 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto instance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instance2.getId());
+    final ProcessInstanceEngineDto instance3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance3.getId());
+
     updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_1);
     updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
     updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
-    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    updateFlowNodeDate(instance3.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance3.getId(), END_EVENT, DATE_2);
     engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), DATE_1);
-    engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), DATE_2);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), DATE_1);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance3.getId(), DATE_2);
     importAllEngineEntitiesFromScratch();
 
-    final List<ProcessFilterDto<?>> filters = createDateFilterForDate2();
+    final List<ProcessFilterDto<?>> filters = createViewLevelDateFilterForDate2();
     filters.addAll(ProcessFilterBuilder.filter().fixedStartDate().start(DATE_1).end(DATE_1).add().buildList());
     final ProcessReportDataDto reportData = buildReportData(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
     final String reportId = reportClient.createSingleProcessReport(reportData);
@@ -206,14 +219,14 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3);
     assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(new Tuple(END_EVENT, 1.));
   }
 
   @Test
-  public void viewLevelFilter_filterValidationFails() {
+  public void viewLevel_filterValidationFails() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     final List<ProcessFilterDto<?>> invalidFilter = createInvalidFilter();
@@ -228,10 +241,180 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
+  @Test
+  public void instanceLevel_filterWithOneFlowNodeId() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(DEF_KEY));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance1.getId(), USER_TASK_1, DATE_1);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), USER_TASK_1, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+      evaluateRawDataReportWithFlowNodeDateFilter(
+        createInstanceLevelDateFilterForDate1(singletonList(START_EVENT))
+      );
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(instance1.getId());
+  }
+
+  @Test
+  public void instanceLevel_filterWithMultipleFlowNodeIds() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto instance3 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    updateFlowNodeDate(instance3.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance3.getId(), END_EVENT, DATE_2);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+      evaluateRawDataReportWithFlowNodeDateFilter(
+        createInstanceLevelDateFilterForDate1(List.of(START_EVENT, END_EVENT))
+      );
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(result.getData())
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactlyInAnyOrder(instance1.getId(), instance2.getId());
+  }
+
+  @Test
+  public void instanceLevel_evaluateSavedReport_differentDateFilters() {
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+    final ProcessInstanceEngineDto instance3 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    updateFlowNodeDate(instance3.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance3.getId(), END_EVENT, DATE_1);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), DATE_1);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), DATE_1);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance3.getId(), DATE_2);
+    importAllEngineEntitiesFromScratch();
+
+    final List<ProcessFilterDto<?>> filters = createInstanceLevelDateFilterForDate1(singletonList(START_EVENT));
+    filters.addAll(ProcessFilterBuilder.filter().fixedStartDate().start(DATE_1).end(DATE_1).add().buildList());
+    final ProcessReportDataDto reportData = buildReportData(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
+    final String reportId = reportClient.createSingleProcessReport(reportData);
+
+    // when
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+      reportClient.evaluateMapReportById(reportId).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(new Tuple(START_EVENT, 1.), new Tuple(END_EVENT, 1.));
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidFlowNodeSelections")
+  public void instanceLevel_filterValidationFails(final List<String> invalidFlowNodeIds) {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+    final List<ProcessFilterDto<?>> invalidFilter = createInstanceLevelDateFilterForDate1(invalidFlowNodeIds);
+    final ProcessReportDataDto reportData = buildReportData(ProcessReportDataType.RAW_DATA, invalidFilter);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto(reportData))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void mixedLevel() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram(DEF_KEY));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance1.getId(), USER_TASK_1, DATE_1);
+    updateFlowNodeDate(instance1.getId(), USER_TASK_2, DATE_2);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), USER_TASK_1, DATE_2);
+    updateFlowNodeDate(instance2.getId(), USER_TASK_2, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    importAllEngineEntitiesFromScratch();
+
+    final List<ProcessFilterDto<?>> mixedLevelFilters = createViewLevelDateFilterForDate1();
+    mixedLevelFilters.addAll(createInstanceLevelDateFilterForDate1(singletonList(USER_TASK_1)));
+
+    // when applying an instanceFilter which excludes instance2 and a viewFilter which excludes userTask2
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+      evaluateReportWithFlowNodeDateFilter(
+        ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK,
+        mixedLevelFilters
+      );
+
+    // then only 1 instance and 1 userTask is included in the result
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactly(new Tuple(USER_TASK_1, 1.));
+  }
+
   protected ReportResultResponseDto<List<MapResultEntryDto>> evaluateReportWithFlowNodeDateFilter(final ProcessReportDataType reportType,
                                                                                                   final List<ProcessFilterDto<?>> flowNodeDateFilter) {
     final ProcessReportDataDto reportData = buildReportData(reportType, flowNodeDateFilter);
     return reportClient.evaluateMapReport(reportData).getResult();
+  }
+
+  protected ReportResultResponseDto<List<RawDataProcessInstanceDto>> evaluateRawDataReportWithFlowNodeDateFilter(
+    final List<ProcessFilterDto<?>> flowNodeDateFilter) {
+    final ProcessReportDataDto reportData = buildReportData(ProcessReportDataType.RAW_DATA, flowNodeDateFilter);
+    return reportClient.evaluateRawReport(reportData).getResult();
   }
 
   protected ProcessReportDataDto buildReportData(final ProcessReportDataType reportType,
@@ -341,27 +524,19 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
       ),
       Arguments.of(
         USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE,
-        Collections.singletonList(
-          new Tuple(DATE_1_STRING, 3.)
-        )
+        singletonList(new Tuple(DATE_1_STRING, 3.))
       ),
       Arguments.of(
         USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE,
-        Collections.singletonList(
-          new Tuple(DATE_1_STRING, 33.)
-        )
+        singletonList(new Tuple(DATE_1_STRING, 33.))
       ),
       Arguments.of(
         FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE,
-        Collections.singletonList(
-          new Tuple(DATE_1_STRING, 5.)
-        )
+        singletonList(new Tuple(DATE_1_STRING, 5.))
       ),
       Arguments.of(
         FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE,
-        Collections.singletonList(
-          new Tuple(DATE_1_STRING, 30.)
-        )
+        singletonList(new Tuple(DATE_1_STRING, 30.))
       ),
       Arguments.of(
         USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE,
@@ -392,6 +567,10 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
         )
       )
     );
+  }
+
+  private static Stream<List<String>> invalidFlowNodeSelections() {
+    return Stream.of(Collections.emptyList(), null);
   }
 
 }

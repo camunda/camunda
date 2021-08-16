@@ -73,6 +73,12 @@ public class ValidationHelper {
     }
   }
 
+  public static void ensureNotNull(String fieldName, Object object) {
+    if (object == null) {
+      throw new OptimizeValidationException(fieldName + " is not allowed to be null");
+    }
+  }
+
   public static void validateCombinedReportDefinition(final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
                                                       final RoleType currentUserRole) {
     AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
@@ -186,6 +192,11 @@ public class ValidationHelper {
         FlowNodeDateFilterDataDto.Fields.flowNodeIds,
         flowNodeDateFilterDataDto.getFlowNodeIds()
       );
+    } else {
+      ensureNull(
+        FlowNodeDateFilterDataDto.Fields.flowNodeIds,
+        flowNodeDateFilterDataDto.getFlowNodeIds()
+      );
     }
   }
 
@@ -225,9 +236,9 @@ public class ValidationHelper {
     }
   }
 
-  public static void ensureNotNull(String fieldName, Object object) {
-    if (object == null) {
-      throw new OptimizeValidationException(fieldName + " is not allowed to be null");
+  private static void ensureNull(String fieldName, Object object) {
+    if (object != null) {
+      throw new OptimizeValidationException(fieldName + " has to be null");
     }
   }
 

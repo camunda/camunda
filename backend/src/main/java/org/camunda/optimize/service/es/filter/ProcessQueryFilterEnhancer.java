@@ -24,6 +24,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Exec
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
@@ -77,6 +79,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CanceledFlowNodesOnlyQueryFilter canceledFlowNodesOnlyQueryFilter;
   private final CompletedOrCanceledFlowNodesOnlyQueryFilter completedOrCanceledFlowNodesOnlyQueryFilter;
   private final InstancesContainingUserTasksFilter instancesContainingUserTasksFilter;
+  private final FlowNodeStartDateQueryFilter flowNodeStartDateQueryFilter;
+  private final FlowNodeEndDateQueryFilter flowNodeEndDateQueryFilter;
 
   @Override
   public void addFilterToQuery(final BoolQueryBuilder query,
@@ -154,6 +158,12 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       );
       instancesContainingUserTasksFilter.addFilters(
         query, extractInstanceFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), filterContext
+      );
+      flowNodeStartDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, FlowNodeStartDateFilterDto.class), filterContext
+      );
+      flowNodeEndDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, FlowNodeEndDateFilterDto.class), filterContext
       );
     }
     addInstanceFilterForViewLevelMatching(query, filters, filterContext);

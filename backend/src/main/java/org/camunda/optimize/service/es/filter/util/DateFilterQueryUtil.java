@@ -9,7 +9,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -40,22 +39,29 @@ public class DateFilterQueryUtil {
                                 final ZoneId timezone) {
     if (dates != null) {
       for (DateFilterDataDto<?> dateDto : dates) {
-        final Optional<RangeQueryBuilder> dateRangeQuery;
-        if (DateFilterType.FIXED.equals(dateDto.getType())) {
-          dateRangeQuery =
-            createFixedDateFilter((OffsetDateTime) dateDto.getStart(), dateDto.getEnd(), dateField, timezone);
-        } else if (DateFilterType.ROLLING.equals(dateDto.getType())) {
-          dateRangeQuery = createRollingDateFilter((RollingDateFilterStartDto) dateDto.getStart(), dateField, timezone);
-        } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
-          dateRangeQuery =
-            createRelativeDateFilter((RelativeDateFilterStartDto) dateDto.getStart(), dateField, timezone);
-        } else {
-          dateRangeQuery = Optional.empty();
-          log.warn("Cannot execute date filter. Unknown type [{}]", dateDto.getType());
-        }
-
-        dateRangeQuery.ifPresent(rangeQueryBuilder -> query.filter(rangeQueryBuilder.format(OPTIMIZE_DATE_FORMAT)));
+        createRangeQuery(dateDto, dateField, timezone).ifPresent(query::filter);
       }
+    }
+  }
+
+  public static Optional<RangeQueryBuilder> createRangeQuery(final DateFilterDataDto<?> dateFilterDto,
+                                                             final String dateField,
+                                                             final ZoneId timezone) {
+    switch (dateFilterDto.getType()) {
+      case FIXED:
+        return createFixedDateFilter(
+          (OffsetDateTime) dateFilterDto.getStart(),
+          dateFilterDto.getEnd(),
+          dateField,
+          timezone
+        );
+      case ROLLING:
+        return createRollingDateFilter((RollingDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone);
+      case RELATIVE:
+        return createRelativeDateFilter((RelativeDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone);
+      default:
+        log.warn("Cannot execute date filter. Unknown type [{}]", dateFilterDto.getType());
+        return Optional.empty();
     }
   }
 
@@ -78,6 +84,7 @@ public class DateFilterQueryUtil {
         start.atZoneSameInstant(timezone).toOffsetDateTime();
       queryDate.gte(formatter.format(startDateWithCorrectTimezone));
     }
+    queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);
   }
 
@@ -103,6 +110,7 @@ public class DateFilterQueryUtil {
       startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase())
     );
     queryDate.gte(formatter.format(dateBeforeGivenFilter));
+    queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);
   }
 
@@ -128,6 +136,7 @@ public class DateFilterQueryUtil {
       queryDate.lt(formatter.format(startOfCurrentInterval));
       queryDate.gte(formatter.format(startOfPreviousInterval));
     }
+    queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);
   }
 
