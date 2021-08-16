@@ -166,7 +166,7 @@ public class AuthenticationTest implements AuthenticationTestable {
     assertThat(response.getBody()).contains("\"lastname\":\"lastname\"");
     assertThat(response.getBody()).contains("\"username\":\"username\"");
     assertThat(response.getBody()).contains("\"firstname\":\"\"");
-    assertThat(response.getBody()).contains("\"canLogout\":true");
+    assertThat(response.getBody()).contains("\"canLogout\":false");
   }
 
   //@Ignore("NOT IMPLEMENTED YET")

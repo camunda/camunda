@@ -31,6 +31,6 @@ public class IAMUserService extends AbstractUserService {
         .setFirstname(EMPTY)
         .setLastname(tokenAuth.getName())
         .setUsername(tokenAuth.getId())
-        .setCanLogout(true);
+        .setCanLogout(false);
   }
 }
