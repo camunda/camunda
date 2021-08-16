@@ -29,6 +29,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
@@ -727,6 +728,28 @@ public final class ClusteringRule extends ExternalResource {
 
   public void takeSnapshot(final Collection<Broker> brokers) {
     brokers.stream().map(Broker::getBrokerAdminService).forEach(BrokerAdminService::takeSnapshot);
+  }
+
+  public void triggerAndWaitForSnapshots() {
+    // Ensure that the exporter positions are distributed to the followers
+    getClock().addTime(ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL);
+    getBrokers().stream()
+        .map(Broker::getBrokerAdminService)
+        .forEach(BrokerAdminService::takeSnapshot);
+
+    getBrokers()
+        .forEach(
+            broker ->
+                Awaitility.await()
+                    .pollInterval(2, TimeUnit.SECONDS)
+                    .timeout(60, TimeUnit.SECONDS)
+                    .until(
+                        () -> {
+                          // Trigger snapshot again in case snapshot is not already taken
+                          broker.getBrokerAdminService().takeSnapshot();
+                          return getSnapshot(broker);
+                        },
+                        Optional::isPresent));
   }
 
   /**

@@ -92,10 +92,10 @@ public final class BrokerLeaderChangeTest {
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
 
     final long jobKey = clientRule.createSingleJob(JOB_TYPE);
-    triggerSnapshot();
+    clusteringRule.triggerAndWaitForSnapshots();
 
     // when
-    clusteringRule.getBrokers().forEach(broker -> clusteringRule.waitForSnapshotAtBroker(broker));
+    clusteringRule.getBrokers().forEach(clusteringRule::waitForSnapshotAtBroker);
     clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
     final JobCompleter jobCompleter = new JobCompleter(jobKey);
 
@@ -103,10 +103,6 @@ public final class BrokerLeaderChangeTest {
     jobCompleter.waitForJobCompletion();
 
     jobCompleter.close();
-  }
-
-  private void triggerSnapshot() {
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 
   @Test

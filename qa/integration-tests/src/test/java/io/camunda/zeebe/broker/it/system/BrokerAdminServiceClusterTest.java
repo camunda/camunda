@@ -90,12 +90,12 @@ public class BrokerAdminServiceClusterTest {
     clientRule.createSingleJob("test");
 
     // when
-    triggerSnapshotInAllBrokers();
+    clusteringRule.triggerAndWaitForSnapshots();
 
     // then
     clusteringRule.getBrokers().stream()
         .map(Broker::getBrokerAdminService)
-        .forEach(this::waitForSnapshotAtBroker);
+        .forEach(this::assertThatStatusContainsProcessedPositionInSnapshot);
   }
 
   @Test
@@ -117,24 +117,16 @@ public class BrokerAdminServiceClusterTest {
     assertStreamProcessorPhase(newLeaderAdminService, Phase.PAUSED);
   }
 
-  private void triggerSnapshotInAllBrokers() {
-    clusteringRule.getBrokers().stream()
-        .map(Broker::getBrokerAdminService)
-        .forEach(BrokerAdminService::takeSnapshot);
-  }
-
-  private void waitForSnapshotAtBroker(final BrokerAdminService adminService) {
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                adminService
-                    .getPartitionStatus()
-                    .values()
-                    .forEach(
-                        status ->
-                            assertThat(status.getProcessedPositionInSnapshot())
-                                .describedAs(status.toString())
-                                .isNotNull()));
+  private void assertThatStatusContainsProcessedPositionInSnapshot(
+      final BrokerAdminService adminService) {
+    adminService
+        .getPartitionStatus()
+        .values()
+        .forEach(
+            status ->
+                assertThat(status.getProcessedPositionInSnapshot())
+                    .describedAs(status.toString())
+                    .isNotNull());
   }
 
   private void assertStreamProcessorPhase(

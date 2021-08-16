@@ -123,7 +123,7 @@ public final class ClusteredDataDeletionTest {
     // when
     final var followerSegmentCountsBeforeSnapshot = getSegmentCountByNodeId(followers);
 
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.triggerAndWaitForSnapshots();
     followers.forEach(clusteringRule::waitForSnapshotAtBroker);
 
     // then
