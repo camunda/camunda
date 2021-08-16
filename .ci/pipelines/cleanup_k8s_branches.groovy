@@ -63,9 +63,9 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/infra-core',
+        git url: 'https://github.com/camunda/infra-core',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-operate-app',
             poll: false
 
         container('gcloud') {
