@@ -32,24 +32,29 @@ public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  @Autowired BrokerCfg configuration;
-  @Autowired Environment springEnvironment;
-  @Autowired SpringBrokerBridge springBrokerBridge;
+  @SuppressWarnings("unused")
+  @Autowired
+  private BrokerCfg configuration;
+
+  @SuppressWarnings("unused")
+  @Autowired
+  private Environment springEnvironment;
+
+  @SuppressWarnings("unused")
+  @Autowired
+  private SpringBrokerBridge springBrokerBridge;
 
   private String tempFolder;
   private Broker broker;
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
-
     EnvironmentHelper.disableGatewayHealthIndicatorsAndProbes();
-
     SpringApplication.run(StandaloneBroker.class, args);
   }
 
   @Override
-  public void run(final String... args) throws Exception {
-
+  public void run(final String... args) {
     if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
       broker = createBrokerInBaseDirectory();
     } else {
