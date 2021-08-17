@@ -23,7 +23,6 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,14 +40,19 @@ public class StandaloneGateway
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  @Autowired private GatewayCfg configuration;
-  @Autowired private SpringGatewayBridge springGatewayBridge;
+  @SuppressWarnings("unused")
+  @Autowired
+  private GatewayCfg configuration;
+
+  @SuppressWarnings("unused")
+  @Autowired
+  private SpringGatewayBridge springGatewayBridge;
 
   private AtomixCluster atomixCluster;
   private Gateway gateway;
   private ActorScheduler actorScheduler;
 
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
     SpringApplication.run(StandaloneGateway.class, args);
   }
@@ -64,16 +68,8 @@ public class StandaloneGateway
 
     atomixCluster = createAtomixCluster(configuration.getCluster());
     actorScheduler = createActorScheduler(configuration);
-    final Function<GatewayCfg, BrokerClient> brokerClientFactory =
-        cfg ->
-            new BrokerClientImpl(
-                cfg,
-                atomixCluster.getMessagingService(),
-                atomixCluster.getMembershipService(),
-                atomixCluster.getEventService(),
-                actorScheduler,
-                false);
-    gateway = new Gateway(configuration, brokerClientFactory, actorScheduler);
+    gateway = new Gateway(configuration, this::createBrokerClient, actorScheduler);
+
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
@@ -109,37 +105,49 @@ public class StandaloneGateway
     LogManager.shutdown();
   }
 
-  private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {
-    final MembershipCfg membershipCfg = clusterCfg.getMembership();
-    final GroupMembershipProtocol membershipProtocol =
-        SwimMembershipProtocol.builder()
-            .withFailureTimeout(membershipCfg.getFailureTimeout())
-            .withGossipInterval(membershipCfg.getGossipInterval())
-            .withProbeInterval(membershipCfg.getProbeInterval())
-            .withProbeTimeout(membershipCfg.getProbeTimeout())
-            .withBroadcastDisputes(membershipCfg.isBroadcastDisputes())
-            .withBroadcastUpdates(membershipCfg.isBroadcastUpdates())
-            .withGossipFanout(membershipCfg.getGossipFanout())
-            .withNotifySuspect(membershipCfg.isNotifySuspect())
-            .withSuspectProbes(membershipCfg.getSuspectProbes())
-            .withSyncInterval(membershipCfg.getSyncInterval())
-            .build();
+  private BrokerClient createBrokerClient(final GatewayCfg config) {
+    return new BrokerClientImpl(
+        config,
+        atomixCluster.getMessagingService(),
+        atomixCluster.getMembershipService(),
+        atomixCluster.getEventService(),
+        actorScheduler,
+        false);
+  }
+
+  private AtomixCluster createAtomixCluster(final ClusterCfg config) {
+    final var membershipProtocol = createMembershipProtocol(config.getMembership());
 
     return AtomixCluster.builder()
-        .withMemberId(clusterCfg.getMemberId())
-        .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
-        .withClusterId(clusterCfg.getClusterName())
+        .withMemberId(config.getMemberId())
+        .withAddress(Address.from(config.getHost(), config.getPort()))
+        .withClusterId(config.getClusterName())
         .withMembershipProvider(
             BootstrapDiscoveryProvider.builder()
-                .withNodes(Address.from(clusterCfg.getContactPoint()))
+                .withNodes(Address.from(config.getContactPoint()))
                 .build())
         .withMembershipProtocol(membershipProtocol)
         .build();
   }
 
-  private ActorScheduler createActorScheduler(final GatewayCfg configuration) {
+  private GroupMembershipProtocol createMembershipProtocol(final MembershipCfg config) {
+    return SwimMembershipProtocol.builder()
+        .withFailureTimeout(config.getFailureTimeout())
+        .withGossipInterval(config.getGossipInterval())
+        .withProbeInterval(config.getProbeInterval())
+        .withProbeTimeout(config.getProbeTimeout())
+        .withBroadcastDisputes(config.isBroadcastDisputes())
+        .withBroadcastUpdates(config.isBroadcastUpdates())
+        .withGossipFanout(config.getGossipFanout())
+        .withNotifySuspect(config.isNotifySuspect())
+        .withSuspectProbes(config.getSuspectProbes())
+        .withSyncInterval(config.getSyncInterval())
+        .build();
+  }
+
+  private ActorScheduler createActorScheduler(final GatewayCfg config) {
     return ActorScheduler.newActorScheduler()
-        .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
+        .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
         .setIoBoundActorThreadCount(0)
         .setSchedulerName("gateway-scheduler")
         .build();
