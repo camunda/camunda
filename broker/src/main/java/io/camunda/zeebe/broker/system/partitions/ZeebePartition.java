@@ -484,4 +484,8 @@ public final class ZeebePartition extends Actor
     // re-install follower services.
     actor.run(() -> currentTransitionFuture = followerTransition(term));
   }
+
+  public ActorFuture<Role> getCurrentRole() {
+    return actor.call(() -> context.getCurrentRole());
+  }
 }

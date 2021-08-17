@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
 import io.camunda.zeebe.broker.it.util.GrpcClientRule;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
-import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import org.awaitility.Awaitility;
@@ -89,20 +88,14 @@ public class BrokerAdminServiceClusterTest {
   public void shouldReportPartitionStatusWithSnapshotOnFollowers() {
     // given
     clientRule.createSingleJob("test");
-    leaderAdminService.takeSnapshot();
 
     // when
-    waitForSnapshotAtBroker(leaderAdminService);
+    triggerSnapshotInAllBrokers();
 
     // then
-    final var leaderStatus = leaderAdminService.getPartitionStatus().get(PARTITION_ID);
     clusteringRule.getBrokers().stream()
         .map(Broker::getBrokerAdminService)
-        .forEach(
-            adminService ->
-                Awaitility.await()
-                    .untilAsserted(
-                        () -> assertFollowerSnapshotEqualToLeader(adminService, leaderStatus)));
+        .forEach(this::waitForSnapshotAtBroker);
   }
 
   @Test
@@ -124,10 +117,10 @@ public class BrokerAdminServiceClusterTest {
     assertStreamProcessorPhase(newLeaderAdminService, Phase.PAUSED);
   }
 
-  private void assertFollowerSnapshotEqualToLeader(
-      final BrokerAdminService followerService, final PartitionStatus leaderStatus) {
-    assertThat(followerService.getPartitionStatus().get(1).getSnapshotId())
-        .isEqualTo(leaderStatus.getSnapshotId());
+  private void triggerSnapshotInAllBrokers() {
+    clusteringRule.getBrokers().stream()
+        .map(Broker::getBrokerAdminService)
+        .forEach(BrokerAdminService::takeSnapshot);
   }
 
   private void waitForSnapshotAtBroker(final BrokerAdminService adminService) {
@@ -138,7 +131,10 @@ public class BrokerAdminServiceClusterTest {
                     .getPartitionStatus()
                     .values()
                     .forEach(
-                        status -> assertThat(status.getProcessedPositionInSnapshot()).isNotNull()));
+                        status ->
+                            assertThat(status.getProcessedPositionInSnapshot())
+                                .describedAs(status.toString())
+                                .isNotNull()));
   }
 
   private void assertStreamProcessorPhase(
