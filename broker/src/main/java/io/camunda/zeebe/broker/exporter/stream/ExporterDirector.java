@@ -315,7 +315,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     if (state.hasExporters()) {
-      exporterDistributionService.subscribeForExporterPositions(actor::submit);
+      exporterDistributionService.subscribeForExporterPositions(actor::run);
     } else {
       actor.close();
     }
