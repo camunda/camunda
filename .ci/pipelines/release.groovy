@@ -144,14 +144,10 @@ pipeline {
         container('maven') {
           sh ('''
             # git is required for maven release
-            apt-get update && apt-get install -y git openssh-client
-
-            # setup ssh for github
-            mkdir -p ~/.ssh
-            ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+            apt-get update && apt-get install -y git
 
             git config --global user.email "ci@tasklist.camunda.cloud"
-            git config --global user.name "camunda-jenkins"
+            git config --global user.name "github-cloud-zeebe-tasklist-app"
           ''')
         }
       }

@@ -63,9 +63,9 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/infra-core',
+        git url: 'https://github.com/camunda/infra-core',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-tasklist-app',
             poll: false
 
         container('gcloud') {
@@ -77,10 +77,6 @@ pipeline {
                 echo '${REGISTRY}' > account.json
                 gcloud auth activate-service-account --key-file=account.json
                 gcloud info
-
-                # setup ssh for github clone
-                mkdir -p ~/.ssh
-                ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
             """)
         }
       }

@@ -63,9 +63,9 @@ pipeline {
     stage('Prepare') {
       steps {
         dir('infra-core') {
-          git url: 'git@github.com:camunda/infra-core',
+          git url: 'https://github.com/camunda/infra-core',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
+            credentialsId: 'github-tasklist-app',
             poll: false
         }
         dir('tasklist') {
