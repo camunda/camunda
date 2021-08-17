@@ -168,6 +168,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
         }),
         {},
       )}
+      keepDirtyOnReinitialize
     >
       {({form, handleSubmit, values}) => (
         <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>

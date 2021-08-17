@@ -114,24 +114,32 @@ const mockGetTaskVariablesTruncatedValues = (id = '0') => ({
             isValueTruncated: true,
             __typename: 'Variable',
           },
+          {
+            id: '1-myVar',
+            name: 'myVar1',
+            previewValue: '"111',
+            isValueTruncated: true,
+            __typename: 'Variable',
+          },
         ],
       },
     },
   },
 });
 
-const mockGetFullVariableValue = (id = '0-myVar') => ({
+const mockGetFullVariableValue = (
+  variable: Pick<Variable, 'id' | 'value'> = {id: '0-myVar', value: '"0001"'},
+) => ({
   request: {
     query: GET_FULL_VARIABLE_VALUE,
     variables: {
-      id,
+      id: variable.id,
     },
   },
   result: {
     data: {
       variable: {
-        id: '0-myVar',
-        value: '"0001"',
+        ...variable,
         __typename: 'Variable',
       },
     },

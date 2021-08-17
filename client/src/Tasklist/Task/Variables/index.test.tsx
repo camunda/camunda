@@ -536,4 +536,53 @@ describe('<Variables />', () => {
       ]),
     );
   });
+
+  it('should preserve full value', async () => {
+    const mockVariable = {id: '1-myVar', value: '"1112"'};
+    const mockNewValue = '"new-value"';
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(
+          ctx.data(mockGetTaskVariablesTruncatedValues().result.data),
+        );
+      }),
+      graphql.query('GetFullVariableValue', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetFullVariableValue().result.data));
+      }),
+      graphql.query('GetFullVariableValue', (_, res, ctx) => {
+        return res.once(
+          ctx.data(mockGetFullVariableValue(mockVariable).result.data),
+        );
+      }),
+    );
+    render(
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('"111')).toBeInTheDocument();
+
+    userEvent.click(screen.getByDisplayValue('"000'));
+
+    const firstVariableValueTextarea = await screen.findByDisplayValue(
+      '"0001"',
+    );
+    expect(firstVariableValueTextarea).toBeInTheDocument();
+    expect(screen.getByDisplayValue('"111')).toBeInTheDocument();
+
+    userEvent.clear(firstVariableValueTextarea);
+    userEvent.type(firstVariableValueTextarea, mockNewValue);
+    userEvent.click(screen.getByDisplayValue('"111'));
+
+    expect(
+      await screen.findByDisplayValue(mockVariable.value),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(mockNewValue)).toBeInTheDocument();
+  });
 });
