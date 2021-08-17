@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.TestPartitionStep;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -43,6 +44,7 @@ public class ZeebePartitionTransitionIntegrationTest {
     final RaftPartition raftPartition = mock(RaftPartition.class);
     when(raftPartition.id()).thenReturn(new PartitionId("", 0));
     when(raftPartition.getRole()).thenReturn(Role.INACTIVE);
+    when(raftPartition.getServer()).thenReturn(mock(RaftPartitionServer.class));
 
     final CriticalComponentsHealthMonitor healthMonitor =
         mock(CriticalComponentsHealthMonitor.class);
