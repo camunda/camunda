@@ -1,7 +1,8 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+// https://github.com/camunda/optimize-jenkins-shared-library
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
@@ -360,7 +361,7 @@ pipeline {
       environment {
         CAM_REGISTRY     = credentials('repository-camunda-cloud')
         SONARCLOUD_TOKEN = credentials('sonarcloud-token')
-        GITHUB_TOKEN     = credentials('camunda-jenkins-github')
+        GITHUB_TOKEN     = credentials("${optimizeUtils.defaultCredentialsId()}")
       }
       failFast false
       parallel {

@@ -15,8 +15,8 @@ pipelineJob('camunda-optimize-example-repo-release') {
       scm {
         git {
           remote {
-            github('camunda/camunda-optimize')
-            credentials('camunda-jenkins-github')
+            github 'camunda/camunda-optimize', 'https'
+            credentials 'github-optimize-app'
           }
           branches('master')
         }

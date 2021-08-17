@@ -31,8 +31,8 @@ def seedJob = job('seed-job-optimize') {
   scm {
     git {
       remote {
-        github "${githubOrga}/${gitRepository}", 'ssh'
-        credentials 'camunda-jenkins-github-ssh'
+        github "${githubOrga}/${gitRepository}", 'https'
+        credentials 'github-optimize-app'
       }
       branch gitBranch
       extensions {
