@@ -648,7 +648,10 @@
           "label": "Outlier",
           "label-plural": "Outliers"
         },
-        "tookDuration": "Took a duration of"
+        "tookDuration": {
+          "singular": "took a duration of",
+          "plural": "took a duration of"
+        }
       },
       "notFound": "No outliers found for the selected process",
       "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",

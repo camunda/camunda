@@ -133,8 +133,8 @@ test('version selection', async (t) => {
   const latestNumber = +(await e.reportNumber.textContent);
 
   await t.click(e.versionSpecific);
-  await t.click(e.versionCheckbox(5));
-  await t.click(e.versionCheckbox(3));
+  await t.click(e.versionCheckbox(0));
+  await t.click(e.versionCheckbox(1));
   await t.click(e.versionCheckbox(2));
 
   await t.takeElementScreenshot(

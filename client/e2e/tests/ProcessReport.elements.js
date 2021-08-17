@@ -99,7 +99,7 @@ export const versionAll = Selector('input[type="radio"]').nth(0);
 export const versionLatest = Selector('input[type="radio"]').nth(1);
 export const versionSpecific = Selector('input[type="radio"]').nth(2);
 export const versionCheckbox = (number) =>
-  Selector('.specificVersions input[type="checkbox"]').nth(-number);
+  Selector('.specificVersions input[type="checkbox"]').nth(number);
 export const tenantPopover = Selector('.TenantPopover');
 export const modalContainer = Selector('.Modal__content-container');
 export const aggregationTypeSelect = Selector('.AggregationType');

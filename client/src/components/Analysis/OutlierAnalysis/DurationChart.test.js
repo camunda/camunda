@@ -42,6 +42,10 @@ it('should format tooltip durations', () => {
 
   const durationInMs = 1020;
   expect(
-    Chart.mock.calls[0][1].options.plugins.tooltip.callbacks.label({label: durationInMs})
+    Chart.mock.calls[0][1].options.plugins.tooltip.callbacks.label({
+      label: durationInMs,
+      dataset: {data: [1]},
+      dataIndex: 0,
+    })
   ).toContain('formatted ' + durationInMs);
 });

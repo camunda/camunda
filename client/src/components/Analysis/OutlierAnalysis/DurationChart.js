@@ -53,8 +53,13 @@ export default class DurationChart extends React.Component {
             mode: 'x',
             callbacks: {
               title: this.createTooltipTitle,
-              label: ({label}) =>
-                t('analysis.outlier.tooltip.tookDuration') + ' ' + duration(label),
+              label: ({label, dataset, dataIndex}) => {
+                const isSingleInstance = dataset.data[dataIndex] === 1;
+                return ` ${t(
+                  'analysis.outlier.tooltip.tookDuration.' +
+                    (isSingleInstance ? 'singular' : 'plural')
+                )} ${duration(label)}`;
+              },
             },
             filter: (tooltipItem) => +tooltipItem.formattedValue > 0,
           },

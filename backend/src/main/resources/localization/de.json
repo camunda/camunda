@@ -648,7 +648,10 @@
           "label": "Ausreißer",
           "label-plural": "Ausreißer"
         },
-        "tookDuration": "Benötigte eine Dauer von"
+        "tookDuration": {
+          "singular": "benötigte eine Dauer von",
+          "plural": "benötigten eine Dauer von"
+        }
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
@@ -682,14 +685,14 @@
     },
     "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, ein Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
     "noInstances": "Keine Instanzen im aktuellen Filter haben das ausgewählte Gateway passiert.",
-    "gatewayInstances": "Von allen <b>{totalGateway} Instanzen</b>, die das Gateway <i class=\"gatewayName\"></i> passiert haben",
-    "branchDistribution": "<b>{count}</b> nahmen ({branchPercentage}%) den <i class=\"branchName\"></i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i class=\"endEventName\"></i>",
+    "gatewayInstances": "<b>{totalGateway} Instanzen</b> haben das Gateway <i class=\"gatewayName\"></i> passiert",
+    "branchDistribution": "<b>{count}</b> ({branchPercentage}%) nahmen den <i class=\"branchName\"></i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i class=\"endEventName\"></i>",
     "gatewayDistribution": "Verteilung von Instanzen am Gateway <i class=\"gatewayName\"></i>:",
     "endEventProbability": "Wahrscheinlichkeit, das Endereignis <i class=\"endEventName\"></i> zu erreichen bei diesem Verlauf:",
     "tooltip": {
       "totalInstances": "Prozessinstanzen insgesamt",
-      "reachedEnd": "Prozessinstanzen, die diesen Stand erreicht haben",
-      "reachedEndPercentage": "von Prozessinstanzen, die diesen Status erreicht haben"
+      "reachedEnd": "der Prozessinstanzen haben dieses Endereignis erreicht",
+      "reachedEndPercentage": "der Prozessinstanzen haben dieses Endereignis erreicht"
     }
   },
   "common": {
