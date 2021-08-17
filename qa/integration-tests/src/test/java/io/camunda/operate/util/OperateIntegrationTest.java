@@ -62,17 +62,38 @@ public abstract class OperateIntegrationTest {
     mockMvc = mockMvcTestRule.getMockMvc();
     when(userService.getCurrentUsername()).thenReturn(DEFAULT_USER);
   }
-  
+
   protected MvcResult getRequest(String requestUrl) throws Exception {
     MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
       .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
       .andReturn();
-    
+
     return mvcResult;
   }
-  
+
+  protected MvcResult getRequestShouldFailWithException(String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
+    MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
+
+    return mockMvc.perform(request)
+      .andExpect(status().is4xxClientError())
+      .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
+      .andReturn();
+  }
+
+  protected MvcResult postRequestShouldFailWithException(String requestUrl, Class<? extends Exception> exceptionClass) throws Exception {
+    MockHttpServletRequestBuilder request = post(requestUrl)
+        .content("{}")
+        .contentType(mockMvcTestRule.getContentType())
+        .accept(mockMvcTestRule.getContentType());
+
+    return mockMvc.perform(request)
+      .andExpect(status().is4xxClientError())
+      .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(exceptionClass))
+      .andReturn();
+  }
+
   protected MvcResult postRequest(String requestUrl, Object query) throws Exception {
     MockHttpServletRequestBuilder request = post(requestUrl)
         .content(mockMvcTestRule.json(query))
@@ -83,35 +104,35 @@ public abstract class OperateIntegrationTest {
         .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
         .andReturn();
   }
-  
+
   protected MvcResult postRequestThatShouldFail(String requestUrl, Object query) throws Exception {
     MockHttpServletRequestBuilder request = post(requestUrl)
       .content(mockMvcTestRule.json(query))
       .contentType(mockMvcTestRule.getContentType());
-    
+
     return mockMvc.perform(request)
             .andExpect(status()
             .isBadRequest())
             .andReturn();
   }
-  
+
   protected MvcResult postRequestThatShouldFail(String requestUrl, String stringContent) throws Exception {
     MockHttpServletRequestBuilder request = post(requestUrl)
       .content(stringContent)
       .contentType(mockMvcTestRule.getContentType());
-    
+
     return mockMvc.perform(request)
             .andExpect(status()
             .isBadRequest())
             .andReturn();
   }
-  
+
   protected void assertErrorMessageContains(MvcResult mvcResult, String text) {
     assertThat(mvcResult.getResolvedException().getMessage()).contains(text);
   }
-  
+
   protected void assertErrorMessageIsEqualTo(MvcResult mvcResult, String message) {
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);  
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);
   }
 
   protected void runArchiving(ProcessInstancesArchiverJob archiverJob) {

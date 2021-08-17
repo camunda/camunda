@@ -5,23 +5,12 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
-import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-
-import io.micrometer.core.annotation.Timed;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
@@ -46,8 +35,16 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import java.util.Set;
+import io.micrometer.core.annotation.Timed;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.annotations.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,12 +52,23 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.ConstraintViolationException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+
 @Api(tags = {"Process instances"})
 @SwaggerDefinition(tags = {
   @Tag(name = "Process instances", description = "Process instances")
 })
 @RestController
 @RequestMapping(value = PROCESS_INSTANCE_URL)
+@Validated
 public class ProcessInstanceRestService {
 
   public static final String PROCESS_INSTANCE_URL = "/api/process-instances";
@@ -168,19 +176,19 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get process instance by id")
   @GetMapping("/{id}")
-  public ListViewProcessInstanceDto queryProcessInstanceById(@PathVariable String id) {
+  public ListViewProcessInstanceDto queryProcessInstanceById(@PathVariable @ValidLongId String id) {
     return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
   }
 
   @ApiOperation("Get incidents by process instance id")
   @GetMapping("/{id}/incidents")
-  public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable String id) {
+  public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     return incidentReader.getIncidentsByProcessInstanceKey(Long.valueOf(id));
   }
 
   @ApiOperation("Get sequence flows by process instance id")
   @GetMapping("/{id}/sequence-flows")
-  public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(@PathVariable String id) {
+  public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
     return SequenceFlowDto.createFrom(sequenceFlows);
   }
@@ -188,20 +196,20 @@ public class ProcessInstanceRestService {
   @ApiOperation("Get variables by process instance id and scope id")
   @PostMapping("/{processInstanceId}/variables")
   public List<VariableDto> getVariables(
-      @PathVariable String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
+      @PathVariable @ValidLongId String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
     validateRequest(variableRequest);
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
   @ApiOperation("Get flow node states by process instance id")
   @GetMapping("/{processInstanceId}/flow-node-states")
-  public Map<String, FlowNodeState> getFlowNodeStates(@PathVariable String processInstanceId) {
+  public Map<String, FlowNodeState> getFlowNodeStates(@PathVariable @ValidLongId String processInstanceId) {
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
   @ApiOperation("Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
-  public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable String processInstanceId,
+  public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,
       @RequestBody FlowNodeMetadataRequestDto request) {
     validateRequest(request);
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
@@ -240,6 +248,12 @@ public class ProcessInstanceRestService {
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME,Metrics.TAG_VALUE_CORESTATISTICS},description = "How long does it take to retrieve the core statistics.")
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {
     return processInstanceReader.getCoreStatistics();
+  }
+
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ResponseEntity<String> handleConstraintViolation(ConstraintViolationException exception){
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(exception.getMessage());
   }
 
 }
