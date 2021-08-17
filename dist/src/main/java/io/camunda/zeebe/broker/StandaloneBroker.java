@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker;
 
-import static java.lang.Runtime.getRuntime;
-
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.shared.EnvironmentHelper;
 import io.camunda.zeebe.util.FileUtil;
@@ -16,7 +14,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,20 +21,23 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.core.env.Environment;
 
 @SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
 @ComponentScan({"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
-public class StandaloneBroker implements CommandLineRunner {
+public class StandaloneBroker
+    implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   @Autowired BrokerCfg configuration;
   @Autowired Environment springEnvironment;
   @Autowired SpringBrokerBridge springBrokerBridge;
 
-  private final CountDownLatch waiting_latch = new CountDownLatch(1);
   private String tempFolder;
+  private Broker broker;
 
   public static void main(final String[] args) throws Exception {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
@@ -49,7 +49,6 @@ public class StandaloneBroker implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    final Broker broker;
 
     if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
       broker = createBrokerInBaseDirectory();
@@ -58,20 +57,16 @@ public class StandaloneBroker implements CommandLineRunner {
     }
 
     broker.start();
-    getRuntime()
-        .addShutdownHook(
-            new Thread("Broker close Thread") {
-              @Override
-              public void run() {
-                try {
-                  broker.close();
-                } finally {
-                  deleteTempDirectory();
-                  LogManager.shutdown();
-                }
-              }
-            });
-    waiting_latch.await();
+  }
+
+  @Override
+  public void onApplicationEvent(final ContextClosedEvent event) {
+    try {
+      broker.close();
+    } finally {
+      deleteTempDirectory();
+      LogManager.shutdown();
+    }
   }
 
   private Broker createBrokerInBaseDirectory() {
