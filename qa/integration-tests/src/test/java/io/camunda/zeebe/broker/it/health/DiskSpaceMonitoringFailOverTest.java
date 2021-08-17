@@ -50,13 +50,13 @@ public class DiskSpaceMonitoringFailOverTest {
         clusteringRule.getBrokers().stream()
             .filter(b -> b.getConfig().getCluster().getNodeId() != leaderId)
             .collect(Collectors.toList());
-    // Force rescan of healthcheck
-    clusteringRule.getClock().addTime(Duration.ofSeconds(60));
 
     followers.forEach(
         broker ->
             Awaitility.await()
-                .timeout(Duration.ofSeconds(30))
+                // If broker is not healthy, it can take upto one health check interval (60 seconds)
+                // to determine if it is healthy again
+                .timeout(Duration.ofSeconds(70))
                 .untilAsserted(
                     () ->
                         assertThat(
