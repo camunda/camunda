@@ -76,7 +76,13 @@ export function DistributedBy({
         {hasDistribution && (
           <Button
             className="removeGrouping"
-            onClick={() => onChange({distributedBy: {$set: {type: 'none', value: null}}}, true)}
+            onClick={() => {
+              const change = {distributedBy: {$set: {type: 'none', value: null}}};
+              if (visualization === 'stacked') {
+                change.visualization = {$set: 'bar'};
+              }
+              onChange(change, true);
+            }}
           >
             <Icon type="close-small" />
           </Button>

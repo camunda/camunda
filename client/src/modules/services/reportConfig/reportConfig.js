@@ -65,15 +65,20 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {
-      return (
-        combinations[viewGroup] &&
-        combinations[viewGroup][groupGroup] &&
-        combinations[viewGroup][groupGroup].includes(visualizationGroup)
-      );
+      const possibleVisualizations = combinations[viewGroup]?.[groupGroup];
+      if (targetVisualization === 'stacked') {
+        return (
+          report.data.distributedBy.type !== 'none' &&
+          report.data.view.properties.length <= 1 &&
+          possibleVisualizations?.includes(visualizationGroup)
+        );
+      }
+
+      return possibleVisualizations?.includes(visualizationGroup);
     }
 
     if (viewGroup && groupGroup) {
-      return combinations[viewGroup] && combinations[viewGroup][groupGroup];
+      return combinations[viewGroup]?.[groupGroup];
     }
 
     return true;

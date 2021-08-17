@@ -323,7 +323,8 @@
       "line": "Liniendiagramm",
       "pie": "Tortendiagramm",
       "table": "Tabelle",
-      "heat": "Heatmap"
+      "heat": "Heatmap",
+      "stacked": "Gestapeltes Balkendiagramm"
     },
     "processPart": {
       "label": "Prozessinstanz-Abschnitt",

@@ -49,7 +49,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       options = createBarOptions({
         targetValue,
         configuration,
-        stacked: false,
         maxDuration: maxValue,
         groupedByDurationMaxValue,
         isDark,
@@ -57,6 +56,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         measures: result.measures,
         entity: view.entity,
         autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
+        visualization,
       });
       break;
     default:
@@ -148,7 +148,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 export function createBarOptions({
   targetValue,
   configuration,
-  stacked,
   maxDuration,
   isDark,
   autoSkip,
@@ -156,8 +155,11 @@ export function createBarOptions({
   measures = [],
   entity,
   groupedByDurationMaxValue = false,
+  visualization,
+  isCombinedNumber,
 }) {
-  const targetLine = targetValue && getFormattedTargetValue(targetValue);
+  const stacked = visualization === 'stacked';
+  const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
@@ -185,6 +187,7 @@ export function createBarOptions({
       suggestedMax: targetLine,
       id: 'axis-0',
       axis: 'y',
+      stacked,
     },
   };
 
@@ -246,7 +249,7 @@ export function createBarOptions({
             const width = this.maxWidth / allLabels.length;
             const widthPerCharacter = 7;
 
-            if (stacked && label.length > width / widthPerCharacter) {
+            if (isCombinedNumber && label.length > width / widthPerCharacter) {
               return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
             }
 
@@ -256,7 +259,7 @@ export function createBarOptions({
             ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
             : {}),
         },
-        stacked,
+        stacked: stacked || isCombinedNumber,
       },
     },
     spanGaps: true,
@@ -326,6 +329,7 @@ export function createDatasetOptions({
         legendColor: color,
       };
     case 'bar':
+    case 'stacked':
     case 'number':
       return {
         borderColor: color,

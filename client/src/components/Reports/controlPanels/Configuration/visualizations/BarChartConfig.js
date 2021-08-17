@@ -16,12 +16,13 @@ export default function BarChartConfig({onChange, report}) {
   const {
     reportType,
     combined,
-    data: {configuration, distributedBy},
+    data: {configuration, distributedBy, visualization},
     result,
   } = report;
 
   const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
   const isMultiMeasure = combined ? false : result?.measures.length > 1;
+  const isStacked = visualization === 'stacked';
 
   return (
     <div className="BarChartConfig">
@@ -67,7 +68,7 @@ export default function BarChartConfig({onChange, report}) {
           />
         )}
       </fieldset>
-      {!isMultiMeasure && (
+      {!isMultiMeasure && !isStacked && (
         <fieldset>
           <legend>
             <Switch

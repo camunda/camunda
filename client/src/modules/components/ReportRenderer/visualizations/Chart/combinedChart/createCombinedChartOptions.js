@@ -56,7 +56,6 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     ...createBarOptions({
       targetValue,
       configuration,
-      stacked: isNumber,
       maxDuration,
       isDark,
       isPersistedTooltips,
@@ -64,6 +63,8 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       entity: view.entity,
       autoSkip: canBeInterpolated(groupBy),
       groupedByDurationMaxValue,
+      visualization,
+      isCombinedNumber: isNumber,
     }),
     plugins: {
       legend: {

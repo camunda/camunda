@@ -85,3 +85,19 @@ it('should not show target value, color picker or y axis label for multi-measure
   expect(node.find('[placeholder="xAxis"]')).not.toExist();
   expect(node.find('ChartTargetInput')).not.toExist();
 });
+
+it('should not show target value for stacked visualization', () => {
+  const node = shallow(
+    <BarChartConfig
+      report={{
+        ...barReport,
+        data: {
+          ...barReport.data,
+          visualization: 'stacked',
+        },
+      }}
+    />
+  );
+
+  expect(node.find('ChartTargetInput')).not.toExist();
+});

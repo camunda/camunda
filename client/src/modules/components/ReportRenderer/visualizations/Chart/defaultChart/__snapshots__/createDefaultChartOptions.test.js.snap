@@ -25,6 +25,7 @@ Object {
         "color": "rgba(0,0,0,0.1)",
       },
       "id": "axis-0",
+      "stacked": false,
       "suggestedMax": undefined,
       "ticks": Object {
         "beginAtZero": true,
@@ -104,6 +105,7 @@ Object {
         "color": "rgba(0,0,0,0.1)",
       },
       "id": "axis-0",
+      "stacked": false,
       "suggestedMax": undefined,
       "ticks": Object {
         "beginAtZero": true,
@@ -142,7 +144,7 @@ Object {
       "grid": Object {
         "color": "rgba(0,0,0,0.1)",
       },
-      "stacked": false,
+      "stacked": undefined,
       "ticks": Object {
         "autoSkip": false,
         "callback": [Function],

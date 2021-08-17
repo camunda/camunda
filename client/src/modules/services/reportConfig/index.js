@@ -70,6 +70,13 @@ config.process.update = (type, data, props) => {
     }
   }
 
+  if (
+    newReport.data.visualization === 'stacked' &&
+    (changes.distributedBy || newReport.data.view?.properties.length > 1)
+  ) {
+    changes.visualization = {$set: 'bar'};
+  }
+
   return changes;
 };
 

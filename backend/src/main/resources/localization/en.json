@@ -323,7 +323,8 @@
       "line": "Line Chart",
       "pie": "Pie Chart",
       "table": "Table",
-      "heat": "Heatmap"
+      "heat": "Heatmap",
+      "stacked": "Stacked Bar"
     },
     "processPart": {
       "label": "Process Instance Part",

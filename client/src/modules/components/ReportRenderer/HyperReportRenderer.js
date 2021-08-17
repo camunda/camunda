@@ -67,7 +67,7 @@ export default function HyperReportRenderer({report, ...rest}) {
 }
 
 function getVisualization(visualization) {
-  if (['table', 'line'].includes(visualization)) {
+  if (['table', 'line', 'stacked'].includes(visualization)) {
     return visualization;
   }
   return 'bar';
