@@ -11,14 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.shared.EnvironmentHelper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.core.env.Environment;
 
-public final class EnvironmentHelperTest {
+final class EnvironmentHelperTest {
 
   @Test
-  public void shouldReturnFalseWhenEnvironmentIsNull() {
+  void shouldReturnFalseWhenEnvironmentIsNull() {
     // when
     final boolean actual = EnvironmentHelper.isProductionEnvironment(null);
 
@@ -27,7 +27,7 @@ public final class EnvironmentHelperTest {
   }
 
   @Test
-  public void shouldReturnTrueWhenEnvironmentReturnsNullForActiveProfiles() {
+  void shouldReturnTrueWhenEnvironmentReturnsNullForActiveProfiles() {
     // given
     final Environment mockEnvironment = Mockito.mock(Environment.class);
 
@@ -39,7 +39,7 @@ public final class EnvironmentHelperTest {
   }
 
   @Test
-  public void shouldReturnTrueWhenEnvironmentReturnsEmptyListForActiveProfiles() {
+  void shouldReturnTrueWhenEnvironmentReturnsEmptyListForActiveProfiles() {
     // given
     final Environment mockEnvironment = Mockito.mock(Environment.class);
     when(mockEnvironment.getActiveProfiles()).thenReturn(new String[] {});
@@ -52,7 +52,7 @@ public final class EnvironmentHelperTest {
   }
 
   @Test
-  public void shouldReturnFalseWhenWhenEnvironmentReturnsListContainingDevForActiveProfiles() {
+  void shouldReturnFalseWhenWhenEnvironmentReturnsListContainingDevForActiveProfiles() {
     // given
     final Environment mockEnvironment = Mockito.mock(Environment.class);
     when(mockEnvironment.getActiveProfiles()).thenReturn(new String[] {"dev"});
@@ -65,7 +65,7 @@ public final class EnvironmentHelperTest {
   }
 
   @Test
-  public void shouldReturnFalseWhenWhenEnvironmentReturnsListContainingTestForActiveProfiles() {
+  void shouldReturnFalseWhenWhenEnvironmentReturnsListContainingTestForActiveProfiles() {
     // given
     final Environment mockEnvironment = Mockito.mock(Environment.class);
     when(mockEnvironment.getActiveProfiles()).thenReturn(new String[] {"test"});
