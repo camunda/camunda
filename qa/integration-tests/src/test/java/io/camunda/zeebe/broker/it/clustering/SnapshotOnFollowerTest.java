@@ -24,17 +24,46 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
+@RunWith(Parameterized.class)
 public class SnapshotOnFollowerTest {
+
+  private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(5);
 
   @Rule
   public final ClusteringRule clusteringRule = new ClusteringRule(1, 2, 2, this::configureBroker);
+
+  @Parameter(0)
+  public BiConsumer<ClusteringRule, Broker> snapshotTrigger;
+
+  @Parameter(1)
+  public String description;
+
+  @Parameters(name = "{index}: {1}")
+  public static Object[][] snapshotTriggers() {
+    return new Object[][] {
+      new Object[] {
+        (BiConsumer<ClusteringRule, Broker>) ClusteringRule::takeSnapshot,
+        "explicit trigger snapshot"
+      },
+      new Object[] {
+        (BiConsumer<ClusteringRule, Broker>)
+            (rule, broker) -> rule.getClock().addTime(SNAPSHOT_INTERVAL),
+        "implicit snapshot by advancing the clock"
+      }
+    };
+  }
 
   @After
   public void cleanUp() {
@@ -62,7 +91,7 @@ public class SnapshotOnFollowerTest {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              clusteringRule.takeSnapshot(follower);
+              snapshotTrigger.accept(clusteringRule, follower);
               assertThatSnapshotContainsExporterPosition(follower);
             });
   }
@@ -76,6 +105,7 @@ public class SnapshotOnFollowerTest {
   private void configureBroker(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setLogIndexDensity(5);
+    data.setSnapshotPeriod(SNAPSHOT_INTERVAL);
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(ControllableExporter.class.getName());
