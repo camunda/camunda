@@ -61,7 +61,7 @@ public class LogStoragePartitionStep implements PartitionStep {
 
   @Override
   public String getName() {
-    return "logstream";
+    return "logstorage";
   }
 
   private Either<Exception, AtomixLogStorage> buildAtomixLogStorage(
