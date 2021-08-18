@@ -113,7 +113,7 @@ static String elasticSearchContainerSpec(esVersion) {
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
     - name: ES_JAVA_OPTS
-      value: "-Xms1g -Xmx1g"
+      value: "-Xms2g -Xmx2g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
@@ -126,11 +126,11 @@ static String elasticSearchContainerSpec(esVersion) {
         add: ["IPC_LOCK"]
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
   """
 }
 
