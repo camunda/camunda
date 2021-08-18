@@ -176,37 +176,6 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
-   * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such
-   * that other other actions may be executed before this. This method is useful in case an actor is
-   * in a (potentially endless) loop and it should be able to interrupt it.
-   *
-   * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param action the action to run.
-   */
-  public void submit(final Runnable action) {
-    final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
-    final ActorTask currentTask = currentActorRunner.getCurrentTask();
-
-    final ActorJob job;
-    if (currentTask == task) {
-      job = currentActorRunner.newJob();
-    } else {
-      job = new ActorJob();
-    }
-
-    job.setRunnable(action);
-    job.setAutoCompleting(true);
-    job.onJobAddedToTask(task);
-    task.submit(job);
-
-    if (currentTask == task) {
-      yield();
-    }
-  }
-
-  /**
    * Scheduled a repeating timer
    *
    * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
@@ -260,6 +229,38 @@ public class ActorControl implements ConcurrencyControl {
           future,
           callback,
           (job) -> new ActorFutureSubscription(future, job, lifecyclePhase.getValue()));
+    }
+  }
+
+  /**
+   * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such
+   * that other other actions may be executed before this. This method is useful in case an actor is
+   * in a (potentially endless) loop and it should be able to interrupt it.
+   *
+   * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
+   * {@link ActorLifecyclePhase#STARTED}
+   *
+   * @param action the action to run.
+   */
+  @Override
+  public void submit(final Runnable action) {
+    final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
+    final ActorTask currentTask = currentActorRunner.getCurrentTask();
+
+    final ActorJob job;
+    if (currentTask == task) {
+      job = currentActorRunner.newJob();
+    } else {
+      job = new ActorJob();
+    }
+
+    job.setRunnable(action);
+    job.setAutoCompleting(true);
+    job.onJobAddedToTask(task);
+    task.submit(job);
+
+    if (currentTask == task) {
+      yield();
     }
   }
 
