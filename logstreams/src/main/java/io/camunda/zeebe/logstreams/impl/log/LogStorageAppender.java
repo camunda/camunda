@@ -168,7 +168,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0) {
       appendBlock(blockPeek);
     } else {
-      actor.yield();
+      actor.yieldThread();
     }
   }
 

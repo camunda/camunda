@@ -151,7 +151,7 @@ public final class PushDeploymentRequestHandler
 
             sendResponse(responseFuture, deploymentKey, partitionId);
           } else {
-            actor.yield();
+            actor.yieldThread();
           }
         });
   }

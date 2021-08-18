@@ -146,7 +146,7 @@ public final class ConditionalActionsTest {
           protected void onCondition() {
             invocations.incrementAndGet();
             actor.run(this::doNothing);
-            actor.yield();
+            actor.yieldThread();
           }
 
           protected void doNothing() {}
