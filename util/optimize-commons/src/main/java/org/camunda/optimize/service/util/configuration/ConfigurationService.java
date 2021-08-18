@@ -77,6 +77,7 @@ public class ConfigurationService {
   private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
   private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
+  private Integer elasticsearchResponseConsumerBufferLimitInMb;
   private ProxyConfiguration elasticSearchProxyConfig;
 
   // elasticsearch connection security
@@ -334,6 +335,15 @@ public class ConfigurationService {
       );
     }
     return elasticsearchConnectionTimeout;
+  }
+
+  public int getElasticsearchResponseConsumerBufferLimitInMb() {
+    if (elasticsearchResponseConsumerBufferLimitInMb == null) {
+      elasticsearchResponseConsumerBufferLimitInMb = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB, Integer.class
+      );
+    }
+    return elasticsearchResponseConsumerBufferLimitInMb;
   }
 
   public ProxyConfiguration getElasticSearchProxyConfig() {

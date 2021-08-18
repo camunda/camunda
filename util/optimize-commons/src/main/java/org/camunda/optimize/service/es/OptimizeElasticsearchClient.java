@@ -109,7 +109,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
                                      final OptimizeIndexNameService indexNameService) {
-    this(highLevelClient, indexNameService, new RequestOptionsProvider(Collections.emptyList()));
+    this(highLevelClient, indexNameService, new RequestOptionsProvider());
   }
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
@@ -124,11 +124,12 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   public void reloadConfiguration(final ApplicationContext context) {
     try {
       highLevelClient.close();
-      this.highLevelClient = ElasticsearchHighLevelRestClientBuilder.build(context.getBean(ConfigurationService.class));
+      final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+      this.highLevelClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
       this.indexNameService = context.getBean(OptimizeIndexNameService.class);
       final ElasticsearchCustomHeaderProvider customHeaderProvider =
         context.getBean(ElasticsearchCustomHeaderProvider.class);
-      this.requestOptionsProvider = new RequestOptionsProvider(customHeaderProvider.getPlugins());
+      this.requestOptionsProvider = new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService);
     } catch (IOException e) {
       log.error("There was an error closing Elasticsearch Client {}", highLevelClient);
     }

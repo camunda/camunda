@@ -276,6 +276,8 @@ es:
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a time out triggers.
     timeout: 10000
+    # Maximum size of the Elasticsearch response consumer heap buffer.
+    responseConsumerBufferLimitInMb: 100
     # a list of Elasticsearch nodes Optimize can connect to. If you  have built
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.

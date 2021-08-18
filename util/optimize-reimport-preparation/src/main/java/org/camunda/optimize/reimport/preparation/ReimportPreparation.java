@@ -94,7 +94,7 @@ public class ReimportPreparation {
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
         new OptimizeIndexNameService(configurationService),
-        new RequestOptionsProvider(customHeaderProvider.getPlugins())
+        new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
       );
 
       deleteImportAndEngineDataIndices(prefixAwareClient);
