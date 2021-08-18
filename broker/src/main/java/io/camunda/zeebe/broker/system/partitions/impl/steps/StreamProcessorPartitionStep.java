@@ -20,12 +20,6 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class StreamProcessorPartitionStep implements PartitionStep {
 
-  private final Role role;
-
-  public StreamProcessorPartitionStep(final Role role) {
-    this.role = role;
-  }
-
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final StreamProcessor streamProcessor = createStreamProcessor(context);
@@ -73,7 +67,9 @@ public class StreamProcessorPartitionStep implements PartitionStep {
   private StreamProcessor createStreamProcessor(
       final PartitionStartupAndTransitionContextImpl state) {
     final StreamProcessorMode streamProcessorMode =
-        role == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
+        state.getCurrentRole() == Role.LEADER
+            ? StreamProcessorMode.PROCESSING
+            : StreamProcessorMode.REPLAY;
     return StreamProcessor.builder()
         .logStream(state.getLogStream())
         .actorSchedulingService(state.getActorSchedulingService())

@@ -25,12 +25,6 @@ public class LogStoragePartitionStep implements PartitionStep {
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
 
-  private final Role role;
-
-  public LogStoragePartitionStep(final Role role) {
-    this.role = role;
-  }
-
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
@@ -68,7 +62,7 @@ public class LogStoragePartitionStep implements PartitionStep {
       final PartitionStartupAndTransitionContextImpl context) {
     final var server = context.getRaftPartition().getServer();
 
-    if (role == Role.LEADER) {
+    if (context.getCurrentRole() == Role.LEADER) {
       return createWritableLogStorage(context, server);
     } else {
       return createReadOnlyStorage(server);

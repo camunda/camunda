@@ -20,18 +20,12 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
-  private final Role role;
-
-  public ExporterDirectorPartitionStep(final Role role) {
-    this.role = role;
-  }
-
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final var exporterDescriptors = context.getExporterRepository().getExporters().values();
 
     final ExporterMode exporterMode =
-        role == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
+        context.getCurrentRole() == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)

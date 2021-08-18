@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.partitioning;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
-import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -70,24 +69,24 @@ final class PartitionFactory {
       List.of(
           new StateControllerPartitionStep(),
           new LogDeletionPartitionStep(),
-          new LogStoragePartitionStep(Role.LEADER),
+          new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
-          new StreamProcessorPartitionStep(Role.LEADER),
-          new SnapshotDirectorPartitionStep(Role.LEADER),
+          new StreamProcessorPartitionStep(),
+          new SnapshotDirectorPartitionStep(),
           new RocksDbMetricExporterPartitionStep(),
-          new ExporterDirectorPartitionStep(Role.LEADER));
+          new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
           new StateControllerPartitionStep(),
           new LogDeletionPartitionStep(),
-          new LogStoragePartitionStep(Role.FOLLOWER),
+          new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
-          new StreamProcessorPartitionStep(Role.FOLLOWER),
-          new SnapshotDirectorPartitionStep(Role.FOLLOWER),
+          new StreamProcessorPartitionStep(),
+          new SnapshotDirectorPartitionStep(),
           new RocksDbMetricExporterPartitionStep(),
-          new ExporterDirectorPartitionStep(Role.FOLLOWER));
+          new ExporterDirectorPartitionStep());
 
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;

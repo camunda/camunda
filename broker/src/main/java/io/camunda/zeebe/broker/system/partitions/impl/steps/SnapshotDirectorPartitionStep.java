@@ -17,19 +17,13 @@ import java.time.Duration;
 
 public class SnapshotDirectorPartitionStep implements PartitionStep {
 
-  private final Role role;
-
-  public SnapshotDirectorPartitionStep(final Role role) {
-    this.role = role;
-  }
-
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final var server = context.getRaftPartition().getServer();
 
     final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
     final AsyncSnapshotDirector director;
-    if (role == Role.LEADER) {
+    if (context.getCurrentRole() == Role.LEADER) {
       director = createSnapshotDirectorOfLeader(context, server, snapshotPeriod);
     } else {
       director = createSnapshotDirectorOfFollower(context, snapshotPeriod);
