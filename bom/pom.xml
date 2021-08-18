@@ -102,6 +102,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-protocol-jackson</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-transport</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -196,16 +202,19 @@
         <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
+
       <dependency>
         <artifactId>zeebe-atomix-storage</artifactId>
         <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
+
       <dependency>
         <artifactId>zeebe-atomix-utils</artifactId>
         <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
+
       <dependency>
         <artifactId>zeebe-atomix</artifactId>
         <groupId>io.camunda</groupId>

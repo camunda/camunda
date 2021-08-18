@@ -102,6 +102,7 @@
     <version.byte-buddy>1.11.12</version.byte-buddy>
     <version.revapi>0.24.4</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
+    <version.immutables>2.8.8</version.immutables>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -570,6 +571,13 @@
             <artifactId>grpc-all</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+
+      <!-- Interface based code generation -->
+      <dependency>
+        <groupId>org.immutables</groupId>
+        <artifactId>value</artifactId>
+        <version>${version.immutables}</version>
       </dependency>
 
       <dependency>
