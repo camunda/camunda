@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Chart} from 'chart.js';
@@ -26,6 +26,8 @@ jest.mock('services', () => ({
 it('should construct a bar Chart with the noda data', () => {
   shallow(<DurationChart data={data} />);
 
+  runAllEffects();
+
   expect(Chart).toHaveBeenCalled();
   expect(Chart.mock.calls[0][1].type).toBe('bar');
   expect(Chart.mock.calls[0][1].data).toMatchSnapshot();
@@ -34,11 +36,15 @@ it('should construct a bar Chart with the noda data', () => {
 it('should create correct chart options', () => {
   shallow(<DurationChart data={data} />);
 
+  runAllEffects();
+
   expect(Chart.mock.calls[0][1].options).toMatchSnapshot();
 });
 
 it('should format tooltip durations', () => {
   shallow(<DurationChart data={data} />);
+
+  runAllEffects();
 
   const durationInMs = 1020;
   expect(

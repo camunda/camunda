@@ -4,30 +4,41 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useRef, useEffect, useCallback} from 'react';
 import {Chart} from 'chart.js';
 
 import {t} from 'translation';
-
 import {formatters} from 'services';
+
 import './DurationChart.scss';
+
 const {createDurationFormattingOptions, duration} = formatters;
 
-export default class DurationChart extends React.Component {
-  componentDidMount() {
-    this.createChart();
-  }
+function DurationChart({data}) {
+  const canvas = useRef(null);
 
-  storeContainer = (canvas) => {
-    this.canvas = canvas;
-  };
+  const createTooltipTitle = useCallback(
+    (tooltipData) => {
+      if (!tooltipData.length) {
+        return;
+      }
+      let key = 'common.instance';
+      if (data[tooltipData[0].dataIndex].outlier) {
+        key = 'analysis.outlier.tooltip.outlier';
+      }
 
-  createChart = () => {
-    const {data} = this.props;
+      const unitLabel = t(`${key}.label${+tooltipData[0].formattedValue !== 1 ? '-plural' : ''}`);
+
+      return tooltipData[0].formattedValue + ' ' + unitLabel;
+    },
+    [data]
+  );
+
+  useEffect(() => {
     const colors = data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'));
     const maxDuration = data && data.length > 0 ? data[data.length - 1].key : 0;
 
-    return new Chart(this.canvas, {
+    return new Chart(canvas.current, {
       type: 'bar',
       data: {
         labels: data.map(({key}) => key),
@@ -52,7 +63,7 @@ export default class DurationChart extends React.Component {
             intersect: false,
             mode: 'x',
             callbacks: {
-              title: this.createTooltipTitle,
+              title: createTooltipTitle,
               label: ({label, dataset, dataIndex}) => {
                 const isSingleInstance = dataset.data[dataIndex] === 1;
                 return ` ${t(
@@ -81,36 +92,17 @@ export default class DurationChart extends React.Component {
               text: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),
               font: {weight: 'bold'},
             },
-            ticks: {
-              // this is needed due to this bug: https://github.com/chartjs/Chart.js/issues/9390
-              // TODO: Remove this after updating chart.js to 3.5
-              callback: (v) => v,
-            },
           },
         },
       },
     });
-  };
+  }, [createTooltipTitle, data]);
 
-  createTooltipTitle = (data) => {
-    if (!data.length) {
-      return;
-    }
-    let key = 'common.instance';
-    if (this.props.data[data[0].dataIndex].outlier) {
-      key = 'analysis.outlier.tooltip.outlier';
-    }
-
-    const unitLabel = t(`${key}.label${+data[0].formattedValue !== 1 ? '-plural' : ''}`);
-
-    return data[0].formattedValue + ' ' + unitLabel;
-  };
-
-  render() {
-    return (
-      <div className="DurationChart">
-        <canvas ref={this.storeContainer} />
-      </div>
-    );
-  }
+  return (
+    <div className="DurationChart">
+      <canvas ref={canvas} />
+    </div>
+  );
 }
+
+export default DurationChart;
