@@ -163,6 +163,7 @@ public class FailOverReplicationTest {
     // which Follower B - old leader hasn't
     awaitFilledSegmentsOnBrokers(List.of(newLeader, followerA), 2);
     awaitSnapshot(newLeader);
+    clusteringRule.takeSnapshot(followerA);
     clusteringRule.waitForSnapshotAtBroker(followerA);
 
     // when shutdown current leader and connect follower (old leader with old log)

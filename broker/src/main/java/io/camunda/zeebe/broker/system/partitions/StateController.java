@@ -21,9 +21,6 @@ public interface StateController extends AutoCloseable {
    */
   Optional<TransientSnapshot> takeTransientSnapshot(long lowerBoundSnapshotPosition);
 
-  /** Registers to consumes replicated snapshots. */
-  void consumeReplicatedSnapshots();
-
   /** Recovers the state from the latest snapshot. */
   void recover() throws Exception;
 
@@ -40,6 +37,4 @@ public interface StateController extends AutoCloseable {
    * @return valid snapshots count
    */
   int getValidSnapshotsCount();
-
-  void stopConsumeReplicatedSnapshots();
 }

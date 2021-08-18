@@ -65,7 +65,6 @@ public final class StateControllerImplTest {
             store,
             factory.getReceivableSnapshotStore(1),
             runtimeDirectory,
-            new NoneSnapshotReplication(),
             l ->
                 Optional.of(
                     new TestIndexedRaftLogEntry(

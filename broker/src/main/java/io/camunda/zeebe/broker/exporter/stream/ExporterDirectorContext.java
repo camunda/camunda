@@ -16,6 +16,8 @@ import java.util.Collection;
 
 public final class ExporterDirectorContext {
 
+  public static final Duration DEFAULT_DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
+
   private int id;
   private String name;
   private LogStream logStream;
@@ -23,7 +25,7 @@ public final class ExporterDirectorContext {
   private ZeebeDb zeebeDb;
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
-  private Duration distributionInterval = Duration.ofSeconds(15);
+  private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
 
   public int getId() {
     return id;
