@@ -64,7 +64,7 @@ export function DistributedBy({
               change.distributedBy.$set = {type, value: {unit}};
             }
 
-            if (value !== 'none' && !['line', 'table'].includes(visualization)) {
+            if (value !== 'none' && !['line', 'table', 'stacked'].includes(visualization)) {
               change.visualization = {$set: 'bar'};
             }
 

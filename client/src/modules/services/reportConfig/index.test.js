@@ -6,7 +6,7 @@
 
 import config from './index';
 
-jest.mock('./reportConfig', () => () => ({update: () => ({})}));
+jest.mock('./reportConfig', () => () => ({update: (type, data) => ({[type]: {$set: data}})}));
 
 describe('process update', () => {
   it('should reset aggregation type if its incompatible', () => {
@@ -142,6 +142,7 @@ describe('process update', () => {
         report: {
           data: {
             view: {entity: 'processInstance', properties: ['frequency']},
+            groupBy: {type: 'flowNodes'},
             distributedBy: {type: 'variable', value: {}},
             configuration: {},
           },
@@ -190,13 +191,14 @@ describe('process update', () => {
   it('should change visualization from stacked to bar when adding measures', () => {
     let changes = config.process.update(
       'view',
-      {entity: 'flowNode', properties: ['frequency']},
+      {entity: 'flowNode', properties: ['frequency', 'duration']},
       {
         report: {
           data: {
-            view: {entity: 'flowNode', properties: ['frequency', 'duration']},
-            configuration: {},
+            view: {entity: 'flowNode', properties: ['frequency']},
+            configuration: {targetValue: {active: false}},
             visualization: 'stacked',
+            groupBy: {type: ''},
           },
         },
       }
