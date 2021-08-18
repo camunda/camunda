@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 
 public class LogStoragePartitionStep implements PartitionStep {
   private static final String WRONG_TERM_ERROR_MSG =
-      "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'AtomixLogStoragePartitionStep' on partition %d.";
+      "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
 
   private final Role role;
 
@@ -125,7 +125,10 @@ public class LogStoragePartitionStep implements PartitionStep {
         final long highestPosition,
         final ByteBuffer data,
         final AppendListener appendListener) {
-      throw new UnsupportedOperationException("Read only storage");
+      throw new UnsupportedOperationException(
+          String.format(
+              "Expect to append entry (positions %d - %d), but was in Follower role. Followers must not append entries to the log storage",
+              lowestPosition, highestPosition));
     }
   }
 }

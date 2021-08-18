@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -52,7 +53,6 @@ public class SnapshotOnFollowerTest {
 
     publishMessages();
     ControllableExporter.updatePosition(false);
-    final var exportedPosition = ControllableExporter.lastUpdatedPosition;
     publishMessages();
 
     // when - then
@@ -63,9 +63,14 @@ public class SnapshotOnFollowerTest {
         .untilAsserted(
             () -> {
               clusteringRule.takeSnapshot(follower);
-              final var snapshotAtFollower = clusteringRule.getSnapshot(follower).orElseThrow();
-              assertThat(snapshotAtFollower.getExportedPosition()).isEqualTo(exportedPosition);
+              assertThatSnapshotContainsExporterPosition(follower);
             });
+  }
+
+  private void assertThatSnapshotContainsExporterPosition(final Broker follower) {
+    final var exportedPosition = ControllableExporter.lastUpdatedPosition;
+    final var snapshotAtFollower = clusteringRule.getSnapshot(follower).orElseThrow();
+    assertThat(snapshotAtFollower.getExportedPosition()).isEqualTo(exportedPosition);
   }
 
   private void configureBroker(final BrokerCfg brokerCfg) {
