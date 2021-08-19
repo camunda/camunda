@@ -129,9 +129,9 @@ public class DashboardWriter {
 
   public void removeReportFromDashboards(String reportId) {
     final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
-    log.info("Removing {}}.", reportId);
+    log.info("Removing {}}.", updateItem);
 
-    Script removeReportIdFromCombinedReportsScript = new Script(
+    Script removeReportFromDashboardScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       "ctx._source.reports.removeIf(report -> report.id.equals(params.idToRemove))",
@@ -140,14 +140,14 @@ public class DashboardWriter {
 
     NestedQueryBuilder query = QueryBuilders.nestedQuery(
       DashboardIndex.REPORTS,
-      QueryBuilders.termQuery(DashboardIndex.REPORTS + "." + DashboardIndex.ID, reportId),
+      QueryBuilders.termQuery(DashboardIndex.REPORTS + "." + DashboardIndex.REPORT_ID, reportId),
       ScoreMode.None
     );
 
     ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       updateItem,
-      removeReportIdFromCombinedReportsScript,
+      removeReportFromDashboardScript,
       query,
       DASHBOARD_INDEX_NAME
     );

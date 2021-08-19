@@ -256,7 +256,7 @@ public class ElasticsearchWriterUtil {
 
     try {
       final TaskResponse.Status taskStatus = getTaskResponse(esClient, taskId).getTaskStatus();
-      log.debug("Deleted [{}] {}.", taskStatus.getDeleted(), deletedItemIdentifier);
+      log.debug("Deleted [{}] out of [{}] {}.", taskStatus.getDeleted(), taskStatus.getTotal(), deletedItemIdentifier);
       return taskStatus.getDeleted() > 0L;
     } catch (IOException e) {
       throw new OptimizeRuntimeException(
@@ -400,14 +400,15 @@ public class ElasticsearchWriterUtil {
           final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
           progress = currentProgress;
           log.info(
-            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {})",
+            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed is {}",
             taskId,
             taskItemIdentifier,
             progress,
             taskStatus.getTotal(),
             taskStatus.getUpdated(),
             taskStatus.getCreated(),
-            taskStatus.getDeleted()
+            taskStatus.getDeleted(),
+            taskResponse.isCompleted()
           );
         }
         finished = taskResponse.isCompleted();

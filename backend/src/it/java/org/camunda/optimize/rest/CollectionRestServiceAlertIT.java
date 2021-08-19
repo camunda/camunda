@@ -109,9 +109,9 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     final String reportId1 = createNumberReportForCollection(collectionId, definitionType);
     final String reportId2 = createNumberReportForCollection(collectionId, definitionType);
 
-    alertClient.createAlertForReport(reportId1);
-    alertClient.createAlertForReport(reportId1);
-    alertClient.createAlertForReport(reportId2);
+    alertClient.createAlertForReport(reportId1, 1, "Hours");
+    alertClient.createAlertForReport(reportId1, 1, "Hours");
+    alertClient.createAlertForReport(reportId2, 1, "Hours");
 
     // when
     collectionClient.deleteCollection(collectionId);
