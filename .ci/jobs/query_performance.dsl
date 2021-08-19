@@ -16,7 +16,7 @@ pipelineJob('query-performance-tests') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for performance tests.')
 
     choiceParam('SQL_DUMP', ['optimize_data-medium.sqlc', 'optimize_data-large.sqlc', 'optimize_data-stage.sqlc'])
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')

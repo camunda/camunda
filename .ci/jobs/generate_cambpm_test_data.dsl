@@ -16,7 +16,7 @@ pipelineJob('generate-cambpm-test-data') {
     }
 
     parameters {
-        stringParam('BRANCH', 'master', 'Branch to use for Camunda BPM test datasets generation.')
+        stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for Camunda BPM test datasets generation.')
         stringParam('POSTGRES_VERSION', '11.2', 'Postgres version to use.')
         stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
         choiceParam('SQL_DUMP', ['optimize_data-large.sqlc', 'optimize_data-medium.sqlc', 'optimize_data-stage.sqlc', 'optimize_data-e2e.sqlc'])

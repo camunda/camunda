@@ -16,7 +16,7 @@ pipelineJob('event-cleanup-performance') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for performance tests.')
 
     choiceParam('SQL_DUMP', ['optimize_data-medium.sqlc', 'optimize_data-large.sqlc', 'optimize_data-stage.sqlc'])
     stringParam('ES_REFRESH_INTERVAL', '5s', 'Elasticsearch index refresh interval.')

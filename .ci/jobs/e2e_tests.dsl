@@ -16,7 +16,7 @@ pipelineJob('e2e_tests') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for E2E tests.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for E2E tests.')
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }

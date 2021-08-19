@@ -16,7 +16,7 @@ pipelineJob('import_mediator_permutation_test') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for Import Mediator Permutation tests.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for Import Mediator Permutation tests.')
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }

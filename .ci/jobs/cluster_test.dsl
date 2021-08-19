@@ -16,7 +16,7 @@ pipelineJob('cluster_test') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for cluster tests.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for cluster tests.')
   }
 
   properties {
