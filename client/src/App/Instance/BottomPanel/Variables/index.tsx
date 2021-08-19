@@ -180,56 +180,58 @@ const Variables: React.FC = observer(() => {
                                   {variableValue}
                                 </Styled.DisplayText>
                               </Styled.DisplayTextTD>
-                              {currentInstanceStore.isRunning && (
-                                <Styled.EditButtonsTD>
-                                  {hasActiveOperation ? (
-                                    <Styled.Spinner data-testid="edit-variable-spinner" />
-                                  ) : (
-                                    <Restricted scopes={['edit']}>
-                                      <Styled.EditButton
-                                        title="Enter edit mode"
-                                        type="button"
-                                        data-testid="edit-variable-button"
-                                        disabled={loadingItemId !== null}
-                                        onClick={async () => {
-                                          let value = variableValue;
-                                          if (isPreview) {
-                                            const variable =
-                                              await variablesStore.fetchVariable(
-                                                {
-                                                  id,
-                                                  onError: () => {
-                                                    notifications.displayNotification(
-                                                      'error',
-                                                      {
-                                                        headline:
-                                                          'Variable could not be fetched',
-                                                      }
-                                                    );
-                                                  },
-                                                }
-                                              );
+                              <Styled.EditButtonsTD>
+                                {currentInstanceStore.isRunning && (
+                                  <>
+                                    {hasActiveOperation ? (
+                                      <Styled.Spinner data-testid="edit-variable-spinner" />
+                                    ) : (
+                                      <Restricted scopes={['edit']}>
+                                        <Styled.EditButton
+                                          title="Enter edit mode"
+                                          type="button"
+                                          data-testid="edit-variable-button"
+                                          disabled={loadingItemId !== null}
+                                          onClick={async () => {
+                                            let value = variableValue;
+                                            if (isPreview) {
+                                              const variable =
+                                                await variablesStore.fetchVariable(
+                                                  {
+                                                    id,
+                                                    onError: () => {
+                                                      notifications.displayNotification(
+                                                        'error',
+                                                        {
+                                                          headline:
+                                                            'Variable could not be fetched',
+                                                        }
+                                                      );
+                                                    },
+                                                  }
+                                                );
 
-                                            if (variable === null) {
-                                              return;
+                                              if (variable === null) {
+                                                return;
+                                              }
+
+                                              value = variable.value;
                                             }
 
-                                            value = variable.value;
-                                          }
-
-                                          form.reset({
-                                            name: variableName,
-                                            value,
-                                          });
-                                        }}
-                                        size="large"
-                                        iconButtonTheme="default"
-                                        icon={<Styled.EditIcon />}
-                                      />
-                                    </Restricted>
-                                  )}
-                                </Styled.EditButtonsTD>
-                              )}
+                                            form.reset({
+                                              name: variableName,
+                                              value,
+                                            });
+                                          }}
+                                          size="large"
+                                          iconButtonTheme="default"
+                                          icon={<Styled.EditIcon />}
+                                        />
+                                      </Restricted>
+                                    )}
+                                  </>
+                                )}
+                              </Styled.EditButtonsTD>
                             </>
                           )}
                         </TR>
