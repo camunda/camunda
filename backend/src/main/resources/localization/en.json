@@ -911,7 +911,7 @@
       },
       "types": {
         "instanceState": "Process Instance State",
-        "date": "Date",
+        "date": "Instance Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
         "startDate": "Start Date",
@@ -932,9 +932,9 @@
         "resolvedIncident": "Resolved Incidents",
         "flowNodeStatus": "Flow Node State",
         "flowNodeSelection": "Flow Node Selection",
-        "flowNodeDate": "Flow Node date",
-        "flowNodeStartDate": "Flow Node start date",
-        "flowNodeEndDate": "Flow Node end date"
+        "flowNodeDate": "Flow Node Date",
+        "flowNodeStartDate": "Flow Node Start Date",
+        "flowNodeEndDate": "Flow Node End Date"
       },
       "list": {
         "appliedTo": "Applied to",
@@ -1041,11 +1041,15 @@
       },
       "nodeDateModal": {
         "info": {
-          "instance": "Only display Instances where at least one of the selected Flow Nodes...",
-          "view": "Only display data from Flow Nodes which..."
-        },
-        "started": "Started",
-        "ended": "Ended"
+          "flowNodeStartDate": {
+            "instance": "Only display instances where at least on of the selected Flow Nodes started",
+            "view": "Only display data from Flow Nodes which started"
+          },
+          "flowNodeEndDate": {
+            "instance": "Only display instances where at least on of the selected Flow Nodes ended",
+            "view": "Only display data from Flow Nodes which ended"
+          }
+        }
       },
       "assigneeModal": {
         "includeOnly": "Include only",

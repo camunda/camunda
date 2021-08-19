@@ -911,7 +911,7 @@
       },
       "types": {
         "instanceState": "Instanzstatus",
-        "date": "Datum",
+        "date": "Instanzdatum",
         "assignee": "Bearbeiter",
         "candidateGroup": "Potenzielle Gruppe",
         "startDate": "Startdatum",
@@ -1041,11 +1041,15 @@
       },
       "nodeDateModal": {
         "info": {
-          "instance": "Nur Anzeigeninstanzen, in denen mindestens einer der ausgewählten Prozessknoten ...",
-          "view": "Nur Daten von Prozessknoten anzeigen, die ..."
-        },
-        "started": "Gestartet",
-        "ended": "Abgeschlossen"
+          "flowNodeStartDate": {
+            "instance": "Nur Instanzen anzeigen, in denen mindestens einer der ausgewählten Prozessknoten in diesem Zeitraum gestartet ist",
+            "view": "Nur Daten von Prozessknoten anzeigen, die in diesem Zeitraum gestartet sind"
+          },
+          "flowNodeEndDate": {
+            "instance": "Nur Instanzen anzeigen, in denen mindestens einer der ausgewählten Prozessknoten in diesem Zeitraum geendet ist",
+            "view": "Nur Daten von Prozessknoten anzeigen, die in diesem Zeitraum geendet sind"
+          }
+        }
       },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",

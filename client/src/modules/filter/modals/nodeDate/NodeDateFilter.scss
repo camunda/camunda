@@ -11,15 +11,9 @@
     > .Form {
       max-width: 500px;
 
-      > .info,
-      .dateRangeLabel {
+      > .info {
         font-size: 0.875em;
         color: var(--grey-darken-23);
-      }
-
-      .dateRangeLabel {
-        padding-bottom: 5px;
-        display: block;
       }
     }
   }

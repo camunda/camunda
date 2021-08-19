@@ -89,7 +89,7 @@ it('should disable create filter button if no node was selected', () => {
   expect(node.find('[primary]').prop('disabled')).toBeTruthy(); // create filter
 });
 
-it('should load new xml after changing definition', async () => {
+it('should load new xml and reset selected nodes after changing definition', () => {
   const definitions = [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
     {
@@ -101,10 +101,17 @@ it('should load new xml after changing definition', async () => {
   ];
   const node = shallow(<NodeDateFilter {...props} definitions={definitions} />);
 
-  node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
-
   runAllEffects();
+  runAllEffects();
+
+  node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
+  node.find('ClickBehavior').prop('onClick')({
+    name: 'foo',
+    id: 'bar',
+  });
+
   runAllEffects();
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('otherDefinitionKey', '1', 'marketing');
+  expect(node.find('ClickBehavior').prop('selectedNodes').length).toBe(0);
 });

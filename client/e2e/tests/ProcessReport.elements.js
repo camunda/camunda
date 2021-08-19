@@ -72,7 +72,7 @@ export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const flowNodeFilterButton = Selector('.Filter__dropdown .activateButton').nth(1);
 export const filterOption = (text) =>
-  Selector('.Filter__dropdown.is-open .DropdownOption').withText(text);
+  Selector('.Filter__dropdown.is-open .DropdownOption').withExactText(text);
 export const subFilterOption = (text) =>
   Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
 export const modalOption = (text) =>

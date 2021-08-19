@@ -52,13 +52,15 @@ export function NodeDateFilter({
 
   useEffect(() => {
     if (applyTo) {
+      setSelectedNodes([]);
+      setXml(null);
       mightFail(
         loadProcessDefinitionXml(applyTo.key, applyTo.versions[0], applyTo.tenantIds[0]),
         setXml,
         showError
       );
     }
-  }, [xml, applyTo, mightFail]);
+  }, [applyTo, mightFail]);
 
   useEffect(() => {
     if (!filterData) {
@@ -111,14 +113,9 @@ export function NodeDateFilter({
           setApplyTo={setApplyTo}
         />
         <Form>
-          <p className="info">{t('common.filter.nodeDateModal.info.' + filterLevel)}</p>
-          <span className="dateRangeLabel">
-            {t(
-              `common.filter.nodeDateModal.${
-                filterType === 'flowNodeStartDate' ? 'started' : 'ended'
-              }`
-            )}
-          </span>
+          <p className="info">
+            {t('common.filter.nodeDateModal.info.' + filterType + '.' + filterLevel)}
+          </p>
           <DateRangeInput
             type={type}
             unit={unit}

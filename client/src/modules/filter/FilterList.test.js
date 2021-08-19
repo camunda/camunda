@@ -55,6 +55,22 @@ it('should display date preview if the filter is a date filter', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should display date preview for decision date time filter', () => {
+  const data = [
+    {
+      type: 'evaluationDateTime',
+      data: {
+        type: 'relative',
+        value: 0,
+        unit: 'days',
+      },
+    },
+  ];
+
+  const node = shallow(<FilterList data={data} />);
+  expect(node.find('DateFilterPreview')).toExist();
+});
+
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
