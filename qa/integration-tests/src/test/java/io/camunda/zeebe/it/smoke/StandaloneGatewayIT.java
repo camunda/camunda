@@ -46,7 +46,7 @@ final class StandaloneGatewayIT {
   private GatewayCfg config;
 
   /** A simple smoke test which checks that the gateway can start and accept requests. */
-  @Test
+  @SmokeTest
   void smokeTest() {
     // given
     try (final var client =
