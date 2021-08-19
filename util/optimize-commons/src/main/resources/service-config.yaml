@@ -554,3 +554,9 @@ caches:
     maxSize: 1000
     # the time a read result will be cached
     defaultTtlMillis: 10000
+
+externalVariable:
+  variableIngestion:
+    # Secret token to be provided to the external variable ingestion API.
+    # If set to `null`, a random token will be generated with each startup of Optimize and logged.
+    accessToken: ${OPTIMIZE_VARIABLE_INGESTION_ACCESS_TOKEN:null}

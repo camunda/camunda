@@ -19,7 +19,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfigurat
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
@@ -41,6 +41,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
@@ -187,6 +188,8 @@ public class ConfigurationService {
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
   private TelemetryConfiguration telemetryConfiguration;
+
+  private ExternalVariableConfiguration externalVariableConfiguration;
 
   private GlobalCacheConfiguration caches;
 
@@ -1037,7 +1040,7 @@ public class ConfigurationService {
   }
 
   @JsonIgnore
-  public IngestionConfiguration getEventIngestionConfiguration() {
+  public EventIngestionConfiguration getEventIngestionConfiguration() {
     return getEventBasedProcessConfiguration().getEventIngestion();
   }
 
@@ -1059,6 +1062,21 @@ public class ConfigurationService {
       );
     }
     return telemetryConfiguration;
+  }
+
+  public ExternalVariableConfiguration getExternalVariableConfiguration() {
+    if (externalVariableConfiguration == null) {
+      externalVariableConfiguration = configJsonContext.read(
+        EXTERNAL_VARIABLE_CONFIGURATION,
+        ExternalVariableConfiguration.class
+      );
+    }
+    return externalVariableConfiguration;
+  }
+
+  @JsonIgnore
+  public VariableIngestionConfiguration getVariableIngestionConfiguration() {
+    return getExternalVariableConfiguration().getVariableIngestion();
   }
 
   public GlobalCacheConfiguration getCaches() {
