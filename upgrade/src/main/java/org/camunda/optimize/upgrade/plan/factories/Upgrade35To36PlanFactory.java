@@ -12,7 +12,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
+import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;

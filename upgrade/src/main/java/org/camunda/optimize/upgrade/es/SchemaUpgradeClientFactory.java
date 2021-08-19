@@ -16,7 +16,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 
-import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.getAllMappings;
+import static org.camunda.optimize.service.es.schema.MappingMetadataUtil.getAllMappings;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {

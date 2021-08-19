@@ -7,16 +7,19 @@ package org.camunda.optimize.service.schema;
 
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -146,7 +149,7 @@ public class SchemaManagerIT extends AbstractIT {
     // when
     initializeSchema();
 
-    // then the settings contain the updated value
+    // then the settings contain values from configuration
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
     assertMappingSettings(mappings, getSettingsResponse);
   }
@@ -174,7 +177,7 @@ public class SchemaManagerIT extends AbstractIT {
   }
 
   @Test
-  public void dynamicSettingsContainUpdatedConfigurations() throws IOException {
+  public void dynamicSettingsAreAppliedToStaticIndices() throws IOException {
     final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
     final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
     final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
@@ -205,6 +208,42 @@ public class SchemaManagerIT extends AbstractIT {
   }
 
   @Test
+  public void dynamicSettingsAreAppliedToExistingDynamicIndices() throws IOException {
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+
+    // given a dynamic index is created by the import of process instance data
+    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
+      BpmnModels.getSimpleBpmnDiagram());
+    importAllEngineEntitiesFromScratch();
+    // then the dynamic index settings are changed
+    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval("100s");
+    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(2);
+    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(10);
+
+    // when
+    initializeSchema();
+
+    // then the settings contain the updated dynamic values
+    final ProcessInstanceIndex dynamicIndex =
+      new ProcessInstanceIndex(processInstanceEngineDto.getProcessDefinitionKey());
+    final GetSettingsResponse getSettingsResponse =
+      getIndexSettingsFor(Collections.singletonList(dynamicIndex));
+    final String indexName = indexNameService.getOptimizeIndexNameWithVersion(dynamicIndex);
+    final Settings settings = getSettingsResponse.getIndexToSettings().get(indexName);
+    assertThat(settings.get("index." + REFRESH_INTERVAL_SETTING)).isEqualTo("100s");
+    assertThat(settings.getAsInt("index." + NUMBER_OF_REPLICAS_SETTING, 111)).isEqualTo(2);
+    assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
+
+    // cleanup
+    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval(oldRefreshInterval);
+    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(oldReplicaCount);
+    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(oldNestedDocumentLimit);
+    initializeSchema();
+  }
+
+  @Test
   public void dynamicSettingsAreUpdatedForExistingIndexesWhenNewIndexesAreCreated() throws IOException {
     // given schema exists
     initializeSchema();
@@ -219,7 +258,7 @@ public class SchemaManagerIT extends AbstractIT {
     // when
     initializeSchema();
 
-    // then the settings contain the updated value
+    // then the settings contain values from configuration
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
     assertMappingSettings(mappings, getSettingsResponse);

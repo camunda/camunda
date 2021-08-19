@@ -3,12 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.util;
+package org.camunda.optimize.service.es.schema;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.CollectionIndex;
@@ -29,7 +28,6 @@ import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -61,11 +59,45 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MappingMetadataUtil {
+
   public static List<IndexMappingCreator> getAllMappings(final OptimizeElasticsearchClient esClient) {
     List<IndexMappingCreator> allMappings = new ArrayList<>();
     allMappings.addAll(getAllNonDynamicMappings());
     allMappings.addAll(getAllDynamicMappings(esClient));
     return allMappings;
+  }
+
+  public static List<IndexMappingCreator> getAllDynamicMappings(final OptimizeElasticsearchClient esClient) {
+    List<IndexMappingCreator> dynamicMappings = new ArrayList<>();
+    dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
+    dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
+    dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
+    dynamicMappings.addAll(retrieveAllProcessInstanceIndices(esClient));
+    dynamicMappings.addAll(retrieveAllDecisionInstanceIndices(esClient));
+    return dynamicMappings;
+  }
+
+  public static List<String> retrieveProcessInstanceIndexIdentifiers(final OptimizeElasticsearchClient esClient,
+                                                                     final boolean eventBased) {
+    final GetAliasesResponse aliases;
+    final String prefix = eventBased ? EVENT_PROCESS_INSTANCE_INDEX_PREFIX : PROCESS_INSTANCE_INDEX_PREFIX;
+    try {
+      GetAliasesRequest request = new GetAliasesRequest();
+      request.indices(prefix + "*");
+      aliases = esClient.getAlias(request);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + prefix, e);
+    }
+    return aliases.getAliases()
+      .values()
+      .stream()
+      // Response requires filtering because it might include both event and non event based process instance indices
+      // due to the shared alias
+      .filter(aliasMetadataPerIndex -> filterProcessInstanceIndexAliases(aliasMetadataPerIndex, eventBased))
+      .flatMap(aliasMetadataPerIndex -> aliasMetadataPerIndex.stream().map(AliasMetadata::alias))
+      .filter(fullAliasName -> fullAliasName.contains(prefix))
+      .map(fullIndexName -> fullIndexName.substring(fullIndexName.lastIndexOf(prefix) + prefix.length()))
+      .collect(toList());
   }
 
   private static List<IndexMappingCreator> getAllNonDynamicMappings() {
@@ -98,19 +130,11 @@ public class MappingMetadataUtil {
     );
   }
 
-  public static List<DecisionInstanceIndex> retrieveAllDecisionInstanceIndices(
+  private static List<DecisionInstanceIndex> retrieveAllDecisionInstanceIndices(
     final OptimizeElasticsearchClient esClient) {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, DECISION_INSTANCE_INDEX_PREFIX)
       .stream()
       .map(DecisionInstanceIndex::new)
-      .collect(toList());
-  }
-
-  public static List<EventProcessInstanceIndex> retrieveAllEventProcessInstanceIndices(
-    final OptimizeElasticsearchClient esClient) {
-    return retrieveProcessInstanceIndexIdentifiers(esClient, true)
-      .stream()
-      .map(EventProcessInstanceIndex::new)
       .collect(toList());
   }
 
@@ -138,7 +162,7 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
-  private static List<ProcessInstanceIndex> retrieveAllProcessIndices(
+  private static List<ProcessInstanceIndex> retrieveAllProcessInstanceIndices(
     final OptimizeElasticsearchClient esClient) {
     return retrieveProcessInstanceIndexIdentifiers(esClient, false)
       .stream()
@@ -146,19 +170,8 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
-  private static List<IndexMappingCreator> getAllDynamicMappings(final OptimizeElasticsearchClient esClient) {
-    List<IndexMappingCreator> dynamicMappings = new ArrayList<>();
-    dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
-    dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
-    dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
-    dynamicMappings.addAll(retrieveAllProcessIndices(esClient));
-    dynamicMappings.addAll(retrieveAllDecisionInstanceIndices(esClient));
-    return dynamicMappings;
-  }
-
-  public static List<String> retrieveAllDynamicIndexKeysForPrefix(final OptimizeElasticsearchClient esClient,
-                                                                  final String dynamicIndexPrefix) {
-    checkNotProcessInstanceIndex(dynamicIndexPrefix);
+  private static List<String> retrieveAllDynamicIndexKeysForPrefix(final OptimizeElasticsearchClient esClient,
+                                                                   final String dynamicIndexPrefix) {
     final GetAliasesResponse aliases;
     try {
       aliases = esClient.getAlias(new GetAliasesRequest(dynamicIndexPrefix + "*"));
@@ -174,29 +187,6 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
-  public static List<String> retrieveProcessInstanceIndexIdentifiers(final OptimizeElasticsearchClient esClient,
-                                                                     final boolean eventBased) {
-    final GetAliasesResponse aliases;
-    final String prefix = eventBased ? EVENT_PROCESS_INSTANCE_INDEX_PREFIX : PROCESS_INSTANCE_INDEX_PREFIX;
-    try {
-      GetAliasesRequest request = new GetAliasesRequest();
-      request.indices(prefix + "*");
-      aliases = esClient.getAlias(request);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + prefix, e);
-    }
-    return aliases.getAliases()
-      .values()
-      .stream()
-      // Response requires filtering because it might include both event and non event based process instance indices
-      // due to the shared alias
-      .filter(aliasMetadataPerIndex -> filterProcessInstanceIndexAliases(aliasMetadataPerIndex, eventBased))
-      .flatMap(aliasMetadataPerIndex -> aliasMetadataPerIndex.stream().map(AliasMetadata::alias))
-      .filter(fullAliasName -> fullAliasName.contains(prefix))
-      .map(fullIndexName -> fullIndexName.substring(fullIndexName.lastIndexOf(prefix) + prefix.length()))
-      .collect(toList());
-  }
-
   private static boolean filterProcessInstanceIndexAliases(final Set<AliasMetadata> aliasMetadataSet,
                                                            final boolean eventBased) {
     if (eventBased) {
@@ -205,15 +195,6 @@ public class MappingMetadataUtil {
     } else {
       return aliasMetadataSet.stream()
         .noneMatch(aliasMetadata -> aliasMetadata.getAlias().contains(EVENT_PROCESS_INSTANCE_INDEX_PREFIX));
-    }
-  }
-
-  private static void checkNotProcessInstanceIndex(final String dynamicIndexPrefix) {
-    if (PROCESS_INSTANCE_INDEX_PREFIX.equals(dynamicIndexPrefix)
-      || EVENT_PROCESS_INSTANCE_INDEX_PREFIX.equals(dynamicIndexPrefix)) {
-      throw new OptimizeRuntimeException(
-        "Cannot reliably retrieve process or event process instance index keys because they share a common alias. Use" +
-          " retrieveProcessInstanceIndexKeys instead.");
     }
   }
 

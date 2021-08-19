@@ -343,6 +343,10 @@ public class ElasticSearchSchemaManager {
     for (IndexMappingCreator mapping : mappings) {
       updateDynamicSettingsAndMappings(esClient, mapping);
     }
+    final List<IndexMappingCreator> allDynamicMappings = MappingMetadataUtil.getAllDynamicMappings(esClient);
+    for (IndexMappingCreator mapping : allDynamicMappings) {
+      updateDynamicSettingsAndMappings(esClient, mapping);
+    }
     log.info("Finished updating Optimize schema.");
   }
 
