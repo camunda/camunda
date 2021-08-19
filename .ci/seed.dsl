@@ -129,7 +129,7 @@ if (ENVIRONMENT == 'prod') {
               // That to avoid running the same CI job twice (one for branch and one for PR).
               headWildcardFilter {
                 // Space-separated list of name patterns to consider.
-                includes 'master prototype_zeebeint PR-* CI-*'
+                includes 'master PR-* CI-*'
                 excludes ''
               }
 
@@ -137,7 +137,7 @@ if (ENVIRONMENT == 'prod') {
               if (ENVIRONMENT != 'prod') {
                 notificationsSkip()
               }
-            }            
+            }
           }
         }
         buildStrategies {
