@@ -171,6 +171,42 @@ it('should allow stacked bar charts for distributed reports', () => {
   ).toBeTruthy();
 });
 
+it('should allow combo bar/line visualization only for multi measure reports', () => {
+  expect(
+    isAllowed(
+      report,
+      {
+        entity: 'processInstance',
+        properties: ['frequency'],
+      },
+      {
+        type: 'startDate',
+        value: {
+          unit: 'day',
+        },
+      },
+      'barLine'
+    )
+  ).toBeFalsy();
+
+  expect(
+    isAllowed(
+      report,
+      {
+        entity: 'flownode',
+        properties: ['count', 'duration'],
+      },
+      {
+        type: 'startDate',
+        value: {
+          unit: 'day',
+        },
+      },
+      'barLine'
+    )
+  ).toBeTruthy();
+});
+
 it('should forbid pie charts for distributed user task reports', () => {
   const report = {
     data: {

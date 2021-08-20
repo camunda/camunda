@@ -11,3 +11,4 @@ export {default as line} from './LineChartConfig';
 export {default as number} from './NumberConfig';
 export {default as pie} from './PieChartConfig';
 export {default as stacked} from './BarChartConfig';
+export {default as barLine} from './LineChartConfig';

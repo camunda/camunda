@@ -37,6 +37,7 @@ export default class ProcessReportRenderer extends React.Component {
       case 'bar':
       case 'line':
       case 'pie':
+      case 'barLine':
         return Chart;
       case 'heat':
         return Heatmap;

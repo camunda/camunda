@@ -267,7 +267,7 @@ export class ReportEdit extends React.Component {
                     }
                     onChange={(newValue) =>
                       this.updateReport(
-                        processConfig.update('visualization', newValue, this.props),
+                        processConfig.update('visualization', newValue, {report}),
                         true
                       )
                     }

@@ -27,14 +27,21 @@ export default function createDefaultChartData(props) {
       color,
       isDark,
     } = extractDefaultChartData(props, idx);
+    let type = visualization;
+    let order;
+    if (visualization === 'barLine') {
+      type = measure.property === 'frequency' ? 'bar' : 'line';
+      order = type === 'line' ? 0 : 1;
+    }
 
     datasets.push({
       yAxisID: 'axis-' + getAxisIdx(measures, idx),
       label: getLabel(measure),
       data: formattedResult.map(({value}) => value),
       formatter: formatters[measure.property],
+      order,
       ...createDatasetOptions({
-        type: visualization,
+        type,
         data: formattedResult,
         targetValue,
         datasetColor: color,

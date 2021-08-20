@@ -62,6 +62,13 @@ function createMultiMeasureChartData(props) {
       visualization,
     } = extractCombinedData(props, idx);
 
+    let type = visualization;
+    let order;
+    if (visualization === 'barLine') {
+      type = measure.property === 'frequency' ? 'bar' : 'line';
+      order = type === 'line' ? 0 : 1;
+    }
+
     unitedResults.forEach((report, index) => {
       datasets.push({
         yAxisID: 'axis-' + getAxisIdx(measures, idx),
@@ -70,8 +77,9 @@ function createMultiMeasureChartData(props) {
           reportsNames[index] + (measures.length > 1 ? ' - ' + getLabel(measure) : ''),
         data: report.map(({value}) => value),
         formatter: formatters[measure.property],
+        order,
         ...createDatasetOptions({
-          type: visualization,
+          type,
           data: report,
           targetValue,
           datasetColor: colors[idx * unitedResults.length + index],

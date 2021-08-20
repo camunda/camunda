@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.BADGE_VISUALIZATION;
+import static org.camunda.optimize.dto.optimize.ReportConstants.BAR_LINE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BAR_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.HEAT_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LINE_VISUALIZATION;
@@ -21,6 +22,7 @@ public enum ProcessVisualization {
   TABLE(TABLE_VISUALIZATION),
   BAR(BAR_VISUALIZATION),
   STACKED(STACKED_VISUALIZATION),
+  BARLINE(BAR_LINE_VISUALIZATION),
   LINE(LINE_VISUALIZATION),
   PIE(PIE_VISUALIZATION),
   BADGE(BADGE_VISUALIZATION),

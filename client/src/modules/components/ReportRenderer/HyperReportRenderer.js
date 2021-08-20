@@ -54,7 +54,7 @@ export default function HyperReportRenderer({report, ...rest}) {
     data: {
       configuration: report.data.configuration,
       reports: firstEntryResult.map(({key}) => ({id: key})),
-      visualization: getVisualization(report.data.visualization),
+      visualization: report.data.visualization,
     },
     result: {
       ...result,
@@ -64,13 +64,6 @@ export default function HyperReportRenderer({report, ...rest}) {
   };
 
   return <CombinedReportRenderer {...rest} report={convertedReport} />;
-}
-
-function getVisualization(visualization) {
-  if (['table', 'line', 'stacked'].includes(visualization)) {
-    return visualization;
-  }
-  return 'bar';
 }
 
 function formatResult(data, result) {

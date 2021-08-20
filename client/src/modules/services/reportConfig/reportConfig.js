@@ -65,16 +65,20 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {
-      const possibleVisualizations = combinations[viewGroup]?.[groupGroup];
-      if (targetVisualization === 'stacked') {
-        return (
-          report.data.distributedBy.type !== 'none' &&
-          report.data.view.properties.length <= 1 &&
-          possibleVisualizations?.includes(visualizationGroup)
-        );
-      }
+      const containGroup = combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
 
-      return possibleVisualizations?.includes(visualizationGroup);
+      switch (targetVisualization) {
+        case 'stacked':
+          return (
+            report.data.distributedBy.type !== 'none' &&
+            targetView.properties.length <= 1 &&
+            containGroup
+          );
+        case 'barLine':
+          return targetView.properties.length > 1 && containGroup;
+        default:
+          return containGroup;
+      }
     }
 
     if (viewGroup && groupGroup) {

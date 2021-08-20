@@ -6,20 +6,16 @@
 
 import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
+import update from 'immutability-helper';
 
 import {Select, Button, Icon} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
-import {loadVariables} from 'services';
+import {loadVariables, reportConfig} from 'services';
 
-export function DistributedBy({
-  report: {
-    data: {definitions, distributedBy, view, groupBy, visualization},
-  },
-  onChange,
-  mightFail,
-}) {
+export function DistributedBy({report, onChange, mightFail}) {
+  const {definitions, distributedBy, view, groupBy, visualization} = report.data;
   const {key, versions, tenantIds} = definitions?.[0] ?? {};
   const [variables, setVariables] = useState([]);
 
@@ -64,7 +60,14 @@ export function DistributedBy({
               change.distributedBy.$set = {type, value: {unit}};
             }
 
-            if (value !== 'none' && !['line', 'table', 'stacked'].includes(visualization)) {
+            if (
+              !reportConfig['process'].isAllowed(
+                update(report, {data: change}),
+                view,
+                groupBy,
+                visualization
+              )
+            ) {
               change.visualization = {$set: 'bar'};
             }
 

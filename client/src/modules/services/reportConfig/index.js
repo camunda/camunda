@@ -71,8 +71,9 @@ config.process.update = (type, data, props) => {
   }
 
   if (
-    newReport.data.visualization === 'stacked' &&
-    (changes.distributedBy || newReport.data.view?.properties.length > 1)
+    (newReport.data.visualization === 'stacked' &&
+      (changes.distributedBy || newReport.data.view?.properties.length > 1)) ||
+    (newReport.data.visualization === 'barLine' && newReport.data.view?.properties.length <= 1)
   ) {
     changes.visualization = {$set: 'bar'};
   }

@@ -46,6 +46,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       break;
     case 'line':
     case 'bar':
+    case 'barLine':
       options = createBarOptions({
         targetValue,
         configuration,
@@ -327,6 +328,7 @@ export function createDatasetOptions({
         fill: false,
         borderWidth: 2,
         legendColor: color,
+        type: 'line',
       };
     case 'bar':
     case 'stacked':

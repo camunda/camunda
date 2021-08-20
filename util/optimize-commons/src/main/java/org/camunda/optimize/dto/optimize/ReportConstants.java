@@ -64,6 +64,7 @@ public class ReportConstants {
   public static final String BADGE_VISUALIZATION = "badge";
   public static final String PIE_VISUALIZATION = "pie";
   public static final String STACKED_VISUALIZATION = "stacked";
+  public static final String BAR_LINE_VISUALIZATION = "barLine";
 
   public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
 

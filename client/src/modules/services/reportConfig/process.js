@@ -157,6 +157,7 @@ export const visualization = [
   {key: 'line', group: 'chart', data: 'line'},
   {key: 'pie', group: 'chart', data: 'pie'},
   {key: 'stacked', group: 'chart', data: 'stacked'},
+  {key: 'barLine', group: 'chart', data: 'barLine'},
   {key: 'heat', group: 'heat', data: 'heat'},
 ];
 

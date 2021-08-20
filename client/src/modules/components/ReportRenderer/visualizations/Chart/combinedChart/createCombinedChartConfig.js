@@ -10,8 +10,9 @@ import createPlugins from '../createPlugins';
 
 export default function createCombinedChartConfig(props) {
   const {visualization} = props.report.data;
-  const chartVisualization =
-    visualization === 'number' || visualization === 'stacked' ? 'bar' : visualization;
+  const chartVisualization = ['number', 'stacked', 'barLine'].includes(visualization)
+    ? 'bar'
+    : visualization;
 
   return {
     type: chartVisualization,
