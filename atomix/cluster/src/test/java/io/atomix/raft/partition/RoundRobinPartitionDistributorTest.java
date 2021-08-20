@@ -29,7 +29,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class PartitionDistributorTest {
+final class RoundRobinPartitionDistributorTest {
 
   @ParameterizedTest(name = "[{index}] {0} {1} {2}")
   @MethodSource("clusterConfig")
@@ -40,8 +40,8 @@ class PartitionDistributorTest {
       final int[][] expected) {
     // when
     final var partitionMetadata =
-        new PartitionDistributor()
-            .generatePartitionDistribution(
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(
                 getMembers(clusterSize), getSortedPartitionIds(partitionCount), replicationFactor);
 
     // then
