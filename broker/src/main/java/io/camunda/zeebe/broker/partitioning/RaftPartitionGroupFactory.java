@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.atomix.raft.partition.PartitionDistributor;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.raft.partition.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
+import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
+import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.logstreams.impl.log.ZeebeEntryValidator;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
@@ -50,7 +54,8 @@ final class RaftPartitionGroupFactory {
     final DataCfg dataCfg = configuration.getData();
     final NetworkCfg networkCfg = configuration.getNetwork();
 
-    final var partitionDistributor = new RoundRobinPartitionDistributor();
+    final var partitionDistributor =
+        buildPartitionDistributor(configuration.getExperimental().getPartitioning());
     final Builder partitionGroupBuilder =
         RaftPartitionGroup.builder(PartitionManagerImpl.GROUP_NAME)
             .withNumPartitions(clusterCfg.getPartitionsCount())
@@ -90,5 +95,29 @@ final class RaftPartitionGroupFactory {
       members.add(Integer.toString(i));
     }
     return members;
+  }
+
+  private PartitionDistributor buildPartitionDistributor(final PartitioningCfg config) {
+    switch (config.getScheme()) {
+      case FIXED:
+        return buildFixedPartitionDistributor(config);
+      case ROUND_ROBIN:
+      default:
+        return new RoundRobinPartitionDistributor();
+    }
+  }
+
+  private FixedPartitionDistributor buildFixedPartitionDistributor(final PartitioningCfg config) {
+    final var distributionBuilder =
+        new FixedPartitionDistributorBuilder(PartitionManagerImpl.GROUP_NAME);
+
+    for (final var partition : config.getFixed()) {
+      for (final var node : partition.getNodes()) {
+        distributionBuilder.assignMember(
+            partition.getPartitionId(), node.getNodeId(), node.getPriority());
+      }
+    }
+
+    return distributionBuilder.build();
   }
 }
