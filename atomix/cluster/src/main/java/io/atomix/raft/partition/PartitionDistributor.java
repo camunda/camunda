@@ -18,8 +18,8 @@ package io.atomix.raft.partition;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Maps a list of partitions to a set of members, based on the given replication factor.
@@ -45,8 +45,6 @@ public interface PartitionDistributor {
    * @param replicationFactor the replication factor for each partition
    * @return a set of distributed partitions, each specifying which members they belong to
    */
-  Collection<PartitionMetadata> distributePartitions(
-      Collection<MemberId> clusterMembers,
-      List<PartitionId> sortedPartitionIds,
-      int replicationFactor);
+  Set<PartitionMetadata> distributePartitions(
+      Set<MemberId> clusterMembers, List<PartitionId> sortedPartitionIds, int replicationFactor);
 }

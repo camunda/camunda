@@ -20,7 +20,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -48,8 +47,8 @@ import java.util.Set;
 public final class RoundRobinPartitionDistributor implements PartitionDistributor {
 
   @Override
-  public Collection<PartitionMetadata> distributePartitions(
-      final Collection<MemberId> clusterMembers,
+  public Set<PartitionMetadata> distributePartitions(
+      final Set<MemberId> clusterMembers,
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
     final List<MemberId> sorted = new ArrayList<>(clusterMembers);

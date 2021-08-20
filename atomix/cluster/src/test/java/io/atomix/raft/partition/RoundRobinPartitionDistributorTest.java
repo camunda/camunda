@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -108,7 +107,7 @@ final class RoundRobinPartitionDistributorTest {
             }));
   }
 
-  private Collection<MemberId> getMembers(final int nodeCount) {
+  private Set<MemberId> getMembers(final int nodeCount) {
     final Set<MemberId> members = new HashSet<>();
     for (int i = 0; i < nodeCount; i++) {
       members.add(MemberId.from(String.valueOf(i)));
