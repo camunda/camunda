@@ -68,10 +68,6 @@ Object.defineProperty(window, 'localStorage', {value: localStorageMock});
 
 window.MutationObserver = MutationObserver;
 
-beforeAll(() =>
-  mockServer.listen({
-    onUnhandledRequest: 'warn',
-  })
-);
+beforeAll(() => mockServer.listen());
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());

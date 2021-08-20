@@ -13,7 +13,7 @@ function startMocking() {
   worker.stop();
 
   if (handlers.length > 0) {
-    worker.start();
+    worker.start({onUnhandledRequest: 'bypass'});
   }
 }
 
