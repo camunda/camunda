@@ -14773,10 +14773,10 @@ symbol-tree@^3.2.2, symbol-tree@^3.2.4:
   resolved "https://registry.yarnpkg.com/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
   integrity sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==
 
-table-js@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-7.1.0.tgz#c280efb6a8f5400bc58f75c057de8f473485a6e4"
-  integrity sha512-x2ctIc9KN6aDWzOAm079uA6RpCnyIK/S7hjzfBSLp1nPzaRo1Cc8rCVKSc2RzcvhOta1XqL1jKvwJGLTXFg8gw==
+table-js@^7.1.0, table-js@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-7.2.0.tgz#3e41a73de4c02dddb548f3ffbec363c724c4d3bf"
+  integrity sha512-Qo+1RZFeEh1kvrc0ol67/5izV9WvCjipfD9iLQtGipPj8k1H2gRZnrkGs4BlwZOC9ke+JJB0yUZEQ+rf7wn/Og==
   dependencies:
     didi "^5.2.1"
     ids "^1.0.0"
