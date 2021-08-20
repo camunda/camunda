@@ -210,6 +210,12 @@
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-test</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
         <version>${version.spring-boot}</version>
         <exclusions>

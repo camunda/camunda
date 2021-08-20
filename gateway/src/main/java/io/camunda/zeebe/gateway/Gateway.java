@@ -18,7 +18,6 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -94,11 +93,6 @@ public final class Gateway {
 
   public void start() throws IOException {
     status = Status.STARTING;
-    if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VersionUtil.getVersion());
-      LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
-    }
-
     brokerClient = buildBrokerClient();
 
     final ActivateJobsHandler activateJobsHandler;
