@@ -40,17 +40,19 @@ public class StandaloneGateway
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  @SuppressWarnings("unused")
-  @Autowired
-  private GatewayCfg configuration;
-
-  @SuppressWarnings("unused")
-  @Autowired
-  private SpringGatewayBridge springGatewayBridge;
+  private final GatewayCfg configuration;
+  private final SpringGatewayBridge springGatewayBridge;
 
   private AtomixCluster atomixCluster;
   private Gateway gateway;
   private ActorScheduler actorScheduler;
+
+  @Autowired
+  public StandaloneGateway(
+      final GatewayCfg configuration, final SpringGatewayBridge springGatewayBridge) {
+    this.configuration = configuration;
+    this.springGatewayBridge = springGatewayBridge;
+  }
 
   public static void main(final String[] args) {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
