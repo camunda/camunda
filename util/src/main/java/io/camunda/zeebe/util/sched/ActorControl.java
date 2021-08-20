@@ -337,7 +337,7 @@ public class ActorControl implements ConcurrencyControl {
   /** can be called by the actor to yield the thread */
   public void yieldThread() {
     final ActorJob job = ensureCalledFromWithinActor("yield()");
-    job.getTask().yield();
+    job.getTask().yieldThread();
   }
 
   public ActorFuture<Void> close() {
