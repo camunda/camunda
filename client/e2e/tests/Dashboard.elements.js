@@ -6,9 +6,12 @@
 
 import {Selector} from 'testcafe';
 
+export const body = Selector('body');
 export const dashboard = Selector('.ListItem.dashboard');
 export const editButton = Selector('.edit-button');
+export const reportEditButton = Selector('.EditButton');
 export const reportDeleteButton = Selector('.DeleteButton');
+export const reportResizeHandle = Selector('.react-resizable-handle');
 export const report = Selector('.ReportRenderer');
 export const nameEditField = Selector('.EntityNameForm .name-input');
 export const dashboardName = Selector('.DashboardView .name');
@@ -31,6 +34,9 @@ export const shareHeader = Selector('.Sharing .header');
 export const shareTitle = shareHeader.find('.name-container');
 export const shareLink = shareHeader.find('.title-button');
 export const deleteButton = Selector('.delete-button');
+export const autoRefreshButton = Selector('.DashboardView .tools .Dropdown').withText(
+  'Auto Refresh'
+);
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const reportModal = Selector('.ReportModal');
 export const addFilterButton = Selector('.Button').withText('Add a filter');
