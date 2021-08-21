@@ -23,7 +23,6 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,7 +48,7 @@ final class StandaloneBrokerIT {
   }
 
   /** A simple smoke test to ensure the broker starts and can perform basic functionality. */
-  @Test
+  @SmokeTest
   void smokeTest() {
     // given
     final var processId = Strings.newRandomValidBpmnId();

@@ -675,7 +675,7 @@ public final class SegmentedJournal implements Journal {
     // necessary to flush the directory to ensure that the file itself is visible as an entry of
     // that directory after recovery
     try {
-      FileUtil.flush(directory.toPath());
+      FileUtil.flushDirectory(directory.toPath());
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),
