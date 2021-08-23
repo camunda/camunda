@@ -18,7 +18,6 @@ type Props = {
   label: string;
   panelPosition: 'RIGHT' | 'LEFT';
   header?: React.ReactNode;
-  renderFooter?: (...args: any[]) => any;
   isOverlay?: boolean;
   toggle: (...args: any[]) => any;
   isCollapsed: boolean;
@@ -35,7 +34,6 @@ function CollapsablePanel({
   label,
   panelPosition,
   header,
-  renderFooter,
   isOverlay,
   children,
   isCollapsed,
@@ -112,7 +110,6 @@ function CollapsablePanel({
         <Panel.Body scrollable={scrollable} onScroll={onScroll}>
           {children}
         </Panel.Body>
-        {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
       </Styled.ExpandedPanel>
     </Styled.Collapsable>
   );

@@ -11,7 +11,6 @@ const Footer = styled.div`
     const colors = theme.colors.modules.panel.panelFooter;
 
     return css`
-      z-index: 1;
       min-height: 38px;
       max-height: 38px;
       width: 100%;

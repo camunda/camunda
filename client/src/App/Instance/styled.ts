@@ -33,10 +33,6 @@ const Section = styled.div`
   }}
 `;
 
-const PaneFooter = styled(SplitPane.Pane.Footer)`
-  text-align: right;
-`;
-
 const FlowNodeInstanceLog = styled.div`
   ${({theme}) => {
     const colors = theme.colors.instance.flowNodeInstanceLog;
@@ -111,7 +107,6 @@ export {
   Instance,
   PaneBody,
   Section,
-  PaneFooter,
   FlowNodeInstanceLog,
   NodeContainer,
   SplitPaneTop,
