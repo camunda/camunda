@@ -325,11 +325,13 @@ public class LogStreamBatchReaderTest {
     writerRule.writeEvent(w -> w.key(1L).value(EVENT_VALUE));
 
     assertThat(batchReader.hasNext()).isTrue();
-    batchReader.next();
 
-    assertThat(batchReader.hasNext()).isFalse();
+    final var batch = batchReader.next();
+    batch.next();
+
+    assertThat(batch.hasNext()).isFalse();
 
     // when / then
-    assertThatThrownBy(batchReader::next).isInstanceOf(NoSuchElementException.class);
+    assertThatThrownBy(batch::next).isInstanceOf(NoSuchElementException.class);
   }
 }
