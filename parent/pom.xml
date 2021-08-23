@@ -64,7 +64,7 @@
     <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.14.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>3.11.2</version.mockito>
+    <version.mockito>3.12.1</version.mockito>
     <version.mockito-jupiter>3.12.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.0</version.msgpack>
@@ -95,7 +95,7 @@
     <version.config>1.4.1</version.config>
     <version.kryo>5.2.0</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
-    <version.failsafe>2.4.2</version.failsafe>
+    <version.failsafe>2.4.3</version.failsafe>
     <version.jqwik>1.5.4</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
