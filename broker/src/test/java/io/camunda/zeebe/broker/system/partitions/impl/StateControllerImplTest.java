@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.logstreams.util.RocksDBWrapper;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -37,7 +36,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-@SuppressWarnings("unchecked")
 public final class StateControllerImplTest {
 
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
