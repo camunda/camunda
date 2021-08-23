@@ -762,7 +762,11 @@ public final class ClusteringRule extends ExternalResource {
    * @return the id of the new snapshot
    */
   SnapshotId waitForNewSnapshotAtBroker(final Broker broker, final SnapshotId previousSnapshot) {
-    return Awaitility.await()
+    return Awaitility.await(
+            "Expected snapshot at partition one on broker: "
+                + broker.getConfig().getCluster().getNodeId()
+                + " with previous snapshot: "
+                + previousSnapshot)
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofMinutes(1))
         .until(
