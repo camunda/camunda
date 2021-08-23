@@ -238,6 +238,7 @@ public class ZeebeDbState implements MutableZeebeState {
     return keyGenerator;
   }
 
+  @Override
   public MutableLastProcessedPositionState getLastProcessedPositionState() {
     return lastProcessedPositionState;
   }
