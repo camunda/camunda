@@ -7868,6 +7868,11 @@ eslint@^7.11.0:
     text-table "^0.2.0"
     v8-compile-cache "^2.0.3"
 
+esm@^3.2.25:
+  version "3.2.25"
+  resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.25.tgz#342c18c29d56157688ba5ce31f8431fbb795cc10"
+  integrity sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
+
 esotope-hammerhead@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/esotope-hammerhead/-/esotope-hammerhead-0.6.1.tgz#3feca697baede6cc89ce387f1e0bfa246d6e256d"
@@ -16666,10 +16671,10 @@ testcafe-browser-tools@2.0.16:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@24.4.3, testcafe-hammerhead@>=19.4.0:
-  version "24.4.3"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.4.3.tgz#06a7dfb2ca053653dceeef2bb23024d78603c6fc"
-  integrity sha512-rlUm1Hyxko+I+WC4kn7/Lo/FFJb5FgS73u+cspxaYqlwaPX5XEJ/zAa4ZVLJ/qzGOB/WX65JayZ75f+hb18RHQ==
+testcafe-hammerhead@24.5.1, testcafe-hammerhead@>=19.4.0:
+  version "24.5.1"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.5.1.tgz#31caf40ad3d877f9b63d10ae8971ab3dfbe85122"
+  integrity sha512-upLFJbEH3unQ8dq65AZdevYgWaJtWiALKW5YO5uWbx7lLvMMeQbyA7gnwrlGbIaepUdi+PlW4dORjncrU+lY/Q==
   dependencies:
     acorn-hammerhead "0.5.0"
     asar "^2.0.1"
@@ -16742,10 +16747,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.15.2:
-  version "1.15.2"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.15.2.tgz#198b638e9b7f21ea5204062006f1b485a3421af2"
-  integrity sha512-4MdpG/s88WGUtHuftphv2OBYPGeD+g+LbJPiKS6diRhr43mOfdqvSimdbe1oMWUS9waJhlUXOlsCLP33TcY5Aw==
+testcafe@^1.15.3:
+  version "1.15.3"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.15.3.tgz#df62ef60a289fc56076f6d13aada3c76b8896ba9"
+  integrity sha512-HiHDLSew6y0+60tz4lssh5BqY9Jw0kZlk85GWYS0V9Tla+QL/kT+gSGCxUoBwfCt+ZwjfU1R6qs9qnGbkflvjw==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -16784,6 +16789,7 @@ testcafe@^1.15.2:
     emittery "^0.4.1"
     endpoint-utils "^1.0.2"
     error-stack-parser "^1.3.6"
+    esm "^3.2.25"
     execa "^4.0.3"
     globby "^11.0.4"
     graceful-fs "^4.1.11"
@@ -16821,7 +16827,7 @@ testcafe@^1.15.2:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.16"
-    testcafe-hammerhead "24.4.3"
+    testcafe-hammerhead "24.5.1"
     testcafe-legacy-api "5.0.2"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
