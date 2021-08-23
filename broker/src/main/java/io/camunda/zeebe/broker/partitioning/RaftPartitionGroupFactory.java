@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroup.Builder;
+import io.atomix.raft.partition.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -49,6 +50,7 @@ final class RaftPartitionGroupFactory {
     final DataCfg dataCfg = configuration.getData();
     final NetworkCfg networkCfg = configuration.getNetwork();
 
+    final var partitionDistributor = new RoundRobinPartitionDistributor();
     final Builder partitionGroupBuilder =
         RaftPartitionGroup.builder(PartitionManagerImpl.GROUP_NAME)
             .withNumPartitions(clusterCfg.getPartitionsCount())
@@ -62,7 +64,8 @@ final class RaftPartitionGroupFactory {
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity())
-            .withPriorityElection(experimentalCfg.isEnablePriorityElection());
+            .withPriorityElection(experimentalCfg.isEnablePriorityElection())
+            .withPartitionDistributor(partitionDistributor);
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 

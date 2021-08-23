@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +28,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class PartitionDistributorTest {
+final class RoundRobinPartitionDistributorTest {
 
   @ParameterizedTest(name = "[{index}] {0} {1} {2}")
   @MethodSource("clusterConfig")
@@ -40,8 +39,8 @@ class PartitionDistributorTest {
       final int[][] expected) {
     // when
     final var partitionMetadata =
-        new PartitionDistributor()
-            .generatePartitionDistribution(
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(
                 getMembers(clusterSize), getSortedPartitionIds(partitionCount), replicationFactor);
 
     // then
@@ -108,7 +107,7 @@ class PartitionDistributorTest {
             }));
   }
 
-  private Collection<MemberId> getMembers(final int nodeCount) {
+  private Set<MemberId> getMembers(final int nodeCount) {
     final Set<MemberId> members = new HashSet<>();
     for (int i = 0; i < nodeCount; i++) {
       members.add(MemberId.from(String.valueOf(i)));
