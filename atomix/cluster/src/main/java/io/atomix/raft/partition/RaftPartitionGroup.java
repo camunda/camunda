@@ -35,8 +35,6 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
@@ -70,16 +68,10 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private ClusterCommunicationService communicationService;
 
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
-    final Logger log =
-        ContextualLoggerFactory.getLogger(
-            RaftPartitionGroup.class,
-            LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
-    name = config.getName();
     this.config = config;
-    replicationFactor = config.getReplicationFactor();
 
-    final int threadPoolSize =
-        Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
+    name = config.getName();
+    replicationFactor = config.getReplicationFactor();
     snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
     buildPartitions(config)
