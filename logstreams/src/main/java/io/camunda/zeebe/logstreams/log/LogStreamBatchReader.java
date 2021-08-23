@@ -34,7 +34,7 @@ import java.util.Iterator;
 public interface LogStreamBatchReader extends Iterator<Batch>, CloseableSilently {
 
   /**
-   * Seeks to the next event after the given position. If the position is negative then it seeks to
+   * Seeks to the next batch after the given position. If the position is negative then it seeks to
    * the first event.
    *
    * @param position the position to seek for the next event

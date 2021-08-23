@@ -11,12 +11,15 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntArrayList;
 
 public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
+
+  private static final Consumer<LoggedEvent> NOOP = event -> {};
 
   private final LogStreamBatchImpl batch = new LogStreamBatchImpl();
 
@@ -31,7 +34,19 @@ public class LogStreamBatchReaderImpl implements LogStreamBatchReader {
 
   @Override
   public boolean seekToNextBatch(final long position) {
-    return logStreamReader.seekToNextEvent(position);
+    if (position < 0) {
+      logStreamReader.seekToFirstEvent();
+      return true;
+
+    } else {
+      final var found = logStreamReader.seek(position);
+      if (found) {
+        // seeks to the next batch by reading the current batch
+        final var batch = next();
+        batch.forEachRemaining(NOOP);
+      }
+      return found;
+    }
   }
 
   @Override

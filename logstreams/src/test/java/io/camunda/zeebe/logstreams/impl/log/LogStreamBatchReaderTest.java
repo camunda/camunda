@@ -259,8 +259,8 @@ public class LogStreamBatchReaderTest {
   public void shouldSeekToNextEventWithinBatch() {
     // given
     final long eventPosition1 = writerRule.sourceEventPosition(1L).writeEvent(EVENT_VALUE);
-    final long eventPosition2 = writerRule.sourceEventPosition(1L).writeEvent(EVENT_VALUE);
-    writerRule.sourceEventPosition(2L).writeEvent(EVENT_VALUE);
+    writerRule.sourceEventPosition(1L).writeEvent(EVENT_VALUE);
+    final long eventPosition3 = writerRule.sourceEventPosition(2L).writeEvent(EVENT_VALUE);
 
     // when
     final var found = batchReader.seekToNextBatch(eventPosition1);
@@ -271,7 +271,7 @@ public class LogStreamBatchReaderTest {
 
     final var batch = batchReader.next();
     assertThat(batch.hasNext()).isTrue();
-    assertThat(batch.next().getPosition()).isEqualTo(eventPosition2);
+    assertThat(batch.next().getPosition()).isEqualTo(eventPosition3);
   }
 
   @Test
