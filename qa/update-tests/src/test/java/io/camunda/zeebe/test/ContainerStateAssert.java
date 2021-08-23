@@ -10,7 +10,7 @@ package io.camunda.zeebe.test;
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.test.PartitionsActuatorClient.PartitionStatus;
+import io.camunda.zeebe.test.util.actuator.PartitionsActuatorClient.PartitionStatus;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Map;

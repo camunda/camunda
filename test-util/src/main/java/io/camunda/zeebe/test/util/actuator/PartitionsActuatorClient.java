@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.test;
+package io.camunda.zeebe.test.util.actuator;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,11 +68,16 @@ public final class PartitionsActuatorClient {
 
     try {
       return Either.right(READER.readValue(httpClient.send(request, bodyHandler).body()));
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return Either.left(e);
     } catch (final Exception e) {
       return Either.left(e);
     }
   }
 
+  /** Suppress unused and visibility warnings as this is a plain DTO */
+  @SuppressWarnings({"unused", "java:S1104"})
   public static final class PartitionStatus {
     public String role;
     public String snapshotId;
@@ -81,5 +86,29 @@ public final class PartitionsActuatorClient {
     public String streamProcessorPhase;
     public Long exportedPosition;
     public String exporterPhase;
+
+    @Override
+    public String toString() {
+      return "PartitionStatus{"
+          + "role='"
+          + role
+          + '\''
+          + ", snapshotId='"
+          + snapshotId
+          + '\''
+          + ", processedPosition="
+          + processedPosition
+          + ", processedPositionInSnapshot="
+          + processedPositionInSnapshot
+          + ", streamProcessorPhase='"
+          + streamProcessorPhase
+          + '\''
+          + ", exportedPosition="
+          + exportedPosition
+          + ", exporterPhase='"
+          + exporterPhase
+          + '\''
+          + '}';
+    }
   }
 }
