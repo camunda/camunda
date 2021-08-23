@@ -64,11 +64,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.netflix.concurrency-limits</groupId>
       <artifactId>concurrency-limits-core</artifactId>
     </dependency>
