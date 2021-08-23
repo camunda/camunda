@@ -87,6 +87,7 @@ public final class RestoreTest {
     final long thirdProcessDefinitionKey = clientRule.deployProcess(thirdProcess);
 
     writeManyEventsUntilAtomixLogIsCompactable();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
     clusteringRule.waitForSnapshotAtBroker(
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
