@@ -21,7 +21,7 @@ export default {
   title: 'Pages/Dashboard',
 };
 
-const Dashboard: Story = () => {
+const Success: Story = () => {
   useEffect(() => {
     statisticsStore.init();
     return () => statisticsStore.reset();
@@ -34,8 +34,7 @@ const Dashboard: Story = () => {
   );
 };
 
-Dashboard.storyName = 'Dashboard - Success';
-Dashboard.parameters = {
+Success.parameters = {
   msw: [
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
       return res(ctx.json(statistics));
@@ -49,7 +48,7 @@ Dashboard.parameters = {
   ],
 };
 
-const DashboardSkeleton: Story = () => {
+const Skeleton: Story = () => {
   useEffect(() => {
     statisticsStore.init();
     return () => statisticsStore.reset();
@@ -62,8 +61,7 @@ const DashboardSkeleton: Story = () => {
   );
 };
 
-DashboardSkeleton.storyName = 'Dashboard - Skeleton';
-DashboardSkeleton.parameters = {
+Skeleton.parameters = {
   msw: [
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
       return res(ctx.delay('infinite'), ctx.json({}));
@@ -77,7 +75,7 @@ DashboardSkeleton.parameters = {
   ],
 };
 
-const DashboardFailure: Story = () => {
+const Error: Story = () => {
   useEffect(() => {
     statisticsStore.init();
     return () => statisticsStore.reset();
@@ -90,8 +88,7 @@ const DashboardFailure: Story = () => {
   );
 };
 
-DashboardFailure.storyName = 'Dashboard - Failure';
-DashboardFailure.parameters = {
+Error.parameters = {
   msw: [
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
       return res(ctx.status(500), ctx.json({}));
@@ -105,4 +102,4 @@ DashboardFailure.parameters = {
   ],
 };
 
-export {Dashboard, DashboardSkeleton, DashboardFailure};
+export {Success, Skeleton, Error};

@@ -40,22 +40,6 @@ const Dashboard: React.FC = () => {
   );
 };
 
-const RunningInstances: React.FC = () => {
-  return (
-    <MemoryRouter initialEntries={['/instances?active=true&incidents=true']}>
-      <Header />
-    </MemoryRouter>
-  );
-};
-
-const Incidents: React.FC = () => {
-  return (
-    <MemoryRouter initialEntries={['/instances?incidents=true']}>
-      <Header />
-    </MemoryRouter>
-  );
-};
-
 const InstanceDetailSkeleton: Story = () => {
   return (
     <MemoryRouter initialEntries={['/instances/2251799813686518']}>
@@ -217,8 +201,6 @@ InstanceDetailCompleted.parameters = {
 
 export {
   Dashboard,
-  RunningInstances,
-  Incidents,
   InstanceDetailSkeleton,
   InstanceDetailIncident,
   InstanceDetailActive,
