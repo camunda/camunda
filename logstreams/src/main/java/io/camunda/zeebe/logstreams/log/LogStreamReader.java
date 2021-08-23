@@ -62,4 +62,13 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
    * @return the current log position, or negative value if the log is empty or not initialized
    */
   long getPosition();
+
+  /**
+   * Peeks the next event on the log. It is similar to {@link #next()} but it doesn't move the
+   * iterator. It should only be called if {@link #hasNext()} returns {@code true}.
+   *
+   * @return return the next event on the log
+   * @throws java.util.NoSuchElementException if there is no next event on the log
+   */
+  LoggedEvent peekNext();
 }
