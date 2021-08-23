@@ -26,8 +26,8 @@ public class MessagingConfig implements Config {
   private final int connectionPoolSize = 8;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
-  private Duration shutdownQuietPeriod = Duration.ofSeconds(2); // taken from Netty's default value
-  private Duration shutdownTimeout = Duration.ofSeconds(15); // taken from Netty's default value
+  private Duration shutdownQuietPeriod = Duration.ofMillis(20);
+  private Duration shutdownTimeout = Duration.ofSeconds(1);
 
   /**
    * Returns the local interfaces to which to bind the node.
