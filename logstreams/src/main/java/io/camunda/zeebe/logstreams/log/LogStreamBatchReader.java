@@ -13,7 +13,7 @@ import java.util.Iterator;
 
 /**
  * Reads the log stream in batches. Similar to {@link LogStreamReader} but groups events with the
- * same source event position in batches. Can be used to read all follow-up events atomically.
+ * same source event position in batches. Can be used to read all follow-up events at once.
  *
  * <pre>
  * <code>
