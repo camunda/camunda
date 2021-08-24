@@ -27,7 +27,7 @@ const Style = createGlobalStyle`
     text-decoration: none;
   }
 
-  ul {
+  ul:not(.fjs-form ul) {
     padding: 0px;
     margin: 0px;
     list-style-type: none;
