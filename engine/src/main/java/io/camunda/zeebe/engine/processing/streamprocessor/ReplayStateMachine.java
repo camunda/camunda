@@ -77,8 +77,11 @@ public final class ReplayStateMachine {
   private final LogStream logStream;
 
   private State currentState = State.AWAIT_RECORD;
+  private final BooleanSupplier shouldPause;
 
-  public ReplayStateMachine(final ProcessingContext context) {
+  public ReplayStateMachine(
+      final ProcessingContext context, final BooleanSupplier shouldReplayNext) {
+    shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
     logStreamReader = context.getLogStreamReader();
     recordValues = context.getRecordValues();
@@ -139,9 +142,13 @@ public final class ReplayStateMachine {
         });
   }
 
-  private void replayNextEvent() {
+  void replayNextEvent() {
     LoggedEvent currentEvent = null;
     try {
+      if (shouldPause.getAsBoolean()) {
+        return;
+      }
+
       if (logStreamReader.hasNext()) {
         currentState = State.REPLAY_EVENT;
 

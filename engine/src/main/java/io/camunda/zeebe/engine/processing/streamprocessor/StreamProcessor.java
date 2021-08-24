@@ -122,7 +122,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      replayStateMachine = new ReplayStateMachine(processingContext);
+      replayStateMachine = new ReplayStateMachine(processingContext, this::shouldProcessNext);
       // disable writing to the log stream
       processingContext.disableLogStreamWriter();
 
@@ -419,8 +419,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
                     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
                     shouldProcess = true;
                     phase = Phase.PROCESSING;
-                    actor.submit(processingStateMachine::readNextEvent);
-                    LOG.debug("Resumed processing for partition {}", partitionId);
+
+                    if (isInReplayOnlyMode()) {
+                      actor.submit(replayStateMachine::replayNextEvent);
+                      LOG.debug("Resumed processing for partition {}", partitionId);
+                    } else {
+                      actor.submit(processingStateMachine::readNextEvent);
+                      LOG.debug("Resumed processing for partition {}", partitionId);
+                    }
                   }
                 }));
   }
