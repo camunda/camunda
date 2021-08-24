@@ -97,7 +97,7 @@ public final class StreamProcessorReprocessingTest {
                         }));
 
     // when
-    streamProcessor.pauseProcessing();
+    streamProcessor.pauseProcessing().join();
     final var success = onRecoveredLatch.await(15, TimeUnit.SECONDS);
 
     // then
