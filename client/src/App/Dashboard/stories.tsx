@@ -16,6 +16,8 @@ import {useEffect} from 'react';
 import {statistics} from 'modules/mocks/statistics';
 import {incidentsByProcess} from 'modules/mocks/incidentsByProcess';
 import {incidentsByError} from 'modules/mocks/incidentsByError';
+import Header from 'App/Header';
+import {user} from 'modules/mocks/user';
 
 export default {
   title: 'Pages/Dashboard',
@@ -29,6 +31,7 @@ const Success: Story = () => {
 
   return (
     <MemoryRouter>
+      <Header />
       <DashboardComponent />
     </MemoryRouter>
   );
@@ -36,6 +39,9 @@ const Success: Story = () => {
 
 Success.parameters = {
   msw: [
+    rest.get('/api/authentications/user', (_, res, ctx) => {
+      return res(ctx.json(user));
+    }),
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
       return res(ctx.json(statistics));
     }),
@@ -56,6 +62,7 @@ const Skeleton: Story = () => {
 
   return (
     <MemoryRouter>
+      <Header />
       <DashboardComponent />
     </MemoryRouter>
   );
@@ -63,6 +70,9 @@ const Skeleton: Story = () => {
 
 Skeleton.parameters = {
   msw: [
+    rest.get('/api/authentications/user', (_, res, ctx) => {
+      return res(ctx.json(user));
+    }),
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
       return res(ctx.delay('infinite'), ctx.json({}));
     }),
@@ -83,6 +93,7 @@ const Error: Story = () => {
 
   return (
     <MemoryRouter>
+      <Header />
       <DashboardComponent />
     </MemoryRouter>
   );
@@ -90,6 +101,9 @@ const Error: Story = () => {
 
 Error.parameters = {
   msw: [
+    rest.get('/api/authentications/user', (_, res, ctx) => {
+      return res(ctx.json(user));
+    }),
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
       return res(ctx.status(500), ctx.json({}));
     }),
