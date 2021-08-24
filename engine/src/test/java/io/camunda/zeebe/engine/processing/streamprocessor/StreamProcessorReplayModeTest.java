@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,6 +108,40 @@ public final class StreamProcessorReplayModeTest {
     inOrder.verifyNoMoreInteractions();
 
     assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPROCESSING);
+  }
+
+  @Test
+  public void shouldReplayIfNoEventsAfterSnapshot() {
+    // given
+    startStreamProcessor(replayContinuously);
+    final var snapshotPosition = 1L;
+    replayContinuously
+        .getZeebeState()
+        .getLastProcessedPositionState()
+        .markAsProcessed(snapshotPosition);
+    replayContinuously.snapshot();
+    replayContinuously.closeStreamProcessor();
+
+    // when - restart with snapshot, but the events in the snapshot are not available at startup
+    startStreamProcessor(replayContinuously);
+
+    // event already applied in snapshot
+    replayContinuously.writeEvent(
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        RECORD,
+        writer -> writer.key(1L).sourceRecordPosition(snapshotPosition));
+
+    // new events to replay
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    // then
+    final InOrder inOrder = inOrder(typedRecordProcessor, eventApplier);
+    inOrder
+        .verify(eventApplier, TIMEOUT.times(1))
+        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+    inOrder.verifyNoMoreInteractions();
   }
 
   @Test

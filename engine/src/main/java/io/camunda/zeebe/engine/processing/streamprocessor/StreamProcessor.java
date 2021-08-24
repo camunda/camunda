@@ -264,7 +264,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         zeebeState.getLastProcessedPositionState().getLastSuccessfulProcessedRecordPosition();
 
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
-    if (failedToRecoverReader) {
+    if (failedToRecoverReader
+        && processingContext.getProcessorMode() == StreamProcessorMode.PROCESSING) {
       throw new IllegalStateException(
           String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
     }
