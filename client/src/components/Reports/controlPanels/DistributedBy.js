@@ -61,7 +61,7 @@ export function DistributedBy({report, onChange, mightFail}) {
             }
 
             if (
-              !reportConfig['process'].isAllowed(
+              !reportConfig.process.isAllowed(
                 update(report, {data: change}),
                 view,
                 groupBy,

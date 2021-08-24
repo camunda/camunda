@@ -6,6 +6,8 @@
 
 import createDefaultChartData from './createDefaultChartData';
 
+jest.mock('./createDefaultChartOptions', () => ({createDatasetOptions: ({type}) => ({type})}));
+
 it('should return correct chart data object for a single report', () => {
   const result = {
     measures: [
@@ -83,7 +85,7 @@ it('should return correct chart data object for multi-measure report', () => {
   ).toMatchSnapshot();
 });
 
-it('should create line dataset for duration in barLine visualization', () => {
+it('should create line dataset for duration and bar dataset for frequency in barLine visualization', () => {
   const result = {
     measures: [
       {
@@ -124,6 +126,8 @@ it('should create line dataset for duration in barLine visualization', () => {
     theme: 'light',
   });
 
+  expect(chartData.datasets[0].type).toBe('bar');
+  expect(chartData.datasets[0].order).toBe(1);
   expect(chartData.datasets[1].type).toBe('line');
   expect(chartData.datasets[1].order).toBe(0);
 });

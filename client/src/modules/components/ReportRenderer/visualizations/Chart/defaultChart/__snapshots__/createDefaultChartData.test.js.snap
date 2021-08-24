@@ -4,17 +4,12 @@ exports[`should return correct chart data object for a single report 1`] = `
 Object {
   "datasets": Array [
     Object {
-      "backgroundColor": "testColor",
-      "borderColor": "testColor",
-      "borderWidth": 2,
       "data": Array [
         123,
         5,
       ],
-      "fill": false,
       "formatter": [Function],
       "label": "Duration - Avg",
-      "legendColor": "testColor",
       "order": undefined,
       "type": "line",
       "yAxisID": "axis-0",
@@ -31,33 +26,23 @@ exports[`should return correct chart data object for multi-measure report 1`] = 
 Object {
   "datasets": Array [
     Object {
-      "backgroundColor": "#aec7e9",
-      "borderColor": "#aec7e9",
-      "borderWidth": 2,
       "data": Array [
         123,
         5,
       ],
-      "fill": false,
       "formatter": [Function],
       "label": "Count",
-      "legendColor": "#aec7e9",
       "order": undefined,
       "type": "line",
       "yAxisID": "axis-0",
     },
     Object {
-      "backgroundColor": "#6391d2",
-      "borderColor": "#6391d2",
-      "borderWidth": 2,
       "data": Array [
         175824,
         592754,
       ],
-      "fill": false,
       "formatter": [Function],
       "label": "Duration - Avg",
-      "legendColor": "#6391d2",
       "order": undefined,
       "type": "line",
       "yAxisID": "axis-1",

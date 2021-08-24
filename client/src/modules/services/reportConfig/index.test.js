@@ -188,44 +188,6 @@ describe('process update', () => {
     expect(changes.visualization).toEqual({$set: 'bar'});
   });
 
-  it('should change visualization from stacked to bar when adding measures', () => {
-    let changes = config.process.update(
-      'view',
-      {entity: 'flowNode', properties: ['frequency', 'duration']},
-      {
-        report: {
-          data: {
-            view: {entity: 'flowNode', properties: ['frequency']},
-            configuration: {targetValue: {active: false}},
-            visualization: 'stacked',
-            groupBy: {type: ''},
-          },
-        },
-      }
-    );
-
-    expect(changes.visualization).toEqual({$set: 'bar'});
-  });
-
-  it('should change visualization from barLine to bar when removing measure', () => {
-    let changes = config.process.update(
-      'view',
-      {entity: 'flowNode', properties: ['frequency']},
-      {
-        report: {
-          data: {
-            view: {entity: 'flowNode', properties: ['frequency', 'duration']},
-            configuration: {targetValue: {active: false}},
-            visualization: 'barLine',
-            groupBy: {type: ''},
-          },
-        },
-      }
-    );
-
-    expect(changes.visualization).toEqual({$set: 'bar'});
-  });
-
   it('should automatically distribute by flownode/usertask when possible', () => {
     const changes = config.process.update(
       'groupBy',

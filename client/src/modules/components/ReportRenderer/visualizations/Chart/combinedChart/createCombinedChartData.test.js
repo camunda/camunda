@@ -140,7 +140,7 @@ it('should return a dataset for each measure value in multi measure reports', ()
   });
 });
 
-it('should create line dataset for duration in barLine visualization', () => {
+it('should create line dataset for duration and bar dataset for frequency in barLine visualization', () => {
   createDatasetOptions.mockImplementation((options) => options);
   const reportA = {
     data: [{key: 'flowNode1', value: 123, label: 'Dec 2017'}],
@@ -174,4 +174,8 @@ it('should create line dataset for duration in barLine visualization', () => {
   expect(getDataset('report A - Duration').order).toBe(0);
   expect(getDataset('report B - Duration').type).toBe('line');
   expect(getDataset('report B - Duration').order).toBe(0);
+  expect(getDataset('report A - Count').type).toBe('bar');
+  expect(getDataset('report A - Count').order).toBe(1);
+  expect(getDataset('report B - Count').type).toBe('bar');
+  expect(getDataset('report B - Count').order).toBe(1);
 });

@@ -65,19 +65,21 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {
-      const containGroup = combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
+      const isVisualizationAllowed =
+        combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
 
+      // check additional requirements for certain visualizations
       switch (targetVisualization) {
         case 'stacked':
           return (
             report.data.distributedBy.type !== 'none' &&
             targetView.properties.length <= 1 &&
-            containGroup
+            isVisualizationAllowed
           );
         case 'barLine':
-          return targetView.properties.length > 1 && containGroup;
+          return targetView.properties.length > 1 && isVisualizationAllowed;
         default:
-          return containGroup;
+          return isVisualizationAllowed;
       }
     }
 
@@ -122,7 +124,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
   /**
    * Based on a given view (and optional groupby), returns the next payload data, if it is unambiguous.
    */
-  const getNext = (targetView, targetGroupBy) => {
+  const getNext = (targetView, targetGroupBy, oldVisualization) => {
     const viewGroup = getGroupFor(view, targetView);
 
     const groups = combinations[viewGroup];
@@ -130,9 +132,16 @@ export default function reportConfig({view, groupBy, visualization, combinations
     if (!targetGroupBy) {
       return getFirstOptionFor(groupBy, Object.keys(groups)[0]);
     } else if (targetGroupBy) {
-      const visualizations = groups[getGroupFor(groupBy, targetGroupBy)];
+      const possibleVisualizationGroups = groups[getGroupFor(groupBy, targetGroupBy)];
+      let visualizationGroup = possibleVisualizationGroups[0];
+      if (oldVisualization) {
+        const oldVisualizationGroup = getGroupFor(visualization, oldVisualization);
+        if (possibleVisualizationGroups.includes(oldVisualizationGroup)) {
+          visualizationGroup = oldVisualizationGroup;
+        }
+      }
 
-      return getFirstOptionFor(visualization, visualizations[0]);
+      return getFirstOptionFor(visualization, visualizationGroup);
     }
   };
 
@@ -180,7 +189,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (!isAllowed(props.report, newView, newGroup, visualization) || !visualization) {
-      changes.visualization = {$set: getNext(newView, newGroup)};
+      changes.visualization = {$set: getNext(newView, newGroup, visualization)};
     }
 
     return changes;

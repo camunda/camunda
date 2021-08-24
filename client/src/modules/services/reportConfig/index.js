@@ -43,6 +43,9 @@ config.process.update = (type, data, props) => {
 
   if (shouldResetDistributedBy(type, data, props.report.data)) {
     changes.distributedBy = {$set: {type: 'none', value: null}};
+    if (props.report.data.visualization === 'stacked') {
+      changes.visualization = {$set: 'bar'};
+    }
   }
 
   const newReport = update(props.report, {data: changes});
@@ -68,14 +71,6 @@ config.process.update = (type, data, props) => {
     if (!['line', 'table'].includes(props.report.data?.visualization)) {
       changes.visualization = {$set: 'bar'};
     }
-  }
-
-  if (
-    (newReport.data.visualization === 'stacked' &&
-      (changes.distributedBy || newReport.data.view?.properties.length > 1)) ||
-    (newReport.data.visualization === 'barLine' && newReport.data.view?.properties.length <= 1)
-  ) {
-    changes.visualization = {$set: 'bar'};
   }
 
   return changes;
