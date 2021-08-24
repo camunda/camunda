@@ -253,7 +253,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   protected CloudEventRequestDto createCloudEventOfType(final EventTypeDto eventType,
                                                         final String traceId,
                                                         final Instant now) {
-    return eventClient.createCloudEventDto().toBuilder()
+    return ingestionClient.createCloudEventDto().toBuilder()
       .group(eventType.getGroup())
       .source(eventType.getSource())
       .type(eventType.getEventName())
@@ -262,7 +262,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   }
 
   protected void ingestEventAndProcessTraces(List<CloudEventRequestDto> eventsToIngest) {
-    eventClient.ingestEventBatch(eventsToIngest);
+    ingestionClient.ingestEventBatch(eventsToIngest);
     processEventCountAndTraces();
   }
 

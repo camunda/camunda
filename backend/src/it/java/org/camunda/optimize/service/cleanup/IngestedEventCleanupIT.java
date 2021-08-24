@@ -31,9 +31,9 @@ public class IngestedEventCleanupIT extends AbstractIT {
     // given
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToCleanup =
-      eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeep =
-      eventClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
+      ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
@@ -52,7 +52,7 @@ public class IngestedEventCleanupIT extends AbstractIT {
     getIngestedEventCleanupConfiguration().setEnabled(false);
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToKeep =
-      eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when

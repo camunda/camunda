@@ -57,7 +57,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
   }
 
   protected void ingestEventAndRolloverIndex(final CloudEventRequestDto cloudEventRequestDto) {
-    eventClient.ingestEventBatch(Collections.singletonList(cloudEventRequestDto));
+    ingestionClient.ingestEventBatch(Collections.singletonList(cloudEventRequestDto));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
   }
@@ -66,7 +66,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
                                                               final String source,
                                                               final String type,
                                                               final Instant timestamp) {
-    return eventClient.createCloudEventDto()
+    return ingestionClient.createCloudEventDto()
       .toBuilder()
       .group(group)
       .source(source)

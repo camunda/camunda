@@ -51,7 +51,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventDtoTraceThree = createCloudEventDtoWithProperties(
       "traceThree", "eventIdThree", null, "mayonnaise", "onboard-event", 300L
     );
-    eventClient.ingestEventBatch(Arrays.asList(eventDtoTraceOne, eventDtoTraceTwo, eventDtoTraceThree));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventDtoTraceOne, eventDtoTraceTwo, eventDtoTraceThree));
 
     // when
     processEventCountAndTraces();
@@ -92,7 +92,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventDtoThree = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", null, "mayonnaise", "onboard-event", 300L
     );
-    eventClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
     // when
     processEventCountAndTraces();
@@ -138,7 +138,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventDtoTraceThreeEventTwo = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdSix", "backend", "ketchup", "onboarded-event", 600L
     );
-    eventClient.ingestEventBatch(Arrays.asList(
+    ingestionClient.ingestEventBatch(Arrays.asList(
       eventDtoTraceOneEventOne,
       eventDtoTraceTwoEventOne,
       eventDtoTraceThreeEventOne,
@@ -186,7 +186,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       traceIdTwo, "eventIdTwo", null, "ketchup", "signup-event", 200L);
     CloudEventRequestDto eventOneTraceThree = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdThree", null, "ketchup", "signup-event", 300L);
-    eventClient.ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
 
     // when
     processEventCountAndTraces();
@@ -209,7 +209,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L);
     CloudEventRequestDto eventThreeTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdSix", "backend", "ketchup", "onboard-event", 600L);
-    eventClient.ingestEventBatch(Arrays.asList(eventTwoTraceOne, eventTwoTraceTwo, eventThreeTraceOne));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventTwoTraceOne, eventTwoTraceTwo, eventThreeTraceOne));
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after processing
@@ -249,7 +249,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       traceId, "eventIdTwo", null, "ketchup", "register-event", 200L);
     CloudEventRequestDto eventDtoThree = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
-    eventClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
     // when
     processEventCountAndTraces();
@@ -279,7 +279,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       150L
     );
 
-    eventClient.ingestEventBatch(Collections.singletonList(eventDtoThreeModified));
+    ingestionClient.ingestEventBatch(Collections.singletonList(eventDtoThreeModified));
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after modification
@@ -311,7 +311,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
     CloudEventRequestDto eventThree = createCloudEventDtoWithProperties
       (traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
-    eventClient.ingestEventBatch(Arrays.asList(eventOne, eventTwo, eventThree));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventOne, eventTwo, eventThree));
 
     // when
     processEventCountAndTraces();
@@ -335,7 +335,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventTwoRepeated = createCloudEventDtoWithProperties(
       traceId, eventTwo.getId(), eventTwo.getGroup().orElse(null), eventTwo.getSource(), eventTwo.getType(), 200L);
 
-    eventClient.ingestEventBatch(Collections.singletonList(eventTwoRepeated));
+    ingestionClient.ingestEventBatch(Collections.singletonList(eventTwoRepeated));
     processEventCountAndTraces();
 
     // then trace state and sequence counts remain correct after processing
@@ -365,7 +365,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
     CloudEventRequestDto eventTaskC = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
-    eventClient.ingestEventBatch(Arrays.asList(eventTaskA, eventTaskB, eventTaskC));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventTaskA, eventTaskB, eventTaskC));
 
     // when
     processEventCountAndTraces();
@@ -393,7 +393,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
       traceId, "eventIdFive", eventTaskB.getGroup().orElse(null), eventTaskB.getSource(), eventTaskB.getType(), 500L
     );
 
-    eventClient.ingestEventBatch(Arrays.asList(eventTaskD, eventTaskBSecondOccurrence));
+    ingestionClient.ingestEventBatch(Arrays.asList(eventTaskD, eventTaskBSecondOccurrence));
     processEventCountAndTraces();
 
     // then trace state and sequence counts remain correct after processing and loop is correctly traced
@@ -427,7 +427,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventTaskE = createCloudEventDtoWithProperties
       (traceId, "eventIdNine", "backend", "ketchup", "helped-event", 900L);
 
-    eventClient.ingestEventBatch(Arrays.asList(
+    ingestionClient.ingestEventBatch(Arrays.asList(
       eventTaskCSecondOccurrence,
       eventTaskDSecondOccurrence,
       eventTaskBThirdOccurrence,
@@ -477,7 +477,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventDtoTraceOneEventThree = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdThree", "backend", "ketchup", "third-event", 300L
     );
-    eventClient.ingestEventBatch(Arrays.asList(
+    ingestionClient.ingestEventBatch(Arrays.asList(
       eventDtoTraceOneEventOne,
       eventDtoTraceOneEventTwo,
       eventDtoTraceOneEventThree
@@ -506,7 +506,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
     CloudEventRequestDto eventDtoTraceTwoEventThree = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdSix", "backend", "ketchup", "third-event", 200L
     );
-    eventClient.ingestEventBatch(Arrays.asList(
+    ingestionClient.ingestEventBatch(Arrays.asList(
       eventDtoTraceTwoEventThree,
       eventDtoTraceTwoEventOne,
       eventDtoTraceTwoEventTwo
@@ -545,7 +545,7 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
   private CloudEventRequestDto createCloudEventDtoWithProperties(String traceId, String eventId, String group,
                                                                  String source, String eventName, Long timestamp) {
-    return eventClient.createCloudEventDto()
+    return ingestionClient.createCloudEventDto()
       .toBuilder()
       .id(eventId)
       .traceid(traceId)

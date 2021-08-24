@@ -17,7 +17,6 @@ import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.util.configuration.EventIndexRolloverConfiguration;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -305,10 +304,10 @@ public class IndexRolloverIT extends AbstractIT {
 
   private void ingestExternalEvents() {
     final List<CloudEventRequestDto> eventDtos = IntStream.range(0, NUMBER_OF_EVENTS_IN_BATCH)
-      .mapToObj(operand -> eventClient.createCloudEventDto())
+      .mapToObj(operand -> ingestionClient.createCloudEventDto())
       .collect(toList());
 
-    eventClient.ingestEventBatch(eventDtos);
+    ingestionClient.ingestEventBatch(eventDtos);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 

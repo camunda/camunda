@@ -9,9 +9,11 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
+import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
@@ -21,14 +23,26 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 
 @AllArgsConstructor
-public class EventClient {
+public class IngestionClient {
   private static final Random RANDOM = new Random();
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
-  private final Supplier<String> accessTokenSupplier;
+  private final Supplier<String> variableAccessTokenSupplier;
+  private final Supplier<String> eventAccessTokenSupplier;
+
+  public Response ingestVariablesAndReturnResponse(final List<ExternalProcessVariableRequestDto> variables) {
+    return ingestVariablesAndReturnResponse(variables, getVariableIngestionToken());
+  }
+
+  public Response ingestVariablesAndReturnResponse(final List<ExternalProcessVariableRequestDto> variables,
+                                                   final String accessToken) {
+    return requestExecutorSupplier.get()
+      .buildIngestExternalVariables(variables, accessToken)
+      .execute();
+  }
 
   public void ingestEventBatch(final List<CloudEventRequestDto> eventDtos) {
-    requestExecutorSupplier.get().buildIngestEventBatch(eventDtos, accessTokenSupplier.get()).execute();
+    requestExecutorSupplier.get().buildIngestEventBatch(eventDtos, eventAccessTokenSupplier.get()).execute();
   }
 
   public List<CloudEventRequestDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {
@@ -37,6 +51,15 @@ public class EventClient {
       .collect(toList());
     ingestEventBatch(ingestedEvents);
     return ingestedEvents;
+  }
+
+  public ExternalProcessVariableRequestDto createExternalVariable() {
+    return new ExternalProcessVariableRequestDto()
+      .setId("anId")
+      .setName("aName")
+      .setValue("aValue")
+      .setProcessInstanceId("anInstanceId")
+      .setProcessDefinitionKey("aDefinitionKey");
   }
 
   public CloudEventRequestDto createCloudEventDto() {
@@ -58,4 +81,7 @@ public class EventClient {
       .build();
   }
 
+  public String getVariableIngestionToken() {
+    return variableAccessTokenSupplier.get();
+  }
 }
