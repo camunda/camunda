@@ -56,7 +56,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
 
   @Override
   public void onResumed() {
-    if (timer == null) {
+    if (timer == null && writer != null) { // only when recovered
       timer =
           processingContext
               .getActor()
