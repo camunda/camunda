@@ -185,11 +185,6 @@ public final class ReplayStateMachine {
    * the last source event, which has caused the last applied event.
    */
   private void onRecordsReplayed() {
-    // Replay ends at the end of the log
-    // reset the position to the first event where the processing should start
-    // TODO(zell): this should probably done outside; makes no sense here
-    logStreamReader.seekToNextEvent(lastSourceEventPosition);
-
     // restore the key generate with the highest key from the log
     keyGeneratorControls.setKeyIfHigher(highestRecordKey);
 

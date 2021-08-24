@@ -139,12 +139,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       } else {
         replayCompletedFuture.onComplete(
-            (lastReprocessedPosition, error) -> {
+            (lastSourceEventPosition, error) -> {
               if (error != null) {
                 LOG.error("The replay of events failed.", error);
                 onFailure(error);
               } else {
-                onRecovered(lastReprocessedPosition);
+                onRecovered(lastSourceEventPosition);
                 metrics.recoveryTime(ActorClock.currentTimeMillis() - startTime);
               }
             });
@@ -288,17 +288,21 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return zeebeState;
   }
 
-  private void onRecovered(final long lastReprocessedPosition) {
+  private void onRecovered(final long lastSourceEventPosition) {
     phase = Phase.PROCESSING;
 
     // enable writing records to the stream
     processingContext.enableLogStreamWriter();
 
+    // Replay ends at the end of the log and returns the lastSourceEventPosition
+    // we need to seek to the next record after that position where the processing should start
+    // Be aware on processing we ignore events, so we will process the next command
+    logStreamReader.seekToNextEvent(lastSourceEventPosition);
     logStream.registerRecordAvailableListener(this);
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    processingStateMachine.startProcessing(lastReprocessedPosition);
+    processingStateMachine.startProcessing(lastSourceEventPosition);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
     }
