@@ -394,13 +394,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public ActorFuture<Void> pauseProcessing() {
     return actor.call(
-        () ->
-            replayCompletedFuture.onComplete(
-                (v, t) -> {
-                  if (shouldProcess) {
-                    setStateToPausedAndNotifyListeners();
-                  }
-                }));
+        () -> {
+          if (shouldProcess) {
+            setStateToPausedAndNotifyListeners();
+          }
+        });
   }
 
   private void setStateToPausedAndNotifyListeners() {
@@ -412,23 +410,22 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public void resumeProcessing() {
     actor.call(
-        () ->
-            replayCompletedFuture.onComplete(
-                (v, t) -> {
-                  if (!shouldProcess) {
-                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-                    shouldProcess = true;
-                    phase = Phase.PROCESSING;
+        () -> {
+          if (!shouldProcess) {
+            lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+            shouldProcess = true;
 
-                    if (isInReplayOnlyMode()) {
-                      actor.submit(replayStateMachine::replayNextEvent);
-                      LOG.debug("Resumed processing for partition {}", partitionId);
-                    } else {
-                      actor.submit(processingStateMachine::readNextEvent);
-                      LOG.debug("Resumed processing for partition {}", partitionId);
-                    }
-                  }
-                }));
+            if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
+              phase = Phase.REPROCESSING;
+              actor.submit(replayStateMachine::replayNextEvent);
+              LOG.debug("Resumed replay for partition {}", partitionId);
+            } else {
+              phase = Phase.PROCESSING;
+              actor.submit(processingStateMachine::readNextEvent);
+              LOG.debug("Resumed processing for partition {}", partitionId);
+            }
+          }
+        });
   }
 
   @Override
