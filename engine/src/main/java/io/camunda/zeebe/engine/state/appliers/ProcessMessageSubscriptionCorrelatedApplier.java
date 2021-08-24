@@ -39,8 +39,13 @@ public final class ProcessMessageSubscriptionCorrelatedApplier
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
     final var eventScopeKey = value.getElementInstanceKey();
+
     if (value.isInterrupting()) {
       subscriptionState.remove(eventScopeKey, value.getMessageNameBuffer());
+    } else {
+      // if the message subscription is created and a matching message is buffered then it writes a
+      // process message subscription CORRELATE instead of a CREATE command
+      subscriptionState.updateToOpenedState(value);
     }
 
     if (shouldCreateTemporaryVariables(value)) {
