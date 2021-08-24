@@ -37,6 +37,34 @@ export function formatTooltip({
   );
 }
 
+export function formatTooltipTitle(title, availableWidth) {
+  if (!title || !availableWidth) {
+    return '';
+  }
+
+  const widthPerCharacter = 7;
+  const charactersPerLine = Math.floor(availableWidth / widthPerCharacter);
+
+  const lines = [];
+  let remainingString = title;
+
+  while (remainingString.length > charactersPerLine) {
+    const currentString = remainingString.substr(0, charactersPerLine);
+    let lastSpaceIndex = currentString.lastIndexOf(' ');
+    const hasSuitableWhitespace = lastSpaceIndex !== -1;
+
+    if (!hasSuitableWhitespace) {
+      lastSpaceIndex = charactersPerLine;
+    }
+
+    lines.push(currentString.substr(0, lastSpaceIndex));
+    remainingString = remainingString.substr(lastSpaceIndex + hasSuitableWhitespace);
+  }
+  lines.push(remainingString);
+
+  return lines.join('\n');
+}
+
 export function getTooltipLabelColor({dataIndex, dataset}, type) {
   if (type === 'pie') {
     const color = dataset.backgroundColor[dataIndex];

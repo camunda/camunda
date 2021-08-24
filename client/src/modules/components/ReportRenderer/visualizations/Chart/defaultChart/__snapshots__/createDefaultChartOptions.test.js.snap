@@ -93,6 +93,7 @@ Object {
       "callbacks": Object {
         "label": [Function],
         "labelColor": [Function],
+        "title": [Function],
       },
       "enabled": true,
     },

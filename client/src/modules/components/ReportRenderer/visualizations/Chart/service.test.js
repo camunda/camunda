@@ -4,7 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {formatTooltip, calculateLinePosition, getTooltipLabelColor} from './service';
+import {
+  formatTooltip,
+  formatTooltipTitle,
+  calculateLinePosition,
+  getTooltipLabelColor,
+} from './service';
 
 it('should include the relative value in tooltips', () => {
   const response = formatTooltip({
@@ -85,4 +90,28 @@ it('should calculate the correct position for the target value line', () => {
       },
     })
   ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
+});
+
+describe('formatTooltipTitle', () => {
+  it('should not change the title if enough space is available', () => {
+    expect(formatTooltipTitle('This is a sample tooltip title', 1000)).toBe(
+      'This is a sample tooltip title'
+    );
+  });
+
+  it('should wrap text at space characters', () => {
+    expect(formatTooltipTitle('This is a sample tooltip title', 100)).toBe(
+      'This is a\nsample\ntooltip title'
+    );
+  });
+
+  it('should handle strings without spaces well', () => {
+    expect(formatTooltipTitle('AAAAAAAAAAAAAAAAAAAAAAAAAAA', 100)).toBe(
+      'AAAAAAAAAAAAAA\nAAAAAAAAAAAAA'
+    );
+  });
+
+  it('should handle null values well', () => {
+    expect(formatTooltipTitle(null, null)).toBe('');
+  });
 });

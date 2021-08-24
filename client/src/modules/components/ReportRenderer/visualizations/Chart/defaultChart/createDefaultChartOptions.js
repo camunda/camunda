@@ -9,7 +9,12 @@ import {isDurationReport, formatters} from 'services';
 import {t} from 'translation';
 
 import {getFormattedTargetValue} from './service';
-import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
+import {
+  formatTooltip,
+  formatTooltipTitle,
+  getTooltipLabelColor,
+  canBeInterpolated,
+} from '../service';
 import {getColorFor, determineBarColor} from '../colorsUtils';
 
 const {createDurationFormattingOptions, duration} = formatters;
@@ -76,6 +81,8 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         showLabel: true,
       }),
     labelColor: (tooltipItem) => getTooltipLabelColor(tooltipItem, visualization),
+    title: (tooltipItems) =>
+      formatTooltipTitle(tooltipItems?.[0]?.label, tooltipItems?.[0]?.chart.chartArea.width),
   };
 
   if (isPersistedTooltips) {
@@ -87,7 +94,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
     tooltipCallbacks.title = (tooltipItems) => {
-      return tooltipItems?.[0].label;
+      return formatTooltipTitle(tooltipItems?.[0].label, tooltipItems?.[0]?.chart.chartArea.width);
     };
   }
 
