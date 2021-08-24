@@ -32,7 +32,6 @@ public class StateControllerPartitionStep implements PartitionStep {
             context.getConstructableSnapshotStore(),
             context.getReceivableSnapshotStore(),
             runtimeDirectory,
-            context.getSnapshotReplication(),
             new AtomixRecordEntrySupplierImpl(context.getRaftPartition().getServer()),
             StatePositionSupplier::getHighestExportedPosition);
 

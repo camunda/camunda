@@ -18,7 +18,6 @@ public class ZeebeDbPartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
-    context.getConstructableSnapshotStore().addSnapshotListener(context.getSnapshotController());
 
     final ZeebeDb zeebeDb;
     try {

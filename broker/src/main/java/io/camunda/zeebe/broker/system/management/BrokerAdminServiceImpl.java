@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -96,6 +97,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
 
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
     final CompletableFuture<PartitionStatus> partitionStatus = new CompletableFuture<>();
+    final var currentRoleFuture = partition.getCurrentRole();
     final var streamProcessorFuture = partition.getStreamProcessor();
     final var exporterDirectorFuture = partition.getExporterDirector();
     actor.runOnCompletion(
@@ -105,11 +107,17 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
             partitionStatus.completeExceptionally(error);
             return;
           }
-          final var streamProcessor = streamProcessorFuture.join();
-          final var exporterDirector = exporterDirectorFuture.join();
-          if (streamProcessor.isPresent() && exporterDirector.isPresent()) {
+          if (currentRoleFuture.join() == Role.LEADER) {
+            final var streamProcessor = streamProcessorFuture.join();
+            final var exporterDirector = exporterDirectorFuture.join();
+            if (!streamProcessor.isPresent() || !exporterDirector.isPresent()) {
+              partitionStatus.completeExceptionally(
+                  new IllegalStateException(
+                      "No streamprocessor or exporter found for leader partition."));
+            }
             getLeaderPartitionStatus(
                 partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
+
           } else {
             getFollowerPartitionStatus(partition, partitionStatus);
           }
@@ -120,7 +128,13 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
   private void getFollowerPartitionStatus(
       final ZeebePartition partition, final CompletableFuture<PartitionStatus> partitionStatus) {
     final var snapshotId = getSnapshotId(partition);
-    final var status = PartitionStatus.ofFollower(snapshotId.orElse(null));
+    final var processedPositionInSnapshot =
+        snapshotId
+            .flatMap(FileBasedSnapshotMetadata::ofFileName)
+            .map(FileBasedSnapshotMetadata::getProcessedPosition)
+            .orElse(null);
+    final var status =
+        PartitionStatus.ofFollower(snapshotId.orElse(null), processedPositionInSnapshot);
     partitionStatus.complete(status);
   }
 

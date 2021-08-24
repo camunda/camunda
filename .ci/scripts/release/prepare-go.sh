@@ -2,7 +2,7 @@
 
 # configure Jenkins GitHub user for GO container
 git config --global user.email "ci@camunda.com"
-git config --global user.name "camunda-jenkins"
+git config --global user.name "${GITHUB_TOKEN_USR}"
 
 GOCOMPAT_VERSION="v0.2.0"
 

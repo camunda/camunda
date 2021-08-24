@@ -168,6 +168,14 @@ public final class LogStreamReaderImpl implements LogStreamReader {
     return -1;
   }
 
+  @Override
+  public LoggedEvent peekNext() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    }
+    return nextEvent;
+  }
+
   private void reset() {
     currentEventBuffer.wrap(0, 0);
     currentEvent.wrap(currentEventBuffer, 0);

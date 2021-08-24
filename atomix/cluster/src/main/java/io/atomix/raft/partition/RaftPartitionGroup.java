@@ -181,18 +181,10 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     final var members =
         config.getMembers().stream().map(MemberId::from).collect(Collectors.toSet());
     metadata =
-        new PartitionDistributor()
-            .generatePartitionDistribution(members, sortedPartitionIds, replicationFactor);
-    // Example distribution with priority, clusterSize=4, partitionCount=5, replicationFactor=3
-    // +------------------+----+----+----+---+
-    // | Partition \ Node | 0  | 1  | 2  | 3 |
-    // +------------------+----+----+----+---+
-    // |                1 | 3  | 2  | 1  |   |
-    // |                2 |    | 3  | 2  | 1 |
-    // |                3 | 1  |    | 3  | 2 |
-    // |                4 | 2  | 1  |    | 3 |
-    // |                5 | 3  | 1  | 2  |   |
-    // +------------------+----+----+----+---+
+        config
+            .getPartitionConfig()
+            .getPartitionDistributor()
+            .distributePartitions(members, sortedPartitionIds, replicationFactor);
 
     communicationService = managementService.getMessagingService();
     communicationService.<Void, Void>subscribe(snapshotSubject, m -> handleSnapshot());
@@ -488,6 +480,18 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
       config.getPartitionConfig().setMaxQuorumResponseTimeout(maxQuorumResponseTimeout);
+      return this;
+    }
+
+    /**
+     * Sets the partition distributor to use. The partition distributor determines which members
+     * will own which partitions, and ensures they are correctly replicated.
+     *
+     * @param partitionDistributor the partition distributor to use
+     * @return this builder for chaining
+     */
+    public Builder withPartitionDistributor(final PartitionDistributor partitionDistributor) {
+      config.getPartitionConfig().setPartitionDistributor(partitionDistributor);
       return this;
     }
 

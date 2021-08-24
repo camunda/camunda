@@ -184,7 +184,7 @@ public final class ActorFrameworkIntegrationTest {
       }
 
       if (counter < totalWork) {
-        actor.yield();
+        actor.yieldThread();
         actor.run(produce);
       } else {
         latch.countDown();

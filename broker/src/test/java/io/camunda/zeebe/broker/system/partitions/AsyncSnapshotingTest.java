@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -68,7 +67,6 @@ public final class AsyncSnapshotingTest {
             persistedSnapshotStore,
             factory.getReceivableSnapshotStore(partitionId),
             rootDirectory.resolve("runtime"),
-            new NoneSnapshotReplication(),
             l ->
                 Optional.of(
                     new TestIndexedRaftLogEntry(

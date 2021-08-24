@@ -46,7 +46,7 @@ var clientCacheFlag string
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
 	Short: "zeebe command line interface",
-	Long: `zbctl is command line interface designed to create and read resources inside zeebe broker.
+	Long: `zbctl is a command line interface designed to create and read resources inside zeebe broker.
 It is designed for regular maintenance jobs such as:
 	* deploying processes,
 	* creating jobs and process instances

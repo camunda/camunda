@@ -15,84 +15,36 @@
  */
 package io.atomix.raft.partition;
 
-import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * Generates the partition distribution based on the cluster size, partition count and replication
- * factor
+ * Maps a list of partitions to a set of members, based on the given replication factor.
+ * Implementations of this class must guarantee that the distribution is complete, that is:
+ *
+ * <ul>
+ *   <li>The number of members a partition belongs to is equal to the replication factor
+ *   <li>All partitions are replicated
+ * </ul>
+ *
+ * It's perfectly valid for an implementation to ignore some members, as long as the above
+ * guarantees are met.
  */
-public class PartitionDistributor {
+public interface PartitionDistributor {
 
-  public Collection<PartitionMetadata> generatePartitionDistribution(
-      final Collection<MemberId> clusterMembers,
-      final List<PartitionId> sortedPartitionIds,
-      final int replicationFactor) {
-    final List<MemberId> sorted = new ArrayList<>(clusterMembers);
-    Collections.sort(sorted);
-
-    final int length = sorted.size();
-    final int count = Math.min(replicationFactor, length);
-
-    final Set<PartitionMetadata> metadata = Sets.newHashSet();
-    for (int i = 0; i < sortedPartitionIds.size(); i++) {
-      final PartitionId partitionId = sortedPartitionIds.get(i);
-      final List<MemberId> membersForPartition = new ArrayList<>(count);
-      for (int j = 0; j < count; j++) {
-        membersForPartition.add(sorted.get((i + j) % length));
-      }
-      final var primary = sorted.get(i % length);
-      final var priorities =
-          getPriorities(
-              partitionId, membersForPartition, primary, sorted.size(), replicationFactor);
-      metadata.add(
-          new PartitionMetadata(
-              partitionId, membersForPartition, priorities, priorities.get(primary)));
-    }
-    return metadata;
-  }
-
-  private Map<MemberId, Integer> getPriorities(
-      final PartitionId partitionId,
-      final List<MemberId> membersForPartition,
-      final MemberId primary,
-      final int clusterSize,
-      final int replicationFactor) {
-    final Map<MemberId, Integer> priority = new HashMap<>();
-    final int lowestPriority = 1;
-
-    priority.put(primary, replicationFactor);
-    // To ensure that secondary priorities are distributed evenly, we alternate the nodes for which
-    // second priority is assigned. Example, clusterSize = 3 partitionCount = 12. Node 0 has highest
-    // priority (=3) for partition 1,4,7 and 10. For partition 1 and 7, node 1 gets priority 2. For
-    // partition 4 and 10, node 2 gets priority 2. This is done so that if node 0 dies, the
-    // leadership is evenly distributed on the rest of the followers.
-    if ((partitionId.id() - 1) / clusterSize % 2 == 0) {
-      int nextPriority = replicationFactor - 1;
-      for (final MemberId member : membersForPartition) {
-        if (!member.equals(primary)) {
-          priority.put(member, nextPriority);
-          nextPriority--;
-        }
-      }
-    } else {
-      int nextPriority = lowestPriority;
-      for (final MemberId member : membersForPartition) {
-        if (!member.equals(primary)) {
-          priority.put(member, nextPriority);
-          nextPriority++;
-        }
-      }
-    }
-    return priority;
-  }
+  /**
+   * Provides the partition distribution based on the given list of partition IDs, cluster members,
+   * and the replication factor. The set of partitions returned is guaranteed to be correctly
+   * replicated.
+   *
+   * @param clusterMembers the set of members that can own partitions
+   * @param sortedPartitionIds a sorted list of partition IDs
+   * @param replicationFactor the replication factor for each partition
+   * @return a set of distributed partitions, each specifying which members they belong to
+   */
+  Set<PartitionMetadata> distributePartitions(
+      Set<MemberId> clusterMembers, List<PartitionId> sortedPartitionIds, int replicationFactor);
 }

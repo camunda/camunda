@@ -53,7 +53,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
         currentFuture.complete(false);
         actor.done();
       } else {
-        actor.yield();
+        actor.yieldThread();
         LOG.error(
             "Catched exception {} with message {}, will retry...",
             exception.getClass(),

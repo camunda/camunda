@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -31,7 +32,11 @@ import java.util.Optional;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
-    implements RaftRoleChangeListener, HealthMonitorable, FailureListener, DiskSpaceUsageListener {
+    implements RaftRoleChangeListener,
+        HealthMonitorable,
+        FailureListener,
+        DiskSpaceUsageListener,
+        SnapshotReplicationListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private Role raftRole;
@@ -174,6 +179,7 @@ public final class ZeebePartition extends Actor
     context.getRaftPartition().addRoleChangeListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
     onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
+    context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
   }
 
   @Override
@@ -192,11 +198,12 @@ public final class ZeebePartition extends Actor
 
   @Override
   protected void onActorClosing() {
+    context.getRaftPartition().getServer().removeSnapshotReplicationListener(this);
+    context.getRaftPartition().removeRoleChangeListener(this);
+
     transitionToInactive()
         .onComplete(
             (nothing, err) -> {
-              context.getRaftPartition().removeRoleChangeListener(this);
-
               context
                   .getComponentHealthMonitor()
                   .removeComponent(context.getRaftPartition().name());
@@ -460,5 +467,25 @@ public final class ZeebePartition extends Actor
             LOG.error("Could not resume exporting", e);
           }
         });
+  }
+
+  @Override
+  public void onSnapshotReplicationStarted() {
+    // When a snapshot is received, the follower stream processor and exporter should
+    // restart from a new state. So we transition to Inactive to close existing services. The
+    // services will be reinstalled when snapshot replication is completed.
+    // We do not want to mark it as unhealthy, hence we don't reuse transitionToInactive()
+    actor.run(() -> currentTransitionFuture = transition.toInactive());
+  }
+
+  @Override
+  public void onSnapshotReplicationCompleted(final long term) {
+    // Snapshot is received only by the followers. Hence we can safely assume that we have to
+    // re-install follower services.
+    actor.run(() -> currentTransitionFuture = followerTransition(term));
+  }
+
+  public ActorFuture<Role> getCurrentRole() {
+    return actor.call(() -> context.getCurrentRole());
   }
 }

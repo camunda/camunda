@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -356,5 +357,66 @@ public final class LogStreamReaderTest {
     assertThat(positionExists).isTrue();
     assertThat(reader).hasNext();
     assertThat(reader.next().getPosition()).isEqualTo(firstEventPosition);
+  }
+
+  @Test
+  public void shouldPeekFirstEvent() {
+    // given
+    final var eventPosition1 = writer.writeEvent(EVENT_VALUE);
+    writer.writeEvent(EVENT_VALUE);
+
+    assertThat(reader.hasNext()).isTrue();
+
+    // when
+    final var nextEvent = reader.peekNext();
+
+    // then
+    assertThat(nextEvent.getPosition()).isEqualTo(eventPosition1);
+  }
+
+  @Test
+  public void shouldPeekNextEvent() {
+    // given
+    final var eventPosition1 = writer.writeEvent(EVENT_VALUE);
+    final var eventPosition2 = writer.writeEvent(EVENT_VALUE);
+
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().getPosition()).isEqualTo(eventPosition1);
+
+    // when
+    final var nextEvent = reader.peekNext();
+
+    // then
+    assertThat(nextEvent.getPosition()).isEqualTo(eventPosition2);
+  }
+
+  @Test
+  public void shouldPeekAndReadNextEvent() {
+    // given
+    final var eventPosition1 = writer.writeEvent(EVENT_VALUE);
+    final var eventPosition2 = writer.writeEvent(EVENT_VALUE);
+
+    assertThat(reader.hasNext()).isTrue();
+
+    final var event = reader.next();
+    assertThat(event.getPosition()).isEqualTo(eventPosition1);
+    assertThat(reader.hasNext()).isTrue();
+
+    // when / then
+    final var peekedEvent = reader.peekNext();
+    assertThat(peekedEvent.getPosition()).isEqualTo(eventPosition2);
+
+    assertThat(reader.hasNext()).isTrue();
+    final var nextEvent = reader.next();
+    assertThat(nextEvent.getPosition()).isEqualTo(eventPosition2);
+  }
+
+  @Test
+  public void shouldThrowNoSuchElementExceptionOnPeek() {
+    // given
+    assertThat(reader.hasNext()).isFalse();
+
+    // when / then
+    assertThatThrownBy(reader::peekNext).isInstanceOf(NoSuchElementException.class);
   }
 }

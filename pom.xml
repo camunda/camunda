@@ -41,6 +41,7 @@
     <module>protocol-asserts</module>
     <module>exporters/elasticsearch-exporter</module>
     <module>protocol-impl</module>
+    <module>protocol-jackson</module>
     <module>zb-db</module>
     <module>expression-language</module>
     <module>snapshot</module>
