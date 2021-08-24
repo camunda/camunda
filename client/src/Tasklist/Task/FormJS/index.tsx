@@ -54,6 +54,8 @@ function extractVariablesFromFormSchema(
   }
 }
 
+const DEFAULT_EVENT_PRIORITY = 1000;
+
 type Props = {
   id: Form['id'];
   processDefinitionId: Form['processDefinitionId'];
@@ -116,23 +118,27 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
             },
           });
 
-          form.on('changed', ({errors}: any) => {
+          form.on('changed', DEFAULT_EVENT_PRIORITY, ({errors}: any) => {
             setIsFormValid(Object.keys(errors).length === 0);
           });
 
-          form.on('submit', async ({errors, data}: any) => {
-            if (Object.keys(errors).length === 0) {
-              const variables = Object.entries(data).map(
-                ([name, value]) =>
-                  ({
-                    name,
-                    value: JSON.stringify(value),
-                  } as Variable),
-              );
-              await onSubmit(variables);
-              updateSelectedVariables(variables);
-            }
-          });
+          form.on(
+            'submit',
+            DEFAULT_EVENT_PRIORITY,
+            async ({errors, data}: any) => {
+              if (Object.keys(errors).length === 0) {
+                const variables = Object.entries(data).map(
+                  ([name, value]) =>
+                    ({
+                      name,
+                      value: JSON.stringify(value),
+                    } as Variable),
+                );
+                await onSubmit(variables);
+                updateSelectedVariables(variables);
+              }
+            },
+          );
 
           if (canCompleteTask) {
             form.validate();
