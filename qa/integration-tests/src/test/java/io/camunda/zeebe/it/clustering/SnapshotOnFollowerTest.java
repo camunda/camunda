@@ -41,7 +41,7 @@ public class SnapshotOnFollowerTest {
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(5);
 
   @Rule
-  public final ClusteringRule clusteringRule = new ClusteringRule(1, 2, 2, this::configureBroker);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3, this::configureBroker);
 
   @Parameter(0)
   public Consumer<ClusteringRule> snapshotTrigger;
