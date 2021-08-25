@@ -52,8 +52,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
-  private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
-      "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final String EXPORTER_STATE_TOPIC_FORMAT = "exporterState-%d";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
@@ -247,11 +245,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
 
     final long snapshotPosition = state.getLowestPosition();
-    final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
-    if (failedToRecoverReader) {
-      throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
-    }
+    logStreamReader.seekToNextEvent(snapshotPosition);
 
     LOG.debug(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",
