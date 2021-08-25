@@ -85,7 +85,7 @@ it('should return correct chart data object for multi-measure report', () => {
   ).toMatchSnapshot();
 });
 
-it('should create line dataset for duration and bar dataset for frequency in barLine visualization', () => {
+it('should assign line/bar visualization to dataset according to configuration order', () => {
   const result = {
     measures: [
       {
@@ -110,7 +110,7 @@ it('should create line dataset for duration and bar dataset for frequency in bar
     report: {
       result,
       data: {
-        configuration: {color: 'testColor'},
+        configuration: {color: 'testColor', measureVisualizations: ['line', 'bar']},
         visualization: 'barLine',
         groupBy: {
           type: '',
@@ -126,8 +126,8 @@ it('should create line dataset for duration and bar dataset for frequency in bar
     theme: 'light',
   });
 
-  expect(chartData.datasets[0].type).toBe('bar');
-  expect(chartData.datasets[0].order).toBe(1);
-  expect(chartData.datasets[1].type).toBe('line');
-  expect(chartData.datasets[1].order).toBe(0);
+  expect(chartData.datasets[0].type).toBe('line');
+  expect(chartData.datasets[0].order).toBe(0);
+  expect(chartData.datasets[1].type).toBe('bar');
+  expect(chartData.datasets[1].order).toBe(1);
 });

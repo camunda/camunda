@@ -1,0 +1,12 @@
+.visualizationSetting .measureContainer {
+  display: flex;
+  align-items: center;
+
+  > span {
+    min-width: 50%;
+  }
+
+  > .ButtonGroup {
+    flex-grow: 1;
+  }
+}

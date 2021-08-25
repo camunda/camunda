@@ -15,7 +15,12 @@ export default function createDefaultChartData(props) {
   const datasets = [];
   let labels = [];
 
-  const {result} = props.report;
+  const {
+    result,
+    data: {
+      configuration: {measureVisualizations},
+    },
+  } = props.report;
   const measures = result.measures;
 
   measures.forEach((measure, idx) => {
@@ -30,7 +35,7 @@ export default function createDefaultChartData(props) {
     let type = visualization;
     let order;
     if (visualization === 'barLine') {
-      type = measure.property === 'frequency' ? 'bar' : 'line';
+      type = measureVisualizations[measure.property === 'frequency' ? 0 : 1];
       order = type === 'line' ? 0 : 1;
     }
 

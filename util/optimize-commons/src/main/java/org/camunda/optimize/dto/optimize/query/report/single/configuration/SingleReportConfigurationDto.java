@@ -20,11 +20,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatm
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -88,6 +91,9 @@ public class SingleReportConfigurationDto implements Combinable {
   private ReportSortingDto sorting = null;
   @Builder.Default
   private ProcessPartDto processPart = null;
+  @Builder.Default
+  private List<ProcessVisualization> measureVisualizations =
+    new ArrayList<>();
 
   @JsonIgnore
   public String createCommandKey() {

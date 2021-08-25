@@ -509,6 +509,11 @@
         "bucketSize": "Bucket Size",
         "baseline": "Baseline",
         "invalidNumber": "Must be a valid number"
+      },
+      "barLine": {
+        "visualizationSettings": "Visualisation settings",
+        "bar": "Bar",
+        "line": "Line"
       }
     },
     "viewByGroup": "{view} by {group}",

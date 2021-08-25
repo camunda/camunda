@@ -45,6 +45,9 @@ function createMultiMeasureChartData(props) {
   const {
     report: {
       result: {measures},
+      data: {
+        configuration: {measureVisualizations},
+      },
     },
   } = props;
 
@@ -65,7 +68,7 @@ function createMultiMeasureChartData(props) {
     let type = visualization;
     let order;
     if (visualization === 'barLine') {
-      type = measure.property === 'frequency' ? 'bar' : 'line';
+      type = measureVisualizations[measure.property === 'frequency' ? 0 : 1];
       order = type === 'line' ? 0 : 1;
     }
 

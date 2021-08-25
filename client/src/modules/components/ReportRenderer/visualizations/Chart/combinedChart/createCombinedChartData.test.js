@@ -46,6 +46,7 @@ const createReport = ({reportA, reportB, groupByType}, measures, visualization =
         {id: 'reportB', color: reportB.color},
       ],
       visualization,
+      configuration: {measureVisualizations: ['line', 'bar']},
     },
     combined: true,
   };
@@ -144,7 +145,7 @@ it('should return a dataset for each measure value in multi measure reports', ()
   });
 });
 
-it('should create line dataset for duration and bar dataset for frequency in barLine visualization', () => {
+it('should assign line/bar visualization to dataset according to configuration order', () => {
   createDatasetOptions.mockImplementation((options) => options);
   const reportA = {
     data: [{key: 'flowNode1', value: 123, label: 'Dec 2017'}],
@@ -174,12 +175,12 @@ it('should create line dataset for duration and bar dataset for frequency in bar
   });
 
   const getDataset = (label) => chartData.datasets.find((dataset) => dataset.label === label);
-  expect(getDataset('report A - Duration').type).toBe('line');
-  expect(getDataset('report A - Duration').order).toBe(0);
-  expect(getDataset('report B - Duration').type).toBe('line');
-  expect(getDataset('report B - Duration').order).toBe(0);
-  expect(getDataset('report A - Count').type).toBe('bar');
-  expect(getDataset('report A - Count').order).toBe(1);
-  expect(getDataset('report B - Count').type).toBe('bar');
-  expect(getDataset('report B - Count').order).toBe(1);
+  expect(getDataset('report A - Count').type).toBe('line');
+  expect(getDataset('report A - Count').order).toBe(0);
+  expect(getDataset('report B - Count').type).toBe('line');
+  expect(getDataset('report B - Count').order).toBe(0);
+  expect(getDataset('report A - Duration').type).toBe('bar');
+  expect(getDataset('report A - Duration').order).toBe(1);
+  expect(getDataset('report B - Duration').type).toBe('bar');
+  expect(getDataset('report B - Duration').order).toBe(1);
 });

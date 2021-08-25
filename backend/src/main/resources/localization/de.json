@@ -509,6 +509,11 @@
         "bucketSize": "Bucket Größe",
         "baseline": "Grundlinie",
         "invalidNumber": "Muss eine gültige Zahl sein"
+      },
+      "barLine": {
+        "visualizationSettings": "Visualisierungseinstellungen",
+        "bar": "Balken",
+        "line": "Linie"
       }
     },
     "viewByGroup": "{view} nach {group}",
