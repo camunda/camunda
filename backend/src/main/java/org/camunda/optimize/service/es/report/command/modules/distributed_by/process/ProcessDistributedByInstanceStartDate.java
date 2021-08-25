@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.StartDateDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
@@ -28,7 +28,7 @@ public class ProcessDistributedByInstanceStartDate extends AbstractProcessDistri
   }
 
   @Override
-  protected ProcessDistributedByDto<DateDistributedByValueDto> getDistributedBy() {
+  protected ProcessReportDistributedByDto<DateDistributedByValueDto> getDistributedBy() {
     return new StartDateDistributedByDto();
   }
 

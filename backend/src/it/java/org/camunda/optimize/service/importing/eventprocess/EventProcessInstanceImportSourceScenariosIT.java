@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
@@ -103,12 +103,12 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .singleElement().satisfies(processInstanceDto -> {
-        assertProcessInstance(
-          processInstanceDto,
-          processInstanceEngineDto.getBusinessKey(),
-          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)
-        );
-      });
+      assertProcessInstance(
+        processInstanceDto,
+        processInstanceEngineDto.getBusinessKey(),
+        Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)
+      );
+    });
     assertThat(processInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(

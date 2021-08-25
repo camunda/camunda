@@ -25,7 +25,7 @@ import java.util.stream.StreamSupport;
 public class BeanConstraintViolationExceptionHandler implements ExceptionMapper<ConstraintViolationException> {
 
   public static final String THE_REQUEST_BODY_WAS_INVALID = "The request body was invalid.";
-  public static final Pattern ARG_PATTERN = Pattern.compile("arg\\d");
+  private static final Pattern ARG_PATTERN = Pattern.compile("arg\\d");
 
   @Override
   public Response toResponse(final ConstraintViolationException throwable) {

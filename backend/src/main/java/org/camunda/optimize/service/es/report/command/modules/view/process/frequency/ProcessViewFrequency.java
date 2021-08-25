@@ -48,7 +48,7 @@ public abstract class ProcessViewFrequency extends ProcessViewPart {
     return createViewResult(null);
   }
 
-  protected ViewResult createViewResult(final Double value) {
+  public ViewResult createViewResult(final Double value) {
     return ViewResult.builder()
       .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
       .build();

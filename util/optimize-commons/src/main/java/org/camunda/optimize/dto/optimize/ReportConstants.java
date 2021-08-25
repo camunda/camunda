@@ -82,6 +82,7 @@ public class ReportConstants {
   public static final String DISTRIBUTED_BY_VARIABLE = "variable";
   public static final String DISTRIBUTED_BY_START_DATE = "startDate";
   public static final String DISTRIBUTED_BY_END_DATE = "endDate";
+  public static final String DISTRIBUTED_BY_PROCESS = "process";
 
   public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
   public static final String WORK_USER_TASK_DURATION_TIME = "work";
@@ -134,6 +135,8 @@ public class ReportConstants {
   public static final String BOOLEAN_TYPE_LOWERCASE = "boolean";
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
+
+  public static final String GROUP_NONE_KEY = "____none";
 
   public static final List<VariableType> ALL_SUPPORTED_VARIABLE_TYPES = ImmutableList.copyOf(VariableType.values());
 

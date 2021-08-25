@@ -57,7 +57,6 @@ public class ProcessDistributedByCreator {
     DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
     distributedByValueDto.setUnit(dateInterval);
     distributedBy.setValue(distributedByValueDto);
-
     return distributedBy;
   }
 
@@ -66,7 +65,6 @@ public class ProcessDistributedByCreator {
     DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
     distributedByValueDto.setUnit(dateInterval);
     distributedBy.setValue(distributedByValueDto);
-
     return distributedBy;
   }
 }

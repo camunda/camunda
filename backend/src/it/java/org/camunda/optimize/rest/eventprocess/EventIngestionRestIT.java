@@ -21,6 +21,7 @@ import org.camunda.optimize.jetty.IngestionQoSFilter;
 import org.camunda.optimize.jetty.MaxRequestSizeFilter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -380,6 +381,7 @@ public class EventIngestionRestIT extends AbstractIT {
     assertEventDtosArePersisted(Collections.emptyList());
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Object> invalidRFC3339EventTimes() {
     return Stream.of(
       "5",

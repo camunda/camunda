@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.CandidateGroupDistributedByValueDto;
 
-public class CandidateGroupDistributedByDto extends ProcessDistributedByDto<CandidateGroupDistributedByValueDto> {
+public class CandidateGroupDistributedByDto extends ProcessReportDistributedByDto<CandidateGroupDistributedByValueDto> {
 
   public CandidateGroupDistributedByDto() {
     this.type = DistributedByType.CANDIDATE_GROUP;

@@ -51,8 +51,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse =
+      reportClient.evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();

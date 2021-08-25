@@ -34,6 +34,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -94,8 +95,7 @@ public class ReportConflictIT extends AbstractIT {
     checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId, secondSingleReportId);
   }
 
-  @ParameterizedTest(name = "update single report fails with conflict if used in combined report and configuration " +
-    "not combinable anymore when force set to {0}")
+  @ParameterizedTest
   @MethodSource("notForcedValues")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
@@ -564,6 +564,7 @@ public class ReportConflictIT extends AbstractIT {
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
+  @SuppressWarnings({SuppressionConstants.UNUSED})
   private static Stream<Boolean> notForcedValues() {
     return Stream.of(null, false);
   }

@@ -12,6 +12,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_C
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_END_DATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_FLOW_NODE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_NONE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_START_DATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_USER_TASK;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_VARIABLE;
@@ -24,7 +25,9 @@ public enum DistributedByType {
   CANDIDATE_GROUP(DISTRIBUTED_BY_CANDIDATE_GROUP),
   VARIABLE(DISTRIBUTED_BY_VARIABLE),
   START_DATE(DISTRIBUTED_BY_START_DATE),
-  END_DATE(DISTRIBUTED_BY_END_DATE);
+  END_DATE(DISTRIBUTED_BY_END_DATE),
+  PROCESS(DISTRIBUTED_BY_PROCESS)
+  ;
 
   private final String id;
 

@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
@@ -146,6 +146,6 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   protected abstract Map<String, FlowNodeDataDto> extractModelElementData(DefinitionOptimizeResponseDto def);
 
-  protected abstract ProcessDistributedByDto getDistributedBy();
+  protected abstract ProcessReportDistributedByDto getDistributedBy();
 
 }

@@ -9,7 +9,7 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 @Data
-public class VariableDistributedByValueDto implements ProcessDistributedByValueDto {
+public class VariableDistributedByValueDto implements ProcessReportDistributedByValueDto {
   protected String name;
   protected VariableType type;
 }

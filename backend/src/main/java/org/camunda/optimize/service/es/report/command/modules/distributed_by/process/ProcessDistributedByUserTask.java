@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -45,7 +45,7 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByModelEleme
   }
 
   @Override
-  protected ProcessDistributedByDto getDistributedBy() {
+  protected ProcessReportDistributedByDto getDistributedBy() {
     return new UserTaskDistributedByDto();
   }
 

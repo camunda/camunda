@@ -5,5 +5,5 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value;
 
-public class CandidateGroupDistributedByValueDto implements ProcessDistributedByValueDto {
+public class CandidateGroupDistributedByValueDto implements ProcessReportDistributedByValueDto {
 }

@@ -50,6 +50,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_NONE_KEY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
@@ -329,7 +330,7 @@ public class CompositeCommandResult {
     private List<DistributedByResult> distributions;
 
     public static GroupByResult createGroupByNone(final List<DistributedByResult> distributions) {
-      return new GroupByResult(null, null, distributions);
+      return new GroupByResult(GROUP_NONE_KEY, null, distributions);
     }
 
     public static GroupByResult createGroupByResult(final String key,
@@ -361,7 +362,7 @@ public class CompositeCommandResult {
     private String label;
     private ViewResult viewResult;
 
-    public static DistributedByResult creatDistributedByNoneResult(ViewResult viewResult) {
+    public static DistributedByResult createDistributedByNoneResult(ViewResult viewResult) {
       return new DistributedByResult(null, null, viewResult);
     }
 

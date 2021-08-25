@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.FlowNodeDistributedByValueDto;
 
-public class FlowNodeDistributedByDto extends ProcessDistributedByDto<FlowNodeDistributedByValueDto> {
+public class FlowNodeDistributedByDto extends ProcessReportDistributedByDto<FlowNodeDistributedByValueDto> {
 
   public FlowNodeDistributedByDto() {
     this.type = DistributedByType.FLOW_NODE;

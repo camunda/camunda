@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.UserTaskDistributedByValueDto;
 
-public class UserTaskDistributedByDto extends ProcessDistributedByDto<UserTaskDistributedByValueDto> {
+public class UserTaskDistributedByDto extends ProcessReportDistributedByDto<UserTaskDistributedByValueDto> {
 
   public UserTaskDistributedByDto() {
     this.type = DistributedByType.USER_TASK;

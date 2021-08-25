@@ -36,7 +36,6 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   @Getter
   private final String publishedProcessStateId;
   private final EventFetcherService<T> eventFetcherService;
-  private final ConfigurationService configurationService;
 
   public EventProcessInstanceImportMediator(final String publishedProcessStateId,
                                             final EventProcessInstanceImportSourceIndexHandler importSourceIndexHandler,

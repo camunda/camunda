@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -26,11 +27,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX
 
 public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<DefinitionType> definitionType() {
     return Stream.of(DefinitionType.PROCESS, DefinitionType.DECISION);
   }
 
-  @ParameterizedTest(name = "get stored alerts for collection with different reports for definition type {0}")
+  @ParameterizedTest
   @MethodSource("definitionType")
   public void getStoredAlerts(final DefinitionType definitionType) {
     // given
@@ -115,7 +117,6 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
     // when
     collectionClient.deleteCollection(collectionId);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
 

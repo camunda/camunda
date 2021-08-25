@@ -9,7 +9,7 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 
 @Data
-public class DateDistributedByValueDto implements ProcessDistributedByValueDto {
+public class DateDistributedByValueDto implements ProcessReportDistributedByValueDto {
 
   protected AggregateByDateUnit unit;
 

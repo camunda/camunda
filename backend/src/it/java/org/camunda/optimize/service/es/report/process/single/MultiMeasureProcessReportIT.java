@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -478,6 +479,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     return AggregationType.values();
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> validMultiViewPropertyScenarios() {
     return Stream.of(
       Arguments.of(Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION)),
@@ -487,6 +489,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> invalidMultiViewPropertyScenarios() {
     return Stream.of(
       Arguments.of(Arrays.asList(ViewProperty.DURATION, ViewProperty.RAW_DATA)),
@@ -495,6 +498,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> multiAggregationScenarios() {
     return Stream.of(
       Arguments.of((Object) getSupportedAggregationTypes()),
@@ -504,6 +508,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> multiAggregationAndUserTaskTimeScenarios() {
     return Stream.of(
       Arguments.of(getSupportedAggregationTypes(), UserTaskDurationTime.values()),
