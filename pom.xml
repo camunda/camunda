@@ -38,7 +38,7 @@
     <version.junit>4.13.2</version.junit>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.7.3</version.micrometer>
-    <version.mockito>3.12.1</version.mockito>
+    <version.mockito>3.12.3</version.mockito>
     <version.assertj-core>3.20.2</version.assertj-core>
     <version.jackson>2.12.4</version.jackson>
     <version.graphql>11.1.0</version.graphql>
