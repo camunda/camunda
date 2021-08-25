@@ -12,22 +12,15 @@ import * as Styled from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 
-type Props = {
-  selectedErrorTypes?: string[];
-  selectedFlowNodes?: string[];
-  onFlowNodeSelect: (flowNodeId: string) => void;
-  onErrorTypeSelect: (errorTypeId: string) => void;
-  onClearAll: () => void;
-};
-
-const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
-  selectedErrorTypes,
-  selectedFlowNodes,
-  onErrorTypeSelect,
-  onFlowNodeSelect,
-  onClearAll,
-}) {
-  const {flowNodes, errorTypes} = incidentsStore;
+const IncidentsFilter: React.FC = observer(function IncidentsFilter() {
+  const {
+    flowNodes,
+    errorTypes,
+    toggleErrorTypeSelection,
+    toggleFlowNodeSelection,
+    clearSelection,
+    state: {selectedErrorTypes, selectedFlowNodes},
+  } = incidentsStore;
 
   const moreErrorTypes = errorTypes.slice(5);
   const moreFlowNodes = flowNodes.slice(5);
@@ -46,8 +39,8 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                       data-testid={id}
                       type="FILTER"
                       count={count}
-                      isActive={selectedErrorTypes?.includes(id)}
-                      onClick={() => onErrorTypeSelect(id)}
+                      isActive={selectedErrorTypes.includes(id)}
+                      onClick={() => toggleErrorTypeSelection(id)}
                     >
                       {name}
                     </Pill>
@@ -64,8 +57,8 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                             data-testid={id}
                             type="FILTER"
                             count={count}
-                            isActive={selectedErrorTypes?.includes(id)}
-                            onClick={() => onErrorTypeSelect(id)}
+                            isActive={selectedErrorTypes.includes(id)}
+                            onClick={() => toggleErrorTypeSelection(id)}
                             grow
                           >
                             {name}
@@ -88,8 +81,8 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                       data-testid={id}
                       type="FILTER"
                       count={count}
-                      isActive={selectedFlowNodes?.includes(id)}
-                      onClick={() => onFlowNodeSelect(id)}
+                      isActive={selectedFlowNodes.includes(id)}
+                      onClick={() => toggleFlowNodeSelection(id)}
                     >
                       {name}
                     </Pill>
@@ -105,9 +98,9 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                           <Pill
                             type="FILTER"
                             count={count}
-                            isActive={selectedFlowNodes?.includes(id)}
+                            isActive={selectedFlowNodes.includes(id)}
                             grow={true}
-                            onClick={() => onFlowNodeSelect(id)}
+                            onClick={() => toggleFlowNodeSelection(id)}
                           >
                             {name}
                           </Pill>
@@ -125,10 +118,9 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
             data-testid="clear-button"
             size="small"
             title="Clear All"
-            onClick={onClearAll}
+            onClick={clearSelection}
             disabled={
-              selectedFlowNodes?.length === 0 &&
-              selectedErrorTypes?.length === 0
+              selectedFlowNodes.length === 0 && selectedErrorTypes.length === 0
             }
           >
             Clear All

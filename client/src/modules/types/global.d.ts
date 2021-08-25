@@ -11,4 +11,6 @@ export declare global {
       contextPath?: string;
     };
   }
+
+  type SortOrder = 'asc' | 'desc';
 }

@@ -68,6 +68,7 @@ const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
 const randomProcessIdInterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
+const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
 /**
  * @returns a mocked selection Object
@@ -119,12 +120,15 @@ export const createSelection = (options = {}) => {
 export const createIncident = (options = {}) => {
   return {
     errorMessage: 'Some Condition error has occured',
-    errorType: 'Condition error',
+    errorType: {
+      name: 'Condition error',
+      id: 'CONDITION_ERROR',
+    },
     id: randomIdIterator.next().value,
     jobId: randomJobIdIterator.next().value,
     state: 'ACTIVE',
     flowNodeId: 'flowNodeId_alwaysFailingTask',
-    flowNodeInstanceId: createRandomId('incident'),
+    flowNodeInstanceId: randomFlowNodeInstanceIdIterator.next().value,
     flowNodeName: 'flowNodeName_alwaysFailingTask',
     creationTime: '2019-03-01T14:26:19',
     hasActiveOperation: false,

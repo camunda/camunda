@@ -44,11 +44,11 @@ const mockIncidents = {
   count: 2,
   incidents: [
     createIncident({
-      errorType: 'Condition error',
+      errorType: {id: 'CONDITION_ERROR', name: 'Condition error'},
       flowNodeId: 'flowNodeId_exclusiveGateway',
     }),
     createIncident({
-      errorType: 'Extract value error',
+      errorType: {id: 'EXTRACT_VALUE_ERROR', name: 'Extract value error'},
       flowNodeName: 'flowNodeName_alwaysFailingTask',
     }),
   ],
@@ -141,6 +141,7 @@ const mockIncidentsWithManyErrorsLegacy = {
   ],
 };
 
+// TODO: remove when IS_NEXT_INCIDENTS is removed
 const defaultProps = {
   selectedFlowNodes: [],
   selectedErrorTypes: [],
@@ -149,6 +150,7 @@ const defaultProps = {
   onClearAll: jest.fn(),
 };
 
+// TODO: remove when IS_NEXT_INCIDENTS is removed
 const selectedErrorPillProps = {
   ...defaultProps,
   selectedFlowNodes: ['flowNodeId_exclusiveGateway'],

@@ -18,6 +18,8 @@ describe('getModalHeadline', () => {
           instanceCount: 1,
           flowNodeType: 'START_EVENT',
           instanceMetadata: null,
+          incident: null,
+          incidentCount: 0,
         },
       })
     ).toEqual('Flow Node "Start Event" Metadata');
@@ -34,6 +36,8 @@ describe('getModalHeadline', () => {
           instanceCount: 1,
           flowNodeType: 'MULTI_INSTANCE_BODY',
           instanceMetadata: null,
+          incident: null,
+          incidentCount: 0,
         },
       })
     ).toEqual('Flow Node "Task A" Instance 2251799813685870 Metadata');

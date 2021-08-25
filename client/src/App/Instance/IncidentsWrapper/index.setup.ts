@@ -48,22 +48,22 @@ const mockIncidents = {
   count: 2,
   incidents: [
     createIncident({
-      errorType: 'Condition errortype',
+      errorType: {name: 'Condition errortype', id: 'CONDITION_ERROR'},
       flowNodeId: 'flowNodeId_exclusiveGateway',
     }),
     createIncident({
-      errorType: 'Extract value errortype',
+      errorType: {name: 'Extract value errortype', id: 'EXTRACT_VALUE_ERROR'},
       flowNodeId: 'flowNodeId_alwaysFailingTask',
     }),
   ],
   errorTypes: [
     {
-      id: 'Condition errortype',
+      id: 'CONDITION_ERROR',
       name: 'Condition errortype',
       count: 1,
     },
     {
-      id: 'Extract value errortype',
+      id: 'EXTRACT_VALUE_ERROR',
       name: 'Extract value errortype',
       count: 1,
     },
@@ -114,13 +114,13 @@ const mockResolvedIncidents = {
   count: 1,
   incidents: [
     createIncident({
-      errorType: 'Extract value error',
+      errorType: {name: 'Extract value errortype', id: 'EXTRACT_VALUE_ERROR'},
       flowNodeId: 'flowNodeId_alwaysFailingTask',
     }),
   ],
   errorTypes: [
     {
-      id: 'Extract value errortype',
+      id: 'EXTRACT_VALUE_ERROR',
       name: 'Extract value errortype',
       count: 1,
     },

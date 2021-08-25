@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {computed} from 'mobx';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {observer} from 'mobx-react';
@@ -15,6 +15,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {flowNodeStatesStore} from 'modules/stores/flowNodeStates';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {incidentsStore} from 'modules/stores/incidents';
 import Diagram from 'modules/components/Diagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
@@ -35,7 +36,6 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     state: {flowNodes},
   } = flowNodeStatesStore;
 
-  const [isIncidentBarOpen, setIncidentBarOpen] = useState(false);
   const {processInstanceId} = useInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
 
@@ -72,6 +72,11 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
     state: {status, diagramModel},
   } = singleInstanceDiagramStore;
 
+  const {
+    setIncidentBarOpen,
+    state: {isIncidentBarOpen},
+  } = incidentsStore;
+
   return (
     <Styled.Pane expandState={expandState}>
       <Styled.SplitPaneHeader data-testid="instance-header">
@@ -92,13 +97,13 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
               (IS_NEXT_INCIDENTS ? (
                 <IncidentsWrapper
                   expandState={expandState}
-                  isOpen={isIncidentBarOpen}
+                  isOpen={incidentsStore.state.isIncidentBarOpen}
                   onClick={() => setIncidentBarOpen(!isIncidentBarOpen)}
                 />
               ) : (
                 <IncidentsWrapperLegacy
                   expandState={expandState}
-                  isOpen={isIncidentBarOpen}
+                  isOpen={incidentsStore.state.isIncidentBarOpen}
                   onClick={() => setIncidentBarOpen(!isIncidentBarOpen)}
                 />
               ))}

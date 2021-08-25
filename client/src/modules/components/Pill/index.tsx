@@ -24,6 +24,7 @@ type Props = {
 function Pill(props: Props) {
   return (
     <Styled.Pill
+      aria-pressed={props.isActive}
       onClick={props.onClick}
       className={props.className}
       isActive={props.isActive}

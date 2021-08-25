@@ -13,7 +13,7 @@ import {IncidentOperation} from 'modules/components/IncidentOperation';
 
 import {formatDate} from 'modules/utils/date';
 import {getSorting} from 'modules/utils/filter';
-import {sortData} from './service';
+import {sortData, sortIncidents} from './service';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
@@ -23,16 +23,15 @@ import * as Styled from './styled';
 import {Restricted} from 'modules/components/Restricted';
 import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
-import {incidentsStore} from 'modules/stores/incidents';
+import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 
 const {THead, TBody, TR, TD} = Table;
 
 type Props = {
-  incidents: unknown[];
-  // TODO: when removing IS_NEXT_INCIDENTS, change this to:
-  // incidents: typeof incidentsStore.incidents;
+  incidents?: unknown[];
+  // TODO: remove this prop, when removing IS_NEXT_INCIDENTS
 };
 
 const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
@@ -43,6 +42,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
   const [modalTitle, setModalTitle] = useState<string | null>(null);
   const {processInstanceId} = useInstancePageParams();
   const {sortBy, sortOrder} = getSorting('instance');
+  const {filteredIncidents} = incidentsStore;
 
   const handleModalClose = () => {
     setIsModalVisible(false);
@@ -59,11 +59,9 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     setModalTitle(`Flow Node "${flowNodeName}" Error`);
   };
 
-  const sortedIncidents: typeof incidentsStore.incidents = sortData(
-    incidents,
-    sortBy,
-    sortOrder
-  );
+  const sortedIncidents: Incident[] = IS_NEXT_INCIDENTS
+    ? sortIncidents(filteredIncidents, sortBy, sortOrder)
+    : sortData(incidents, sortBy, sortOrder);
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
 
@@ -151,12 +149,18 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                         isMultiInstance: false,
                       })
                     }
-                    aria-label={`Incident ${incident.errorType}`}
+                    aria-label={`Incident ${
+                      IS_NEXT_INCIDENTS
+                        ? incident.errorType.name
+                        : incident.errorType
+                    }`}
                   >
                     <TD>
                       <Styled.FirstCell>
                         <Styled.Index>{index + 1}</Styled.Index>
-                        {incident.errorType}
+                        {IS_NEXT_INCIDENTS
+                          ? incident.errorType.name
+                          : incident.errorType}
                       </Styled.FirstCell>
                     </TD>
                     <TD>

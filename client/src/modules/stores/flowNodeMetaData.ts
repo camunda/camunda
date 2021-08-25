@@ -20,7 +20,8 @@ import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {formatDate} from 'modules/utils/date';
-import {incidentsStore} from './incidents';
+import {incidentsStore} from './incidents.legacy';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 type InstanceMetaData = {
   startDate: string;
@@ -29,8 +30,6 @@ type InstanceMetaData = {
   flowNodeId: string;
   flowNodeInstanceId: string;
   flowNodeType: string;
-  incidentErrorMessage: string | null;
-  incidentErrorType: string | null;
   jobCustomHeaders: {[key: string]: string} | null;
   jobDeadline: string | null;
   jobId: string | null;
@@ -50,6 +49,14 @@ type MetaData = {
   flowNodeType: string;
   instanceCount: number | null;
   instanceMetadata: InstanceMetaData | null;
+  incident: {
+    errorMessage: string;
+    errorType: {
+      id: string;
+      name: string;
+    };
+  } | null;
+  incidentCount: number;
 };
 
 type State = {
@@ -135,24 +142,20 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
           const metaData = await response.json();
 
           if (metaData.instanceMetadata !== null) {
-            const {
-              startDate,
-              endDate,
-              jobDeadline,
-              incidentErrorType,
-              flowNodeInstanceId,
-            } = metaData.instanceMetadata;
+            const {startDate, endDate, jobDeadline, incidentErrorType} =
+              metaData.instanceMetadata;
+
+            const errorType = IS_NEXT_INCIDENTS
+              ? undefined
+              : incidentsStore.getIncidentType(metaData.flowNodeInstanceId) ||
+                incidentErrorType;
 
             metaData.instanceMetadata = {
               ...metaData.instanceMetadata,
               startDate: formatDate(startDate, null),
               endDate: formatDate(endDate, null),
               jobDeadline: formatDate(jobDeadline, null),
-              incidentErrorType:
-                incidentErrorType === null
-                  ? null
-                  : incidentsStore.getIncidentType(flowNodeInstanceId) ||
-                    incidentErrorType,
+              incidentErrorType: incidentErrorType === null ? null : errorType,
             };
           }
 

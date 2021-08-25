@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {MetaDataEntity} from 'modules/stores/flowNodeMetaData';
+
 const mockVariables = [
   {
     id: '2251799813686037-clientNo',
@@ -31,13 +33,15 @@ const mockVariables = [
   },
 ] as const;
 
-const mockMetaData = {
+const mockMetaData: MetaDataEntity = {
   breadcrumb: [],
   flowNodeId: null,
   flowNodeInstanceId: '123',
   flowNodeType: 'start-event',
   instanceCount: null,
   instanceMetadata: null,
+  incident: null,
+  incidentCount: 0,
 };
 
 export {mockVariables, mockMetaData};

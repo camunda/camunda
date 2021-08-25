@@ -4,20 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IncidentsFilter} from './index';
+import {IncidentsFilter} from './index.legacy';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {mockIncidents, mockIncidentsWithManyErrors} from './index.setup';
-import {incidentsStore} from 'modules/stores/incidents';
+import {
+  defaultProps,
+  selectedErrorPillProps,
+  mockIncidentsLegacy,
+  mockIncidentsWithManyErrorsLegacy,
+} from './index.setup';
+import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
-const {reset, fetchIncidents} = incidentsStore;
+const {reset, fetchIncidents} = incidentsStoreLegacy;
 
-(IS_NEXT_INCIDENTS ? describe : describe.skip)('IncidentsFilter', () => {
+(IS_NEXT_INCIDENTS ? describe.skip : describe)('IncidentsFilter', () => {
   afterAll(() => {
     reset();
   });
@@ -25,13 +30,13 @@ const {reset, fetchIncidents} = incidentsStore;
   it('should render pills by incident type', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(ctx.json(mockIncidentsLegacy))
       )
     );
 
     await fetchIncidents('1');
 
-    render(<IncidentsFilter />, {
+    render(<IncidentsFilter {...defaultProps} />, {
       wrapper: ThemeProvider,
     });
 
@@ -47,12 +52,12 @@ const {reset, fetchIncidents} = incidentsStore;
   it('should render pills by flow node', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(ctx.json(mockIncidentsLegacy))
       )
     );
     await fetchIncidents('1');
 
-    render(<IncidentsFilter />, {
+    render(<IncidentsFilter {...defaultProps} />, {
       wrapper: ThemeProvider,
     });
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
@@ -67,12 +72,12 @@ const {reset, fetchIncidents} = incidentsStore;
   it('should show a more button', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsWithManyErrors))
+        res.once(ctx.json(mockIncidentsWithManyErrorsLegacy))
       )
     );
     await fetchIncidents('1');
 
-    render(<IncidentsFilter />, {
+    render(<IncidentsFilter {...defaultProps} />, {
       wrapper: ThemeProvider,
     });
     expect(
@@ -89,41 +94,21 @@ const {reset, fetchIncidents} = incidentsStore;
   it('should disable/enable clear all button depending on selected pills', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
+        res.once(ctx.json(mockIncidentsLegacy))
       )
     );
     await fetchIncidents('1');
 
-    render(<IncidentsFilter />, {
+    const {rerender} = render(<IncidentsFilter {...defaultProps} />, {
       wrapper: ThemeProvider,
     });
-
-    expect(
-      screen.getByRole('button', {
-        name: 'Condition error 2',
-        pressed: false,
-      })
-    ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
-
-    userEvent.click(screen.getByRole('button', {name: 'Condition error 2'}));
-
-    expect(
-      screen.getByRole('button', {
-        name: 'Condition error 2',
-        pressed: true,
-      })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Clear All'})).toBeEnabled();
-
     userEvent.click(screen.getByRole('button', {name: 'Clear All'}));
+    expect(defaultProps.onClearAll).not.toHaveBeenCalled();
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Condition error 2',
-        pressed: false,
-      })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
+    rerender(<IncidentsFilter {...selectedErrorPillProps} />);
+    expect(screen.getByRole('button', {name: 'Clear All'})).toBeEnabled();
+    userEvent.click(screen.getByRole('button', {name: 'Clear All'}));
+    expect(defaultProps.onClearAll).toHaveBeenCalled();
   });
 });

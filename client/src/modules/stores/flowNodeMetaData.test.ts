@@ -20,6 +20,8 @@ const metaData: MetaDataEntity = {
   flowNodeType: 'SERVICE_TASK',
   instanceCount: 5,
   instanceMetadata: null,
+  incident: null,
+  incidentCount: 0,
 };
 
 describe('stores/flowNodeMetaData', () => {

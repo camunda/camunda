@@ -23,6 +23,7 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router';
 import {incidentsStore} from 'modules/stores/incidents';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
@@ -42,14 +43,13 @@ const completedFlowNodeMetaData = {
   flowNodeType: null,
   instanceCount: null,
   breadcrumb: [],
+  incident: null,
   instanceMetadata: {
     flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
     flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
     flowNodeType: 'TASK_CALL_ACTIVITY',
     startDate: '2021-03-26T09:50:22.457+0000',
     endDate: '2021-03-26T11:00:00.000+0000',
-    incidentErrorType: null,
-    incidentErrorMessage: null,
     jobId: null,
     jobType: null,
     jobRetries: null,
@@ -58,6 +58,9 @@ const completedFlowNodeMetaData = {
     jobCustomHeaders: null,
     calledProcessInstanceId: '229843728748927482',
     calledProcessDefinitionName: 'Called Process',
+    // TODO: remove incidentErrorType and incidentErrorMessage when IS_NEXT_INCIDENTS is removed
+    incidentErrorType: null,
+    incidentErrorMessage: null,
   },
 };
 
@@ -67,14 +70,17 @@ const incidentFlowNodeMetaData = {
   flowNodeType: null,
   instanceCount: null,
   breadcrumb: [],
+  incident: {
+    errorType: {id: 'JOB_NO_RETRIES', name: 'No more retries left.'},
+    errorMessage: 'There are no more retries left.',
+  },
+  incidentCount: 1,
   instanceMetadata: {
     flowNodeId: FLOW_NODE_ID,
     flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
     flowNodeType: 'START_EVENT',
     startDate: '2021-03-26T10:00:00.000+0000',
     endDate: null,
-    incidentErrorType: 'JOB_NO_RETRIES',
-    incidentErrorMessage: 'No more retries left.',
     jobId: '2251799813690876',
     jobType: null,
     jobRetries: null,
@@ -83,6 +89,9 @@ const incidentFlowNodeMetaData = {
     jobCustomHeaders: null,
     calledProcessInstanceId: null,
     calledProcessDefinitionName: null,
+    // TODO: remove incidentErrorType and incidentErrorMessage when IS_NEXT_INCIDENTS is removed
+    incidentErrorType: 'JOB_NO_RETRIES',
+    incidentErrorMessage: 'No more retries left.',
   },
 };
 
@@ -143,16 +152,31 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/End Date/)).toBeInTheDocument();
     expect(screen.getByText(/Type/)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/)).toBeInTheDocument();
-    expect(screen.getByText(/View/)).toBeInTheDocument();
+    if (IS_NEXT_INCIDENTS) {
+      expect(screen.getAllByText(/View/)).toHaveLength(2);
+    } else {
+      expect(screen.getByText(/View/)).toBeInTheDocument();
+    }
     expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
 
-    const {incidentErrorMessage, flowNodeInstanceId} =
-      incidentFlowNodeMetaData.instanceMetadata;
+    const {
+      incident,
+      instanceMetadata: {
+        flowNodeInstanceId,
+        incidentErrorMessage,
+        incidentErrorType,
+      },
+    } = incidentFlowNodeMetaData;
 
     expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(screen.getByText('No more retries left')).toBeInTheDocument();
-    expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
+    if (IS_NEXT_INCIDENTS) {
+      expect(screen.getByText(incident.errorMessage)).toBeInTheDocument();
+      expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
+    } else {
+      expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
+      expect(screen.getByText(incidentErrorType)).toBeInTheDocument();
+    }
   });
 
   it('should render meta data for completed flow node', async () => {
@@ -223,7 +247,7 @@ describe('PopoverOverlay', () => {
 
     await screen.findByText(/Flow Node Instance Id/);
 
-    userEvent.click(screen.getByText(/View/));
+    userEvent.click(screen.getAllByText(/View/)[0]);
 
     expect(
       screen.getByText(/Flow Node "Activity_0zqism7" Metadata/)

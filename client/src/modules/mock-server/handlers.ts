@@ -5,7 +5,6 @@
  */
 
 import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
-import {Incident} from 'modules/stores/incidents';
 import {RequestHandler, rest} from 'msw';
 
 type IncidentsResponse = {
@@ -13,6 +12,13 @@ type IncidentsResponse = {
   errorTypes: [{errorType: string; count: number}];
   incidents: any;
   count: number;
+};
+
+const ERROR_TYPES: {[errorType: string]: string} = {
+  'I/O mapping error': 'IO_MAPPING_ERROR',
+  'No more retries left': 'JOB_NO_RETRIES',
+  'Extract value error': 'EXTRACT_VALUE_ERROR',
+  'Condition error': 'CONDITION_ERROR',
 };
 
 const handlers: RequestHandler[] = [
@@ -27,10 +33,15 @@ const handlers: RequestHandler[] = [
 
       const parsedResponse: IncidentsResponse = await response.json();
 
-      const incidents = parsedResponse.incidents.map((incident: Incident) => {
+      const incidents = parsedResponse.incidents.map((incident: any) => {
+        const errorType = {
+          id: ERROR_TYPES[incident.errorType] || incident.errorType,
+          name: incident.errorType,
+        };
         if (incident.flowNodeId === 'call-activity') {
           return {
             ...incident,
+            errorType,
             rootCauseInstance: {
               instanceId: '11111111111111111',
               processDefinitionId: '00000000000000000',
@@ -40,6 +51,7 @@ const handlers: RequestHandler[] = [
         } else {
           return {
             ...incident,
+            errorType,
             rootCauseInstance: null,
           };
         }
@@ -51,7 +63,7 @@ const handlers: RequestHandler[] = [
       }));
 
       const errorTypes = parsedResponse.errorTypes.map((errorType) => ({
-        id: errorType.errorType,
+        id: ERROR_TYPES[errorType.errorType] || errorType.errorType,
         name: errorType.errorType,
         count: errorType.count,
       }));
@@ -64,6 +76,53 @@ const handlers: RequestHandler[] = [
           count: parsedResponse.count,
         })
       );
+    }
+  ),
+  rest.post(
+    '/api/process-instances/:processInstanceId/flow-node-metadata',
+    async (req, res, ctx) => {
+      const response = await ctx.fetch(req);
+
+      if (!IS_NEXT_INCIDENTS) {
+        return res(ctx.json(await response.json()));
+      }
+
+      const parsedResponse = await response.json();
+      const {incidentErrorType} = parsedResponse.instanceMetadata;
+
+      if (incidentErrorType) {
+        const errorTypeName =
+          Object.entries(ERROR_TYPES).find(
+            ([errorTypeName, errorTypeId]) => incidentErrorType === errorTypeId
+          )?.[0] || incidentErrorType;
+
+        const incident = {
+          errorType: {
+            id: incidentErrorType,
+            name: errorTypeName,
+          },
+          errorMessage: parsedResponse.instanceMetadata.incidentErrorMessage,
+        };
+
+        delete parsedResponse.instanceMetadata.incidentErrorType;
+        delete parsedResponse.instanceMetadata.incidentErrorMessage;
+
+        return res(
+          ctx.json({
+            ...parsedResponse,
+            incidentCount: 1,
+            incident,
+          })
+        );
+      } else {
+        return res(
+          ctx.json({
+            ...parsedResponse,
+            incidentCount: 5,
+            incident: null,
+          })
+        );
+      }
     }
   ),
 ];
