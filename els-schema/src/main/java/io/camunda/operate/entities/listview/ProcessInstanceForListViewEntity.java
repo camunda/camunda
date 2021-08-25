@@ -32,6 +32,8 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
 
   private Long parentFlowNodeInstanceKey;
 
+  private String treePath;
+
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 
   @JsonIgnore
@@ -129,6 +131,15 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return this;
   }
 
+  public String getTreePath() {
+    return treePath;
+  }
+
+  public ProcessInstanceForListViewEntity setTreePath(final String treePath) {
+    this.treePath = treePath;
+    return this;
+  }
+
   public ListViewJoinRelation getJoinRelation() {
     return joinRelation;
   }
@@ -167,6 +178,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
         Objects.equals(batchOperationIds, that.batchOperationIds) &&
         Objects.equals(parentProcessInstanceKey, that.parentProcessInstanceKey) &&
         Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey) &&
+        Objects.equals(treePath, that.treePath) &&
         Objects.equals(joinRelation, that.joinRelation) &&
         Arrays.equals(sortValues, that.sortValues);
   }
@@ -176,7 +188,7 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     int result = Objects
         .hash(super.hashCode(), processDefinitionKey, processName, processVersion, bpmnProcessId,
             startDate, endDate, state, batchOperationIds, parentProcessInstanceKey,
-            parentFlowNodeInstanceKey, joinRelation);
+            parentFlowNodeInstanceKey, treePath, joinRelation);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

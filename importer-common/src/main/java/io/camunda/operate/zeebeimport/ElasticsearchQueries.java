@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +48,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
-public class ElasticsearchManager {
+public class ElasticsearchQueries {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchQueries.class);
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -164,6 +166,26 @@ public class ElasticsearchManager {
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  public String findProcessInstanceTreePath(final long parentProcessInstanceKey) {
+    final SearchRequest searchRequest = ElasticsearchUtil
+        .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder()
+            .query(termQuery(ListViewTemplate.KEY, parentProcessInstanceKey))
+            .fetchSource(ListViewTemplate.TREE_PATH, null));
+    try {
+      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      if (hits.getTotalHits().value > 0) {
+        return (String) hits.getHits()[0].getSourceAsMap().get(ListViewTemplate.TREE_PATH);
+      }
+      return null;
+    } catch (IOException e) {
+      final String message = String
+          .format("Exception occurred, while searching for parent process instance processes: %s",
+              e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }

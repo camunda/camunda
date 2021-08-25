@@ -7,10 +7,9 @@ package io.camunda.operate.zeebeimport.v1_1.processors;
 
 import java.util.HashSet;
 import java.util.Set;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.zeebeimport.ElasticsearchManager;
+import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.v1_1.record.Intent;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
@@ -34,12 +33,12 @@ public class OperationZeebeRecordProcessor {
   private OperationTemplate operationTemplate;
 
   @Autowired
-  private ElasticsearchManager elasticsearchManager;
+  private ElasticsearchQueries elasticsearchQueries;
 
   public void processVariableDocumentRecords(Record record, BulkRequest bulkRequest) throws PersistenceException {
     if (!VARIABLE_DOCUMENT_STATES.contains(record.getIntent().name())) {
       return;
     }
-    elasticsearchManager.completeOperation(record.getKey(), null, null, null, bulkRequest);
+    elasticsearchQueries.completeOperation(record.getKey(), null, null, null, bulkRequest);
   }
 }

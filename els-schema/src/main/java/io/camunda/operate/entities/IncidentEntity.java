@@ -6,6 +6,7 @@
 package io.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
@@ -29,6 +30,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
   private OffsetDateTime creationTime;
 
   private Long processDefinitionKey;
+
+  private String treePath;
 
   public ErrorType getErrorType() {
     return errorType;
@@ -120,52 +123,45 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return processDefinitionKey;
   }
 
+  public String getTreePath() {
+    return treePath;
+  }
+
+  public IncidentEntity setTreePath(final String treePath) {
+    this.treePath = treePath;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (!super.equals(o))
+    }
+    if (!super.equals(o)) {
       return false;
-
-    IncidentEntity that = (IncidentEntity) o;
-
-    if (errorType != that.errorType)
-      return false;
-    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
-      return false;
-    if (errorMessageHash != null ? !errorMessageHash.equals(that.errorMessageHash) : that.errorMessageHash != null)
-      return false;
-    if (state != that.state)
-      return false;
-    if (flowNodeId != null ? !flowNodeId.equals(that.flowNodeId) : that.flowNodeId != null)
-      return false;
-    if (flowNodeInstanceKey != null ? !flowNodeInstanceKey.equals(that.flowNodeInstanceKey) : that.flowNodeInstanceKey != null)
-      return false;
-    if (jobKey != null ? !jobKey.equals(that.jobKey) : that.jobKey != null)
-      return false;
-    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
-      return false;
-    if (processDefinitionKey != null ? !processDefinitionKey.equals(that.processDefinitionKey) : that.processDefinitionKey != null)
-      return false;
-    return creationTime != null ? creationTime.equals(that.creationTime) : that.creationTime == null;
+    }
+    final IncidentEntity that = (IncidentEntity) o;
+    return errorType == that.errorType &&
+        Objects.equals(errorMessage, that.errorMessage) &&
+        Objects.equals(errorMessageHash, that.errorMessageHash) &&
+        state == that.state &&
+        Objects.equals(flowNodeId, that.flowNodeId) &&
+        Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey) &&
+        Objects.equals(jobKey, that.jobKey) &&
+        Objects.equals(processInstanceKey, that.processInstanceKey) &&
+        Objects.equals(creationTime, that.creationTime) &&
+        Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
+        Objects.equals(treePath, that.treePath);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (errorType != null ? errorType.hashCode() : 0);
-    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
-    result = 31 * result + (errorMessageHash != null ? getErrorMessageHash().hashCode() : 0);
-    result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
-    result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);
-    result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
-    result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
-    result = 31 * result + (processDefinitionKey != null ? processDefinitionKey.hashCode() : 0);
-    return result;
+    return Objects
+        .hash(super.hashCode(), errorType, errorMessage, errorMessageHash, state, flowNodeId,
+            flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey,
+            treePath);
   }
-
 }

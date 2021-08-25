@@ -25,10 +25,15 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
   public static final String ERROR_MSG_HASH = "errorMessageHash";
   public static final String STATE = "state";
   public static final String CREATION_TIME = "creationTime";
+  public static final String TREE_PATH = "treePath";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "1.2.0";
+  }
 }

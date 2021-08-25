@@ -5,6 +5,39 @@
  */
 package io.camunda.operate.zeebeimport.v1_1.processors;
 
+import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.entities.listview.VariableForListViewEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.DateUtil;
+import io.camunda.operate.util.SoftHashMap;
+import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.operate.zeebeimport.ElasticsearchQueries;
+import io.camunda.operate.zeebeimport.ImportBatch;
+import io.camunda.operate.zeebeimport.UpdateIncidentsWithTreePathsAction;
+import io.camunda.operate.zeebeimport.cache.ProcessCache;
+import io.camunda.operate.zeebeimport.v1_1.record.Intent;
+import io.camunda.operate.zeebeimport.v1_1.record.RecordImpl;
+import io.camunda.operate.zeebeimport.v1_1.record.value.IncidentRecordValueImpl;
+import io.camunda.operate.zeebeimport.v1_1.record.value.ProcessInstanceRecordValueImpl;
+import io.camunda.operate.zeebeimport.v1_1.record.value.VariableRecordValueImpl;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
@@ -12,42 +45,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.zeebeimport.ElasticsearchManager;
-import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.zeebeimport.cache.ProcessCache;
-import io.camunda.operate.zeebeimport.v1_1.record.Intent;
-import io.camunda.operate.zeebeimport.v1_1.record.RecordImpl;
-import io.camunda.operate.zeebeimport.v1_1.record.value.IncidentRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_1.record.value.VariableRecordValueImpl;
-import io.camunda.operate.zeebeimport.v1_1.record.value.ProcessInstanceRecordValueImpl;
+import java.util.concurrent.Callable;
+import javax.annotation.PostConstruct;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -55,12 +64,17 @@ public class ListViewZeebeRecordProcessor {
   private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES = new HashSet<>();
-  protected static final int ABSENT_PARENT_PROCESS_INSTANCE_ID = -1;
+  private static final String PROCESS_INSTANCE_ID_PREFIX = "PI_";
+  private static final String CALL_ACTIVITY_ID_PREFIX = "CA_";
+  protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
     AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
   }
+
+  @Autowired
+  private BeanFactory beanFactory;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -72,7 +86,27 @@ public class ListViewZeebeRecordProcessor {
   private ProcessCache processCache;
 
   @Autowired
-  private ElasticsearchManager elasticsearchManager;
+  private ElasticsearchQueries elasticsearchQueries;
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private OperateProperties operateProperties;
+
+  @Autowired
+  private PartitionHolder partitionHolder;
+
+  //treePath by processInstanceKey cache
+  private Map<String, String> treePathCache;
+
+  @PostConstruct
+  private void init() {
+    //cache must be able to contain all possible processInstanceKeys with there treePaths before
+    //the data is persisted: import batch size * number of partitions processed by current import node
+    treePathCache = new SoftHashMap<>(operateProperties.getElasticsearch().getBatchSize() *
+        partitionHolder.getPartitionIds().size());
+  }
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
@@ -90,9 +124,9 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  public void processProcessInstanceRecord(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest,
+  public Callable<Void> processProcessInstanceRecord(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest,
       ImportBatch importBatch) throws PersistenceException {
-
+    final Map<String, String> treePathMap = new HashMap<>();
     for (Map.Entry<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       ProcessInstanceForListViewEntity piEntity = null;
       Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<Long, FlowNodeInstanceForListViewEntity>();
@@ -105,9 +139,9 @@ public class ListViewZeebeRecordProcessor {
           //complete operation
           if (intentStr.equals(ELEMENT_TERMINATED.name())) {
             //resolve corresponding operation
-            elasticsearchManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
+            elasticsearchQueries.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
           }
-          piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity);
+          piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity, treePathMap);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           updateFlowNodeInstance(record, intentStr, recordValue, actEntities);
         }
@@ -119,12 +153,14 @@ public class ListViewZeebeRecordProcessor {
         bulkRequest.add(getFlowNodeInstanceQuery(actEntity, processInstanceKey));
       }
     }
+    return beanFactory.getBean(UpdateIncidentsWithTreePathsAction.class, treePathMap);
   }
 
 
   private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch, Record record, String intentStr,
                                                                    ProcessInstanceRecordValueImpl recordValue,
-                                                                   ProcessInstanceForListViewEntity piEntity) {
+                                                                   ProcessInstanceForListViewEntity piEntity,
+                                                                   Map<String, String> treePathMap) {
     if (piEntity == null) {
       piEntity = new ProcessInstanceForListViewEntity();
     }
@@ -154,13 +190,53 @@ public class ListViewZeebeRecordProcessor {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
     //call activity related fields
-    if (recordValue.getParentProcessInstanceKey() != ABSENT_PARENT_PROCESS_INSTANCE_ID) {
+    if (recordValue.getParentProcessInstanceKey() != EMPTY_PARENT_PROCESS_INSTANCE_ID) {
       piEntity
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey());
       piEntity
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
+      if (piEntity.getTreePath() == null) {
+        final String treePath = getTreePathForCalledProcess(recordValue);
+        piEntity.setTreePath(treePath);
+        treePathMap.put(String.valueOf(record.getKey()), treePath);
+      }
+    }
+    if (piEntity.getTreePath() == null) {
+      piEntity.setTreePath(PROCESS_INSTANCE_ID_PREFIX + ConversionUtils
+          .toStringOrNull(recordValue.getProcessInstanceKey()));
+      treePathCache.put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()),
+          PROCESS_INSTANCE_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()));
     }
     return piEntity;
+  }
+
+  private String getTreePathForCalledProcess(final ProcessInstanceRecordValueImpl recordValue) {
+    String parentTreePath = null;
+
+    //search in cache
+    if (treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getParentProcessInstanceKey()))
+        != null) {
+      parentTreePath = treePathCache
+          .get(ConversionUtils.toStringOrNull(recordValue.getParentProcessInstanceKey()));
+    }
+    //query from ELS
+    if (parentTreePath == null) {
+      parentTreePath = elasticsearchQueries
+          .findProcessInstanceTreePath(recordValue.getParentProcessInstanceKey());
+
+    }
+    //still not found - smth is wrong
+    if (parentTreePath == null) {
+      throw new OperateRuntimeException(
+          "Unable to find parent tree path for parent instance id " + recordValue.getParentProcessInstanceKey());
+    }
+    String treePath = String.join("/", parentTreePath,
+        CALL_ACTIVITY_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey()),
+        PROCESS_INSTANCE_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()));
+
+    treePathCache.put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+
+    return treePath;
   }
 
   private void updateFlowNodeInstance(Record record, String intentStr, ProcessInstanceRecordValueImpl recordValue, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
@@ -213,7 +289,7 @@ public class ListViewZeebeRecordProcessor {
     Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
 
-    return getActivityInstanceFromIncidentQuery(entity, processInstanceKey);
+    return getFlowNodeInstanceFromIncidentQuery(entity, processInstanceKey);
   }
 
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue) throws PersistenceException {
@@ -273,7 +349,7 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getActivityInstanceFromIncidentQuery(
+  private UpdateRequest getFlowNodeInstanceFromIncidentQuery(
       FlowNodeInstanceForListViewEntity entity, Long processInstanceKey) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());

@@ -233,6 +233,12 @@ public abstract class ElasticsearchUtil {
     processBulkRequest(esClient, bulkRequest, false);
   }
 
+  public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest,
+      Runnable afterBulkAction) throws PersistenceException {
+    processBulkRequest(esClient, bulkRequest, false);
+    afterBulkAction.run();
+  }
+
   public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately) throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {

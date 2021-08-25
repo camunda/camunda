@@ -24,6 +24,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
   public static final String STATE = "state";
   public static final String PARENT_PROCESS_INSTANCE_KEY = "parentProcessInstanceKey";
   public static final String PARENT_FLOW_NODE_INSTANCE_KEY = "parentFlowNodeInstanceKey";
+  public static final String TREE_PATH = "treePath";
 
   public static final String ACTIVITY_ID = "activityId";
   public static final String ACTIVITY_STATE = "activityState";
@@ -51,7 +52,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
 
   @Override
   public String getVersion() {
-     return "1.1.0";
+     return "1.2.0";
   }
 
 }

@@ -24,10 +24,13 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
   @Override
   public void performImport(ImportBatch importBatch) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
-    processZeebeRecords(importBatch, bulkRequest);
+    Callable<Void> callable = processZeebeRecords(importBatch, bulkRequest);
     try {
       withTimer(() -> {
         ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+        if (callable != null) {
+          callable.call();
+        }
         return null;
       });
     } catch (Exception e) {
@@ -39,6 +42,13 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_INDEX_QUERY).recordCallable(callable);
   }
 
-  protected abstract void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException;
+  /**
+   * Returns action to be performed (synchronously) after successful execution of bulk request.
+   * @param importBatch
+   * @param bulkRequest
+   * @return
+   * @throws PersistenceException
+   */
+  protected abstract Callable processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException;
 
 }

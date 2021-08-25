@@ -5,8 +5,11 @@
  */
 package io.camunda.operate.zeebeimport.v1_1.processors;
 
+import io.camunda.operate.util.CollectionUtil;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -64,7 +67,9 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private ObjectMapper objectMapper;
 
   @Override
-  protected void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException {
+  protected Callable<Void> processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException {
+
+    Callable<Void> afterFlushAction = null;
 
     JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, getRecordValueClass(importBatch.getImportValueType()));
     final List<Record> zeebeRecords = ElasticsearchUtil.mapSearchHits(importBatch.getHits(), objectMapper, valueType);
@@ -75,9 +80,13 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
     switch (importValueType) {
     case PROCESS_INSTANCE:
-      Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords.stream()
-          .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getProcessInstanceKey()));
-      listViewZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
+      Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords
+          .stream()
+          .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(LinkedHashMap::new,
+              (map, item) -> CollectionUtil
+                  .addToMap(map, item.getValue().getProcessInstanceKey(), item),
+              Map::putAll);
+      afterFlushAction = listViewZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
       Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords.stream()
           .map(obj -> (RecordImpl<ProcessInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
       List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
@@ -95,7 +104,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
       }
-      incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
+      afterFlushAction = incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
       Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> groupedIncidentRecordsPerActivityInst = zeebeRecords.stream()
           .map(obj -> (RecordImpl<IncidentRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
       eventZeebeRecordProcessor.processIncidentRecords(groupedIncidentRecordsPerActivityInst, bulkRequest);
@@ -128,6 +137,8 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
       logger.debug("Default case triggered for type {}", importValueType);
       break;
     }
+
+    return afterFlushAction;
 
   }
 

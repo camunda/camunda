@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.zeebeimport.ElasticsearchManager;
+import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ public class ProcessCache {
   private static final long WAIT_TIME = 200;
 
   @Autowired
-  private ElasticsearchManager elasticsearchManager;
+  private ElasticsearchQueries elasticsearchQueries;
 
   public String getProcessNameOrDefaultValue(Long processDefinitionKey, String defaultValue) {
     final ProcessEntity cachedProcessData = cache.get(processDefinitionKey);
@@ -55,7 +55,7 @@ public class ProcessCache {
   
   private Optional<ProcessEntity> readProcessByKey(Long processDefinitionKey) {
     try {
-      return Optional.of(elasticsearchManager.getProcess(processDefinitionKey));
+      return Optional.of(elasticsearchQueries.getProcess(processDefinitionKey));
     } catch (OperateRuntimeException ex) {
       return Optional.empty();
     }

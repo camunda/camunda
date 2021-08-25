@@ -5,36 +5,40 @@
  */
 package io.camunda.operate.zeebeimport.v1_1.processors;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.zeebeimport.ElasticsearchManager;
+import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.IncidentNotifier;
-import io.camunda.operate.zeebeimport.v1_1.record.value.IncidentRecordValueImpl;
+import io.camunda.operate.zeebeimport.UpdateIncidentsFromProcessInstancesAction;
 import io.camunda.operate.zeebeimport.v1_1.record.Intent;
+import io.camunda.operate.zeebeimport.v1_1.record.value.IncidentRecordValueImpl;
+import io.camunda.zeebe.protocol.record.Record;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.Record;
 
 @Component
 public class IncidentZeebeRecordProcessor {
@@ -51,38 +55,53 @@ public class IncidentZeebeRecordProcessor {
   private IncidentTemplate incidentTemplate;
 
   @Autowired
-  private ElasticsearchManager elasticsearchManager;
-
+  private ElasticsearchQueries elasticsearchQueries;
 
   @Autowired
   private IncidentNotifier incidentNotifier;
 
-  public void processIncidentRecord(List<Record> records, BulkRequest bulkRequest) throws PersistenceException {
+  @Autowired
+  private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  private BeanFactory beanFactory;
+
+  public Callable<Void> processIncidentRecord(List<Record> records, BulkRequest bulkRequest) throws PersistenceException {
     List<IncidentEntity> newIncidents = new ArrayList<>();
+    List<String> processInstanceIdsForTreePathUpdate = new ArrayList<>();
     for (Record record: records) {
-      processIncidentRecord(record, bulkRequest, newIncidents::add);
+      processIncidentRecord(record, bulkRequest, newIncidents::add, processInstanceIdsForTreePathUpdate);
     }
     if (operateProperties.getAlert().getWebhook() != null) {
       incidentNotifier.notifyOnIncidents(newIncidents);
     }
+    return beanFactory.getBean(UpdateIncidentsFromProcessInstancesAction.class,
+        processInstanceIdsForTreePathUpdate);
   }
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest,
-      Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
+      Consumer<IncidentEntity> newIncidentHandler,
+      List<String> processInstanceIdsForTreePathUpdate) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
-    persistIncident(record, recordValue, bulkRequest, newIncidentHandler);
+    persistIncident(record, recordValue, bulkRequest, newIncidentHandler,
+        processInstanceIdsForTreePathUpdate);
 
   }
 
-  private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest,
-      Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
+  private void persistIncident(Record record, IncidentRecordValueImpl recordValue,
+      BulkRequest bulkRequest,
+      Consumer<IncidentEntity> newIncidentHandler,
+      List<String> processInstanceIdsForTreePathUpdate) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
     if (intentStr.equals(Intent.RESOLVED.toString())) {
 
       //resolve corresponding operation
-      elasticsearchManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
+      elasticsearchQueries.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
 
       bulkRequest.add(getIncidentDeleteQuery(incidentKey));
     } else if (intentStr.equals(Intent.CREATED.toString())) {
@@ -107,6 +126,20 @@ public class IncidentZeebeRecordProcessor {
       }
       incident.setState(IncidentState.ACTIVE);
       incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+
+      if (incident.getTreePath() == null) {
+        String processInstanceTreePath = elasticsearchQueries
+            .findProcessInstanceTreePath(recordValue.getProcessInstanceKey());
+        if (processInstanceTreePath == null) {
+          logger.warn("No tree path found for incident [{}], processInstanceKey [{}]",
+              incident.getKey(), recordValue.getProcessInstanceKey());
+          incident.setTreePath(String.valueOf(recordValue.getProcessInstanceKey()));
+          processInstanceIdsForTreePathUpdate.add(String.valueOf(recordValue.getProcessInstanceKey()));
+        } else {
+          incident.setTreePath(processInstanceTreePath);
+        }
+      }
+
       bulkRequest.add(getIncidentInsertQuery(incident));
       newIncidentHandler.accept(incident);
     }
