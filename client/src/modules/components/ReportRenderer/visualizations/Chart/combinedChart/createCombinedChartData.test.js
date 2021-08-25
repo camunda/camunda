@@ -131,12 +131,16 @@ it('should return a dataset for each measure value in multi measure reports', ()
     label: 'report A - Count',
     data: [123, null],
     formatter: expect.any(Function),
+    order: undefined,
+    stack: 0,
   });
   expect(chartData.datasets[2]).toEqual({
     yAxisID: 'axis-1',
     label: 'report A - Duration',
     data: [123, null],
     formatter: expect.any(Function),
+    order: undefined,
+    stack: 1,
   });
 });
 

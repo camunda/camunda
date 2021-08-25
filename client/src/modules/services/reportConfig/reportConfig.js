@@ -71,11 +71,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
       // check additional requirements for certain visualizations
       switch (targetVisualization) {
         case 'stacked':
-          return (
-            report.data.distributedBy.type !== 'none' &&
-            targetView.properties.length <= 1 &&
-            isVisualizationAllowed
-          );
+          return report.data.distributedBy.type !== 'none' && isVisualizationAllowed;
         case 'barLine':
           return targetView.properties.length > 1 && isVisualizationAllowed;
         default:

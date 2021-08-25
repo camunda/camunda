@@ -78,6 +78,7 @@ function createMultiMeasureChartData(props) {
         data: report.map(({value}) => value),
         formatter: formatters[measure.property],
         order,
+        stack: idx,
         ...createDatasetOptions({
           type,
           data: report,
