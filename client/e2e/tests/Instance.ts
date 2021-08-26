@@ -454,8 +454,7 @@ test('Instance with an incident - incident bar', async (t) => {
     .eql(3);
 });
 
-// This test was skipped, because of OPE-1098, please unskip, when the bug is fixed
-test.skip('Instance with an incident - cancel an instance', async (t) => {
+test('Instance with an incident - cancel an instance', async (t) => {
   const {
     initialData: {instanceWithIncidentToCancel},
   } = t.fixtureCtx;
@@ -467,7 +466,7 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
   await t
     .expect(
       screen.queryByRole('button', {
-        name: `View 3 Incidents in Instance ${instanceId}.`,
+        name: `View 3 Incidents in Instance ${instanceId}`,
       }).exists
     )
     .ok();
@@ -486,7 +485,7 @@ test.skip('Instance with an incident - cancel an instance', async (t) => {
   await t
     .expect(
       screen.queryByRole('button', {
-        name: `View 3 Incidents in Instance ${instanceId}.`,
+        name: `View 3 Incidents in Instance ${instanceId}`,
       }).exists
     )
     .notOk();

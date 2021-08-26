@@ -36,8 +36,7 @@ test('infinite scrolling', async (t) => {
   await t.expect(screen.getAllByTestId('operations-entry').count).eql(40);
 });
 
-// This test was skipped, because of OPE-1098, please unskip, when the bug is fixed
-test.skip('Retry and Cancel single instance ', async (t) => {
+test('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
 
@@ -138,8 +137,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
     .ok();
 });
 
-// This test was skipped, because of OPE-1098, please unskip, when the bug is fixed
-test.skip('Retry and cancel multiple instances ', async (t) => {
+test('Retry and cancel multiple instances ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instances = initialData.batchOperationInstances.slice(0, 5);
   const instancesListItems = within(
@@ -207,7 +205,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
 
   // reset filters
   await t
-    .click(screen.queryByRole('button', {name: 'Reset filters'}))
+    .click(screen.queryByRole('button', {name: /reset filters/i}))
     .expect(within(instancesList).getAllByRole('row').count)
     .gt(instances.length);
 

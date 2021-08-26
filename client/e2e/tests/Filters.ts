@@ -280,8 +280,7 @@ test('Error Message filter', async (t) => {
     );
 });
 
-//https://jira.camunda.com/browse/OPE-1098
-test.skip('End Date filter', async (t) => {
+test('End Date filter', async (t) => {
   const {
     initialData: {instanceToCancel},
   } = t.fixtureCtx;
@@ -453,8 +452,7 @@ test('Variable filter', async (t) => {
     );
 });
 
-//https://jira.camunda.com/browse/OPE-1098
-test.skip('Operation ID filter', async (t) => {
+test('Operation ID filter', async (t) => {
   const {
     initialData: {instanceToCancelForOperations},
   } = t.fixtureCtx;
@@ -524,7 +522,7 @@ test.skip('Operation ID filter', async (t) => {
         incidents: 'true',
         completed: 'true',
         canceled: 'true',
-        batchOperationId: operationId,
+        operationId,
       })
     );
 

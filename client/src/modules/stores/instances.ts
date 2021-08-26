@@ -62,6 +62,7 @@ class Instances extends NetworkReconnectionHandler {
   completedOperationActionsDisposer: null | IReactionDisposer = null;
   instancesPollingDisposer: null | IReactionDisposer = null;
   retryInstanceFetchTimeout: NodeJS.Timeout | null = null;
+  refreshInstanceTimeout: number | undefined;
   completedOperationsHandlers: Array<() => void> = [];
   shouldRetryOnEmptyResponse: boolean = false;
   retryCount: number = 0;
@@ -266,9 +267,16 @@ class Instances extends NetworkReconnectionHandler {
     );
   }
 
-  refreshAllInstances = async (payload: Payload) => {
+  refreshAllInstances = async () => {
     try {
-      const response = await fetchProcessInstances(payload);
+      const response = await fetchProcessInstances({
+        query: getRequestFilters(),
+        sorting: getSorting(),
+        pageSize:
+          this.state.processInstances.length > 0
+            ? this.state.processInstances.length
+            : MAX_INSTANCES_PER_REQUEST,
+      });
 
       if (response.ok) {
         const {processInstances, totalCount} = await response.json();
@@ -416,14 +424,7 @@ class Instances extends NetworkReconnectionHandler {
               handler();
             });
 
-            this.refreshAllInstances({
-              query: getRequestFilters(),
-              sorting: getSorting(),
-              pageSize:
-                this.state.processInstances.length > 0
-                  ? this.state.processInstances.length
-                  : MAX_INSTANCES_PER_REQUEST,
-            });
+            this.refreshAllInstances();
           }
         }
       } else {
@@ -443,14 +444,7 @@ class Instances extends NetworkReconnectionHandler {
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
-      this.refreshAllInstances({
-        query: getRequestFilters(),
-        sorting: getSorting(),
-        pageSize:
-          this.state.processInstances.length > 0
-            ? this.state.processInstances.length
-            : MAX_INSTANCES_PER_REQUEST,
-      });
+      this.refreshAllInstances();
     } else {
       this.state.processInstances
         .filter((instance) => instanceIds.includes(instance.id))
@@ -472,6 +466,11 @@ class Instances extends NetworkReconnectionHandler {
     if (intervalId !== null) {
       clearInterval(intervalId);
       this.intervalId = null;
+
+      this.refreshInstanceTimeout = window.setTimeout(
+        this.refreshAllInstances,
+        2000
+      );
     }
   };
 
@@ -487,6 +486,7 @@ class Instances extends NetworkReconnectionHandler {
     this.instancesPollingDisposer?.();
     this.completedOperationsHandlers = [];
     this.resetRetryInstancesFetch();
+    window.clearTimeout(this.refreshInstanceTimeout);
   }
 }
 

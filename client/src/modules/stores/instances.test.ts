@@ -285,7 +285,7 @@ describe('stores/instances', () => {
       )
     );
 
-    instancesStore.refreshAllInstances({query: {}});
+    instancesStore.refreshAllInstances();
     await waitFor(() =>
       expect(instancesStore.instanceIdsWithActiveOperations).toEqual([])
     );
@@ -304,7 +304,7 @@ describe('stores/instances', () => {
       )
     );
 
-    instancesStore.refreshAllInstances({query: {}});
+    instancesStore.refreshAllInstances();
     await waitFor(() =>
       expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
         '2251799813685625',
