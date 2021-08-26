@@ -243,10 +243,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void recoverFromSnapshot() {
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
-
     final long snapshotPosition = state.getLowestPosition();
-    logStreamReader.seekToNextEvent(snapshotPosition);
-
     LOG.debug(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",
         getName(),
@@ -290,6 +287,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     if (state.hasExporters()) {
+      final long snapshotPosition = state.getLowestPosition();
+      logStreamReader.seekToNextEvent(snapshotPosition);
       if (!isPaused) {
         exporterPhase = ExporterPhase.EXPORTING;
         actor.submit(this::readNextEvent);
