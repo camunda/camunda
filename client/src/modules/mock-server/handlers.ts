@@ -88,9 +88,11 @@ const handlers: RequestHandler[] = [
       }
 
       const parsedResponse = await response.json();
-      const {incidentErrorType} = parsedResponse.instanceMetadata;
+      const {instanceMetadata} = parsedResponse;
 
-      if (incidentErrorType) {
+      if (instanceMetadata && instanceMetadata.incidentErrorType) {
+        const {incidentErrorType, incidentErrorMessage, flowNodeType} =
+          instanceMetadata;
         const errorTypeName =
           Object.entries(ERROR_TYPES).find(
             ([errorTypeName, errorTypeId]) => incidentErrorType === errorTypeId
@@ -101,7 +103,15 @@ const handlers: RequestHandler[] = [
             id: incidentErrorType,
             name: errorTypeName,
           },
-          errorMessage: parsedResponse.instanceMetadata.incidentErrorMessage,
+          errorMessage: incidentErrorMessage,
+          rootCauseInstance:
+            flowNodeType === 'CALL_ACTIVITY'
+              ? {
+                  instanceId: '11111111111111111',
+                  processDefinitionId: '00000000000000000',
+                  processDefinitionName: 'Called Process',
+                }
+              : null,
         };
 
         delete parsedResponse.instanceMetadata.incidentErrorType;

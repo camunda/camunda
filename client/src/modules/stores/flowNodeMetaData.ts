@@ -55,6 +55,11 @@ type MetaData = {
       id: string;
       name: string;
     };
+    rootCauseInstance: {
+      instanceId: string;
+      processDefinitionId: string;
+      processDefinitionName: string;
+    } | null;
   } | null;
   incidentCount: number;
 };

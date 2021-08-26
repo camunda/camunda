@@ -61,7 +61,6 @@ import {statistics} from 'modules/mocks/statistics';
 import {user} from 'modules/mocks/user';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
-import {instancesStore} from 'modules/stores/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 
 const mocks = [

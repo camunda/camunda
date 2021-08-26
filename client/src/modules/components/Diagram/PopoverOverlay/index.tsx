@@ -91,6 +91,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
     // @ts-expect-error
     incidentErrorType,
   } = instanceMetadata || {};
+  const rootCauseInstance = incident?.rootCauseInstance || null;
 
   return selectedFlowNodeRef !== null
     ? createPortal(
@@ -192,11 +193,9 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                               incidentsStore.toggleFlowNodeSelection(
                                 flowNodeId
                               );
-                              if (incident.errorType !== null) {
-                                incidentsStore.toggleErrorTypeSelection(
-                                  incident.errorType.id
-                                );
-                              }
+                              incidentsStore.toggleErrorTypeSelection(
+                                incident.errorType.id
+                              );
                               incidentsStore.setIncidentBarOpen(true);
                             }}
                             title="Show incident"
@@ -213,6 +212,25 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                             <SummaryDataKey>Error Message</SummaryDataKey>
                             <SummaryDataValue>
                               {incident.errorMessage}
+                            </SummaryDataValue>
+                          </>
+                        )}
+                        {rootCauseInstance !== null && (
+                          <>
+                            <SummaryDataKey>Root Cause Instance</SummaryDataKey>
+                            <SummaryDataValue>
+                              <Link
+                                to={(location) =>
+                                  Locations.instance(
+                                    rootCauseInstance.instanceId,
+                                    location
+                                  )
+                                }
+                                title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                              >
+                                {`${rootCauseInstance.processDefinitionName}
+                                - ${rootCauseInstance.instanceId}`}
+                              </Link>
                             </SummaryDataValue>
                           </>
                         )}

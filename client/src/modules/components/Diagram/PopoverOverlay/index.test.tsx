@@ -73,6 +73,11 @@ const incidentFlowNodeMetaData = {
   incident: {
     errorType: {id: 'JOB_NO_RETRIES', name: 'No more retries left.'},
     errorMessage: 'There are no more retries left.',
+    rootCauseInstance: {
+      instanceId: '00000000000000',
+      processDefinitionId: '111111111111111',
+      processDefinitionName: 'Called Process',
+    },
   },
   incidentCount: 1,
   instanceMetadata: {
@@ -173,6 +178,11 @@ describe('PopoverOverlay', () => {
     if (IS_NEXT_INCIDENTS) {
       expect(screen.getByText(incident.errorMessage)).toBeInTheDocument();
       expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          `${incident.rootCauseInstance.processDefinitionName} - ${incident.rootCauseInstance.instanceId}`
+        )
+      );
     } else {
       expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
       expect(screen.getByText(incidentErrorType)).toBeInTheDocument();
