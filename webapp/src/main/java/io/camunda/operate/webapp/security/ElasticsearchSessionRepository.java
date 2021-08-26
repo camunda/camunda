@@ -12,9 +12,7 @@ import static io.camunda.operate.schema.indices.OperateWebSessionIndex.LAST_ACCE
 import static io.camunda.operate.schema.indices.OperateWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
 
 import io.camunda.operate.es.RetryElasticsearchClient;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
-import io.camunda.operate.util.SoftHashMap;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.TypeDescriptor;
@@ -45,11 +43,10 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.stereotype.Component;
 
 @Configuration
-@ConditionalOnProperty(
-    prefix = OperateProperties.PREFIX,
-    value = "persistentSessionsEnabled",
-    havingValue = "true"
-    //,matchIfMissing = true
+@ConditionalOnExpression(
+    "${camunda.operate.persistent.sessions.enabled:false}"
+        + " or " +
+    "${camunda.operate.persistentSessionsEnabled:false}"
 )
 @Component
 @EnableSpringHttpSession
@@ -71,8 +68,6 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Autowired
   @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
-
-  private Map<String, ElasticsearchSession> cache = new SoftHashMap<>();
 
   @PostConstruct
   private void setUp() {
@@ -140,15 +135,12 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
       delete(session.getId());
       return;
     }
-    cache.put(session.getId(), session);
     if (session.isChanged()) {
       logger.debug("Session {} changed, save in Elasticsearch.", session);
-      executeAsyncElasticsearchRequest(() ->
-          retryElasticsearchClient.createOrUpdateDocument(
-            operateWebSessionIndex.getFullQualifiedName(),
-            session.getId(),
-            sessionToDocument(session)
-          )
+      retryElasticsearchClient.createOrUpdateDocument(
+          operateWebSessionIndex.getFullQualifiedName(),
+          session.getId(),
+          sessionToDocument(session)
       );
       session.clearChangeFlag();
     }
@@ -157,18 +149,16 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public ElasticsearchSession getSession(final String id) {
     logger.debug("Retrieve session {} from Elasticsearch", id);
-    ElasticsearchSession session = cache.get(id);
-    if (session == null) {
-      retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
-      Map<String, Object> document = retryElasticsearchClient
+    ElasticsearchSession session = null;
+    retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
+    Map<String, Object> document = retryElasticsearchClient
           .getDocument(operateWebSessionIndex.getFullQualifiedName(), id);
-      if (document != null) {
+    if (document != null) {
         session = documentToSession(document);
-      }
-      if (session != null && session.isExpired()) {
+    }
+    if (session != null && session.isExpired()) {
         delete(session.getId());
         return null;
-      }
     }
     return session;
   }
@@ -176,7 +166,6 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public void delete(String id) {
     logger.debug("Delete session {}", id);
-    cache.remove(id);
     executeAsyncElasticsearchRequest(() -> retryElasticsearchClient.deleteDocument(operateWebSessionIndex.getFullQualifiedName(), id));
   }
 
@@ -215,7 +204,7 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   }
 
   private void executeAsyncElasticsearchRequest(Runnable requestRunnable) {
-    sessionThreadScheduler.submit(requestRunnable);
+    sessionThreadScheduler.execute(requestRunnable);
   }
 
   static class ElasticsearchSession implements ExpiringSession {
