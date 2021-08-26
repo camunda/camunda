@@ -121,7 +121,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         () -> {
           isPaused = false;
           exporterPhase = ExporterPhase.EXPORTING;
-          actor.submit(this::readNextEvent);
+          if (exporterMode == ExporterMode.ACTIVE) {
+            actor.submit(this::readNextEvent);
+          }
         });
   }
 
