@@ -15,10 +15,13 @@
  */
 package io.atomix.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,12 +44,18 @@ public class SnapshotReplicationListenerTest {
 
     // when
     // leader appended new entries and took snapshot when the follower was disconnected. When
-    // follower reconnects, it should receive a new InstallRequest which resets the log.
+    // follower reconnects, it should receive a new new snapshot which resets the log.
+    final var snapshotReceived = new CountDownLatch(1);
+    raftRule
+        .getPersistedSnapshotStore(follower.name())
+        .addSnapshotListener(s -> snapshotReceived.countDown());
     raftRule.reconnect(follower);
 
+    assertThat(snapshotReceived.await(30, TimeUnit.SECONDS)).isTrue();
+
     // then
-    verify(snapshotReplicationListener, timeout(1000L).times(1)).onSnapshotReplicationStarted();
-    verify(snapshotReplicationListener, timeout(1000L).times(1))
+    verify(snapshotReplicationListener, timeout(1_000).times(1)).onSnapshotReplicationStarted();
+    verify(snapshotReplicationListener, timeout(1_000).times(1))
         .onSnapshotReplicationCompleted(follower.getTerm());
   }
 }
