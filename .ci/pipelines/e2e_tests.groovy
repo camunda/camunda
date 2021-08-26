@@ -58,11 +58,11 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
       requests:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
 """ \
  + gcloudContainerSpec() \
  + postgresContainerSpec() + camBpmContainerSpec(camBpmVersion) \
