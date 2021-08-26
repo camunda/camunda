@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
@@ -58,6 +59,7 @@ public class IngestionClient {
       .setId("anId")
       .setName("aName")
       .setValue("aValue")
+      .setType(VariableType.STRING)
       .setProcessInstanceId("anInstanceId")
       .setProcessDefinitionKey("aDefinitionKey");
   }

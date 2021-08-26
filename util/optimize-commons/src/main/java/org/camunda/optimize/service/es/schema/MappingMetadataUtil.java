@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
@@ -126,7 +127,8 @@ public class MappingMetadataUtil {
       new PositionBasedImportIndex(),
       new CombinedReportIndex(),
       new SingleDecisionReportIndex(),
-      new SingleProcessReportIndex()
+      new SingleProcessReportIndex(),
+      new ExternalProcessVariableIndex()
     );
   }
 

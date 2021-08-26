@@ -9,11 +9,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.variable.ExternalVariableService;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
@@ -72,6 +75,7 @@ public class IngestionRestService {
   public void ingestVariables(final @Context ContainerRequestContext requestContext,
                               final @NotNull @Valid @RequestBody List<ExternalProcessVariableRequestDto> variableDtos) {
     validateAccessToken(requestContext, getVariableIngestionAccessToken());
+    validateVariableType(variableDtos);
     externalVariableService.storeExternalProcessVariables(
       toExternalProcessVariableDtos(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
@@ -95,6 +99,15 @@ public class IngestionRestService {
         .data(cloudEventDto.getData())
         .build())
       .collect(toList());
+  }
+
+  private void validateVariableType(final List<ExternalProcessVariableRequestDto> variables) {
+    if (variables.stream().anyMatch(variable -> !VariableHelper.isVariableTypeSupported(variable.getType()))) {
+      throw new BadRequestException(String.format(
+        "A given variable type is not supported. The type must always be one of: %s",
+        ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES
+      ));
+    }
   }
 
   private void validateAccessToken(final ContainerRequestContext requestContext, final String expectedAccessToken) {

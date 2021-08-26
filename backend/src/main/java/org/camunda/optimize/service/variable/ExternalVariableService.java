@@ -5,15 +5,20 @@
  */
 package org.camunda.optimize.service.variable;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import org.camunda.optimize.service.es.writer.variable.ExternalProcessVariableWriter;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class ExternalVariableService {
 
+  private final ExternalProcessVariableWriter externalProcessVariableWriter;
+
   public void storeExternalProcessVariables(final List<ExternalProcessVariableDto> externalProcessVariables) {
-    // TODO with OPT-5500
+    externalProcessVariableWriter.writeExternalProcessVariables(externalProcessVariables);
   }
 }

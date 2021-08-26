@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
@@ -58,7 +59,8 @@ public class ReimportPreparation {
     new TenantIndex(),
     new BusinessKeyIndex(),
     new VariableUpdateInstanceIndex(),
-    new EventProcessPublishStateIndex()
+    new EventProcessPublishStateIndex(),
+    new ExternalProcessVariableIndex()
   );
   private static final List<IndexMappingCreator> DYNAMIC_EVENT_INDICES_TO_DELETE = List.of(
     new EventProcessInstanceIndex("*"),

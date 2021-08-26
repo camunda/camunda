@@ -12,6 +12,7 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -26,6 +27,8 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
   @NotBlank
   private String name;
   private String value;
+  @NotNull
+  private VariableType type;
   @NotBlank
   private String processInstanceId;
   @NotBlank
@@ -39,6 +42,7 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
         .setVariableId(varDto.getId())
         .setVariableName(varDto.getName())
         .setVariableValue(varDto.getValue())
+        .setVariableType(varDto.getType())
         .setProcessInstanceId(varDto.getProcessInstanceId())
         .setProcessDefinitionKey(varDto.getProcessDefinitionKey()))
       .collect(toList());
