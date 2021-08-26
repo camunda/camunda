@@ -17,37 +17,39 @@ import './BarLineConfig.scss';
 export default function BarLineConfig({onChange, report}) {
   const configuration = report.data.configuration;
 
-  const posibilities = {
-    count: {
-      bar: ['bar', 'line'],
-      line: ['line', 'bar'],
-    },
-    duration: {
-      bar: ['line', 'bar'],
-      line: ['bar', 'line'],
-    },
+  const otherMeasure = {
+    frequency: 'duration',
+    duration: 'frequency',
   };
 
   return (
-    <>
-      <fieldset className="visualizationSetting">
+    <div className="BarLineConfig">
+      <fieldset>
         <legend>{t('report.config.barLine.visualizationSettings')}</legend>
-        {['count', 'duration'].map((measure, idx) => (
+        {['frequency', 'duration'].map((measure, idx) => (
           <div className="measureContainer" key={idx}>
-            <span>{t('report.view.' + measure)}</span>
+            <span>{t('report.view.' + (measure === 'frequency' ? 'count' : 'duration'))}</span>
             <ButtonGroup>
               <Button
-                active={configuration.measureVisualizations[idx] === 'line'}
+                active={configuration.measureVisualizations[measure] === 'line'}
                 onClick={() =>
-                  onChange({measureVisualizations: {$set: posibilities[measure]['line']}})
+                  onChange({
+                    measureVisualizations: {
+                      $set: {[measure]: 'line', [otherMeasure[measure]]: 'bar'},
+                    },
+                  })
                 }
               >
                 {t('report.config.barLine.line')}
               </Button>
               <Button
-                active={configuration.measureVisualizations[idx] === 'bar'}
+                active={configuration.measureVisualizations[measure] === 'bar'}
                 onClick={() =>
-                  onChange({measureVisualizations: {$set: posibilities[measure]['bar']}})
+                  onChange({
+                    measureVisualizations: {
+                      $set: {[measure]: 'bar', [otherMeasure[measure]]: 'line'},
+                    },
+                  })
                 }
               >
                 {t('report.config.barLine.bar')}
@@ -58,6 +60,6 @@ export default function BarLineConfig({onChange, report}) {
       </fieldset>
       <PointMarkersConfig {...{onChange, configuration}} />
       <BarChartConfig {...{onChange, report}} />
-    </>
+    </div>
   );
 }

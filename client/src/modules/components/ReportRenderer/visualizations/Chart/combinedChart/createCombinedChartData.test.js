@@ -46,7 +46,7 @@ const createReport = ({reportA, reportB, groupByType}, measures, visualization =
         {id: 'reportB', color: reportB.color},
       ],
       visualization,
-      configuration: {measureVisualizations: ['line', 'bar']},
+      configuration: {measureVisualizations: {frequency: 'line', duration: 'bar'}},
     },
     combined: true,
   };
@@ -145,7 +145,7 @@ it('should return a dataset for each measure value in multi measure reports', ()
   });
 });
 
-it('should assign line/bar visualization to dataset according to configuration order', () => {
+it('should assign line/bar visualization to dataset according to measureVisualizations configuration', () => {
   createDatasetOptions.mockImplementation((options) => options);
   const reportA = {
     data: [{key: 'flowNode1', value: 123, label: 'Dec 2017'}],

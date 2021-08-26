@@ -19,7 +19,10 @@ const report = {
     groupBy: {},
     distributedBy: {type: 'none', value: null},
     configuration: {
-      measureVisualizations: ['bar', 'line'],
+      measureVisualizations: {
+        frequency: 'bar',
+        duration: 'line',
+      },
     },
   },
   result: {
@@ -50,8 +53,14 @@ it('should change measure visualization on button click', () => {
   const node = shallow(<BarLineConfig report={report} onChange={spy} />);
 
   node.find('.measureContainer').at(0).find(Button).at(0).simulate('click');
-  expect(spy.mock.calls[0][0].measureVisualizations.$set).toEqual(['line', 'bar']);
+  expect(spy.mock.calls[0][0].measureVisualizations.$set).toEqual({
+    frequency: 'line',
+    duration: 'bar',
+  });
 
   node.find('.measureContainer').at(1).find(Button).at(0).simulate('click');
-  expect(spy.mock.calls[1][0].measureVisualizations.$set).toEqual(['bar', 'line']);
+  expect(spy.mock.calls[1][0].measureVisualizations.$set).toEqual({
+    frequency: 'bar',
+    duration: 'line',
+  });
 });

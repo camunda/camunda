@@ -35,7 +35,7 @@ export default function createDefaultChartData(props) {
     let type = visualization;
     let order;
     if (visualization === 'barLine') {
-      type = measureVisualizations[measure.property === 'frequency' ? 0 : 1];
+      type = measureVisualizations[measure.property];
       order = type === 'line' ? 0 : 1;
     }
 

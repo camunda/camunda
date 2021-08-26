@@ -85,7 +85,7 @@ it('should return correct chart data object for multi-measure report', () => {
   ).toMatchSnapshot();
 });
 
-it('should assign line/bar visualization to dataset according to configuration order', () => {
+it('should assign line/bar visualization to dataset according to measureVisualizations configuration', () => {
   const result = {
     measures: [
       {
@@ -110,7 +110,10 @@ it('should assign line/bar visualization to dataset according to configuration o
     report: {
       result,
       data: {
-        configuration: {color: 'testColor', measureVisualizations: ['line', 'bar']},
+        configuration: {
+          color: 'testColor',
+          measureVisualizations: {frequency: 'line', duration: 'bar'},
+        },
         visualization: 'barLine',
         groupBy: {
           type: '',
