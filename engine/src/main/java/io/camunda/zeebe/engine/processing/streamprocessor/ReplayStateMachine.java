@@ -144,12 +144,12 @@ public final class ReplayStateMachine {
   }
 
   void replayNextEvent() {
+    if (shouldPause.getAsBoolean()) {
+      return;
+    }
+
     LoggedEvent currentEvent = null;
     try {
-      if (shouldPause.getAsBoolean()) {
-        return;
-      }
-
       if (logStreamReader.hasNext()) {
         currentState = State.REPLAY_EVENT;
 
