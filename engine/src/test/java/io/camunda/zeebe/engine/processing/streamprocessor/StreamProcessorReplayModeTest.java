@@ -156,7 +156,6 @@ public final class StreamProcessorReplayModeTest {
 
     // then
     final var inOrder = inOrder(typedRecordProcessor, eventApplier);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onPaused();
     inOrder.verifyNoMoreInteractions();
     assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.PAUSED);
   }
@@ -183,7 +182,6 @@ public final class StreamProcessorReplayModeTest {
     inOrder
         .verify(eventApplier, TIMEOUT.times(1))
         .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onPaused();
     inOrder.verifyNoMoreInteractions();
 
     assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.PAUSED);
@@ -233,12 +231,7 @@ public final class StreamProcessorReplayModeTest {
     // then
     final var inOrder = inOrder(typedRecordProcessor, eventApplier);
     inOrder
-        .verify(eventApplier, TIMEOUT.times(1))
-        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onPaused();
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onResumed();
-    inOrder
-        .verify(eventApplier, TIMEOUT.times(1))
+        .verify(eventApplier, TIMEOUT.times(2))
         .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
     inOrder.verifyNoMoreInteractions();
 
