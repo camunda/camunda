@@ -27,7 +27,9 @@ public class RecordLogger {
   }
 
   public static void logRecordsCompact(final Collection<Record<?>> records) {
-    new CompactRecordLogger(records).log();
+    if (!records.isEmpty()) {
+      new CompactRecordLogger(records).log();
+    }
   }
 
   public static void logRecordsRaw(final Collection<Record<?>> records) {
