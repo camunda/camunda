@@ -443,9 +443,14 @@ public final class ProcessingStateMachine {
     return !onErrorHandlingLoop;
   }
 
-  public void startProcessing(final long lastReprocessedPosition) {
+  public void startProcessing(final long lastProcessedPosition) {
+    // Replay ends at the end of the log and returns the lastSourceEventPosition
+    // which is equal to the last processed position
+    // we need to seek to the next record after that position where the processing should start
+    // Be aware on processing we ignore events, so we will process the next command
+    logStreamReader.seekToNextEvent(lastProcessedPosition);
     if (lastSuccessfulProcessedEventPosition == StreamProcessor.UNSET_POSITION) {
-      lastSuccessfulProcessedEventPosition = lastReprocessedPosition;
+      lastSuccessfulProcessedEventPosition = lastProcessedPosition;
     }
     actor.submit(this::readNextEvent);
   }

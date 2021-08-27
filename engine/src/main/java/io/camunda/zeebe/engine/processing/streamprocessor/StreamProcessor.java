@@ -139,12 +139,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       } else {
         replayCompletedFuture.onComplete(
-            (lastReprocessedPosition, error) -> {
+            (lastSourceEventPosition, error) -> {
               if (error != null) {
                 LOG.error("The replay of events failed.", error);
                 onFailure(error);
               } else {
-                onRecovered(lastReprocessedPosition);
+                onRecovered(lastSourceEventPosition);
                 metrics.recoveryTime(ActorClock.currentTimeMillis() - startTime);
               }
             });
@@ -288,7 +288,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return zeebeState;
   }
 
-  private void onRecovered(final long lastReprocessedPosition) {
+  private void onRecovered(final long lastSourceEventPosition) {
     phase = Phase.PROCESSING;
 
     // enable writing records to the stream
@@ -298,7 +298,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    processingStateMachine.startProcessing(lastReprocessedPosition);
+    processingStateMachine.startProcessing(lastSourceEventPosition);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
     }
