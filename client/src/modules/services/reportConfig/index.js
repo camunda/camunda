@@ -52,6 +52,14 @@ config.process.update = (type, data, props) => {
     columnOrder: {$set: []},
   };
 
+  if (
+    newReport.data.distributedBy?.type === 'none' &&
+    newReport.data.groupBy?.type === 'none' &&
+    newReport.data.view?.entity !== null
+  ) {
+    changes.visualization = {$set: 'number'};
+  }
+
   // automatically distribute by flownode/usertasks when view is flownode/usertask
   if (
     newReport.data.distributedBy?.type === 'none' &&

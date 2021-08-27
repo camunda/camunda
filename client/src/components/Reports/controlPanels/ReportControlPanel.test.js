@@ -59,6 +59,7 @@ const report = {
     ],
     view: {entity: 'processInstance', properties: ['frequency']},
     groupBy: {type: 'none', unit: null},
+    distributedBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],
     configuration: {
@@ -575,6 +576,44 @@ it('should call updateReport with correct payload when adding measures', () => {
     {...props, updateReport: spy}
   );
   expect(spy).toHaveBeenCalledWith(reportUpdateMock, true);
+});
+
+it('should remove distribute by process if going back to single process report', async () => {
+  const spy = jest.fn();
+
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={update(props.report, {
+        data: {
+          definitions: {
+            $set: [
+              {
+                key: 'aKey',
+                versions: ['aVersion'],
+                tenantIds: [],
+                identifier: 'def1',
+              },
+              {
+                key: 'aKey',
+                versions: ['aVersion'],
+                tenantIds: [],
+                identifier: 'def2',
+              },
+            ],
+          },
+          distributedBy: {$set: {type: 'process', value: null}},
+        },
+      })}
+      updateReport={spy}
+    />
+  );
+
+  await node.find(DefinitionList).prop('onRemove')(0);
+
+  expect(spy.mock.calls[0][0].distributedBy).toEqual({
+    $set: {type: 'none', value: null},
+  });
 });
 
 describe('filter handling when changing definitions', () => {

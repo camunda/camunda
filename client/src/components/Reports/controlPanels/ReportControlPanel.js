@@ -206,6 +206,14 @@ export default withErrorHandling(
         };
       }
 
+      if (definitions.length === 1 && data.distributedBy.type === 'process') {
+        // going back to single definition reports resets distributed by process reports
+        change.distributedBy = {$set: {type: 'none', value: null}};
+        if (data.groupBy.type === 'none') {
+          change.visualization = {$set: 'number'};
+        }
+      }
+
       const newFilters = [];
       const identifierOfRemovedDefinition = data.definitions[idx].identifier;
       data.filter.forEach((filter) => {
@@ -420,7 +428,7 @@ export default withErrorHandling(
                   value={data.groupBy}
                   report={this.props.report}
                   variables={{variable: variables}}
-                  onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                  onChange={this.props.updateReport}
                   view={data.view}
                 />
                 <DistributedBy report={this.props.report} onChange={this.props.updateReport} />

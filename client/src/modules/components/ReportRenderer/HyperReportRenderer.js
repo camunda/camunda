@@ -17,7 +17,7 @@ const {formatReportResult} = formatters;
 export default function HyperReportRenderer({report, ...rest}) {
   const result = getReportResult(report);
 
-  if (!result.data.length || result.data.some(({value}) => value.length === 0)) {
+  if (!result.data.length || result.instanceCount === 0) {
     const data = result.data.map((entry) => ({...entry, value: 0}));
     const emptyReport = update(report, {result: {measures: {$set: [{data}]}}});
     return <ProcessReportRenderer {...rest} report={emptyReport} />;

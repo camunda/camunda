@@ -125,3 +125,21 @@ it('should hide median aggregation if processpart is defined', () => {
 
   expect(node.find({label: 'Median'})).not.toExist();
 });
+
+it('should disable median aggregation for reports distributed by process', () => {
+  const spy = jest.fn();
+
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {properties: ['duration']},
+        distributedBy: {type: 'process'},
+        configuration: {aggregationTypes: ['avg']},
+      }}
+      onChange={spy}
+    />
+  );
+
+  expect(node.find({label: 'Median'})).toExist();
+  expect(node.find({label: 'Median'}).prop('disabled')).toBe(true);
+});

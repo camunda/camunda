@@ -213,7 +213,7 @@ export class DecisionControlPanel extends React.Component {
                 value={data.groupBy}
                 report={this.props.report}
                 variables={this.state.variables}
-                onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                onChange={this.props.updateReport}
                 view={data.view}
               />
             </ul>

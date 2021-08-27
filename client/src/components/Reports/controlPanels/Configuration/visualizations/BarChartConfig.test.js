@@ -123,3 +123,20 @@ it('should show goal line option and not show stacking option if current visuali
   expect(node.find('.stackedBars')).not.toExist();
   expect(node.find('ChartTargetInput')).toExist();
 });
+
+it('should show Color Picker for distributed by process reports that are grouped by none', () => {
+  const node = shallow(
+    <BarChartConfig
+      report={{
+        ...barReport,
+        data: {
+          ...barReport.data,
+          groupBy: {type: 'none'},
+          distributedBy: {type: 'process', value: null},
+        },
+      }}
+    />
+  );
+
+  expect(node.find('ColorPicker')).toExist();
+});

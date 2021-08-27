@@ -22,7 +22,16 @@ export async function evaluateReport(payload, filter = [], query = {}) {
     response = await post(`api/report/evaluate/`, payload, {query});
   }
 
-  return await response.json();
+  response = await response.json();
+
+  if (
+    response?.data?.groupBy?.type === 'none' &&
+    response?.data?.distributedBy?.type === 'process'
+  ) {
+    response = convertHyperMapToMap(response);
+  }
+
+  return response;
 }
 
 export function getReportResult(report, idx = 0) {
@@ -73,4 +82,16 @@ function formatResult(result, {groupBy: {type}}) {
   }
 
   return result;
+}
+
+function convertHyperMapToMap(report) {
+  const newResult = {...report.result};
+
+  newResult.type = 'map';
+  newResult.measures.forEach((measure) => {
+    measure.type = 'map';
+    measure.data = measure.data[0].value;
+  });
+
+  return {...report, result: newResult};
 }

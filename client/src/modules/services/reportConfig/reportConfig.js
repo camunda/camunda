@@ -57,7 +57,10 @@ export default function reportConfig({view, groupBy, visualization, combinations
       return false;
     }
 
-    if (report.data.distributedBy.type !== 'none') {
+    if (report.data.distributedBy.type !== 'none' && viewGroup !== 'raw') {
+      if (targetVisualization === 'pie' && targetGroupBy.type === 'none') {
+        return true;
+      }
       if (['pie', 'heat'].includes(targetVisualization)) {
         // pie charts and heatmaps generally do not support distributed reports
         return false;
@@ -65,8 +68,12 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {
-      const isVisualizationAllowed =
+      let isVisualizationAllowed =
         combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
+
+      if (report.data.distributedBy.type === 'process' && viewGroup !== 'raw') {
+        isVisualizationAllowed = ['table', 'chart'].includes(visualizationGroup);
+      }
 
       if (targetVisualization === 'barLine') {
         // barLine is only supported for multi measure reports

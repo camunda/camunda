@@ -48,11 +48,15 @@
     padding-top: 10px;
   }
 
-  .Switch:first-child {
-    margin-top: 14px;
-  }
-
   .Form fieldset {
     padding-bottom: 14px;
+
+    > :first-child {
+      margin-top: 14px;
+    }
+
+    .Switch {
+      display: inline;
+    }
   }
 }

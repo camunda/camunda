@@ -451,7 +451,8 @@
         "min": "Minimum",
         "avg": "Average",
         "median": "Median",
-        "max": "Maximum"
+        "max": "Maximum",
+        "multiProcessWarning": "Reports that are grouped by process cannot display median aggregations."
       },
       "aggregationShort": {
         "sum": "Sum",
