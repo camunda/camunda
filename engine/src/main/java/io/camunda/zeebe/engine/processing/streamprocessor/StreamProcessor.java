@@ -402,17 +402,21 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void setStateToPausedAndNotifyListeners() {
-    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+    if (isInReplayOnlyMode()) {
+      LOG.debug("Paused replay for partition {}", partitionId);
+    } else {
+      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+      LOG.debug("Paused processing for partition {}", partitionId);
+    }
+
     shouldProcess = false;
     phase = Phase.PAUSED;
-    LOG.debug("Paused processing for partition {}", partitionId);
   }
 
   public void resumeProcessing() {
     actor.call(
         () -> {
           if (!shouldProcess) {
-            lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
             shouldProcess = true;
 
             if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
@@ -420,6 +424,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               actor.submit(replayStateMachine::replayNextEvent);
               LOG.debug("Resumed replay for partition {}", partitionId);
             } else {
+              // we only want to call the lifecycle listeners on processing resume
+              // since the listeners are not recovered yet
+              lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
               phase = Phase.PROCESSING;
               actor.submit(processingStateMachine::readNextEvent);
               LOG.debug("Resumed processing for partition {}", partitionId);

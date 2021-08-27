@@ -109,7 +109,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onResumed() {
-    if (scheduledTimer == null && streamWriter != null) { // only when recovered
+    if (scheduledTimer == null) {
       triggerTimers();
     }
   }

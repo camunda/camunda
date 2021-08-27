@@ -61,9 +61,7 @@ public final class PendingProcessMessageSubscriptionChecker
 
   @Override
   public void onResumed() {
-    if (actor != null) { // only when recovered
-      scheduleTimer();
-    }
+    scheduleTimer();
   }
 
   private void scheduleTimer() {
