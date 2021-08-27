@@ -72,6 +72,27 @@ public class SnapshotOnFollowerTest {
   }
 
   @Test
+  public void shouldTakeSnapshotsOnAllNodes() {
+    // given
+    ControllableExporter.updatePosition(true);
+
+    publishMessages();
+    ControllableExporter.updatePosition(false);
+    publishMessages();
+
+    // when - then
+    Awaitility.await()
+        .pollInterval(Duration.ofSeconds(1))
+        .timeout(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              snapshotTrigger.accept(clusteringRule);
+              assertThatSnapshotExists();
+            });
+  }
+
+  @Test
   public void shouldIncludeExportedPositionInSnapshotOnFollower() {
     // given
     ControllableExporter.updatePosition(true);
@@ -101,6 +122,10 @@ public class SnapshotOnFollowerTest {
               final var snapshotAtFollower = clusteringRule.getSnapshot(broker).orElseThrow();
               assertThat(snapshotAtFollower.getExportedPosition()).isEqualTo(exportedPosition);
             });
+  }
+
+  private void assertThatSnapshotExists() {
+    clusteringRule.getBrokers().forEach(broker -> clusteringRule.getSnapshot(broker).orElseThrow());
   }
 
   private void configureBroker(final BrokerCfg brokerCfg) {
