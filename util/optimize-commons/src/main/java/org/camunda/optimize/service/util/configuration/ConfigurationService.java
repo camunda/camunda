@@ -1020,7 +1020,7 @@ public class ConfigurationService {
   }
 
   @JsonIgnore
-  public EventIndexRolloverConfiguration getEventIndexRolloverConfiguration() {
+  public IndexRolloverConfiguration getEventIndexRolloverConfiguration() {
     return getEventBasedProcessConfiguration().getEventIndexRollover();
   }
 
@@ -1077,6 +1077,11 @@ public class ConfigurationService {
   @JsonIgnore
   public VariableIngestionConfiguration getVariableIngestionConfiguration() {
     return getExternalVariableConfiguration().getVariableIngestion();
+  }
+
+  @JsonIgnore
+  public IndexRolloverConfiguration getVariableIndexRolloverConfiguration() {
+    return getExternalVariableConfiguration().getVariableIndexRollover();
   }
 
   public GlobalCacheConfiguration getCaches() {

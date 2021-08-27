@@ -22,6 +22,6 @@ public class EventBasedProcessConfiguration {
   private List<String> authorizedGroupIds;
   private EventImportConfiguration eventImport;
   private EventIngestionConfiguration eventIngestion;
-  private EventIndexRolloverConfiguration eventIndexRollover;
+  private IndexRolloverConfiguration eventIndexRollover;
 
 }

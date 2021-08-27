@@ -5,74 +5,48 @@
  */
 package org.camunda.optimize.service.events.rollover;
 
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
-public class IndexRolloverService extends AbstractScheduledService {
+public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
-  private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
-  @Override
-  protected void run() {
-    triggerRollover();
+  public EventIndexRolloverService(final OptimizeElasticsearchClient esClient,
+                                   final ConfigurationService configurationService) {
+    super(esClient);
+    this.configurationService = configurationService;
   }
 
   @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(
-      configurationService.getEventBasedProcessConfiguration()
-        .getEventIndexRollover()
-        .getScheduleIntervalInMinutes(),
-      TimeUnit.MINUTES
-    );
-  }
-
-  public List<String> triggerRollover() {
-    List<String> rolledOverIndexAliases = new ArrayList<>();
+  protected Set<String> getAliasesToConsiderRolling() {
     final Set<String> aliasesToConsiderRolling = getCamundaActivityEventsIndexAliases();
     aliasesToConsiderRolling.add(EXTERNAL_EVENTS_INDEX_NAME);
     aliasesToConsiderRolling.add(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
-    aliasesToConsiderRolling
-      .forEach(indexAlias -> {
-        try {
-          boolean isRolledOver = ElasticsearchWriterUtil.triggerRollover(
-            esClient,
-            indexAlias,
-            configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB()
-          );
-          if (isRolledOver) {
-            rolledOverIndexAliases.add(indexAlias);
-          }
-        } catch (Exception e) {
-          log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
-        }
-      });
-    return rolledOverIndexAliases;
+    return aliasesToConsiderRolling;
+  }
+
+  @Override
+  protected int getMaxIndexSizeGB() {
+    return configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB();
+  }
+
+  @Override
+  protected int getScheduleIntervalInMinutes() {
+    return configurationService.getEventIndexRolloverConfiguration().getScheduleIntervalInMinutes();
   }
 
   @SneakyThrows

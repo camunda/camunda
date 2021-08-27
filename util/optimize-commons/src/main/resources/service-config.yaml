@@ -560,3 +560,9 @@ externalVariable:
     # Secret token to be provided to the external variable ingestion API.
     # If set to `null`, a random token will be generated with each startup of Optimize and logged.
     accessToken: ${OPTIMIZE_VARIABLE_INGESTION_ACCESS_TOKEN:null}
+  variableIndexRollover:
+    # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
+    # external variable index is required (whether the rollover is triggered depends on the conditions specified by maxIndexSizeGB).
+    scheduleIntervalInMinutes: 10
+    # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
+    maxIndexSizeGB: 50

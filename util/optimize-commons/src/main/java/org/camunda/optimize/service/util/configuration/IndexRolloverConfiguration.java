@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
-public class EventIndexRolloverConfiguration {
+public class IndexRolloverConfiguration {
   private int scheduleIntervalInMinutes;
   private int maxIndexSizeGB;
 }

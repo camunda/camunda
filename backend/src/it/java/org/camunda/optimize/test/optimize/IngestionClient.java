@@ -42,6 +42,12 @@ public class IngestionClient {
       .execute();
   }
 
+  public void ingestVariables(final List<ExternalProcessVariableRequestDto> variables) {
+    requestExecutorSupplier.get()
+      .buildIngestExternalVariables(variables, getVariableIngestionToken())
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
   public void ingestEventBatch(final List<CloudEventRequestDto> eventDtos) {
     requestExecutorSupplier.get().buildIngestEventBatch(eventDtos, eventAccessTokenSupplier.get()).execute();
   }

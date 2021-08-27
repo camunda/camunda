@@ -10,4 +10,5 @@ import lombok.Data;
 @Data
 public class ExternalVariableConfiguration {
   private VariableIngestionConfiguration variableIngestion;
+  private IndexRolloverConfiguration variableIndexRollover;
 }

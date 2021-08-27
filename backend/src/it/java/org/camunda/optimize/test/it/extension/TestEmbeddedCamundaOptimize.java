@@ -14,7 +14,8 @@ import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
+import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
@@ -161,8 +162,12 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(UserTaskIdentityCacheService.class);
   }
 
-  public IndexRolloverService getEventIndexRolloverService() {
-    return getApplicationContext().getBean(IndexRolloverService.class);
+  public EventIndexRolloverService getEventIndexRolloverService() {
+    return getApplicationContext().getBean(EventIndexRolloverService.class);
+  }
+
+  public ExternalProcessVariableIndexRolloverService getExternalProcessVariableIndexRolloverService() {
+    return getApplicationContext().getBean(ExternalProcessVariableIndexRolloverService.class);
   }
 
   public LocalizationService getLocalizationService() {

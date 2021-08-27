@@ -270,7 +270,7 @@ public class ElasticsearchWriterUtil {
     RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
     rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
 
-    log.info("Executing Rollover Request...");
+    log.info("Executing rollover request on {}", indexAliasName);
 
     try {
       RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);

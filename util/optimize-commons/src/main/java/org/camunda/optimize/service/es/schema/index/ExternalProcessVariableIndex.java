@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -39,6 +40,16 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
   @Override
   public int getVersion() {
     return VERSION;
+  }
+
+  @Override
+  public String getIndexNameInitialSuffix() {
+    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+  }
+
+  @Override
+  public boolean isCreateFromTemplate() {
+    return true;
   }
 
   @Override

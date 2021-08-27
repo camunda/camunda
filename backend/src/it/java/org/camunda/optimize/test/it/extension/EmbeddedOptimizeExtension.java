@@ -28,7 +28,8 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
-import org.camunda.optimize.service.events.rollover.IndexRolloverService;
+import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
+import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
@@ -531,8 +532,12 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getUserTaskIdentityCacheService();
   }
 
-  public IndexRolloverService getEventIndexRolloverService() {
+  public EventIndexRolloverService getEventIndexRolloverService() {
     return getOptimize().getEventIndexRolloverService();
+  }
+
+  public ExternalProcessVariableIndexRolloverService getExternalProcessVariableIndexRolloverService() {
+    return getOptimize().getExternalProcessVariableIndexRolloverService();
   }
 
   public LocalizationService getLocalizationService() {
