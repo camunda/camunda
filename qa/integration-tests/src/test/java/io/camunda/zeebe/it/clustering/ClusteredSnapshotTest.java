@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @RunWith(Parameterized.class)
-public class SnapshotOnFollowerTest {
+public class ClusteredSnapshotTest {
 
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(5);
 
@@ -93,7 +93,7 @@ public class SnapshotOnFollowerTest {
   }
 
   @Test
-  public void shouldIncludeExportedPositionInSnapshotOnFollower() {
+  public void shouldIncludeExportedPositionInSnapshot() {
     // given
     ControllableExporter.updatePosition(true);
 
