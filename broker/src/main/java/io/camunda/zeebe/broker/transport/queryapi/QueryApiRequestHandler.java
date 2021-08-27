@@ -13,10 +13,10 @@ import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
 import io.camunda.zeebe.broker.transport.commandapi.ErrorResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -35,6 +35,7 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -46,19 +47,19 @@ public final class QueryApiRequestHandler implements RequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-  private final ExecuteCommandRequestDecoder executeCommandRequestDecoder =
+  private final ExecuteCommandRequestDecoder executeQueryRequestDecoder =
       new ExecuteCommandRequestDecoder();
   private final Queue<Runnable> cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
   private final Consumer<Runnable> cmdConsumer = Runnable::run;
 
-  private final Int2ObjectHashMap<LogStreamRecordWriter> leadingStreams = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<QueryService> leadingStreams = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
       new Int2ObjectHashMap<>();
   private final RecordMetadata eventMetadata = new RecordMetadata();
 
   private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
 
-  private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
+  private final Map<ValueType, UnifiedRecordValue> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
   private boolean isDiskSpaceAvailable = true;
   private final CommandResponseWriter responseWriter;
@@ -100,26 +101,26 @@ public final class QueryApiRequestHandler implements RequestHandler {
       return;
     }
 
-    executeCommandRequestDecoder.wrap(
+    executeQueryRequestDecoder.wrap(
         buffer,
         messageOffset + messageHeaderDecoder.encodedLength(),
         messageHeaderDecoder.blockLength(),
         messageHeaderDecoder.version());
 
-    final long key = executeCommandRequestDecoder.key();
+    final long key = executeQueryRequestDecoder.key();
 
-    final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
+    final QueryService queryService = leadingStreams.get(partitionId);
 
-    if (logStreamWriter == null) {
+    if (queryService == null) {
       errorResponseWriter
           .partitionLeaderMismatch(partitionId)
           .tryWriteResponseOrLogFailure(output, partitionId, requestId);
       return;
     }
 
-    final ValueType eventType = executeCommandRequestDecoder.valueType();
-    final short intent = executeCommandRequestDecoder.intent();
-    final UnpackedObject event = recordsByType.get(eventType);
+    final ValueType eventType = executeQueryRequestDecoder.valueType();
+    final short intent = executeQueryRequestDecoder.intent();
+    final UnifiedRecordValue event = recordsByType.get(eventType);
 
     if (event == null) {
       errorResponseWriter
@@ -129,8 +130,8 @@ public final class QueryApiRequestHandler implements RequestHandler {
     }
 
     final int eventOffset =
-        executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
-    final int eventLength = executeCommandRequestDecoder.valueLength();
+        executeQueryRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
+    final int eventLength = executeQueryRequestDecoder.valueLength();
 
     event.reset();
 
@@ -166,6 +167,17 @@ public final class QueryApiRequestHandler implements RequestHandler {
       return;
     }
 
+    final Optional<DirectBuffer> bpmnProcessId;
+    if (eventType == ValueType.JOB) {
+      bpmnProcessId = queryService.getBpmnProcessIdForJob(key);
+    } else if (eventType == ValueType.PROCESS) {
+      bpmnProcessId = queryService.getBpmnProcessIdForProcess(key);
+    } else if (eventType == ValueType.PROCESS_INSTANCE) {
+      bpmnProcessId = queryService.getBpmnProcessIdForProcessInstance(key);
+    } else {
+      bpmnProcessId = Optional.empty();
+    }
+
     boolean written = false;
     try {
       written =
@@ -189,37 +201,13 @@ public final class QueryApiRequestHandler implements RequestHandler {
     }
   }
 
-  private boolean writeCommand(
-      final RecordMetadata eventMetadata,
-      final DirectBuffer buffer,
-      final long key,
-      final LogStreamRecordWriter logStreamWriter,
-      final int eventOffset,
-      final int eventLength) {
-    logStreamWriter.reset();
-
-    if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
-      logStreamWriter.key(key);
-    } else {
-      logStreamWriter.keyNull();
-    }
-
-    final long eventPosition =
-        logStreamWriter
-            .metadataWriter(eventMetadata)
-            .value(buffer, eventOffset, eventLength)
-            .tryWrite();
-
-    return eventPosition >= 0;
-  }
-
   public void addPartition(
       final int partitionId,
-      final LogStreamRecordWriter logStreamWriter,
-      final RequestLimiter<Intent> limiter) {
+      final RequestLimiter<Intent> limiter,
+      final QueryService queryService) {
     cmdQueue.add(
         () -> {
-          leadingStreams.put(partitionId, logStreamWriter);
+          leadingStreams.put(partitionId, queryService);
           partitionLimiters.put(partitionId, limiter);
         });
   }

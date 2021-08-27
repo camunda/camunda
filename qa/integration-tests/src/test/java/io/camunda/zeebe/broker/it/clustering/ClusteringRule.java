@@ -39,6 +39,7 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -311,7 +312,8 @@ public final class ClusteringRule extends ExternalResource {
     DISABLE_EMBEDDED_GATEWAY.accept(brokerCfg);
 
     // configure cluster
-    setCluster(nodeId, partitionCount, replicationFactor, clusterSize, clusterName)
+    setCluster(nodeId, partitionCount, replicationFactor, clusterSize,
+        clusterName)
         .accept(brokerCfg);
     if (nodeId > 0) {
       // all nodes have to join the same broker
@@ -343,7 +345,8 @@ public final class ClusteringRule extends ExternalResource {
 
   private Gateway createGateway() {
     final String contactPoint =
-        NetUtil.toSocketAddressString(getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
+        NetUtil.toSocketAddressString(
+            getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
@@ -456,7 +459,8 @@ public final class ClusteringRule extends ExternalResource {
   public void waitForPartitionReplicationFactor() {
     waitForTopology(
         topology ->
-            hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
+            hasPartitionsWithReplicationFactor(topology, partitionCount,
+                replicationFactor));
   }
 
   private boolean hasPartitionsWithReplicationFactor(
@@ -789,7 +793,10 @@ public final class ClusteringRule extends ExternalResource {
 
     @Override
     public ActorFuture<Void> onBecomingLeader(
-        final int partitionId, final long term, final LogStream logStream) {
+        final int partitionId,
+        final long term,
+        final LogStream logStream,
+        final @Deprecated QueryService queryService) {
       logstreams.put(partitionId, logStream);
       latch.countDown();
       partitionLeader.put(partitionId, new Leader(nodeId, term, logStream));

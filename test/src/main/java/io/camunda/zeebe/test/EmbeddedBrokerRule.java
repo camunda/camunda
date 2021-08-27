@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -218,7 +219,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
       final boolean hasLeaderPartition = latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
       assertThat(hasLeaderPartition)
-          .describedAs("Expected the broker to have a leader of the partition within %s", timeout)
+          .describedAs("Expected the broker to have a leader of the partition within %s",
+              timeout)
           .isTrue();
 
     } catch (final InterruptedException e) {
@@ -287,7 +289,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     @Override
     public ActorFuture<Void> onBecomingLeader(
-        final int partitionId, final long term, final LogStream logStream) {
+        final int partitionId,
+        final long term,
+        final LogStream logStream,
+        final @Deprecated QueryService queryService) {
       latch.countDown();
       return CompletableActorFuture.completed(null);
     }

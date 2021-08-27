@@ -12,6 +12,7 @@ import io.atomix.primitive.partition.PartitionGroup;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -135,7 +136,10 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final @Deprecated QueryService queryService) {
     return updateBrokerReadyStatus(partitionId);
   }
 

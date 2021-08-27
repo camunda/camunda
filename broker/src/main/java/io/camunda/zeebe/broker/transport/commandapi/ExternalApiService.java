@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -67,7 +68,10 @@ public final class ExternalApiService extends Actor
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final @Deprecated QueryService queryService) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
@@ -82,7 +86,7 @@ public final class ExternalApiService extends Actor
 
                       final var requestLimiter = limiter.getLimiter(partitionId);
                       commandRequestHandler.addPartition(partitionId, recordWriter, requestLimiter);
-                      queryRequestHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      queryRequestHandler.addPartition(partitionId, requestLimiter, queryService);
                       serverTransport.subscribe(partitionId, commandRequestHandler, "command");
                       serverTransport.subscribe(partitionId, queryRequestHandler, "query");
                       future.complete(null);

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -92,7 +93,10 @@ public final class SimpleBrokerStartTest {
 
           @Override
           public ActorFuture<Void> onBecomingLeader(
-              final int partitionId, final long term, final LogStream logStream) {
+              final int partitionId,
+              final long term,
+              final LogStream logStream,
+              final @Deprecated QueryService queryService) {
             leaderLatch.countDown();
             return CompletableActorFuture.completed(null);
           }

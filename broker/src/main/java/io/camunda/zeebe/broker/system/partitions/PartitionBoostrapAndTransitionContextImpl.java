@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.query.ZbQueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -136,7 +137,10 @@ public class PartitionBoostrapAndTransitionContextImpl
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
     return partitionListeners.stream()
-        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
+        .map(
+            l ->
+                l.onBecomingLeader(
+                    getPartitionId(), newTerm, getLogStream(), new ZbQueryService(zeebeDb)))
         .collect(Collectors.toList());
   }
 
@@ -149,7 +153,8 @@ public class PartitionBoostrapAndTransitionContextImpl
 
   @Override
   public void notifyListenersOfBecomingInactive() {
-    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(), getCurrentTerm()));
+    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(),
+        getCurrentTerm()));
   }
 
   @Override
