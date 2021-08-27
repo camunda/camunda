@@ -32,7 +32,7 @@ public final class MessageSubscriptionCorrelatedApplier
     if (value.isInterrupting()) {
       messageSubscriptionState.remove(subscription);
     } else {
-      messageSubscriptionState.resetCorrelatingState(subscription);
+      messageSubscriptionState.updateToCorrelatedState(subscription);
     }
   }
 }
