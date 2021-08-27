@@ -178,11 +178,13 @@ public class DiskSpaceRecoveryTest {
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
-            () ->
-                RecordingExporter.jobRecords(JobIntent.TIME_OUT)
-                    .withProcessInstanceKey(processInstanceKey)
-                    .limit(1)
-                    .exists());
+            () -> {
+              embeddedBrokerRule.getClock().addTime(Duration.ofMinutes(1));
+              return RecordingExporter.jobRecords(JobIntent.TIME_OUT)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .limit(1)
+                  .exists();
+            });
 
     JobRecordValueAssert.assertThat(
             RecordingExporter.jobRecords(JobIntent.TIME_OUT).getFirst().getValue())
