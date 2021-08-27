@@ -36,7 +36,13 @@ public class HealthMonitoringTest {
     /* timeouts are selected generously as at the time of this implementation there is a
      * 1 minute cycle to update the state
      */
-    await("Broker is healthy").atMost(Duration.ofMinutes(2)).until(this::isBrokerHealthy);
+    await("Broker is healthy")
+        .atMost(Duration.ofMinutes(2))
+        .until(
+            () -> {
+              embeddedBrokerRule.getClock().addTime(Duration.ofMinutes(1));
+              return isBrokerHealthy();
+            });
 
     // when
     final var raftPartition =
@@ -52,7 +58,12 @@ public class HealthMonitoringTest {
     /* timeouts are selected generously as at the time of this implementation there is a
      * 1 minute cycle to update the state
      */
-    waitAtMost(Duration.ofMinutes(2)).until(() -> !isBrokerHealthy());
+    waitAtMost(Duration.ofMinutes(2))
+        .until(
+            () -> {
+              embeddedBrokerRule.getClock().addTime(Duration.ofMinutes(1));
+              return !isBrokerHealthy();
+            });
   }
 
   private boolean isBrokerHealthy() {
