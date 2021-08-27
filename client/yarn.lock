@@ -3362,10 +3362,10 @@
   resolved "https://registry.yarnpkg.com/@types/stack-utils/-/stack-utils-2.0.1.tgz#20f18294f797f2209b5f65c8e3b5c8e8261d127c"
   integrity sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==
 
-"@types/styled-components@^5.1.12":
-  version "5.1.12"
-  resolved "https://registry.yarnpkg.com/@types/styled-components/-/styled-components-5.1.12.tgz#1a3679942746adecd1e736bfc47aea2c938a7d9a"
-  integrity sha512-sTjc0+gMl08JvOHchQKgEGbbiSexSvWg5khUNSH4kosb7Tl4782AtfWMkAhQmeXMg2vIn6PthGVHFW+U/Dpihg==
+"@types/styled-components@^5.1.13":
+  version "5.1.13"
+  resolved "https://registry.yarnpkg.com/@types/styled-components/-/styled-components-5.1.13.tgz#a2906b68c2c6c811996216983b74ca02e22c6c34"
+  integrity sha512-nIIsiQ+Ag/4xnYf9mhzO3zIZ/zOmKN6HImEZifKh2TLibYz8OudzJbvzDu1uvMfX/+bs0B0RDPB2OIcbrrptVQ==
   dependencies:
     "@types/hoist-non-react-statics" "*"
     "@types/react" "*"
