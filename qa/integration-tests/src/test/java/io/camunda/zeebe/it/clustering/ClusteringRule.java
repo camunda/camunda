@@ -726,10 +726,6 @@ public final class ClusteringRule extends ExternalResource {
     broker.getBrokerAdminService().takeSnapshot();
   }
 
-  public void takeSnapshot(final Collection<Broker> brokers) {
-    brokers.stream().map(Broker::getBrokerAdminService).forEach(BrokerAdminService::takeSnapshot);
-  }
-
   public void triggerAndWaitForSnapshots() {
     // Ensure that the exporter positions are distributed to the followers
     getClock().addTime(ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL);

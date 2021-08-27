@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -24,7 +23,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.junit.After;
@@ -37,15 +36,15 @@ import org.junit.runners.Parameterized.Parameters;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @RunWith(Parameterized.class)
-public class SnapshotOnFollowerTest {
+public class ClusteredSnapshotTest {
 
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(5);
 
   @Rule
-  public final ClusteringRule clusteringRule = new ClusteringRule(1, 2, 2, this::configureBroker);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3, this::configureBroker);
 
   @Parameter(0)
-  public BiConsumer<ClusteringRule, Broker> snapshotTrigger;
+  public Consumer<ClusteringRule> snapshotTrigger;
 
   @Parameter(1)
   public String description;
@@ -54,12 +53,11 @@ public class SnapshotOnFollowerTest {
   public static Object[][] snapshotTriggers() {
     return new Object[][] {
       new Object[] {
-        (BiConsumer<ClusteringRule, Broker>) ClusteringRule::takeSnapshot,
+        (Consumer<ClusteringRule>) ClusteringRule::triggerAndWaitForSnapshots,
         "explicit trigger snapshot"
       },
       new Object[] {
-        (BiConsumer<ClusteringRule, Broker>)
-            (rule, broker) -> rule.getClock().addTime(SNAPSHOT_INTERVAL),
+        (Consumer<ClusteringRule>) (rule) -> rule.getClock().addTime(SNAPSHOT_INTERVAL),
         "implicit snapshot by advancing the clock"
       }
     };
@@ -74,11 +72,9 @@ public class SnapshotOnFollowerTest {
   }
 
   @Test
-  public void shouldIncludeExportedPositionInSnapshotOnFollower() {
+  public void shouldTakeSnapshotsOnAllNodes() {
     // given
     ControllableExporter.updatePosition(true);
-    final var leader = clusteringRule.getLeaderForPartition(1);
-    final var follower = clusteringRule.getOtherBrokerObjects(leader.getNodeId()).get(0);
 
     publishMessages();
     ControllableExporter.updatePosition(false);
@@ -91,15 +87,45 @@ public class SnapshotOnFollowerTest {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              snapshotTrigger.accept(clusteringRule, follower);
-              assertThatSnapshotContainsExporterPosition(follower);
+              snapshotTrigger.accept(clusteringRule);
+              assertThatSnapshotExists();
             });
   }
 
-  private void assertThatSnapshotContainsExporterPosition(final Broker follower) {
-    final var exportedPosition = ControllableExporter.lastUpdatedPosition;
-    final var snapshotAtFollower = clusteringRule.getSnapshot(follower).orElseThrow();
-    assertThat(snapshotAtFollower.getExportedPosition()).isEqualTo(exportedPosition);
+  @Test
+  public void shouldIncludeExportedPositionInSnapshot() {
+    // given
+    ControllableExporter.updatePosition(true);
+
+    publishMessages();
+    ControllableExporter.updatePosition(false);
+    publishMessages();
+
+    // when - then
+    Awaitility.await()
+        .pollInterval(Duration.ofSeconds(1))
+        .timeout(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              snapshotTrigger.accept(clusteringRule);
+              assertThatSnapshotContainsExporterPosition();
+            });
+  }
+
+  private void assertThatSnapshotContainsExporterPosition() {
+    clusteringRule
+        .getBrokers()
+        .forEach(
+            broker -> {
+              final var exportedPosition = ControllableExporter.lastUpdatedPosition;
+              final var snapshotAtFollower = clusteringRule.getSnapshot(broker).orElseThrow();
+              assertThat(snapshotAtFollower.getExportedPosition()).isEqualTo(exportedPosition);
+            });
+  }
+
+  private void assertThatSnapshotExists() {
+    clusteringRule.getBrokers().forEach(broker -> clusteringRule.getSnapshot(broker).orElseThrow());
   }
 
   private void configureBroker(final BrokerCfg brokerCfg) {
