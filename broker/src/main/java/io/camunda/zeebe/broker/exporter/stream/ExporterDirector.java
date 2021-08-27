@@ -393,10 +393,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         });
   }
 
-  public ExportersState getState() {
-    return state;
-  }
-
   private void clearExporterState() {
     final List<String> exporterIds =
         containers.stream().map(ExporterContainer::getId).collect(Collectors.toList());
@@ -434,6 +430,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   public void onRecordAvailable() {
     actor.run(this::readNextEvent);
+  }
+
+  public ActorFuture<Long> getLowestPosition() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
+    }
+    return actor.call(() -> state.getLowestPosition());
   }
 
   private static class RecordExporter {

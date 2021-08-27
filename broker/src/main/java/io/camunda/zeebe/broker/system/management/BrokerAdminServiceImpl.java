@@ -147,7 +147,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
     final var positionFuture = streamProcessor.getLastProcessedPositionAsync();
     final var currentPhaseFuture = streamProcessor.getCurrentPhase();
     final var exporterPhaseFuture = exporterDirector.getPhase();
-    final var exporterPosition = exporterDirector.getState().getLowestPosition();
+    final var exporterPositionFuture = exporterDirector.getLowestPosition();
     final var snapshotId = getSnapshotId(partition);
     final var processedPositionInSnapshot =
         snapshotId
@@ -159,7 +159,8 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
         List.of(
             (ActorFuture) positionFuture,
             (ActorFuture) currentPhaseFuture,
-            (ActorFuture) exporterPhaseFuture),
+            (ActorFuture) exporterPhaseFuture,
+            (ActorFuture) exporterPositionFuture),
         error -> {
           if (error != null) {
             partitionStatus.completeExceptionally(error);
@@ -168,6 +169,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
           final var processedPosition = positionFuture.join();
           final var processorPhase = currentPhaseFuture.join();
           final var exporterPhase = exporterPhaseFuture.join();
+          final var exporterPosition = exporterPositionFuture.join();
           final var status =
               PartitionStatus.ofLeader(
                   processedPosition,
