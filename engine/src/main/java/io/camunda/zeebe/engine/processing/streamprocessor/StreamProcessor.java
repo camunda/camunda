@@ -405,7 +405,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void setStateToPausedAndNotifyListeners() {
-    if (isInReplayOnlyMode()) {
+    if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
       LOG.debug("Paused replay for partition {}", partitionId);
     } else {
       lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
