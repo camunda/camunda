@@ -70,7 +70,6 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       entity: view.entity,
       autoSkip: canBeInterpolated(groupBy),
       groupedByDurationMaxValue,
-      visualization,
       isCombinedNumber: isNumber,
     }),
     plugins: {

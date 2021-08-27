@@ -93,6 +93,7 @@ export default class Configuration extends React.Component {
           frequency: 'bar',
           duration: 'line',
         },
+        stackedBar: false,
       }),
       true
     );

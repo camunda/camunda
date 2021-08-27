@@ -46,7 +46,7 @@ function createMultiMeasureChartData(props) {
     report: {
       result: {measures},
       data: {
-        configuration: {measureVisualizations},
+        configuration: {measureVisualizations, stackedBar},
       },
     },
   } = props;
@@ -81,7 +81,7 @@ function createMultiMeasureChartData(props) {
         data: report.map(({value}) => value),
         formatter: formatters[measure.property],
         order,
-        stack: idx,
+        stack: stackedBar ? idx : undefined,
         ...createDatasetOptions({
           type,
           data: report,
@@ -89,6 +89,7 @@ function createMultiMeasureChartData(props) {
           datasetColor: colors[idx * unitedResults.length + index],
           isStriped: true,
           isDark,
+          stackedBar,
         }),
       });
     });

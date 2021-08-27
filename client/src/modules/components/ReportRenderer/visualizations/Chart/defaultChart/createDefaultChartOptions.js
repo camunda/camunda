@@ -62,7 +62,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         measures: result.measures,
         entity: view.entity,
         autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
-        visualization,
       });
       break;
     default:
@@ -163,10 +162,9 @@ export function createBarOptions({
   measures = [],
   entity,
   groupedByDurationMaxValue = false,
-  visualization,
   isCombinedNumber,
 }) {
-  const stacked = visualization === 'stacked';
+  const stacked = configuration.stackedBar;
   const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
@@ -311,12 +309,13 @@ export function createDatasetOptions({
   isDark,
   measureCount = 1,
   datasetIdx = 0,
+  stackedBar,
 }) {
   let color = datasetColor;
   let legendColor = datasetColor;
   if (measureCount > 1) {
     legendColor = color = ColorPicker.getGeneratedColors(measureCount)[datasetIdx];
-  } else if (['bar', 'number'].includes(type) && targetValue) {
+  } else if (['bar', 'number'].includes(type) && !stackedBar && targetValue) {
     color = determineBarColor(targetValue, data, datasetColor, isStriped, isDark);
     legendColor = datasetColor;
   }
@@ -338,7 +337,6 @@ export function createDatasetOptions({
         type: 'line',
       };
     case 'bar':
-    case 'stacked':
     case 'number':
       return {
         borderColor: color,

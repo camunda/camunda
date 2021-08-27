@@ -25,7 +25,7 @@ Object {
         "color": "rgba(0,0,0,0.1)",
       },
       "id": "axis-0",
-      "stacked": false,
+      "stacked": undefined,
       "suggestedMax": undefined,
       "ticks": Object {
         "beginAtZero": true,
@@ -106,7 +106,7 @@ Object {
         "color": "rgba(0,0,0,0.1)",
       },
       "id": "axis-0",
-      "stacked": false,
+      "stacked": undefined,
       "suggestedMax": undefined,
       "ticks": Object {
         "beginAtZero": true,

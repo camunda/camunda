@@ -191,7 +191,6 @@ it('should have a button to reset the distribution', () => {
         data: {
           ...data,
           distributedBy: {type: 'assignee', value: null},
-          visualization: 'stacked',
         },
       }}
       onChange={spy}
@@ -204,9 +203,6 @@ it('should have a button to reset the distribution', () => {
   expect(spy).toHaveBeenCalledWith(
     {
       distributedBy: {$set: {type: 'none', value: null}},
-      visualization: {
-        $set: 'bar',
-      },
     },
     true
   );

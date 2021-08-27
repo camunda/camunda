@@ -68,14 +68,11 @@ export default function reportConfig({view, groupBy, visualization, combinations
       const isVisualizationAllowed =
         combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
 
-      // check additional requirements for certain visualizations
-      switch (targetVisualization) {
-        case 'stacked':
-          return report.data.distributedBy.type !== 'none' && isVisualizationAllowed;
-        case 'barLine':
-          return targetView.properties.length > 1 && isVisualizationAllowed;
-        default:
-          return isVisualizationAllowed;
+      if (targetVisualization === 'barLine') {
+        // barLine is only supported for multi measure reports
+        return targetView.properties.length > 1 && isVisualizationAllowed;
+      } else {
+        return isVisualizationAllowed;
       }
     }
 

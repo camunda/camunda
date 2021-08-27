@@ -4,11 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {determineBarColor} from '../colorsUtils';
 import {
   createDatasetOptions,
   default as createDefaultChartOptions,
   createBarOptions,
 } from './createDefaultChartOptions';
+
+jest.mock('../colorsUtils', () => ({
+  ...jest.requireActual('../colorsUtils'),
+  determineBarColor: jest.fn(),
+}));
 
 it('should create dataset option for barchart report', () => {
   const data = [
@@ -29,6 +35,43 @@ it('should create dataset option for barchart report', () => {
     borderWidth: 1,
     legendColor: 'testColor',
   });
+});
+
+it('should invoke determineBarColor when targetValue is present', () => {
+  determineBarColor.mockClear();
+  const data = [
+    {key: 'foo', value: 123},
+    {key: 'bar', value: 5},
+  ];
+  createDatasetOptions({
+    type: 'bar',
+    data,
+    targetValue: true,
+    datasetColor: 'testColor',
+    isStriped: true,
+    isDark: false,
+  });
+
+  expect(determineBarColor).toHaveBeenCalledWith(true, data, 'testColor', true, false);
+});
+
+it('should not invoke determineBarColor for stackedBar', () => {
+  determineBarColor.mockClear();
+  const data = [
+    {key: 'foo', value: 123},
+    {key: 'bar', value: 5},
+  ];
+  createDatasetOptions({
+    type: 'bar',
+    data,
+    targetValue: true,
+    datasetColor: 'testColor',
+    isStriped: true,
+    isDark: false,
+    stackedBar: true,
+  });
+
+  expect(determineBarColor).not.toHaveBeenCalled();
 });
 
 it('should create dataset option for pie reports', () => {

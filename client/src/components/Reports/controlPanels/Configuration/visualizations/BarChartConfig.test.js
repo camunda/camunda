@@ -86,18 +86,20 @@ it('should not show target value, color picker or y axis label for multi-measure
   expect(node.find('ChartTargetInput')).not.toExist();
 });
 
-it('should not show target value for stacked visualization', () => {
-  const node = shallow(
-    <BarChartConfig
-      report={{
-        ...barReport,
-        data: {
-          ...barReport.data,
-          visualization: 'stacked',
-        },
-      }}
-    />
-  );
+it('should show stacked bar option for distributed bar chart reports', () => {
+  const node = shallow(<BarChartConfig report={barReport} />);
 
-  expect(node.find('ChartTargetInput')).not.toExist();
+  expect(node.find('.stackedBars')).not.toExist();
+
+  node.setProps({
+    report: {
+      ...barReport,
+      data: {
+        ...barReport.data,
+        distributedBy: {type: 'flowNode'},
+      },
+    },
+  });
+
+  expect(node.find('.stackedBars')).toExist();
 });

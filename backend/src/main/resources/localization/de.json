@@ -324,7 +324,6 @@
       "pie": "Tortendiagramm",
       "table": "Tabelle",
       "heat": "Heatmap",
-      "stacked": "Gestapeltes Balkendiagramm",
       "barLine": "Balken-/Liniendiagramm"
     },
     "processPart": {
@@ -493,6 +492,10 @@
       "pointMarkers": {
         "legend": "Linienpunkte",
         "enableMarkers": "Punktmarkierungen aktivieren"
+      },
+      "stackedBars": {
+        "legend": "Anzeige",
+        "enableStackedBars": "Gestapelte Balken"
       },
       "limitPrecision": {
         "legend": "Genauigkeit begrenzen",

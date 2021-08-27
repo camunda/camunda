@@ -169,25 +169,6 @@ describe('process update', () => {
     expect(changes.distributedBy).toEqual({$set: {type: 'flowNode', value: null}});
   });
 
-  it('should change visualization from stacked to bar when reseting distributed by', () => {
-    let changes = config.process.update(
-      'view',
-      {entity: 'flowNode', properties: ['frequency']},
-      {
-        report: {
-          data: {
-            view: {entity: 'processInstance', properties: ['frequency']},
-            distributedBy: {type: 'variable', value: {}},
-            configuration: {},
-            visualization: 'stacked',
-          },
-        },
-      }
-    );
-
-    expect(changes.visualization).toEqual({$set: 'bar'});
-  });
-
   it('should automatically distribute by flownode/usertask when possible', () => {
     const changes = config.process.update(
       'groupBy',

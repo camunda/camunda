@@ -14,14 +14,12 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.HEAT_VISUALIZATI
 import static org.camunda.optimize.dto.optimize.ReportConstants.LINE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PIE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
-import static org.camunda.optimize.dto.optimize.ReportConstants.STACKED_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.TABLE_VISUALIZATION;
 
 public enum ProcessVisualization {
   NUMBER(SINGLE_NUMBER_VISUALIZATION),
   TABLE(TABLE_VISUALIZATION),
   BAR(BAR_VISUALIZATION),
-  STACKED(STACKED_VISUALIZATION),
   BARLINE(BAR_LINE_VISUALIZATION),
   LINE(LINE_VISUALIZATION),
   PIE(PIE_VISUALIZATION),

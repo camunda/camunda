@@ -46,7 +46,10 @@ const createReport = ({reportA, reportB, groupByType}, measures, visualization =
         {id: 'reportB', color: reportB.color},
       ],
       visualization,
-      configuration: {measureVisualizations: {frequency: 'line', duration: 'bar'}},
+      configuration: {
+        measureVisualizations: {frequency: 'line', duration: 'bar'},
+        stackedBar: true,
+      },
     },
     combined: true,
   };

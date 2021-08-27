@@ -324,7 +324,6 @@
       "pie": "Pie Chart",
       "table": "Table",
       "heat": "Heatmap",
-      "stacked": "Stacked Bar",
       "barLine": "Bar/Line Chart"
     },
     "processPart": {
@@ -494,6 +493,10 @@
         "legend": "Line points",
         "enableMarkers": "Enable point markers"
       },
+      "stackedBars": {
+        "legend": "Display",
+        "enableStackedBars": "Stacked bars"
+      },
       "limitPrecision": {
         "legend": "Limit Precision",
         "numberOf": {
@@ -511,7 +514,7 @@
         "invalidNumber": "Must be a valid number"
       },
       "barLine": {
-        "visualizationSettings": "Visualisation settings",
+        "visualizationSettings": "Visualization settings",
         "bar": "Bar",
         "line": "Line"
       }

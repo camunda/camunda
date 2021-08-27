@@ -127,48 +127,6 @@ it('should allow only visualization options that make sense for the selected vie
       'pie'
     )
   ).toBeFalsy();
-  expect(
-    isAllowed(
-      report,
-      {
-        entity: 'processInstance',
-        properties: ['duration'],
-      },
-      {
-        type: 'startDate',
-        value: {
-          unit: 'day',
-        },
-      },
-      'stacked'
-    )
-  ).toBeFalsy();
-});
-
-it('should allow stacked bar charts for distributed reports', () => {
-  const report = {
-    data: {
-      distributedBy: {type: 'flownode'},
-      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-    },
-  };
-
-  expect(
-    isAllowed(
-      report,
-      {
-        entity: 'flownode',
-        properties: ['count'],
-      },
-      {
-        type: 'startDate',
-        value: {
-          unit: 'day',
-        },
-      },
-      'stacked'
-    )
-  ).toBeTruthy();
 });
 
 it('should allow combo bar/line visualization only for multi measure reports', () => {
