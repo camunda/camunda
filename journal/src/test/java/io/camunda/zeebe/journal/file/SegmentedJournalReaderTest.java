@@ -65,6 +65,7 @@ class SegmentedJournalReaderTest {
     // when - compact up to the first index of segment 3
     final int indexToCompact = ENTRIES_PER_SEGMENT * 2 + 1;
     journal.deleteUntil(indexToCompact);
+    reader.seekToFirst();
 
     // then
     assertThat(reader.hasNext()).isTrue();
