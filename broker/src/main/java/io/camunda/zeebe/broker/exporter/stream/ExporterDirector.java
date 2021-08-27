@@ -433,6 +433,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   public ActorFuture<Long> getLowestPosition() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
+    }
     return actor.call(() -> state.getLowestPosition());
   }
 
