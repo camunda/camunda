@@ -294,10 +294,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     // enable writing records to the stream
     processingContext.enableLogStreamWriter();
 
-    // Replay ends at the end of the log and returns the lastSourceEventPosition
-    // we need to seek to the next record after that position where the processing should start
-    // Be aware on processing we ignore events, so we will process the next command
-    logStreamReader.seekToNextEvent(lastSourceEventPosition);
     logStream.registerRecordAvailableListener(this);
 
     // start reading
