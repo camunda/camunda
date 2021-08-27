@@ -107,7 +107,7 @@ public final class StreamProcessorReplayModeTest {
     inOrder.verify(typedRecordProcessor, never()).onRecovered(any());
     inOrder.verifyNoMoreInteractions();
 
-    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPROCESSING);
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }
 
   @Test
@@ -209,7 +209,7 @@ public final class StreamProcessorReplayModeTest {
     inOrder.verify(typedRecordProcessor, never()).onRecovered(any());
     inOrder.verifyNoMoreInteractions();
 
-    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPROCESSING);
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }
 
   @Test
@@ -242,7 +242,7 @@ public final class StreamProcessorReplayModeTest {
         .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
     inOrder.verifyNoMoreInteractions();
 
-    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPROCESSING);
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }
 
   @Test

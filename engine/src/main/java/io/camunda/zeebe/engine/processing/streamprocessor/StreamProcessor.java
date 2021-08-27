@@ -65,7 +65,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingStateMachine processingStateMachine;
   private ReplayStateMachine replayStateMachine;
 
-  private volatile Phase phase = Phase.REPROCESSING;
+  private volatile Phase phase = Phase.REPLAY;
 
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
@@ -416,7 +416,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             shouldProcess = true;
 
             if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
-              phase = Phase.REPROCESSING;
+              phase = Phase.REPLAY;
               actor.submit(replayStateMachine::replayNextEvent);
               LOG.debug("Resumed replay for partition {}", partitionId);
             } else {
@@ -434,7 +434,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   public enum Phase {
-    REPROCESSING,
+    REPLAY,
     PROCESSING,
     FAILED,
     PAUSED,
