@@ -162,7 +162,7 @@ public final class StreamProcessorReplayModeTest {
   }
 
   @Test
-  public void shouldNotReplayMoreWhenPaused() {
+  public void shouldPauseReplay() {
     // given
     final var streamProcessor = startStreamProcessor(replayContinuously);
     replayContinuously.writeBatch(
