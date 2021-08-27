@@ -21,7 +21,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
+import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -77,8 +78,11 @@ public final class ReplayStateMachine {
   private final LogStream logStream;
 
   private State currentState = State.AWAIT_RECORD;
+  private final BooleanSupplier shouldPause;
 
-  public ReplayStateMachine(final ProcessingContext context) {
+  public ReplayStateMachine(
+      final ProcessingContext context, final BooleanSupplier shouldReplayNext) {
+    shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
     logStreamReader = context.getLogStreamReader();
     recordValues = context.getRecordValues();
@@ -90,8 +94,8 @@ public final class ReplayStateMachine {
     lastProcessedPositionState = context.getLastProcessedPositionState();
 
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
-    updateStateRetryStrategy = new EndlessRetryStrategy(actor);
-    processRetryStrategy = new EndlessRetryStrategy(actor);
+    updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
+    processRetryStrategy = new AbortableRetryStrategy(actor);
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
   }
@@ -139,7 +143,11 @@ public final class ReplayStateMachine {
         });
   }
 
-  private void replayNextEvent() {
+  void replayNextEvent() {
+    if (shouldPause.getAsBoolean()) {
+      return;
+    }
+
     LoggedEvent currentEvent = null;
     try {
       if (logStreamReader.hasNext()) {

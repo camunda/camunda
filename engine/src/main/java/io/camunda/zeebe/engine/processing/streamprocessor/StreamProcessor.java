@@ -65,7 +65,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingStateMachine processingStateMachine;
   private ReplayStateMachine replayStateMachine;
 
-  private volatile Phase phase = Phase.REPROCESSING;
+  private volatile Phase phase = Phase.REPLAY;
 
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
@@ -122,13 +122,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       healthCheckTick();
 
-      replayStateMachine = new ReplayStateMachine(processingContext);
+      replayStateMachine = new ReplayStateMachine(processingContext, this::shouldProcessNext);
       // disable writing to the log stream
       processingContext.disableLogStreamWriter();
 
+      openFuture.complete(null);
       replayCompletedFuture = replayStateMachine.startRecover(snapshotPosition);
-      if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
-        openFuture.complete(null);
+
+      if (!shouldProcess) {
+        setStateToPausedAndNotifyListeners();
+      }
+
+      if (isInReplayOnlyMode()) {
         replayCompletedFuture.onComplete(
             (v, error) -> {
               if (error != null) {
@@ -302,8 +307,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
     }
-
-    openFuture.complete(null);
   }
 
   private void onFailure(final Throwable throwable) {
@@ -335,7 +338,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Long> getLastProcessedPositionAsync() {
     return actor.call(
         () -> {
-          if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
+          if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastSourceEventPosition();
           } else {
             return processingStateMachine.getLastSuccessfulProcessedEventPosition();
@@ -343,10 +346,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         });
   }
 
+  private boolean isInReplayOnlyMode() {
+    return processingContext.getProcessorMode() == StreamProcessorMode.REPLAY;
+  }
+
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(
         () -> {
-          if (processingContext.getProcessorMode() == StreamProcessorMode.REPLAY) {
+          if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastReplayedEventPosition();
           } else {
             return processingStateMachine.getLastWrittenEventPosition();
@@ -390,35 +397,45 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public ActorFuture<Void> pauseProcessing() {
     return actor.call(
-        () ->
-            replayCompletedFuture.onComplete(
-                (v, t) -> {
-                  if (shouldProcess) {
-                    setStateToPausedAndNotifyListeners();
-                  }
-                }));
+        () -> {
+          if (shouldProcess) {
+            setStateToPausedAndNotifyListeners();
+          }
+        });
   }
 
   private void setStateToPausedAndNotifyListeners() {
-    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+    if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
+      LOG.debug("Paused replay for partition {}", partitionId);
+    } else {
+      lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+      LOG.debug("Paused processing for partition {}", partitionId);
+    }
+
     shouldProcess = false;
     phase = Phase.PAUSED;
-    LOG.debug("Paused processing for partition {}", partitionId);
   }
 
   public void resumeProcessing() {
     actor.call(
-        () ->
-            replayCompletedFuture.onComplete(
-                (v, t) -> {
-                  if (!shouldProcess) {
-                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-                    shouldProcess = true;
-                    phase = Phase.PROCESSING;
-                    actor.submit(processingStateMachine::readNextEvent);
-                    LOG.debug("Resumed processing for partition {}", partitionId);
-                  }
-                }));
+        () -> {
+          if (!shouldProcess) {
+            shouldProcess = true;
+
+            if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
+              phase = Phase.REPLAY;
+              actor.submit(replayStateMachine::replayNextEvent);
+              LOG.debug("Resumed replay for partition {}", partitionId);
+            } else {
+              // we only want to call the lifecycle listeners on processing resume
+              // since the listeners are not recovered yet
+              lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+              phase = Phase.PROCESSING;
+              actor.submit(processingStateMachine::readNextEvent);
+              LOG.debug("Resumed processing for partition {}", partitionId);
+            }
+          }
+        });
   }
 
   @Override
@@ -427,7 +444,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   public enum Phase {
-    REPROCESSING,
+    REPLAY,
     PROCESSING,
     FAILED,
     PAUSED,

@@ -58,11 +58,13 @@ public class DiskSpaceMonitoringFailOverTest {
                 // to determine if it is healthy again
                 .timeout(Duration.ofSeconds(70))
                 .untilAsserted(
-                    () ->
-                        assertThat(
-                                clusteringRule.isBrokerHealthy(
-                                    broker.getConfig().getCluster().getNodeId()))
-                            .isTrue()));
+                    () -> {
+                      clusteringRule.getClock().addTime(Duration.ofMinutes(1));
+                      assertThat(
+                              clusteringRule.isBrokerHealthy(
+                                  broker.getConfig().getCluster().getNodeId()))
+                          .isTrue();
+                    }));
     // When one of the follower becomes the new leader, it should be out of disk space already
     for (final Broker broker : followers) {
       waitUntilDiskSpaceNotAvailable(broker);
@@ -80,16 +82,17 @@ public class DiskSpaceMonitoringFailOverTest {
         .timeout(Duration.ofSeconds(60))
         .untilAsserted(() -> assertThat(clusteringRule.isBrokerHealthy(newLeaderId)).isFalse());
     // should install StreamProcessor and immediately pause it
-    Awaitility.await()
+    Awaitility.await(
+            "Stream processor of broker " + newLeaderId + " is expected to be in paused state.")
         .until(
             () ->
                 clusteringRule
-                        .getBroker(newLeaderId)
-                        .getBrokerAdminService()
-                        .getPartitionStatus()
-                        .get(1)
-                        .getStreamProcessorPhase()
-                    == Phase.PAUSED);
+                    .getBroker(newLeaderId)
+                    .getBrokerAdminService()
+                    .getPartitionStatus()
+                    .get(1)
+                    .getStreamProcessorPhase(),
+            p -> p == Phase.PAUSED);
   }
 
   private void waitUntilDiskSpaceNotAvailable(final Broker broker) throws InterruptedException {
