@@ -39,8 +39,7 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
-  @Parameter(0)
-  public String name;
+  @Parameter public String name;
 
   @Parameter(1)
   public Consumer<GrpcClientRule> beforeRestart;
@@ -113,33 +112,31 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
               clientRule.createProcessInstance(processDefinitionKey);
             },
         (BiConsumer<ClusteringRule, GrpcClientRule>)
-            (clusteringRule, clientRule) -> {
-              Awaitility.await("timer should trigger and complete instance")
-                  .untilAsserted(
-                      () -> {
-                        clusteringRule.getClock().addTime(Duration.ofSeconds(15));
-                        ZeebeAssertHelper.assertProcessInstanceCompleted("process");
-                      });
-            }
+            (clusteringRule, clientRule) ->
+                Awaitility.await("timer should trigger and complete instance")
+                    .untilAsserted(
+                        () -> {
+                          clusteringRule.getClock().addTime(Duration.ofSeconds(15));
+                          ZeebeAssertHelper.assertProcessInstanceCompleted("process");
+                        })
       },
       new Object[] {
         "complete job after restart",
         (Consumer<GrpcClientRule>) (clientRule) -> clientRule.createSingleJob("testTask"),
         (BiConsumer<ClusteringRule, GrpcClientRule>)
-            (clusteringRule, clientRule) -> {
-              Awaitility.await("timer should trigger and complete instance")
-                  .untilAsserted(
-                      () -> {
-                        final var jobKey =
-                            RecordingExporter.jobRecords(JobIntent.CREATED)
-                                .withType("testTask")
-                                .getFirst()
-                                .getKey();
+            (clusteringRule, clientRule) ->
+                Awaitility.await("timer should trigger and complete instance")
+                    .untilAsserted(
+                        () -> {
+                          final var jobKey =
+                              RecordingExporter.jobRecords(JobIntent.CREATED)
+                                  .withType("testTask")
+                                  .getFirst()
+                                  .getKey();
 
-                        clientRule.getClient().newCompleteCommand(jobKey).send().join();
-                        ZeebeAssertHelper.assertJobCompleted();
-                      });
-            }
+                          clientRule.getClient().newCompleteCommand(jobKey).send().join();
+                          ZeebeAssertHelper.assertJobCompleted();
+                        })
       }
     };
   }
