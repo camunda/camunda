@@ -211,7 +211,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
 
   private void takeSnapshotOnAllPartitions(final List<ZeebePartition> partitions) {
     LOG.info("Triggering Snapshots on all partitions.");
-    partitions.forEach(ZeebePartition::triggerSnapshot);
+    partitions.forEach(p -> p.takeSnapshot().join());
   }
 
   private List<ActorFuture<Void>> pauseExportingOnAllPartitions() {

@@ -12,6 +12,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -36,7 +37,8 @@ public final class ZeebePartition extends Actor
         HealthMonitorable,
         FailureListener,
         DiskSpaceUsageListener,
-        SnapshotReplicationListener {
+        SnapshotReplicationListener,
+        PartitionAdminAccess {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private Role raftRole;
@@ -373,56 +375,12 @@ public final class ZeebePartition extends Actor
         });
   }
 
-  @Deprecated // will be removed from public API of ZeebePartition
-  public ActorFuture<Void> pauseProcessing() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            context.pauseProcessing();
-
-            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
-              context.getStreamProcessor().pauseProcessing().onComplete(completed);
-            } else {
-              completed.complete(null);
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not pause processing state", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
-  }
-
-  @Deprecated // will be removed from public API of ZeebePartition
-  public void resumeProcessing() {
-    actor.call(
-        () -> {
-          try {
-            context.resumeProcessing();
-            if (context.getStreamProcessor() != null && context.shouldProcess()) {
-              context.getStreamProcessor().resumeProcessing();
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not resume processing", e);
-          }
-        });
-  }
-
   public int getPartitionId() {
     return context.getPartitionId();
   }
 
   public PersistedSnapshotStore getSnapshotStore() {
     return context.getRaftPartition().getServer().getPersistedSnapshotStore();
-  }
-
-  @Deprecated // will be removed from public API of ZeebePartition
-  public void triggerSnapshot() {
-    actor.call(
-        () -> {
-          context.triggerSnapshot();
-        });
   }
 
   public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
@@ -433,6 +391,24 @@ public final class ZeebePartition extends Actor
     return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
   }
 
+  @Override
+  public ActorFuture<Void> takeSnapshot() {
+    final var completed = new CompletableActorFuture<Void>();
+
+    actor.call(
+        () -> {
+          try {
+            context.triggerSnapshot();
+            completed.complete(null);
+          } catch (final Throwable t) {
+            completed.completeExceptionally(t);
+          }
+        });
+
+    return completed;
+  }
+
+  @Override
   @Deprecated // will be removed from public API of ZeebePartition
   public ActorFuture<Void> pauseExporting() {
     final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
@@ -454,19 +430,67 @@ public final class ZeebePartition extends Actor
     return completed;
   }
 
+  @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void resumeExporting() {
+  public ActorFuture<Void> resumeExporting() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
     actor.call(
         () -> {
           try {
             context.resumeExporting();
             if (context.getExporterDirector() != null && context.shouldExport()) {
-              context.getExporterDirector().resumeExporting();
+              context.getExporterDirector().resumeExporting().onComplete(completed);
+            } else {
+              completed.complete(null);
             }
           } catch (final IOException e) {
             LOG.error("Could not resume exporting", e);
+            completed.completeExceptionally(e);
           }
         });
+    return completed;
+  }
+
+  @Override
+  @Deprecated // will be removed from public API of ZeebePartition
+  public ActorFuture<Void> pauseProcessing() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          try {
+            context.pauseProcessing();
+
+            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
+              context.getStreamProcessor().pauseProcessing().onComplete(completed);
+            } else {
+              completed.complete(null);
+            }
+          } catch (final IOException e) {
+            LOG.error("Could not pause processing state", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
+  }
+
+  @Override
+  @Deprecated // will be removed from public API of ZeebePartition
+  public ActorFuture<Void> resumeProcessing() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          try {
+            context.resumeProcessing();
+            if (context.getStreamProcessor() != null && context.shouldProcess()) {
+              context.getStreamProcessor().resumeProcessing();
+            }
+            completed.complete(null);
+          } catch (final IOException e) {
+            LOG.error("Could not resume processing", e);
+            completed.completeExceptionally(e);
+          }
+        });
+    return completed;
   }
 
   @Override
