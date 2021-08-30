@@ -97,6 +97,24 @@ public final class BrokerLeaderChangeTest {
   }
 
   @Test
+  public void shouldBecomeLeaderAfterInstallRequest() {
+    // given
+    final var followerId = clusteringRule.stopAnyFollower();
+
+    final long jobKey = clientRule.createSingleJob(JOB_TYPE);
+    clusteringRule.triggerAndWaitForSnapshots();
+    clusteringRule.startBroker(followerId);
+    clusteringRule.waitForSnapshotAtBroker(followerId);
+
+    // when
+    stepDownUntilRightLeaderIsChosen(followerId);
+
+    // then
+    clientRule.getClient().newCompleteCommand(jobKey).send().join();
+    ZeebeAssertHelper.assertJobCompleted();
+  }
+
+  @Test
   public void shouldBeAbleToBecomeLeaderAgain() {
     // given
     final var firstLeaderInfo = clusteringRule.getLeaderForPartition(1);
