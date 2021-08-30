@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-// FIXME: rewrite tests now that leader election is not controllable
 public final class BrokerLeaderChangeTest {
   public static final String JOB_TYPE = "testTask";
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
