@@ -197,7 +197,7 @@ public final class ReplayStateMachine {
         () -> {
           batch.forEachRemaining(this::replayEvent);
 
-          if (batchSourceEventPosition > 0) {
+          if (batchSourceEventPosition > snapshotPosition) {
             lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
           }
         });
@@ -209,7 +209,8 @@ public final class ReplayStateMachine {
   }
 
   private void replayEvent(final LoggedEvent currentEvent) {
-    if (eventFilter.applies(currentEvent)) {
+    if (eventFilter.applies(currentEvent)
+        && currentEvent.getSourceEventPosition() > snapshotPosition) {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
@@ -284,11 +285,9 @@ public final class ReplayStateMachine {
   }
 
   private void applyCurrentEvent(final TypedRecord<?> currentEvent) {
-    if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
-      eventApplier.applyState(
-          currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
-      lastReplayedEventPosition = currentEvent.getPosition();
-    }
+    eventApplier.applyState(
+        currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+    lastReplayedEventPosition = currentEvent.getPosition();
   }
 
   public long getLastSourceEventPosition() {
