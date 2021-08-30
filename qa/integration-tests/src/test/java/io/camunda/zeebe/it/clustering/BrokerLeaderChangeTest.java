@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.stream.Stream;
@@ -23,9 +20,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-// FIXME: rewrite tests now that leader election is not controllable
 public final class BrokerLeaderChangeTest {
-  public static final String JOB_TYPE = "testTask";
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
 
   public final Timeout testTimeout = Timeout.seconds(120);
@@ -44,56 +39,22 @@ public final class BrokerLeaderChangeTest {
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
-  public void shouldBecomeFollowerAfterRestartLeaderChange() {
+  public void shouldBecomeFollowerAfterRestart() {
     // given
     final int partition = Protocol.START_PARTITION_ID;
     final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
-
     clusteringRule.stopBrokerAndAwaitNewLeader(oldLeader);
 
-    waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() != oldLeader);
-
     // when
-    clusteringRule.restartBroker(oldLeader);
+    clusteringRule.startBroker(oldLeader);
 
     // then
-
     final Stream<PartitionInfo> partitionInfo =
         clusteringRule.getTopologyFromClient().getBrokers().stream()
             .filter(b -> b.getNodeId() == oldLeader)
             .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition));
 
     assertThat(partitionInfo).noneMatch(PartitionInfo::isLeader);
-  }
-
-  @Test
-  public void shouldCompleteProcessInstanceAfterLeaderChange() {
-    // given
-    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
-
-    final long jobKey = clientRule.createSingleJob(JOB_TYPE);
-
-    // when
-    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
-
-    // then
-    clientRule.getClient().newCompleteCommand(jobKey).send().join();
-    ZeebeAssertHelper.assertJobCompleted();
-  }
-
-  @Test
-  public void shouldCompleteProcessInstanceAfterLeaderChangeWithSnapshot() {
-    // given
-    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
-    final long jobKey = clientRule.createSingleJob(JOB_TYPE);
-    clusteringRule.triggerAndWaitForSnapshots();
-
-    // when
-    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
-
-    // then
-    clientRule.getClient().newCompleteCommand(jobKey).send().join();
-    ZeebeAssertHelper.assertJobCompleted();
   }
 
   @Test
