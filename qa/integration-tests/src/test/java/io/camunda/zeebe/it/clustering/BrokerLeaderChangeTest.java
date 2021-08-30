@@ -104,6 +104,14 @@ public final class BrokerLeaderChangeTest {
 
     // when
     // restarting until we become leader again
+    stepDownUntilRightLeaderIsChosen(firstLeaderNodeId);
+
+    // then
+    assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
+        .isEqualTo(firstLeaderNodeId);
+  }
+
+  private void stepDownUntilRightLeaderIsChosen(final int expectedLeader) {
     do {
       final var previousLeader = clusteringRule.getCurrentLeaderForPartition(1);
       clusteringRule.stepDown(previousLeader.getNodeId(), 1);
@@ -114,10 +122,6 @@ public final class BrokerLeaderChangeTest {
               () -> clusteringRule.getCurrentLeaderForPartition(1),
               newLeader -> !previousLeader.equals(newLeader));
 
-    } while (clusteringRule.getCurrentLeaderForPartition(1).getNodeId() != firstLeaderNodeId);
-
-    // then
-    assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
-        .isEqualTo(firstLeaderNodeId);
+    } while (clusteringRule.getCurrentLeaderForPartition(1).getNodeId() != expectedLeader);
   }
 }
