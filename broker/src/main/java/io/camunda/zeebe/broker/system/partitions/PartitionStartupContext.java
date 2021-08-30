@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -58,8 +57,6 @@ public interface PartitionStartupContext {
   ExporterRepository getExporterRepository();
 
   List<PartitionListener> getPartitionListeners();
-
-  PartitionProcessingState getPartitionProcessingState();
 
   // injected before bootstrap
   /**
