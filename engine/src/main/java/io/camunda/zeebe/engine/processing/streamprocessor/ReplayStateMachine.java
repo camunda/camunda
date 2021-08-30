@@ -67,6 +67,8 @@ public final class ReplayStateMachine {
   private final BooleanSupplier abortCondition;
   // current iteration
   private long lastSourceEventPosition = StreamProcessor.UNSET_POSITION;
+  private long batchSourceEventPosition = StreamProcessor.UNSET_POSITION;
+
   private long snapshotPosition;
   private long highestRecordKey = -1L;
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
@@ -159,6 +161,9 @@ public final class ReplayStateMachine {
                   if (failure != null) {
                     throw new RuntimeException(failure);
                   } else {
+                    // the position should be visible only after the batch is replayed successfully
+                    lastSourceEventPosition =
+                        Math.max(lastSourceEventPosition, batchSourceEventPosition);
                     actor.submit(this::replayNextEvent);
                   }
                 });
@@ -192,7 +197,9 @@ public final class ReplayStateMachine {
         () -> {
           batch.forEachRemaining(this::replayEvent);
 
-          lastProcessedPositionState.markAsProcessed(lastSourceEventPosition);
+          if (batchSourceEventPosition > 0) {
+            lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
+          }
         });
 
     zeebeDbTransaction.commit();
@@ -245,9 +252,7 @@ public final class ReplayStateMachine {
 
     // we need to keep track of the last source event position to know where to start with
     // processing after replay
-    if (sourceEventPosition > 0) {
-      lastSourceEventPosition = sourceEventPosition;
-    }
+    batchSourceEventPosition = sourceEventPosition;
 
     // records from other partitions should not influence the key generator of this partition
     if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
