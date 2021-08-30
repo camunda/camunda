@@ -43,7 +43,10 @@ import java.util.stream.Collectors;
  */
 @Deprecated // will be split up according to interfaces
 public class PartitionStartupAndTransitionContextImpl
-    implements PartitionContext, PartitionStartupContext, PartitionTransitionContext {
+    implements PartitionContext,
+        PartitionStartupContext,
+        PartitionTransitionContext,
+        PartitionAdminControl {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -119,6 +122,10 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public PartitionContext getPartitionContext() {
+    return this;
+  }
+
+  public PartitionAdminControl getPartitionAdminControl() {
     return this;
   }
 
@@ -240,13 +247,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public void triggerSnapshot() {
-    if (getSnapshotDirector() != null) {
-      getSnapshotDirector().forceSnapshot();
-    }
-  }
-
-  @Override
   public ExporterDirector getExporterDirector() {
     return exporterDirector;
   }
@@ -266,9 +266,29 @@ public class PartitionStartupAndTransitionContextImpl
     partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
   }
 
+  public void setCurrentTerm(final long currentTerm) {
+    this.currentTerm = currentTerm;
+  }
+
+  public void setCurrentRole(final Role currentRole) {
+    this.currentRole = currentRole;
+  }
+
+  @Override
+  public void triggerSnapshot() {
+    if (getSnapshotDirector() != null) {
+      getSnapshotDirector().forceSnapshot();
+    }
+  }
+
   @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
+  }
+
+  @Override
+  public boolean shouldExport() {
+    return !partitionProcessingState.isExportingPaused();
   }
 
   @Override
@@ -282,11 +302,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public boolean shouldExport() {
-    return !partitionProcessingState.isExportingPaused();
-  }
-
-  @Override
   public boolean pauseExporting() throws IOException {
     return partitionProcessingState.pauseExporting();
   }
@@ -294,14 +309,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public boolean resumeExporting() throws IOException {
     return partitionProcessingState.resumeExporting();
-  }
-
-  public void setCurrentTerm(final long currentTerm) {
-    this.currentTerm = currentTerm;
-  }
-
-  public void setCurrentRole(final Role currentRole) {
-    this.currentRole = currentRole;
   }
 
   public AtomixLogStorage getLogStorage() {

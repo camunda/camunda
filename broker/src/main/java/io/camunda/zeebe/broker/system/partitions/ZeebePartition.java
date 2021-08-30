@@ -26,7 +26,6 @@ import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +36,7 @@ public final class ZeebePartition extends Actor
         HealthMonitorable,
         FailureListener,
         DiskSpaceUsageListener,
-        SnapshotReplicationListener,
-        PartitionAdminAccess {
+        SnapshotReplicationListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private Role raftRole;
@@ -50,6 +48,7 @@ public final class ZeebePartition extends Actor
   private final ZeebePartitionHealth zeebePartitionHealth;
 
   private final PartitionContext context;
+  private final PartitionAdminControl adminControl;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
   private ActorFuture<Void> currentTransitionFuture;
@@ -58,6 +57,8 @@ public final class ZeebePartition extends Actor
       final PartitionStartupAndTransitionContextImpl transitionContext,
       final PartitionTransition transition) {
     context = transitionContext.getPartitionContext();
+    adminControl = transitionContext.getPartitionAdminControl();
+
     this.transition = transition;
 
     transitionContext.setActorControl(actor);
@@ -72,6 +73,10 @@ public final class ZeebePartition extends Actor
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
     roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
+  }
+
+  public PartitionAdminAccess createAdminAccess() {
+    return new ZeebePartitionAdminAccess(actor, adminControl);
   }
 
   /**
@@ -389,108 +394,6 @@ public final class ZeebePartition extends Actor
 
   public ActorFuture<Optional<ExporterDirector>> getExporterDirector() {
     return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
-  }
-
-  @Override
-  public ActorFuture<Void> takeSnapshot() {
-    final var completed = new CompletableActorFuture<Void>();
-
-    actor.call(
-        () -> {
-          try {
-            context.triggerSnapshot();
-            completed.complete(null);
-          } catch (final Throwable t) {
-            completed.completeExceptionally(t);
-          }
-        });
-
-    return completed;
-  }
-
-  @Override
-  @Deprecated // will be removed from public API of ZeebePartition
-  public ActorFuture<Void> pauseExporting() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            final var pauseStatePersisted = context.pauseExporting();
-
-            if (context.getExporterDirector() != null && pauseStatePersisted) {
-              context.getExporterDirector().pauseExporting().onComplete(completed);
-            } else {
-              completed.complete(null);
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not pause exporting", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
-  }
-
-  @Override
-  @Deprecated // will be removed from public API of ZeebePartition
-  public ActorFuture<Void> resumeExporting() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            context.resumeExporting();
-            if (context.getExporterDirector() != null && context.shouldExport()) {
-              context.getExporterDirector().resumeExporting().onComplete(completed);
-            } else {
-              completed.complete(null);
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not resume exporting", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
-  }
-
-  @Override
-  @Deprecated // will be removed from public API of ZeebePartition
-  public ActorFuture<Void> pauseProcessing() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            context.pauseProcessing();
-
-            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
-              context.getStreamProcessor().pauseProcessing().onComplete(completed);
-            } else {
-              completed.complete(null);
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not pause processing state", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
-  }
-
-  @Override
-  @Deprecated // will be removed from public API of ZeebePartition
-  public ActorFuture<Void> resumeProcessing() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            context.resumeProcessing();
-            if (context.getStreamProcessor() != null && context.shouldProcess()) {
-              context.getStreamProcessor().resumeProcessing();
-            }
-            completed.complete(null);
-          } catch (final IOException e) {
-            LOG.error("Could not resume processing", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
   }
 
   @Override

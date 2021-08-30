@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +108,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
   public PartitionAdminAccess createAdminAccess() {
     // TODO make partition manager an actor and then pass this instead of topologyManager
-    return new MultiPartitionAdminAccess(topologyManager, partitions);
+    return new MultiPartitionAdminAccess(
+        topologyManager,
+        partitions.stream().map(ZeebePartition::createAdminAccess).collect(Collectors.toList()));
   }
 
   public CompletableFuture<Void> start() {
