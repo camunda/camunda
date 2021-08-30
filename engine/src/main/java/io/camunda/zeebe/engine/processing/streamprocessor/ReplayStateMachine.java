@@ -171,7 +171,11 @@ public final class ReplayStateMachine {
       }
 
     } catch (final RuntimeException e) {
-      recoveryFuture.completeExceptionally(new RuntimeException("Failed to replay records", e));
+      final var message =
+          String.format(
+              "Failed to replay records. [snapshot-position: %d, last-read-record-position: %d, last-replayed-event-position: %d]",
+              snapshotPosition, lastReadRecordPosition, lastReplayedEventPosition);
+      recoveryFuture.completeExceptionally(new RuntimeException(message, e));
     }
   }
 
