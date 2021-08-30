@@ -8,7 +8,7 @@ import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {Dropdown, Icon, Popover, DatePicker, Button} from 'components';
 import {t} from 'translation';
 
@@ -106,8 +106,8 @@ export default function DateFilter({
               if (valid) {
                 setFilter({
                   type: 'fixed',
-                  start: format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
-                  end: format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  start: format(startOfDay(startDate), BACKEND_DATE_FORMAT),
+                  end: format(endOfDay(endDate), BACKEND_DATE_FORMAT),
                   excludeUndefined: false,
                   includeUndefined: false,
                 });

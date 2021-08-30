@@ -6,7 +6,7 @@
 
 import {parseISO} from 'date-fns';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 
 import {convertStateToFilter, convertFilterToState} from './service';
 
@@ -39,8 +39,8 @@ it('create correct filter from state object', () => {
 
   expect(filter3).toEqual({
     type: 'fixed',
-    start: format(parseISO('2015-01-20T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
-    end: format(parseISO('2019-05-11T23:59:59.999'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+    start: format(parseISO('2015-01-20T00:00:00'), BACKEND_DATE_FORMAT),
+    end: format(parseISO('2019-05-11T23:59:59.999'), BACKEND_DATE_FORMAT),
   });
 });
 

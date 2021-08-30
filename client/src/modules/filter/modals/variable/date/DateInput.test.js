@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {parseISO} from 'date-fns';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 
 import DateInput from './DateInput';
 
@@ -28,8 +28,8 @@ const exampleFilter = {
     name: 'aVariableName',
     type: 'Date',
     data: {
-      start: format(parseISO('2018-07-09T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
-      end: format(parseISO('2018-07-12T23:59:59.999'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+      start: format(parseISO('2018-07-09T00:00:00'), BACKEND_DATE_FORMAT),
+      end: format(parseISO('2018-07-12T23:59:59.999'), BACKEND_DATE_FORMAT),
       type: 'fixed',
     },
   },

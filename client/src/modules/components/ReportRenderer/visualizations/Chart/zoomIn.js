@@ -6,7 +6,7 @@
 
 import {addMilliseconds} from 'date-fns';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 
 import './zoomIn.scss';
 
@@ -92,8 +92,8 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
                 type,
                 data: {
                   type: 'fixed',
-                  start: format(start, "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
-                  end: format(end, "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  start: format(start, BACKEND_DATE_FORMAT),
+                  end: format(end, BACKEND_DATE_FORMAT),
                 },
                 filterLevel: 'instance',
               },

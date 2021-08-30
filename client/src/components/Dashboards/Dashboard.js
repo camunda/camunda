@@ -7,7 +7,7 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled, newReport} from 'config';
@@ -301,5 +301,5 @@ export class Dashboard extends React.Component {
 export default withErrorHandling(withUser(Dashboard));
 
 function getFormattedNowDate() {
-  return format(new Date(), "y-MM-dd'T'HH:mm:ss.SSSXX");
+  return format(new Date(), BACKEND_DATE_FORMAT);
 }

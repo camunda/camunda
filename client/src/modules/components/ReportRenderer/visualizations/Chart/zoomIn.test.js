@@ -6,7 +6,7 @@
 
 import {parseISO} from 'date-fns';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 
 import zoomIn from './zoomIn';
 
@@ -65,8 +65,8 @@ it('should create a startDate filter on zoom interaction', () => {
         $set: [
           {
             data: {
-              end: format(parseISO('2019-01-22T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
-              start: format(parseISO('2019-01-07T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+              end: format(parseISO('2019-01-22T00:00:00'), BACKEND_DATE_FORMAT),
+              start: format(parseISO('2019-01-07T00:00:00'), BACKEND_DATE_FORMAT),
               type: 'fixed',
             },
             type: 'startDate',
