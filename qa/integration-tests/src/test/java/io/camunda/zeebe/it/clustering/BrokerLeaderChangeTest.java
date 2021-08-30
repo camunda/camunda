@@ -82,6 +82,23 @@ public final class BrokerLeaderChangeTest {
   }
 
   @Test
+  public void shouldCompleteProcessInstanceAfterSeveralLeaderChanges() {
+    // given
+    var leaderForPartition = clusteringRule.getLeaderForPartition(1);
+    final long jobKey = clientRule.createSingleJob(JOB_TYPE);
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
+    clusteringRule.startBroker(leaderForPartition.getNodeId());
+    leaderForPartition = clusteringRule.getLeaderForPartition(1);
+
+    // when
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
+
+    // then
+    clientRule.getClient().newCompleteCommand(jobKey).send().join();
+    ZeebeAssertHelper.assertJobCompleted();
+  }
+
+  @Test
   public void shouldCompleteProcessInstanceAfterLeaderChangeWithSnapshot() {
     // given
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
