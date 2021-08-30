@@ -16,6 +16,7 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import java.time.Duration;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -77,6 +78,43 @@ public final class BrokerLeaderChangeTest {
         .getClient()
         .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
+        .withResult()
+        .send()
+        .join();
+    ZeebeAssertHelper.assertProcessInstanceCompleted("process");
+  }
+
+  @Test
+  public void shouldCorrelateMessageAfterLeaderChange() {
+    // given
+    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName("msg")
+        .correlationKey("123")
+        .send();
+
+    // when
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
+
+    // then
+    final var processDefinitionKey =
+        clientRule.deployProcess(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .intermediateCatchEvent()
+                .message(
+                    msg -> {
+                      msg.name("msg").zeebeCorrelationKey("=key");
+                    })
+                .endEvent()
+                .done());
+    clientRule
+        .getClient()
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variables(Map.of("key", "123"))
         .withResult()
         .send()
         .join();
