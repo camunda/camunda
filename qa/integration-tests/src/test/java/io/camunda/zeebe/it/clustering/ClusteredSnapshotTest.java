@@ -93,6 +93,22 @@ public class ClusteredSnapshotTest {
   }
 
   @Test
+  public void shouldSendSnapshotOnReconnect() {
+    // given
+    final var followerId = clusteringRule.stopAnyFollower();
+    ControllableExporter.updatePosition(true);
+    publishMessages();
+    snapshotTrigger.accept(clusteringRule);
+
+    // when
+    clusteringRule.startBroker(followerId);
+
+    // then
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(followerId));
+    assertThat(clusteringRule.getSnapshot(followerId)).isPresent();
+  }
+
+  @Test
   public void shouldIncludeExportedPositionInSnapshot() {
     // given
     ControllableExporter.updatePosition(true);
