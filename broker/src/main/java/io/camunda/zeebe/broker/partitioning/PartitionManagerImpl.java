@@ -105,6 +105,11 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     return partitionGroup;
   }
 
+  public PartitionAdminAccess createAdminAccess() {
+    // TODO make partition manager an actor and then pass this instead of topologyManager
+    return new MultiPartitionAdminAccess(topologyManager, partitions);
+  }
+
   public CompletableFuture<Void> start() {
     if (closeFuture != null) {
       return Futures.exceptionalFuture(new IllegalStateException("PartitionManager is closed"));
