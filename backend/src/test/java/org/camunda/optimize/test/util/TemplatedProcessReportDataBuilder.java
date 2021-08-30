@@ -69,6 +69,15 @@ public class TemplatedProcessReportDataBuilder {
           .definitions(definitions)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_NONE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.NONE)
+          .distributedByType(DistributedByType.PROCESS)
+          .definitions(definitions)
+          .build();
+        break;
       case PROC_INST_DUR_GROUP_BY_NONE_WITH_PART:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)

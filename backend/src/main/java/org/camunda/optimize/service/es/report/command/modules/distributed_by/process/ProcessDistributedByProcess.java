@@ -8,13 +8,17 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountInstanceFrequency;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
@@ -23,11 +27,13 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +57,14 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
 
   @Override
   public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
-    return viewPart.createAggregations(context)
-      .stream().map(viewAgg -> AggregationBuilders
+    final TermsAggregationBuilder tenantAgg = AggregationBuilders.terms(TENANT_AGG)
+      .size(configurationService.getEsAggregationBucketLimit())
+      .order(BucketOrder.key(true))
+      .missing(MISSING_TENANT_KEY)
+      .field(ProcessInstanceDto.Fields.tenantId);
+    viewPart.createAggregations(context).forEach(tenantAgg::subAggregation);
+    return Collections.singletonList(
+      AggregationBuilders
         .terms(PROC_DEF_KEY_AGG)
         .size(configurationService.getEsAggregationBucketLimit())
         .order(BucketOrder.key(true))
@@ -62,47 +74,112 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
             .size(configurationService.getEsAggregationBucketLimit())
             .order(BucketOrder.key(true))
             .field(ProcessInstanceDto.Fields.processDefinitionVersion)
-            .subAggregation(
-              AggregationBuilders.terms(TENANT_AGG)
-                .size(configurationService.getEsAggregationBucketLimit())
-                .order(BucketOrder.key(true))
-                .missing(MISSING_TENANT_KEY)
-                .field(ProcessInstanceDto.Fields.tenantId)
-                .subAggregation(viewAgg)
-            )
-        )).collect(Collectors.toList());
+            .subAggregation(tenantAgg)));
   }
 
   @Override
   public List<CompositeCommandResult.DistributedByResult> retrieveResult(final SearchResponse response,
                                                                          final Aggregations aggregations,
                                                                          final ExecutionContext<ProcessReportDataDto> context) {
-    Map<String, List<ProcessBucket>> bucketsByDefKey = extractBucketsByDefKey(response, aggregations, context);
     List<CompositeCommandResult.DistributedByResult> results = new ArrayList<>();
+    Map<String, List<ProcessBucket>> bucketsByDefKey = extractBucketsByDefKey(response, aggregations, context);
     for (ReportDataDefinitionDto definition : context.getReportData().getDefinitions()) {
+      final CompositeCommandResult.ViewResult result;
       if (bucketsByDefKey.containsKey(definition.getKey())) {
-        final Double combinedResult = extractResultsToMergeForDefinitionSource(bucketsByDefKey, definition).stream()
-          .mapToDouble(result -> result.getViewMeasures().get(0).getValue())
-          .sum();
-        results.add(createDistributedByResult(
-          definition.getIdentifier(),
-          definition.getDisplayName(),
-          CompositeCommandResult.ViewResult.builder()
-            .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(combinedResult).build())
-            .build()
-        ));
+        result = calculateMergedResult(bucketsByDefKey, definition, context);
       } else {
-        results.add(createDistributedByResult(
-          definition.getIdentifier(),
-          definition.getDisplayName(),
-          viewPart.createEmptyResult(context)
-        ));
+        result = viewPart.createEmptyResult(context);
       }
+      results.add(createDistributedByResult(
+        definition.getIdentifier(),
+        definition.getDisplayName(),
+        result
+      ));
     }
     return results;
   }
 
-  private List<CompositeCommandResult.ViewResult> extractResultsToMergeForDefinitionSource(
+  private CompositeCommandResult.ViewResult calculateMergedResult(final Map<String, List<ProcessBucket>> bucketsByDefKey,
+                                                                  final ReportDataDefinitionDto definition,
+                                                                  final ExecutionContext<ProcessReportDataDto> context) {
+    final List<ProcessBucket> processBuckets = extractResultsToMergeForDefinitionSource(bucketsByDefKey, definition);
+    List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
+    if (viewPart instanceof ProcessViewCountInstanceFrequency) {
+      final Double totalCount = processBuckets.stream()
+        .map(ProcessBucket::getResult)
+        .mapToDouble(result -> result.getViewMeasures().get(0).getValue())
+        .sum();
+      viewMeasures.add(CompositeCommandResult.ViewMeasure.builder().value(totalCount).build());
+    } else {
+      for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
+        Double mergedAggResult = calculateMergedAggregationResult(processBuckets, aggregationType);
+        viewMeasures.add(CompositeCommandResult.ViewMeasure.builder()
+                           .aggregationType(aggregationType)
+                           .value(mergedAggResult).build());
+      }
+    }
+    return CompositeCommandResult.ViewResult.builder().viewMeasures(viewMeasures).build();
+  }
+
+  private Double calculateMergedAggregationResult(final List<ProcessBucket> processBuckets,
+                                                  final AggregationType aggregationType) {
+    final Map<AggregationType, List<CompositeCommandResult.ViewMeasure>> measuresByAggType = processBuckets.stream()
+      .map(ProcessBucket::getResult)
+      .flatMap(results -> results.getViewMeasures().stream())
+      .collect(Collectors.groupingBy(CompositeCommandResult.ViewMeasure::getAggregationType));
+    Double mergedAggResult;
+    switch (aggregationType) {
+      case MAX:
+        mergedAggResult = measuresByAggType.getOrDefault(aggregationType, Collections.emptyList())
+          .stream()
+          .mapToDouble(CompositeCommandResult.ViewMeasure::getValue)
+          .max()
+          .orElse(0.0);
+        break;
+      case MIN:
+        mergedAggResult = measuresByAggType.getOrDefault(aggregationType, Collections.emptyList())
+          .stream()
+          .mapToDouble(CompositeCommandResult.ViewMeasure::getValue)
+          .min()
+          .orElse(0.0);
+        break;
+      case SUM:
+        mergedAggResult = measuresByAggType.getOrDefault(aggregationType, Collections.emptyList())
+          .stream()
+          .mapToDouble(CompositeCommandResult.ViewMeasure::getValue)
+          .sum();
+        break;
+      case AVERAGE:
+        final double totalDocCount = processBuckets.stream()
+          .mapToDouble(ProcessBucket::getDocCount)
+          .sum();
+        final double totalValueSum = processBuckets.stream()
+          .map(bucket -> {
+            final Optional<CompositeCommandResult.ViewMeasure> avgMeasure = bucket.getResult()
+              .getViewMeasures()
+              .stream()
+              .filter(measure -> measure.getAggregationType() == AggregationType.AVERAGE)
+              .findFirst();
+            return avgMeasure.map(measure -> Pair.of(bucket, measure.getValue()));
+          })
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .mapToDouble(pair -> pair.getLeft().getDocCount() * pair.getRight())
+          .sum();
+        // We must check to avoid a potential division by zero
+        mergedAggResult = totalDocCount == 0 ? null : (totalValueSum / totalDocCount);
+        break;
+      // We cannot support the median aggregation type as the information is lost on merging of buckets
+      case MEDIAN:
+        mergedAggResult = null;
+        break;
+      default:
+        throw new OptimizeRuntimeException(String.format("%s is not a valid Aggregation type", aggregationType));
+    }
+    return mergedAggResult;
+  }
+
+  private List<ProcessBucket> extractResultsToMergeForDefinitionSource(
     final Map<String, List<ProcessBucket>> bucketsByDefKey, final ReportDataDefinitionDto definition) {
     final boolean useAllVersions =
       DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(definition.getVersions());
@@ -123,7 +200,6 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       })
       .filter(bucketForKey -> (definition.getTenantIds().contains(bucketForKey.getTenant())) ||
         (bucketForKey.getTenant().equals(MISSING_TENANT_KEY) && definition.getTenantIds().contains(null)))
-      .map(ProcessBucket::getResult)
       .collect(Collectors.toList());
   }
 
@@ -153,6 +229,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
                   keyBucket.getKeyAsString(),
                   versionBucket.getKeyAsString(),
                   tenantBucket.getKeyAsString(),
+                  tenantBucket.getDocCount(),
                   viewPart.retrieveResult(response, tenantBucket.getAggregations(), context)
                 )).collect(Collectors.toList());
               bucketsByDefKey.computeIfAbsent(keyBucket.getKeyAsString(), key -> new ArrayList<>())
@@ -176,6 +253,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     private final String procDefKey;
     private final String version;
     private final String tenant;
+    private final long docCount;
     private final CompositeCommandResult.ViewResult result;
   }
 

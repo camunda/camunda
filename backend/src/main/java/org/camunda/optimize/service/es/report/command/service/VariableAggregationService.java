@@ -41,7 +41,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class VariableAggregationService {
 
   public static final String NESTED_VARIABLE_AGGREGATION = "nestedVariables";
-  public static final String NESTED_FLOWNODE_AGGREGATION = "nestedFlownodes";
+  public static final String NESTED_FLOWNODE_AGGREGATION = "nestedFlowNodes";
   public static final String VARIABLES_AGGREGATION = "variables";
   public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   public static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";

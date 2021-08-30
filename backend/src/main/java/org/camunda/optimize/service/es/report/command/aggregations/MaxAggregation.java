@@ -31,4 +31,5 @@ public class MaxAggregation implements AggregationStrategy {
   public AggregationType getAggregationType() {
     return AggregationType.MAX;
   }
+
 }

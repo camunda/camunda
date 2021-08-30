@@ -42,7 +42,7 @@ public abstract class ProcessViewMultiAggregation extends ProcessViewPart {
     return viewResultBuilder.build();
   }
 
-  protected List<AggregationStrategy> getAggregationStrategies(final ProcessReportDataDto definitionData) {
+  public List<AggregationStrategy> getAggregationStrategies(final ProcessReportDataDto definitionData) {
     return definitionData.getConfiguration().getAggregationTypes().stream()
       .map(AGGREGATION_STRATEGIES::get)
       .collect(Collectors.toList());

@@ -608,7 +608,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>>>() {});
+      .execute(new TypeReference<>() {});
     // @formatter:on
   }
 
@@ -622,7 +622,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -630,7 +630,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -638,7 +638,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<Double>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -646,7 +646,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -654,7 +654,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -664,7 +664,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId, filters)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>>() {});
+      .execute(new TypeReference<>() {});
     // @formatter:on
   }
 
@@ -672,7 +672,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -680,7 +680,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<Double>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -688,7 +688,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -722,7 +722,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId, filters)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<T>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -761,7 +761,7 @@ public class ReportClient {
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(
-        new TypeReference<AuthorizedSingleReportEvaluationResponseDto<T, SingleProcessReportDefinitionRequestDto>>() {}
+        new TypeReference<>() {}
       );
       // @formatter:on
   }
@@ -772,7 +772,7 @@ public class ReportClient {
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(
-        new TypeReference<AuthorizedSingleReportEvaluationResponseDto<T, SingleDecisionReportDefinitionRequestDto>>() {}
+        new TypeReference<>() {}
       );
       // @formatter:off
   }
@@ -791,7 +791,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResponseDto<T>>() {});
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -799,7 +799,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResponseDto<T>>() {});
+      .execute(new TypeReference<>() {});
     // @formatter:on
   }
 }

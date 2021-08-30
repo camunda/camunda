@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.none.distributedby;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -14,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public class CountProcessInstanceFrequencyByNoneByProcessReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class CountProcessInstanceFrequencyByNoneByProcessReportEvaluationIT extends AbstractIT {
 
   @Test
   public void reportEvaluationWithSingleProcessDefinitionSource() {
