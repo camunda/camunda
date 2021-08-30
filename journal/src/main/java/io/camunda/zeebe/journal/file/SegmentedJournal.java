@@ -165,7 +165,6 @@ public final class SegmentedJournal implements Journal {
       compactSegments.clear();
 
       journalIndex.deleteUntil(index);
-      resetHead(getFirstSegment().index());
     }
   }
 
@@ -606,19 +605,6 @@ public final class SegmentedJournal implements Journal {
 
   public void closeReader(final SegmentedJournalReader segmentedJournalReader) {
     readers.remove(segmentedJournalReader);
-  }
-
-  /**
-   * Resets journal readers to the given head.
-   *
-   * @param index The index at which to reset readers.
-   */
-  void resetHead(final long index) {
-    for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() <= index) {
-        reader.unsafeSeek(index);
-      }
-    }
   }
 
   /**

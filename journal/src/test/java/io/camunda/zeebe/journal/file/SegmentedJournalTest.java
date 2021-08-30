@@ -260,6 +260,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
+    reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
   }
 
@@ -279,6 +280,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
+    reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
   }
 
