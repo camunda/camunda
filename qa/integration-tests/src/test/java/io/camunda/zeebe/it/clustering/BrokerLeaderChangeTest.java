@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.clustering;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.response.BrokerInfo;
@@ -44,20 +43,16 @@ public final class BrokerLeaderChangeTest {
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
-  public void shouldBecomeFollowerAfterRestartLeaderChange() {
+  public void shouldBecomeFollowerAfterRestart() {
     // given
     final int partition = Protocol.START_PARTITION_ID;
     final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
-
     clusteringRule.stopBrokerAndAwaitNewLeader(oldLeader);
 
-    waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() != oldLeader);
-
     // when
-    clusteringRule.restartBroker(oldLeader);
+    clusteringRule.startBroker(oldLeader);
 
     // then
-
     final Stream<PartitionInfo> partitionInfo =
         clusteringRule.getTopologyFromClient().getBrokers().stream()
             .filter(b -> b.getNodeId() == oldLeader)
