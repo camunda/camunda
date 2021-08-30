@@ -76,7 +76,7 @@ public final class Broker implements AutoCloseable {
   private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private BrokerAdminService brokerAdminService;
+  private BrokerAdminServiceImpl brokerAdminService;
   private PartitionManagerImpl partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
@@ -201,10 +201,9 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable addBrokerAdminService() {
-    final var adminService =
-        new BrokerAdminServiceImpl(
-            partitionManager.createAdminAccess(), partitionManager.getPartitions());
+    final var adminService = new BrokerAdminServiceImpl(partitionManager.getPartitions());
     scheduleActor(adminService);
+    adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;

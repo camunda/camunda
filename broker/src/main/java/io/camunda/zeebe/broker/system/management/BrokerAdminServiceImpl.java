@@ -37,14 +37,16 @@ import org.slf4j.Logger;
 public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private final PartitionAdminAccess adminAccess;
+  private PartitionAdminAccess adminAccess;
   private final List<ZeebePartition> partitions;
 
   public BrokerAdminServiceImpl(
-      final PartitionAdminAccess adminAccess,
       @Deprecated /* TODO find smaller interface */ final List<ZeebePartition> partitions) {
-    this.adminAccess = requireNonNull(adminAccess);
     this.partitions = partitions;
+  }
+
+  public void injectAdminAccess(final PartitionAdminAccess adminAccess) {
+    this.adminAccess = requireNonNull(adminAccess);
   }
 
   @Override

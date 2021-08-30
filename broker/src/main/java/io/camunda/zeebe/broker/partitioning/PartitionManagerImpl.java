@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -106,10 +107,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     return partitionGroup;
   }
 
-  public PartitionAdminAccess createAdminAccess() {
-    // TODO make partition manager an actor and then pass this instead of topologyManager
+  public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
     return new MultiPartitionAdminAccess(
-        topologyManager,
+        concurrencyControl,
         partitions.stream().map(ZeebePartition::createAdminAccess).collect(Collectors.toList()));
   }
 
