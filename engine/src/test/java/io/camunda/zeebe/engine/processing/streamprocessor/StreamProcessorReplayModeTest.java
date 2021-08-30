@@ -69,6 +69,10 @@ public final class StreamProcessorReplayModeTest {
     // when
     startStreamProcessor(replayUntilEnd);
 
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(getCurrentPhase(replayUntilEnd)).isEqualTo(Phase.PROCESSING));
+
     replayUntilEnd.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
@@ -81,8 +85,6 @@ public final class StreamProcessorReplayModeTest {
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(anyLong(), any(), any(), any(), any());
     inOrder.verifyNoMoreInteractions();
-
-    assertThat(getCurrentPhase(replayUntilEnd)).isEqualTo(Phase.PROCESSING);
   }
 
   @Test
@@ -309,10 +311,16 @@ public final class StreamProcessorReplayModeTest {
     // when
     startStreamProcessor(replayContinuously);
 
-    replayContinuously.writeEvent(
-        ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.sourceRecordPosition(commandPositionBeforeSnapshot));
+    final var eventPosition =
+        replayContinuously.writeEvent(
+            ELEMENT_ACTIVATING,
+            RECORD,
+            writer -> writer.sourceRecordPosition(commandPositionBeforeSnapshot));
+
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(getLastProcessedPosition(replayContinuously)).isEqualTo(eventPosition));
 
     // then
     final var lastProcessedPositionState =
@@ -327,7 +335,7 @@ public final class StreamProcessorReplayModeTest {
   private StreamProcessor startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
     return streamProcessorRule
         .withEventApplierFactory(zeebeState -> eventApplier)
-        .startTypedStreamProcessor(
+        .startTypedStreamProcessorNotAwaitOpening(
             (processors, context) ->
                 processors.onCommand(
                     ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor));
