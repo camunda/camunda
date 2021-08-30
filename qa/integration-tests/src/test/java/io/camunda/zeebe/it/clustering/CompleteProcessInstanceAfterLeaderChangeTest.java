@@ -49,7 +49,7 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
   public BiConsumer<ClusteringRule, GrpcClientRule> afterRestart;
 
   @Parameters(name = "{index}: {0}")
-  public static Object[][] restartAction() {
+  public static Object[][] actions() {
     return new Object[][] {
       new Object[] {
         "create instance after restart",
