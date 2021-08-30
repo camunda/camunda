@@ -141,23 +141,25 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   protected void onActorStarting() {
-    final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
-    actor.runOnCompletionBlockingCurrentPhase(
-        newReaderFuture,
-        (reader, errorOnReceivingReader) -> {
-          if (errorOnReceivingReader == null) {
-            logStreamReader = reader;
-          } else {
-            // TODO https://github.com/zeebe-io/zeebe/issues/3499
-            // ideally we could fail the actor start future such that we are able to propagate the
-            // error
-            LOG.error(
-                "Unexpected error on retrieving reader from log {}",
-                logStream.getLogName(),
-                errorOnReceivingReader);
-            actor.close();
-          }
-        });
+    if (exporterMode == ExporterMode.ACTIVE) {
+      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
+      actor.runOnCompletionBlockingCurrentPhase(
+          newReaderFuture,
+          (reader, errorOnReceivingReader) -> {
+            if (errorOnReceivingReader == null) {
+              logStreamReader = reader;
+            } else {
+              // TODO https://github.com/zeebe-io/zeebe/issues/3499
+              // ideally we could fail the actor start future such that we are able to propagate the
+              // error
+              LOG.error(
+                  "Unexpected error on retrieving reader from log {}",
+                  logStream.getLogName(),
+                  errorOnReceivingReader);
+              actor.close();
+            }
+          });
+    }
   }
 
   @Override
@@ -190,7 +192,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   protected void onActorClosing() {
-    logStreamReader.close();
+    if (logStreamReader != null) {
+      logStreamReader.close();
+    }
     logStream.removeRecordAvailableListener(this);
   }
 
@@ -245,14 +249,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void recoverFromSnapshot() {
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
-
     final long snapshotPosition = state.getLowestPosition();
-    final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
-    if (failedToRecoverReader) {
-      throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
-    }
-
     LOG.debug(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",
         getName(),
@@ -296,6 +293,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     if (state.hasExporters()) {
+      final long snapshotPosition = state.getLowestPosition();
+      final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
+      if (failedToRecoverReader) {
+        throw new IllegalStateException(
+            String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
+      }
       if (!isPaused) {
         exporterPhase = ExporterPhase.EXPORTING;
         actor.submit(this::readNextEvent);
