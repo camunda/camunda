@@ -6,7 +6,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -43,7 +42,7 @@ public class InstallRequestHandlingTest {
 
     // then
     clusteringRule.waitForSnapshotAtBroker(followerId);
-    stepDownUntilRightLeaderIsChosen(followerId);
+    clusteringRule.forceClusterToHaveNewLeader(followerId);
 
     clientRule.getClient().newCompleteCommand(jobKey).send().join();
     ZeebeAssertHelper.assertProcessInstanceCompleted("process");
@@ -69,7 +68,7 @@ public class InstallRequestHandlingTest {
     clientRule.createProcessInstance(processDefinitionKey);
 
     // then
-    stepDownUntilRightLeaderIsChosen(followerId);
+    clusteringRule.forceClusterToHaveNewLeader(followerId);
 
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -79,19 +78,5 @@ public class InstallRequestHandlingTest {
             .getKey();
     clientRule.getClient().newCompleteCommand(jobKey).send().join();
     ZeebeAssertHelper.assertProcessInstanceCompleted("process");
-  }
-
-  private void stepDownUntilRightLeaderIsChosen(final int expectedLeader) {
-    do {
-      final var previousLeader = clusteringRule.getCurrentLeaderForPartition(1);
-      clusteringRule.stepDown(previousLeader.getNodeId(), 1);
-      Awaitility.await()
-          .pollInterval(Duration.ofMillis(100))
-          .atMost(Duration.ofSeconds(10))
-          .until(
-              () -> clusteringRule.getCurrentLeaderForPartition(1),
-              newLeader -> !previousLeader.equals(newLeader));
-
-    } while (clusteringRule.getCurrentLeaderForPartition(1).getNodeId() != expectedLeader);
   }
 }

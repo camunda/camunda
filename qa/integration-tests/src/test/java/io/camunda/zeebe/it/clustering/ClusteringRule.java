@@ -634,6 +634,22 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
+  public void forceClusterToHaveNewLeader(final int expectedLeader) {
+    // naive approach; steps down until the right node becomes leader
+    // there is probably a better way
+    do {
+      final var previousLeader = getCurrentLeaderForPartition(1);
+      stepDown(previousLeader.getNodeId(), 1);
+      Awaitility.await()
+          .pollInterval(Duration.ofMillis(100))
+          .atMost(Duration.ofSeconds(10))
+          .until(
+              () -> getCurrentLeaderForPartition(1),
+              newLeader -> !previousLeader.equals(newLeader));
+
+    } while (getCurrentLeaderForPartition(1).getNodeId() != expectedLeader);
+  }
+
   private void waitUntilBrokerIsRemovedFromTopology(final InetSocketAddress socketAddress) {
     waitForTopology(
         topology ->
