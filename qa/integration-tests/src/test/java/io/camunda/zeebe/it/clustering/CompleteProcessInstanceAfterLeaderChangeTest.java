@@ -85,10 +85,7 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
                       Bpmn.createExecutableProcess("process")
                           .startEvent()
                           .intermediateCatchEvent()
-                          .message(
-                              msg -> {
-                                msg.name("msg").zeebeCorrelationKey("=key");
-                              })
+                          .message(msg -> msg.name("msg").zeebeCorrelationKey("=key"))
                           .endEvent()
                           .done());
               clientRule
