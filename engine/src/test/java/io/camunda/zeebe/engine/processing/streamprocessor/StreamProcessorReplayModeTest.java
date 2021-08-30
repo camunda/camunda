@@ -290,6 +290,40 @@ public final class StreamProcessorReplayModeTest {
         .isEqualTo(commandPosition);
   }
 
+  @Test
+  public void shouldNotSetLastProcessedPositionIfLessThanSnapshotPosition() {
+    // given
+    final var commandPositionBeforeSnapshot = 1L;
+    final var snapshotPosition = 2L;
+
+    startStreamProcessor(replayContinuously);
+
+    replayContinuously
+        .getZeebeState()
+        .getLastProcessedPositionState()
+        .markAsProcessed(snapshotPosition);
+
+    replayContinuously.snapshot();
+    replayContinuously.closeStreamProcessor();
+
+    // when
+    startStreamProcessor(replayContinuously);
+
+    replayContinuously.writeEvent(
+        ELEMENT_ACTIVATING,
+        RECORD,
+        writer -> writer.sourceRecordPosition(commandPositionBeforeSnapshot));
+
+    // then
+    final var lastProcessedPositionState =
+        replayContinuously.getZeebeState().getLastProcessedPositionState();
+
+    assertThat(lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition())
+        .describedAs(
+            "Expected that the last processed position is not less than the snapshot position")
+        .isEqualTo(snapshotPosition);
+  }
+
   private StreamProcessor startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
     return streamProcessorRule
         .withEventApplierFactory(zeebeState -> eventApplier)
