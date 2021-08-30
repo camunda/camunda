@@ -13,6 +13,7 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.stream.Stream;
@@ -58,6 +59,28 @@ public final class BrokerLeaderChangeTest {
             .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition));
 
     assertThat(partitionInfo).noneMatch(PartitionInfo::isLeader);
+  }
+
+  @Test
+  public void shouldCreateInstanceAfterLeaderChange() {
+    // given
+    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
+    final var processDefinitionKey =
+        clientRule.deployProcess(
+            Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
+
+    // when
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
+
+    // then
+    clientRule
+        .getClient()
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .withResult()
+        .send()
+        .join();
+    ZeebeAssertHelper.assertProcessInstanceCompleted("process");
   }
 
   @Test
