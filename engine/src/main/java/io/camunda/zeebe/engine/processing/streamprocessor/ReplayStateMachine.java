@@ -14,14 +14,15 @@ import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -57,16 +58,17 @@ public final class ReplayStateMachine {
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(REPLAY_FILTER));
 
-  private final LogStreamReader logStreamReader;
+  private final LogStreamBatchReader logStreamBatchReader;
   private final EventApplier eventApplier;
 
   private final TransactionContext transactionContext;
-  private final RetryStrategy updateStateRetryStrategy;
-  private final RetryStrategy processRetryStrategy;
+  private final RetryStrategy replayStrategy;
 
   private final BooleanSupplier abortCondition;
   // current iteration
   private long lastSourceEventPosition = StreamProcessor.UNSET_POSITION;
+  private long batchSourceEventPosition = StreamProcessor.UNSET_POSITION;
+
   private long snapshotPosition;
   private long highestRecordKey = -1L;
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
@@ -84,7 +86,6 @@ public final class ReplayStateMachine {
       final ProcessingContext context, final BooleanSupplier shouldReplayNext) {
     shouldPause = () -> !shouldReplayNext.getAsBoolean();
     actor = context.getActor();
-    logStreamReader = context.getLogStreamReader();
     recordValues = context.getRecordValues();
     transactionContext = context.getTransactionContext();
     zeebeState = context.getZeebeState();
@@ -94,10 +95,10 @@ public final class ReplayStateMachine {
     lastProcessedPositionState = context.getLastProcessedPositionState();
 
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
-    updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
-    processRetryStrategy = new AbortableRetryStrategy(actor);
+    replayStrategy = new RecoverableRetryStrategy(actor);
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
+    logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());
   }
 
   /**
@@ -114,7 +115,7 @@ public final class ReplayStateMachine {
         snapshotPosition > 0 ? snapshotPosition : StreamProcessor.UNSET_POSITION;
 
     // start after snapshot
-    logStreamReader.seekToNextEvent(snapshotPosition);
+    logStreamBatchReader.seekToNextBatch(snapshotPosition);
 
     LOG.info(
         "Processor starts replay of events. [snapshot-position: {}, replay-mode: {}]",
@@ -148,13 +149,24 @@ public final class ReplayStateMachine {
       return;
     }
 
-    LoggedEvent currentEvent = null;
     try {
-      if (logStreamReader.hasNext()) {
+      if (logStreamBatchReader.hasNext()) {
         currentState = State.REPLAY_EVENT;
 
-        currentEvent = logStreamReader.next();
-        replayEvent(currentEvent);
+        final var batch = logStreamBatchReader.next();
+        replayStrategy
+            .runWithRetry(() -> tryToReplayBatch(batch), abortCondition)
+            .onComplete(
+                (success, failure) -> {
+                  if (failure != null) {
+                    throw new RuntimeException(failure);
+                  } else {
+                    // the position should be visible only after the batch is replayed successfully
+                    lastSourceEventPosition =
+                        Math.max(lastSourceEventPosition, batchSourceEventPosition);
+                    actor.submit(this::replayNextEvent);
+                  }
+                });
 
       } else if (streamProcessorMode == StreamProcessorMode.PROCESSING) {
         onRecordsReplayed();
@@ -164,28 +176,47 @@ public final class ReplayStateMachine {
       }
 
     } catch (final RuntimeException e) {
-      final var replayException =
-          new ProcessingException("Unable to replay record", currentEvent, metadata, e);
-      recoveryFuture.completeExceptionally(replayException);
+      final var message =
+          String.format(
+              "Failed to replay records. [snapshot-position: %d, last-read-record-position: %d, last-replayed-event-position: %d]",
+              snapshotPosition, lastReadRecordPosition, lastReplayedEventPosition);
+      recoveryFuture.completeExceptionally(new RuntimeException(message, e));
     }
   }
 
-  private void replayEvent(final LoggedEvent currentEvent) {
-    if (!eventFilter.applies(currentEvent)) {
-      onRecordReplayed(currentEvent);
-      return;
+  private boolean tryToReplayBatch(final Batch batch) throws Exception {
+    final boolean onRetry = zeebeDbTransaction != null;
+    if (onRetry) {
+      zeebeDbTransaction.rollback();
+      // reading the whole batch from the beginning again
+      batch.head();
     }
 
-    readMetadata(currentEvent);
-    final var currentTypedEvent = readRecordValue(currentEvent);
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
+    zeebeDbTransaction.run(
+        () -> {
+          batch.forEachRemaining(this::replayEvent);
 
-    processRetryStrategy
-        .runWithRetry(() -> tryToApplyCurrentEvent(currentTypedEvent), abortCondition)
-        .onComplete(
-            (v, t) ->
-                updateStateRetryStrategy
-                    .runWithRetry(this::tryToCommitStateChanges, abortCondition)
-                    .onComplete((bool, throwable) -> onRecordReplayed(currentEvent)));
+          if (batchSourceEventPosition > 0) {
+            lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
+          }
+        });
+
+    zeebeDbTransaction.commit();
+    zeebeDbTransaction = null;
+
+    return true;
+  }
+
+  private void replayEvent(final LoggedEvent currentEvent) {
+    if (eventFilter.applies(currentEvent)) {
+      readMetadata(currentEvent);
+      final var currentTypedEvent = readRecordValue(currentEvent);
+
+      applyCurrentEvent(currentTypedEvent);
+    }
+
+    onRecordReplayed(currentEvent);
   }
 
   /**
@@ -221,17 +252,13 @@ public final class ReplayStateMachine {
 
     // we need to keep track of the last source event position to know where to start with
     // processing after replay
-    if (sourceEventPosition > 0) {
-      lastSourceEventPosition = sourceEventPosition;
-    }
+    batchSourceEventPosition = sourceEventPosition;
 
     // records from other partitions should not influence the key generator of this partition
     if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
       // remember the highest key on the stream to restore the key generator after replay
       highestRecordKey = Math.max(currentRecordKey, highestRecordKey);
     }
-
-    actor.submit(this::replayNextEvent);
   }
 
   /**
@@ -256,45 +283,12 @@ public final class ReplayStateMachine {
     return typedEvent;
   }
 
-  /**
-   * Tries to apply the current read event to the state. If this method is called multiple times,
-   * because of previous errors, then it will reset the current transaction before it tries to apply
-   * the event again.
-   *
-   * @return true on success
-   * @throws Exception if the applying of the event fails
-   */
-  private boolean tryToApplyCurrentEvent(final TypedRecord<?> currentEvent) throws Exception {
-    final boolean onRetry = zeebeDbTransaction != null;
-    if (onRetry) {
-      zeebeDbTransaction.rollback();
+  private void applyCurrentEvent(final TypedRecord<?> currentEvent) {
+    if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
+      eventApplier.applyState(
+          currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+      lastReplayedEventPosition = currentEvent.getPosition();
     }
-
-    zeebeDbTransaction = transactionContext.getCurrentTransaction();
-    zeebeDbTransaction.run(
-        () -> {
-          if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
-            eventApplier.applyState(
-                currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
-            lastReplayedEventPosition = currentEvent.getPosition();
-          }
-          lastProcessedPositionState.markAsProcessed(currentEvent.getSourceRecordPosition());
-        });
-
-    return true;
-  }
-
-  /**
-   * Commits the current transaction. The transaction holds the state changes, which have been
-   * caused by applying the current event.
-   *
-   * @return true on success
-   * @throws Exception if the commit fails
-   */
-  private boolean tryToCommitStateChanges() throws Exception {
-    zeebeDbTransaction.commit();
-    zeebeDbTransaction = null;
-    return true;
   }
 
   public long getLastSourceEventPosition() {
