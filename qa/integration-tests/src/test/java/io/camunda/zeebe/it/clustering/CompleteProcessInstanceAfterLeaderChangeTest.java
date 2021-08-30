@@ -11,6 +11,8 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -27,8 +29,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class CompleteProcessInstanceAfterLeaderChangeTest {
-
-  private static long intermediateValue = -1;
 
   public final Timeout testTimeout = Timeout.seconds(120);
 
@@ -127,14 +127,19 @@ public class CompleteProcessInstanceAfterLeaderChangeTest {
       },
       new Object[] {
         "complete job after restart",
-        (Consumer<GrpcClientRule>)
-            (clientRule) -> intermediateValue = clientRule.createSingleJob("testTask"),
+        (Consumer<GrpcClientRule>) (clientRule) -> clientRule.createSingleJob("testTask"),
         (BiConsumer<ClusteringRule, GrpcClientRule>)
             (clusteringRule, clientRule) -> {
               Awaitility.await("timer should trigger and complete instance")
                   .untilAsserted(
                       () -> {
-                        clientRule.getClient().newCompleteCommand(intermediateValue).send().join();
+                        final var jobKey =
+                            RecordingExporter.jobRecords(JobIntent.CREATED)
+                                .withType("testTask")
+                                .getFirst()
+                                .getKey();
+
+                        clientRule.getClient().newCompleteCommand(jobKey).send().join();
                         ZeebeAssertHelper.assertJobCompleted();
                       });
             }
