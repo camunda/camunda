@@ -153,8 +153,7 @@ public class PartitionBoostrapAndTransitionContextImpl
 
   @Override
   public void notifyListenersOfBecomingInactive() {
-    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(),
-        getCurrentTerm()));
+    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(), getCurrentTerm()));
   }
 
   @Override

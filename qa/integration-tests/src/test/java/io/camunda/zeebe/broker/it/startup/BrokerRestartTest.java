@@ -27,8 +27,7 @@ public class BrokerRestartTest {
   private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule public final RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(
-      clientRule);
+  @Rule public final RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test
   public void shouldSortRecordsByPosition() {

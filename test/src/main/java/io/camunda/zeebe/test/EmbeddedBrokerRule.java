@@ -219,8 +219,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       final boolean hasLeaderPartition = latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
       assertThat(hasLeaderPartition)
-          .describedAs("Expected the broker to have a leader of the partition within %s",
-              timeout)
+          .describedAs("Expected the broker to have a leader of the partition within %s", timeout)
           .isTrue();
 
     } catch (final InterruptedException e) {

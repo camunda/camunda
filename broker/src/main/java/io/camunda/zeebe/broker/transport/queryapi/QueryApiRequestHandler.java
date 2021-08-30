@@ -17,15 +17,11 @@ import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.ExecuteQueryRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -35,7 +31,6 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -47,8 +42,8 @@ public final class QueryApiRequestHandler implements RequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-  private final ExecuteCommandRequestDecoder executeQueryRequestDecoder =
-      new ExecuteCommandRequestDecoder();
+  private final ExecuteQueryRequestDecoder executeQueryRequestDecoder =
+      new ExecuteQueryRequestDecoder();
   private final Queue<Runnable> cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
   private final Consumer<Runnable> cmdConsumer = Runnable::run;
 
@@ -72,24 +67,17 @@ public final class QueryApiRequestHandler implements RequestHandler {
   }
 
   private void initEventTypeMap() {
-    recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
     recordsByType.put(ValueType.JOB, new JobRecord());
+    recordsByType.put(ValueType.PROCESS, new ProcessRecord());
     recordsByType.put(ValueType.PROCESS_INSTANCE, new ProcessInstanceRecord());
-    recordsByType.put(ValueType.MESSAGE, new MessageRecord());
-    recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
-    recordsByType.put(ValueType.INCIDENT, new IncidentRecord());
-    recordsByType.put(ValueType.VARIABLE_DOCUMENT, new VariableDocumentRecord());
-    recordsByType.put(ValueType.PROCESS_INSTANCE_CREATION, new ProcessInstanceCreationRecord());
   }
 
-  private void handleExecuteCommandRequest(
+  private void handleExecuteQueryRequest(
       final ServerOutput output,
       final int partitionId,
       final long requestId,
-      final RecordMetadata eventMetadata,
       final DirectBuffer buffer,
-      final int messageOffset,
-      final int messageLength) {
+      final int messageOffset) {
 
     if (!isDiskSpaceAvailable) {
       errorResponseWriter
@@ -107,8 +95,6 @@ public final class QueryApiRequestHandler implements RequestHandler {
         messageHeaderDecoder.blockLength(),
         messageHeaderDecoder.version());
 
-    final long key = executeQueryRequestDecoder.key();
-
     final QueryService queryService = leadingStreams.get(partitionId);
 
     if (queryService == null) {
@@ -118,44 +104,18 @@ public final class QueryApiRequestHandler implements RequestHandler {
       return;
     }
 
-    final ValueType eventType = executeQueryRequestDecoder.valueType();
-    final short intent = executeQueryRequestDecoder.intent();
-    final UnifiedRecordValue event = recordsByType.get(eventType);
+    final ValueType queryValueType = executeQueryRequestDecoder.valueType();
 
-    if (event == null) {
+    if (!recordsByType.containsKey(queryValueType)) {
       errorResponseWriter
-          .unsupportedMessage(eventType.name(), recordsByType.keySet().toArray())
+          .unsupportedMessage(queryValueType.name(), recordsByType.keySet().toArray())
           .tryWriteResponseOrLogFailure(output, partitionId, requestId);
       return;
     }
-
-    final int eventOffset =
-        executeQueryRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
-    final int eventLength = executeQueryRequestDecoder.valueLength();
-
-    event.reset();
-
-    try {
-      // verify that the event / command is valid
-      event.wrap(buffer, eventOffset, eventLength);
-    } catch (final RuntimeException e) {
-      LOG.error("Failed to deserialize message of type {} in client API", eventType.name(), e);
-
-      errorResponseWriter
-          .malformedRequest(e)
-          .tryWriteResponseOrLogFailure(output, partitionId, requestId);
-      return;
-    }
-
-    // Queries are not records, they just retrieve records, specifically they retrieve event records
-    eventMetadata.recordType(RecordType.EVENT);
-    final Intent eventIntent = Intent.fromProtocolValue(eventType, intent);
-    eventMetadata.intent(eventIntent);
-    eventMetadata.valueType(eventType);
 
     metrics.receivedRequest(partitionId);
     final RequestLimiter<Intent> limiter = partitionLimiters.get(partitionId);
-    if (!limiter.tryAcquire(partitionId, requestId, eventIntent)) {
+    if (!limiter.tryAcquire(partitionId, requestId, Intent.UNKNOWN)) {
       metrics.dropped(partitionId);
       LOG.trace(
           "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway",
@@ -167,15 +127,20 @@ public final class QueryApiRequestHandler implements RequestHandler {
       return;
     }
 
-    final Optional<DirectBuffer> bpmnProcessId;
-    if (eventType == ValueType.JOB) {
-      bpmnProcessId = queryService.getBpmnProcessIdForJob(key);
-    } else if (eventType == ValueType.PROCESS) {
-      bpmnProcessId = queryService.getBpmnProcessIdForProcess(key);
-    } else if (eventType == ValueType.PROCESS_INSTANCE) {
-      bpmnProcessId = queryService.getBpmnProcessIdForProcessInstance(key);
-    } else {
-      bpmnProcessId = Optional.empty();
+    final long key = executeQueryRequestDecoder.key();
+    final UnifiedRecordValue result = recordsByType.get(queryValueType);
+    result.reset();
+
+    if (queryValueType == ValueType.JOB) {
+      queryService.getBpmnProcessIdForJob(key).ifPresent(((JobRecord) result)::setBpmnProcessId);
+    } else if (queryValueType == ValueType.PROCESS) {
+      queryService
+          .getBpmnProcessIdForProcess(key)
+          .ifPresent(((ProcessRecord) result)::setBpmnProcessId);
+    } else if (queryValueType == ValueType.PROCESS_INSTANCE) {
+      queryService
+          .getBpmnProcessIdForProcessInstance(key)
+          .ifPresent(((ProcessInstanceRecord) result)::setBpmnProcessId);
     }
 
     boolean written = false;
@@ -185,15 +150,15 @@ public final class QueryApiRequestHandler implements RequestHandler {
               .key(key)
               .intent(Intent.UNKNOWN)
               .partitionId(partitionId)
-              .valueType(eventType)
+              .valueType(queryValueType)
               .recordType(RecordType.EVENT)
-              .valueWriter(event)
+              .valueWriter(result)
               .tryWriteResponse(partitionId, requestId);
 
       LOG.info("!!!!!!!!!!             OMG Query Request HANDLED             !!!!!!!!");
 
     } catch (final Exception ex) {
-      LOG.error("Unexpected error on writing {} command", eventIntent, ex);
+      LOG.error("Unexpected error on writing {} command", Intent.UNKNOWN, ex);
     } finally {
       if (!written) {
         limiter.onIgnore(partitionId, requestId);
@@ -258,8 +223,7 @@ public final class QueryApiRequestHandler implements RequestHandler {
     }
 
     if (templateId == ExecuteCommandRequestDecoder.TEMPLATE_ID) {
-      handleExecuteCommandRequest(
-          output, partitionId, requestId, eventMetadata, buffer, offset, length);
+      handleExecuteQueryRequest(output, partitionId, requestId, buffer, offset);
       return;
     }
 

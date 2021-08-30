@@ -312,8 +312,7 @@ public final class ClusteringRule extends ExternalResource {
     DISABLE_EMBEDDED_GATEWAY.accept(brokerCfg);
 
     // configure cluster
-    setCluster(nodeId, partitionCount, replicationFactor, clusterSize,
-        clusterName)
+    setCluster(nodeId, partitionCount, replicationFactor, clusterSize, clusterName)
         .accept(brokerCfg);
     if (nodeId > 0) {
       // all nodes have to join the same broker
@@ -345,8 +344,7 @@ public final class ClusteringRule extends ExternalResource {
 
   private Gateway createGateway() {
     final String contactPoint =
-        NetUtil.toSocketAddressString(
-            getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
+        NetUtil.toSocketAddressString(getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
@@ -459,8 +457,7 @@ public final class ClusteringRule extends ExternalResource {
   public void waitForPartitionReplicationFactor() {
     waitForTopology(
         topology ->
-            hasPartitionsWithReplicationFactor(topology, partitionCount,
-                replicationFactor));
+            hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
   }
 
   private boolean hasPartitionsWithReplicationFactor(

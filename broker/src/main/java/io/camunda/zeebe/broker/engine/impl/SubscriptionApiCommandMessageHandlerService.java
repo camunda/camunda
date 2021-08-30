@@ -47,8 +47,7 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   protected void onActorStarting() {
-    messageHandler = new SubscriptionCommandMessageHandler(actor::call,
-        leaderPartitions::get);
+    messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
     communicationService.subscribe(SUBSCRIPTION_TOPIC, messageHandler);
   }
 

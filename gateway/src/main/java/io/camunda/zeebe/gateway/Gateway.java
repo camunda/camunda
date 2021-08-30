@@ -15,6 +15,8 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.gateway.impl.interceptor.GrpcInterceptor;
+import io.camunda.zeebe.gateway.impl.interceptor.Repository;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
@@ -123,6 +125,12 @@ public final class Gateway {
     } else {
       serverBuilder.addService(gatewayGrpcService);
     }
+
+    // todo: make it clear that these steps can fail
+    final var repo = new Repository();
+    gatewayCfg.getInterceptors().forEach(repo::load);
+    repo.forEach(
+        (id, descriptor) -> serverBuilder.intercept(new GrpcInterceptor(descriptor.newInstance())));
 
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
     if (securityCfg.isEnabled()) {
