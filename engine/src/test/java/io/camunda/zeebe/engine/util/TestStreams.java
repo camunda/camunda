@@ -282,8 +282,8 @@ public final class TestStreams {
       } catch (final InterruptedException e) {
         Thread.interrupted();
       }
-      openFuture.join(15, TimeUnit.SECONDS);
     }
+    openFuture.join(15, TimeUnit.SECONDS);
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
