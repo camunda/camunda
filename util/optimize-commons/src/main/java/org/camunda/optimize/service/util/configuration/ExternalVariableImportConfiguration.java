@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class ExternalVariableConfiguration {
-  private VariableIngestionConfiguration variableIngestion;
-  private IndexRolloverConfiguration variableIndexRollover;
-  @JsonProperty("import")
-  private ExternalVariableImportConfiguration importConfiguration;
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class ExternalVariableImportConfiguration {
+  private boolean enabled;
+  private int maxPageSize;
 }

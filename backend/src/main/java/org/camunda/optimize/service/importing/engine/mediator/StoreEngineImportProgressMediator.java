@@ -28,16 +28,16 @@ import java.util.stream.Stream;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class StoreIndexesEngineImportMediator
+public class StoreEngineImportProgressMediator
   extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService> implements ImportMediator {
 
   protected EngineContext engineContext;
   private ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
-  public StoreIndexesEngineImportMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                          final StoreIndexesEngineImportService importService,
-                                          final EngineContext engineContext,
-                                          final ConfigurationService configurationService) {
+  public StoreEngineImportProgressMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                           final StoreIndexesEngineImportService importService,
+                                           final EngineContext engineContext,
+                                           final ConfigurationService configurationService) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
     this.engineContext = engineContext;

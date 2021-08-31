@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.SchedulerConfig;
 import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
@@ -780,13 +781,15 @@ public class ConfigurationService {
       .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public boolean isImportEnabled(SchedulerConfig dataSourceDto) {
+  public boolean isImportEnabled(final SchedulerConfig dataSourceDto) {
     if (dataSourceDto instanceof EngineDataSourceDto) {
       final EngineDataSourceDto engineSource = (EngineDataSourceDto) dataSourceDto;
       return getEngineConfiguration(engineSource.getName()).map(EngineConfiguration::isImportEnabled)
         .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineSource.getName()));
     } else if (dataSourceDto instanceof ZeebeConfigDto) {
       return getConfiguredZeebe().isEnabled();
+    } else if (dataSourceDto instanceof IngestedDataSourceDto) {
+      return getExternalVariableConfiguration().getImportConfiguration().isEnabled();
     }
     throw new OptimizeConfigurationException("Invalid data import source");
   }

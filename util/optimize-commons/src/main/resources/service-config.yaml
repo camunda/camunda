@@ -556,6 +556,11 @@ caches:
     defaultTtlMillis: 10000
 
 externalVariable:
+  import:
+    # Controls whether external ingested variable data is processed and imported into process instance data
+    enabled: false
+    # Determines the page size for the external variable import, that got ingested via the external variable API
+    maxPageSize: 10000
   variableIngestion:
     # Secret token to be provided to the external variable ingestion API.
     # If set to `null`, a random token will be generated with each startup of Optimize and logged.

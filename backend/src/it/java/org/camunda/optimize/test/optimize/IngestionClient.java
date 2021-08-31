@@ -38,18 +38,22 @@ public class IngestionClient {
   public Response ingestVariablesAndReturnResponse(final List<ExternalProcessVariableRequestDto> variables,
                                                    final String accessToken) {
     return requestExecutorSupplier.get()
+      .withoutAuthentication()
       .buildIngestExternalVariables(variables, accessToken)
       .execute();
   }
 
   public void ingestVariables(final List<ExternalProcessVariableRequestDto> variables) {
     requestExecutorSupplier.get()
+      .withoutAuthentication()
       .buildIngestExternalVariables(variables, getVariableIngestionToken())
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public void ingestEventBatch(final List<CloudEventRequestDto> eventDtos) {
-    requestExecutorSupplier.get().buildIngestEventBatch(eventDtos, eventAccessTokenSupplier.get()).execute();
+    requestExecutorSupplier.get()
+      .withoutAuthentication()
+      .buildIngestEventBatch(eventDtos, eventAccessTokenSupplier.get()).execute();
   }
 
   public List<CloudEventRequestDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {

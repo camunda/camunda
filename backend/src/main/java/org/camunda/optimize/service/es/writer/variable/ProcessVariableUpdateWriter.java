@@ -202,7 +202,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
         "  if (v == null) {" +
         "    return var;"   +
         "  } else {" +
-        "    return v.version > var.version ? v : var;" +
+        "    return v.version >= var.version ? v : var;" +
         "  }" +
         "});" +
       "}" +
@@ -228,8 +228,9 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     return objectMapper.writeValueAsString(procInst);
   }
 
-  private boolean isVariableFromCaseDefinition(ProcessVariableDto variable) {
-    return variable.getProcessDefinitionId() == null;
+  private boolean isVariableFromCaseDefinition(final ProcessVariableDto variable) {
+    // if the variable instance is not related to a process instance we assume it's originating from a case definition
+    return variable.getProcessInstanceId() == null;
   }
 
 }

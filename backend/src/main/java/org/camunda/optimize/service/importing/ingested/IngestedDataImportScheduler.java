@@ -3,21 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.zeebe;
+package org.camunda.optimize.service.importing.ingested;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
+import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.ImportMediator;
 
 import java.util.List;
 
 @Slf4j
-public class ZeebeImportScheduler extends AbstractImportScheduler<ZeebeConfigDto> {
+public class IngestedDataImportScheduler extends AbstractImportScheduler<IngestedDataSourceDto> {
 
-  public ZeebeImportScheduler(final List<ImportMediator> importMediators,
-                              final ZeebeConfigDto dataImportSourceDto) {
-    super(importMediators, dataImportSourceDto);
+  public IngestedDataImportScheduler(final List<ImportMediator> importMediators) {
+    super(importMediators, new IngestedDataSourceDto());
   }
 
 }

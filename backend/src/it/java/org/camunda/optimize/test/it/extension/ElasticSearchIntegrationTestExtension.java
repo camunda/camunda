@@ -534,8 +534,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return eventProcessDefinitionDto;
   }
 
-  public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)
-    throws IOException {
+  @SneakyThrows
+  public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine) {
     GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
     GetResponse response = prefixAwareRestHighLevelClient.get(getRequest);
     if (response.isExists()) {

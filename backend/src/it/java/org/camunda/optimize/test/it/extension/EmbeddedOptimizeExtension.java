@@ -41,8 +41,7 @@ import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.DefinitionXmlImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.StorePositionBasedIndexesImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.StoreEngineImportProgressMediator;
 import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
@@ -51,7 +50,10 @@ import org.camunda.optimize.service.importing.engine.service.definition.ProcessD
 import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
+import org.camunda.optimize.service.importing.ingested.IngestedDataImportScheduler;
+import org.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
+import org.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -229,6 +231,18 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
+  public void importIngestedDataFromScratch() {
+    try {
+      resetImportStartIndexes();
+    } catch (Exception e) {
+      // nothing to do
+    }
+    final IngestedDataImportScheduler scheduler = getImportSchedulerManager().getIngestedDataImportScheduler()
+      .orElseThrow();
+    scheduler.runImportRound(true).get();
+  }
+
+  @SneakyThrows
   public void importAllZeebeEntitiesFromScratch() {
     try {
       resetImportStartIndexes();
@@ -317,16 +331,16 @@ public class EmbeddedOptimizeExtension
 
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    final List<AbstractImportScheduler<?>> importSchedulers = new ArrayList<>(
-      getImportSchedulerManager().getEngineImportSchedulers()
-    );
-    getImportSchedulerManager().getZeebeImportScheduler().ifPresent(importSchedulers::add);
+    final List<AbstractImportScheduler<?>> importSchedulers = getImportSchedulerManager().getImportSchedulers()
+      .stream().filter(scheduler -> getConfigurationService().isImportEnabled(scheduler.getDataImportSourceDto()))
+      .collect(Collectors.toList());
     for (AbstractImportScheduler<?> scheduler : importSchedulers) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()
           .stream()
-          .filter(med -> med instanceof StoreIndexesEngineImportMediator
-            || med instanceof StorePositionBasedIndexesImportMediator)
+          .filter(med -> med instanceof StoreEngineImportProgressMediator
+            || med instanceof StoreIngestedImportProgressMediator
+            || med instanceof StorePositionBasedImportProgressMediator)
           .map(mediator -> {
             mediator.resetBackoff();
             return mediator.runImport();

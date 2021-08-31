@@ -95,7 +95,6 @@ public class ElasticsearchConstants {
   public static final String EXTERNAL_EVENTS_INDEX_SUFFIX = "external";
 
   public static final String EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX = "eventStateProcessing-";
-  public static final String EVENT_PROCESSING_ENGINE_REFERENCE = "optimize";
 
   public static final String INDEX = "_index";
 
@@ -103,7 +102,11 @@ public class ElasticsearchConstants {
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE = "resource_already_exists_exception";
 
+  // used to reference Optimize as the source "engine" of imported data
+  public static final String ENGINE_ALIAS_OPTIMIZE = "optimize";
+
   public static final String ENGINE_DATA_SOURCE = "engine";
   public static final String ZEEBE_DATA_SOURCE = "zeebe";
   public static final String EVENTS_DATA_SOURCE = "events";
+  public static final String INGESTED_DATA_SOURCE = "ingested";
 }

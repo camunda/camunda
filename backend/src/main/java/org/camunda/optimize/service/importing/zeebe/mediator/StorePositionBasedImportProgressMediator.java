@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.engine.mediator;
+package org.camunda.optimize.service.importing.zeebe.mediator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.ZeebeImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.mediator.AbstractStoreIndexesImportMediator;
 import org.camunda.optimize.service.importing.engine.service.StorePositionBasedIndexImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -23,21 +24,20 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class StorePositionBasedIndexesImportMediator
+public class StorePositionBasedImportProgressMediator
   extends AbstractStoreIndexesImportMediator<StorePositionBasedIndexImportService> implements ImportMediator {
 
   private ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private ZeebeDataSourceDto dataSource;
 
-  public StorePositionBasedIndexesImportMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                 final StorePositionBasedIndexImportService importService,
-                                                 final ConfigurationService configurationService,
-                                                 final ZeebeDataSourceDto zeebeDataSourceDto) {
+  public StorePositionBasedImportProgressMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                  final StorePositionBasedIndexImportService importService,
+                                                  final ConfigurationService configurationService,
+                                                  final ZeebeDataSourceDto zeebeDataSourceDto) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
     this.dataSource = zeebeDataSourceDto;
