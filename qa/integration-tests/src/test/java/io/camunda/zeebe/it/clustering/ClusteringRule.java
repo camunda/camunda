@@ -634,6 +634,29 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
+  public void forceClusterToHaveNewLeader(final int expectedLeader) {
+    final var previousLeader = getCurrentLeaderForPartition(1);
+    if (previousLeader.getNodeId() == expectedLeader) {
+      return;
+    }
+
+    final var broker = brokers.get(expectedLeader);
+    final var atomix = broker.getClusterServices();
+    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+
+    final var raftPartition =
+        broker.getPartitionManager().getPartitionGroup().getPartitions().stream()
+            .filter(partition -> partition.members().contains(nodeId))
+            .filter(partition -> partition.id().id() == START_PARTITION_ID)
+            .map(RaftPartition.class::cast)
+            .findFirst()
+            .orElseThrow();
+
+    raftPartition.getServer().promote().join();
+
+    awaitOtherLeader(START_PARTITION_ID, previousLeader.getNodeId());
+  }
+
   private void waitUntilBrokerIsRemovedFromTopology(final InetSocketAddress socketAddress) {
     waitForTopology(
         topology ->
