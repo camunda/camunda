@@ -87,58 +87,28 @@ public final class ClusteredDataDeletionTest {
   }
 
   @Test
-  public void shouldDeleteDataOnLeader() {
+  public void shouldDeleteDataOnBrokers() {
     // given
-    final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final Broker leader = clusteringRule.getBroker(leaderNodeId);
-
-    fillSegments(List.of(leader), SEGMENT_COUNT);
+    final var brokers = clusteringRule.getBrokers();
+    fillSegments(brokers, SEGMENT_COUNT);
 
     // when
-    final var segmentCountBeforeSnapshot = getSegmentsCount(leader);
-
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForSnapshotAtBroker(leader);
-
-    // then
-    await()
-        .untilAsserted(
-            () ->
-                assertThat(getSegmentsCount(leader))
-                    .describedAs("Expected less segments after a snapshot is taken")
-                    .isLessThan(segmentCountBeforeSnapshot));
-  }
-
-  @Test
-  public void shouldDeleteDataOnFollowers() {
-    // given
-    final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final List<Broker> followers =
-        clusteringRule.getBrokers().stream()
-            .filter(b -> b.getConfig().getCluster().getNodeId() != leaderNodeId)
-            .collect(Collectors.toList());
-
-    fillSegments(followers, SEGMENT_COUNT);
-
-    // when
-    final var followerSegmentCountsBeforeSnapshot = getSegmentCountByNodeId(followers);
-
+    final var segmentCountsBeforeSnapshot = getSegmentCountByNodeId(brokers);
     clusteringRule.triggerAndWaitForSnapshots();
-    followers.forEach(clusteringRule::waitForSnapshotAtBroker);
 
     // then
     await()
         .untilAsserted(
             () ->
-                assertThat(getSegmentCountByNodeId(followers))
+                assertThat(getSegmentCountByNodeId(brokers))
                     .describedAs("Expected less segments after a snapshot is taken")
                     .allSatisfy(
                         (nodeId, segmentCount) ->
                             assertThat(segmentCount)
-                                .isLessThan(followerSegmentCountsBeforeSnapshot.get(nodeId))));
+                                .isLessThan(segmentCountsBeforeSnapshot.get(nodeId))));
   }
 
-  private Map<Integer, Integer> getSegmentCountByNodeId(final List<Broker> brokers) {
+  private Map<Integer, Integer> getSegmentCountByNodeId(final Collection<Broker> brokers) {
     return brokers.stream()
         .collect(
             Collectors.toMap(
@@ -159,7 +129,7 @@ public final class ClusteredDataDeletionTest {
     }
   }
 
-  private void fillSegments(final List<Broker> brokers, final int segmentCount) {
+  private void fillSegments(final Collection<Broker> brokers, final int segmentCount) {
 
     while (brokers.stream().map(this::getSegmentsCount).allMatch(count -> count <= segmentCount)) {
 

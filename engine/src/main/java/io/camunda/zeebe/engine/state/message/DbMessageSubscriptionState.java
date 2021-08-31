@@ -155,8 +155,9 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void resetCorrelatingState(final MessageSubscription subscription) {
+  public void updateToCorrelatedState(final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
+    transientState.remove(subscription.getRecord());
   }
 
   @Override

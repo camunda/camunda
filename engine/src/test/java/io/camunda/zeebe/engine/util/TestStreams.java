@@ -17,7 +17,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -53,6 +55,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -241,6 +244,17 @@ public final class TestStreams {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
+    final var recoveredLatch = new CountDownLatch(1);
+    final var recoveredAwaiter =
+        new StreamProcessorLifecycleAware() {
+          @Override
+          public void onRecovered(final ReadonlyProcessingContext context) {
+            recoveredLatch.countDown();
+          }
+        };
+    final TypedRecordProcessorFactory wrappedFactory =
+        (ctx) -> factory.createProcessors(ctx).withListener(recoveredAwaiter);
+
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
       zeebeDb = zeebeDbFactory.createDb(snapshot.toFile());
@@ -256,13 +270,18 @@ public final class TestStreams {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
-            .streamProcessorFactory(factory)
+            .streamProcessorFactory(wrappedFactory)
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode)
             .build();
     final var openFuture = streamProcessor.openAsync(false);
 
-    if (awaitOpening) {
+    if (awaitOpening) { // and recovery
+      try {
+        recoveredLatch.await(15, TimeUnit.SECONDS);
+      } catch (final InterruptedException e) {
+        Thread.interrupted();
+      }
       openFuture.join(15, TimeUnit.SECONDS);
     }
 

@@ -107,7 +107,7 @@ public final class StreamProcessorReplayModeTest {
     inOrder.verify(typedRecordProcessor, never()).onRecovered(any());
     inOrder.verifyNoMoreInteractions();
 
-    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPROCESSING);
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }
 
   @Test
@@ -142,6 +142,100 @@ public final class StreamProcessorReplayModeTest {
         .verify(eventApplier, TIMEOUT.times(1))
         .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldNotReplayWhenPaused() {
+    // given
+    startWithPausedStreamProcessor(replayContinuously);
+
+    // when
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    // then
+    final var inOrder = inOrder(typedRecordProcessor, eventApplier);
+    inOrder.verifyNoMoreInteractions();
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.PAUSED);
+  }
+
+  @Test
+  public void shouldPauseReplay() {
+    // given
+    final var streamProcessor = startStreamProcessor(replayContinuously);
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    Awaitility.await("should have replayed first events")
+        .until(replayContinuously::getLastSuccessfulProcessedRecordPosition, (pos) -> pos > 0);
+
+    // when
+    streamProcessor.pauseProcessing().join();
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    // then
+    final var inOrder = inOrder(typedRecordProcessor, eventApplier);
+    inOrder
+        .verify(eventApplier, TIMEOUT.times(1))
+        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+    inOrder.verifyNoMoreInteractions();
+
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.PAUSED);
+  }
+
+  @Test
+  public void shouldReplayAfterResumed() {
+    // given
+    startWithPausedStreamProcessor(replayContinuously);
+
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    // when
+    replayContinuously.resumeProcessing(1);
+
+    // then
+    final var inOrder = inOrder(typedRecordProcessor, eventApplier);
+    inOrder
+        .verify(eventApplier, TIMEOUT.times(1))
+        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+    inOrder.verify(typedRecordProcessor, never()).onRecovered(any());
+    inOrder.verifyNoMoreInteractions();
+
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
+  }
+
+  @Test
+  public void shouldReplayMoreAfterResumed() {
+    // given
+    final var streamProcessor = startStreamProcessor(replayContinuously);
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    Awaitility.await("should have replayed first events")
+        .until(replayContinuously::getLastSuccessfulProcessedRecordPosition, (pos) -> pos > 0);
+    streamProcessor.pauseProcessing().join();
+    replayContinuously.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+
+    // when
+    streamProcessor.resumeProcessing();
+
+    // then
+    final var inOrder = inOrder(typedRecordProcessor, eventApplier);
+    inOrder
+        .verify(eventApplier, TIMEOUT.times(2))
+        .applyState(anyLong(), eq(ELEMENT_ACTIVATING), any());
+    inOrder.verifyNoMoreInteractions();
+
+    assertThat(getCurrentPhase(replayContinuously)).isEqualTo(Phase.REPLAY);
   }
 
   @Test
@@ -196,13 +290,17 @@ public final class StreamProcessorReplayModeTest {
         .isEqualTo(commandPosition);
   }
 
-  private void startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
-    streamProcessorRule
+  private StreamProcessor startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
+    return streamProcessorRule
         .withEventApplierFactory(zeebeState -> eventApplier)
         .startTypedStreamProcessor(
             (processors, context) ->
                 processors.onCommand(
                     ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor));
+  }
+
+  private void startWithPausedStreamProcessor(final StreamProcessorRule streamProcessorRule) {
+    startStreamProcessor(streamProcessorRule).pauseProcessing().join();
   }
 
   private Phase getCurrentPhase(final StreamProcessorRule streamProcessorRule) {

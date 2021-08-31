@@ -718,16 +718,16 @@ public final class ClusteringRule extends ExternalResource {
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
   }
 
+  public SnapshotId waitForSnapshotAtBroker(final int nodeId) {
+    return waitForNewSnapshotAtBroker(getBroker(nodeId), null);
+  }
+
   public SnapshotId waitForSnapshotAtBroker(final Broker broker) {
     return waitForNewSnapshotAtBroker(broker, null);
   }
 
   public void takeSnapshot(final Broker broker) {
     broker.getBrokerAdminService().takeSnapshot();
-  }
-
-  public void takeSnapshot(final Collection<Broker> brokers) {
-    brokers.stream().map(Broker::getBrokerAdminService).forEach(BrokerAdminService::takeSnapshot);
   }
 
   public void triggerAndWaitForSnapshots() {
@@ -806,6 +806,15 @@ public final class ClusteringRule extends ExternalResource {
 
   public Leader getCurrentLeaderForPartition(final int partition) {
     return partitionLeader.get(partition);
+  }
+
+  public int stopAnyFollower() {
+    final var leaderForPartition = getLeaderForPartition(START_PARTITION_ID);
+
+    final var otherBrokerObjects = getOtherBrokerObjects(leaderForPartition.getNodeId());
+    final var nodeId = otherBrokerObjects.get(0).getConfig().getCluster().getNodeId();
+    stopBroker(nodeId);
+    return nodeId;
   }
 
   private class LeaderListener implements PartitionListener {

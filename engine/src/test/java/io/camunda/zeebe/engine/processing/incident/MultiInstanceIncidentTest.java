@@ -74,7 +74,7 @@ public final class MultiInstanceIncidentTest {
                                 b ->
                                     b.zeebeInputCollectionExpression(INPUT_COLLECTION)
                                         .zeebeInputElement(INPUT_ELEMENT)
-                                        .zeebeOutputElementExpression("sum(undefined_var)")
+                                        .zeebeOutputElementExpression("{x: undefined_var}")
                                         .zeebeOutputCollection("results")))
                 .endEvent()
                 .done())
@@ -173,8 +173,8 @@ public final class MultiInstanceIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression 'sum(undefined_var)': expected number but found "
-                + "'ValError(no variable found for name 'undefined_var')'");
+            "failed to evaluate expression '{x: undefined_var}': "
+                + "no variable found for name 'undefined_var'");
   }
 
   @Test
@@ -233,7 +233,7 @@ public final class MultiInstanceIncidentTest {
         .extracting(Record::getValue)
         .extracting(VariableRecordValue::getValue)
         .describedAs("the results have been collected")
-        .isEqualTo("[1,1,1]");
+        .isEqualTo("[{\"x\":1},{\"x\":1},{\"x\":1}]");
   }
 
   @Test

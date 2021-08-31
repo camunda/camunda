@@ -28,6 +28,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private RaftCfg raft = new RaftCfg();
+  private PartitioningCfg partitioning = new PartitioningCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -79,6 +80,22 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.enablePriorityElection = enablePriorityElection;
   }
 
+  public RaftCfg getRaft() {
+    return raft;
+  }
+
+  public void setRaft(final RaftCfg raft) {
+    this.raft = raft;
+  }
+
+  public PartitioningCfg getPartitioning() {
+    return partitioning;
+  }
+
+  public void setPartitioning(final PartitioningCfg partitioning) {
+    this.partitioning = partitioning;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -90,14 +107,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + disableExplicitRaftFlush
         + ", rocksdb="
         + rocksdb
+        + ", partitioning="
+        + partitioning
         + '}';
-  }
-
-  public RaftCfg getRaft() {
-    return raft;
-  }
-
-  public void setRaft(final RaftCfg raft) {
-    this.raft = raft;
   }
 }
