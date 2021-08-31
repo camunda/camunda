@@ -122,13 +122,14 @@ const Task: React.FC = () => {
         search: history.location.search,
       });
     } catch (error) {
+      const errorMessage = (error as Error).message ?? '';
       notifications.displayNotification('error', {
         headline: 'Task could not be completed',
-        description: getCompleteTaskErrorMessage(error.message),
+        description: getCompleteTaskErrorMessage(errorMessage),
       });
 
       // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
-      if (shouldFetchMore(error.message)) {
+      if (shouldFetchMore(errorMessage)) {
         fetchMore({variables: {id}});
       }
     }

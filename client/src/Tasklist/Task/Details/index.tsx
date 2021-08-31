@@ -131,17 +131,19 @@ const Details: React.FC = () => {
         await claimTask();
       }
     } catch (error) {
-      if (shouldDisplayNotification(error.message)) {
+      const errorMessage = (error as Error).message ?? '';
+
+      if (shouldDisplayNotification(errorMessage)) {
         notifications.displayNotification('error', {
           headline: assignee
             ? 'Task could not be unclaimed'
             : 'Task could not be claimed',
-          description: getTaskAssignmentChangeErrorMessage(error.message),
+          description: getTaskAssignmentChangeErrorMessage(errorMessage),
         });
       }
 
       // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssigmentChangeErrorMessage
-      if (shouldFetchMore(error.message)) {
+      if (shouldFetchMore(errorMessage)) {
         fetchMore({variables: {id}});
       }
     }
