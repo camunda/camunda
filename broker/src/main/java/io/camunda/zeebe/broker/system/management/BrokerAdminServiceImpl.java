@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.partitioning.NoOpPartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,19 +36,21 @@ import org.slf4j.Logger;
  *
  * <p>This is intended to be used only by advanced users
  */
-public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
+public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private PartitionAdminAccess adminAccess;
-  private final List<ZeebePartition> partitions;
+  private PartitionAdminAccess adminAccess = new NoOpPartitionAdminAccess();
+  private List<ZeebePartition> partitions = Collections.emptyList();
 
-  public BrokerAdminServiceImpl(
-      @Deprecated /* TODO find smaller interface */ final List<ZeebePartition> partitions) {
-    this.partitions = partitions;
-  }
+  public BrokerAdminServiceImpl() {}
 
   public void injectAdminAccess(final PartitionAdminAccess adminAccess) {
     this.adminAccess = requireNonNull(adminAccess);
+  }
+
+  public void injectPartitionInfoSource(
+      @Deprecated /* TODO find smaller interface */ final List<ZeebePartition> partitions) {
+    this.partitions = partitions;
   }
 
   @Override
@@ -85,23 +89,28 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
   public Map<Integer, PartitionStatus> getPartitionStatus() {
     final CompletableFuture<Map<Integer, PartitionStatus>> future = new CompletableFuture<>();
     final Map<Integer, PartitionStatus> partitionStatuses = new ConcurrentHashMap<>();
-    actor.call(
-        () -> {
-          final var statusFutures =
-              partitions.stream()
-                  .map(
-                      partition ->
-                          getPartitionStatus(partition)
-                              .whenComplete(
-                                  (ps, error) -> {
-                                    if (error == null) {
-                                      partitionStatuses.put(partition.getPartitionId(), ps);
-                                    }
-                                  }))
-                  .collect(Collectors.toList());
-          CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
-              .thenAccept(r -> future.complete(partitionStatuses));
-        });
+    if (partitions.isEmpty()) {
+      // can happen before partitions are injected
+      future.complete(partitionStatuses);
+    } else {
+      actor.call(
+          () -> {
+            final var statusFutures =
+                partitions.stream()
+                    .map(
+                        partition ->
+                            getPartitionStatus(partition)
+                                .whenComplete(
+                                    (ps, error) -> {
+                                      if (error == null) {
+                                        partitionStatuses.put(partition.getPartitionId(), ps);
+                                      }
+                                    }))
+                    .collect(Collectors.toList());
+            CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
+                .thenAccept(r -> future.complete(partitionStatuses));
+          });
+    }
     return future.join();
   }
 
