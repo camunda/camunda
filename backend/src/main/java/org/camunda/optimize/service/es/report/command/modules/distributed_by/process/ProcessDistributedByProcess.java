@@ -105,6 +105,9 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
                                                                   final ReportDataDefinitionDto definition,
                                                                   final ExecutionContext<ProcessReportDataDto> context) {
     final List<ProcessBucket> processBuckets = extractResultsToMergeForDefinitionSource(bucketsByDefKey, definition);
+    if (processBuckets.isEmpty()) {
+      return viewPart.createEmptyResult(context);
+    }
     List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
     if (viewPart instanceof ProcessViewFrequency) {
       final Double totalCount = processBuckets.stream()

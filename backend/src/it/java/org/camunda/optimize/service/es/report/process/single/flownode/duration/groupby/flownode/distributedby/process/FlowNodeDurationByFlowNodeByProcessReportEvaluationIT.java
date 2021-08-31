@@ -51,7 +51,7 @@ public class FlowNodeDurationByFlowNodeByProcessReportEvaluationIT extends Abstr
   public void reportEvaluationWithSingleProcessDefinitionSource() {
     // given
     final ProcessInstanceEngineDto instance =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("first"));
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineDatabaseExtension.changeAllFlowNodeTotalDurations(instance.getId(), 1000);
     importAllEngineEntitiesFromScratch();

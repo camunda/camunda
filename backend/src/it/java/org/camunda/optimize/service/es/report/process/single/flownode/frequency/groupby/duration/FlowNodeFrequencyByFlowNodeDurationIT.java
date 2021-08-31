@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode.duration;
+package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.duration;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDurationIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,7 +35,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
-import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getTripleUserTaskDiagram;
 
 public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequencyByModelElementDurationIT {
@@ -75,12 +75,13 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
       .build();
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(
         IN,
         new String[]{SECOND_USER},
-        Arrays.asList(
+        List.of(
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 1.),
@@ -91,7 +92,7 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Arrays.asList(
+        List.of(
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 1.),
@@ -102,7 +103,7 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Arrays.asList(
+        List.of(
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 1.),
           Tuple.tuple("30.0", 0.),
@@ -113,7 +114,7 @@ public class FlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequency
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Arrays.asList(
+        List.of(
           Tuple.tuple("10.0", 0.),
           Tuple.tuple("20.0", 0.),
           Tuple.tuple("30.0", 0.),
