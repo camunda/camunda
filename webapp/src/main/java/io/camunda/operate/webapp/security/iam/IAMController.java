@@ -11,6 +11,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
+import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
 import io.camunda.iam.sdk.IamApi;
@@ -91,7 +92,7 @@ public class IAMController {
   }
 
   private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
-    Object originalRequestUrl = req.getSession().getAttribute(IAMWebSecurityConfig.REQUESTED_URL);
+    Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
         res.sendRedirect(originalRequestUrl.toString());
     } else {

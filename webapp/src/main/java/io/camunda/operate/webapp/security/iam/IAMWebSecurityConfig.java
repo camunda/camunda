@@ -9,6 +9,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.API;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
 import io.camunda.iam.sdk.IamApi;
@@ -37,7 +38,6 @@ import org.springframework.stereotype.Component;
 @Component("webSecurityConfig")
 public class IAMWebSecurityConfig extends WebSecurityConfigurerAdapter implements CSRFProtectable {
 
-  public static final String REQUESTED_URL = "requestedUrl";
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
   @Autowired
   private OperateProperties operateProperties;

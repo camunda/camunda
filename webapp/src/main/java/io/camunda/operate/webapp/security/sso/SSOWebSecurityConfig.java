@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.security.sso;
 import static io.camunda.operate.webapp.security.OperateURIs.API;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
 
@@ -37,8 +38,6 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  public static final String REQUESTED_URL = "requestedUrl";
-
   @Autowired
   private OperateProperties operateProperties;
 
@@ -67,7 +66,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
     logger.debug("Try to access protected resource {}. Save it for later redirect",requestedUrl);
     req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
-    res.sendRedirect(req.getContextPath()+LOGIN_RESOURCE);
+    res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
   }
 
 }

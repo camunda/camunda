@@ -5,12 +5,13 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
@@ -19,7 +20,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.RetryOperation;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -58,7 +59,7 @@ public class SSOController {
    * @return a redirect command to auth0 authorize url
    */
   @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
-  public String login(final HttpServletRequest req,final HttpServletResponse res) throws IOException {
+  public String login(final HttpServletRequest req,final HttpServletResponse res) {
     final String authorizeUrl = getAuthorizeUrl(req, res);
     logger.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
@@ -78,10 +79,9 @@ public class SSOController {
    * Redirects to root url if successful, otherwise it will redirected to an error url.
    * @param req
    * @param res
-   * @throws ServletException
    * @throws IOException
    */
-  @RequestMapping(value = SSO_CALLBACK_URI, method = RequestMethod.GET)
+  @GetMapping(value = SSO_CALLBACK_URI)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
     logger.debug("Called back by auth0 with {} {} and SessionId: {}", req.getRequestURI(), req.getQueryString(), req.getSession().getId());
     try {
@@ -118,7 +118,7 @@ public class SSOController {
   }
 
   private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
-    Object originalRequestUrl = req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
+    Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
         res.sendRedirect(originalRequestUrl.toString());
     } else {
@@ -128,12 +128,8 @@ public class SSOController {
 
   private void saveTokens(final HttpServletRequest req,final Tokens tokens) {
     HttpSession httpSession = req.getSession();
-    httpSession.setMaxInactiveInterval(Long.valueOf(tokens.getExpiresIn()).intValue());
+    httpSession.setMaxInactiveInterval(tokens.getExpiresIn().intValue());
     httpSession.setAttribute(ACCESS_TOKENS, tokens);
-  }
-
-  private Tokens readTokens(final HttpServletRequest req) {
-    return (Tokens) req.getSession().getAttribute(ACCESS_TOKENS);
   }
 
   /**

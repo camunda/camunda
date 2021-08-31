@@ -34,7 +34,10 @@ public final class OperateURIs {
 
       X_CSRF_PARAM = "OPERATE-X-CSRF-PARAM",
       X_CSRF_HEADER = "OPERATE-X-CSRF-HEADER",
-      X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN"
+      X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN",
+
+      // For redirects after login
+      REQUESTED_URL = "requestedUrl"
   ;
 
    public static final String DEFAULT_AUTH = AUTH_PROFILE;

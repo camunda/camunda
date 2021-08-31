@@ -5,10 +5,13 @@
  */
 package io.camunda.operate.webapp;
 
+import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
+
+import io.camunda.operate.util.ConversionUtils;
 import java.util.Arrays;
 import javax.servlet.RequestDispatcher;
 import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.sso.SSOWebSecurityConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +41,7 @@ public class ForwardErrorController implements ErrorController {
     if (requestedURI == null) {
       return forwardToRootPage();
     }
-    if (isSSOProfile() && !requestedURI.equals(OperateURIs.LOGIN_RESOURCE) && isNotLoggedIn()) {
+    if (isLoginDelegated()  && !requestedURI.contains(LOGIN_RESOURCE) && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
       if (requestedURI.contains("/api/")) {
@@ -54,6 +57,10 @@ public class ForwardErrorController implements ErrorController {
     }
   }
 
+  private boolean isLoginDelegated() {
+    return isIAMProfile() || isSSOProfile();
+  }
+
   private ModelAndView forwardToRootPage() {
     final ModelAndView modelAndView = new ModelAndView("forward:/");
     // Is it really necessary to set status to OK (for frontend)?
@@ -65,9 +72,15 @@ public class ForwardErrorController implements ErrorController {
     LOGGER.warn(
         "Requested path {}, but not authenticated. Redirect to  {} ",
         requestedURI,
-        OperateURIs.LOGIN_RESOURCE);
-    request.getSession(true).setAttribute(SSOWebSecurityConfig.REQUESTED_URL, requestedURI);
-    final ModelAndView modelAndView = new ModelAndView("redirect:" + OperateURIs.LOGIN_RESOURCE);
+        LOGIN_RESOURCE);
+    String queryString = request.getQueryString();
+    if(ConversionUtils.stringIsEmpty(queryString)){
+      request.getSession(true).setAttribute(REQUESTED_URL, requestedURI);
+    } else {
+      request.getSession(true).setAttribute(REQUESTED_URL, requestedURI + "?" + queryString);
+    }
+
+    final ModelAndView modelAndView = new ModelAndView("redirect:" + LOGIN_RESOURCE);
     modelAndView.setStatus(HttpStatus.FOUND);
     return modelAndView;
   }
@@ -76,8 +89,13 @@ public class ForwardErrorController implements ErrorController {
     return (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
   }
+
   private boolean isSSOProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(OperateURIs.SSO_AUTH_PROFILE);
+  }
+
+  private boolean isIAMProfile() {
+    return Arrays.asList(environment.getActiveProfiles()).contains(OperateURIs.IAM_AUTH_PROFILE);
   }
 
 }
