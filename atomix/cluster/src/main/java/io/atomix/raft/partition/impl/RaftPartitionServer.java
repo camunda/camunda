@@ -345,4 +345,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
   }
+
+  public CompletableFuture<RaftServer> promote() {
+    return server.promote();
+  }
 }
