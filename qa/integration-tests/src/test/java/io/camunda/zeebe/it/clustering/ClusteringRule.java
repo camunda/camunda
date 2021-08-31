@@ -635,19 +635,26 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void forceClusterToHaveNewLeader(final int expectedLeader) {
-    // naive approach; steps down until the right node becomes leader
-    // there is probably a better way
-    do {
-      final var previousLeader = getCurrentLeaderForPartition(1);
-      stepDown(previousLeader.getNodeId(), 1);
-      Awaitility.await()
-          .pollInterval(Duration.ofMillis(100))
-          .atMost(Duration.ofSeconds(10))
-          .until(
-              () -> getCurrentLeaderForPartition(1),
-              newLeader -> !previousLeader.equals(newLeader));
+    final var previousLeader = getCurrentLeaderForPartition(1);
+    if (previousLeader.getNodeId() == expectedLeader) {
+      return;
+    }
 
-    } while (getCurrentLeaderForPartition(1).getNodeId() != expectedLeader);
+    final var broker = brokers.get(expectedLeader);
+    final var atomix = broker.getClusterServices();
+    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+
+    final var raftPartition =
+        broker.getPartitionManager().getPartitionGroup().getPartitions().stream()
+            .filter(partition -> partition.members().contains(nodeId))
+            .filter(partition -> partition.id().id() == START_PARTITION_ID)
+            .map(RaftPartition.class::cast)
+            .findFirst()
+            .orElseThrow();
+
+    raftPartition.getServer().promote().join();
+
+    awaitOtherLeader(START_PARTITION_ID, previousLeader.getNodeId());
   }
 
   private void waitUntilBrokerIsRemovedFromTopology(final InetSocketAddress socketAddress) {
