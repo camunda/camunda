@@ -10,7 +10,9 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
+import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
+import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
@@ -54,11 +57,10 @@ public final class Gateway {
   private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
   private final GatewayCfg gatewayCfg;
   private final ActorSchedulingService actorSchedulingService;
+  private final GatewayHealthManager healthManager;
 
   private Server server;
   private BrokerClient brokerClient;
-
-  private volatile Status status = Status.INITIAL;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -89,6 +91,8 @@ public final class Gateway {
     this.brokerClientFactory = brokerClientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
     this.actorSchedulingService = actorSchedulingService;
+
+    this.healthManager = new GatewayHealthManagerImpl();
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -96,7 +100,7 @@ public final class Gateway {
   }
 
   public Status getStatus() {
-    return status;
+    return healthManager.getStatus();
   }
 
   public BrokerClient getBrokerClient() {
@@ -104,7 +108,7 @@ public final class Gateway {
   }
 
   public void start() throws IOException {
-    status = Status.STARTING;
+    healthManager.setStatus(Status.STARTING);
     brokerClient = buildBrokerClient();
 
     final ActivateJobsHandler activateJobsHandler;
@@ -126,9 +130,15 @@ public final class Gateway {
       setSecurityConfig(serverBuilder, securityCfg);
     }
 
-    server = serverBuilder.addService(applyInterceptors(gatewayGrpcService)).build();
+    server =
+        serverBuilder
+            .addService(applyInterceptors(gatewayGrpcService))
+            .addService(
+                ServerInterceptors.intercept(
+                    healthManager.getHealthService(), MONITORING_SERVER_INTERCEPTOR))
+            .build();
     server.start();
-    status = Status.RUNNING;
+    healthManager.setStatus(Status.RUNNING);
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
@@ -184,7 +194,7 @@ public final class Gateway {
     return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
-  private ServerServiceDefinition applyInterceptors(final GatewayGrpcService service) {
+  private ServerServiceDefinition applyInterceptors(final BindableService service) {
     final var repository = new InterceptorRepository().load(gatewayCfg.getInterceptors());
     final var queryApi = new QueryApiImpl(brokerClient);
     final List<ServerInterceptor> interceptors =
@@ -201,7 +211,8 @@ public final class Gateway {
   }
 
   public void stop() {
-    status = Status.SHUTDOWN;
+    healthManager.setStatus(Status.SHUTDOWN);
+
     if (server != null && !server.isShutdown()) {
       server.shutdownNow();
       try {
