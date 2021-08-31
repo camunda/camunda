@@ -56,8 +56,14 @@ async function fetchProcessInstanceIncidents(id: ProcessInstanceEntity['id']) {
   return get(`${URL}/${id}/incidents`);
 }
 
-async function fetchProcessInstances(payload: ProcessInstancesQuery) {
-  return await post(`${URL}`, payload);
+async function fetchProcessInstances({
+  payload,
+  signal,
+}: {
+  payload: ProcessInstancesQuery;
+  signal?: AbortSignal;
+}) {
+  return await post(`${URL}`, payload, {signal});
 }
 
 async function fetchSequenceFlows(
@@ -74,18 +80,27 @@ async function fetchProcessCoreStatistics() {
   return get(`${URL}/core-statistics`);
 }
 
-async function fetchProcessInstancesByIds(ids: ProcessInstanceEntity['id'][]) {
+async function fetchProcessInstancesByIds({
+  ids,
+  signal,
+}: {
+  ids: ProcessInstanceEntity['id'][];
+  signal?: AbortSignal;
+}) {
   return fetchProcessInstances({
-    pageSize: ids.length,
-    query: {
-      running: true,
-      finished: true,
-      active: true,
-      incidents: true,
-      completed: true,
-      canceled: true,
-      ids,
+    payload: {
+      pageSize: ids.length,
+      query: {
+        running: true,
+        finished: true,
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+        ids,
+      },
     },
+    signal,
   });
 }
 

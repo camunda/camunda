@@ -22,7 +22,7 @@ import {logger} from 'modules/logger';
 import {getRequestFilters, getSorting} from 'modules/utils/filter';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
-type Payload = Parameters<typeof fetchProcessInstances>['0'];
+type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -66,6 +66,7 @@ class Instances extends NetworkReconnectionHandler {
   completedOperationsHandlers: Array<() => void> = [];
   shouldRetryOnEmptyResponse: boolean = false;
   retryCount: number = 0;
+  pollingAbortController: AbortController | undefined;
 
   constructor() {
     super();
@@ -89,6 +90,8 @@ class Instances extends NetworkReconnectionHandler {
 
     this.state.filteredInstancesCount =
       getStateLocally().filteredInstancesCount || null;
+
+    this.pollingAbortController = new AbortController();
   }
 
   addCompletedOperationsHandler(handler: () => void) {
@@ -232,7 +235,7 @@ class Instances extends NetworkReconnectionHandler {
     payload: Payload;
   }) => {
     try {
-      const response = await fetchProcessInstances(payload);
+      const response = await fetchProcessInstances({payload});
 
       if (response.ok) {
         const {processInstances, totalCount} = await response.json();
@@ -270,12 +273,14 @@ class Instances extends NetworkReconnectionHandler {
   refreshAllInstances = async () => {
     try {
       const response = await fetchProcessInstances({
-        query: getRequestFilters(),
-        sorting: getSorting(),
-        pageSize:
-          this.state.processInstances.length > 0
-            ? this.state.processInstances.length
-            : MAX_INSTANCES_PER_REQUEST,
+        payload: {
+          query: getRequestFilters(),
+          sorting: getSorting(),
+          pageSize:
+            this.state.processInstances.length > 0
+              ? this.state.processInstances.length
+              : MAX_INSTANCES_PER_REQUEST,
+        },
       });
 
       if (response.ok) {
@@ -405,9 +410,14 @@ class Instances extends NetworkReconnectionHandler {
 
   handlePollingActiveInstances = async () => {
     try {
-      const response = await fetchProcessInstancesByIds(
-        this.instanceIdsWithActiveOperations
-      );
+      if (this.pollingAbortController?.signal.aborted) {
+        this.pollingAbortController = new AbortController();
+      }
+
+      const response = await fetchProcessInstancesByIds({
+        ids: this.instanceIdsWithActiveOperations,
+        signal: this.pollingAbortController?.signal,
+      });
 
       if (response.ok) {
         if (this.intervalId !== null) {
@@ -475,6 +485,8 @@ class Instances extends NetworkReconnectionHandler {
   };
 
   reset() {
+    this.pollingAbortController?.abort();
+
     super.reset();
     this.state = {
       ...DEFAULT_STATE,
