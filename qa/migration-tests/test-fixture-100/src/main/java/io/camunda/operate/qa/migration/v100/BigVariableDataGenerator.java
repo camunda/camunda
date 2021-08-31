@@ -6,6 +6,8 @@
 package io.camunda.operate.qa.migration.v100;
 
 import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
+import static io.camunda.operate.qa.util.VariablesUtil.VAR_SUFFIX;
+import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
@@ -23,7 +25,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Random;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -39,7 +40,6 @@ public class BigVariableDataGenerator {
   private static final Logger logger = LoggerFactory.getLogger(BigProcessDataGenerator.class);
   public static final String PROCESS_BPMN_PROCESS_ID = "bigVariableProcess";
   protected static final String ACTIVITY_ID = "task";
-  public static final String VAR_SUFFIX = "9999999999";
   private ZeebeClient zeebeClient;
 
   @Autowired
@@ -82,26 +82,10 @@ public class BigVariableDataGenerator {
 
   private void startProcessInstance() {
     final int size = ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD;
-    String vars = createBigVarsWithSuffix(size, VAR_SUFFIX);
+    String vars = createBigVarsWithSuffix(PROCESS_BPMN_PROCESS_ID, size, VAR_SUFFIX);
     ZeebeTestUtil
         .startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, vars);
     logger.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
-  }
-
-  private String createBigVarsWithSuffix(final int size, final String varSuffix) {
-    StringBuffer vars = new StringBuffer("{");
-    for (int i = 0; i < 3; i++) {
-      if (vars.length() > 1) {
-        vars.append(",\n");
-      }
-      vars.append("\"" + PROCESS_BPMN_PROCESS_ID + "_var")
-          .append(i)
-          .append("\": \"")
-          .append(createBigVariable(size) + varSuffix)
-          .append("\"");
-    }
-    vars.append("}");
-    return vars.toString();
   }
 
   private void waitUntilAllDataIsImported() throws IOException {
@@ -123,15 +107,6 @@ public class BigVariableDataGenerator {
     if (count == maxWait) {
       throw new RuntimeException("Waiting for loading process instances failed: Timeout");
     }
-  }
-
-  private String createBigVariable(int size) {
-    Random random = new Random();
-    StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < size; i++) {
-      sb.append(random.nextInt(9));
-    }
-    return sb.toString();
   }
 
   private String getAliasFor(String index) {

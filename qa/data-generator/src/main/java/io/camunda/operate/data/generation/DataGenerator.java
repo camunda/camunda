@@ -5,23 +5,31 @@
  */
 package io.camunda.operate.data.generation;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import javax.annotation.PreDestroy;
+import static io.camunda.operate.qa.util.VariablesUtil.createALotOfVarsPayload;
+import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+
+import io.camunda.operate.data.generation.DataGenerationApp.DataGeneratorThread;
+import io.camunda.operate.property.ImportProperties;
+import io.camunda.operate.qa.util.ZeebeTestUtil;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import io.camunda.operate.data.generation.DataGenerationApp.DataGeneratorThread;
-import io.camunda.operate.qa.util.ZeebeTestUtil;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,10 +37,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 /**
  * It is considered that Zeebe and Elasticsearch are running.
@@ -195,14 +199,15 @@ public class DataGenerator {
       while (!shuttingDown) {
         try {
           futures.take().get();
-          responseCount++;
-          if (responseCount % 1000 == 0) {
-            logger.info("{} process instances started", responseCount);
-          }
-        } catch (InterruptedException e) {
-          // ignore and retry
         } catch (ExecutionException e) {
           logger.warn("Request failed", e);
+          //we still count this as a response
+        } catch (InterruptedException ex) {
+          Thread.currentThread().interrupt();
+        }
+        responseCount++;
+        if (responseCount % 1000 == 0) {
+          logger.info("{} process instances started", responseCount);
         }
       }
     }
@@ -236,7 +241,16 @@ public class DataGenerator {
       int localCount = 0;
       while (count.getAndIncrement() <= dataGeneratorProperties.getProcessInstanceCount()  && ! shuttingDown) {
         try {
-          futures.put(ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
+          String vars;
+          if (count.get() == 1) {
+            vars = createALotOfVarsPayload();
+          } else if (count.get() <= 100) {
+            //third part of all process instances will get big variables
+            vars = createBigVarsWithSuffix(ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD);
+          } else {
+            vars = "{\"smallVar\": \"value1\"}";
+          }
+          futures.put(ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), vars));
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

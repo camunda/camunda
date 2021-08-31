@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.qa.migration;
 
-import static io.camunda.operate.qa.migration.v100.BigVariableDataGenerator.VAR_SUFFIX;
+import static io.camunda.operate.qa.util.VariablesUtil.VAR_SUFFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 

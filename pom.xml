@@ -43,6 +43,7 @@
     <version.jackson>2.12.4</version.jackson>
     <version.auth0>1.8.0</version.auth0>
     <version.auth0.jwt>3.18.1</version.auth0.jwt>
+    <version.gson>2.8.7</version.gson>
 
     <version.node>v16.5.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
@@ -219,6 +220,12 @@
         <groupId>org.springframework.session</groupId>
         <artifactId>spring-session</artifactId>
         <version>${version.spring.session}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${version.gson}</version>
       </dependency>
 
     </dependencies>

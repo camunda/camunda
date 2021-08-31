@@ -5,6 +5,9 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.qa.util.VariablesUtil.VAR_SUFFIX;
+import static io.camunda.operate.qa.util.VariablesUtil.createBigVariable;
+import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
 import static io.camunda.operate.webapp.rest.VariableRestService.VARIABLE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
@@ -24,7 +27,6 @@ import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import java.util.Optional;
-import java.util.Random;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Test;
@@ -347,9 +349,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   public void testBigVariablesWithPreview() throws Exception {
     // given
     final int size = operateProperties.getImporter().getVariableSizeThreshold();
-    final String varSuffix = "9999999999";
     final String bpmnProcessId = "testProcess";
-    String vars = createBigVarsWithSuffix(size, varSuffix);
+    String vars = createBigVarsWithSuffix(size);
     final String flowNodeId = "taskA";
     final Long processInstanceKey =
         tester
@@ -368,7 +369,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
                 .setPageSize(10));
 
     //then "value" contains truncated value
-    Condition<String> suffix = new Condition<>(s -> s.contains(varSuffix), "contains");
+    Condition<String> suffix = new Condition<>(s -> s.contains(VAR_SUFFIX), "contains");
     Condition<String> length = new Condition<>(s -> s.length() == size, "length");
     assertThat(variables).extracting(VariableDto::getValue).areNot(suffix).are(length);
     assertThat(variables).extracting(VariableDto::getIsPreview).containsOnly(true);
@@ -378,7 +379,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     final VariableDto variable = getOneVariable(variableId);
 
     //then
-    assertThat(variable.getValue()).contains(varSuffix);
+    assertThat(variable.getValue()).contains(VAR_SUFFIX);
     assertThat(variable.getIsPreview()).isFalse();
   }
 
@@ -386,9 +387,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   public void testUpdateBigVariableWithSmallValue() throws Exception {
     // given
     final int size = operateProperties.getImporter().getVariableSizeThreshold();
-    final String varSuffix = "9999999999";
     final String bpmnProcessId = "testProcess";
-    String vars = createBigVarsWithSuffix(size, varSuffix);
+    String vars = createBigVarsWithSuffix(size);
     final String flowNodeId = "taskA";
     final Long processInstanceKey =
         tester
@@ -425,29 +425,12 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertThat(var.get().getIsPreview()).isEqualTo(false);
   }
 
-  private String createBigVarsWithSuffix(final int size, final String varSuffix) {
-    StringBuffer vars = new StringBuffer("{");
-    for (int i = 0; i < 3; i++) {
-      if (vars.length() > 1) {
-        vars.append(",\n");
-      }
-      vars.append("\"var")
-          .append(i)
-          .append("\": \"")
-          .append(createBigVariable(size) + varSuffix)
-          .append("\"");
-    }
-    vars.append("}");
-    return vars.toString();
-  }
-
   @Test
   public void testBigVariablesWithActiveOperations() throws Exception {
     // given
     final int size = operateProperties.getImporter().getVariableSizeThreshold();
-    final String varSuffix = "9999999999";
     final String bpmnProcessId = "testProcess";
-    String vars = createBigVarsWithSuffix(size, varSuffix);
+    String vars = createBigVarsWithSuffix(size);
     final String flowNodeId = "taskA";
     final Long processInstanceKey =
         tester
@@ -462,8 +445,8 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     final String varName = "var1";
     final String newVarValue = createBigVariable(size);
     final String newVarName = "newVar";
-    postUpdateVariableOperation(processInstanceKey, varName, newVarValue + varSuffix);
-    postAddVariableOperation(processInstanceKey, newVarName, newVarValue + varSuffix);
+    postUpdateVariableOperation(processInstanceKey, varName, newVarValue + VAR_SUFFIX);
+    postAddVariableOperation(processInstanceKey, newVarName, newVarValue + VAR_SUFFIX);
     elasticsearchTestRule.refreshOperateESIndices();
 
     //then variable with new value is returned
@@ -478,15 +461,6 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertThat(variables)
         .filteredOn(v -> v.getName().equals(newVarName))
         .isEmpty();
-  }
-
-  private String createBigVariable(int size) {
-    Random random = new Random();
-    StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < size; i++) {
-      sb.append(random.nextInt(9));
-    }
-    return sb.toString();
   }
 
   @Test

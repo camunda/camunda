@@ -94,10 +94,10 @@ spec:
               resource: limits.cpu
       resources:
         limits:
-          cpu: 4
+          cpu: 8
           memory: 8Gi
         requests:
-          cpu: 4
+          cpu: 8
           memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
@@ -143,7 +143,7 @@ spec:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: io.camunda.zeebe.exporter.ElasticsearchExporter
         - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-          value: 8
+          value: 12
       resources:
         limits:
           cpu: 10

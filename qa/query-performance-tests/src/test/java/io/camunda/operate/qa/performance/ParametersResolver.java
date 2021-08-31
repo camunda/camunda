@@ -5,6 +5,18 @@
  */
 package io.camunda.operate.qa.performance;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,11 +29,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import org.apache.http.HttpHost;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -33,11 +40,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
  * This class helps to resolve placeholders in JSON query files. On startup it reads the required data from Elasticsearch.
@@ -46,8 +48,10 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class ParametersResolver {
 
+  private static final String PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER = "${processInstanceIdWithLotsOfVariables}";
   private static final String PROCESS_INSTANCE_IDS_PLACEHOLDER = "${processInstanceIds}";
   private static final String PROCESS_INSTANCE_ID_PLACEHOLDER = "${processInstanceId}";
+  private static final String VARIABLE_ID_PLACEHOLDER = "${variableId}";
   private static final String PROCESS_IDS_PLACEHOLDER = "${processIds}";
   private static final String PROCESS_ID_PLACEHOLDER = "${processId}";
   private static final String START_DATE_AFTER_PLACEHOLDER = "${startDateAfter}";
@@ -73,7 +77,11 @@ public class ParametersResolver {
   @Autowired
   private ListViewTemplate listViewTemplate;
 
+  @Autowired
+  private VariableTemplate variableTemplate;
+
   private List<String> processInstanceIds = new ArrayList<>();
+  private String processInstanceIdWithLotsOfVariables;
   private List<String> processIds = new ArrayList<>();
   private String startDateBefore;
   private String startDateAfter;
@@ -87,6 +95,7 @@ public class ParametersResolver {
     URI uri = new URI(elasticsearchUrl);
     esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme())));
     initProcessInstanceIds();
+    findProcessInstanceIdWithManyVars();
     initProcessIds();
     initStartDates();
   }
@@ -131,6 +140,24 @@ public class ParametersResolver {
     }
   }
 
+  private void findProcessInstanceIdWithManyVars() {
+    try {
+      final String variableAlias = getAlias(variableTemplate);
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder()
+              .query(termQuery(VariableTemplate.NAME, "many_vars_0"))
+              .fetchSource(VariableTemplate.PROCESS_INSTANCE_KEY, null)
+              .size(1);
+      SearchRequest searchRequest =
+          new SearchRequest(variableAlias).source(searchSourceBuilder);
+      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      processInstanceIdWithLotsOfVariables = hits.getAt(0).getSourceAsMap()
+          .get(VariableTemplate.PROCESS_INSTANCE_KEY).toString();
+    } catch (IOException ex) {
+      throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
+    }
+  }
+
   private void initProcessIds() {
     processIds = io.camunda.operate.qa.util.ElasticsearchUtil.getProcessIds(esClient, getAlias(processIndex), 2);
   }
@@ -153,7 +180,7 @@ public class ParametersResolver {
       //replace in body
       String body = testQuery.getBody();
       body = replacePlaceholdersInString(body);
-      if (body != testQuery.getBody()) {
+      if (!body.equals(testQuery.getBody())) {
         testQuery.setBody(objectMapper.readTree(body));
       }
     } catch (IOException e) {
@@ -165,23 +192,34 @@ public class ParametersResolver {
       return str!=null && str.contains(substr);
   }
 
-  private String replacePlaceholdersInString(String string) throws IOException {
-    if (contains(string,PROCESS_INSTANCE_IDS_PLACEHOLDER)) {
-      string = replacePlaceholderWithIds(string, PROCESS_INSTANCE_IDS_PLACEHOLDER, processInstanceIds);
+  private String replacePlaceholdersInString(String string) {
+    if (contains(string, PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER)) {
+      string = replacePlaceholderWithString(string, PROCESS_INSTANCE_IDS_MANY_VARS_PLACEHOLDER,
+          processInstanceIdWithLotsOfVariables);
     }
-    if (contains(string,PROCESS_INSTANCE_ID_PLACEHOLDER)) {
-      string = replacePlaceholderWithRandomId(string, PROCESS_INSTANCE_ID_PLACEHOLDER, processInstanceIds);
+    if (contains(string, PROCESS_INSTANCE_IDS_PLACEHOLDER)) {
+      string = replacePlaceholderWithIds(string, PROCESS_INSTANCE_IDS_PLACEHOLDER,
+          processInstanceIds);
     }
-    if (contains(string,PROCESS_IDS_PLACEHOLDER)) {
+    if (contains(string, PROCESS_INSTANCE_ID_PLACEHOLDER)) {
+      string = replacePlaceholderWithRandomId(string, PROCESS_INSTANCE_ID_PLACEHOLDER,
+          processInstanceIds);
+    }
+    if (contains(string, VARIABLE_ID_PLACEHOLDER)) {
+      string = replacePlaceholderWithString(string, VARIABLE_ID_PLACEHOLDER,
+          String.format("%s-%s", processInstanceIds.get(random.nextInt(processInstanceIds.size())),
+              "var1"));
+    }
+    if (contains(string, PROCESS_IDS_PLACEHOLDER)) {
       string = replacePlaceholderWithIds(string, PROCESS_IDS_PLACEHOLDER, processIds);
     }
-    if (contains(string,PROCESS_ID_PLACEHOLDER)) {
+    if (contains(string, PROCESS_ID_PLACEHOLDER)) {
       string = replacePlaceholderWithRandomId(string, PROCESS_ID_PLACEHOLDER, processIds);
     }
-    if (contains(string,START_DATE_AFTER_PLACEHOLDER)) {
+    if (contains(string, START_DATE_AFTER_PLACEHOLDER)) {
       string = replacePlaceholderWithString(string, START_DATE_AFTER_PLACEHOLDER, startDateAfter);
     }
-    if (contains(string,START_DATE_BEFORE_PLACEHOLDER)) {
+    if (contains(string, START_DATE_BEFORE_PLACEHOLDER)) {
       string = replacePlaceholderWithString(string, START_DATE_BEFORE_PLACEHOLDER, startDateBefore);
     }
     return string;
