@@ -62,8 +62,6 @@ public final class RaftNamespaces {
           .register(ConfigureResponse.class)
           .register(ReconfigureRequest.class)
           .register(ReconfigureResponse.class)
-          .register(TransferRequest.class)
-          .register(TransferResponse.class)
           .register(InstallRequest.class)
           .register(InstallResponse.class)
           .register(PollRequest.class)
@@ -89,6 +87,8 @@ public final class RaftNamespaces {
           .register(ApplicationEntry.class)
           .register(RaftLogEntry.class)
           .register(PersistedRaftRecord.class)
+          .register(TransferRequest.class)
+          .register(TransferResponse.class)
           .name("RaftProtocol")
           .build();
 
