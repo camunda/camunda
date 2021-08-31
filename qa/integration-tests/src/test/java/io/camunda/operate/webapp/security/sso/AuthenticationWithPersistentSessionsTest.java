@@ -77,6 +77,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         RetryElasticsearchClient.class
     },
     properties = {
+        "server.servlet.context-path=" + AuthenticationWithPersistentSessionsTest.CONTEXT_PATH,
         "camunda.operate.persistentSessionsEnabled=true",
         "camunda.operate.auth0.clientId=1",
         "camunda.operate.auth0.clientSecret=2",
@@ -90,6 +91,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 @ActiveProfiles(SSO_AUTH_PROFILE)
 public class AuthenticationWithPersistentSessionsTest {
 
+  public final static String CONTEXT_PATH = "/operate-test";
   @ClassRule
   public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
   @Rule
@@ -308,7 +310,7 @@ public class AuthenticationWithPersistentSessionsTest {
   }
 
   private String urlFor(String path) {
-    return "http://localhost:" + randomServerPort + path;
+    return String.format("http://localhost:%d%s%s",randomServerPort, CONTEXT_PATH, path);
   }
 
   private static Tokens tokensWithOrgAsListFrom(String claim, String organization) {

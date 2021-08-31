@@ -5,26 +5,24 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.RetryOperation;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import io.camunda.operate.property.OperateProperties;
 import javax.servlet.http.HttpSession;
-
-import io.camunda.operate.util.RetryOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -68,7 +66,7 @@ public class SSOController {
 
   private String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
     return authenticationController
-        .buildAuthorizeUrl(req, res, getRedirectURI(req, SSO_CALLBACK_URI))
+        .buildAuthorizeUrl(req, res, getRedirectURI(req, SSO_CALLBACK_URI, true))
         .withAudience(
             String.format("https://%s/userinfo", operateProperties.getAuth0().getBackendDomain())) // get user profile
         .withScope("openid profile email") // which info we request
@@ -164,7 +162,7 @@ public class SSOController {
   protected void clearContextAndRedirectToNoPermission(HttpServletRequest req,HttpServletResponse res, Throwable t) throws IOException {
     logger.error("Error in authentication callback: ", t);
     cleanup(req);
-    res.sendRedirect(NO_PERMISSION);
+    res.sendRedirect(getRedirectURI(req, NO_PERMISSION));
   }
 
   protected void logoutAndRedirectToNoPermissionPage(HttpServletRequest req, HttpServletResponse res) throws IOException {
@@ -189,15 +187,20 @@ public class SSOController {
   }
 
   protected String getRedirectURI(final HttpServletRequest req, final String redirectTo) {
+    return getRedirectURI(req, redirectTo, false);
+  }
+
+  protected String getRedirectURI(final HttpServletRequest req, final String redirectTo, boolean omitContextPath) {
     String redirectUri = req.getScheme() + "://" + req.getServerName();
     if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
     final String clusterId = req.getContextPath().replaceAll("/", "");
-    final String result =
-        redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
-    logger.debug("RedirectURI: {}", result);
-    return result;
+    if (omitContextPath) {
+      return redirectUri + redirectTo + "?uuid=" + clusterId;
+    } else {
+      return redirectUri + req.getContextPath() + redirectTo;
+    }
   }
 
 }
