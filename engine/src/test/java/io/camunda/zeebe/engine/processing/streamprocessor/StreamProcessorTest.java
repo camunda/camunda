@@ -18,6 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -37,7 +38,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.sched.ActorControl;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -48,6 +48,7 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
 
@@ -439,10 +440,9 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldNotUpdateStateOnExceptionInProcessing() throws Exception {
+  public void shouldNotUpdateStateOnExceptionInProcessing() {
     // given
     final long jobKey = 1L;
-    final CountDownLatch processLatch = new CountDownLatch(2);
 
     streamProcessorRule.startTypedStreamProcessor(
         (builder, processingContext) -> {
@@ -465,8 +465,7 @@ public final class StreamProcessorTest {
                   throw new RuntimeException("expected");
                 }
               });
-        },
-        processedRecord -> processLatch.countDown());
+        });
 
     // when
     streamProcessorRule.writeCommand(
@@ -475,7 +474,8 @@ public final class StreamProcessorTest {
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(any());
 
     processingContextActor
         .call(
@@ -489,10 +489,9 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldUpdateStateAfterProcessing() throws Exception {
+  public void shouldUpdateStateAfterProcessing() {
     // given
     final long jobKey = 1L;
-    final CountDownLatch processingLatch = new CountDownLatch(1);
 
     streamProcessorRule.startTypedStreamProcessor(
         (builder, processingContext) -> {
@@ -513,15 +512,14 @@ public final class StreamProcessorTest {
                   state.getJobState().create(jobKey, JOB_RECORD);
                 }
               });
-        },
-        processedRecord -> processingLatch.countDown());
+        });
 
     // when
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    assertThat(processingLatch.await(5, TimeUnit.SECONDS)).isTrue();
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT).onProcessed(any());
 
     processingContextActor
         .call(
@@ -626,16 +624,14 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldInvokeOnProcessedListener() throws InterruptedException {
+  public void shouldInvokeOnProcessedListener() {
     // given
-    final var onProcessedListener = new AwaitableProcessedListener();
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
                 ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                mock(TypedRecordProcessor.class)),
-        onProcessedListener.expect(1));
+                mock(TypedRecordProcessor.class)));
 
     // when
     final var position =
@@ -643,8 +639,11 @@ public final class StreamProcessorTest {
             ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    assertThat(onProcessedListener.await()).isTrue();
-    assertThat(onProcessedListener.lastProcessedRecord.getPosition()).isEqualTo(position);
+    final var processedCommandCaptor = ArgumentCaptor.forClass(TypedRecord.class);
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT)
+        .onProcessed(processedCommandCaptor.capture());
+
+    assertThat(processedCommandCaptor.getValue().getPosition()).isEqualTo(position);
   }
 
   @Test
@@ -684,7 +683,6 @@ public final class StreamProcessorTest {
   @Test
   public void shouldResumeProcessMoreRecordsAfterPause() throws InterruptedException {
     // given
-    final var onProcessedListener = new AwaitableProcessedListener();
     final CountDownLatch pauseLatch = new CountDownLatch(1);
     final CountDownLatch resumeLatch = new CountDownLatch(1);
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
@@ -707,8 +705,7 @@ public final class StreamProcessorTest {
                           public void onResumed() {
                             resumeLatch.countDown();
                           }
-                        }),
-            onProcessedListener.expect(2));
+                        }));
 
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
@@ -725,7 +722,9 @@ public final class StreamProcessorTest {
     resumeLatch.await();
 
     // then
-    assertThat(onProcessedListener.await()).isTrue();
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(any());
+
     Assertions.assertThat(streamProcessorRule.getLastSuccessfulProcessedRecordPosition())
         .isEqualTo(positionProcessedAfterResume);
   }
@@ -734,7 +733,6 @@ public final class StreamProcessorTest {
   public void shouldNotOverwriteLastWrittenPositionIfNoFollowUpEvent()
       throws ExecutionException, InterruptedException {
     // given
-    final var onProcessedListener = new AwaitableProcessedListener();
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
             processors
@@ -759,18 +757,18 @@ public final class StreamProcessorTest {
                 .onCommand(
                     ValueType.PROCESS_INSTANCE,
                     ProcessInstanceIntent.CANCEL,
-                    mock(TypedRecordProcessor.class)),
-        onProcessedListener.expect(1));
+                    mock(TypedRecordProcessor.class)));
 
     // when
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    assertThat(onProcessedListener.await()).isTrue();
+
     final long position = waitForActivatingEvent().getPosition();
 
-    onProcessedListener.expect(1);
     streamProcessorRule.writeCommand(ProcessInstanceIntent.CANCEL, PROCESS_INSTANCE_RECORD);
-    assertThat(onProcessedListener.await()).isTrue();
+
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(any());
 
     // then
     final long lastWrittenPos =
@@ -788,42 +786,5 @@ public final class StreamProcessorTest {
                     .findAny())
         .until(Optional::isPresent)
         .get();
-  }
-
-  /**
-   * A simple listener which allows you to wait for specific amount of records to be processed.
-   *
-   * <p>It is necessary to always call {@link #expect(int)} before {@link #accept(TypedRecord)}}
-   */
-  private static final class AwaitableProcessedListener implements Consumer<TypedRecord<?>> {
-
-    private static final Duration TIMEOUT = Duration.ofSeconds(5);
-
-    private CountDownLatch latch;
-    private TypedRecord lastProcessedRecord;
-
-    @Override
-    public void accept(final TypedRecord typedRecord) {
-      lastProcessedRecord = typedRecord;
-      getLatch().countDown();
-    }
-
-    private AwaitableProcessedListener expect(final int expectedCount) {
-      latch = new CountDownLatch(expectedCount);
-      return this;
-    }
-
-    private boolean await() throws InterruptedException {
-      return getLatch().await(TIMEOUT.toSeconds(), TimeUnit.SECONDS);
-    }
-
-    private CountDownLatch getLatch() {
-      if (latch == null) {
-        throw new IllegalStateException(
-            "Expected #expect to have been called prior to this method, but it was not");
-      }
-
-      return latch;
-    }
   }
 }

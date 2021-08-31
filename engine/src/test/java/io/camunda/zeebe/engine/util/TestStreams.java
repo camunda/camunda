@@ -20,9 +20,9 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
@@ -77,7 +77,7 @@ public final class TestStreams {
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
-  private final Consumer<TypedRecord<?>> mockOnProcessedListener;
+  private final StreamProcessorListener mockStreamProcessorListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
@@ -104,7 +104,7 @@ public final class TestStreams {
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-    mockOnProcessedListener = mock(Consumer.class);
+    mockStreamProcessorListener = mock(StreamProcessorListener.class);
   }
 
   public void withEventApplierFactory(
@@ -120,8 +120,8 @@ public final class TestStreams {
     return mockCommandResponseWriter;
   }
 
-  public Consumer<TypedRecord<?>> getMockedOnProcessedListener() {
-    return mockOnProcessedListener;
+  public StreamProcessorListener getMockStreamProcessorListener() {
+    return mockStreamProcessorListener;
   }
 
   public SynchronousLogStream createLogStream(final String name) {
@@ -269,7 +269,7 @@ public final class TestStreams {
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
-            .onProcessedListener(mockOnProcessedListener)
+            .listener(mockStreamProcessorListener)
             .streamProcessorFactory(wrappedFactory)
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode)

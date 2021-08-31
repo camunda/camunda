@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingCont
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -192,17 +193,20 @@ public final class EngineRule extends ExternalResource {
               partitionId,
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
-                          processingContext
-                              .onProcessedListener(
-                                  record -> {
-                                    lastProcessedPosition = record.getPosition();
-                                    onProcessedCallback.accept(record);
-                                  })
-                              .onSkippedListener(
-                                  record -> {
-                                    lastProcessedPosition = record.getPosition();
-                                    onSkippedCallback.accept(record);
-                                  }),
+                          processingContext.listener(
+                              new StreamProcessorListener() {
+                                @Override
+                                public void onProcessed(final TypedRecord<?> processedCommand) {
+                                  lastProcessedPosition = processedCommand.getPosition();
+                                  onProcessedCallback.accept(processedCommand);
+                                }
+
+                                @Override
+                                public void onSkipped(final LoggedEvent skippedRecord) {
+                                  lastProcessedPosition = skippedRecord.getPosition();
+                                  onSkippedCallback.accept(skippedRecord);
+                                }
+                              }),
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),

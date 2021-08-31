@@ -78,6 +78,7 @@ public final class ReplayStateMachine {
   private ZeebeDbTransaction zeebeDbTransaction;
   private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
+  private final StreamProcessorListener streamProcessorListener;
 
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
@@ -93,6 +94,7 @@ public final class ReplayStateMachine {
     eventApplier = context.getEventApplier();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
+    streamProcessorListener = context.getStreamProcessorListener();
 
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     replayStrategy = new RecoverableRetryStrategy(actor);
@@ -165,6 +167,8 @@ public final class ReplayStateMachine {
                     lastSourceEventPosition =
                         Math.max(lastSourceEventPosition, batchSourceEventPosition);
                     actor.submit(this::replayNextEvent);
+
+                    notifyReplayListener();
                   }
                 });
 
@@ -288,6 +292,17 @@ public final class ReplayStateMachine {
     eventApplier.applyState(
         currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
     lastReplayedEventPosition = currentEvent.getPosition();
+  }
+
+  private void notifyReplayListener() {
+    try {
+      streamProcessorListener.onReplayed(lastReplayedEventPosition, lastReadRecordPosition);
+    } catch (final Exception e) {
+      LOG.error(
+          "Expected to invoke replay listener successfully, but an exception was thrown. [last-read-record-position: {}, last-replayed-event-position: {}]",
+          lastReadRecordPosition,
+          lastReplayedEventPosition);
+    }
   }
 
   public long getLastSourceEventPosition() {

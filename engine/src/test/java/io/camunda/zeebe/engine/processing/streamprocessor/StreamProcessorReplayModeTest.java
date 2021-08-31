@@ -317,10 +317,8 @@ public final class StreamProcessorReplayModeTest {
             RECORD,
             writer -> writer.sourceRecordPosition(commandPositionBeforeSnapshot));
 
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                assertThat(getLastProcessedPosition(replayContinuously)).isEqualTo(eventPosition));
+    verify(replayContinuously.getMockStreamProcessorListener(), TIMEOUT)
+        .onReplayed(-1L, eventPosition);
 
     // then
     final var lastProcessedPositionState =
