@@ -33,6 +33,5 @@ yarn start:e2e
 ## Run Tests
 
 ```sh
-cd e2e
-yarn test
+yarn test:e2e
 ```
