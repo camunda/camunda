@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.security.es;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + SSO_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE + " & !" + TasklistURIs.IAM_AUTH_PROFILE)
 public class ElasticsearchUserReader implements UserReader {
 
   @Autowired private UserStorage userStorage;

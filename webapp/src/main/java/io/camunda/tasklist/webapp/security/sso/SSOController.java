@@ -5,12 +5,13 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.CALLBACK_URI;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;
@@ -66,7 +67,7 @@ public class SSOController {
 
   private String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
     return authenticationController
-        .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
+        .buildAuthorizeUrl(req, res, getRedirectURI(req, SSO_CALLBACK))
         .withAudience(
             String.format(
                 "https://%s/userinfo",
@@ -79,7 +80,7 @@ public class SSOController {
    * Logged in callback - Is called by auth0 with results of user authentication (GET) <br>
    * Redirects to root url if successful, otherwise it will redirected to an error url.
    */
-  @GetMapping(value = CALLBACK_URI)
+  @GetMapping(value = SSO_CALLBACK)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)
       throws IOException {
     LOGGER.debug(
@@ -128,8 +129,7 @@ public class SSOController {
 
   private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res)
       throws IOException {
-    final Object originalRequestUrl =
-        req.getSession().getAttribute(SSOWebSecurityConfig.REQUESTED_URL);
+    final Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
       res.sendRedirect(originalRequestUrl.toString());
     } else {

@@ -5,8 +5,9 @@
  */
 package io.camunda.tasklist.webapp;
 
+import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
+
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.sso.SSOWebSecurityConfig;
 import java.util.Arrays;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -35,17 +36,18 @@ public class ForwardErrorController implements ErrorController {
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
     final String requestedURI =
         (String) request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-    if (isSSOProfile() && !requestedURI.equals(TasklistURIs.LOGIN_RESOURCE) && isNotLoggedIn()) {
+    if (requestedURI == null) {
+      return forwardToRootPage();
+    }
+    if (shouldSaveRequestedURI(requestedURI)) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
-      return forwardToRootPage(requestedURI);
+      return forwardToRootPage();
     }
   }
 
-  private ModelAndView forwardToRootPage(final String requestedURI) {
-    LOGGER.warn("Requested non existing path {}. Forward (on serverside) to /\"", requestedURI);
+  private ModelAndView forwardToRootPage() {
     final ModelAndView modelAndView = new ModelAndView("forward:/");
-    // Is it really necessary to set status to OK (for frontend)?
     modelAndView.setStatus(HttpStatus.OK);
     return modelAndView;
   }
@@ -56,7 +58,7 @@ public class ForwardErrorController implements ErrorController {
         "Requested path {}, but not authenticated. Redirect to  {} ",
         requestedURI,
         TasklistURIs.LOGIN_RESOURCE);
-    request.getSession(true).setAttribute(SSOWebSecurityConfig.REQUESTED_URL, requestedURI);
+    request.getSession(true).setAttribute(REQUESTED_URL, requestedURI);
     final ModelAndView modelAndView = new ModelAndView("redirect:" + TasklistURIs.LOGIN_RESOURCE);
     modelAndView.setStatus(HttpStatus.FOUND);
     return modelAndView;
@@ -70,5 +72,15 @@ public class ForwardErrorController implements ErrorController {
 
   private boolean isSSOProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.SSO_AUTH_PROFILE);
+  }
+
+  private boolean isIAMProfile() {
+    return Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.IAM_AUTH_PROFILE);
+  }
+
+  private boolean shouldSaveRequestedURI(String requestedURI) {
+    return (isSSOProfile() || isIAMProfile())
+        && !requestedURI.equals(TasklistURIs.LOGIN_RESOURCE)
+        && isNotLoggedIn();
   }
 }

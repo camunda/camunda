@@ -6,6 +6,7 @@
 package io.camunda.tasklist.webapp.security;
 
 import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
@@ -22,6 +23,7 @@ import org.assertj.core.util.Lists;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -29,6 +31,8 @@ import org.springframework.util.MultiValueMap;
 public interface AuthenticationTestable {
 
   String SET_COOKIE_HEADER = "Set-Cookie";
+
+  String CURRENT_USER_QUERY = "{currentUser{ username \n lastname \n firstname }}";
 
   TestRestTemplate getTestRestTemplate();
 
@@ -72,9 +76,20 @@ public interface AuthenticationTestable {
         .postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
-  default ResponseEntity<String> logout(ResponseEntity<Void> response) {
+  default ResponseEntity<String> logout(ResponseEntity<?> response) {
     final HttpEntity<Map> request = prepareRequestWithCookies(response.getHeaders());
     return getTestRestTemplate().postForEntity(LOGOUT_RESOURCE, request, String.class);
+  }
+
+  default ResponseEntity<String> getCurrentUserByGraphQL(final HttpEntity<?> cookies) {
+    final ResponseEntity<String> responseEntity =
+        getTestRestTemplate()
+            .exchange(
+                GRAPHQL_URL,
+                HttpMethod.POST,
+                prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
+                String.class);
+    return responseEntity;
   }
 
   default void assertThatCookiesAreSet(ResponseEntity<?> response, boolean csrfEnabled) {
@@ -96,6 +111,10 @@ public interface AuthenticationTestable {
       assertThat(cookies).anyMatch((cookie) -> cookie.contains(X_CSRF_TOKEN + emptyValue));
     }
     assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
+  }
+
+  default ResponseEntity<String> get(String path) {
+    return getTestRestTemplate().getForEntity(path, String.class);
   }
 
   default String getCookiesAsString(HttpHeaders headers) {

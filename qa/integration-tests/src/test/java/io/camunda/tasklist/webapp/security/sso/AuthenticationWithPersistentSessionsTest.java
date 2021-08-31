@@ -6,12 +6,12 @@
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.CALLBACK_URI;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -140,7 +140,7 @@ public class AuthenticationWithPersistentSessionsTest {
     assertThat(redirectLocationIn(response))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
-            CALLBACK_URI,
+            SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
             tasklistProperties.getAuth0().getBackendDomain());
     // Step 3 Call back uri with invalid userdata
@@ -148,7 +148,7 @@ public class AuthenticationWithPersistentSessionsTest {
         .willReturn(
             orgExtractor.apply(tasklistProperties.getAuth0().getClaimName(), "wrong-organization"));
 
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
@@ -174,7 +174,7 @@ public class AuthenticationWithPersistentSessionsTest {
     assertThat(redirectLocationIn(response))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
-            CALLBACK_URI,
+            SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
             tasklistProperties.getAuth0().getBackendDomain());
     // Step 3 Call back uri, but there is an IdentityVerificationException.
@@ -182,7 +182,7 @@ public class AuthenticationWithPersistentSessionsTest {
         .when(authenticationController)
         .handle(any(), any());
 
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(NO_PERMISSION));
   }
 
@@ -219,7 +219,7 @@ public class AuthenticationWithPersistentSessionsTest {
     assertThat(redirectLocationIn(response))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
-            CALLBACK_URI,
+            SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
             tasklistProperties.getAuth0().getBackendDomain());
     // Step 3 Call back uri with valid userinfos
@@ -230,7 +230,7 @@ public class AuthenticationWithPersistentSessionsTest {
                 tasklistProperties.getAuth0().getClaimName(),
                 tasklistProperties.getAuth0().getOrganization()));
 
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(GRAPHQL_URL));
 
     // when
@@ -321,7 +321,7 @@ public class AuthenticationWithPersistentSessionsTest {
     assertThat(redirectLocationIn(response))
         .contains(
             tasklistProperties.getAuth0().getDomain(),
-            CALLBACK_URI,
+            SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
             tasklistProperties.getAuth0().getBackendDomain());
     // Step 3 Call back uri with valid userinfos
@@ -332,7 +332,7 @@ public class AuthenticationWithPersistentSessionsTest {
                 tasklistProperties.getAuth0().getClaimName(),
                 tasklistProperties.getAuth0().getOrganization()));
 
-    get(CALLBACK_URI, cookies);
+    get(SSO_CALLBACK, cookies);
     // Sometimes the testLogin fails without waiting
     TimeUnit.MILLISECONDS.sleep(1000);
     return cookies;

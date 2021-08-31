@@ -5,8 +5,9 @@
  */
 package io.camunda.tasklist.webapp.rest;
 
+import static io.camunda.tasklist.webapp.security.TasklistURIs.CANT_LOGOUT_AUTH_PROFILES;
+
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.Arrays;
 import javax.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,8 @@ public class ClientConfigRestService {
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
     final boolean canLogout =
-        !Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.SSO_AUTH_PROFILE);
+        Arrays.stream(environment.getActiveProfiles())
+            .noneMatch(CANT_LOGOUT_AUTH_PROFILES::contains);
     return String.format(
         "window.clientConfig = { \"isEnterprise\": %s, \"contextPath\": \"%s\", \"canLogout\": %b };",
         tasklistProperties.isEnterprise(), context.getContextPath(), canLogout);
