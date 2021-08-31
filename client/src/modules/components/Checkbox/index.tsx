@@ -88,16 +88,13 @@ export default class Checkbox extends React.Component<Props, State> {
           data-testid="checkbox-input"
           id={id}
           name={id}
-          indeterminate={isIndeterminate}
           type="checkbox"
           checked={isChecked}
           ref={this.inputRef}
-          checkboxType={type}
           onChange={this.handleChange}
           onFocus={this.handleFocus}
           onBlur={this.handleFocus}
-          // @ts-expect-error ts-migrate(2769) FIXME: Type 'null' is not assignable to type 'string | un... Remove this comment to see the full error message
-          aria-label={!id ? label || title : null}
+          aria-label={!id ? label || title : undefined}
           title={label || title}
           {...other}
         />

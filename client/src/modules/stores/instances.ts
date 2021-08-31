@@ -354,7 +354,7 @@ class Instances extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchError = (error?: Error) => {
+  handleFetchError = (error?: unknown) => {
     this.state.status = 'error';
     this.state.filteredInstancesCount = 0;
     this.state.processInstances = [];

@@ -239,7 +239,7 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchFailure = (error?: Error) => {
+  handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
     logger.error('Failed to fetch Variables');
     if (error !== undefined) {
@@ -251,7 +251,7 @@ class Variables extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchVariableFailure = (error?: Error) => {
+  handleFetchVariableFailure = (error?: unknown) => {
     this.setLoadingItemId(null);
     logger.error('Failed to fetch Single Variable');
     if (error !== undefined) {

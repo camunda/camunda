@@ -5,7 +5,7 @@
  */
 
 const logger = {
-  error(message: string | Error) {
+  error(message: unknown | Error) {
     if (['production', 'development'].includes(process.env.NODE_ENV)) {
       console.error(message);
     }

@@ -85,7 +85,7 @@ class Processes extends NetworkReconnectionHandler {
     this.state.status = 'fetching';
   };
 
-  handleFetchError = (error?: Error) => {
+  handleFetchError = (error?: unknown) => {
     this.state.status = 'fetch-error';
     logger.error('Failed to fetch processes');
 

@@ -296,7 +296,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     this.state.status = 'fetching-prev';
   };
 
-  handleFetchFailure = (error?: Error) => {
+  handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
     logger.error('Failed to fetch flow node instances');
     if (error !== undefined) {
@@ -329,7 +329,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     );
   };
 
-  handlePollFailure = (error?: Error) => {
+  handlePollFailure = (error?: unknown) => {
     logger.error('Failed to poll flow node instances');
     if (error !== undefined) {
       logger.error(error);

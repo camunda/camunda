@@ -112,7 +112,7 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
     );
   }
 
-  handleFetchFailure = (error?: Error) => {
+  handleFetchFailure = (error?: unknown) => {
     logger.error('Failed to fetch flow node meta data');
     if (error !== undefined) {
       logger.error(error);

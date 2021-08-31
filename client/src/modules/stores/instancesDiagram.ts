@@ -87,7 +87,7 @@ class InstancesDiagram extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchError = (error?: Error) => {
+  handleFetchError = (error?: unknown) => {
     this.state.diagramModel = null;
     this.state.status = 'error';
 

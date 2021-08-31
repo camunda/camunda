@@ -153,7 +153,7 @@ class CurrentInstance extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: Error) => {
+  handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
 
     logger.error('Failed to fetch process instance');

@@ -176,7 +176,7 @@ class Operations extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchError = (error?: Error) => {
+  handleFetchError = (error?: unknown) => {
     this.state.status = 'error';
 
     logger.error('Failed to fetch operations');

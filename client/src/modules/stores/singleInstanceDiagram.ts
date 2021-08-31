@@ -143,7 +143,7 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
     });
   }
 
-  handleFetchFailure = (error?: Error) => {
+  handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
 
     logger.error('Failed to fetch Diagram XML');
