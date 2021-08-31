@@ -343,6 +343,16 @@ public class TemplatedProcessReportDataBuilder {
           .definitions(definitions)
           .build();
         break;
+      case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.HEAT)
+          .definitions(definitions)
+          .build();
+        break;
       case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)
@@ -436,6 +446,15 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.FLOW_NODE)
           .viewProperty(ViewProperty.DURATION)
           .groupByType(ProcessGroupByType.FLOW_NODES)
+          .definitions(definitions)
+          .build();
+        break;
+      case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .distributedByType(DistributedByType.PROCESS)
           .definitions(definitions)
           .build();
         break;

@@ -122,7 +122,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(setDuration), DEFAULT_FULLNAME);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER)).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-      .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(setDuration), SECOND_USER_FULLNAME);
+      .containsExactly(calculateExpectedValueGivenDurationsDefaultAggr(setDuration), SECOND_USER_FULL_NAME);
 
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
@@ -252,7 +252,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
           DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]), DEFAULT_FULLNAME
         )
         .groupedByContains(
-          SECOND_USER, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), SECOND_USER_FULLNAME
+          SECOND_USER, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), SECOND_USER_FULL_NAME
         )
       .doAssert(actualResult);
     // @formatter:on

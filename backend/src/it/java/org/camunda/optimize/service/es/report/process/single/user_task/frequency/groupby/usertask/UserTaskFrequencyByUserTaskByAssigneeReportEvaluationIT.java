@@ -107,16 +107,16 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
         .groupByContains(USER_TASK_A)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(USER_TASK_B)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -216,19 +216,19 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
           .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
           .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
         .groupByContains(USER_TASK_A)
           .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
           .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
         .groupByContains(USER_TASK_B)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
           .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
       .doAssert(actualResult);
     // @formatter:on
@@ -271,10 +271,10 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -325,10 +325,10 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -390,10 +390,10 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_1, "thisLabelComesSecond")
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
         .groupByContains(USER_TASK_2, "thisLabelComesFirst")
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }

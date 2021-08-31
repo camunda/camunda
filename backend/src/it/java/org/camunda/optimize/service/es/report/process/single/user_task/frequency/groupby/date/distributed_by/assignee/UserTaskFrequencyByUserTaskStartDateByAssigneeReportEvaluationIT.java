@@ -99,7 +99,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count, DEFAULT_FULLNAME);
     }
     if (assignee2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count, SECOND_USER_FULLNAME);
+      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count, SECOND_USER_FULL_NAME);
     }
     groupByAsserter.doAssert(result);
   }

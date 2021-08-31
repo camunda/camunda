@@ -114,7 +114,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER))
       .isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-      .containsExactly(1., SECOND_USER_FULLNAME);
+      .containsExactly(1., SECOND_USER_FULL_NAME);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
@@ -217,7 +217,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       .containsExactly(2., DEFAULT_FULLNAME);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_USER)).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-      .containsExactly(1., SECOND_USER_FULLNAME);
+      .containsExactly(1., SECOND_USER_FULL_NAME);
     assertThat(MapResultUtil.getEntryForKey(
       result.getFirstMeasureData(),
       DISTRIBUTE_BY_IDENTITY_MISSING_KEY
@@ -260,7 +260,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       .processInstanceCountWithoutFilters(2L)
       .measure(ViewProperty.FREQUENCY)
         .groupedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-        .groupedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+        .groupedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }

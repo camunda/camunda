@@ -85,7 +85,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String SECOND_USERS_PASSWORD = SECOND_USER;
   protected static final String SECOND_USER_FIRST_NAME = "the";
   protected static final String SECOND_USER_LAST_NAME = "other";
-  protected static final String SECOND_USER_FULLNAME = SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
+  protected static final String SECOND_USER_FULL_NAME = SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
   protected static final String TEST_PROCESS = "aProcess";
 
@@ -529,7 +529,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected static Triple<String, Double, String> createSecondUserTriple(final Double value) {
-    return Triple.of(SECOND_USER, value, SECOND_USER_FULLNAME);
+    return Triple.of(SECOND_USER, value, SECOND_USER_FULL_NAME);
   }
 
   protected static Triple<String, Double, String> createFirstGroupTriple(final Double value) {

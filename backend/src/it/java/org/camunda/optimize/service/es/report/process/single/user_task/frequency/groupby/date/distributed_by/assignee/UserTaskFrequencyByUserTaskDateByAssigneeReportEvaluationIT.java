@@ -192,7 +192,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(localDateTimeToString(startOfToday))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -231,16 +231,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -280,16 +280,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -328,10 +328,10 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 2., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 2., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -363,13 +363,13 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -885,7 +885,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
           .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }

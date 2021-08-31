@@ -10,14 +10,16 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountInstanceFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewFrequency;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -61,19 +63,19 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       .size(configurationService.getEsAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .missing(MISSING_TENANT_KEY)
-      .field(ProcessInstanceDto.Fields.tenantId);
+      .field(tenantField(context));
     viewPart.createAggregations(context).forEach(tenantAgg::subAggregation);
     return Collections.singletonList(
       AggregationBuilders
         .terms(PROC_DEF_KEY_AGG)
         .size(configurationService.getEsAggregationBucketLimit())
         .order(BucketOrder.key(true))
-        .field(ProcessInstanceDto.Fields.processDefinitionKey)
+        .field(definitionKeyField(context))
         .subAggregation(
           AggregationBuilders.terms(PROC_DEF_VERSION_AGG)
             .size(configurationService.getEsAggregationBucketLimit())
             .order(BucketOrder.key(true))
-            .field(ProcessInstanceDto.Fields.processDefinitionVersion)
+            .field(definitionVersionField(context))
             .subAggregation(tenantAgg)));
   }
 
@@ -104,7 +106,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
                                                                   final ExecutionContext<ProcessReportDataDto> context) {
     final List<ProcessBucket> processBuckets = extractResultsToMergeForDefinitionSource(bucketsByDefKey, definition);
     List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
-    if (viewPart instanceof ProcessViewCountInstanceFrequency) {
+    if (viewPart instanceof ProcessViewFrequency) {
       final Double totalCount = processBuckets.stream()
         .map(ProcessBucket::getResult)
         .mapToDouble(result -> result.getViewMeasures().get(0).getValue())
@@ -113,9 +115,8 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     } else {
       for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
         Double mergedAggResult = calculateMergedAggregationResult(processBuckets, aggregationType);
-        viewMeasures.add(CompositeCommandResult.ViewMeasure.builder()
-                           .aggregationType(aggregationType)
-                           .value(mergedAggResult).build());
+        viewMeasures.add(
+          CompositeCommandResult.ViewMeasure.builder().aggregationType(aggregationType).value(mergedAggResult).build());
       }
     }
     return CompositeCommandResult.ViewResult.builder().viewMeasures(viewMeasures).build();
@@ -153,23 +154,28 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
         final double totalDocCount = processBuckets.stream()
           .mapToDouble(ProcessBucket::getDocCount)
           .sum();
-        final double totalValueSum = processBuckets.stream()
-          .map(bucket -> {
-            final Optional<CompositeCommandResult.ViewMeasure> avgMeasure = bucket.getResult()
-              .getViewMeasures()
-              .stream()
-              .filter(measure -> measure.getAggregationType() == AggregationType.AVERAGE)
-              .findFirst();
-            return avgMeasure.map(measure -> Pair.of(bucket, measure.getValue()));
-          })
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .mapToDouble(pair -> pair.getLeft().getDocCount() * pair.getRight())
-          .sum();
         // We must check to avoid a potential division by zero
-        mergedAggResult = totalDocCount == 0 ? null : (totalValueSum / totalDocCount);
+        if (totalDocCount == 0) {
+          mergedAggResult = null;
+        } else {
+          final double totalValueSum = processBuckets.stream()
+            .map(bucket -> {
+              final Optional<CompositeCommandResult.ViewMeasure> avgMeasure = bucket.getResult()
+                .getViewMeasures()
+                .stream()
+                .filter(measure -> measure.getAggregationType() == AggregationType.AVERAGE)
+                .findFirst();
+              return avgMeasure.map(measure -> Pair.of(bucket, measure.getValue()));
+            })
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .mapToDouble(pair -> pair.getLeft().getDocCount() * pair.getRight())
+            .sum();
+          mergedAggResult = totalValueSum / totalDocCount;
+        }
         break;
-      // We cannot support the median aggregation type as the information is lost on merging of buckets
+      // We cannot support the median aggregation type with this distribution as the information is lost on merging
+      // of buckets
       case MEDIAN:
         mergedAggResult = null;
         break;
@@ -240,6 +246,25 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       }
     }
     return bucketsByDefKey;
+  }
+
+  private String definitionKeyField(final ExecutionContext<ProcessReportDataDto> context) {
+    return isProcessReport(context) ? ProcessInstanceDto.Fields.processDefinitionKey
+      : ProcessInstanceDto.Fields.flowNodeInstances + "." + FlowNodeInstanceDto.Fields.definitionKey;
+  }
+
+  private String definitionVersionField(final ExecutionContext<ProcessReportDataDto> context) {
+    return isProcessReport(context) ? ProcessInstanceDto.Fields.processDefinitionVersion
+      : ProcessInstanceDto.Fields.flowNodeInstances + "." + FlowNodeInstanceDto.Fields.definitionVersion;
+  }
+
+  private String tenantField(final ExecutionContext<ProcessReportDataDto> context) {
+    return isProcessReport(context) ? ProcessInstanceDto.Fields.tenantId
+      : ProcessInstanceDto.Fields.flowNodeInstances + "." + FlowNodeInstanceDto.Fields.tenantId;
+  }
+
+  private boolean isProcessReport(final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getReportData().getView().getEntity() == ProcessViewEntity.PROCESS_INSTANCE;
   }
 
   @Override

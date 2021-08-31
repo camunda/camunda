@@ -204,7 +204,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(localDateTimeToString(startOfToday))
           .distributedByContains(DEFAULT_USERNAME, expectedDuration, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, expectedDuration, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, expectedDuration, SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -246,16 +246,16 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 40., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 40., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
           .distributedByContains(DEFAULT_USERNAME, 30., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, 20., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 10., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 10., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -298,16 +298,16 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 10., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 10., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, 20., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
           .distributedByContains(DEFAULT_USERNAME, 30., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 40., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 40., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -349,10 +349,10 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 200., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 200., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, 10., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -385,13 +385,13 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 30., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 30., SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
         .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
           .distributedByContains(DEFAULT_USERNAME, 10., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -918,7 +918,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
           .distributedByContains(DEFAULT_USERNAME, 15., DEFAULT_FULLNAME)
-          .distributedByContains(SECOND_USER, 30., SECOND_USER_FULLNAME)
+          .distributedByContains(SECOND_USER, 30., SECOND_USER_FULL_NAME)
       .doAssert(result);
     // @formatter:on
   }
