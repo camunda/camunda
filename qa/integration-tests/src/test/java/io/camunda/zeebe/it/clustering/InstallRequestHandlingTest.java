@@ -56,7 +56,7 @@ public class InstallRequestHandlingTest {
   }
 
   @Test
-  public void shouldBeAbleToContinueWithReplayState() {
+  public void shouldContinueProcessingAfterReplay() {
     // given
     final var followerId = clusteringRule.stopAnyFollower();
 
