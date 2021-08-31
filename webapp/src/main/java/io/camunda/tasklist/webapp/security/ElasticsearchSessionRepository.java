@@ -12,9 +12,7 @@ import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.LAST_AC
 import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
-import io.camunda.tasklist.util.SoftHashMap;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.TypeDescriptor;
@@ -45,10 +43,10 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.stereotype.Component;
 
 @Configuration
-@ConditionalOnProperty(
-    prefix = TasklistProperties.PREFIX,
-    value = "persistentSessionsEnabled",
-    havingValue = "true")
+@ConditionalOnExpression(
+    "${camunda.tasklist.persistent.sessions.enabled:false}"
+        + " or "
+        + "${camunda.tasklist.persistentSessionsEnabled:false}")
 @Component
 @EnableSpringHttpSession
 public class ElasticsearchSessionRepository
@@ -63,13 +61,11 @@ public class ElasticsearchSessionRepository
 
   @Autowired private GenericConversionService conversionService;
 
-  @Autowired private TasklistWebSessionIndex operateWebSessionIndex;
+  @Autowired private TasklistWebSessionIndex tasklistWebSessionIndex;
 
   @Autowired
   @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
-
-  private Map<String, ElasticsearchSession> cache = new SoftHashMap<>();
 
   @PostConstruct
   private void setUp() {
@@ -87,7 +83,7 @@ public class ElasticsearchSessionRepository
   public ThreadPoolTaskScheduler getTaskScheduler() {
     final ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(5);
-    executor.setThreadNamePrefix("operate_session_");
+    executor.setThreadNamePrefix("tasklist_session_");
     executor.initialize();
     return executor;
   }
@@ -112,7 +108,7 @@ public class ElasticsearchSessionRepository
   private void removedExpiredSessions() {
     LOGGER.debug("Check for expired sessions");
     final SearchRequest searchRequest =
-        new SearchRequest(operateWebSessionIndex.getFullQualifiedName());
+        new SearchRequest(tasklistWebSessionIndex.getFullQualifiedName());
     retryElasticsearchClient.doWithEachSearchResult(
         searchRequest,
         sh -> {
@@ -144,15 +140,12 @@ public class ElasticsearchSessionRepository
       delete(session.getId());
       return;
     }
-    cache.put(session.getId(), session);
     if (session.isChanged()) {
       LOGGER.debug("Session {} changed, save in Elasticsearch.", session);
-      executeAsyncElasticsearchRequest(
-          () ->
-              retryElasticsearchClient.createOrUpdateDocument(
-                  operateWebSessionIndex.getFullQualifiedName(),
-                  session.getId(),
-                  sessionToDocument(session)));
+      retryElasticsearchClient.createOrUpdateDocument(
+          tasklistWebSessionIndex.getFullQualifiedName(),
+          session.getId(),
+          sessionToDocument(session));
       session.clearChangeFlag();
     }
   }
@@ -161,9 +154,9 @@ public class ElasticsearchSessionRepository
   public ElasticsearchSession getSession(final String id) {
     LOGGER.debug("Retrieve session {} from Elasticsearch", id);
     ElasticsearchSession session = null;
-    retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
+    retryElasticsearchClient.refresh(tasklistWebSessionIndex.getFullQualifiedName());
     final Map<String, Object> document =
-        retryElasticsearchClient.getDocument(operateWebSessionIndex.getFullQualifiedName(), id);
+        retryElasticsearchClient.getDocument(tasklistWebSessionIndex.getFullQualifiedName(), id);
     if (document != null) {
       session = documentToSession(document);
     }
@@ -177,11 +170,10 @@ public class ElasticsearchSessionRepository
   @Override
   public void delete(String id) {
     LOGGER.debug("Delete session {}", id);
-    cache.remove(id);
     executeAsyncElasticsearchRequest(
         () ->
             retryElasticsearchClient.deleteDocument(
-                operateWebSessionIndex.getFullQualifiedName(), id));
+                tasklistWebSessionIndex.getFullQualifiedName(), id));
   }
 
   private byte[] serialize(Object object) {
@@ -235,7 +227,7 @@ public class ElasticsearchSessionRepository
   }
 
   private void executeAsyncElasticsearchRequest(Runnable requestRunnable) {
-    sessionThreadScheduler.submit(requestRunnable);
+    sessionThreadScheduler.execute(requestRunnable);
   }
 
   static class ElasticsearchSession implements ExpiringSession {
