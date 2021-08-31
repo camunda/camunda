@@ -13,8 +13,10 @@ import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionFactory;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
+import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.startup.StartupProcess;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,15 +42,18 @@ public final class ZeebePartition extends Actor
         SnapshotReplicationListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private Role raftRole;
 
+  private static final StartupProcess<PartitionStartupContext> STARTUP_PROCESS =
+      new StartupProcess<PartitionStartupContext>(LOG, List.of());
+
+  private Role raftRole;
   private final String actorName;
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
   private final RoleMetrics roleMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
-
-  private final PartitionContext context;
+  private PartitionContext context;
+  private PartitionStartupContext startupContext;
   private final PartitionAdminControl adminControl;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
@@ -60,9 +66,16 @@ public final class ZeebePartition extends Actor
     adminControl = transitionContext.getPartitionAdminControl();
 
     this.transition = transition;
+    startupContext = transitionContext;
 
     transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
+
+    // todo remove after migration
+    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+      ((NewPartitionTransitionImpl) transition).setConcurrencyControl(actor);
+    }
+    // todo remove after migration
 
     actorName =
         buildActorName(
@@ -183,10 +196,30 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    context.getRaftPartition().addRoleChangeListener(this);
-    context.getComponentHealthMonitor().addFailureListener(this);
-    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
-    context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
+    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+      STARTUP_PROCESS
+          .startup(actor, startupContext)
+          .onComplete(
+              (newStartupContext, error) -> {
+                if (error != null) {
+                  LOG.error(error.getMessage(), error);
+                  handleUnrecoverableFailure();
+                  close();
+                  return;
+                }
+                startupContext = newStartupContext;
+                final var transitionContext = startupContext.createTransitionContext();
+
+                ((NewPartitionTransitionImpl) transition)
+                    .updateTransitionContext(transitionContext);
+
+                context = transitionContext.getPartitionContext();
+
+                registerListenersAndTriggerRoleChange();
+              });
+    } else {
+      registerListenersAndTriggerRoleChange();
+    }
   }
 
   @Override
@@ -214,7 +247,26 @@ public final class ZeebePartition extends Actor
               context
                   .getComponentHealthMonitor()
                   .removeComponent(context.getRaftPartition().name());
-              closeFuture.complete(null);
+
+              if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+                STARTUP_PROCESS
+                    .shutdown(actor, startupContext)
+                    .onComplete(
+                        (newStartupContext, error) -> {
+                          if (error != null) {
+                            LOG.error(error.getMessage(), error);
+                          }
+
+                          // reset contexts to null to not have lingering references that could
+                          // cause OOM problems in tests which start/stop partitions
+                          startupContext = null;
+                          context = null;
+
+                          closeFuture.complete(null);
+                        });
+              } else {
+                closeFuture.complete(null);
+              }
             });
   }
 
@@ -247,6 +299,13 @@ public final class ZeebePartition extends Actor
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);
+  }
+
+  private void registerListenersAndTriggerRoleChange() {
+    context.getRaftPartition().addRoleChangeListener(this);
+    context.getComponentHealthMonitor().addFailureListener(this);
+    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
+    context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
   }
 
   @Override
