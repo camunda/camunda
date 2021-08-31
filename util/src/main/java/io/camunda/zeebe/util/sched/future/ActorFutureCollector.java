@@ -60,19 +60,19 @@ final class ActorFutureCollector<V>
 
     @Override
     public ActorFuture<List<V>> get() {
-      if (pendingFutures.isEmpty()) {
-        return CompletableActorFuture.completed(Collections.emptyList());
-      }
-
       aggregated = concurrencyControl.createFuture();
 
-      for (int index = 0; index < pendingFutures.size(); index++) {
-        final var pendingFuture = pendingFutures.get(index);
+      if (pendingFutures.isEmpty()) {
+        aggregated.complete(Collections.emptyList());
+      } else {
+        for (int index = 0; index < pendingFutures.size(); index++) {
+          final var pendingFuture = pendingFutures.get(index);
 
-        final var currentIndex = index;
-        concurrencyControl.runOnCompletion(
-            pendingFuture,
-            (result, error) -> handleCompletion(pendingFuture, currentIndex, result, error));
+          final var currentIndex = index;
+          concurrencyControl.runOnCompletion(
+              pendingFuture,
+              (result, error) -> handleCompletion(pendingFuture, currentIndex, result, error));
+        }
       }
 
       return aggregated;

@@ -14,7 +14,6 @@ import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.ActorFutureAggregator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 
 final class MultiPartitionAdminAccess implements PartitionAdminAccess {
@@ -24,7 +23,7 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
   MultiPartitionAdminAccess(
       final ConcurrencyControl concurrencyControl,
       final List<? extends PartitionAdminAccess> partitions) {
-    this.concurrencyControl = Objects.requireNonNull(concurrencyControl);
+    this.concurrencyControl = requireNonNull(concurrencyControl);
     this.partitions = unmodifiableList(requireNonNull(partitions));
   }
 
