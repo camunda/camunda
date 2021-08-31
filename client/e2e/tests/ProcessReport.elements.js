@@ -123,3 +123,4 @@ export const sectionToggle = (sectionName) =>
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist .label').withText(name);
+export const lineButton = Selector('.measureContainer .Button').withText('Line');
