@@ -35,6 +35,7 @@ Object {
         "color": "#666",
         "display": false,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": undefined,
@@ -55,6 +56,7 @@ Object {
         "color": "#666",
         "display": false,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": undefined,
@@ -113,7 +115,12 @@ Object {
         "color": "#666",
       },
       "title": Object {
+        "color": "#666",
         "display": true,
+        "font": Object {
+          "size": 14,
+          "weight": "bold",
+        },
         "text": "Flow Node Count",
       },
     },
@@ -135,6 +142,7 @@ Object {
         "color": "#666",
         "display": true,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": "Flow Node Duration",
@@ -155,6 +163,7 @@ Object {
         "color": "#666",
         "display": false,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": undefined,

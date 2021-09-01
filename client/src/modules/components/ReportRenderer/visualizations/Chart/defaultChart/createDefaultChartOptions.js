@@ -182,6 +182,7 @@ export function createBarOptions({
         text: configuration.yLabel,
         color: getColorFor('label', isDark),
         font: {
+          size: 14,
           weight: 'bold',
         },
       },
@@ -200,10 +201,8 @@ export function createBarOptions({
   };
 
   if (hasMultipleAxes) {
-    yAxes['axis-0'].title = {
-      display: true,
-      text: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
-    };
+    yAxes['axis-0'].title.display = true;
+    yAxes['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t('report.view.count')}`;
 
     yAxes['axis-1'] = {
       grid: {
@@ -214,6 +213,7 @@ export function createBarOptions({
         text: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
         color: getColorFor('label', isDark),
         font: {
+          size: 14,
           weight: 'bold',
         },
       },
@@ -246,6 +246,7 @@ export function createBarOptions({
           text: configuration.xLabel,
           color: getColorFor('label', isDark),
           font: {
+            size: 14,
             weight: 'bold',
           },
         },
