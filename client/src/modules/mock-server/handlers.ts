@@ -6,6 +6,7 @@
 
 import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {RequestHandler, rest} from 'msw';
+import {incidentsStore} from 'modules/stores/incidents';
 
 type IncidentsResponse = {
   flowNodes: [{flowNodeId: string; count: number}];
@@ -125,10 +126,13 @@ const handlers: RequestHandler[] = [
           })
         );
       } else {
+        const hasIncidents = incidentsStore.incidents.some(
+          (incident) => incident.flowNodeId === parsedResponse.flowNodeId
+        );
         return res(
           ctx.json({
             ...parsedResponse,
-            incidentCount: 5,
+            incidentCount: instanceMetadata === null && hasIncidents ? 3 : null,
             incident: null,
           })
         );

@@ -77,7 +77,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
 
   const flowNodeMetaData = singleInstanceDiagramStore.getMetaData(flowNodeId);
   const flowNodeName = flowNodeMetaData?.name || flowNodeId;
-  const {instanceMetadata, incident} = metaData;
+  const {instanceMetadata, incident, incidentCount} = metaData;
   const {
     flowNodeInstanceId,
     startDate,
@@ -265,6 +265,30 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                   )}
                   mode="view"
                 />
+              </>
+            )}
+            {incidentCount > 1 && (
+              <>
+                <Divider />
+                <Header>
+                  <IncidentTitle aria-label="Incidents">
+                    Incidents
+                  </IncidentTitle>
+                  <LinkButton
+                    size="small"
+                    onClick={() => {
+                      incidentsStore.clearSelection();
+                      incidentsStore.toggleFlowNodeSelection(flowNodeId);
+                      incidentsStore.setIncidentBarOpen(true);
+                    }}
+                    title="Show incidents"
+                  >
+                    View
+                  </LinkButton>
+                </Header>
+                <SummaryDataValue>
+                  {`${incidentCount} incidents occured`}
+                </SummaryDataValue>
               </>
             )}
           </Popover>

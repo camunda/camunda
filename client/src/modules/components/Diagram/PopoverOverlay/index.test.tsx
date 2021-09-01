@@ -100,6 +100,17 @@ const incidentFlowNodeMetaData = {
   },
 };
 
+const multiInstanceFlowNodeData = {
+  flowNodeInstanceId: null,
+  flowNodeId: FLOW_NODE_ID,
+  flowNodeType: 'START_EVENT',
+  instanceCount: 10,
+  breadcrumb: [],
+  instanceMetadata: null,
+  incidentCount: 3,
+  incident: null,
+};
+
 const renderPopover = () => {
   const {container} = render(<svg />);
 
@@ -296,5 +307,40 @@ describe('PopoverOverlay', () => {
     expect(
       screen.getByText(/"calledProcessInstanceId": "229843728748927482"/)
     ).toBeInTheDocument();
+  });
+
+  it('should render metadata for multi instance flow nodes', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      ),
+      rest.post(
+        `/api/process-instances/:processInstanceId/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(multiInstanceFlowNodeData))
+      )
+    );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+      })
+    );
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: FLOW_NODE_ID,
+    });
+
+    renderPopover();
+
+    expect(
+      await screen.findByText(/There are 10 Instances/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /To view details for any of these,\s*select one Instance in the Instance History./
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText(/3 incidents occured/)).toBeInTheDocument();
+    expect(screen.getByText(/View/)).toBeInTheDocument();
+    expect(screen.queryByText(/Flow Node Instance Id/)).not.toBeInTheDocument();
   });
 });
