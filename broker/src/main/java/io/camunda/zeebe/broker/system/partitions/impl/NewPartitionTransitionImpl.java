@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -34,7 +35,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
 
   public NewPartitionTransitionImpl(
       final List<PartitionTransitionStep> steps, final PartitionTransitionContext context) {
-    this.steps = requireNonNull(steps);
+    this.steps = new ArrayList<>(requireNonNull(steps));
     this.context = requireNonNull(context);
   }
 
@@ -118,7 +119,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
         final PartitionTransitionContext context,
         final long term,
         final Role role) {
-      this.pendingSteps = pendingSteps;
+      this.pendingSteps = new ArrayList<>(pendingSteps);
       this.concurrencyControl = concurrencyControl;
       this.context = context;
       this.term = term;
