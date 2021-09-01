@@ -97,7 +97,7 @@ const InstanceHeader = observer(() => {
           </tr>
         </tbody>
       </Styled.Table>
-      <Restricted scopes={['edit']}>
+      <Restricted scopes={['write']}>
         <Operations
           instance={instance}
           onOperation={() => currentInstanceStore.activateOperation()}

@@ -12,24 +12,24 @@ describe('stores/authentication', () => {
   });
 
   it('should set user role', () => {
-    expect(authenticationStore.state.roles).toEqual(['view', 'edit']);
-    authenticationStore.setRoles(undefined);
-    expect(authenticationStore.state.roles).toEqual(['view', 'edit']);
-    authenticationStore.setRoles(['view']);
-    expect(authenticationStore.state.roles).toEqual(['view']);
+    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
+    authenticationStore.setPermissions(undefined);
+    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
+    authenticationStore.setPermissions(['read']);
+    expect(authenticationStore.state.permissions).toEqual(['read']);
   });
 
   it('should see if user has permissions to specific scopes', () => {
-    expect(authenticationStore.hasPermission(['edit'])).toBe(true);
-    expect(authenticationStore.hasPermission(['view'])).toBe(true);
-    expect(authenticationStore.hasPermission(['edit', 'view'])).toBe(true);
-    authenticationStore.setRoles(undefined);
-    expect(authenticationStore.hasPermission(['edit'])).toBe(true);
-    expect(authenticationStore.hasPermission(['view'])).toBe(true);
-    expect(authenticationStore.hasPermission(['edit', 'view'])).toBe(true);
-    authenticationStore.setRoles(['view']);
-    expect(authenticationStore.hasPermission(['edit'])).toBe(false);
-    expect(authenticationStore.hasPermission(['view'])).toBe(true);
-    expect(authenticationStore.hasPermission(['edit', 'view'])).toBe(true);
+    expect(authenticationStore.hasPermission(['write'])).toBe(true);
+    expect(authenticationStore.hasPermission(['read'])).toBe(true);
+    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
+    authenticationStore.setPermissions(undefined);
+    expect(authenticationStore.hasPermission(['write'])).toBe(true);
+    expect(authenticationStore.hasPermission(['read'])).toBe(true);
+    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
+    authenticationStore.setPermissions(['read']);
+    expect(authenticationStore.hasPermission(['write'])).toBe(false);
+    expect(authenticationStore.hasPermission(['read'])).toBe(true);
+    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
   });
 });

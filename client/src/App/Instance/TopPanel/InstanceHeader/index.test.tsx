@@ -310,7 +310,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    authenticationStore.setRoles(['view', 'edit']);
+    authenticationStore.setPermissions(['read', 'write']);
 
     render(<InstanceHeader />, {wrapper: Wrapper});
 
@@ -338,7 +338,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    authenticationStore.setRoles(['view']);
+    authenticationStore.setPermissions(['read']);
 
     render(<InstanceHeader />, {wrapper: Wrapper});
 

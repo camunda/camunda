@@ -38,7 +38,7 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
     >
       <TD>
         <Cell>
-          <Restricted scopes={['edit']}>
+          <Restricted scopes={['write']}>
             <>
               <SelectionStatusIndicator selected={isSelected} />
               <Checkbox
@@ -82,7 +82,7 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
           'None'
         )}
       </TD>
-      <Restricted scopes={['edit']}>
+      <Restricted scopes={['write']}>
         <TD>
           <Operations
             instance={instance}

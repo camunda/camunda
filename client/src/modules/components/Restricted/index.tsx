@@ -4,13 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {authenticationStore, Roles} from 'modules/stores/authentication';
+import {authenticationStore, Permissions} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
 import React from 'react';
 
 type Props = {
   children: React.ReactElement;
-  scopes: Roles;
+  scopes: Permissions;
 };
 
 const Restricted: React.FC<Props> = observer(({children, scopes}) => {

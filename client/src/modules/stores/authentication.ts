@@ -7,18 +7,18 @@
 import {makeObservable, observable, action} from 'mobx';
 import {Notification} from 'modules/notifications';
 
-type Roles = Array<'view' | 'edit'>;
+type Permissions = Array<'read' | 'write'>;
 
 type State = {
   isSessionValid: boolean;
   notification: Notification | undefined;
-  roles: Roles;
+  permissions: Permissions;
 };
 
 const DEFAULT_STATE: State = {
   isSessionValid: false,
   notification: undefined,
-  roles: ['view', 'edit'],
+  permissions: ['read', 'write'],
 };
 
 class Authentication {
@@ -28,7 +28,7 @@ class Authentication {
       state: observable,
       disableUserSession: action,
       enableUserSession: action,
-      setRoles: action,
+      setPermissions: action,
       reset: action,
     });
   }
@@ -44,12 +44,14 @@ class Authentication {
     this.state.notification = undefined;
   };
 
-  hasPermission = (scopes: Roles) => {
-    return this.state.roles.some((role) => scopes.includes(role));
+  hasPermission = (scopes: Permissions) => {
+    return this.state.permissions.some((permission) =>
+      scopes.includes(permission)
+    );
   };
 
-  setRoles = (roles: Roles | undefined) => {
-    this.state.roles = roles ?? DEFAULT_STATE.roles;
+  setPermissions = (permissions: Permissions | undefined) => {
+    this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
   };
 
   reset = () => {
@@ -58,4 +60,4 @@ class Authentication {
 }
 
 export const authenticationStore = new Authentication();
-export type {Roles};
+export type {Permissions};

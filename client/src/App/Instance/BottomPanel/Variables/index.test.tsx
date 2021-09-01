@@ -1070,7 +1070,7 @@ describe('Variables', () => {
 
   describe('Restricted user', () => {
     beforeAll(() => {
-      authenticationStore.setRoles(['view']);
+      authenticationStore.setPermissions(['read']);
     });
 
     afterAll(() => {

@@ -109,7 +109,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                   <ColumnHeader label="Root Cause Instance" />
                 </Styled.TH>
               )}
-            <Restricted scopes={['edit']}>
+            <Restricted scopes={['write']}>
               <Styled.TH>
                 <ColumnHeader label="Operations" />
               </Styled.TH>
@@ -215,7 +215,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                           )}
                         </TD>
                       )}
-                    <Restricted scopes={['edit']}>
+                    <Restricted scopes={['write']}>
                       <TD>
                         {areOperationsVisible && (
                           <IncidentOperation

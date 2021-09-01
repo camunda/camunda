@@ -25,12 +25,12 @@ const Authentication: React.FC<Props> = observer((props) => {
   const [forceRedirect, setForceRedirect] = useState<boolean | null>(null);
 
   useEffect(() => {
-    requestUserEndpoint().then(({status, roles}) => {
+    requestUserEndpoint().then(({status, permissions}) => {
       if (status === 401 || status === 403) {
         setForceRedirect(true);
       } else {
         authenticationStore.enableUserSession();
-        authenticationStore.setRoles(roles);
+        authenticationStore.setPermissions(permissions);
 
         setForceRedirect(false);
       }
@@ -54,7 +54,7 @@ const Authentication: React.FC<Props> = observer((props) => {
     return get('/api/authentications/user')
       .then(async (response) => {
         const body = await response.json();
-        return {status: response.status, roles: body.roles};
+        return {status: response.status, permissions: body.permissions};
       })
       .catch((error) => error.status);
   };

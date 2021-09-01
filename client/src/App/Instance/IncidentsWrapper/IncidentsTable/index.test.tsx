@@ -94,7 +94,7 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers for restricted user', () => {
     incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
-    authenticationStore.setRoles(['view']);
+    authenticationStore.setPermissions(['read']);
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -173,7 +173,7 @@ describe('IncidentsTable', () => {
 
   it('should render incident details for restricted user', () => {
     incidentsStore.setIncidents({incidents: incidentsMock, count: 2});
-    authenticationStore.setRoles(['view']);
+    authenticationStore.setPermissions(['read']);
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(

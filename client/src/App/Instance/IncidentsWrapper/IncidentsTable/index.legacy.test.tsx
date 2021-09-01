@@ -96,7 +96,7 @@ const Wrapper = ({children}: Props) => {
   });
 
   it('should render the right column headers for restricted user', () => {
-    authenticationStore.setRoles(['view']);
+    authenticationStore.setPermissions(['read']);
 
     render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
 
@@ -183,7 +183,7 @@ const Wrapper = ({children}: Props) => {
   });
 
   it('should render incident details for restricted user', () => {
-    authenticationStore.setRoles(['view']);
+    authenticationStore.setPermissions(['read']);
 
     render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
     let withinRow = within(

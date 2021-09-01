@@ -44,7 +44,7 @@ const Header = observer(function (props: any) {
       <TRHeader>
         <TH>
           <CheckAll shouldShowOffset={!isInitialDataLoaded}>
-            <Restricted scopes={['edit']}>
+            <Restricted scopes={['write']}>
               {isInitialDataLoaded ? (
                 <Checkbox
                   disabled={isListEmpty}
@@ -98,7 +98,7 @@ const Header = observer(function (props: any) {
             sortKey="parentInstanceId"
           />
         </TH>
-        <Restricted scopes={['edit']}>
+        <Restricted scopes={['write']}>
           <OperationsTH>
             <ColumnHeader disabled={isListEmpty} label="Operations" />
           </OperationsTH>

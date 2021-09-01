@@ -74,10 +74,10 @@ describe('Authentication', () => {
       await screen.findByText(PRIVATE_COMPONENT_CONTENT)
     ).toBeInTheDocument();
     expect(historyMock.location.pathname).toBe(mockPathname);
-    expect(authenticationStore.state.roles).toEqual(['view', 'edit']);
+    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
   });
 
-  it('should set user roles if defined', async () => {
+  it('should set user permissions if defined', async () => {
     const mockPathname = '/instances/1';
     const historyMock = createMemoryHistory({
       initialEntries: [mockPathname],
@@ -85,7 +85,7 @@ describe('Authentication', () => {
 
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json({roles: ['view']}))
+        res.once(ctx.json({permissions: ['read']}))
       )
     );
 
@@ -97,7 +97,7 @@ describe('Authentication', () => {
       await screen.findByText(PRIVATE_COMPONENT_CONTENT)
     ).toBeInTheDocument();
     expect(historyMock.location.pathname).toBe(mockPathname);
-    expect(authenticationStore.state.roles).toEqual(['view']);
+    expect(authenticationStore.state.permissions).toEqual(['read']);
   });
 
   it('should redirect to login page if user is not authenticated (401)', async () => {

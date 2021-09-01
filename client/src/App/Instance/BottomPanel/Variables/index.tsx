@@ -186,7 +186,7 @@ const Variables: React.FC = observer(() => {
                                     {hasActiveOperation ? (
                                       <Styled.Spinner data-testid="edit-variable-spinner" />
                                     ) : (
-                                      <Restricted scopes={['edit']}>
+                                      <Restricted scopes={['write']}>
                                         <Styled.EditButton
                                           title="Enter edit mode"
                                           type="button"
@@ -243,7 +243,7 @@ const Variables: React.FC = observer(() => {
             </InfiniteScroller>
           </>
         )}
-        <Restricted scopes={['edit']}>
+        <Restricted scopes={['write']}>
           <Styled.Footer
             scrollBarWidth={
               (scrollableContentRef?.current?.offsetWidth ?? 0) -
