@@ -29,9 +29,6 @@ Windows users need to install `make` manually on their shell. You can find
 instructions on how to do it
 [here](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
-If you need support to configure these tools please contact Andrea or
-Christian.
-
 To spawn the full local environment, run this command in the root folder:
 
 ```
