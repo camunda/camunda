@@ -22,19 +22,22 @@ export function formatTooltip({
     return;
   }
 
+  const tooltipText = getTooltipText(
+    dataset.data[dataIndex],
+    formatter,
+    instanceCount,
+    alwaysShowAbsolute,
+    alwaysShowRelative,
+    isDuration
+  );
+
+  if (!tooltipText) {
+    return;
+  }
+
   const label = showLabel && dataset.label ? dataset.label + ': ' : '';
 
-  return (
-    label +
-    getTooltipText(
-      dataset.data[dataIndex],
-      formatter,
-      instanceCount,
-      alwaysShowAbsolute,
-      alwaysShowRelative,
-      isDuration
-    )
-  );
+  return label + tooltipText;
 }
 
 export function formatTooltipTitle(title, availableWidth) {

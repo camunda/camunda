@@ -11,44 +11,60 @@ import {
   getTooltipLabelColor,
 } from './service';
 
-it('should include the relative value in tooltips', () => {
-  const response = formatTooltip({
-    dataset: {data: [2.5]},
-    dataIndex: 0,
-    configuration: {},
-    formatter: (v) => v,
-    instanceCount: 5,
-    isDuration: false,
+describe('formatTooltip', () => {
+  it('should include the relative value in tooltips', () => {
+    const response = formatTooltip({
+      dataset: {data: [2.5]},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: false,
+    });
+
+    expect(response).toBe('2.5\u00A0(50%)');
   });
 
-  expect(response).toBe('2.5\u00A0(50%)');
-});
+  it('should return undefined tooltip for target line dataset', () => {
+    const response = formatTooltip({
+      dataset: {data: [2.5], isTarget: true},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: false,
+    });
 
-it('should return undefined tooltip for target line dataset', () => {
-  const response = formatTooltip({
-    dataset: {data: [2.5], isTarget: true},
-    dataIndex: 0,
-    configuration: {},
-    formatter: (v) => v,
-    instanceCount: 5,
-    isDuration: false,
+    expect(response).toBe(undefined);
   });
 
-  expect(response).toBe(undefined);
-});
+  it('should return undefined for null values', () => {
+    const response = formatTooltip({
+      dataset: {data: [null], label: 'testLabel'},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: true,
+      showLabel: true,
+    });
 
-it('should display a label before the data if specified', () => {
-  const response = formatTooltip({
-    dataset: {data: [2], label: 'testLabel'},
-    dataIndex: 0,
-    configuration: {},
-    formatter: (v) => v,
-    instanceCount: 5,
-    isDuration: true,
-    showLabel: true,
+    expect(response).toBe(undefined);
   });
 
-  expect(response).toBe('testLabel: 2');
+  it('should display a label before the data if specified', () => {
+    const response = formatTooltip({
+      dataset: {data: [2], label: 'testLabel'},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: true,
+      showLabel: true,
+    });
+
+    expect(response).toBe('testLabel: 2');
+  });
 });
 
 it('should generate correct colors in label tooltips for pie charts ', () => {
