@@ -436,9 +436,11 @@ class Variables extends NetworkReconnectionHandler {
           this.handleFetchFailure();
         }
       } catch (error) {
-        if (error.name !== 'AbortError') {
-          this.handleFetchFailure(error);
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
         }
+
+        this.handleFetchFailure(error);
       }
     }
   );
