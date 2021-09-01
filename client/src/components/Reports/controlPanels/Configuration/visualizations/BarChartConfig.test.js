@@ -16,6 +16,7 @@ const configuration = {
   xLabel: '',
   yLabel: '',
   targetValue: {active: false},
+  stackedBar: false,
 };
 
 const barReport = {
@@ -102,4 +103,23 @@ it('should show stacked bar option for distributed bar chart reports', () => {
   });
 
   expect(node.find('.stackedBars')).toExist();
+});
+
+it('should show goal line option and not show stacking option if current visualization cannot be stacked ', () => {
+  const node = shallow(<BarChartConfig report={barReport} />);
+
+  node.setProps({
+    report: {
+      ...barReport,
+      data: {
+        ...barReport.data,
+        visualization: 'line',
+        distributedBy: {type: 'flowNode'},
+        configuration: {...configuration, stackedBar: true},
+      },
+    },
+  });
+
+  expect(node.find('.stackedBars')).not.toExist();
+  expect(node.find('ChartTargetInput')).toExist();
 });

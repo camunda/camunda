@@ -22,6 +22,9 @@ export default function BarChartConfig({onChange, report}) {
 
   const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
   const isMultiMeasure = combined ? false : result?.measures.length > 1;
+  const isStackingPossible =
+    !combined && distributedBy.type !== 'none' && ['barLine', 'bar'].includes(visualization);
+  const isStacked = isStackingPossible && configuration.stackedBar;
 
   return (
     <div className="BarChartConfig">
@@ -50,7 +53,7 @@ export default function BarChartConfig({onChange, report}) {
           }}
         />
       </fieldset>
-      {!combined && distributedBy.type !== 'none' && visualization !== 'line' && (
+      {isStackingPossible && (
         <fieldset className="stackedBars">
           <legend>{t('report.config.stackedBars.legend')}</legend>
           <Switch
@@ -77,7 +80,7 @@ export default function BarChartConfig({onChange, report}) {
           />
         )}
       </fieldset>
-      {!isMultiMeasure && !configuration.stackedBar && (
+      {!isMultiMeasure && !isStacked && (
         <fieldset>
           <legend>
             <Switch

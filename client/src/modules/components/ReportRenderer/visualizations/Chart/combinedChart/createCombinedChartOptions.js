@@ -62,6 +62,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   return {
     ...createBarOptions({
       targetValue,
+      visualization,
       configuration,
       maxDuration,
       isDark,

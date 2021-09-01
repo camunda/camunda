@@ -54,6 +54,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     case 'barLine':
       options = createBarOptions({
         targetValue,
+        visualization,
         configuration,
         maxDuration: maxValue,
         groupedByDurationMaxValue,
@@ -163,8 +164,9 @@ export function createBarOptions({
   entity,
   groupedByDurationMaxValue = false,
   isCombinedNumber,
+  visualization,
 }) {
-  const stacked = configuration.stackedBar;
+  const stacked = configuration.stackedBar && ['bar', 'barLine'].includes(visualization);
   const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
