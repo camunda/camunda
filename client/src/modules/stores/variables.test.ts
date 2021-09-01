@@ -11,6 +11,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {createInstance} from 'modules/testUtils';
+
 jest.mock('modules/constants/variables', () => ({
   ...jest.requireActual('modules/constants/variables'),
   MAX_VARIABLES_STORED: 5,
@@ -74,7 +75,7 @@ describe('stores/variables', () => {
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(mockVariableOperation))
       ),
-      rest.get('/api/operations', (req, res, ctx) =>
+      rest.get('/api/operations', (_, res, ctx) =>
         res.once(
           ctx.json([
             {
@@ -664,9 +665,9 @@ describe('stores/variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
     variablesStore.reset();
-    expect(variablesStore.shouldCancelOngoingRequests).toBe(true);
+
     await variablesRequest;
-    expect(variablesStore.shouldCancelOngoingRequests).toBe(false);
+
     expect(variablesStore.state.status).toBe('initial');
   });
 

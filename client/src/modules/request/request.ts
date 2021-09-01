@@ -9,7 +9,7 @@ import {mergePathname} from './mergePathname';
 
 let responseInterceptor: null | ((response: Response) => Promise<void>) = null;
 
-async function request({url, method, body, headers}: any) {
+async function request({url, method, body, headers, signal}: any) {
   const csrfToken = getToken(document.cookie);
 
   if (csrfToken) {
@@ -30,6 +30,7 @@ async function request({url, method, body, headers}: any) {
         ...headers,
       },
       mode: 'cors',
+      signal,
     }
   );
 

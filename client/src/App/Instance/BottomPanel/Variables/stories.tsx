@@ -64,7 +64,6 @@ const AddMode: Story = () => {
     flowNodeSelectionStore.init();
     currentInstanceStore.fetchCurrentInstance(1);
     variablesStore.init('1');
-    variablesStore.shouldCancelOngoingRequests = false;
 
     return () => {
       currentInstanceStore.reset();
@@ -123,7 +122,6 @@ const EditMode: Story = () => {
     flowNodeSelectionStore.init();
     currentInstanceStore.fetchCurrentInstance(1);
     variablesStore.init('1');
-    variablesStore.shouldCancelOngoingRequests = false;
 
     return () => {
       currentInstanceStore.reset();
@@ -172,7 +170,6 @@ const WithActiveOperations: Story = () => {
     flowNodeSelectionStore.init();
     currentInstanceStore.fetchCurrentInstance(1);
     variablesStore.init('1');
-    variablesStore.shouldCancelOngoingRequests = false;
 
     return () => {
       currentInstanceStore.reset();

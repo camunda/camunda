@@ -64,13 +64,14 @@ class Variables extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
-  shouldCancelOngoingRequests: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   operationIntervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   variablesWithActiveOperationsDisposer: null | IReactionDisposer = null;
   fetchVariablesDisposer: null | IReactionDisposer = null;
   instanceId: ProcessInstanceEntity['id'] | null = null;
+  pollingAbortController: AbortController | undefined;
+  fetchAbortController: AbortController | undefined;
 
   constructor() {
     super();
@@ -95,6 +96,9 @@ class Variables extends NetworkReconnectionHandler {
       displayStatus: computed,
       setLatestFetchDetails: action,
     });
+
+    this.pollingAbortController = new AbortController();
+    this.fetchAbortController = new AbortController();
   }
 
   init = (instanceId: ProcessInstanceEntity['id']) => {
@@ -122,6 +126,9 @@ class Variables extends NetworkReconnectionHandler {
       if (this.scopeId !== null) {
         this.clearItems();
         this.setPendingItem(null);
+
+        this.fetchAbortController?.abort();
+
         this.fetchVariables({
           fetchType: 'initial',
           instanceId,
@@ -319,23 +326,26 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
-  handlePolling = async (processInstanceId: ProcessInstanceEntity['id']) => {
+  handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
     try {
       const {items} = this.state;
 
-      const response = await fetchVariables(processInstanceId, {
-        scopeId: this.scopeId || processInstanceId,
-        pageSize:
-          items.length <= MAX_VARIABLES_PER_REQUEST
-            ? MAX_VARIABLES_PER_REQUEST
-            : items.length,
-        searchAfterOrEqual: this.getSortValues('initial'),
-      });
-
-      if (this.shouldCancelOngoingRequests) {
-        this.shouldCancelOngoingRequests = false;
-        return;
+      if (this.pollingAbortController?.signal.aborted) {
+        this.pollingAbortController = new AbortController();
       }
+
+      const response = await fetchVariables({
+        instanceId,
+        payload: {
+          scopeId: this.scopeId || instanceId,
+          pageSize:
+            items.length <= MAX_VARIABLES_PER_REQUEST
+              ? MAX_VARIABLES_PER_REQUEST
+              : items.length,
+          searchAfterOrEqual: this.getSortValues('initial'),
+        },
+        signal: this.pollingAbortController?.signal,
+      });
 
       if (this.intervalId !== null && response.ok) {
         const variables: VariableEntity[] = await response.json();
@@ -406,12 +416,15 @@ class Variables extends NetworkReconnectionHandler {
           this.startFetching();
         }
 
-        const response = await fetchVariables(instanceId, payload);
-
-        if (this.shouldCancelOngoingRequests) {
-          this.shouldCancelOngoingRequests = false;
-          return;
+        if (this.fetchAbortController?.signal.aborted) {
+          this.fetchAbortController = new AbortController();
         }
+
+        const response = await fetchVariables({
+          instanceId,
+          payload,
+          signal: this.fetchAbortController?.signal,
+        });
 
         if (response.ok) {
           const variablesFromResponse = await response.json();
@@ -423,7 +436,9 @@ class Variables extends NetworkReconnectionHandler {
           this.handleFetchFailure();
         }
       } catch (error) {
-        this.handleFetchFailure(error);
+        if (error.name !== 'AbortError') {
+          this.handleFetchFailure(error);
+        }
       }
     }
   );
@@ -626,10 +641,11 @@ class Variables extends NetworkReconnectionHandler {
   }
 
   reset() {
+    this.pollingAbortController?.abort();
+    this.fetchAbortController?.abort();
+
     super.reset();
-    if (['first-fetch', 'fetching'].includes(this.state.status)) {
-      this.shouldCancelOngoingRequests = true;
-    }
+
     this.stopPolling();
     this.stopPollingOperation();
     this.state = {...DEFAULT_STATE};

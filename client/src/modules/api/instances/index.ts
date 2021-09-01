@@ -134,11 +134,16 @@ async function getOperation(batchOperationId: string) {
   return get(`/api/operations?batchOperationId=${batchOperationId}`);
 }
 
-async function fetchVariables(
-  instanceId: ProcessInstanceEntity['id'],
-  payload: VariablePayload
-) {
-  return post(`${URL}/${instanceId}/variables`, payload);
+async function fetchVariables({
+  instanceId,
+  payload,
+  signal,
+}: {
+  instanceId: ProcessInstanceEntity['id'];
+  payload: VariablePayload;
+  signal?: AbortSignal;
+}) {
+  return post(`${URL}/${instanceId}/variables`, payload, {signal});
 }
 
 async function fetchVariable(id: VariableEntity['id']) {
