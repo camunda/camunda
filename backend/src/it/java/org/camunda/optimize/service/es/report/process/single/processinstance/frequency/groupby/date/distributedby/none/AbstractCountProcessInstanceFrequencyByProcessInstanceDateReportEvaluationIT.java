@@ -44,15 +44,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -100,25 +97,23 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(
-      ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(),
-      is(AggregateByDateUnit.DAY)
-    );
+      ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
 
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -136,24 +131,22 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(
-      ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(),
-      is(AggregateByDateUnit.DAY)
-    );
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstance.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
+    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit())
+      .isEqualTo(AggregateByDateUnit.DAY);
 
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -176,17 +169,15 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    // expect ascending order
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -211,17 +202,16 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
+    assertThat(resultKeys)
       // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+      .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -252,16 +242,14 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<Double> resultValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
-    assertThat(
-      resultValues,
-      contains(resultValues.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    assertThat(resultValues).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @Test
@@ -290,22 +278,20 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData).hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringToday = localDateTimeToString(startOfToday);
     final Optional<MapResultEntryDto> todayEntry = resultData.stream()
       .filter(e -> expectedStringToday.equals(e.getKey()))
       .findFirst();
-    assertThat(todayEntry.isPresent(), is(true));
-    assertThat(todayEntry.get().getValue(), is(2.));
+    assertThat(todayEntry).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     final Optional<MapResultEntryDto> yesterdayEntry = resultData.stream()
       .filter(e -> expectedStringYesterday.equals(e.getKey()))
       .findFirst();
-    assertThat(yesterdayEntry.isPresent(), is(true));
-    assertThat(yesterdayEntry.get().getValue(), is(1.));
+    assertThat(yesterdayEntry).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -333,7 +319,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
@@ -341,22 +327,19 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     final Optional<MapResultEntryDto> todayEntry = resultData.stream()
       .filter(e -> expectedStringToday.equals(e.getKey()))
       .findFirst();
-    assertThat(todayEntry.isPresent(), is(true));
-    assertThat(todayEntry.get().getValue(), is(2.));
+    assertThat(todayEntry).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
     final Optional<MapResultEntryDto> yesterdayEntry = resultData.stream()
       .filter(e -> expectedStringYesterday.equals(e.getKey()))
       .findFirst();
-    assertThat(yesterdayEntry.isPresent(), is(true));
-    assertThat(yesterdayEntry.get().getValue(), is(0.));
+    assertThat(yesterdayEntry).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(0.);
 
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
     final Optional<MapResultEntryDto> dayBeforeYesterdayEntry = resultData.stream()
       .filter(e -> expectedStringDayBeforeYesterday.equals(e.getKey()))
       .findFirst();
-    assertThat(dayBeforeYesterdayEntry.isPresent(), is(true));
-    assertThat(dayBeforeYesterdayEntry.get().getValue(), is(1.));
+    assertThat(dayBeforeYesterdayEntry).isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @SneakyThrows
@@ -382,7 +365,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData).isNotNull();
     assertStartDateResultMap(resultData, 5, now, mapToChronoUnit(unit));
   }
 
@@ -404,7 +387,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
+    assertThat(resultData).isNotNull();
     assertStartDateResultMap(resultData, 1, OffsetDateTime.now(), ChronoUnit.DAYS);
   }
 
@@ -432,7 +415,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -463,8 +446,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData().size(), is(1));
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
   }
 
   @Test
@@ -485,7 +467,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -507,7 +489,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
@@ -544,13 +526,13 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
                                           OffsetDateTime now,
                                           ChronoUnit unit,
                                           Double expectedValue) {
-    assertThat(resultData.size(), is(size));
+    assertThat(resultData).hasSize(size);
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
-        assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        assertThat(resultData.get(i).getValue(), is(expectedValue));
+        assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
+        assertThat(resultData.get(i).getValue()).isEqualTo(expectedValue);
       });
   }
 
