@@ -57,9 +57,7 @@ describe('IncidentsBanner', () => {
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
-    expect(
-      screen.getByText('There is 1 Incident in Instance 1')
-    ).toBeInTheDocument();
+    expect(screen.getByText('1 Incident occured')).toBeInTheDocument();
   });
 
   it('should not display incidents banner if panel is collapsed', async () => {
@@ -80,9 +78,7 @@ describe('IncidentsBanner', () => {
       {wrapper: Wrapper}
     );
 
-    expect(
-      screen.queryByText('There is 1 Incident in Instance 1')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('1 Incident occured')).not.toBeInTheDocument();
   });
 
   it('should show the right text for more than 1 incident', async () => {
@@ -100,8 +96,6 @@ describe('IncidentsBanner', () => {
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
-    expect(
-      screen.getByText('There are 2 Incidents in Instance 1')
-    ).toBeInTheDocument();
+    expect(screen.getByText('2 Incidents occured')).toBeInTheDocument();
   });
 });

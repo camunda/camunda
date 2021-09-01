@@ -134,9 +134,7 @@ describe('TopPanel', () => {
 
     currentInstanceStore.init('instance_with_incident');
     await singleInstanceDiagramStore.fetchProcessXml('1');
-    expect(
-      await screen.findByText('There is 1 Incident in Instance 1')
-    ).toBeInTheDocument();
+    expect(await screen.findByText('1 Incident occured')).toBeInTheDocument();
   });
 
   it('should show an error when a server error occurs', async () => {

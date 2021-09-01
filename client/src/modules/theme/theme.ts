@@ -603,14 +603,6 @@ const theme = Object.freeze({
                 backgroundColor: SEMANTIC_COLORS.transparent,
               },
             },
-            incidentsBanner: {
-              svg: {
-                color: LIGHT_COLORS.ui02,
-              },
-              before: {
-                backgroundColor: SEMANTIC_COLORS.transparent,
-              },
-            },
             foldable: {
               svg: {
                 color: LIGHT_COLORS.ui02,
@@ -622,24 +614,6 @@ const theme = Object.freeze({
           },
           button: {
             default: {
-              hover: {
-                before: {
-                  backgroundColor: SEMANTIC_COLORS.white,
-                },
-                svg: {
-                  color: LIGHT_COLORS.ui02,
-                },
-              },
-              active: {
-                before: {
-                  backgroundColor: SEMANTIC_COLORS.white,
-                },
-                svg: {
-                  color: LIGHT_COLORS.ui02,
-                },
-              },
-            },
-            incidentsBanner: {
               hover: {
                 before: {
                   backgroundColor: SEMANTIC_COLORS.white,
@@ -932,25 +906,12 @@ const theme = Object.freeze({
             default: {
               svg: 1,
             },
-            incidentsBanner: {
-              svg: 1,
-            },
             foldable: {
               svg: 1,
             },
           },
           button: {
             default: {
-              hover: {
-                before: 0.25,
-                svg: 1,
-              },
-              active: {
-                before: 0.4,
-                svg: 1,
-              },
-            },
-            incidentsBanner: {
               hover: {
                 before: 0.25,
                 svg: 1,
@@ -1563,14 +1524,6 @@ const theme = Object.freeze({
                 backgroundColor: SEMANTIC_COLORS.transparent,
               },
             },
-            incidentsBanner: {
-              svg: {
-                color: LIGHT_COLORS.ui02,
-              },
-              before: {
-                backgroundColor: SEMANTIC_COLORS.transparent,
-              },
-            },
             foldable: {
               svg: {
                 color: DARK_COLORS.ui04,
@@ -1596,24 +1549,6 @@ const theme = Object.freeze({
                 },
                 svg: {
                   color: DARK_COLORS.ui04,
-                },
-              },
-            },
-            incidentsBanner: {
-              hover: {
-                before: {
-                  backgroundColor: SEMANTIC_COLORS.white,
-                },
-                svg: {
-                  color: LIGHT_COLORS.ui02,
-                },
-              },
-              active: {
-                before: {
-                  backgroundColor: SEMANTIC_COLORS.white,
-                },
-                svg: {
-                  color: LIGHT_COLORS.ui02,
                 },
               },
             },
@@ -1892,9 +1827,6 @@ const theme = Object.freeze({
             default: {
               svg: 0.9,
             },
-            incidentsBanner: {
-              svg: 1,
-            },
             foldable: {
               svg: 0.9,
             },
@@ -1908,16 +1840,6 @@ const theme = Object.freeze({
               active: {
                 svg: 1,
                 before: 0.8,
-              },
-            },
-            incidentsBanner: {
-              hover: {
-                before: 0.25,
-                svg: 1,
-              },
-              active: {
-                before: 0.4,
-                svg: 1,
               },
             },
             foldable: {

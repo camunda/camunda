@@ -8,7 +8,7 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
 import {SIZES, DEFAULT_SIZE} from './constants';
 
-type IconButtonTheme = 'default' | 'incidentsBanner' | 'foldable';
+type IconButtonTheme = 'default' | 'foldable';
 
 const setSize: ThemedInterpolationFunction<{size?: 'medium' | 'large'}> = ({
   size,
@@ -21,11 +21,12 @@ const setSize: ThemedInterpolationFunction<{size?: 'medium' | 'large'}> = ({
   `;
 };
 
-type IconButtonThemeProps = {
+type IconProps = {
   iconButtonTheme?: IconButtonTheme;
+  size?: 'medium' | 'large';
 };
 
-const Icon = styled.div<IconButtonThemeProps>`
+const Icon = styled.div<IconProps>`
   ${({theme, iconButtonTheme}) => {
     const variant = iconButtonTheme ?? 'default';
     const colors = theme.colors.modules.iconButton;

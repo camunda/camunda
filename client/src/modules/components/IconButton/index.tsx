@@ -9,7 +9,7 @@ import React from 'react';
 import * as Styled from './styled';
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  iconButtonTheme: 'default' | 'incidentsBanner' | 'foldable';
+  iconButtonTheme: 'default' | 'foldable';
   size?: 'medium' | 'large';
   icon?: React.ReactNode;
 }
@@ -20,7 +20,6 @@ const IconButton = React.forwardRef<any, Props>(function IconButton(
 ) {
   return (
     <Styled.Button {...props} iconButtonTheme={iconButtonTheme} ref={ref}>
-      {/* @ts-expect-error ts-migrate(2769) FIXME: Property 'size' does not exist on type 'IntrinsicA... Remove this comment to see the full error message */}
       <Styled.Icon size={size} iconButtonTheme={iconButtonTheme}>
         {icon}
       </Styled.Icon>

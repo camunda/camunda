@@ -96,16 +96,14 @@ describe('IncidentsFilter', () => {
       wrapper: Wrapper,
     });
 
-    expect(
-      screen.getByText('There are 2 Incidents in Instance 1')
-    ).toBeInTheDocument();
+    expect(screen.getByText('2 Incidents occured')).toBeInTheDocument();
   });
 
   it('should render the table', () => {
     render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
       wrapper: Wrapper,
     });
-    userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
+    userEvent.click(screen.getByText('2 Incidents occured'));
 
     const table = within(screen.getByTestId('incidents-table'));
 
@@ -121,7 +119,7 @@ describe('IncidentsFilter', () => {
     render(<IncidentsWrapper {...mockIncidentWrapperProps} isOpen={true} />, {
       wrapper: Wrapper,
     });
-    userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
+    userEvent.click(screen.getByText('2 Incidents occured'));
 
     const errorFilters = within(screen.getByTestId(/incidents-by-errortype/i));
     const flowNodeFilters = within(
@@ -149,7 +147,7 @@ describe('IncidentsFilter', () => {
         }
       );
       rerender = wrapper.rerender;
-      userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
+      userEvent.click(screen.getByText('2 Incidents occured'));
     });
 
     it('should not have active filters by default', () => {

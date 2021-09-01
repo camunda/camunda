@@ -7,7 +7,7 @@
 import React from 'react';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {EXPAND_STATE} from 'modules/constants';
-import * as Styled from './styled';
+import {ViewHide, BannerButton} from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
 import {observer} from 'mobx-react';
@@ -27,12 +27,7 @@ const IncidentsBanner: React.FC<Props> = observer(
       ? incidentsStore
       : incidentsStoreLegacy;
 
-    const errorMessage = `There ${
-      incidentsCount === 1 ? 'is' : 'are'
-    } ${pluralSuffix(
-      incidentsCount,
-      'Incident'
-    )} in Instance ${processInstanceId}`;
+    const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occured`;
     const title = `View ${pluralSuffix(
       incidentsCount,
       'Incident'
@@ -43,15 +38,14 @@ const IncidentsBanner: React.FC<Props> = observer(
     }
 
     return (
-      <Styled.IncidentsBanner
+      <BannerButton
         data-testid="incidents-banner"
         onClick={onClick}
         title={title}
-        isExpanded={isOpen}
-        iconButtonTheme="incidentsBanner"
       >
         {errorMessage}
-      </Styled.IncidentsBanner>
+        <ViewHide>{isOpen ? 'Hide' : 'View'}</ViewHide>
+      </BannerButton>
     );
   }
 );
