@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
@@ -139,7 +140,11 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
             String.format(
                 "An error was thrown with the code '%s' but not caught.", job.getErrorCode()));
     if (jobErrorMessage.capacity() > 0) {
-      incidentErrorMessage = jobErrorMessage;
+      incidentErrorMessage =
+          wrapString(
+              String.format(
+                  "An error was thrown with the code '%s' with message '%s', but not caught.",
+                  job.getErrorCode(), BufferUtil.bufferAsString(jobErrorMessage)));
     }
 
     incidentEvent.reset();

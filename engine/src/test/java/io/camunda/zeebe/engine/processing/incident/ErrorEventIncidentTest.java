@@ -86,7 +86,8 @@ public final class ErrorEventIncidentTest {
                 .getValue())
         .describedAs("unhandled error event incident created")
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
-        .hasErrorMessage("error thrown")
+        .hasErrorMessage(
+            "An error was thrown with the code 'other-error' with message 'error thrown', but not caught.")
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(jobEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(jobEvent.getValue().getProcessInstanceKey())

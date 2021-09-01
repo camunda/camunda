@@ -15,8 +15,10 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -99,5 +101,32 @@ public final class JobThrowErrorTest {
     // then
     Assertions.assertThat(result).hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(result.getRejectionReason()).contains("it is in state 'ERROR_THROWN'");
+  }
+
+  @Test
+  public void shouldThrowErrorIfNoCatchEventFound() {
+    // given
+    final var job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(job.getKey())
+            .withErrorCode("error")
+            .withErrorMessage("error message")
+            .throwError();
+
+    // then
+    Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
+    Assertions.assertThat(result.getValue()).hasErrorCode("error").hasErrorMessage("error message");
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords()
+                .withJobKey(job.getKey())
+                .withIntent(IncidentIntent.CREATED)
+                .getFirst()
+                .getValue())
+        .hasErrorMessage(
+            "An error was thrown with the code 'error' with message 'error message', but not caught.");
   }
 }
