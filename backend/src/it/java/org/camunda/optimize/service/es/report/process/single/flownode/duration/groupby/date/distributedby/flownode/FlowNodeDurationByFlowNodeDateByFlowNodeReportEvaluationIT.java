@@ -1025,5 +1025,6 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       durationInMs.longValue()
     );
   }
+
 }
 

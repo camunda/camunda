@@ -242,7 +242,6 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
-  @SuppressWarnings(UNCHECKED_CAST)
   @Test
   public void variablesCanHaveNullValue() throws JsonProcessingException {
     // given
@@ -259,6 +258,7 @@ public class VariableImportIT extends AbstractImportIT {
 
     // then
     for (SearchHit searchHit : responseForAllDocumentsOfIndex.getHits()) {
+      @SuppressWarnings(UNCHECKED_CAST)
       List<Map> retrievedVariables = (List<Map>) searchHit.getSourceAsMap().get(VARIABLES);
       assertThat(retrievedVariables).hasSize(variables.size());
       retrievedVariables.forEach(var -> assertThat(var.get(VARIABLE_VALUE)).isNull());

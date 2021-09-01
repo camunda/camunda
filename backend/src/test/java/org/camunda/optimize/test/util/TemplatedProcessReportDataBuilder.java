@@ -372,6 +372,16 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .build();
         break;
+      case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
       case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)
@@ -387,6 +397,16 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.END_DATE)
           .distributedByType(DistributedByType.FLOW_NODE)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.PROCESS)
           .definitions(definitions)
           .groupByDateInterval(groupByDateInterval)
           .build();
@@ -501,6 +521,26 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.DURATION)
           .groupByType(ProcessGroupByType.END_DATE)
           .distributedByType(DistributedByType.FLOW_NODE)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_END_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.PROCESS)
           .definitions(definitions)
           .groupByDateInterval(groupByDateInterval)
           .build();
