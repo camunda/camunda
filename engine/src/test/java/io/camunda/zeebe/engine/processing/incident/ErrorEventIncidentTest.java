@@ -87,7 +87,7 @@ public final class ErrorEventIncidentTest {
         .describedAs("unhandled error event incident created")
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            "An error was thrown with the code 'other-error' with message 'error thrown', but not caught.")
+            "An error was thrown with the code 'other-error' with message 'error thrown', but not caught. Available error events are [error]")
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(jobEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(jobEvent.getValue().getProcessInstanceKey())
@@ -121,7 +121,8 @@ public final class ErrorEventIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
-        .hasErrorMessage("An error was thrown with the code 'other-error' but not caught.");
+        .hasErrorMessage(
+            "An error was thrown with the code 'other-error' but not caught. Available error events are [error]");
   }
 
   @Test
@@ -157,7 +158,9 @@ public final class ErrorEventIncidentTest {
                 .getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
+            String.format(
+                "An error was thrown with the code '%s' but not caught. Available error events are []",
+                ERROR_CODE))
         .hasElementId("NO_CATCH_EVENT_FOUND");
   }
 

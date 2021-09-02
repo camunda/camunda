@@ -29,6 +29,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
@@ -82,13 +84,13 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final JobRecord job) {
 
     final var serviceTaskInstanceKey = job.getElementId();
+    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
 
     if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, stateWriter);
+      raiseIncident(jobKey, job, stateWriter, serviceTaskInstance);
       return;
     }
 
-    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
     final var errorCode = job.getErrorCodeBuffer();
 
     final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
@@ -132,19 +134,33 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
   }
 
-  private void raiseIncident(final long key, final JobRecord job, final StateWriter stateWriter) {
+  private void raiseIncident(
+      final long key,
+      final JobRecord job,
+      final StateWriter stateWriter,
+      final ElementInstance serviceTaskInstance) {
 
     final DirectBuffer jobErrorMessage = job.getErrorMessageBuffer();
+    final List<DirectBuffer> availableCatchEvents =
+        stateAnalyzer.getAvailableCatchEvents(serviceTaskInstance);
     DirectBuffer incidentErrorMessage =
         wrapString(
             String.format(
-                "An error was thrown with the code '%s' but not caught.", job.getErrorCode()));
+                "An error was thrown with the code '%s' but not caught. Available error events are %s",
+                job.getErrorCode(),
+                availableCatchEvents.stream()
+                    .map(BufferUtil::bufferAsString)
+                    .collect(Collectors.toList())));
     if (jobErrorMessage.capacity() > 0) {
       incidentErrorMessage =
           wrapString(
               String.format(
-                  "An error was thrown with the code '%s' with message '%s', but not caught.",
-                  job.getErrorCode(), BufferUtil.bufferAsString(jobErrorMessage)));
+                  "An error was thrown with the code '%s' with message '%s', but not caught. Available error events are %s",
+                  job.getErrorCode(),
+                  BufferUtil.bufferAsString(jobErrorMessage),
+                  availableCatchEvents.stream()
+                      .map(BufferUtil::bufferAsString)
+                      .collect(Collectors.toList())));
     }
 
     incidentEvent.reset();
