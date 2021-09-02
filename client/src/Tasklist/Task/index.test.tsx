@@ -182,13 +182,13 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
       graphql.mutation('CompleteTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockCompleteTask.result.data));
+        return res.once(ctx.data(mockCompleteTask().result.data));
       }),
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
       }),
     );
 
@@ -254,7 +254,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
       graphql.mutation('CompleteTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockCompleteTask.result.data));
+        return res.once(ctx.data(mockCompleteTask().result.data));
       }),
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));

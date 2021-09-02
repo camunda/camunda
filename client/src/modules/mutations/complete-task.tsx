@@ -36,17 +36,23 @@ const COMPLETE_TASK = gql`
   }
 `;
 
-const mockCompleteTask = {
+const mockCompleteTask = () => ({
   request: {
     query: COMPLETE_TASK,
-    variables: {id: '0', variables: []},
+    variables: {
+      id: '0',
+      variables: [],
+    },
   },
   result: {
     data: {
-      completeTask: completedTask(),
+      completeTask: {
+        ...completedTask(),
+        variables: [],
+      },
     },
   },
-};
+});
 
 const mockCompleteTaskWithAddedVariable = {
   request: {

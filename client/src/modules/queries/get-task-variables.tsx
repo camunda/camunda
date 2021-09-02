@@ -15,7 +15,7 @@ interface GetTaskVariables {
 }
 
 const GET_TASK_VARIABLES = gql`
-  query GetTaskVariables($id: String!) {
+  query GetTaskVariables($id: ID!) {
     task(id: $id) {
       id
       variables {
@@ -35,7 +35,7 @@ interface GetFullVariableValueVariables {
 }
 
 const GET_FULL_VARIABLE_VALUE = gql`
-  query GetFullVariableValue($id: String!) {
+  query GetFullVariableValue($id: ID!) {
     variable(id: $id) {
       id
       value
@@ -193,6 +193,7 @@ function useTaskVariables(id: Task['id']) {
       query: GET_TASK_VARIABLES,
       data: {
         task: {
+          id,
           variables: data.task.variables.map((variable) =>
             variable.id === fullVariableData.variable.id
               ? {
