@@ -32,7 +32,7 @@
     <version.zeebe>1.2.0-alpha1</version.zeebe>
     <version.iam>1.2.0-alpha1</version.iam>
 
-    <version.elasticsearch>7.13.4</version.elasticsearch>
+    <version.elasticsearch>7.14.1</version.elasticsearch>
     <version.spring.boot>2.5.4</version.spring.boot>
     <version.spring.session>1.3.5.RELEASE</version.spring.session>
     <version.log4j>2.13.3</version.log4j>
