@@ -200,6 +200,18 @@ public class TemplatedProcessReportDataBuilder {
           .variableType(variableType)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.HEAT)
+          .definitions(definitions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
       case PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -597,6 +609,18 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
           .viewProperty(ViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.VARIABLE)
+          .visualization(ProcessVisualization.HEAT)
+          .definitions(definitions)
+          .variableType(variableType)
+          .variableName(variableName)
+          .build();
+        break;
+      case PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.PROCESS)
           .visualization(ProcessVisualization.HEAT)
           .definitions(definitions)
           .variableType(variableType)
