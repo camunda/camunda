@@ -62,10 +62,8 @@ public final class AsyncSnapshotingTest {
 
     snapshotController =
         new StateControllerImpl(
-            1,
             ZeebeRocksDbFactory.newFactory(),
             persistedSnapshotStore,
-            factory.getReceivableSnapshotStore(partitionId),
             rootDirectory.resolve("runtime"),
             l ->
                 Optional.of(

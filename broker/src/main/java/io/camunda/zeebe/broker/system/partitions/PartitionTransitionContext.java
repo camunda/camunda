@@ -22,7 +22,7 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   AsyncSnapshotDirector getSnapshotDirector();
 
-  StateControllerImpl getSnapshotController();
+  StateControllerImpl getStateController();
 
   ConstructableSnapshotStore getConstructableSnapshotStore();
 

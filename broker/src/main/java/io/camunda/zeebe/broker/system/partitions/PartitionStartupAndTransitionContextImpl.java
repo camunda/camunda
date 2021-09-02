@@ -109,15 +109,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public StateControllerImpl getSnapshotController() {
-    return stateController;
-  }
-
-  public void setSnapshotController(final StateControllerImpl controller) {
-    stateController = controller;
-  }
-
-  @Override
   public PartitionContext getPartitionContext() {
     return this;
   }
@@ -173,11 +164,13 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public StateControllerImpl getStateController() {
-    return null;
+    return stateController;
   }
 
   @Override
-  public void setStateController(final StateControllerImpl stateController) {}
+  public void setStateController(final StateControllerImpl stateController) {
+    this.stateController = stateController;
+  }
 
   @Override
   public LogDeletionService getLogDeletionService() {
