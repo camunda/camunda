@@ -15,7 +15,7 @@ interface GetTaskVariables {
 }
 
 const GET_TASK_VARIABLES = gql`
-  query GetTaskVariables($id: ID!) {
+  query GetTaskVariables($id: String!) {
     task(id: $id) {
       id
       variables {
@@ -35,7 +35,7 @@ interface GetFullVariableValueVariables {
 }
 
 const GET_FULL_VARIABLE_VALUE = gql`
-  query GetFullVariableValue($id: ID!) {
+  query GetFullVariableValue($id: String!) {
     variable(id: $id) {
       id
       value
