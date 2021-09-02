@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
@@ -75,6 +76,37 @@ public class FlowNodeFrequencyByFlowNodeByProcessReportEvaluationIT extends Abst
         createHyperMapResult(END_EVENT, new MapResultEntryDto(processIdentifier, 1.0, processDisplayName)),
         createHyperMapResult(START_EVENT, new MapResultEntryDto(processIdentifier, 1.0, processDisplayName)),
         createHyperMapResult(USER_TASK_1, new MapResultEntryDto(processIdentifier, 1.0, processDisplayName))
+      ));
+  }
+
+  @Test
+  public void reportEvaluationWithSingleProcessDefinitionSourceWithAllInstancesRemovedByFilter() {
+    // given
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("first"));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importAllEngineEntitiesFromScratch();
+    final String processDisplayName = "processDisplayName";
+    final String processIdentifier = IdGenerator.getNextId();
+    ReportDataDefinitionDto definition =
+      new ReportDataDefinitionDto(processIdentifier, instance.getProcessDefinitionKey(), processDisplayName);
+
+    // when
+    final ProcessReportDataDto reportData = createReport(Collections.singletonList(definition));
+    reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getMeasures()).hasSize(1)
+      .extracting(MeasureResponseDto::getData)
+      .containsExactly(List.of(
+        createHyperMapResult(END_EVENT, new MapResultEntryDto(processIdentifier, null, processDisplayName)),
+        createHyperMapResult(START_EVENT, new MapResultEntryDto(processIdentifier, null, processDisplayName)),
+        createHyperMapResult(USER_TASK_1, new MapResultEntryDto(processIdentifier, null, processDisplayName))
       ));
   }
 

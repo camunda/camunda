@@ -101,6 +101,18 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     return results;
   }
 
+  @Override
+  public List<CompositeCommandResult.DistributedByResult> createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getReportData().getDefinitions()
+      .stream()
+      .map(definitionSource -> createDistributedByResult(
+        definitionSource.getIdentifier(),
+        definitionSource.getDisplayName(),
+        viewPart.createEmptyResult(context)
+      ))
+      .collect(Collectors.toList());
+  }
+
   private CompositeCommandResult.ViewResult calculateMergedResult(final Map<String, List<ProcessBucket>> bucketsByDefKey,
                                                                   final ReportDataDefinitionDto definition,
                                                                   final ExecutionContext<ProcessReportDataDto> context) {
