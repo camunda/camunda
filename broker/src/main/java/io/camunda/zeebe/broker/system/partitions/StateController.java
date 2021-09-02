@@ -31,6 +31,8 @@ public interface StateController extends AutoCloseable {
    */
   ZeebeDb openDb();
 
+  void closeDb() throws Exception;
+
   /**
    * Returns the current number of valid snapshots.
    *

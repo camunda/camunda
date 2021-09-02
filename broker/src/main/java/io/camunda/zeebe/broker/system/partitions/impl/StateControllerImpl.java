@@ -128,12 +128,7 @@ public class StateControllerImpl implements StateController {
   }
 
   @Override
-  public int getValidSnapshotsCount() {
-    return constructableSnapshotStore.getLatestSnapshot().isPresent() ? 1 : 0;
-  }
-
-  @Override
-  public void close() throws Exception {
+  public void closeDb() throws Exception {
     if (db != null) {
       final var dbToClose = db;
       db = null;
@@ -143,6 +138,16 @@ public class StateControllerImpl implements StateController {
     }
 
     FileUtil.deleteFolderIfExists(runtimeDirectory);
+  }
+
+  @Override
+  public int getValidSnapshotsCount() {
+    return constructableSnapshotStore.getLatestSnapshot().isPresent() ? 1 : 0;
+  }
+
+  @Override
+  public void close() throws Exception {
+    closeDb();
   }
 
   boolean isDbOpened() {
