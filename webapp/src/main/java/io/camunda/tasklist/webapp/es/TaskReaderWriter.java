@@ -25,6 +25,7 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
+import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -367,19 +368,22 @@ public class TaskReaderWriter {
     return taskBefore;
   }
 
-  public void persistTaskAssignee(TaskDTO task, final String currentUser) {
-    TaskValidator taskValidator = null;
+  public void persistTaskAssignee(TaskDTO task, final UserDTO currentUser) {
+    final TaskValidator taskValidator;
+    final String username;
     if (currentUser != null) {
       taskValidator = TaskValidator.CAN_CLAIM;
+      username = currentUser.getUsername();
     } else {
       taskValidator = TaskValidator.CAN_UNCLAIM;
+      username = null;
     }
-    updateTask(task.getId(), currentUser, taskValidator, asMap(TaskTemplate.ASSIGNEE, currentUser));
+    updateTask(task.getId(), currentUser, taskValidator, asMap(TaskTemplate.ASSIGNEE, username));
   }
 
   private void updateTask(
       final String taskId,
-      final String currentUser,
+      final UserDTO currentUser,
       final TaskValidator taskValidator,
       final Map<String, Object> updateFields) {
     try {

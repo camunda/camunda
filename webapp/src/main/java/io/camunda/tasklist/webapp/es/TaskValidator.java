@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.es;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.TaskValidationException;
+import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 
 public interface TaskValidator {
 
@@ -16,11 +17,16 @@ public interface TaskValidator {
         if (!taskBefore.getState().equals(TaskState.CREATED)) {
           throw new TaskValidationException("Task is not active");
         }
+
+        if (currentUser.isApiUser()) {
+          // JWT Token/API users are allowed to complete any task
+          return;
+        }
         if (taskBefore.getAssignee() == null) {
           throw new TaskValidationException("Task is not assigned");
         }
-        if (!taskBefore.getAssignee().equals(currentUser)) {
-          throw new TaskValidationException("Task is not assigned to " + currentUser);
+        if (!taskBefore.getAssignee().equals(currentUser.getUsername())) {
+          throw new TaskValidationException("Task is not assigned to " + currentUser.getUsername());
         }
       };
 
@@ -44,6 +50,6 @@ public interface TaskValidator {
         }
       };
 
-  void validate(final TaskEntity taskBefore, final String currentUser)
+  void validate(final TaskEntity taskBefore, final UserDTO currentUser)
       throws TaskValidationException;
 }

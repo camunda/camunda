@@ -65,7 +65,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     final TaskEntity taskBefore =
         fromSearchHit(taskSearchHit.getSourceAsString(), objectMapper, TaskEntity.class);
     try {
-      CAN_COMPLETE.validate(taskBefore, getCurrentUsername());
+      CAN_COMPLETE.validate(taskBefore, getCurrentUser());
     } catch (TaskValidationException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -94,9 +94,9 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   public TaskDTO claimTask(String taskId) {
     final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
-    final String currentUsername = getCurrentUsername();
+    final String currentUsername = getCurrentUser().getUsername();
     task.setAssigneeUsername(currentUsername);
-    taskReaderWriter.persistTaskAssignee(task, currentUsername);
+    taskReaderWriter.persistTaskAssignee(task, getCurrentUser());
     updateClaimedMetric(task);
     return task;
   }
@@ -112,12 +112,12 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     return task;
   }
 
-  private String getCurrentUsername() {
+  private UserDTO getCurrentUser() {
     final UserDTO currentUser = userReader.getCurrentUser();
     if (currentUser == null) {
       throw new TasklistRuntimeException("Current user is not found.");
     }
-    return currentUser.getUsername();
+    return currentUser;
   }
 
   private void updateClaimedMetric(final TaskDTO task) {

@@ -13,7 +13,6 @@ import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.webapp.security.es.User;
 import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
 import java.util.List;
@@ -27,6 +26,7 @@ public class UserDTO {
   private String username;
   private String firstname;
   private String lastname;
+  private boolean apiUser;
 
   public String getUsername() {
     return username;
@@ -55,9 +55,18 @@ public class UserDTO {
     return this;
   }
 
+  public boolean isApiUser() {
+    return apiUser;
+  }
+
+  public UserDTO setApiUser(boolean apiUser) {
+    this.apiUser = apiUser;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(firstname, lastname, username);
+    return Objects.hash(firstname, lastname, username, apiUser);
   }
 
   @Override
@@ -73,6 +82,7 @@ public class UserDTO {
     }
     final UserDTO other = (UserDTO) obj;
     return Objects.equals(firstname, other.firstname)
+        && Objects.equals(apiUser, other.apiUser)
         && Objects.equals(lastname, other.lastname)
         && Objects.equals(username, other.username);
   }
@@ -86,24 +96,22 @@ public class UserDTO {
     return new UserDTO()
         .setUsername(userDetails.getUsername())
         .setFirstname(userDetails.getFirstname())
-        .setLastname(userDetails.getLastname());
+        .setLastname(userDetails.getLastname())
+        .setApiUser(false);
   }
 
   private static UserDTO createFrom(UserEntity userEntity) {
     return new UserDTO()
         .setUsername(userEntity.getUsername())
         .setFirstname(userEntity.getFirstname())
-        .setLastname(userEntity.getLastname());
+        .setLastname(userEntity.getLastname())
+        .setApiUser(false);
   }
 
   public static UserDTO buildFromJWTAuthenticationToken(
       final JwtAuthenticationToken authentication) {
-    final String name = authentication.getName();
-    if (ConversionUtils.stringIsEmpty(name)) {
-      return createUserDTO(DEFAULT_USER);
-    } else {
-      return createUserDTO(name);
-    }
+    final String name = authentication.getName() == null ? DEFAULT_USER : authentication.getName();
+    return createUserDTO(name, true);
   }
 
   public static UserDTO buildFromTokenAuthentication(
@@ -127,6 +135,14 @@ public class UserDTO {
   }
 
   public static UserDTO createUserDTO(String name) {
-    return new UserDTO().setUsername(name).setFirstname(EMPTY).setLastname(name);
+    return createUserDTO(name, false);
+  }
+
+  public static UserDTO createUserDTO(String name, boolean apiUser) {
+    return new UserDTO()
+        .setUsername(name)
+        .setFirstname(EMPTY)
+        .setLastname(name)
+        .setApiUser(apiUser);
   }
 }
