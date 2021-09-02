@@ -58,7 +58,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
             context.getNodeId(),
             context.getPartitionId(),
             context.getStreamProcessor(),
-            context.getSnapshotController(),
+            context.getStateController(),
             snapshotPeriod);
 
     server.addCommittedEntryListener(director);
@@ -73,7 +73,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
             context.getNodeId(),
             context.getPartitionId(),
             context.getStreamProcessor(),
-            context.getSnapshotController(),
+            context.getStateController(),
             snapshotPeriod);
 
     return director;
