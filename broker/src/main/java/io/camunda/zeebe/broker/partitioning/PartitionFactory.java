@@ -61,7 +61,7 @@ final class PartitionFactory {
   // preparation for future steps
   // will be executed in the order they are defined in this list
   private static final List<PartitionStartupStep> STARTUP_STEPS =
-      List.of(new StateControllerPartitionStep());
+      List.of(new StateControllerPartitionStep(), new LogDeletionPartitionStep());
 
   // will probably be executed in parallel
   private static final List<PartitionTransitionStep> TRANSITION_STEPS = List.of();
@@ -70,7 +70,7 @@ final class PartitionFactory {
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
           PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStep()),
-          new LogDeletionPartitionStep(),
+          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStep()),
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
@@ -81,7 +81,7 @@ final class PartitionFactory {
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
           PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStep()),
-          new LogDeletionPartitionStep(),
+          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStep()),
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
