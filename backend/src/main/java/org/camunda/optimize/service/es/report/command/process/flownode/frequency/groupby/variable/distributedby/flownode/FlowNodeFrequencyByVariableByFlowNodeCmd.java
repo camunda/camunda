@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.flownode.frequency.groupby.variable;
+package org.camunda.optimize.service.es.report.command.process.flownode.frequency.groupby.variable.distributedby.flownode;
 
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
