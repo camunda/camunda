@@ -61,6 +61,11 @@ import java.util.stream.Collectors;
 // TODO make package private again
 public final class PartitionFactory {
 
+  /**
+   * Feature flag to switch between old and new partition bootstrap and transition code. The old
+   * code is based on LEADER_STEPS and FOLLOWER steps. The new code is based on TRANSITION_STEPS and
+   * ZeebePartition.STARTUP_PROCESS
+   */
   public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = false;
   private static final List<PartitionStartupStep> STARTUP_STEPS =
       List.of(new StateControllerPartitionStep(), new LogDeletionPartitionStep());

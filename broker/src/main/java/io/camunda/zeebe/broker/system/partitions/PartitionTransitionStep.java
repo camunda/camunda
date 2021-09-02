@@ -17,9 +17,9 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 public interface PartitionTransitionStep {
 
   /**
-   * This method is called prior to starting a new transition. It is expected that this method
-   * completes instantly. It is called on all steps, and only afterwards the first step is called
-   * with the transition.
+   * This method is called prior to starting a new transition. It is called immediately after the
+   * new Raft role is known. It is expected that this method completes instantly. It is called on
+   * all steps, and only afterwards the first step is called with the transition.
    *
    * <p>Steps are expected to pause any active requests and assume a neutral stance after this
    * method is called. After all steps have been notified, the first steps' {@code
@@ -35,11 +35,9 @@ public interface PartitionTransitionStep {
    * the raft partition transitions faster than the Zeebe partition. In this case steps are
    * encouraged to cancel what they are doing
    *
-   * @param targetRole target role to transition to
+   * @param newRole target role to transition to
    */
-  default void prepareForTransition(final Role targetRole) {
-    // todo remove default implementation
-  }
+  default void onNewRaftRole(final Role newRole) {}
 
   ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole);

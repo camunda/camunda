@@ -74,8 +74,8 @@ class NewPartitionTransitionImplTest {
 
     // then
     final var invocationRecorder = inOrder(mockStep1, mockStep2);
-    invocationRecorder.verify(mockStep1).prepareForTransition(DEFAULT_ROLE);
-    invocationRecorder.verify(mockStep2).prepareForTransition(DEFAULT_ROLE);
+    invocationRecorder.verify(mockStep1).onNewRaftRole(DEFAULT_ROLE);
+    invocationRecorder.verify(mockStep2).onNewRaftRole(DEFAULT_ROLE);
     invocationRecorder.verify(mockStep1).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
     invocationRecorder.verify(mockStep2).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
   }
@@ -139,13 +139,13 @@ class NewPartitionTransitionImplTest {
 
     final var invocationRecorder = inOrder(spyStep1, mockStep2);
     // first transition sequence
-    invocationRecorder.verify(spyStep1).prepareForTransition(DEFAULT_ROLE);
-    invocationRecorder.verify(mockStep2).prepareForTransition(DEFAULT_ROLE);
+    invocationRecorder.verify(spyStep1).onNewRaftRole(DEFAULT_ROLE);
+    invocationRecorder.verify(mockStep2).onNewRaftRole(DEFAULT_ROLE);
     invocationRecorder.verify(spyStep1).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
 
     // second transition sequence
-    invocationRecorder.verify(spyStep1).prepareForTransition(secondRole);
-    invocationRecorder.verify(mockStep2).prepareForTransition(secondRole);
+    invocationRecorder.verify(spyStep1).onNewRaftRole(secondRole);
+    invocationRecorder.verify(mockStep2).onNewRaftRole(secondRole);
     invocationRecorder.verify(spyStep1).transitionTo(mockContext, secondTerm, secondRole);
     invocationRecorder.verify(mockStep2).transitionTo(mockContext, secondTerm, secondRole);
   }
