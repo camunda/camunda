@@ -125,10 +125,10 @@ class NewPartitionTransitionImplTest {
     final var secondTransitionFuture = sut.transitionTo(secondTerm, secondRole);
 
     step1CountdownLatch.countDown();
-
-    // then
     await().until(firstTransitionFuture::isDone);
     await().until(secondTransitionFuture::isDone);
+
+    // then
 
     // both transitions completed orderly
     assertThat(firstTransitionFuture.isCompletedExceptionally()).isFalse();
@@ -136,6 +136,7 @@ class NewPartitionTransitionImplTest {
 
     // the first transition was cancelled before the second step
     verify(mockStep2, never()).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
+    verify(mockStep2, never()).prepareTransition(mockContext, secondTerm, secondRole);
 
     final var invocationRecorder = inOrder(spyStep1, mockStep2);
     // first transition sequence
@@ -146,8 +147,77 @@ class NewPartitionTransitionImplTest {
     // second transition sequence
     invocationRecorder.verify(spyStep1).onNewRaftRole(secondRole);
     invocationRecorder.verify(mockStep2).onNewRaftRole(secondRole);
+    invocationRecorder.verify(spyStep1).prepareTransition(mockContext, secondTerm, secondRole);
     invocationRecorder.verify(spyStep1).transitionTo(mockContext, secondTerm, secondRole);
     invocationRecorder.verify(mockStep2).transitionTo(mockContext, secondTerm, secondRole);
+  }
+
+  @Test
+  void shouldCallTransitionStepsInReverseOrderDuringPreparationForTransitionPhase() {
+    // given
+    when(mockStep1.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep1.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+
+    when(mockStep2.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+
+    final var sut = new NewPartitionTransitionImpl(of(mockStep1, mockStep2), mockContext);
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+
+    final var secondTerm = 2L;
+    final var secondRole = Role.FOLLOWER;
+
+    // when
+    sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE).join();
+    sut.transitionTo(secondTerm, secondRole).join();
+
+    // then
+    final var invocationRecorder = inOrder(mockStep1, mockStep2);
+    // excerpt from call sequence (calls before and after this are covered in other test cases)
+    invocationRecorder.verify(mockStep2).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
+    invocationRecorder.verify(mockStep2).prepareTransition(mockContext, secondTerm, secondRole);
+    invocationRecorder.verify(mockStep1).prepareTransition(mockContext, secondTerm, secondRole);
+    invocationRecorder.verify(mockStep1).transitionTo(mockContext, secondTerm, secondRole);
+  }
+
+  @Test
+  void shouldAbortTransitionIfOneStepThrowsAnExceptionDuringPreparationPhase() {
+    // given
+    final var secondTerm = 2L;
+    final var secondRole = Role.FOLLOWER;
+
+    final var testException = new Exception("TEST_EXCEPTION");
+    when(mockStep1.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep1.prepareTransition(mockContext, secondTerm, secondRole))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.failedFuture(testException));
+
+    when(mockStep2.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+
+    final var sut = new NewPartitionTransitionImpl(of(mockStep1, mockStep2), mockContext);
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+
+    // when
+    final var firstTransitionFuture = sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE);
+    final var secondTransitionFuture = sut.transitionTo(secondTerm, secondRole);
+
+    // then
+    assertThat(firstTransitionFuture.isCompletedExceptionally()).isFalse();
+
+    verify(mockStep1, never()).transitionTo(mockContext, secondTerm, secondRole);
+    verify(mockStep2, never()).transitionTo(mockContext, secondTerm, secondRole);
+
+    assertThatThrownBy(() -> secondTransitionFuture.join())
+        .isInstanceOf(CompletionException.class)
+        .getCause()
+        .isSameAs(testException);
   }
 
   private final class WaitingTransitionStep implements PartitionTransitionStep {
@@ -160,6 +230,14 @@ class NewPartitionTransitionImplTest {
         final CountDownLatch transitionCountDownLatch) {
       this.concurrencyControl = concurrencyControl;
       this.transitionCountDownLatch = transitionCountDownLatch;
+    }
+
+    @Override
+    public ActorFuture<Void> prepareTransition(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
+      cleanupFuture.complete(null);
+      return cleanupFuture;
     }
 
     @Override

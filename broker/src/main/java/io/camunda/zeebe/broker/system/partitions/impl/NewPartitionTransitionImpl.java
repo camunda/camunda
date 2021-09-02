@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import org.slf4j.Logger;
 
 public final class NewPartitionTransitionImpl implements PartitionTransition {
@@ -28,6 +29,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
   private final List<PartitionTransitionStep> steps;
   private PartitionTransitionContext context;
   private ConcurrencyControl concurrencyControl;
+  private Transition lastTransition;
   // these two should be set/cleared in tandem
   private Transition currentTransition;
   private ActorFuture<Void> currentTransitionFuture;
@@ -63,6 +65,8 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
   }
 
   public ActorFuture<Void> transitionTo(final long term, final Role role) {
+    LOG.info(format("Transition to %s on term %d requested.", role, term));
+
     // notify steps immediately that a transition is coming; steps are encouraged to cancel any
     // ongoing activity at this point in time
     steps.forEach(step -> step.onNewRaftRole(role));
@@ -82,13 +86,35 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
             // has completed
             concurrencyControl.runOnCompletion(
                 currentTransitionFuture,
-                (nil, error) -> startNewTransition(nextTransitionFuture, term, role));
+                (nil, error) -> cleanupLastTransition(nextTransitionFuture, term, role));
 
           } else {
-            startNewTransition(nextTransitionFuture, term, role);
+            cleanupLastTransition(nextTransitionFuture, term, role);
           }
         });
     return nextTransitionFuture;
+  }
+
+  private void cleanupLastTransition(
+      final ActorFuture<Void> nextTransitionFuture, final long term, final Role role) {
+    if (lastTransition == null) {
+      startNewTransition(nextTransitionFuture, term, role);
+    } else {
+      final var cleanupFuture = lastTransition.cleanup(term, role);
+      concurrencyControl.runOnCompletion(
+          cleanupFuture,
+          (nil, error) -> {
+            if (error != null) {
+              LOG.error(
+                  String.format("Error during transition clean up: %s", error.getMessage()), error);
+              LOG.info(
+                  String.format("Aborting transition to %s on term %d due to error.", role, term));
+              nextTransitionFuture.completeExceptionally(error);
+            } else {
+              startNewTransition(nextTransitionFuture, term, role);
+            }
+          });
+    }
   }
 
   private void startNewTransition(
@@ -98,6 +124,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
     concurrencyControl.runOnCompletion(
         currentTransitionFuture,
         (nil, error) -> {
+          lastTransition = currentTransition;
           currentTransition = null;
           currentTransitionFuture = null;
         });
@@ -107,6 +134,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
   private static final class Transition {
 
     private final List<PartitionTransitionStep> pendingSteps;
+    private final Stack<PartitionTransitionStep> startedSteps = new Stack<>();
     private final ConcurrencyControl concurrencyControl;
     private final PartitionTransitionContext context;
     private final long term;
@@ -135,10 +163,10 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
         return;
       }
 
-      proceed(future);
+      proceedWithTransition(future);
     }
 
-    private void proceed(final ActorFuture<Void> future) {
+    private void proceedWithTransition(final ActorFuture<Void> future) {
       if (cancelRequested) {
         LOG.info(format("Cancelling transition to %s on term %d", role, term));
         future.complete(null);
@@ -148,6 +176,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
       concurrencyControl.submit(
           () -> {
             final var nextStep = pendingSteps.remove(0);
+            startedSteps.push(nextStep);
 
             LOG.info(
                 format(
@@ -174,7 +203,63 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
         return;
       }
 
-      proceed(future);
+      proceedWithTransition(future);
+    }
+
+    public ActorFuture<Void> cleanup(final long newTerm, final Role newRole) {
+      LOG.info(
+          format(
+              "Cleanup of transition to %s on term %d starting (in preparation for new transition to %s)",
+              role, term, newRole));
+      final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
+
+      if (startedSteps.isEmpty()) {
+        LOG.info("No steps to clean up");
+        cleanupFuture.complete(null);
+      } else {
+        proceedWithCleanup(cleanupFuture, newTerm, newRole);
+      }
+      return cleanupFuture;
+    }
+
+    private void proceedWithCleanup(
+        final ActorFuture<Void> future, final long newTerm, final Role newRole) {
+      concurrencyControl.submit(
+          () -> {
+            final var nextCleanupStep = startedSteps.pop();
+
+            LOG.info(
+                format(
+                    "Cleanup of transition to %s on term %d - executing %s",
+                    role, term, nextCleanupStep.getName()));
+
+            nextCleanupStep
+                .prepareTransition(context, newTerm, newRole)
+                .onComplete(
+                    (nil, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
+          });
+    }
+
+    private void onCleanupStepCompletion(
+        final ActorFuture<Void> future,
+        final Throwable error,
+        final long newTerm,
+        final Role newRole) {
+      if (error != null) {
+        LOG.error(error.getMessage(), error);
+        future.completeExceptionally(error);
+
+        return;
+      }
+
+      if (startedSteps.isEmpty()) {
+        LOG.info(format("Cleanup of transition to %s on term %d completed", role, term));
+        future.complete(null);
+
+        return;
+      }
+
+      proceedWithCleanup(future, newTerm, newRole);
     }
 
     private void cancel() {
