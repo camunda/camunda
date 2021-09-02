@@ -16,7 +16,7 @@ const tasks: ReadonlyArray<Task> = [
     processName: 'processName',
     creationTime: '2020-05-28 10:11:12',
     completionTime: new Date().toISOString(),
-    assignee: currentUser,
+    assignee: currentUser.username,
     variables: [],
     taskState: TaskStates.Created,
     sortValues: ['0', '1'],
@@ -31,13 +31,7 @@ const tasks: ReadonlyArray<Task> = [
     processName: 'processName',
     creationTime: '2020-05-29 13:14:15',
     completionTime: new Date().toISOString(),
-    assignee: {
-      username: 'mustermann',
-      firstname: 'Otto',
-      lastname: 'Mustermann',
-      roles: ['view', 'edit'],
-      __typename: 'User',
-    },
+    assignee: 'mustermann',
     variables: [
       {
         id: '0-myVar',
@@ -79,7 +73,7 @@ const tasks: ReadonlyArray<Task> = [
 
 const tasksClaimedByDemoUser: ReadonlyArray<Task> = tasks.map((task) => ({
   ...task,
-  assignee: currentUser,
+  assignee: currentUser.username,
 }));
 
 const unclaimedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
@@ -89,7 +83,7 @@ const unclaimedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
 
 const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
   ...task,
-  assignee: task.assignee === null ? currentUser : task.assignee,
+  assignee: task.assignee === null ? currentUser.username : task.assignee,
   taskState: TaskStates.Completed,
 }));
 
@@ -98,12 +92,7 @@ const generateTask = (id: string, name?: string) => {
     id,
     name: name ?? `TASK ${id}`,
     processName: 'Flight registration',
-    assignee: {
-      username: 'demo',
-      firstname: 'Demo',
-      lastname: 'User',
-      __typename: 'User',
-    },
+    assignee: 'demo',
     creationTime: '2021-01-13T12:13:18.655Z',
     taskState: 'CREATED',
     sortValues: [id, id],

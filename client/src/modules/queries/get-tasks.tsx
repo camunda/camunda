@@ -100,11 +100,7 @@ const GET_TASKS = gql`
       id
       name
       processName
-      assignee {
-        username
-        firstname
-        lastname
-      }
+      assignee
       creationTime
       taskState
       sortValues

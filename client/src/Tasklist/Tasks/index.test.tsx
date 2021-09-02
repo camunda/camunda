@@ -84,11 +84,7 @@ describe('<Tasks />', () => {
     expect(
       withinFirstTask.getByText(firstTask.creationTime),
     ).toBeInTheDocument();
-    expect(
-      withinFirstTask.getByText(
-        `${firstTask.assignee?.firstname} ${firstTask.assignee?.lastname}`,
-      ),
-    ).toBeInTheDocument();
+    expect(withinFirstTask.getByText(firstTask.assignee!)).toBeInTheDocument();
 
     expect(withinSecondTask.getByText(secondTask.name)).toBeInTheDocument();
     expect(
@@ -98,9 +94,7 @@ describe('<Tasks />', () => {
       withinSecondTask.getByText(secondTask.creationTime),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByText(
-        `${secondTask.assignee?.firstname} ${secondTask.assignee?.lastname}`,
-      ),
+      withinSecondTask.getByText(secondTask.assignee!),
     ).toBeInTheDocument();
   });
 

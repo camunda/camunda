@@ -31,7 +31,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="2020-05-29 14:00:00"
-        assignee={currentUser}
+        assignee={currentUser.username}
       />,
       {
         wrapper: createWrapper(),
@@ -41,7 +41,7 @@ describe('<Task />', () => {
     expect(screen.getByText('name')).toBeInTheDocument();
     expect(screen.getByText('processName')).toBeInTheDocument();
     expect(screen.getByText('2020-05-29 14:00:00')).toBeInTheDocument();
-    expect(screen.getByText('Demo User')).toBeInTheDocument();
+    expect(screen.getByText('demo')).toBeInTheDocument();
   });
 
   it('should render -- as assignee if task is not assigned', () => {
@@ -70,7 +70,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="invalid date"
-        assignee={currentUser}
+        assignee={currentUser.username}
       />,
       {
         wrapper: createWrapper(),
@@ -89,7 +89,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="2020-05-29 14:00:00"
-        assignee={currentUser}
+        assignee={currentUser.username}
       />,
       {
         wrapper: createWrapper(historyMock),
@@ -111,7 +111,7 @@ describe('<Task />', () => {
         name="name"
         processName="processName"
         creationTime="2020-05-29 14:00:00"
-        assignee={currentUser}
+        assignee={currentUser.username}
       />,
       {
         wrapper: createWrapper(historyMock),

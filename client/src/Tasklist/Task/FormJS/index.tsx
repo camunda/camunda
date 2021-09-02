@@ -90,7 +90,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   } = useSelectedVariables(task.id, extractVariablesFromFormSchema(schema));
   const [isFormValid, setIsFormValid] = useState(false);
   const canCompleteTask =
-    userData?.currentUser.username === assignee?.username &&
+    userData?.currentUser.username === assignee &&
     taskState === 'CREATED' &&
     hasPermission;
 

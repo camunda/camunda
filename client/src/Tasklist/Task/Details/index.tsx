@@ -29,12 +29,12 @@ import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {getUserDisplayName} from 'modules/utils/getUserDisplayName';
 import {useNotifications} from 'modules/notifications';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {Restricted} from 'modules/components/Restricted';
+import {getAssigneeName} from 'modules/utils/getAssigneeName';
 
 import {
   GET_CURRENT_USER,
@@ -176,7 +176,7 @@ const Details: React.FC = () => {
             <RowTH>Assignee</RowTH>
             <AssigneeTD>
               <Assignee data-testid="assignee-task-details">
-                {getUserDisplayName(assignee)}
+                {getAssigneeName(assignee)}
                 {taskState === TaskStates.Created && (
                   <Restricted scopes={['edit']}>
                     <ClaimButton

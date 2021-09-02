@@ -28,8 +28,7 @@ public final class TaskDTO {
 
   private String creationTime;
   private String completionTime;
-  /** Field is used to return user data. */
-  private String assigneeUsername;
+  private String assignee;
 
   private TaskState taskState;
 
@@ -45,6 +44,15 @@ public final class TaskDTO {
 
   public TaskDTO setId(String id) {
     this.id = id;
+    return this;
+  }
+
+  public String getAssignee() {
+    return assignee;
+  }
+
+  public TaskDTO setAssignee(String assignee) {
+    this.assignee = assignee;
     return this;
   }
 
@@ -111,15 +119,6 @@ public final class TaskDTO {
     return this;
   }
 
-  public String getAssigneeUsername() {
-    return assigneeUsername;
-  }
-
-  public TaskDTO setAssigneeUsername(String assigneeUsername) {
-    this.assigneeUsername = assigneeUsername;
-    return this;
-  }
-
   public TaskState getTaskState() {
     return taskState;
   }
@@ -170,7 +169,7 @@ public final class TaskDTO {
             .setId(taskEntity.getId())
             .setProcessInstanceId(taskEntity.getProcessInstanceId())
             .setTaskState(taskEntity.getState())
-            .setAssigneeUsername(taskEntity.getAssignee())
+            .setAssignee(taskEntity.getAssignee())
             .setBpmnProcessId(taskEntity.getBpmnProcessId())
             .setProcessDefinitionId(taskEntity.getProcessDefinitionId())
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
@@ -200,7 +199,7 @@ public final class TaskDTO {
         && Objects.equals(bpmnProcessId, taskDTO.bpmnProcessId)
         && Objects.equals(creationTime, taskDTO.creationTime)
         && Objects.equals(completionTime, taskDTO.completionTime)
-        && Objects.equals(assigneeUsername, taskDTO.assigneeUsername)
+        && Objects.equals(assignee, taskDTO.assignee)
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
         && Objects.equals(formKey, taskDTO.formKey);
@@ -218,7 +217,7 @@ public final class TaskDTO {
             bpmnProcessId,
             creationTime,
             completionTime,
-            assigneeUsername,
+            assignee,
             taskState,
             isFirst,
             formKey);
@@ -253,8 +252,8 @@ public final class TaskDTO {
         + ", completionTime='"
         + completionTime
         + '\''
-        + ", assigneeUsername='"
-        + assigneeUsername
+        + ", assignee='"
+        + assignee
         + '\''
         + ", taskState="
         + taskState

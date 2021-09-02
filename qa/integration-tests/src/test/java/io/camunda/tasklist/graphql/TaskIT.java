@@ -39,8 +39,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   public static final String ELEMENT_ID = "taskA";
   public static final String BPMN_PROCESS_ID = "testProcess";
-  public static final String TASK_RESULT_PATTERN =
-      "{id name assignee {username firstname lastname}}";
+  public static final String TASK_RESULT_PATTERN = "{id name assignee}";
   public static final String CLAIM_TASK_MUTATION_PATTERN =
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
 
@@ -436,7 +435,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertNotNull(response.get("$.data.tasks[0].creationTime"));
     assertNotNull(response.get("$.data.tasks[0].completionTime"));
     assertEquals(TaskState.COMPLETED.name(), response.get("$.data.tasks[0].taskState"));
-    assertNotNull(response.get("$.data.tasks[0].assignee.username"));
+    assertNotNull(response.get("$.data.tasks[0].assignee"));
     assertEquals("0", response.get("$.data.tasks[0].variables.length()"));
     assertIsFirst(response, true);
   }

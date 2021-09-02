@@ -33,8 +33,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
   public static final String ELEMENT_ID = "taskA";
   public static final String BPMN_PROCESS_ID = "testProcess";
-  public static final String TASK_RESULT_PATTERN =
-      "{id name assignee {username firstname lastname} taskState completionTime}";
+  public static final String TASK_RESULT_PATTERN = "{id name assignee taskState completionTime}";
   public static final String COMPLETE_TASK_MUTATION_PATTERN =
       "mutation {completeTask(taskId: \"%s\", variables: [%s])" + TASK_RESULT_PATTERN + "}";
   public static final String CLAIM_TASK_MUTATION_PATTERN =
@@ -327,19 +326,13 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
             .getByPath("$.data.claimTask");
 
     assertEquals(claimedTask.get("id"), unclaimedTask.getId());
-    final Map<String, Object> userData = (Map<String, Object>) claimedTask.get("assignee");
-    assertTaskIsAssigned(userData, getDefaultCurrentUser());
+    final String assignee = (String) claimedTask.get("assignee");
+    assertEquals(getDefaultCurrentUser().getUsername(), assignee);
 
     // query "Get tasks" immediately
-    final GraphQLResponse allTasks = tester.getAllTasks();
-    final Map<String, Object> task = tester.getByPath("$.data.tasks[0].assignee");
-    assertTaskIsAssigned(task, getDefaultCurrentUser());
-  }
-
-  private void assertTaskIsAssigned(final Map<String, Object> assigneeData, final UserDTO user) {
-    assertEquals(user.getUsername(), assigneeData.get("username"));
-    assertEquals(user.getFirstname(), assigneeData.get("firstname"));
-    assertEquals(user.getLastname(), assigneeData.get("lastname"));
+    tester.getAllTasks();
+    final TaskDTO claimedTaskObject = tester.getTasksByPath("$.data.tasks").get(0);
+    assertEquals(getDefaultCurrentUser().getUsername(), claimedTaskObject.getAssignee());
   }
 
   @Test

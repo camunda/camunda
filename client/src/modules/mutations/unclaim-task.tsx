@@ -19,11 +19,7 @@ const UNCLAIM_TASK = gql`
   mutation UnclaimTask($id: String!) {
     unclaimTask(taskId: $id) {
       id
-      assignee {
-        username
-        firstname
-        lastname
-      }
+      assignee
     }
   }
 `;

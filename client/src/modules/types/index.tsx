@@ -33,7 +33,7 @@ type Task = Readonly<{
   processName: string;
   creationTime: string;
   completionTime: string | null;
-  assignee: User | null;
+  assignee: string | null;
   variables: ReadonlyArray<Variable>;
   taskState: TaskState;
   sortValues: [string, string];

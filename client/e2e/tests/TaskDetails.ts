@@ -95,7 +95,7 @@ test('claim and unclaim task', async (t) => {
     .expect(await screen.findByRole('button', {name: 'Unclaim'}).exists)
     .ok()
     .expect(
-      within(screen.getByTestId('assignee-task-details')).getByText('Demo User')
+      within(screen.getByTestId('assignee-task-details')).getByText('demo')
         .exists,
     )
     .ok()

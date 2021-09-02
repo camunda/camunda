@@ -29,7 +29,7 @@ const TaskCard: React.FC = () => {
             taskId="2251799813685883"
             name="Register the passenger"
             processName="Flight registration"
-            assignee={currentUser}
+            assignee={currentUser.username}
             creationTime="2020-05-22T13:39:31.139+0000"
           />
           <Task

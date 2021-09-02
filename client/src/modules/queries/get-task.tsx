@@ -39,11 +39,7 @@ const GET_TASK = gql`
       id
       formKey
       processDefinitionId
-      assignee {
-        username
-        firstname
-        lastname
-      }
+      assignee
       name
       taskState
       processName

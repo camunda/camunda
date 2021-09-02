@@ -5,11 +5,7 @@ query getTasks($query: TaskQuery!){
         processName
         creationTime
         completionTime
-        assignee {
-            username
-            firstname
-            lastname
-        }
+        assignee
         variables {
             ... variableFields
         }

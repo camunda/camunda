@@ -62,7 +62,7 @@ describe('<Details />', () => {
     expect(await screen.findByText('My Task')).toBeInTheDocument();
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
     expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'Demo User',
+      'demo',
     );
     expect(
       screen.queryByRole('button', {name: 'Unclaim'}),
@@ -144,7 +144,7 @@ describe('<Details />', () => {
       screen.queryByRole('button', {name: 'Claim'}),
     ).not.toBeInTheDocument();
     expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
-      'Demo User',
+      'demo',
     );
     expect(
       screen.queryByText('Claim the Task to start working on it'),
@@ -217,7 +217,7 @@ describe('<Details />', () => {
     });
 
     expect(await screen.findByText('Nice Process')).toBeInTheDocument();
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(await screen.findByText('demo')).toBeInTheDocument();
 
     expect(
       screen.queryByRole('button', {name: 'Unclaim'}),

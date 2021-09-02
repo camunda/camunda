@@ -18,8 +18,8 @@ import {useParams, Link} from 'react-router-dom';
 import {Location} from 'history';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
-import {getUserDisplayName} from 'modules/utils/getUserDisplayName';
 import {Task as TaskType} from 'modules/types';
+import {getAssigneeName} from 'modules/utils/getAssigneeName';
 
 interface Props {
   taskId: TaskType['id'];
@@ -51,7 +51,7 @@ const Task = React.forwardRef<HTMLLIElement, Props>(
           </TaskInfo>
           <TaskStatus>
             <Assignee data-testid="assignee">
-              {getUserDisplayName(assignee)}
+              {getAssigneeName(assignee)}
             </Assignee>
 
             <CreationTime data-testid="creation-time">

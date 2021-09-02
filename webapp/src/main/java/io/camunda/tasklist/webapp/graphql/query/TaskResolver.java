@@ -5,7 +5,6 @@
  */
 package io.camunda.tasklist.webapp.graphql.query;
 
-import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.USER_DATA_LOADER;
 import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.VARIABLE_DATA_LOADER;
 
 import graphql.kickstart.execution.context.GraphQLContext;
@@ -14,7 +13,6 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.util.List;
@@ -29,16 +27,6 @@ import org.springframework.stereotype.Component;
 public class TaskResolver implements GraphQLResolver<TaskDTO> {
 
   @Autowired private ProcessCache processCache;
-
-  public CompletableFuture<UserDTO> getAssignee(TaskDTO task, DataFetchingEnvironment dfe) {
-    if (task.getAssigneeUsername() == null) {
-      return null;
-    }
-    final DataLoader<String, UserDTO> dataloader =
-        ((GraphQLContext) dfe.getContext()).getDataLoaderRegistry().getDataLoader(USER_DATA_LOADER);
-
-    return dataloader.load(task.getAssigneeUsername());
-  }
 
   public CompletableFuture<List<VariableDTO>> getVariables(
       TaskDTO task, DataFetchingEnvironment dfe) {

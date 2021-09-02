@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Task} from 'modules/types';
+import {User} from 'modules/types';
 
-function getUserDisplayName(user: Task['assignee']) {
+function getUserDisplayName(user: User) {
   if (user === null) {
     return '--';
   }

@@ -18,11 +18,7 @@ const CLAIM_TASK = gql`
   mutation ClaimTask($id: String!) {
     claimTask(taskId: $id) {
       id
-      assignee {
-        username
-        firstname
-        lastname
-      }
+      assignee
     }
   }
 `;

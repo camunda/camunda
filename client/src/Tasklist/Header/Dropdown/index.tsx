@@ -15,7 +15,7 @@ import {
   GET_CURRENT_USER,
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
-import {getUserDisplayName} from 'modules/utils/getUserDisplayName';
+import {getUserDisplayName} from './getUserDisplayName';
 
 interface Props {
   isInitiallyOpen?: boolean;

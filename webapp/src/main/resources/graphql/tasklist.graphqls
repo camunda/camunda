@@ -10,8 +10,8 @@ type Task {
     creationTime: String!
     # When was the task completed
     completionTime: String
-    # Who is assigned to the task
-    assignee: User
+    # Username/id of who is assigned to the task
+    assignee: String
     # Variables associated to the task
     variables: [Variable!]
     # State of the task
