@@ -58,10 +58,8 @@ public final class StateControllerImplTest {
     runtimeDirectory = rootDirectory.resolve("runtime");
     snapshotController =
         new StateControllerImpl(
-            1,
             ZeebeRocksDbFactory.newFactory(),
             store,
-            factory.getReceivableSnapshotStore(1),
             runtimeDirectory,
             l ->
                 Optional.of(

@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -41,18 +40,14 @@ public class StateControllerImpl implements StateController {
   private ZeebeDb db;
 
   private final ConstructableSnapshotStore constructableSnapshotStore;
-  private final ReceivableSnapshotStore receivableSnapshotStore;
 
   public StateControllerImpl(
-      final int partitionId,
       @SuppressWarnings("rawtypes") final ZeebeDbFactory zeebeDbFactory,
       final ConstructableSnapshotStore constructableSnapshotStore,
-      final ReceivableSnapshotStore receivableSnapshotStore,
       final Path runtimeDirectory,
       final AtomixRecordEntrySupplier entrySupplier,
       @SuppressWarnings("rawtypes") final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
     this.constructableSnapshotStore = constructableSnapshotStore;
-    this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
     this.zeebeDbFactory = zeebeDbFactory;
     this.exporterPositionSupplier = exporterPositionSupplier;

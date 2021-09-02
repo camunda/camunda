@@ -33,10 +33,8 @@ public class StateControllerPartitionStep implements PartitionStartupStep {
 
     final var stateController =
         new StateControllerImpl(
-            partitionStartupContext.getPartitionId(),
             DefaultZeebeDbFactory.defaultFactory(databaseCfg.createRocksDbConfiguration()),
             partitionStartupContext.getConstructableSnapshotStore(),
-            partitionStartupContext.getReceivableSnapshotStore(),
             runtimeDirectory,
             new AtomixRecordEntrySupplierImpl(
                 partitionStartupContext.getRaftPartition().getServer()),
