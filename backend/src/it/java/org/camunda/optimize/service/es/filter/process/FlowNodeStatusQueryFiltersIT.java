@@ -302,7 +302,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(definitionEngineDto.getKey())
       .setProcessDefinitionVersion(definitionEngineDto.getVersionAsString())
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .setFilter(filter)
       .build();
     return reportClient.evaluateMapReport(reportData).getResult();

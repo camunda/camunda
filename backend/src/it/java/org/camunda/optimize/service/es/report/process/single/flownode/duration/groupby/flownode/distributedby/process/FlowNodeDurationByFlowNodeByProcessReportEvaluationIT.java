@@ -32,7 +32,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_BY_PROCESS;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE_BY_PROCESS;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
@@ -266,7 +266,7 @@ public class FlowNodeDurationByFlowNodeByProcessReportEvaluationIT extends Abstr
 
   private ProcessReportDataDto createReport(final List<ReportDataDefinitionDto> definitionDtos) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_BY_PROCESS)
+      .setReportDataType(FLOW_NODE_DUR_GROUP_BY_FLOW_NODE_BY_PROCESS)
       .build();
     reportData.setDefinitions(definitionDtos);
     return reportData;

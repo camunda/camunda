@@ -965,7 +965,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(definitionVersions)
       .setTenantIds(tenantIds)
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
   }
 

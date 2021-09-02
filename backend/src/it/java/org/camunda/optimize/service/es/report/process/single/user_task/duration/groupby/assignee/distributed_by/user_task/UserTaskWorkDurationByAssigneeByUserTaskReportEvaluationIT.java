@@ -25,7 +25,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE_BY_USER_TASK;
 
 public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluationIT {
@@ -54,7 +54,7 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_ASSIGNEE_BY_USER_TASK)
       .build();
   }
 

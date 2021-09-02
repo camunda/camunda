@@ -186,7 +186,7 @@ public class Generator {
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();

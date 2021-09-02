@@ -23,7 +23,7 @@ import java.util.List;
 
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_CANDIDATE_BY_USER_TASK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -54,7 +54,7 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_CANDIDATE_BY_USER_TASK)
       .build();
   }
 

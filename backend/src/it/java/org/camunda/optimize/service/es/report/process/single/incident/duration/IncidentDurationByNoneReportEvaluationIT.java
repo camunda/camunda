@@ -38,7 +38,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.process.filt
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DURATION_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_NONE;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -487,7 +487,7 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(INCIDENT_DURATION_GROUP_BY_NONE)
+      .setReportDataType(INCIDENT_DUR_GROUP_BY_NONE)
       .build();
   }
 

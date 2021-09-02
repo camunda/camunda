@@ -12,7 +12,7 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewFlowNodeDuration;
-import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountFlowNodeFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewFlowNodeFrequency;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -31,7 +31,7 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
   public abstract boolean isKeyOfNumericType(final ExecutionContext<Data> context);
 
   public boolean isFlownodeReport() {
-    return viewPart instanceof ProcessViewCountFlowNodeFrequency
+    return viewPart instanceof ProcessViewFlowNodeFrequency
       || viewPart instanceof ProcessViewFlowNodeDuration;
   }
 

@@ -118,7 +118,7 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE;
+    return ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_START_DATE;
   }
 
 }

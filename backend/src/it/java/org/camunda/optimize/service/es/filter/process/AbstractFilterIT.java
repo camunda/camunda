@@ -21,9 +21,9 @@ import org.camunda.optimize.util.BpmnModels;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -108,7 +108,7 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK)
       .setFilter(filter)
       .build();
     return reportClient.evaluateMapReport(reportData).getResult();
@@ -128,9 +128,9 @@ public abstract class AbstractFilterIT extends AbstractIT {
   @SuppressWarnings(UNUSED)
   private static Stream<ProcessReportDataType> simpleDateReportTypes() {
     return Stream.of(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_RUNNING_DATE
     );
   }
 }

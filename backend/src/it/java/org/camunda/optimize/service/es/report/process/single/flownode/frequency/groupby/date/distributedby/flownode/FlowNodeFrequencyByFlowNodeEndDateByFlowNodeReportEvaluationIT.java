@@ -17,7 +17,7 @@ public class FlowNodeFrequencyByFlowNodeEndDateByFlowNodeReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE_BY_FLOW_NODE;
+    return ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_END_DATE_BY_FLOW_NODE;
   }
 
   @Override

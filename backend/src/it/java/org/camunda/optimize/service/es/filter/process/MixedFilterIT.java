@@ -52,11 +52,11 @@ import static org.camunda.optimize.service.es.report.process.single.incident.dur
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
@@ -625,7 +625,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
       .build();
     ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
@@ -808,12 +808,12 @@ public class MixedFilterIT extends AbstractFilterIT {
   @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<ProcessReportDataType> reportTypesToEvaluate() {
     return Stream.of(
-      COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
-      USER_TASK_FREQUENCY_GROUP_BY_USER_TASK,
+      FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+      USER_TASK_FREQ_GROUP_BY_USER_TASK,
       RAW_DATA,
-      COUNT_PROC_INST_FREQ_GROUP_BY_NONE,
+      PROC_INST_FREQ_GROUP_BY_NONE,
       VARIABLE_AGGREGATION_GROUP_BY_NONE,
-      INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE
+      INCIDENT_FREQ_GROUP_BY_FLOW_NODE
     );
   }
 
@@ -828,13 +828,13 @@ public class MixedFilterIT extends AbstractFilterIT {
       .setReportDataType(reportType)
       .setFilter(filter);
     switch (reportType) {
-      case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
-      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
-      case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
+      case FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK:
+      case INCIDENT_FREQ_GROUP_BY_FLOW_NODE:
         return reportClient.evaluateMapReport(dataBuilder.build()).getResult();
       case RAW_DATA:
         return reportClient.evaluateRawReport(dataBuilder.build()).getResult();
-      case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
+      case PROC_INST_FREQ_GROUP_BY_NONE:
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:
         dataBuilder.setVariableName("someName").setVariableType(VariableType.LONG);
         return reportClient.evaluateNumberReport(dataBuilder.build()).getResult();
@@ -851,13 +851,13 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(reportResult.getInstanceCountWithoutFilters()).isEqualTo(1L);
     // and the incompatible filters results in no data
     switch (reportType) {
-      case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
-      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
-      case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
+      case FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK:
+      case INCIDENT_FREQ_GROUP_BY_FLOW_NODE:
       case RAW_DATA:
         assertThat(((ReportResultResponseDto<List<?>>) reportResult).getFirstMeasureData()).isEmpty();
         break;
-      case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
+      case PROC_INST_FREQ_GROUP_BY_NONE:
         assertThat(((ReportResultResponseDto<Double>) reportResult).getFirstMeasureData()).isZero();
         break;
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:

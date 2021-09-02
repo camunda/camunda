@@ -108,7 +108,7 @@ public class ReportConflictIT extends AbstractIT {
     final SingleProcessReportDefinitionRequestDto reportUpdate = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto userTaskReport = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_CANDIDATE_BY_USER_TASK)
       .build();
     userTaskReport.setDistributedBy(new UserTaskDistributedByDto());
     reportUpdate.setData(userTaskReport);
@@ -130,7 +130,7 @@ public class ReportConflictIT extends AbstractIT {
   @MethodSource("notForcedValues")
   public void updateSingleProcessReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
-    ProcessReportDataDto numberReport = createProcessReport(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE);
+    ProcessReportDataDto numberReport = createProcessReport(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReport);
     String alertForReport = createNewAlertForReport(reportId);
@@ -161,7 +161,7 @@ public class ReportConflictIT extends AbstractIT {
   public void updateSingleProcessToMultiViewReportFailsWithConflictIfUsedInAlert(Boolean force) {
     // given
     final ProcessReportDataDto numberReportData =
-      createProcessReport(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE);
+      createProcessReport(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReportData);
     String alertForReport = createNewAlertForReport(reportId);
@@ -262,9 +262,9 @@ public class ReportConflictIT extends AbstractIT {
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotNoneWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(
-      createProcessReport(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK));
+      createProcessReport(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK));
     String secondSingleReportId = createAndStoreProcessReportWithDefinition(
-      createProcessReport(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK));
+      createProcessReport(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK));
     String combinedReportId = reportClient.createCombinedReport(
       null,
       Arrays.asList(firstSingleReportId, secondSingleReportId)
@@ -293,9 +293,9 @@ public class ReportConflictIT extends AbstractIT {
   public void updateSingleReportToMultiMeasureFailsWithConflictIfUsedInCombinedReportWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(
-      createProcessReport(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK));
+      createProcessReport(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK));
     String secondSingleReportId = createAndStoreProcessReportWithDefinition(
-      createProcessReport(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK));
+      createProcessReport(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK));
     String combinedReportId = reportClient.createCombinedReport(
       null,
       Arrays.asList(firstSingleReportId, secondSingleReportId)

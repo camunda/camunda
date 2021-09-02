@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecu
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByAssignee;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask.ProcessGroupByUserTask;
-import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewUserTaskFrequency;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,7 +27,7 @@ public class UserTaskFrequencyGroupByTaskByAssigneeCmd extends ProcessCmd<List<H
   protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessViewCountUserTaskFrequency.class)
+      .view(ProcessViewUserTaskFrequency.class)
       .groupBy(ProcessGroupByUserTask.class)
       .distributedBy(ProcessDistributedByAssignee.class)
       .resultAsHyperMap()

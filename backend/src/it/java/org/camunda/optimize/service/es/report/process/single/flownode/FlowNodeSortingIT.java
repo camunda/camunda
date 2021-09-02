@@ -215,7 +215,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
       .createReportData()
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
   }
 
@@ -261,7 +261,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
       .build();
   }
 

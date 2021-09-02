@@ -482,7 +482,7 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
       .ignoringFields(CombinedReportDataDto.Fields.reports)
       .isEqualTo(combinedReportDef.getData());
     assertThat(importedCombinedReport.getData().getReports())
-      .usingElementComparatorIgnoringFields(CombinedReportItemDto.Fields.id)
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(CombinedReportItemDto.Fields.id)
       .containsExactlyElementsOf(combinedReportDef.getData().getReports());
     assertThat(importedCombinedReport.getData().getReportIds())
       .containsExactlyInAnyOrder(importedSingleReport1.getId(), importedSingleReport2.getId());
@@ -553,7 +553,7 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
       .ignoringFields(CombinedReportDataDto.Fields.reports)
       .isEqualTo(combinedReportDef.getData());
     assertThat(importedCombinedReport.getData().getReports())
-      .usingElementComparatorIgnoringFields(CombinedReportItemDto.Fields.id)
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(CombinedReportItemDto.Fields.id)
       .containsExactlyElementsOf(combinedReportDef.getData().getReports());
     assertThat(importedCombinedReport.getData().getReportIds())
       .containsExactlyInAnyOrder(importedSingleReport1.getId(), importedSingleReport2.getId());

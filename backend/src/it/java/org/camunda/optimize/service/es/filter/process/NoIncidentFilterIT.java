@@ -64,7 +64,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
       .build();
     reportData.setFilter(ProcessFilterBuilder.filter().noIncidents().add().buildList());
     ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();

@@ -905,7 +905,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(version)
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_ASSIGNEE)
       .build();
   }
 

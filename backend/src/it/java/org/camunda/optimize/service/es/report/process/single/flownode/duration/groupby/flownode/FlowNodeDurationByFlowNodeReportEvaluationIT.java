@@ -1171,7 +1171,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersions(definitionVersions)
       .setTenantIds(tenantIds)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
       .build();
   }
 

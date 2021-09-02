@@ -223,7 +223,7 @@ public class ReportClient {
       .definitions(
         definitionKeys.stream().map(key -> new ReportDataDefinitionDto(key, tenants)).collect(Collectors.toList())
       )
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();

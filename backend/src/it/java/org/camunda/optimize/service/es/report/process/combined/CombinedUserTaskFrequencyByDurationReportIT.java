@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.combined;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
 
 public class CombinedUserTaskFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
 
@@ -21,7 +21,7 @@ public class CombinedUserTaskFrequencyByDurationReportIT extends AbstractCombine
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
+    return USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
   }
 
 }

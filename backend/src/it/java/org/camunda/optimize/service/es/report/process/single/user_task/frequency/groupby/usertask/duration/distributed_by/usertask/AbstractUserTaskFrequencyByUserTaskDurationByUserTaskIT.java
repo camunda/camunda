@@ -27,7 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK;
 
 public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
   extends ModelElementFrequencyByModelElementDurationByModelElementIT {
@@ -56,7 +56,7 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
       .createReportData()
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK)
       .setUserTaskDurationTime(getUserTaskDurationTime())
       .build();
   }

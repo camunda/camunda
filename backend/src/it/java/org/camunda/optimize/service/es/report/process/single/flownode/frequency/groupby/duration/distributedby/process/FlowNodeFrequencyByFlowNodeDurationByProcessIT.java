@@ -28,7 +28,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_PROCESS;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_PROCESS;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -191,7 +191,7 @@ public class FlowNodeFrequencyByFlowNodeDurationByProcessIT extends AbstractIT {
 
   private ProcessReportDataDto createReport(final List<ReportDataDefinitionDto> definitionDtos) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_PROCESS)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_PROCESS)
       .build();
     reportData.setDefinitions(definitionDtos);
     return reportData;

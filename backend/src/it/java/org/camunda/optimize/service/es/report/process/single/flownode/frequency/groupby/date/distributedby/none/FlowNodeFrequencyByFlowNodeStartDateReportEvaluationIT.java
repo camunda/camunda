@@ -21,7 +21,7 @@ public class FlowNodeFrequencyByFlowNodeStartDateReportEvaluationIT
   }
 
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE;
+    return ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE;
   }
 
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {

@@ -51,7 +51,7 @@ import static org.camunda.optimize.service.es.report.process.single.incident.dur
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DURATION_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_1;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_2;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_NAME;
@@ -931,7 +931,7 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(Arrays.asList(processDefinitionVersions))
-      .setReportDataType(INCIDENT_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(INCIDENT_DUR_GROUP_BY_FLOW_NODE)
       .build();
   }
 

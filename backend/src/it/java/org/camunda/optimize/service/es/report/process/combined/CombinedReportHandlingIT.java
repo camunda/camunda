@@ -76,20 +76,20 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_DURATION;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
@@ -155,7 +155,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto(
         TemplatedProcessReportDataBuilder
           .createReportData()
-          .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+          .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
           .setProcessDefinitionKey("key")
           .setProcessDefinitionVersion("1")
           .setGroupByDateInterval(AggregateByDateUnit.YEAR)
@@ -167,7 +167,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto(
         TemplatedProcessReportDataBuilder
           .createReportData()
-          .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+          .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
           .setProcessDefinitionKey("key")
           .setProcessDefinitionVersion("1")
           .setGroupByDateInterval(AggregateByDateUnit.YEAR)
@@ -180,7 +180,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto(
         TemplatedProcessReportDataBuilder
           .createReportData()
-          .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+          .setReportDataType(PROC_INST_FREQ_GROUP_BY_VARIABLE)
           .setProcessDefinitionKey("key")
           .setProcessDefinitionVersion("1")
           .setVariableName("var")
@@ -206,7 +206,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionRequestDto groupByNumberVarBucketSize5 = new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto groupByNumberVar1Data = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .setVariableType(VariableType.DOUBLE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
@@ -222,7 +222,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto();
     ProcessReportDataDto groupByNumberVar2Data = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .setVariableType(VariableType.DOUBLE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
@@ -239,7 +239,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_DURATION)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
       .setVisualization(ProcessVisualization.BAR)
@@ -259,7 +259,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByDurationDataDifferentBucketSize = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_DURATION)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
       .setVisualization(ProcessVisualization.BAR)
@@ -281,7 +281,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto();
     final ProcessReportDataDto groupByFlowNodeDurationDistributeByFlowNodeData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
       .setVisualization(ProcessVisualization.TABLE)
@@ -293,7 +293,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto(
         TemplatedProcessReportDataBuilder
           .createReportData()
-          .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
           .setProcessDefinitionKey("key")
           .setProcessDefinitionVersion("1")
           .build()
@@ -317,7 +317,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       new SingleProcessReportDefinitionRequestDto(
         TemplatedProcessReportDataBuilder
           .createReportData()
-          .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
+          .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK)
           .setProcessDefinitionKey("key")
           .setProcessDefinitionVersion("1")
           .build()
@@ -1168,7 +1168,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
@@ -1207,7 +1207,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
@@ -1246,7 +1246,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
@@ -1285,7 +1285,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     final String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
     final String remainingSingleReportId = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
@@ -1324,7 +1324,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK)
       .build();
     final String singleReportIdToUpdate = createNewSingleMapReport(userTaskDurationByTaskReportData);
     final String remainingSingleReportId = createNewSingleMapReport(userTaskDurationByTaskReportData);
@@ -1361,7 +1361,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK)
       .build();
     final String singleReportIdToUpdate = createNewSingleMapReport(userTaskDurationByTaskReportData);
     final String remainingSingleReportId = createNewSingleMapReport(userTaskDurationByTaskReportData);
@@ -1628,7 +1628,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_END_DATE)
       .build();
     String groupedByEndDateReportId = createNewSingleMapReport(groupedByEndDateReportData);
     final ProcessReportDataDto groupedByStartDateReportData = TemplatedProcessReportDataBuilder
@@ -1636,7 +1636,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE)
       .build();
     String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
 
@@ -1682,7 +1682,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_END_DATE)
       .build();
     String groupedByEndDateReportId = createNewSingleMapReport(groupedByEndDateReportData);
     final ProcessReportDataDto groupedByStartDateReportData = TemplatedProcessReportDataBuilder
@@ -1690,7 +1690,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setGroupByDateInterval(AggregateByDateUnit.DAY)
-      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE)
       .build();
     String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
 
@@ -1783,7 +1783,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_ASSIGNEE_BY_USER_TASK)
       .build();
     String singleReportId = createNewSingleMapReport(reportData);
     importAllEngineEntitiesFromScratch();
@@ -1819,7 +1819,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
     Optional.ofNullable(filterDto)
       .ifPresent(filters -> templatedProcessReportDataBuilder.setFilter(filters.getFilter()));
     return createNewSingleMapReport(templatedProcessReportDataBuilder.build());
@@ -1840,7 +1840,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
       .setVisualization(ProcessVisualization.TABLE)
       .build();
     return createNewSingleMapReport(durationMapReportData);
@@ -1852,7 +1852,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
-      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK)
       .setVisualization(ProcessVisualization.TABLE)
       .build();
     return createNewSingleMapReport(durationMapReportData);
@@ -1864,7 +1864,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
-      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK)
       .build();
     return createNewSingleMapReport(durationMapReportData);
   }
@@ -1882,7 +1882,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     return createNewSingleNumberReport(countFlowNodeFrequencyGroupByFlowNode);
   }
@@ -1901,7 +1901,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setGroupByDateInterval(groupByDateUnit)
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
     return createNewSingleMapReport(reportDataByEndDate);
   }
@@ -1913,7 +1913,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setGroupByDateInterval(groupByDateUnit)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     return createNewSingleMapReport(reportDataByStartDate);
   }

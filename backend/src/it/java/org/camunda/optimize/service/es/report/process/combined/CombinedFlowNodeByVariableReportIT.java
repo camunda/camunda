@@ -88,11 +88,11 @@ public class CombinedFlowNodeByVariableReportIT extends AbstractProcessDefinitio
   }
 
   private String createFrequencyStringVariableReport(final ProcessInstanceEngineDto processInstanceDto) {
-    return createStringVariableReport(processInstanceDto, ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE);
+    return createStringVariableReport(processInstanceDto, ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_VARIABLE);
   }
 
   private String createDurationStringVariableReport(final ProcessInstanceEngineDto processInstanceDto) {
-    return createStringVariableReport(processInstanceDto, ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_VARIABLE);
+    return createStringVariableReport(processInstanceDto, ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_VARIABLE);
   }
 
   private String createStringVariableReport(final ProcessInstanceEngineDto processInstanceDto,

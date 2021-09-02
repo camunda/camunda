@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 
 public class UserTaskTotalDurationByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskReportEvaluationIT {
@@ -46,7 +46,7 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK)
       .build();
   }
 

@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecu
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByFlowNodeEndDate;
-import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountFlowNodeFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewFlowNodeFrequency;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,7 +27,7 @@ public class FlowNodeFrequencyGroupByFlowNodeEndDateCmd extends ProcessCmd<List<
   protected ProcessReportCmdExecutionPlan<List<MapResultEntryDto>> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessViewCountFlowNodeFrequency.class)
+      .view(ProcessViewFlowNodeFrequency.class)
       .groupBy(ProcessGroupByFlowNodeEndDate.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()

@@ -595,7 +595,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       .createReportData()
       .setProcessDefinitionKey(definition.getKey())
       .setProcessDefinitionVersion(definition.getVersionAsString())
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK)
       .setFilter(filters)
       .build();
   }

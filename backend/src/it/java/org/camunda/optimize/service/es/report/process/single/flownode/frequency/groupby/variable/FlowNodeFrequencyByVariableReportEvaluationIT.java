@@ -626,7 +626,7 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
       .setTenantIds(Collections.singletonList(null))
       .setVariableName(variableName)
       .setVariableType(variableType)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_VARIABLE)
       .build();
   }
 }

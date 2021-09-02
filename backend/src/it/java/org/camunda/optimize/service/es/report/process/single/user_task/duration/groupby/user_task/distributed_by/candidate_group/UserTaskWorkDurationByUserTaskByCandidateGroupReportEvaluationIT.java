@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
@@ -57,7 +57,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
       .build();
   }
 

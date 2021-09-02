@@ -17,7 +17,7 @@ public class FlowNodeFrequencyByFlowNodeStartDateByFlowNodeReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE_BY_FLOW_NODE;
+    return ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE_BY_FLOW_NODE;
   }
 
   @Override

@@ -922,7 +922,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK)
       .build();
   }
 

@@ -119,7 +119,10 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
         Double mergedAggResult = calculateMergedAggregationResult(processBuckets, aggregationType);
         viewMeasures.add(
-          CompositeCommandResult.ViewMeasure.builder().aggregationType(aggregationType).value(mergedAggResult).build());
+          CompositeCommandResult.ViewMeasure.builder()
+            .aggregationType(aggregationType)
+            .value(mergedAggResult)
+            .build());
       }
     }
     return CompositeCommandResult.ViewResult.builder().viewMeasures(viewMeasures).build();

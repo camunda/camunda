@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_BY_PROCESS;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_BY_PROCESS;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
@@ -188,7 +188,7 @@ public class FlowNodeFrequencyByFlowNodeByProcessReportEvaluationIT extends Abst
 
   private ProcessReportDataDto createReport(final List<ReportDataDefinitionDto> definitionDtos) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_BY_PROCESS)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_BY_PROCESS)
       .build();
     reportData.setDefinitions(definitionDtos);
     return reportData;

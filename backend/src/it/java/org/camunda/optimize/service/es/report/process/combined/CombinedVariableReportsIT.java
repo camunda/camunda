@@ -115,7 +115,7 @@ public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);

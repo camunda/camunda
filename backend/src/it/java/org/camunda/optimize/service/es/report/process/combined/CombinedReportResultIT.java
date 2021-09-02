@@ -43,9 +43,9 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
 
 public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
@@ -204,7 +204,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   public void correctCombinedInstanceCount_differentProcessDefinitions() {
     // given report for first definition
     final SingleProcessReportDefinitionRequestDto singleReport1 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
       AggregateByDateUnit.DAY,
       createNonSuspendedInstancesOnlyFilter()
     );
@@ -216,7 +216,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
     // and report for second definition (with no instances in it)
     final SingleProcessReportDefinitionRequestDto singleReport2 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
       AggregateByDateUnit.DAY
     );
     singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
@@ -225,7 +225,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
     // and a report for a second definition
     final SingleProcessReportDefinitionRequestDto singleReport3 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
       AggregateByDateUnit.DAY
     );
     singleReport3.getData().setProcessDefinitionKey("otherDef");
@@ -251,12 +251,12 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   public void correctCombinedInstanceCount_sameDefinition_distinctSingleReportInstances() {
     // given
     final SingleProcessReportDefinitionRequestDto singleReport1 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
       AggregateByDateUnit.DAY,
       createNonSuspendedInstancesOnlyFilter()
     );
     final SingleProcessReportDefinitionRequestDto singleReport2 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
       AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
@@ -288,11 +288,11 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   public void correctCombinedInstanceCount_sameDefinition_overlappingSingleReportInstances() {
     // given
     final SingleProcessReportDefinitionRequestDto singleReport1 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
       AggregateByDateUnit.DAY
     );
     final SingleProcessReportDefinitionRequestDto singleReport2 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
       AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
@@ -325,12 +325,12 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   public void correctCombinedInstanceCount_emptySingleReportInstanceCounts() {
     // given
     final SingleProcessReportDefinitionRequestDto singleReport1 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
       AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
     final SingleProcessReportDefinitionRequestDto singleReport2 = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
       AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
@@ -368,17 +368,17 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   private static Stream<Pair<AggregateByDateUnit, List<SingleProcessReportDefinitionRequestDto>>> staticIntervalDateReportCombinationsPerUnit() {
     return staticAggregateByDateUnits().flatMap(unit -> {
       final SingleProcessReportDefinitionRequestDto runningDateReport = createReport(
-        COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
+        PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
         unit
       );
 
       final SingleProcessReportDefinitionRequestDto startDateReport = createReport(
-        COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+        PROC_INST_FREQ_GROUP_BY_START_DATE,
         unit
       );
 
       final SingleProcessReportDefinitionRequestDto endDateReport = createReport(
-        COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+        PROC_INST_FREQ_GROUP_BY_END_DATE,
         unit
       );
 
@@ -392,28 +392,28 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
   private static Stream<List<SingleProcessReportDefinitionRequestDto>> automaticIntervalDateReportCombinations() {
     final SingleProcessReportDefinitionRequestDto runningDateReport = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
+      PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
       AggregateByDateUnit.AUTOMATIC
     );
 
     final SingleProcessReportDefinitionRequestDto startDateReport = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
       AggregateByDateUnit.AUTOMATIC
     );
 
     final SingleProcessReportDefinitionRequestDto endDateReport = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      PROC_INST_FREQ_GROUP_BY_END_DATE,
       AggregateByDateUnit.AUTOMATIC
     );
 
     final SingleProcessReportDefinitionRequestDto emptyRunningDateReport = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
+      PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
       AggregateByDateUnit.AUTOMATIC,
       createSuspendedInstancesOnlyFilter()
     );
 
     final SingleProcessReportDefinitionRequestDto emptyStartDateReport = createReport(
-      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      PROC_INST_FREQ_GROUP_BY_START_DATE,
       AggregateByDateUnit.AUTOMATIC,
       createSuspendedInstancesOnlyFilter()
     );
@@ -444,7 +444,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setVariableName("dateVar")
       .setVariableType(VariableType.DATE)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .build();
   }
 

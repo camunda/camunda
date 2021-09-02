@@ -73,10 +73,10 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -180,7 +180,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
       .setVariableName("testVariable")
       .setFilter(endDateFilter)
       .setVisualization(ProcessVisualization.BAR)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_START_DATE)
       .build();
     filteredDistrByReport.getConfiguration().getCustomBucket().setBucketSize(150.0);
     filteredDistrByReport.getConfiguration().getCustomBucket().setBaseline(55.0);
@@ -198,7 +198,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     // a groupBy startDate report
     final ProcessReportDataDto byStartDateData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_START_DATE)
       .setProcessDefinitionKey(DEFINITION_KEY)
       .setProcessDefinitionVersion(DEFINITION_VERSION)
       .setGroupByDateInterval(AggregateByDateUnit.YEAR)
@@ -211,7 +211,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     // a groupBy endDate report
     final ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_END_DATE)
       .setProcessDefinitionKey(DEFINITION_KEY)
       .setProcessDefinitionVersion(DEFINITION_VERSION)
       .setGroupByDateInterval(AggregateByDateUnit.YEAR)
@@ -224,7 +224,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     // a userTask duration report
     final ProcessReportDataDto userTaskDurData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK)
       .setProcessDefinitionKey(DEFINITION_KEY)
       .setProcessDefinitionVersion(DEFINITION_VERSION)
       .build();
@@ -236,7 +236,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     // a flownode duration report
     final ProcessReportDataDto flowNodeDurData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
       .setProcessDefinitionKey(DEFINITION_KEY)
       .setProcessDefinitionVersion(DEFINITION_VERSION)
       .setVisualization(ProcessVisualization.BAR)

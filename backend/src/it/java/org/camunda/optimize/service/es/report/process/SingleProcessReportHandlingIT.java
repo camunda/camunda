@@ -35,7 +35,6 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,8 +61,8 @@ import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DURATION_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
@@ -432,7 +431,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     // which exceeds the elastic limit of 65k
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket.html
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(procInst1.getProcessDefinitionKey())
       .setProcessDefinitionVersion(procInst1.getProcessDefinitionVersion())
       .setVariableType(VariableType.DOUBLE)
@@ -543,9 +542,9 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
   private boolean isNullResultExpected(final ProcessReportDataType reportDataType) {
     return PROC_INST_DUR_GROUP_BY_NONE.equals(reportDataType)
       || PROC_INST_DUR_GROUP_BY_NONE_WITH_PART.equals(reportDataType)
-      || INCIDENT_DURATION_GROUP_BY_NONE.equals(reportDataType)
+      || INCIDENT_DUR_GROUP_BY_NONE.equals(reportDataType)
       || VARIABLE_AGGREGATION_GROUP_BY_NONE.equals(reportDataType)
-      || INCIDENT_FREQUENCY_GROUP_BY_NONE.equals(reportDataType);
+      || INCIDENT_FREQ_GROUP_BY_NONE.equals(reportDataType);
   }
 
 }

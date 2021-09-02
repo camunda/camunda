@@ -30,7 +30,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_DURATION_BY_PROCESS;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_DURATION_BY_PROCESS;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
@@ -185,7 +185,7 @@ public class ProcessInstanceFrequencyByDurationByProcessReportEvaluationIT exten
 
   private ProcessReportDataDto createReport(final List<ReportDataDefinitionDto> definitionDtos) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION_BY_PROCESS)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_DURATION_BY_PROCESS)
       .build();
     reportData.setDefinitions(definitionDtos);
     reportData.getConfiguration().getCustomBucket().setActive(true);

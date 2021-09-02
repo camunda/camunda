@@ -855,7 +855,7 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       .setTenantIds(Collections.singletonList(null))
       .setVariableName(variableName)
       .setVariableType(variableType)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_VARIABLE_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_VARIABLE_BY_FLOW_NODE)
       .build();
   }
 }

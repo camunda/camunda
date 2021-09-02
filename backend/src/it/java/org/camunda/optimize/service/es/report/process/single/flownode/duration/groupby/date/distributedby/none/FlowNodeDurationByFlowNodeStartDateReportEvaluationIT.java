@@ -22,7 +22,7 @@ public class FlowNodeDurationByFlowNodeStartDateReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE;
+    return ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE_START_DATE;
   }
 
   @Override

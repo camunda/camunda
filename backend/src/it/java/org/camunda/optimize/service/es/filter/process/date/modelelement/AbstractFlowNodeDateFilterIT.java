@@ -42,21 +42,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_VARIABLE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_VARIABLE_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_ASSIGNEE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
@@ -159,7 +159,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData =
-      buildReportData(FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_FLOW_NODE, createViewLevelDateFilterForDate2());
+      buildReportData(FLOW_NODE_FREQ_GROUP_BY_VARIABLE_BY_FLOW_NODE, createViewLevelDateFilterForDate2());
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
       reportClient.evaluateHyperMapReport(reportData).getResult();
 
@@ -210,7 +210,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     final List<ProcessFilterDto<?>> filters = createViewLevelDateFilterForDate2();
     filters.addAll(ProcessFilterBuilder.filter().fixedStartDate().start(DATE_1).end(DATE_1).add().buildList());
-    final ProcessReportDataDto reportData = buildReportData(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
+    final ProcessReportDataDto reportData = buildReportData(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
     final String reportId = reportClient.createSingleProcessReport(reportData);
 
     // when
@@ -332,7 +332,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
     final List<ProcessFilterDto<?>> filters = createInstanceLevelDateFilterForDate1(singletonList(START_EVENT));
     filters.addAll(ProcessFilterBuilder.filter().fixedStartDate().start(DATE_1).end(DATE_1).add().buildList());
-    final ProcessReportDataDto reportData = buildReportData(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
+    final ProcessReportDataDto reportData = buildReportData(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
     final String reportId = reportClient.createSingleProcessReport(reportData);
 
     // when
@@ -393,7 +393,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     // when applying an instanceFilter which excludes instance2 and a viewFilter which excludes userTask2
     final ReportResultResponseDto<List<MapResultEntryDto>> result =
       evaluateReportWithFlowNodeDateFilter(
-        ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK,
+        ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK,
         mixedLevelFilters
       );
 
@@ -486,26 +486,26 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
 
   private static Stream<Arguments> flowNodeAndUserTaskMapReportTypeAndExpectedResults() {
     return Stream.of(
-      Arguments.of(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, List.of(
+      Arguments.of(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, List.of(
         new Tuple(START_EVENT, 2.),
         new Tuple(USER_TASK_1, 2.),
         new Tuple(USER_TASK_2, 1.)
       )),
-      Arguments.of(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE, List.of(
+      Arguments.of(FLOW_NODE_DUR_GROUP_BY_FLOW_NODE, List.of(
         new Tuple(START_EVENT, 25.),
         new Tuple(USER_TASK_1, 35.),
         new Tuple(USER_TASK_2, 30.)
       )),
       Arguments.of(
-        USER_TASK_FREQUENCY_GROUP_BY_USER_TASK,
+        USER_TASK_FREQ_GROUP_BY_USER_TASK,
         List.of(new Tuple(USER_TASK_1, 2.), new Tuple(USER_TASK_2, 1.))
       ),
       Arguments.of(
-        USER_TASK_DURATION_GROUP_BY_USER_TASK,
+        USER_TASK_DUR_GROUP_BY_USER_TASK,
         List.of(new Tuple(USER_TASK_1, 35.), new Tuple(USER_TASK_2, 30.))
       ),
       Arguments.of(
-        FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION,
+        FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION,
         List.of(
           new Tuple(INSTANCE_1_START_DURATION_STRING, 1.),
           new Tuple(INSTANCE_1_USER_TASK_1_DURATION_STRING, 1.),
@@ -515,7 +515,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
         )
       ),
       Arguments.of(
-        USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION,
+        USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION,
         List.of(
           new Tuple(INSTANCE_1_USER_TASK_1_DURATION_STRING, 1.),
           new Tuple(INSTANCE_1_USER_TASK_2_DURATION_STRING, 1.),
@@ -523,44 +523,44 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
         )
       ),
       Arguments.of(
-        USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE,
+        USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE,
         singletonList(new Tuple(DATE_1_STRING, 3.))
       ),
       Arguments.of(
-        USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE,
+        USER_TASK_DUR_GROUP_BY_USER_TASK_START_DATE,
         singletonList(new Tuple(DATE_1_STRING, 33.))
       ),
       Arguments.of(
-        FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE,
+        FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE,
         singletonList(new Tuple(DATE_1_STRING, 5.))
       ),
       Arguments.of(
-        FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE,
+        FLOW_NODE_DUR_GROUP_BY_FLOW_NODE_START_DATE,
         singletonList(new Tuple(DATE_1_STRING, 30.))
       ),
       Arguments.of(
-        USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE,
+        USER_TASK_FREQ_GROUP_BY_ASSIGNEE,
         List.of(
           new Tuple(DEMO_USER, 2.),
           new Tuple(KERMIT_USER, 1.)
         )
       ),
       Arguments.of(
-        USER_TASK_DURATION_GROUP_BY_ASSIGNEE,
+        USER_TASK_DUR_GROUP_BY_ASSIGNEE,
         List.of(
           new Tuple(DEMO_USER, 25.),
           new Tuple(KERMIT_USER, 50.)
         )
       ),
       Arguments.of(
-        FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE,
+        FLOW_NODE_FREQ_GROUP_BY_VARIABLE,
         List.of(
           new Tuple(VARIABLE_1_VALUE, 3.),
           new Tuple(VARIABLE_2_VALUE, 2.)
         )
       ),
       Arguments.of(
-        FLOW_NODE_DURATION_GROUP_BY_VARIABLE,
+        FLOW_NODE_DUR_GROUP_BY_VARIABLE,
         List.of(
           new Tuple(VARIABLE_1_VALUE, 20.),
           new Tuple(VARIABLE_2_VALUE, 45.)

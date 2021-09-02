@@ -45,7 +45,7 @@ import static org.camunda.optimize.service.es.report.process.single.incident.dur
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_1;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_2;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_NAME;
@@ -700,7 +700,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(Arrays.asList(processDefinitionVersions))
-      .setReportDataType(INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE)
+      .setReportDataType(INCIDENT_FREQ_GROUP_BY_FLOW_NODE)
       .build();
   }
 

@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecu
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByProcess;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByDuration;
-import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountInstanceFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewInstanceFrequency;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public class ProcessInstanceFrequencyGroupByDurationByProcessCmd extends Process
     final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessViewCountInstanceFrequency.class)
+      .view(ProcessViewInstanceFrequency.class)
       .groupBy(ProcessGroupByDuration.class)
       .distributedBy(ProcessDistributedByProcess.class)
       .resultAsHyperMap()

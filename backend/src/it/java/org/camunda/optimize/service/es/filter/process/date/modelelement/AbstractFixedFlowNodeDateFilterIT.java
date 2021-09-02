@@ -72,7 +72,7 @@ public abstract class AbstractFixedFlowNodeDateFilterIT extends AbstractFlowNode
     // when
     final ReportResultResponseDto<List<MapResultEntryDto>> result =
       evaluateReportWithFlowNodeDateFilter(
-        ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+        ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
         rangeFilter
       );
 
@@ -107,7 +107,7 @@ public abstract class AbstractFixedFlowNodeDateFilterIT extends AbstractFlowNode
     // when
     final ReportResultResponseDto<List<MapResultEntryDto>> result =
       evaluateReportWithFlowNodeDateFilter(
-        ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+        ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
         rangeFilter
       );
 
