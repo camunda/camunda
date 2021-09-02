@@ -31,8 +31,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -41,6 +39,7 @@ import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
@@ -242,9 +241,8 @@ public final class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldStartAfterLastProcessedEventInSnapshot() throws Exception {
+  public void shouldStartAfterLastProcessedEventInSnapshot() {
     // given
-    final CountDownLatch onProcessedListenerLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onCommand(
@@ -258,21 +256,22 @@ public final class StreamProcessorReprocessingTest {
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {}
-                }),
-        (t) -> onProcessedListenerLatch.countDown());
+                }));
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(2));
 
-    onProcessedListenerLatch.await(10_000, TimeUnit.SECONDS);
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(any());
+
     streamProcessorRule.snapshot();
     streamProcessorRule.closeStreamProcessor();
+
+    Mockito.clearInvocations(streamProcessorRule.getMockStreamProcessorListener());
 
     // when
     // The processor restarts with a snapshot that was the state of the processor before it
     // was closed.
-    final List<Long> processedPositions = new ArrayList<>();
-    final CountDownLatch newProcessLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onCommand(
@@ -285,19 +284,20 @@ public final class StreamProcessorReprocessingTest {
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
-                    processedPositions.add(position);
-                    newProcessLatch.countDown();
-                  }
+                      final Consumer<SideEffectProducer> sideEffect) {}
                 }));
 
     final long position =
         streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(3));
 
     // then
-    newProcessLatch.await(10_000, TimeUnit.SECONDS);
+    final var processedCommandCaptor = ArgumentCaptor.forClass(TypedRecord.class);
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT)
+        .onProcessed(processedCommandCaptor.capture());
 
-    assertThat(processedPositions).containsExactly(position);
+    assertThat(processedCommandCaptor.getAllValues())
+        .extracting(TypedRecord::getPosition)
+        .containsExactly(position);
   }
 
   @Test
@@ -344,7 +344,6 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldUpdateLastProcessedEventWhenSnapshot() throws Exception {
     // given
-    final CountDownLatch onProcessedListenerLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onCommand(
@@ -358,14 +357,15 @@ public final class StreamProcessorReprocessingTest {
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {}
-                }),
-        (t) -> onProcessedListenerLatch.countDown());
+                }));
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     // should be processed and included in the snapshot
     final var snapshotPosition =
         streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(2));
-    onProcessedListenerLatch.await();
+
+    verify(streamProcessorRule.getMockStreamProcessorListener(), TIMEOUT.times(2))
+        .onProcessed(any());
 
     streamProcessorRule.snapshot();
     streamProcessorRule.closeStreamProcessor();

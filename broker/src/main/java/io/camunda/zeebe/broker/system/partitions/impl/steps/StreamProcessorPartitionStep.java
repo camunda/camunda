@@ -77,7 +77,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
         .eventApplierFactory(EventAppliers::new)
         .nodeId(state.getNodeId())
         .commandResponseWriter(state.getCommandResponseWriter())
-        .onProcessedListener(state.getOnProcessedListener())
+        .listener(processedCommand -> state.getOnProcessedListener().accept(processedCommand))
         .streamProcessorFactory(
             processingContext -> {
               final ActorControl actor = processingContext.getActor();

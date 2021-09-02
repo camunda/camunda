@@ -34,7 +34,6 @@ import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
@@ -127,8 +126,7 @@ public final class ProcessingStateMachine {
   private final RecordProcessorMap recordProcessorMap;
   private final TypedEventImpl typedEvent;
   private final StreamProcessorMetrics metrics;
-  private final Consumer<TypedRecord<?>> onProcessedListener;
-  private final Consumer<LoggedEvent> onSkippedListener;
+  private final StreamProcessorListener streamProcessorListener;
 
   // current iteration
   private SideEffectProducer sideEffectProducer;
@@ -167,8 +165,7 @@ public final class ProcessingStateMachine {
     responseWriter = context.getWriters().response();
 
     metrics = new StreamProcessorMetrics(partitionId);
-    onProcessedListener = context.getOnProcessedListener();
-    onSkippedListener = context.getOnSkippedListener();
+    streamProcessorListener = context.getStreamProcessorListener();
   }
 
   private void skipRecord() {
@@ -417,7 +414,7 @@ public final class ProcessingStateMachine {
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
     try {
-      onProcessedListener.accept(processedRecord);
+      streamProcessorListener.onProcessed(processedRecord);
     } catch (final Exception e) {
       LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedRecord, e);
     }
@@ -425,7 +422,7 @@ public final class ProcessingStateMachine {
 
   private void notifySkippedListener(final LoggedEvent skippedRecord) {
     try {
-      onSkippedListener.accept(skippedRecord);
+      streamProcessorListener.onSkipped(skippedRecord);
     } catch (final Exception e) {
       LOG.error(NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE, skippedRecord, metadata, e);
     }

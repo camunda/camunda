@@ -69,6 +69,10 @@ public final class StreamProcessorReplayModeTest {
     // when
     startStreamProcessor(replayUntilEnd);
 
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(getCurrentPhase(replayUntilEnd)).isEqualTo(Phase.PROCESSING));
+
     replayUntilEnd.writeBatch(
         command().processInstance(ACTIVATE_ELEMENT, RECORD),
         event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
@@ -81,8 +85,6 @@ public final class StreamProcessorReplayModeTest {
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(anyLong(), any(), any(), any(), any());
     inOrder.verifyNoMoreInteractions();
-
-    assertThat(getCurrentPhase(replayUntilEnd)).isEqualTo(Phase.PROCESSING);
   }
 
   @Test
@@ -290,10 +292,48 @@ public final class StreamProcessorReplayModeTest {
         .isEqualTo(commandPosition);
   }
 
+  @Test
+  public void shouldNotSetLastProcessedPositionIfLessThanSnapshotPosition() {
+    // given
+    final var commandPositionBeforeSnapshot = 1L;
+    final var snapshotPosition = 2L;
+
+    startStreamProcessor(replayContinuously);
+
+    replayContinuously
+        .getZeebeState()
+        .getLastProcessedPositionState()
+        .markAsProcessed(snapshotPosition);
+
+    replayContinuously.snapshot();
+    replayContinuously.closeStreamProcessor();
+
+    // when
+    startStreamProcessor(replayContinuously);
+
+    final var eventPosition =
+        replayContinuously.writeEvent(
+            ELEMENT_ACTIVATING,
+            RECORD,
+            writer -> writer.sourceRecordPosition(commandPositionBeforeSnapshot));
+
+    verify(replayContinuously.getMockStreamProcessorListener(), TIMEOUT)
+        .onReplayed(-1L, eventPosition);
+
+    // then
+    final var lastProcessedPositionState =
+        replayContinuously.getZeebeState().getLastProcessedPositionState();
+
+    assertThat(lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition())
+        .describedAs(
+            "Expected that the last processed position is not less than the snapshot position")
+        .isEqualTo(snapshotPosition);
+  }
+
   private StreamProcessor startStreamProcessor(final StreamProcessorRule streamProcessorRule) {
     return streamProcessorRule
         .withEventApplierFactory(zeebeState -> eventApplier)
-        .startTypedStreamProcessor(
+        .startTypedStreamProcessorNotAwaitOpening(
             (processors, context) ->
                 processors.onCommand(
                     ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor));
