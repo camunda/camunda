@@ -282,6 +282,8 @@ export function createBarOptions({
         labels: {
           color: getColorFor('label', isDark),
           boxWidth: 12,
+          // make sorting only by dataset index to ignore 'order' dataset option
+          sort: (a, b) => a.datasetIndex - b.datasetIndex,
         },
       },
     },

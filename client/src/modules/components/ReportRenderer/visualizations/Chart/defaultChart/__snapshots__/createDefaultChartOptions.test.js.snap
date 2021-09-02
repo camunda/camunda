@@ -14,6 +14,7 @@ Object {
       "labels": Object {
         "boxWidth": 12,
         "color": "#666",
+        "sort": [Function],
       },
       "onClick": [Function],
     },
@@ -88,6 +89,7 @@ Object {
       "labels": Object {
         "boxWidth": 12,
         "color": "#666",
+        "sort": [Function],
       },
       "onClick": [Function],
     },
