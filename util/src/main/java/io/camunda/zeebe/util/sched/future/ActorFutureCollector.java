@@ -8,6 +8,7 @@
 package io.camunda.zeebe.util.sched.future;
 
 import static java.util.Arrays.stream;
+import static java.util.Collections.emptySet;
 
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
@@ -70,7 +71,7 @@ public final class ActorFutureCollector<V>
 
   @Override
   public Set<Characteristics> characteristics() {
-    return Collections.singleton(Characteristics.CONCURRENT);
+    return emptySet();
   }
 
   private static final class CompletionWaiter<V> implements Supplier<ActorFuture<List<V>>> {
