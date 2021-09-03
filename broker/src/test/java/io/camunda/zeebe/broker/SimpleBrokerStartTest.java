@@ -86,10 +86,12 @@ public final class SimpleBrokerStartTest {
         });
 
     // when
+    systemContext.getScheduler().start();
     broker.start().join();
 
     // then
     leaderLatch.await();
     broker.close();
+    systemContext.getScheduler().stop().get();
   }
 }

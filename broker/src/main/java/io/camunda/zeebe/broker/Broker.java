@@ -67,7 +67,7 @@ public final class Broker implements AutoCloseable {
   private CompletableFuture<Broker> startFuture;
   private LeaderManagementRequestHandler managementRequestHandler;
   private CommandApiService commandHandler;
-  private ActorScheduler scheduler;
+  private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private BrokerHealthCheckService healthCheckService;
@@ -83,6 +83,7 @@ public final class Broker implements AutoCloseable {
     brokerContext = systemContext;
     partitionListeners = new ArrayList<>();
     this.springBrokerBridge = springBrokerBridge;
+    scheduler = brokerContext.getScheduler();
   }
 
   public void addPartitionListener(final PartitionListener listener) {
@@ -135,7 +136,6 @@ public final class Broker implements AutoCloseable {
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
-    startContext.addStep("actor scheduler", this::actorSchedulerStep);
     startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
@@ -200,12 +200,6 @@ public final class Broker implements AutoCloseable {
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
-  }
-
-  private AutoCloseable actorSchedulerStep() {
-    scheduler = brokerContext.getScheduler();
-    scheduler.start();
-    return () -> scheduler.stop().get();
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {

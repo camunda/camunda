@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ public class StandaloneBroker
   private final SpringBrokerBridge springBrokerBridge;
 
   private String tempFolder;
+  private SystemContext systemContext;
   private Broker broker;
 
   @Autowired
@@ -59,10 +61,15 @@ public class StandaloneBroker
   @Override
   public void run(final String... args) {
     if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
-      broker = createBrokerInBaseDirectory();
+      systemContext = createSystemContextInBaseDirectory();
     } else {
-      broker = createBrokerInTempDirectory();
+      Loggers.SYSTEM_LOGGER.info("Launching broker in temporary folder.");
+      systemContext = createSystemContextInTempDirectory();
     }
+
+    systemContext.getScheduler().start();
+
+    broker = new Broker(systemContext, springBrokerBridge);
 
     broker.start();
   }
@@ -71,31 +78,30 @@ public class StandaloneBroker
   public void onApplicationEvent(final ContextClosedEvent event) {
     try {
       broker.close();
+      systemContext.getScheduler().stop().get();
+    } catch (final ExecutionException | InterruptedException e) {
+      LOG.error(e.getMessage(), e);
     } finally {
       deleteTempDirectory();
       LogManager.shutdown();
     }
   }
 
-  private Broker createBrokerInBaseDirectory() {
+  private SystemContext createSystemContextInBaseDirectory() {
     String basePath = System.getProperty("basedir");
 
     if (basePath == null) {
       basePath = Paths.get(".").toAbsolutePath().normalize().toString();
     }
-    final var systemContext = new SystemContext(configuration, basePath, null);
-    return new Broker(systemContext, springBrokerBridge);
+    return new SystemContext(configuration, basePath, null);
   }
 
-  private Broker createBrokerInTempDirectory() {
-    Loggers.SYSTEM_LOGGER.info("Launching broker in temporary folder.");
-
+  private SystemContext createSystemContextInTempDirectory() {
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      final var systemContext = new SystemContext(configuration, tempFolder, null);
-      return new Broker(systemContext, springBrokerBridge);
+      return new SystemContext(configuration, tempFolder, null);
     } catch (final IOException e) {
-      throw new UncheckedIOException("Could not start broker", e);
+      throw new UncheckedIOException("Could not create system context", e);
     }
   }
 
