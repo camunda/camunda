@@ -18,10 +18,10 @@
         "java.class.nonPublicPartOfAPI"
       ],
       "versionIncreaseAllows": {
+        "major": {
+          "severity": "BREAKING"
+        },
         "minor": {
-          "severity": "BREAKING",
-          "regex": "true",
-          "code": "java\\..*",
           "classification": {
             "BINARY": "NON_BREAKING",
             "SOURCE": "BREAKING",
@@ -30,13 +30,11 @@
           }
         },
         "patch": {
-          "severity": "NON_BREAKING",
-          "code": "java\\..*",
           "classification": {
             "BINARY": "NON_BREAKING",
-            "SOURCE": "NON_BREAKING",
-            "SEMANTIC": "NON_BREAKING",
-            "OTHER": "NON_BREAKING"
+            "SOURCE": "BREAKING",
+            "SEMANTIC": "BREAKING",
+            "OTHER": "BREAKING"
           }
         }
       }
