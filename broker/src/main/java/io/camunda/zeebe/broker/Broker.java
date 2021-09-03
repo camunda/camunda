@@ -46,7 +46,6 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -84,14 +83,6 @@ public final class Broker implements AutoCloseable {
     brokerContext = systemContext;
     partitionListeners = new ArrayList<>();
     this.springBrokerBridge = springBrokerBridge;
-  }
-
-  public Broker(
-      final BrokerCfg cfg,
-      final String basePath,
-      final ActorClock clock,
-      final SpringBrokerBridge springBrokerBridge) {
-    this(new SystemContext(cfg, basePath, clock), springBrokerBridge);
   }
 
   public void addPartitionListener(final PartitionListener listener) {

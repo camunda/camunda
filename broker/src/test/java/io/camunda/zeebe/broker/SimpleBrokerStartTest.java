@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -41,14 +42,14 @@ public final class SimpleBrokerStartTest {
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
 
     // when
+
     final var catchedThrownBy =
         assertThatThrownBy(
-            () ->
-                new Broker(
-                    brokerCfg,
-                    newTemporaryFolder.getAbsolutePath(),
-                    null,
-                    TEST_SPRING_BROKER_BRIDGE));
+            () -> {
+              final var systemContext =
+                  new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+              new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
+            });
 
     // then
     catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
@@ -59,10 +60,10 @@ public final class SimpleBrokerStartTest {
     // given
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
+    final var systemContext =
+        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
 
-    final var broker =
-        new Broker(
-            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
+    final var broker = new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
     broker.addPartitionListener(
         new PartitionListener() {

@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
@@ -273,12 +274,10 @@ public final class ClusteringRule extends ExternalResource {
   private Broker createBroker(final int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
-    final Broker broker =
-        new Broker(
-            brokerCfg,
-            brokerBase.getAbsolutePath(),
-            controlledClock,
-            getSpringBrokerBridge(nodeId));
+    final var systemContext =
+        new SystemContext(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
+
+    final Broker broker = new Broker(systemContext, getSpringBrokerBridge(nodeId));
 
     broker.addPartitionListener(new LeaderListener(partitionLatch, nodeId));
     new Thread(broker::start).start();
