@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.shared.EnvironmentHelper;
 import io.camunda.zeebe.util.FileUtil;
@@ -82,8 +83,8 @@ public class StandaloneBroker
     if (basePath == null) {
       basePath = Paths.get(".").toAbsolutePath().normalize().toString();
     }
-
-    return new Broker(configuration, basePath, null, springBrokerBridge);
+    final var systemContext = new SystemContext(configuration, basePath, null);
+    return new Broker(systemContext, springBrokerBridge);
   }
 
   private Broker createBrokerInTempDirectory() {
@@ -91,7 +92,8 @@ public class StandaloneBroker
 
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      return new Broker(configuration, tempFolder, null, springBrokerBridge);
+      final var systemContext = new SystemContext(configuration, tempFolder, null);
+      return new Broker(systemContext, springBrokerBridge);
     } catch (final IOException e) {
       throw new UncheckedIOException("Could not start broker", e);
     }

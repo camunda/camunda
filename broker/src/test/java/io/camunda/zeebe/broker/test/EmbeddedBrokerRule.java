@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
@@ -213,13 +214,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         throw new RuntimeException("Unable to open configuration", e);
       }
     }
-
-    broker =
-        new Broker(
-            brokerCfg,
-            newTemporaryFolder.getAbsolutePath(),
-            controlledActorClock,
-            springBrokerBridge);
+    final var systemContext =
+        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    broker = new Broker(systemContext, springBrokerBridge);
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     broker.addPartitionListener(new LeaderPartitionListener(latch));

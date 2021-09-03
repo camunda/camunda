@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
@@ -202,12 +203,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void startBroker() {
-    broker =
-        new Broker(
-            brokerCfg,
-            newTemporaryFolder.getAbsolutePath(),
-            controlledActorClock,
-            springBrokerBridge);
+    final var systemContext =
+        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+
+    broker = new Broker(systemContext, springBrokerBridge);
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     broker.addPartitionListener(new LeaderPartitionListener(latch));
