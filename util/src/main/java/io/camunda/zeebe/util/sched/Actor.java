@@ -11,9 +11,10 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public abstract class Actor implements CloseableSilently, AsyncClosable {
+public abstract class Actor implements CloseableSilently, AsyncClosable, ConcurrencyControl {
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
@@ -91,5 +92,16 @@ public abstract class Actor implements CloseableSilently, AsyncClosable {
 
   public void onActorFailed() {
     // clean ups
+  }
+
+  @Override
+  public <T> void runOnCompletion(
+      final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
+    actor.runOnCompletion(future, callback);
+  }
+
+  @Override
+  public void submit(final Runnable action) {
+    actor.submit(action);
   }
 }

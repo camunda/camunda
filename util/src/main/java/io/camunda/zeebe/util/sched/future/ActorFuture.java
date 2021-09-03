@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 /** interface for actor futures */
-public interface ActorFuture<V> extends Future<V> {
+public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
   void complete(V value);
 
   void completeExceptionally(String failure, Throwable throwable);
@@ -54,4 +54,13 @@ public interface ActorFuture<V> extends Future<V> {
   boolean isCompletedExceptionally();
 
   Throwable getException();
+
+  @Override
+  default void accept(final V value, final Throwable throwable) {
+    if (throwable != null) {
+      completeExceptionally(throwable);
+    } else {
+      complete(value);
+    }
+  }
 }

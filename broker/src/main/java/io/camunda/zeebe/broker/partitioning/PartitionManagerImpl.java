@@ -29,10 +29,12 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +105,16 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   @Override
   public ManagedPartitionGroup getPartitionGroup() {
     return partitionGroup;
+  }
+
+  public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
+    final var adminAccess =
+        new MultiPartitionAdminAccess(
+            concurrencyControl,
+            partitions.stream()
+                .map(ZeebePartition::createAdminAccess)
+                .collect(Collectors.toList()));
+    return adminAccess;
   }
 
   public CompletableFuture<Void> start() {

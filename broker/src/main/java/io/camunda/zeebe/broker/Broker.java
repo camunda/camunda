@@ -201,8 +201,12 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable addBrokerAdminService() {
-    final var adminService = new BrokerAdminServiceImpl(partitionManager.getPartitions());
+    final var adminService = new BrokerAdminServiceImpl();
     scheduleActor(adminService);
+
+    adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
+    adminService.injectPartitionInfoSource(partitionManager.getPartitions());
+
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
