@@ -31,17 +31,17 @@ import java.util.stream.Collector;
  * individual futures.
  *
  * <pre>
- * var aggregated = of(future1, future2).stream().collect(new ActorFutureAggregator<>(concurrencyControl));
+ * var aggregated = of(future1, future2).stream().collect(new ActorFutureCollector<>(concurrencyControl));
  * </pre>
  *
  * @param <V> type of the value of each future
  */
-public final class ActorFutureAggregator<V>
+public final class ActorFutureCollector<V>
     implements Collector<ActorFuture<V>, List<ActorFuture<V>>, ActorFuture<List<V>>> {
 
   private final ConcurrencyControl concurrencyControl;
 
-  public ActorFutureAggregator(final ConcurrencyControl concurrencyControl) {
+  public ActorFutureCollector(final ConcurrencyControl concurrencyControl) {
     this.concurrencyControl = Objects.requireNonNull(concurrencyControl);
   }
 

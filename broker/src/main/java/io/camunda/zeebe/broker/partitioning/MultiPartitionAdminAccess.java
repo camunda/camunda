@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.ActorFutureAggregator;
+import io.camunda.zeebe.util.sched.future.ActorFutureCollector;
 import java.util.List;
 import java.util.function.Function;
 
@@ -58,7 +58,7 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
     final var aggregatedResult =
         partitions.stream()
             .map(functionToCall)
-            .collect(new ActorFutureAggregator<>(concurrencyControl));
+            .collect(new ActorFutureCollector<>(concurrencyControl));
 
     concurrencyControl.runOnCompletion(
         aggregatedResult,

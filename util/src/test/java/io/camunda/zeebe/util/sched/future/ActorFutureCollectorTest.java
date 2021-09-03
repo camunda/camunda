@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ActorFutureAggregatorTest {
+public class ActorFutureCollectorTest {
 
   private ActorFuture<String> future1;
   private ActorFuture<String> future2;
@@ -31,7 +31,7 @@ public class ActorFutureAggregatorTest {
     future2 = concurrencyControl.createFuture();
 
     aggregatedFuture =
-        Stream.of(future1, future2).collect(new ActorFutureAggregator<>(concurrencyControl));
+        Stream.of(future1, future2).collect(new ActorFutureCollector<>(concurrencyControl));
   }
 
   @Test
