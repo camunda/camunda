@@ -84,6 +84,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -123,6 +124,7 @@ public final class ClusteringRule extends ExternalResource {
   private CountDownLatch partitionLatch;
   private final Map<Integer, Leader> partitionLeader;
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
+  private final Map<Integer, SystemContext> systemContexts;
 
   public ClusteringRule() {
     this(3);
@@ -168,9 +170,11 @@ public final class ClusteringRule extends ExternalResource {
     controlledClock = new ControlledActorClock();
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
+    systemContexts = new HashMap<>();
     partitionLeader = new ConcurrentHashMap<>();
     logstreams = new ConcurrentHashMap<>();
     springBrokerBridge = new HashMap<>();
+
     partitionIds =
         IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
             .boxed()
@@ -276,11 +280,17 @@ public final class ClusteringRule extends ExternalResource {
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final var systemContext =
         new SystemContext(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
+    systemContexts.put(nodeId, systemContext);
 
     final Broker broker = new Broker(systemContext, getSpringBrokerBridge(nodeId));
 
     broker.addPartitionListener(new LeaderListener(partitionLatch, nodeId));
-    new Thread(broker::start).start();
+    new Thread(
+            () -> {
+              systemContext.getScheduler().start();
+              broker.start();
+            })
+        .start();
     return broker;
   }
 
@@ -630,6 +640,14 @@ public final class ClusteringRule extends ExternalResource {
           broker.getConfig().getNetwork().getCommandApi().getAddress();
       broker.close();
       waitUntilBrokerIsRemovedFromTopology(socketAddress);
+      try {
+        final var systemContext = systemContexts.remove(nodeId);
+        if (systemContext != null) {
+          systemContext.getScheduler().stop().get();
+        }
+      } catch (final InterruptedException | ExecutionException e) {
+        LangUtil.rethrowUnchecked(e);
+      }
     }
   }
 
