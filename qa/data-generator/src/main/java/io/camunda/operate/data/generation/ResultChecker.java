@@ -22,7 +22,7 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 @Component
 public class ResultChecker {
 
-  private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
+  private static final Logger logger = LoggerFactory.getLogger(ResultChecker.class);
 
   private static final double PRECISION_RATE = 0.01;
 

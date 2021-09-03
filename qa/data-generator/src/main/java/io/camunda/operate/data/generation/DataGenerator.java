@@ -248,7 +248,7 @@ public class DataGenerator {
             //third part of all process instances will get big variables
             vars = createBigVarsWithSuffix(ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD);
           } else {
-            vars = "{\"smallVar\": \"value1\"}";
+            vars = "{\"var1\": \"value1\"}";
           }
           futures.put(ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), vars));
         } catch (InterruptedException e) {

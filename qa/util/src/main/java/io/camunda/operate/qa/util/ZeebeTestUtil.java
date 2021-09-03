@@ -78,21 +78,27 @@ public abstract class ZeebeTestUtil {
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
     final int[] countCompleted = { 0 };
     JobWorker jobWorker = client.newWorker()
-      .jobType(jobType)
-      .handler((jobClient, job) -> {
-        if (countCompleted[0] < count) {
-          CompleteJobCommandStep1 completeJobCommandStep1 = jobClient.newCompleteCommand(job.getKey());
-          if (payload != null) {
-            completeJobCommandStep1 = completeJobCommandStep1.variables(payload);
+        .jobType(jobType)
+        .handler((jobClient, job) -> {
+          try {
+            if (countCompleted[0] < count) {
+              CompleteJobCommandStep1 completeJobCommandStep1 = jobClient
+                  .newCompleteCommand(job.getKey());
+              if (payload != null) {
+                completeJobCommandStep1 = completeJobCommandStep1.variables(payload);
+              }
+              completeJobCommandStep1.send().join();
+              logger.debug("Task completed jobKey [{}]", job.getKey());
+              countCompleted[0]++;
+              if (countCompleted[0] % 1000 == 0) {
+                logger.info("{} jobs completed ", countCompleted[0]);
+              }
+            }
+          } catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+            throw ex;
           }
-          completeJobCommandStep1.send().join();
-          logger.debug("Task completed jobKey [{}]", job.getKey());
-          countCompleted[0]++;
-          if (countCompleted[0] % 1000 == 0) {
-            logger.info("{} jobs completed ", countCompleted[0]);
-          }
-        }
-      })
+        })
       .name(workerName)
       .timeout(Duration.ofSeconds(2))
       .open();

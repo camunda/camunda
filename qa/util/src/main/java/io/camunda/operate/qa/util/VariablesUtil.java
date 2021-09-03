@@ -46,6 +46,7 @@ public abstract class VariablesUtil {
 
   public static String createALotOfVarsPayload() {
     Map<String, String> payload = new HashMap<>();
+    payload.put("var1", "value1");
     int numberOfVars = 600;
     IntStream.range(0, numberOfVars)
         .forEach(value -> {
