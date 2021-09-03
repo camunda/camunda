@@ -86,15 +86,15 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var serviceTaskInstanceKey = job.getElementId();
     final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
 
+    final var errorCode = job.getErrorCodeBuffer();
+    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
+
     if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, stateWriter, serviceTaskInstance);
+      raiseIncident(jobKey, job, stateWriter, foundCatchEvent.getLeft());
       return;
     }
 
-    final var errorCode = job.getErrorCodeBuffer();
-
-    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent);
+    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get());
   }
 
   private void acceptCommand(
@@ -111,7 +111,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var errorCode = job.getErrorCodeBuffer();
     final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
 
-    if (foundCatchEvent == null) {
+    if (foundCatchEvent.isLeft()) {
       job.setElementId(NO_CATCH_EVENT_FOUND);
 
       commandControl.accept(JobIntent.ERROR_THROWN, job);
@@ -120,11 +120,11 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
           RejectionType.INVALID_STATE,
           "Expected to find active service task, but was " + serviceTaskInstance);
     } else if (!eventScopeInstanceState.isAcceptingEvent(
-        foundCatchEvent.getElementInstance().getKey())) {
+        foundCatchEvent.get().getElementInstance().getKey())) {
       commandControl.reject(
           RejectionType.INVALID_STATE,
           "Expected to find event scope that is accepting events, but was "
-              + foundCatchEvent.getElementInstance());
+              + foundCatchEvent.get().getElementInstance());
     } else {
       commandControl.accept(JobIntent.ERROR_THROWN, job);
     }
@@ -138,30 +138,25 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final long key,
       final JobRecord job,
       final StateWriter stateWriter,
-      final ElementInstance serviceTaskInstance) {
+      final List<DirectBuffer> availableCatchEvents) {
 
     final DirectBuffer jobErrorMessage = job.getErrorMessageBuffer();
-    final List<DirectBuffer> availableCatchEvents =
-        stateAnalyzer.getAvailableCatchEvents(serviceTaskInstance);
-    DirectBuffer incidentErrorMessage =
+    final DirectBuffer incidentErrorMessage =
         wrapString(
             String.format(
-                "An error was thrown with the code '%s' but not caught. Available error events are %s",
+                "An error was thrown with the code '%s'%s but not caught.%s",
                 job.getErrorCode(),
-                availableCatchEvents.stream()
-                    .map(BufferUtil::bufferAsString)
-                    .collect(Collectors.toList())));
-    if (jobErrorMessage.capacity() > 0) {
-      incidentErrorMessage =
-          wrapString(
-              String.format(
-                  "An error was thrown with the code '%s' with message '%s', but not caught. Available error events are %s",
-                  job.getErrorCode(),
-                  BufferUtil.bufferAsString(jobErrorMessage),
-                  availableCatchEvents.stream()
-                      .map(BufferUtil::bufferAsString)
-                      .collect(Collectors.toList())));
-    }
+                jobErrorMessage.capacity() > 0
+                    ? String.format(
+                        " with message '%s',", BufferUtil.bufferAsString(jobErrorMessage))
+                    : "",
+                availableCatchEvents.isEmpty()
+                    ? ""
+                    : String.format(
+                        " Available error events are [%s]",
+                        availableCatchEvents.stream()
+                            .map(BufferUtil::bufferAsString)
+                            .collect(Collectors.joining(", ")))));
 
     incidentEvent.reset();
     incidentEvent

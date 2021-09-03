@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import static io.camunda.zeebe.protocol.record.intent.JobIntent.ERROR_THROWN;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -14,11 +16,13 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -57,6 +61,27 @@ public final class ErrorEventIncidentTest {
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
           .endEvent()
+          .done();
+  private static final BpmnModelInstance BOUNDARY_EVENT_SUBPROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .subProcess(
+              "subprocess",
+              subprocess ->
+                  subprocess
+                      .embeddedSubProcess()
+                      .startEvent("start_subprocess")
+                      .serviceTask("task_in_subprocess", b -> b.zeebeJobType(JOB_TYPE))
+                      .boundaryEvent(
+                          "error_in_subprocess", event -> event.error("error_in_subprocess"))
+                      .endEvent("end_boundary_in_subprocess")
+                      .moveToActivity("task_in_subprocess")
+                      .endEvent("end_subprocess")
+                      .subProcessDone())
+          .boundaryEvent("error", b -> b.error("error"))
+          .endEvent("end_boundary")
+          .moveToActivity("subprocess")
+          .endEvent("end")
           .done();
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
@@ -158,9 +183,7 @@ public final class ErrorEventIncidentTest {
                 .getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            String.format(
-                "An error was thrown with the code '%s' but not caught. Available error events are []",
-                ERROR_CODE))
+            String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
         .hasElementId("NO_CATCH_EVENT_FOUND");
   }
 
@@ -311,5 +334,44 @@ public final class ErrorEventIncidentTest {
         .extracting(Record::getIntent)
         .describedAs("job that had error_thrown is completed")
         .containsExactly(JobIntent.CREATED, JobIntent.ERROR_THROWN, JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenNoCatchEventFoundWithBoundaryEventsInMultipleScopes() {
+    // given
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_SUBPROCESS).deploy();
+
+    final long instanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var jobKey =
+        jobRecords(JobIntent.CREATED)
+            .withType(JOB_TYPE)
+            .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<JobRecordValue> result =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withErrorCode("unknown_error_code")
+            .withErrorMessage("error message")
+            .throwError();
+
+    // then
+    Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
+    Assertions.assertThat(result.getValue())
+        .hasErrorCode("unknown_error_code")
+        .hasErrorMessage("error message");
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords()
+                .withJobKey(jobKey)
+                .withIntent(IncidentIntent.CREATED)
+                .getFirst()
+                .getValue())
+        .hasErrorMessage(
+            "An error was thrown with the code 'unknown_error_code' with message 'error message', but not caught."
+                + " Available error events are [error_in_subprocess, error]");
   }
 }
