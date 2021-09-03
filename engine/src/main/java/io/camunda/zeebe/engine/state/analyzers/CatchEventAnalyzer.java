@@ -36,10 +36,6 @@ public final class CatchEventAnalyzer {
     this.elementInstanceState = elementInstanceState;
   }
 
-  public boolean hasCatchEvent(final DirectBuffer errorCode, final ElementInstance instance) {
-    return findCatchEvent(errorCode, instance).isRight();
-  }
-
   public Either<List<DirectBuffer>, CatchEventTuple> findCatchEvent(
       final DirectBuffer errorCode, ElementInstance instance) {
     // assuming that error events are used rarely
