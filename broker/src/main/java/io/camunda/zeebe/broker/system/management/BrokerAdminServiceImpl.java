@@ -89,12 +89,13 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   public Map<Integer, PartitionStatus> getPartitionStatus() {
     final CompletableFuture<Map<Integer, PartitionStatus>> future = new CompletableFuture<>();
     final Map<Integer, PartitionStatus> partitionStatuses = new ConcurrentHashMap<>();
-    if (partitions.isEmpty()) {
-      // can happen before partitions are injected
-      future.complete(partitionStatuses);
-    } else {
-      actor.call(
-          () -> {
+
+    actor.call(
+        () -> {
+          if (partitions.isEmpty()) {
+            // can happen before partitions are injected
+            future.complete(partitionStatuses);
+          } else {
             final var statusFutures =
                 partitions.stream()
                     .map(
@@ -109,8 +110,9 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                     .collect(Collectors.toList());
             CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
                 .thenAccept(r -> future.complete(partitionStatuses));
-          });
-    }
+          }
+        });
+
     return future.join();
   }
 

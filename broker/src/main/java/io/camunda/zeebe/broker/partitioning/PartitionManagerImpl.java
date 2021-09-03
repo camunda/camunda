@@ -108,9 +108,13 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   }
 
   public PartitionAdminAccess createAdminAccess(final ConcurrencyControl concurrencyControl) {
-    return new MultiPartitionAdminAccess(
-        concurrencyControl,
-        partitions.stream().map(ZeebePartition::createAdminAccess).collect(Collectors.toList()));
+    final var adminAccess =
+        new MultiPartitionAdminAccess(
+            concurrencyControl,
+            partitions.stream()
+                .map(ZeebePartition::createAdminAccess)
+                .collect(Collectors.toList()));
+    return adminAccess;
   }
 
   public CompletableFuture<Void> start() {

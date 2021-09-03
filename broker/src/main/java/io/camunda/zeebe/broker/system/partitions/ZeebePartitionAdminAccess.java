@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import org.slf4j.Logger;
 
@@ -32,7 +31,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> takeSnapshot() {
-    final var completed = new CompletableActorFuture<Void>();
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
 
     concurrencyControl.submit(
         () -> {
@@ -49,7 +48,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> pauseExporting() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
     concurrencyControl.submit(
         () -> {
           try {
@@ -70,7 +69,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> resumeExporting() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
     concurrencyControl.submit(
         () -> {
           try {
@@ -90,7 +89,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> pauseProcessing() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
     concurrencyControl.submit(
         () -> {
           try {
@@ -111,7 +110,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> resumeProcessing() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    final ActorFuture<Void> completed = concurrencyControl.createFuture();
     concurrencyControl.submit(
         () -> {
           try {
