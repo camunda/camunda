@@ -19,7 +19,6 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,10 +42,9 @@ public final class SystemContext {
       "Disabling explicit flushing is an experimental feature and can lead to inconsistencies "
           + "and/or data loss! Please refer to the documentation whether or not you should use this!";
 
-  protected final BrokerCfg brokerCfg;
+  private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
-  private Duration stepTimeout;
 
   public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
     this.brokerCfg = brokerCfg;
@@ -60,14 +58,11 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    stepTimeout = brokerCfg.getStepTimeout();
-
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
     scheduler = initScheduler(clock, brokerId);
-    setStepTimeout(stepTimeout);
   }
 
   private void validateConfiguration() {
@@ -249,13 +244,5 @@ public final class SystemContext {
 
   public Map<String, String> getDiagnosticContext() {
     return diagnosticContext;
-  }
-
-  public Duration getStepTimeout() {
-    return stepTimeout;
-  }
-
-  private void setStepTimeout(final Duration stepTimeout) {
-    this.stepTimeout = stepTimeout;
   }
 }
