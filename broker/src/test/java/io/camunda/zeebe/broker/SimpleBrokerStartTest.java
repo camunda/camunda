@@ -17,7 +17,6 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,24 +32,6 @@ public final class SimpleBrokerStartTest {
   @Before
   public void setup() throws Exception {
     newTemporaryFolder = temporaryFolder.newFolder();
-  }
-
-  @Test
-  public void shouldFailToStartBrokerWithSmallTimeout() {
-    // given
-    final var brokerCfg = new BrokerCfg();
-    assignSocketAddresses(brokerCfg);
-    brokerCfg.setStepTimeout(Duration.ofMillis(1));
-
-    final var broker =
-        new Broker(
-            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
-
-    // when
-    final var catchedThrownBy = assertThatThrownBy(() -> broker.start().join());
-
-    // then
-    catchedThrownBy.hasRootCauseInstanceOf(TimeoutException.class);
   }
 
   @Test
