@@ -207,6 +207,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void tearDown() {
     processingContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
+    replayStateMachine.close();
   }
 
   private void healthCheckTick() {
