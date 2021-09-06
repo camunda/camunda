@@ -9,10 +9,12 @@ package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.transport.RequestHandler;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.EnumSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -24,10 +26,11 @@ import org.slf4j.Logger;
 public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-  private static final String API_TOPIC_FORMAT = "command-api-%d";
+  private static final String API_TOPIC_FORMAT = "%s-api-%d";
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
+  private final Int2ObjectHashMap<EnumSet<RequestType>> partitionsSubscriptions;
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
       partitionsRequestMap;
   private final AtomicLong requestCount;
@@ -37,6 +40,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   public AtomixServerTransport(final int nodeId, final MessagingService messagingService) {
     this.messagingService = messagingService;
+    partitionsSubscriptions = new Int2ObjectHashMap<>();
     partitionsRequestMap = new Int2ObjectHashMap<>();
     requestCount = new AtomicLong(0);
     reusableRequestBuffer = new UnsafeBuffer(0, 0);
@@ -62,17 +66,23 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   @Override
-  public ActorFuture<Void> subscribe(final int partitionId, final RequestHandler requestHandler) {
+  public ActorFuture<Void> subscribe(
+      final int partitionId, final RequestType requestType, final RequestHandler requestHandler) {
     return actor.call(
         () -> {
-          final var topicName = topicName(partitionId);
+          final var topicName = topicName(partitionId, requestType);
           if (LOG.isTraceEnabled()) {
             LOG.trace("Subscribe for topic {}", topicName);
           }
-          partitionsRequestMap.put(partitionId, new Long2ObjectHashMap<>());
+          subscribePartitionToRequestType(partitionId, requestType);
+          if (!partitionsRequestMap.containsKey(partitionId)) {
+            // init partitions request map only when it wasn't already initialized before
+            partitionsRequestMap.put(partitionId, new Long2ObjectHashMap<>());
+          }
           messagingService.registerHandler(
               topicName,
-              (sender, request) -> handleAtomixRequest(request, partitionId, requestHandler));
+              (sender, request) ->
+                  handleAtomixRequest(request, partitionId, requestType, requestHandler));
         });
   }
 
@@ -81,13 +91,25 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     return actor.call(() -> removePartition(partitionId));
   }
 
-  private void removePartition(final int partitionId) {
-    final var topicName = topicName(partitionId);
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("Unsubscribe from topic {}", topicName);
-    }
+  private void subscribePartitionToRequestType(
+      final int partitionId, final RequestType requestType) {
+    final var requestTypes =
+        partitionsSubscriptions.getOrDefault(partitionId, EnumSet.noneOf(RequestType.class));
+    requestTypes.add(requestType);
+    partitionsSubscriptions.put(partitionId, requestTypes);
+  }
 
-    messagingService.unregisterHandler(topicName);
+  private void removePartition(final int partitionId) {
+    partitionsSubscriptions
+        .remove(partitionId)
+        .forEach(
+            requestType -> {
+              final var topicName = topicName(partitionId, requestType);
+              if (LOG.isTraceEnabled()) {
+                LOG.trace("Unsubscribe from topic {}", topicName);
+              }
+              messagingService.unregisterHandler(topicName);
+            });
 
     final var requestMap = partitionsRequestMap.remove(partitionId);
     if (requestMap != null) {
@@ -96,7 +118,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   private CompletableFuture<byte[]> handleAtomixRequest(
-      final byte[] requestBytes, final int partitionId, final RequestHandler requestHandler) {
+      final byte[] requestBytes,
+      final int partitionId,
+      final RequestType requestType,
+      final RequestHandler requestHandler) {
     final var completableFuture = new CompletableFuture<byte[]>();
     actor.call(
         () -> {
@@ -114,7 +139,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             requestHandler.onRequest(
                 this, partitionId, requestId, reusableRequestBuffer, 0, requestBytes.length);
             if (LOG.isTraceEnabled()) {
-              LOG.trace("Handled request {} for topic {}", requestId, topicName(partitionId));
+              LOG.trace(
+                  "Handled request {} for topic {}",
+                  requestId,
+                  topicName(partitionId, requestType));
             }
             // we only add the request to the map after successful handling
             requestMap.put(requestId, completableFuture);
@@ -155,21 +183,17 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           final var completableFuture = requestMap.remove(requestId);
           if (completableFuture != null) {
             if (LOG.isTraceEnabled()) {
-              LOG.trace(
-                  "Send response to request {} for topic {}", requestId, topicName(partitionId));
+              LOG.trace("Send response to request {}", requestId);
             }
 
             completableFuture.complete(bytes);
           } else if (LOG.isTraceEnabled()) {
-            LOG.trace(
-                "Wasn't able to send response to request {} for topic {}",
-                requestId,
-                topicName(partitionId));
+            LOG.trace("Wasn't able to send response to request {}", requestId);
           }
         });
   }
 
-  static String topicName(final int partitionId) {
-    return String.format(API_TOPIC_FORMAT, partitionId);
+  static String topicName(final int partitionId, final RequestType requestType) {
+    return String.format(API_TOPIC_FORMAT, requestType, partitionId);
   }
 }

@@ -7,15 +7,15 @@
  */
 package io.camunda.zeebe.transport;
 
-import io.camunda.zeebe.util.buffer.BufferWriter;
+public enum RequestType {
+  COMMAND;
 
-public interface ClientRequest extends BufferWriter {
+  public static RequestType from(final String name) {
+    return RequestType.valueOf(name.toUpperCase());
+  }
 
-  /** @return the partition id to which the request should be send to */
-  int getPartitionId();
-
-  /** @return the type of this request */
-  default RequestType getRequestType() {
-    return RequestType.COMMAND;
+  @Override
+  public String toString() {
+    return name().toLowerCase();
   }
 }
