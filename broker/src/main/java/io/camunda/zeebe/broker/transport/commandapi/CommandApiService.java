@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -79,7 +80,7 @@ public final class CommandApiService extends Actor
 
                       final var requestLimiter = limiter.getLimiter(partitionId);
                       requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
-                      serverTransport.subscribe(partitionId, requestHandler);
+                      serverTransport.subscribe(partitionId, RequestType.COMMAND, requestHandler);
                       future.complete(null);
                     } else {
                       Loggers.SYSTEM_LOGGER.error(
