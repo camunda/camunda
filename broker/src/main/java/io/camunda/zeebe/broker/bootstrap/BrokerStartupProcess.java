@@ -7,34 +7,50 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupProcess;
+import java.util.List;
 import org.slf4j.Logger;
 
 public final class BrokerStartupProcess {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
+  private final BrokerInfo brokerInfo;
+  private final SpringBrokerBridge springBrokerBridge;
   private final ConcurrencyControl concurrencyControl;
+  private final ActorSchedulingService actorSchedulingService;
 
   private final StartupProcess<BrokerStartupContext> startupProcess =
-      new StartupProcess<>(LOG, emptyList());
+      new StartupProcess<>(LOG, List.of(new MonitoringServerStep()));
+  private BrokerStartupContext context;
 
-  public BrokerStartupProcess(final ConcurrencyControl concurrencyControl) {
+  public BrokerStartupProcess(
+      final BrokerInfo brokerInfo,
+      final SpringBrokerBridge springBrokerBridge,
+      final ConcurrencyControl concurrencyControl,
+      final ActorSchedulingService actorSchedulingService) {
+    this.brokerInfo = brokerInfo;
+    this.springBrokerBridge = springBrokerBridge;
     this.concurrencyControl = requireNonNull(concurrencyControl);
+    this.actorSchedulingService = actorSchedulingService;
   }
 
   public ActorFuture<BrokerContext> start() {
     final ActorFuture<BrokerContext> result = concurrencyControl.createFuture();
 
-    final var startupContext = new BrokerStartupContextImpl();
+    context =
+        new BrokerStartupContextImpl(
+            brokerInfo, springBrokerBridge, concurrencyControl, actorSchedulingService);
 
-    final var startupFuture = startupProcess.startup(concurrencyControl, startupContext);
+    final var startupFuture = startupProcess.startup(concurrencyControl, context);
 
     concurrencyControl.runOnCompletion(
         startupFuture,
@@ -42,6 +58,7 @@ public final class BrokerStartupProcess {
           if (error != null) {
             result.completeExceptionally(error);
           } else {
+            context = bsc;
             result.complete(createBrokerContext(bsc));
           }
         });
@@ -51,12 +68,10 @@ public final class BrokerStartupProcess {
   public ActorFuture<Void> stop() {
     final ActorFuture<Void> result = concurrencyControl.createFuture();
 
-    final var shutdownContext = new BrokerStartupContextImpl();
-
-    final var startupFuture = startupProcess.shutdown(concurrencyControl, shutdownContext);
+    final var shutdownFuture = startupProcess.shutdown(concurrencyControl, context);
 
     concurrencyControl.runOnCompletion(
-        startupFuture,
+        shutdownFuture,
         (bsc, error) -> {
           if (error != null) {
             result.completeExceptionally(error);
@@ -68,6 +83,6 @@ public final class BrokerStartupProcess {
   }
 
   private BrokerContext createBrokerContext(final BrokerStartupContext bsc) {
-    return new BrokerContextImpl();
+    return new BrokerContextImpl(bsc.getHealthCheckService(), bsc.getPartitionListeners());
   }
 }

@@ -7,4 +7,33 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-public final class BrokerContextImpl implements BrokerContext {}
+import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.requireNonNull;
+
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import java.util.Collection;
+import java.util.List;
+
+public final class BrokerContextImpl implements BrokerContext {
+
+  private final BrokerHealthCheckService healthCheckService;
+  private final List<PartitionListener> partitionListeners;
+
+  public BrokerContextImpl(
+      final BrokerHealthCheckService healthCheckService,
+      final List<PartitionListener> partitionListeners) {
+    this.healthCheckService = requireNonNull(healthCheckService);
+    this.partitionListeners = unmodifiableList(requireNonNull(partitionListeners));
+  }
+
+  @Override
+  public BrokerHealthCheckService getHealthCheckService() {
+    return healthCheckService;
+  }
+
+  @Override
+  public Collection<? extends PartitionListener> getPartitionListeners() {
+    return partitionListeners;
+  }
+}

@@ -7,4 +7,82 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-public class BrokerStartupContextImpl implements BrokerStartupContext {}
+import static java.util.Objects.requireNonNull;
+
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.ArrayList;
+import java.util.List;
+
+public class BrokerStartupContextImpl implements BrokerStartupContext {
+
+  private final BrokerInfo brokerInfo;
+  private final SpringBrokerBridge springBrokerBridge;
+  private final ConcurrencyControl concurrencyControl;
+  private final ActorSchedulingService actorSchedulingService;
+  private final List<PartitionListener> partitionListeners = new ArrayList<>();
+
+  private BrokerHealthCheckService healthCheckService;
+
+  public BrokerStartupContextImpl(
+      final BrokerInfo brokerInfo,
+      final SpringBrokerBridge springBrokerBridge,
+      final ConcurrencyControl concurrencyControl,
+      final ActorSchedulingService actorSchedulingService) {
+    this.brokerInfo = brokerInfo;
+    this.springBrokerBridge = springBrokerBridge;
+    this.concurrencyControl = concurrencyControl;
+    this.actorSchedulingService = actorSchedulingService;
+  }
+
+  @Override
+  public BrokerInfo getBrokerInfo() {
+    return brokerInfo;
+  }
+
+  @Override
+  public SpringBrokerBridge getSpringBrokerBridge() {
+    return springBrokerBridge;
+  }
+
+  @Override
+  public ConcurrencyControl getConcurrencyControl() {
+    return concurrencyControl;
+  }
+
+  @Override
+  public ActorFuture<Void> scheduleActor(final Actor actor) {
+    return actorSchedulingService.submitActor(actor);
+  }
+
+  @Override
+  public BrokerHealthCheckService getHealthCheckService() {
+    return healthCheckService;
+  }
+
+  @Override
+  public void setHealthCheckService(final BrokerHealthCheckService healthCheckService) {
+    this.healthCheckService = healthCheckService;
+  }
+
+  @Override
+  public void addPartitionListener(final PartitionListener listener) {
+    partitionListeners.add(requireNonNull(listener));
+  }
+
+  @Override
+  public void removePartitionListener(final PartitionListener listener) {
+    partitionListeners.remove(requireNonNull(listener));
+  }
+
+  @Override
+  public List<PartitionListener> getPartitionListeners() {
+    return partitionListeners;
+  }
+}

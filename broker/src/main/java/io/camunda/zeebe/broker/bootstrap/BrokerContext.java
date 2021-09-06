@@ -7,4 +7,13 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-public interface BrokerContext {}
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import java.util.Collection;
+
+public interface BrokerContext {
+
+  BrokerHealthCheckService getHealthCheckService();
+
+  Collection<? extends PartitionListener> getPartitionListeners();
+}

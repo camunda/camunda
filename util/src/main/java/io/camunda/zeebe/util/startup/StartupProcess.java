@@ -86,7 +86,7 @@ public final class StartupProcess<CONTEXT> {
    *     null}
    * @param steps the steps to execute; must not be {@code null}
    */
-  public StartupProcess(final Logger logger, final List<StartupStep<CONTEXT>> steps) {
+  public StartupProcess(final Logger logger, final List<? extends StartupStep<CONTEXT>> steps) {
     this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
     this.logger = Objects.requireNonNull(logger);
   }

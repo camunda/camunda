@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker;
 
-import static java.util.concurrent.CompletableFuture.runAsync;
-
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -49,12 +47,14 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
@@ -84,6 +84,7 @@ public final class Broker implements AutoCloseable {
   private final BrokerStartupProcess brokerStartupProcess;
   // TODO make Broker class itself the actor
   private final BrokerStartupActor brokerStartupActor = new BrokerStartupActor();
+  private final BrokerInfo localBroker;
   // TODO make Broker class itself the actor
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
@@ -92,8 +93,12 @@ public final class Broker implements AutoCloseable {
     this.springBrokerBridge = springBrokerBridge;
     scheduler = brokerContext.getScheduler();
 
-    scheduleActor(brokerStartupActor);
-    brokerStartupProcess = new BrokerStartupProcess(brokerStartupActor);
+    localBroker = createBrokerInfo(getConfig());
+
+    scheduler.submitActor(brokerStartupActor);
+
+    brokerStartupProcess =
+        new BrokerStartupProcess(localBroker, springBrokerBridge, brokerStartupActor, scheduler);
   }
 
   public void addPartitionListener(final PartitionListener listener) {
@@ -142,12 +147,10 @@ public final class Broker implements AutoCloseable {
 
   private StartProcess initStart() {
     final BrokerCfg brokerCfg = getConfig();
-    final BrokerInfo localBroker = createBrokerInfo(brokerCfg);
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", () -> migratedStartupSteps());
-    startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
         "command api transport and handler",
@@ -181,10 +184,14 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable migratedStartupSteps() {
-    runAsync(() -> brokerStartupActor.execute(() -> brokerStartupProcess.start().join())).join();
+    final var brokerContext = brokerStartupActor.call(() -> brokerStartupProcess.start()).join();
+
+    healthCheckService = brokerContext.getHealthCheckService();
+    partitionListeners.addAll(brokerContext.getPartitionListeners());
 
     return () -> {
-      runAsync(() -> brokerStartupActor.execute(() -> brokerStartupProcess.stop().join())).join();
+      brokerStartupActor.call(() -> brokerStartupProcess.stop()).join();
+      healthCheckService = null;
     };
   }
 
@@ -440,8 +447,8 @@ public final class Broker implements AutoCloseable {
       return "Broker Startup Actor";
     }
 
-    private void execute(final Runnable r) {
-      actor.run(r);
+    public <V, T extends ActorFuture<V>> ActorFuture<V> call(final Callable<T> callable) {
+      return actor.call(callable).join();
     }
   }
 }
