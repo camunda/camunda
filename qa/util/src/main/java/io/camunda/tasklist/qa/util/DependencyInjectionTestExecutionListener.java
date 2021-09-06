@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.util;
+package io.camunda.tasklist.qa.util;
 
 import java.lang.reflect.Field;
 import org.junit.Rule;

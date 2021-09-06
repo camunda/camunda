@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.graphql;
 
+import static io.camunda.tasklist.qa.util.VariablesUtil.createBigVariable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
@@ -26,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.Before;
@@ -281,15 +281,6 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         "true",
         () -> varResponse.get("$.data.variable.isValueTruncated"),
         shouldContainIsTruncatedFlag);
-  }
-
-  private String createBigVariable(int size) {
-    final Random random = new Random();
-    final StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < size; i++) {
-      sb.append(random.nextInt(9));
-    }
-    return sb.toString();
   }
 
   @Test

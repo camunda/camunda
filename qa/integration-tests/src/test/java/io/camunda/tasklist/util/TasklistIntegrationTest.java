@@ -10,6 +10,7 @@ import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;

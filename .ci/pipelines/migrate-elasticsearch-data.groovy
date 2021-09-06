@@ -2,7 +2,6 @@
 
 String agent() {
   boolean isStage = env.JENKINS_URL.contains('stage')
-  String vaultPrefix = isStage ? 'stage.' : ''
   String prefix = isStage ? 'stage-' : ''
   """
 ---
@@ -18,35 +17,12 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
-  serviceAccountName: ${prefix}ci-tasklist-camunda-cloud
+  serviceAccountName: ${prefix}ci-zeebe-tasklist-camunda-cloud
   tolerations:
     - key: "agents-n1-standard-32-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   initContainers:
-    - name: vault-template
-      image: gcr.io/camunda-public/camunda-internal_vault-template
-      imagePullPolicy: Always
-      env:
-      - name: VAULT_ADDR
-        value: https://${vaultPrefix}vault.int.camunda.com/
-      - name: CLUSTER
-        value: camunda-ci
-      - name: SA_NAMESPACE
-        valueFrom:
-          fieldRef:
-            apiVersion: v1
-            fieldPath: metadata.namespace
-      - name: SA_NAME
-        valueFrom:
-          fieldRef:
-            apiVersion: v1
-            fieldPath: spec.serviceAccountName
-      volumeMounts:
-      - mountPath: /etc/consul-templates
-        name: vault-config
-      - mountPath: /etc/vault-output
-        name: vault-output
     - name: init-sysctl
       image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
       command:
@@ -60,28 +36,6 @@ spec:
       volumeMounts:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
-    - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
-      command:
-      - "sh"
-      args:
-      - "-c"
-      - "elasticsearch-plugin install --batch repository-gcs && \
-        elasticsearch-keystore create && \
-        elasticsearch-keystore add-file gcs.client.tasklist_ci_service_account.credentials_file /usr/share/elasticsearch/svc/tasklist-ci-service-account.json"
-      securityContext:
-        privileged: true
-        capabilities:
-          add:
-            - IPC_LOCK
-      volumeMounts:
-      - mountPath: /usr/share/elasticsearch/config/
-        name: configdir
-      - mountPath: /usr/share/elasticsearch/plugins/
-        name: plugindir
-      - mountPath: /usr/share/elasticsearch/svc/
-        name: vault-output
-        readOnly: true
   containers:
     - name: maven
       image: maven:3.6.1-jdk-11
@@ -119,12 +73,6 @@ spec:
     emptyDir: {}
   - name: plugindir
     emptyDir: {}
-  - name: vault-output
-    emptyDir:
-      medium: Memory
-  - name: vault-config
-    configMap:
-      name: ${prefix}ci-zeebe-taklist-vault-templates
 """ as String
 }
 
@@ -133,7 +81,7 @@ spec:
 pipeline {
   agent {
     kubernetes {
-      cloud 'tasklist-ci'
+      cloud 'zeebe-tasklist-ci'
       label "tasklist-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
       yaml agent()
@@ -157,7 +105,7 @@ pipeline {
          	// checkout current tasklist
             git url: 'https://github.com/camunda-cloud/tasklist.git',
                 branch: "master",
-                credentialsId: 'github-cloud-tasklist-app',
+                credentialsId: 'github-cloud-zeebe-tasklist-app',
                 poll: false
             // compile current tasklist
             configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {

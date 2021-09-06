@@ -125,7 +125,7 @@ public class ElasticsearchSchemaManager {
         new PutComposableIndexTemplateRequest()
             .name(templateDescriptor.getTemplateName())
             .indexTemplate(composableTemplate));
-    // This is necessary, otherwise operate won't find indexes at startup
+    // This is necessary, otherwise tasklist won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
     createIndex(new CreateIndexRequest(indexName), indexName);
   }

@@ -22,6 +22,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor {
   public static final String STATE = "state";
   public static final String ASSIGNEE = "assignee";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
 
   //  public static final List<String> ALL_FIELDS = asList(ID, KEY, PROCESS_INSTANCE_KEY, POSITION,
   // PARTITION_ID, CREATION_TIME, COMPLETION_TIME, ELEMENT_ID,

@@ -7,6 +7,8 @@ package io.camunda.tasklist.property;
 
 public class ImportProperties {
 
+  public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
+
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
 
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 5;
@@ -27,7 +29,7 @@ public class ImportProperties {
   private boolean startLoadingDataOnStartup = true;
 
   /** Variable size under which we won't store preview separately. */
-  private int variableSizeThreshold = 8191;
+  private int variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
