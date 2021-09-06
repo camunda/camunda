@@ -7,15 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
+import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -28,7 +28,8 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import org.agrona.DirectBuffer;
+import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
@@ -40,6 +41,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
+  private Either<Failure, CatchEventTuple> foundCatchEvent;
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -83,15 +85,11 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var serviceTaskInstanceKey = job.getElementId();
 
     if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, stateWriter);
+      raiseIncident(jobKey, job, stateWriter, foundCatchEvent.getLeft());
       return;
     }
 
-    final var serviceTaskInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
-    final var errorCode = job.getErrorCodeBuffer();
-
-    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent);
+    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get());
   }
 
   private void acceptCommand(
@@ -106,9 +104,12 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);
 
     final var errorCode = job.getErrorCodeBuffer();
-    final var foundCatchEvent = stateAnalyzer.findCatchEvent(errorCode, serviceTaskInstance);
+    final var foundCatchEvent =
+        stateAnalyzer.findCatchEvent(
+            errorCode, serviceTaskInstance, Optional.of(job.getErrorMessageBuffer()));
+    this.foundCatchEvent = foundCatchEvent;
 
-    if (foundCatchEvent == null) {
+    if (foundCatchEvent.isLeft()) {
       job.setElementId(NO_CATCH_EVENT_FOUND);
 
       commandControl.accept(JobIntent.ERROR_THROWN, job);
@@ -117,11 +118,11 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
           RejectionType.INVALID_STATE,
           "Expected to find active service task, but was " + serviceTaskInstance);
     } else if (!eventScopeInstanceState.isAcceptingEvent(
-        foundCatchEvent.getElementInstance().getKey())) {
+        foundCatchEvent.get().getElementInstance().getKey())) {
       commandControl.reject(
           RejectionType.INVALID_STATE,
           "Expected to find event scope that is accepting events, but was "
-              + foundCatchEvent.getElementInstance());
+              + foundCatchEvent.get().getElementInstance());
     } else {
       commandControl.accept(JobIntent.ERROR_THROWN, job);
     }
@@ -131,21 +132,13 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
   }
 
-  private void raiseIncident(final long key, final JobRecord job, final StateWriter stateWriter) {
-
-    final DirectBuffer jobErrorMessage = job.getErrorMessageBuffer();
-    DirectBuffer incidentErrorMessage =
-        wrapString(
-            String.format(
-                "An error was thrown with the code '%s' but not caught.", job.getErrorCode()));
-    if (jobErrorMessage.capacity() > 0) {
-      incidentErrorMessage = jobErrorMessage;
-    }
+  private void raiseIncident(
+      final long key, final JobRecord job, final StateWriter stateWriter, final Failure failure) {
 
     incidentEvent.reset();
     incidentEvent
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
-        .setErrorMessage(incidentErrorMessage)
+        .setErrorMessage(failure.getMessage())
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())

@@ -7,12 +7,20 @@
  */
 package io.camunda.zeebe.engine.state.analyzers;
 
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 /**
@@ -33,21 +41,23 @@ public final class CatchEventAnalyzer {
     this.elementInstanceState = elementInstanceState;
   }
 
-  public boolean hasCatchEvent(final DirectBuffer errorCode, final ElementInstance instance) {
-    return findCatchEvent(errorCode, instance) != null;
-  }
-
-  public CatchEventTuple findCatchEvent(final DirectBuffer errorCode, ElementInstance instance) {
+  public Either<Failure, CatchEventTuple> findCatchEvent(
+      final DirectBuffer errorCode,
+      ElementInstance instance,
+      final Optional<DirectBuffer> jobErrorMessage) {
     // assuming that error events are used rarely
     // - just walk through the scope hierarchy and look for a matching catch event
 
+    final ArrayList<DirectBuffer> availableCatchEvents = new ArrayList<>();
     while (instance != null && instance.isActive()) {
       final var instanceRecord = instance.getValue();
       final var process = getProcess(instanceRecord.getProcessDefinitionKey());
 
       final var found = findCatchEventInProcess(errorCode, process, instance);
-      if (found != null) {
-        return found;
+      if (found.isRight()) {
+        return Either.right(found.get());
+      } else {
+        availableCatchEvents.addAll(found.getLeft());
       }
 
       // find in parent process instance if exists
@@ -55,17 +65,37 @@ public final class CatchEventAnalyzer {
       instance = elementInstanceState.getInstance(parentElementInstanceKey);
     }
 
+    final String incidentErrorMessage =
+        String.format(
+            "Expected to throw an error event with the code '%s'%s, but it was not caught.%s",
+            BufferUtil.bufferAsString(errorCode),
+            jobErrorMessage.isPresent() && jobErrorMessage.get().capacity() > 0
+                ? String.format(
+                    " with message '%s'", BufferUtil.bufferAsString(jobErrorMessage.get()))
+                : "",
+            availableCatchEvents.isEmpty()
+                ? " No error events are available in the scope."
+                : String.format(
+                    " Available error events are [%s]",
+                    availableCatchEvents.stream()
+                        .map(BufferUtil::bufferAsString)
+                        .collect(Collectors.joining(", "))));
+
     // no matching catch event found
-    return null;
+    return Either.left(new Failure(incidentErrorMessage, ErrorType.UNHANDLED_ERROR_EVENT));
   }
 
-  private CatchEventTuple findCatchEventInProcess(
+  private Either<List<DirectBuffer>, CatchEventTuple> findCatchEventInProcess(
       final DirectBuffer errorCode, final ExecutableProcess process, ElementInstance instance) {
 
+    final Either<List<DirectBuffer>, CatchEventTuple> availableCatchEvents =
+        Either.left(new ArrayList<>());
     while (instance != null && instance.isActive() && !instance.isInterrupted()) {
       final var found = findCatchEventInScope(errorCode, process, instance);
-      if (found != null) {
+      if (found.isRight()) {
         return found;
+      } else {
+        availableCatchEvents.getLeft().addAll(found.getLeft());
       }
 
       // find in parent scope if exists
@@ -73,14 +103,16 @@ public final class CatchEventAnalyzer {
       instance = elementInstanceState.getInstance(instanceParentKey);
     }
 
-    return null;
+    return availableCatchEvents;
   }
 
-  private CatchEventTuple findCatchEventInScope(
+  private Either<List<DirectBuffer>, CatchEventTuple> findCatchEventInScope(
       final DirectBuffer errorCode,
       final ExecutableProcess process,
       final ElementInstance instance) {
 
+    final Either<List<DirectBuffer>, CatchEventTuple> availableCatchEvents =
+        Either.left(new ArrayList<>());
     final var processInstanceRecord = instance.getValue();
     final var elementId = processInstanceRecord.getElementIdBuffer();
     final var elementType = processInstanceRecord.getBpmnElementType();
@@ -88,20 +120,18 @@ public final class CatchEventAnalyzer {
     final var element = process.getElementById(elementId, elementType, ExecutableActivity.class);
 
     for (final ExecutableCatchEvent catchEvent : element.getEvents()) {
-      if (hasErrorCode(catchEvent, errorCode)) {
+      if (catchEvent.isError()) {
+        availableCatchEvents.getLeft().add(catchEvent.getError().getErrorCode());
+        if (catchEvent.getError().getErrorCode().equals(errorCode)) {
 
-        catchEventTuple.instance = instance;
-        catchEventTuple.catchEvent = catchEvent;
-        return catchEventTuple;
+          catchEventTuple.instance = instance;
+          catchEventTuple.catchEvent = catchEvent;
+          return Either.right(catchEventTuple);
+        }
       }
     }
 
-    return null;
-  }
-
-  private boolean hasErrorCode(
-      final ExecutableCatchEvent catchEvent, final DirectBuffer errorCode) {
-    return catchEvent.isError() && catchEvent.getError().getErrorCode().equals(errorCode);
+    return availableCatchEvents;
   }
 
   private ExecutableProcess getProcess(final long processDefinitionKey) {
