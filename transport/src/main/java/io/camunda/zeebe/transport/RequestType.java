@@ -8,7 +8,8 @@
 package io.camunda.zeebe.transport;
 
 public enum RequestType {
-  COMMAND;
+  COMMAND,
+  UNKNOWN;
 
   public static RequestType from(final String name) {
     return RequestType.valueOf(name.toUpperCase());

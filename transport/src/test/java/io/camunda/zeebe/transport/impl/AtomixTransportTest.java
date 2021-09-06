@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -351,6 +352,22 @@ public class AtomixTransportTest {
     assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
   }
 
+  @Test
+  public void shouldOnlyHandleRequestsOfSubscribedTypes() {
+    // given
+    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder());
+    serverTransport.subscribe(0, RequestType.UNKNOWN, new FailingResponder());
+
+    // when
+    final var requestFuture =
+        clientTransport.sendRequest(
+            () -> serverAddress, new Request("messageABC"), REQUEST_TIMEOUT);
+
+    // then
+    final var response = requestFuture.join();
+    assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
+  }
+
   private static final class Request implements ClientRequest {
 
     private final String msg;
@@ -407,6 +424,20 @@ public class AtomixTransportTest {
               .setPartitionId(partitionId);
       requestConsumer.accept(buffer.byteArray());
       serverOutput.sendResponse(serverResponse);
+    }
+  }
+
+  private static final class FailingResponder implements RequestHandler {
+
+    @Override
+    public void onRequest(
+        final ServerOutput serverOutput,
+        final int partitionId,
+        final long requestId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length) {
+      fail("Expected request to not be handled by this handler, but it was");
     }
   }
 }
