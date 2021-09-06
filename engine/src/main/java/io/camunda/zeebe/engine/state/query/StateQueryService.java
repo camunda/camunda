@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public class StateQueryService implements QueryService {
+public final class StateQueryService implements QueryService {
   private final ProcessState processes;
   private final ElementInstanceState instances;
   private final JobState jobs;
