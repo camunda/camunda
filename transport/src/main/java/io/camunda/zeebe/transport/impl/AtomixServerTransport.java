@@ -57,7 +57,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     actor
         .call(
             () -> {
-              for (int partitionId : partitionsRequestMap.keySet()) {
+              for (final int partitionId : partitionsRequestMap.keySet()) {
                 removePartition(partitionId);
               }
               actor.close();
