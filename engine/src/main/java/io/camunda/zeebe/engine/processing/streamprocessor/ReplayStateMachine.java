@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
@@ -32,7 +33,7 @@ import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 /** Represents the state machine to replay events and rebuild the state. */
-public final class ReplayStateMachine {
+public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
@@ -127,17 +128,14 @@ public final class ReplayStateMachine {
     replayNextEvent();
 
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
-      logStream.registerRecordAvailableListener(this::recordAvailable);
+      logStream.registerRecordAvailableListener(this);
     }
 
     return recoveryFuture;
   }
 
-  /**
-   * Will be called by the LogStream#RecordAvailableListener, we will schedule the next replay of
-   * the record
-   */
-  private void recordAvailable() {
+  @Override
+  public void onRecordAvailable() {
     actor.call(
         () -> {
           if (currentState == State.AWAIT_RECORD) {
@@ -311,6 +309,10 @@ public final class ReplayStateMachine {
 
   public long getLastReplayedEventPosition() {
     return lastReplayedEventPosition;
+  }
+
+  public void close() {
+    logStream.removeRecordAvailableListener(this);
   }
 
   private enum State {

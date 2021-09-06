@@ -379,6 +379,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
+   * Removes registered committedEntryListener
+   *
+   * @param raftCommittedEntryListener the listener to remove
+   */
+  public void removeCommittedEntryListener(
+      final RaftCommittedEntryListener raftCommittedEntryListener) {
+    committedEntryListeners.remove(raftCommittedEntryListener);
+  }
+
+  /**
    * Notifies all listeners of the latest entry.
    *
    * @param lastCommitIndex index of the most recently committed entry
