@@ -67,8 +67,6 @@ public final class PartitionFactory {
    * ZeebePartition.STARTUP_PROCESS
    */
   public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = false;
-  private static final List<PartitionStartupStep> STARTUP_STEPS =
-      List.of(new StateControllerPartitionStep(), new LogDeletionPartitionStep());
 
   // will probably be executed in parallel
   private static final List<PartitionTransitionStep> TRANSITION_STEPS = List.of();
