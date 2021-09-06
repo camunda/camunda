@@ -109,8 +109,7 @@ public abstract class AbstractProcessInstanceFrequencyByProcessInstanceDateRepor
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
+    assertThat(resultData).isNotNull().hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);
@@ -142,8 +141,7 @@ public abstract class AbstractProcessInstanceFrequencyByProcessInstanceDateRepor
 
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
+    assertThat(resultData).isNotNull().hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);

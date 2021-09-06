@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.date.distributedby.process;
+package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.process;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
@@ -33,35 +33,38 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.util.BpmnModels.START_EVENT;
-import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
-public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT extends AbstractIT {
+public abstract class AbstractProcessInstanceDurationByProcessInstanceDateByProcessReportEvaluationIT
+  extends AbstractIT {
 
   protected abstract ProcessReportDataType getReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();
 
-  abstract void changeFlowNodeInstanceDate(final ProcessInstanceEngineDto processInstanceDto,
-                                           final String flowNodeId,
-                                           final OffsetDateTime date);
-
   @Test
   public void reportEvaluationWithSingleProcessDefinitionSource() {
     // given
     final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    final ProcessInstanceEngineDto instance =
+    final ProcessInstanceEngineDto firstInstance =
       engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeFlowNodeInstanceDate(instance, START_EVENT, now.minusDays(1));
+    changeProcessInstanceDuration(firstInstance, now.minusSeconds(1), now);
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
+      firstInstance.getDefinitionId());
+    changeProcessInstanceDuration(secondInstance, now.minusDays(1).minusSeconds(5), now.minusDays(1));
     importAllEngineEntitiesFromScratch();
     final String processDisplayName = "processDisplayName";
     final String processIdentifier = IdGenerator.getNextId();
     ReportDataDefinitionDto definition =
-      new ReportDataDefinitionDto(processIdentifier, instance.getProcessDefinitionKey(), processDisplayName);
+      new ReportDataDefinitionDto(processIdentifier, firstInstance.getProcessDefinitionKey(), processDisplayName);
 
     // when
     final ProcessReportDataDto reportData = createReport(Collections.singletonList(definition));
@@ -70,31 +73,31 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(instance.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(firstInstance.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(definition.getVersions().get(0));
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
-    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.PROCESS);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount()).isEqualTo(1);
-    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getInstanceCount()).isEqualTo(2);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(result.getMeasures()).hasSize(1)
       .extracting(MeasureResponseDto::getProperty, MeasureResponseDto::getData)
       .containsExactly(
         Tuple.tuple(
-          ViewProperty.FREQUENCY,
+          ViewProperty.DURATION,
           List.of(
             createHyperMapResult(
               localDateTimeToString(now.minusDays(1)),
-              new MapResultEntryDto(processIdentifier, 1.0, processDisplayName)
+              new MapResultEntryDto(processIdentifier, 5000.0, processDisplayName)
             ),
             createHyperMapResult(
               localDateTimeToString(now),
-              new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)
+              new MapResultEntryDto(processIdentifier, 1000.0, processDisplayName)
             )
           )
         )
@@ -108,13 +111,12 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT
     final ProcessInstanceEngineDto firstInstance =
       engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("first"));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeFlowNodeInstanceDate(firstInstance, START_EVENT, now.minusDays(1));
-    changeFlowNodeInstanceDate(firstInstance, USER_TASK_1, now.minusDays(1));
+    changeProcessInstanceDuration(firstInstance, now.minusSeconds(1), now);
     final ProcessInstanceEngineDto secondInstance =
       engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram("second"));
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeFlowNodeInstanceDate(secondInstance, START_EVENT, now.minusDays(1));
+    changeProcessInstanceDuration(secondInstance, now.minusDays(1).minusSeconds(5), now.minusDays(1));
     importAllEngineEntitiesFromScratch();
     final String firstDisplayName = "firstName";
     final String secondDisplayName = "secondName";
@@ -139,13 +141,13 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT
       .containsExactly(List.of(
         createHyperMapResult(
           localDateTimeToString(now.minusDays(1)),
-          new MapResultEntryDto(firstIdentifier, 2.0, firstDisplayName),
-          new MapResultEntryDto(secondIdentifier, 1.0, secondDisplayName)
+          new MapResultEntryDto(firstIdentifier, null, firstDisplayName),
+          new MapResultEntryDto(secondIdentifier, 5000.0, secondDisplayName)
         ),
         createHyperMapResult(
           localDateTimeToString(now),
-          new MapResultEntryDto(firstIdentifier, 1.0, firstDisplayName),
-          new MapResultEntryDto(secondIdentifier, 3.0, secondDisplayName)
+          new MapResultEntryDto(firstIdentifier, 1000.0, firstDisplayName),
+          new MapResultEntryDto(secondIdentifier, null, secondDisplayName)
         )
       ));
   }
@@ -157,13 +159,11 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT
     final ProcessInstanceEngineDto v1Instance =
       engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("definition"));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeFlowNodeInstanceDate(v1Instance, START_EVENT, now.minusDays(1));
-    changeFlowNodeInstanceDate(v1Instance, USER_TASK_1, now.minusDays(1));
+    changeProcessInstanceDuration(v1Instance, now.minusSeconds(1), now);
     final ProcessInstanceEngineDto v2Instance =
       engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("definition"));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeFlowNodeInstanceDate(v2Instance, START_EVENT, now.minusDays(1));
-    engineDatabaseExtension.changeAllFlowNodeTotalDurations(v2Instance.getId(), 5000);
+    changeProcessInstanceDuration(v2Instance, now.minusDays(1).minusSeconds(5), now.minusDays(1));
     importAllEngineEntitiesFromScratch();
     final String v1displayName = "v1";
     final String allVersionsDisplayName = "all";
@@ -186,19 +186,127 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT
     assertThat(result.getInstanceCount()).isEqualTo(2);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(result.getMeasures()).hasSize(1)
-      .extracting(MeasureResponseDto::getData)
-      .containsExactly(List.of(
-        createHyperMapResult(
-          localDateTimeToString(now.minusDays(1)),
-          new MapResultEntryDto(allVersionsIdentifier, 3.0, allVersionsDisplayName),
-          new MapResultEntryDto(v1Identifier, 2.0, v1displayName)
-        ),
-        createHyperMapResult(
-          localDateTimeToString(now),
-          new MapResultEntryDto(allVersionsIdentifier, 3.0, allVersionsDisplayName),
-          new MapResultEntryDto(v1Identifier, 1.0, v1displayName)
+      .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
+      .containsExactly(Tuple.tuple(
+        AVERAGE,
+        List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, 1000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
+          )
         )
       ));
+  }
+
+  @Test
+  public void reportEvaluationWithMultipleProcessDefinitionSourcesAndOverlappingInstancesAcrossAggregationTypes() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto v1Instance =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("definition"));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeProcessInstanceDuration(v1Instance, now.minusSeconds(1), now);
+    final ProcessInstanceEngineDto v2InstanceOne =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("definition"));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeProcessInstanceDuration(v2InstanceOne, now.minusDays(1).minusSeconds(5), now.minusDays(1));
+    final ProcessInstanceEngineDto v2InstanceTwo =
+      engineIntegrationExtension.startProcessInstance(v2InstanceOne.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeProcessInstanceDuration(v2InstanceTwo, now.minusSeconds(10), now);
+    importAllEngineEntitiesFromScratch();
+    final String v1displayName = "v1";
+    final String allVersionsDisplayName = "all";
+    final String v1Identifier = "v1Identifier";
+    final String allVersionsIdentifier = "allIdentifier";
+    ReportDataDefinitionDto v1definition =
+      new ReportDataDefinitionDto(v1Identifier, v1Instance.getProcessDefinitionKey(), v1displayName);
+    v1definition.setVersion("1");
+    ReportDataDefinitionDto allVersionsDefinition = new ReportDataDefinitionDto(
+      allVersionsIdentifier, v2InstanceOne.getProcessDefinitionKey(), allVersionsDisplayName);
+    allVersionsDefinition.setVersion(ALL_VERSIONS);
+
+    // when
+    final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
+    reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(3);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3);
+    assertThat(result.getMeasures()).hasSize(5)
+      .extracting(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData)
+      .containsExactly(
+        Tuple.tuple(MAX, List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, 10000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
+          )
+        )),
+        Tuple.tuple(MIN, List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, 1000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
+          )
+        )),
+        Tuple.tuple(AVERAGE, List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, 5500.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
+          )
+        )),
+        Tuple.tuple(SUM, List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, 5000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, 11000.0, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, 1000.0, v1displayName)
+          )
+        )),
+        // We cannot support the median aggregation type with this distribution as the information is lost on merging
+        Tuple.tuple(MEDIAN, List.of(
+          createHyperMapResult(
+            localDateTimeToString(now.minusDays(1)),
+            new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          ),
+          createHyperMapResult(
+            localDateTimeToString(now),
+            new MapResultEntryDto(allVersionsIdentifier, null, allVersionsDisplayName),
+            new MapResultEntryDto(v1Identifier, null, v1displayName)
+          )
+        ))
+      );
   }
 
   private String localDateTimeToString(OffsetDateTime time) {
@@ -219,5 +327,10 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByProcessReportEvaluationIT
     return reportData;
   }
 
-}
+  private void changeProcessInstanceDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                             final OffsetDateTime startDate,
+                                             final OffsetDateTime endDate) {
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
+  }
 
+}

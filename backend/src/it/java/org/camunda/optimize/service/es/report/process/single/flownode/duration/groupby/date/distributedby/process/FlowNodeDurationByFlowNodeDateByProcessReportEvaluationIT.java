@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
@@ -175,7 +176,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByProcessReportEvaluationIT 
     v1definition.setVersion("1");
     ReportDataDefinitionDto allVersionsDefinition = new ReportDataDefinitionDto(
       allVersionsIdentifier, v2Instance.getProcessDefinitionKey(), allVersionsDisplayName);
-    allVersionsDefinition.setVersion("all");
+    allVersionsDefinition.setVersion(ALL_VERSIONS);
 
     // when
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
@@ -220,7 +221,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByProcessReportEvaluationIT 
     v1definition.setVersion("1");
     ReportDataDefinitionDto allVersionsDefinition = new ReportDataDefinitionDto(
       ALL_VERSIONS_IDENTIFIER, v2Instance.getProcessDefinitionKey(), ALL_DISPLAY_NAME);
-    allVersionsDefinition.setVersion("all");
+    allVersionsDefinition.setVersion(ALL_VERSIONS);
     final ProcessReportDataDto reportData = createReport(List.of(v1definition, allVersionsDefinition));
     reportData.getConfiguration().setAggregationTypes(MAX, MIN, AVERAGE, SUM, MEDIAN);
 

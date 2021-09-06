@@ -139,6 +139,17 @@ public class TemplatedProcessReportDataBuilder {
           .processPartEnd(endFlowNodeId)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_START_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
       case PROC_INST_DUR_GROUP_BY_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -187,6 +198,17 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .processPartStart(startFlowNodeId)
           .processPartEnd(endFlowNodeId)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
           .build();
         break;
       case PROC_INST_DUR_GROUP_BY_VARIABLE:
@@ -313,6 +335,17 @@ public class TemplatedProcessReportDataBuilder {
           .variableType(variableType)
           .build();
         break;
+      case PROC_INST_FREQ_GROUP_BY_START_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.TABLE)
+          .groupByDateInterval(groupByDateInterval)
+          .definitions(definitions)
+          .build();
+        break;
       case PROC_INST_FREQ_GROUP_BY_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -336,11 +369,33 @@ public class TemplatedProcessReportDataBuilder {
           .variableType(variableType)
           .build();
         break;
+      case PROC_INST_FREQ_GROUP_BY_END_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.TABLE)
+          .groupByDateInterval(groupByDateInterval)
+          .definitions(definitions)
+          .build();
+        break;
       case PROC_INST_FREQ_GROUP_BY_RUNNING_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
           .viewProperty(ViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.RUNNING_DATE)
+          .visualization(ProcessVisualization.TABLE)
+          .groupByDateInterval(groupByDateInterval)
+          .definitions(definitions)
+          .build();
+        break;
+      case PROC_INST_FREQ_GROUP_BY_RUNNING_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.RUNNING_DATE)
+          .distributedByType(DistributedByType.PROCESS)
           .visualization(ProcessVisualization.TABLE)
           .groupByDateInterval(groupByDateInterval)
           .definitions(definitions)
