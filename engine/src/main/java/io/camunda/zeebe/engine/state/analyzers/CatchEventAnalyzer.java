@@ -7,15 +7,20 @@
  */
 package io.camunda.zeebe.engine.state.analyzers;
 
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 /**
@@ -36,22 +41,23 @@ public final class CatchEventAnalyzer {
     this.elementInstanceState = elementInstanceState;
   }
 
-  public Either<List<DirectBuffer>, CatchEventTuple> findCatchEvent(
-      final DirectBuffer errorCode, ElementInstance instance) {
+  public Either<Failure, CatchEventTuple> findCatchEvent(
+      final DirectBuffer errorCode,
+      ElementInstance instance,
+      final Optional<DirectBuffer> jobErrorMessage) {
     // assuming that error events are used rarely
     // - just walk through the scope hierarchy and look for a matching catch event
 
-    final Either<List<DirectBuffer>, CatchEventTuple> availableCatchEvents =
-        Either.left(new ArrayList<>());
+    final ArrayList<DirectBuffer> availableCatchEvents = new ArrayList<>();
     while (instance != null && instance.isActive()) {
       final var instanceRecord = instance.getValue();
       final var process = getProcess(instanceRecord.getProcessDefinitionKey());
 
       final var found = findCatchEventInProcess(errorCode, process, instance);
       if (found.isRight()) {
-        return found;
+        return Either.right(found.get());
       } else {
-        availableCatchEvents.getLeft().addAll(found.getLeft());
+        availableCatchEvents.addAll(found.getLeft());
       }
 
       // find in parent process instance if exists
@@ -59,8 +65,24 @@ public final class CatchEventAnalyzer {
       instance = elementInstanceState.getInstance(parentElementInstanceKey);
     }
 
+    final String incidentErrorMessage =
+        String.format(
+            "Expected to throw an error event with the code '%s'%s, but it was not caught.%s",
+            BufferUtil.bufferAsString(errorCode),
+            jobErrorMessage.isPresent() && jobErrorMessage.get().capacity() > 0
+                ? String.format(
+                    " with message '%s'", BufferUtil.bufferAsString(jobErrorMessage.get()))
+                : "",
+            availableCatchEvents.isEmpty()
+                ? " No error events are available in the scope."
+                : String.format(
+                    " Available error events are [%s]",
+                    availableCatchEvents.stream()
+                        .map(BufferUtil::bufferAsString)
+                        .collect(Collectors.joining(", "))));
+
     // no matching catch event found
-    return availableCatchEvents;
+    return Either.left(new Failure(incidentErrorMessage, ErrorType.UNHANDLED_ERROR_EVENT));
   }
 
   private Either<List<DirectBuffer>, CatchEventTuple> findCatchEventInProcess(

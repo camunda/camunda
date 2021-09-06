@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.ERROR_THROWN;
-import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -112,7 +111,7 @@ public final class ErrorEventIncidentTest {
         .describedAs("unhandled error event incident created")
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            "An error was thrown with the code 'other-error' with message 'error thrown', but not caught. Available error events are [error]")
+            "Expected to throw an error event with the code 'other-error' with message 'error thrown', but it was not caught. Available error events are [error]")
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(jobEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(jobEvent.getValue().getProcessInstanceKey())
@@ -147,7 +146,7 @@ public final class ErrorEventIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            "An error was thrown with the code 'other-error' but not caught. Available error events are [error]");
+            "Expected to throw an error event with the code 'other-error', but it was not caught. Available error events are [error]");
   }
 
   @Test
@@ -183,7 +182,9 @@ public final class ErrorEventIncidentTest {
                 .getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
+            String.format(
+                "Expected to throw an error event with the code '%s', but it was not caught. No error events are available in the scope.",
+                ERROR_CODE))
         .hasElementId("NO_CATCH_EVENT_FOUND");
   }
 
@@ -246,7 +247,7 @@ public final class ErrorEventIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
-            "Expected to throw an error event with the code 'error', but it was not caught.")
+            "Expected to throw an error event with the code 'error', but it was not caught. No error events are available in the scope.")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(endEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(endEvent.getValue().getProcessInstanceKey())
@@ -343,18 +344,12 @@ public final class ErrorEventIncidentTest {
 
     final long instanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final var jobKey =
-        jobRecords(JobIntent.CREATED)
-            .withType(JOB_TYPE)
-            .filter(r -> r.getValue().getProcessInstanceKey() == instanceKey)
-            .getFirst()
-            .getKey();
-
     // when
     final Record<JobRecordValue> result =
         ENGINE
             .job()
-            .withKey(jobKey)
+            .ofInstance(instanceKey)
+            .withType(JOB_TYPE)
             .withErrorCode("unknown_error_code")
             .withErrorMessage("error message")
             .throwError();
@@ -366,12 +361,12 @@ public final class ErrorEventIncidentTest {
         .hasErrorMessage("error message");
     Assertions.assertThat(
             RecordingExporter.incidentRecords()
-                .withJobKey(jobKey)
+                .withProcessInstanceKey(instanceKey)
                 .withIntent(IncidentIntent.CREATED)
                 .getFirst()
                 .getValue())
         .hasErrorMessage(
-            "An error was thrown with the code 'unknown_error_code' with message 'error message', but not caught."
+            "Expected to throw an error event with the code 'unknown_error_code' with message 'error message', but it was not caught."
                 + " Available error events are [error_in_subprocess, error]");
   }
 }
