@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.broker;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
+
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
@@ -78,12 +81,19 @@ public final class Broker implements AutoCloseable {
   private PartitionManagerImpl partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
+  private final BrokerStartupProcess brokerStartupProcess;
+  // TODO make Broker class itself the actor
+  private final BrokerStartupActor brokerStartupActor = new BrokerStartupActor();
+  // TODO make Broker class itself the actor
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
     brokerContext = systemContext;
     partitionListeners = new ArrayList<>();
     this.springBrokerBridge = springBrokerBridge;
     scheduler = brokerContext.getScheduler();
+
+    scheduleActor(brokerStartupActor);
+    brokerStartupProcess = new BrokerStartupProcess(brokerStartupActor);
   }
 
   public void addPartitionListener(final PartitionListener listener) {
@@ -136,6 +146,7 @@ public final class Broker implements AutoCloseable {
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
+    startContext.addStep("Migrated Startup Steps", () -> migratedStartupSteps());
     startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
@@ -167,6 +178,14 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private AutoCloseable migratedStartupSteps() {
+    runAsync(() -> brokerStartupActor.execute(() -> brokerStartupProcess.start().join())).join();
+
+    return () -> {
+      runAsync(() -> brokerStartupActor.execute(() -> brokerStartupProcess.stop().join())).join();
+    };
   }
 
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
@@ -412,5 +431,17 @@ public final class Broker implements AutoCloseable {
   @Deprecated // only used for test; temporary work around
   private static final class TestCompanionClass {
     private AtomixCluster atomix;
+  }
+
+  private static class BrokerStartupActor extends Actor {
+
+    @Override
+    public String getName() {
+      return "Broker Startup Actor";
+    }
+
+    private void execute(final Runnable r) {
+      actor.run(r);
+    }
   }
 }
