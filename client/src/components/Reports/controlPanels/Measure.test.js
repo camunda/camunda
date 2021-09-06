@@ -8,17 +8,29 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
+import {updateReport} from 'services';
+
 import Measure from './Measure';
+
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
+  return {
+    ...rest,
+    updateReport: jest.fn(),
+  };
+});
 
 const props = {
   report: {
     view: {entity: 'processInstance', properties: ['frequency']},
   },
-  updateMeasure: jest.fn(),
+  onChange: jest.fn(),
 };
 
 beforeEach(() => {
-  props.updateMeasure.mockClear();
+  props.onChange.mockClear();
+  updateReport.mockClear();
 });
 
 it('should show SelectionPreviews for multi-measure reports', () => {
@@ -43,7 +55,8 @@ it('should call updateMeasure with correct payload for deleting a measure', () =
 
   node.find('SelectionPreview').first().simulate('click');
 
-  expect(props.updateMeasure).toHaveBeenCalledWith(['duration']);
+  expect(updateReport.mock.calls[0][4].view.properties.$set).toEqual(['duration']);
+  expect(props.onChange).toHaveBeenCalled();
 });
 
 it('should show Select for single-measure reports', () => {
@@ -57,5 +70,6 @@ it('should call updateMeasure with correct payload for switching measures', () =
 
   node.find('Select').simulate('change', 'duration');
 
-  expect(props.updateMeasure).toHaveBeenCalledWith(['duration']);
+  expect(updateReport.mock.calls[0][4].view.properties.$set).toEqual(['duration']);
+  expect(props.onChange).toHaveBeenCalled();
 });

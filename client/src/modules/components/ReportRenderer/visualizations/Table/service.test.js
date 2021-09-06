@@ -22,14 +22,18 @@ jest.mock('services', () => {
     ...rest,
     reportConfig: {
       process: {
-        getLabelFor: () => 'foo',
-        findSelectedOption: () => ({key: 'fn'}),
-        options: {
-          view: {foo: {data: 'foo', label: 'viewfoo'}},
-          groupBy: {
-            foo: {data: 'foo', label: 'groupbyfoo'},
+        view: [
+          {
+            matcher: () => true,
+            label: () => 'Flow Node',
           },
-        },
+        ],
+        group: [
+          {
+            matcher: () => true,
+            label: () => 'foo',
+          },
+        ],
       },
     },
   };

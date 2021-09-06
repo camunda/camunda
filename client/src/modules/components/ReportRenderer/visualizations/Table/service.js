@@ -8,12 +8,6 @@ import {NoDataNotice} from 'components';
 import {reportConfig, formatters} from 'services';
 import {t} from 'translation';
 
-const {
-  options: {view, groupBy},
-  getLabelFor,
-  findSelectedOption,
-} = reportConfig.process;
-
 const {formatReportResult, getRelativeValue, duration} = formatters;
 
 export function getFormattedLabels(reportsLabels, reportsNames, reportsIds) {
@@ -82,8 +76,7 @@ export function getCombinedTableProps(
     const {data, result, name} = report;
 
     // build 2d array of all labels
-    const selectedView = findSelectedOption(view, 'data', data.view);
-    const viewString = t('report.view.' + selectedView.key.split('_')[0]);
+    const viewString = reportConfig.process.view.find(({matcher}) => matcher(data)).label();
 
     const viewLabels = result.measures
       .map((measure) => {
@@ -100,7 +93,7 @@ export function getCombinedTableProps(
           return [
             viewString +
               ': ' +
-              (view.entity === 'incident'
+              (data.view.entity === 'incident'
                 ? t('report.view.resolutionDuration')
                 : t('report.view.duration')) +
               (measure.aggregationType
@@ -114,7 +107,7 @@ export function getCombinedTableProps(
         return '';
       })
       .flat();
-    const groupByLabel = getLabelFor('groupBy', groupBy, data.groupBy);
+    const groupByLabel = reportConfig.process.group.find(({matcher}) => matcher(data)).label();
     const labels = [...prevReport.labels, [groupByLabel, ...viewLabels]];
 
     // 2d array of all names

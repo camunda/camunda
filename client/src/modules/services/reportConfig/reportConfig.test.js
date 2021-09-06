@@ -4,336 +4,245 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import reportConfig from './reportConfig';
-import * as process from './process';
-import * as decision from './decision';
-
-const {
-  options: {view, groupBy, visualization},
-  getLabelFor,
-  isAllowed,
-  findSelectedOption,
-  update,
-} = reportConfig(process);
+import {updateReport} from './reportConfig';
 
 const report = {
-  data: {
-    distributedBy: {type: 'none', value: null},
-    configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+  configuration: {
+    tableColumns: {},
   },
+  definitions: [{}],
+  view: {
+    entity: 'processInstance',
+    properties: ['frequency'],
+  },
+  groupBy: {
+    type: 'startDate',
+    value: {unit: 'month'},
+  },
+  distributedBy: {
+    type: 'none',
+    value: null,
+  },
+  visualization: 'bar',
 };
 
-it('should get a label for a simple visualization', () => {
-  expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
-});
-
-it('should get a label for a complex view', () => {
-  expect(getLabelFor('view', view, {entity: 'processInstance', properties: ['frequency']})).toBe(
-    'Process Instance: Count'
+it('should update the payload when selecting a new report setting', () => {
+  expect(updateReport('process', report, 'visualization', 'table').visualization.$set).toBe(
+    'table'
   );
 });
 
-it('should get a label for group by variables', () => {
+it('should augment change with custom payload adjustment', () => {
   expect(
-    getLabelFor('groupBy', groupBy, {type: 'variable', value: {name: 'aName', type: 'String'}})
-  ).toBe('Variable: aName');
+    updateReport('process', report, 'group', 'variable', {
+      groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+    }).groupBy.$set
+  ).toEqual({type: 'variable', value: {name: 'boolVar', type: 'Boolean'}});
 });
 
-it('should get a label for group by variables for dmn', () => {
-  expect(
-    getLabelFor('groupBy', decision.groupBy, {
-      type: 'inputVariable',
-      value: {id: 'anId', name: 'aName'},
-    })
-  ).toBe('Input Variable: aName');
+it('should ensure that groups stay valid', () => {
+  expect(updateReport('process', report, 'view', 'rawData').groupBy.$set).toEqual({
+    type: 'none',
+    value: null,
+  });
+  expect(updateReport('process', report, 'view', 'flowNode').groupBy.$set).toEqual(report.groupBy);
 });
 
-it('should always allow view selection', () => {
-  expect(isAllowed(report, {properties: ['rawData'], entity: null})).toBe(true);
-});
-
-it('should allow only groupBy options that make sense for the selected view', () => {
-  expect(
-    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'none', value: null})
-  ).toBeTruthy();
-  expect(
-    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'flowNodes', value: null})
-  ).toBeFalsy();
-  expect(
-    isAllowed(
-      report,
-      {properties: ['frequency'], entity: 'processInstance'},
-      {type: 'runningDate', value: {unit: 'automatic'}}
-    )
-  ).toBeTruthy();
-  expect(
-    isAllowed(
-      report,
-      {properties: ['duration'], entity: 'processInstance'},
-      {type: 'runningDate', value: {unit: 'automatic'}}
-    )
-  ).toBeFalsy();
-  expect(
-    isAllowed(
-      report,
-      {properties: [{name: 'doubleVar', type: 'Double'}], entity: 'variable'},
-      {type: 'flowNodes', value: null}
-    )
-  ).toBeFalsy();
-  expect(
-    isAllowed(
-      report,
-      {properties: [{name: 'doubleVar', type: 'Double'}], entity: 'variable'},
-      {type: 'none', value: null}
-    )
-  ).toBeTruthy();
-});
-
-it('should allow only visualization options that make sense for the selected view and group', () => {
-  expect(
-    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'none', value: null}, 'table')
-  ).toBeTruthy();
-  expect(
-    isAllowed(report, {properties: ['rawData'], entity: null}, {type: 'none', value: null}, 'heat')
-  ).toBeFalsy();
-
-  expect(
-    isAllowed(
-      report,
-      {
-        entity: 'processInstance',
-        properties: ['duration'],
-      },
-      {
-        type: 'startDate',
-        value: {
-          unit: 'day',
-        },
-      },
-      'pie'
-    )
-  ).toBeTruthy();
-  expect(
-    isAllowed(
-      report,
-      {
-        entity: 'processInstance',
-        properties: ['duration'],
-      },
-      {
-        type: 'none',
-        value: null,
-      },
-      'pie'
-    )
-  ).toBeFalsy();
-});
-
-it('should allow combo bar/line visualization only for multi measure reports', () => {
-  expect(
-    isAllowed(
-      report,
-      {
-        entity: 'processInstance',
-        properties: ['frequency'],
-      },
-      {
-        type: 'startDate',
-        value: {
-          unit: 'day',
-        },
-      },
-      'barLine'
-    )
-  ).toBeFalsy();
-
-  expect(
-    isAllowed(
-      report,
-      {
-        entity: 'flownode',
-        properties: ['count', 'duration'],
-      },
-      {
-        type: 'startDate',
-        value: {
-          unit: 'day',
-        },
-      },
-      'barLine'
-    )
-  ).toBeTruthy();
-});
-
-it('should forbid pie charts for distributed user task reports', () => {
-  const report = {
-    data: {
-      distributedBy: {type: 'userTask', value: null},
-      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-    },
+it('should ensure that distributions stay valid', () => {
+  const reportWithDistribution = {
+    ...report,
+    distributedBy: {type: 'variable', value: {name: 'integerVar', type: 'Integer'}},
   };
-  const view = {entity: 'userTask', properties: ['frequency']};
-  const groupBy = {type: 'assignee', value: null};
+  expect(
+    updateReport('process', reportWithDistribution, 'group', 'duration').distributedBy.$set
+  ).toEqual({
+    type: 'none',
+    value: null,
+  });
 
-  expect(isAllowed(report, view, groupBy, 'bar')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
+  expect(
+    updateReport('process', reportWithDistribution, 'group', 'endDate').distributedBy.$set
+  ).toEqual(reportWithDistribution.distributedBy);
 });
 
-it('should forbid pie charts and heatmap for distributed userTask reports', () => {
-  const report = {
-    data: {
-      distributedBy: {type: 'assignee', value: null},
-      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-    },
+it('should ensure that visualizations stay valid', () => {
+  expect(updateReport('process', report, 'group', 'none').visualization.$set).toBe('number');
+  expect(updateReport('process', report, 'group', 'endDate').visualization.$set).toBe('bar');
+});
+
+it('should reset distribution when switching view and distribution is none', () => {
+  expect(updateReport('process', report, 'view', 'flowNode').distributedBy.$set).toEqual({
+    type: 'flowNode',
+    value: null,
+  });
+});
+
+it('should reset distribution when switching group away from flowNodes', () => {
+  const flowNodeReport = {
+    ...report,
+    view: {entity: 'flowNode', properties: ['frequency']},
+    groupBy: {type: 'flowNodes', value: null},
   };
-  const view = {entity: 'userTask', properties: ['frequency']};
-  const groupBy = {type: 'userTasks', value: null};
-
-  expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
-  expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
+  expect(updateReport('process', flowNodeReport, 'group', 'startDate').distributedBy.$set).toEqual({
+    type: 'flowNode',
+    value: null,
+  });
 });
 
-it('should forbid heatmap for multi-definition reports', () => {
-  const report = {
-    data: {
+it('should update y axis labels', () => {
+  expect(
+    updateReport('process', report, 'view', 'userTask', {view: {properties: {$set: ['duration']}}})
+      .configuration.$set.yLabel
+  ).toBe('User Task Duration');
+});
+
+it('should update x axis labels', () => {
+  expect(updateReport('process', report, 'group', 'endDate').configuration.$set.xLabel).toBe(
+    'End Date'
+  );
+  expect(
+    updateReport('process', report, 'group', 'variable', {
+      groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
+    }).configuration.$set.xLabel
+  ).toBe('boolVar');
+});
+
+it('should update sorting', () => {
+  expect(updateReport('process', report, 'view', 'rawData').configuration.$set.sorting).toEqual({
+    by: 'startDate',
+    order: 'desc',
+  });
+});
+
+describe('process exclusive updates', () => {
+  it('should reset heatmap target values', () => {
+    const heatmapReport = {
+      ...report,
+      view: {entity: 'flowNode', properties: ['duration']},
+      groupBy: {type: 'flowNodes'},
+      visualization: 'heat',
+      configuration: {
+        ...report.configuration,
+        heatmapTargetValue: {active: true, values: {flowNode: {value: 12, unit: 'hours'}}},
+      },
+    };
+
+    expect(
+      updateReport('process', heatmapReport, 'visualization', 'barChart').configuration.$set
+        .heatmapTargetValue
+    ).toEqual({active: false, values: {}});
+  });
+
+  it('should remove sum aggregations from incidents', () => {
+    const durationReport = {
+      ...report,
+      view: {entity: 'processInstance', properties: ['duration']},
+      configuration: {
+        ...report.configuration,
+        aggregationTypes: ['avg', 'sum', 'min'],
+      },
+    };
+
+    expect(
+      updateReport('process', durationReport, 'view', 'incident').configuration.$set
+        .aggregationTypes
+    ).toEqual(['avg', 'min']);
+  });
+
+  it('should use average aggregation by default for incident views', () => {
+    const durationReport = {
+      ...report,
+      view: {entity: 'processInstance', properties: ['duration']},
+      configuration: {
+        ...report.configuration,
+        aggregationTypes: ['sum'],
+      },
+    };
+
+    expect(
+      updateReport('process', durationReport, 'view', 'incident').configuration.$set
+        .aggregationTypes
+    ).toEqual(['avg']);
+  });
+
+  it('should remove median aggregation for group by process reports', () => {
+    const processReport = {
+      ...report,
       definitions: [{}, {}],
-      distributedBy: {type: 'none', value: null},
-      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-    },
-  };
-  const view = {entity: 'userTask', properties: ['frequency']};
-  const groupBy = {type: 'userTasks', value: null};
+      view: {entity: 'processInstance', properties: ['duration']},
+      configuration: {
+        ...report.configuration,
+        aggregationTypes: ['avg', 'sum', 'median', 'min'],
+      },
+    };
 
-  expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'pie')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
-});
-
-it('should find a selected option based on property', () => {
-  expect(
-    findSelectedOption(view, 'data', {properties: ['frequency'], entity: 'processInstance'})
-  ).toBe(view[1].options[0]);
-  expect(findSelectedOption(groupBy, 'key', 'startDate_day')).toBe(groupBy[4].options[4]);
-});
-
-describe('update', () => {
-  const countProcessInstances = {
-    entity: 'processInstance',
-    properties: ['frequency'],
-  };
-
-  const startDate = {
-    type: 'startDate',
-    value: {unit: 'month'},
-  };
-
-  it('should just update visualization', () => {
-    expect(update('visualization', 'bar')).toEqual({visualization: {$set: 'bar'}});
+    expect(
+      updateReport('process', processReport, 'group', 'process').configuration.$set.aggregationTypes
+    ).toEqual(['avg', 'sum', 'min']);
   });
 
-  it('should update groupby', () => {
+  it('should use average aggregation by default for group by process reports', () => {
+    const processReport = {
+      ...report,
+      definitions: [{}, {}],
+      view: {entity: 'processInstance', properties: ['duration']},
+      configuration: {
+        ...report.configuration,
+        aggregationTypes: ['median'],
+      },
+    };
+
     expect(
-      update('groupBy', startDate, {
-        report: {
-          data: {
-            view: countProcessInstances,
-            visualization: 'bar',
-            distributedBy: {type: 'none', value: null},
-            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-          },
+      updateReport('process', processReport, 'group', 'process').configuration.$set.aggregationTypes
+    ).toEqual(['avg']);
+  });
+
+  it('should remove process parts if report setup does not support it', () => {
+    const processPartReport = {
+      ...report,
+      view: {entity: 'processInstance', properties: ['duration']},
+      groupBy: {type: 'none', value: null},
+      visualization: 'number',
+      configuration: {
+        ...report.configuration,
+        processPart: {start: 'flowNode1', end: 'flowNode2'},
+      },
+    };
+
+    expect(
+      updateReport('process', processPartReport, 'group', 'startDate').configuration.$set
+        .processPart
+    ).toEqual(processPartReport.configuration.processPart);
+
+    expect(
+      updateReport('process', processPartReport, 'view', 'processInstance', {
+        view: {properties: {$set: ['frequency']}},
+      }).configuration.$set.processPart
+    ).toBe(null);
+  });
+
+  it('should remove target values for multi-measure reports', () => {
+    const targetValueReport = {
+      ...report,
+      configuration: {
+        ...report.configuration,
+        targetValue: {
+          active: true,
+          countChart: {isBelow: false, value: '10'},
         },
-      })
-    ).toEqual({groupBy: {$set: startDate}, configuration: {xLabel: {$set: 'Start Date'}}});
-  });
+      },
+    };
 
-  it("should switch visualization when it's incompatible with the new group to the first compatible one", () => {
     expect(
-      update('groupBy', startDate, {
-        report: {
-          data: {
-            view: countProcessInstances,
-            visualization: 'number',
-            distributedBy: {type: 'none', value: null},
-            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-          },
-        },
-      }).visualization
-    ).toEqual({$set: 'table'});
-  });
+      updateReport('process', targetValueReport, 'view', 'processInstance', {
+        view: {properties: {$set: ['duration']}},
+      }).configuration.$set.targetValue
+    ).toEqual(targetValueReport.configuration.targetValue);
 
-  it('should automatically select an unambiguous visualization when updating group', () => {
     expect(
-      update(
-        'groupBy',
-        {type: 'none', value: null},
-        {
-          report: {
-            data: {
-              view: countProcessInstances,
-              visualization: 'heat',
-              distributedBy: {type: 'none'},
-              configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-            },
-          },
-        }
-      ).visualization
-    ).toEqual({$set: 'number'});
-  });
-
-  it('should update view', () => {
-    expect(
-      update('view', countProcessInstances, {
-        report: {
-          data: {
-            groupBy: startDate,
-            visualization: 'bar',
-            distributedBy: {type: 'none', value: null},
-            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-          },
-        },
-      })
-    ).toEqual({
-      view: {$set: countProcessInstances},
-      configuration: {xLabel: {$set: 'Start Date'}, yLabel: {$set: 'Process Instance Count'}},
-    });
-  });
-
-  it('should adjust groupby and visualization when changing view', () => {
-    expect(
-      update('view', countProcessInstances, {
-        report: {
-          data: {
-            groupBy: {type: 'flowNodes', value: null},
-            visualization: 'heat',
-            distributedBy: {type: 'none'},
-            configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-          },
-        },
-      })
-    ).toMatchSnapshot();
-  });
-
-  it('should automatically select new visualization in the same old visualization group if possible', () => {
-    expect(
-      update(
-        'view',
-        {entity: 'flowNode', properties: ['frequency']},
-        {
-          report: {
-            data: {
-              view: {entity: 'flowNode', properties: ['frequency', 'duration']},
-              groupBy: startDate,
-              visualization: 'barLine',
-              distributedBy: {type: 'none', value: null},
-              configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
-            },
-          },
-        }
-      ).visualization
-    ).toEqual({$set: 'bar'});
+      updateReport('process', targetValueReport, 'view', 'processInstance', {
+        view: {properties: {$set: ['frequency', 'duration']}},
+      }).configuration.$set.targetValue.active
+    ).toBe(false);
   });
 });

@@ -36,7 +36,7 @@ export default class Select extends React.Component {
     React.Children.forEach(ignoreFragments(children), (child) => {
       if (child?.props.value === this.props.value) {
         label = child.props.children;
-      } else if (child?.type === Select.Submenu) {
+      } else if (child?.type === Select.Submenu && child?.props.children) {
         const sublabel = this.getLabel(child.props.children);
         if (sublabel) {
           label = child.props.label + ' : ' + sublabel;

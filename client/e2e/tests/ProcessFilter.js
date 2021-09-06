@@ -420,6 +420,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(Report.nodeTableCell('Assign Approver Group').exists).ok();
 

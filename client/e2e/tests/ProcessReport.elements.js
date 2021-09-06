@@ -26,6 +26,7 @@ export const deleteButton = Selector('.delete-button');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const groupbyDropdown = Selector('.label').withText('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
+export const removeGroupButton = Selector('.removeGrouping');
 export const visualizationDropdown = Selector('.label').withText('Visualization').nextSibling();
 export const option = (text) => Selector('.DropdownOption').withExactText(text);
 export const configurationOption = (text) =>

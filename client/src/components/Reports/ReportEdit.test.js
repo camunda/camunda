@@ -13,7 +13,6 @@ import {EntityNameForm, InstanceCount, ReportRenderer} from 'components';
 
 import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
-import ReportSelect from './controlPanels/ReportSelect';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -280,14 +279,6 @@ it('should only resolve the save promise if a decision for conflicts has been ma
   await flushPromises();
 
   expect(promiseResolved).toBe(true);
-});
-
-it('should disable the visualization Select if view or groupBy is not selected', () => {
-  const node = shallow(
-    <ReportEdit {...props} report={{...report, data: {...report.data, groupBy: null}}} />
-  );
-
-  expect(node.find(ReportSelect)).toBeDisabled();
 });
 
 it('should go back to a custom route after saving if provided as URL Search Param', async () => {
