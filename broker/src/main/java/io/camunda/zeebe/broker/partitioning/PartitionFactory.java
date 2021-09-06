@@ -18,7 +18,7 @@ import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
@@ -47,6 +47,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -55,7 +56,6 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 // TODO make package private again
@@ -129,7 +129,7 @@ public final class PartitionFactory {
   List<ZeebePartition> constructPartitions(
       final RaftPartitionGroup partitionGroup,
       final List<PartitionListener> partitionListeners,
-      final Consumer<TopologyPartitionListener> partitionListenerConsumer) {
+      final TopologyManager topologyManager) {
     final var partitions = new ArrayList<ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
     final var eventService = clusterServices.getEventService();
@@ -144,7 +144,7 @@ public final class PartitionFactory {
 
     final var typedRecordProcessorsFactory =
         createFactory(
-            partitionListenerConsumer,
+            topologyManager,
             localBroker,
             communicationService,
             eventService,
@@ -192,7 +192,7 @@ public final class PartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final Consumer<TopologyPartitionListener> partitionListenerConsumer,
+      final TopologyManager topologyManager,
       final BrokerInfo localBroker,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
@@ -204,27 +204,36 @@ public final class PartitionFactory {
 
       final TopologyPartitionListenerImpl partitionListener =
           new TopologyPartitionListenerImpl(actor);
-      partitionListenerConsumer.accept(partitionListener);
+      topologyManager.addTopologyPartitionListener(partitionListener);
 
       final DeploymentDistributorImpl deploymentDistributor =
           new DeploymentDistributorImpl(
               communicationService, eventService, partitionListener, actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(communicationService, partitionListenerConsumer, actor);
+          new PartitionCommandSenderImpl(communicationService, partitionListener);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(eventService);
 
-      return EngineProcessors.createEngineProcessors(
-          processingContext,
-          localBroker.getPartitionsCount(),
-          subscriptionCommandSender,
-          deploymentDistributor,
-          deploymentRequestHandler,
-          jobsAvailableNotification::onJobsAvailable);
+      final var processor =
+          EngineProcessors.createEngineProcessors(
+              processingContext,
+              localBroker.getPartitionsCount(),
+              subscriptionCommandSender,
+              deploymentDistributor,
+              deploymentRequestHandler,
+              jobsAvailableNotification::onJobsAvailable);
+
+      return processor.withListener(
+          new StreamProcessorLifecycleAware() {
+            @Override
+            public void onClose() {
+              topologyManager.removeTopologyPartitionListener(partitionListener);
+            }
+          });
     };
   }
 }

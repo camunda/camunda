@@ -150,7 +150,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
               partitions.addAll(
                   partitionFactory.constructPartitions(
-                      partitionGroup, partitionListeners, this::addTopologyPartitionListener));
+                      partitionGroup, partitionListeners, topologyManager));
 
               final var futures =
                   partitions.stream()
