@@ -39,6 +39,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
   public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
     final var director = context.getSnapshotDirector();
     context.getComponentHealthMonitor().removeComponent(director.getName());
+    context.getRaftPartition().getServer().removeCommittedEntryListener(director);
     final ActorFuture<Void> future = director.closeAsync();
     context.setSnapshotDirector(null);
     return future;
