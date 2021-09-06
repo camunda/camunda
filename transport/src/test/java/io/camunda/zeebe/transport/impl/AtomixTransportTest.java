@@ -365,6 +365,11 @@ public class AtomixTransportTest {
     }
 
     @Override
+    public RequestType getRequestType() {
+      return RequestType.COMMAND;
+    }
+
+    @Override
     public int getLength() {
       return msg.length();
     }

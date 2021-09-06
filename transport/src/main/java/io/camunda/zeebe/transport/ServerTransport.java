@@ -12,16 +12,6 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 public interface ServerTransport extends ServerOutput, AutoCloseable {
 
   /**
-   * Subscribes to the given partition and call's the given handler on each new COMMAND request.
-   *
-   * @param partitionId the partition, for which should be subscribed
-   * @param requestHandler the handler which should be called.
-   */
-  default ActorFuture<Void> subscribe(final int partitionId, final RequestHandler requestHandler) {
-    return subscribe(partitionId, RequestType.COMMAND, requestHandler);
-  }
-
-  /**
    * Subscribes to the given partition and call's the given handler on each new request of the given
    * type.
    *
