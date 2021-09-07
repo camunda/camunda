@@ -105,5 +105,7 @@ type Mutation {
     # Claim a task with taskId to currently logged in user. Returns the task.
     claimTask(taskId: String!, assignee: String): Task!
     # Unclaim a task with taskId. Returns the task.
-	  unclaimTask(taskId: String!): Task!
+	unclaimTask(taskId: String!): Task!
+    # Delete process instance by given processInstanceId. Returns true if process instance could be deleted.
+    deleteProcessInstance(processInstanceId: String!): Boolean!
 }

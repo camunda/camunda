@@ -8,14 +8,14 @@ package io.camunda.tasklist.schema.indices;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeInstanceIndex extends AbstractIndexDescriptor {
+public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
+    implements ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "flownode-instance";
 
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String POSITION = "position";
-  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String PARENT_FLOW_NODE_ID = "parentFlowNodeId";
 
   @Override

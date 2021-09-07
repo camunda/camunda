@@ -14,14 +14,13 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VariableIndex extends AbstractIndexDescriptor {
+public class VariableIndex extends AbstractIndexDescriptor implements ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "variable";
 
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String SCOPE_FLOW_NODE_ID = "scopeFlowNodeId";
-  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String NAME = "name";
   public static final String VALUE = "value";
   public static final String FULL_VALUE = "fullValue";

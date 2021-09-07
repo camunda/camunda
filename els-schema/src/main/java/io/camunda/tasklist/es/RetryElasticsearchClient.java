@@ -63,6 +63,9 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -181,9 +184,7 @@ public class RetryElasticsearchClient {
     return executeWithGivenRetries(
         10,
         String.format("Exists document from %s with id %s", name, id),
-        () -> {
-          return esClient.exists(new GetRequest(name).id(id), requestOptions);
-        },
+        () -> esClient.exists(new GetRequest(name).id(id), requestOptions),
         null);
   }
 
@@ -201,6 +202,16 @@ public class RetryElasticsearchClient {
           }
         },
         null);
+  }
+
+  public boolean deleteDocumentsByQuery(String indexName, QueryBuilder query) {
+    return executeWithRetries(
+        () -> {
+          final DeleteByQueryRequest request = new DeleteByQueryRequest(indexName).setQuery(query);
+          final BulkByScrollResponse response =
+              esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+          return response.getBulkFailures().isEmpty();
+        });
   }
 
   public boolean deleteDocument(String name, String id) {

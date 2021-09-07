@@ -286,6 +286,14 @@ public class TasklistTester {
     return this;
   }
 
+  public Boolean deleteProcessInstance(String processInstanceId) {
+    final String mutation =
+        String.format(
+            "mutation { deleteProcessInstance(processInstanceId: \"%s\") }", processInstanceId);
+    graphQLResponse = graphQLTestTemplate.postMultipart(mutation, "{}");
+    return graphQLResponse.get("$.data.deleteProcessInstance", Boolean.class);
+  }
+
   public TasklistTester deployProcess(String... classpathResources) {
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, classpathResources);
     return this;
