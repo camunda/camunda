@@ -34,7 +34,7 @@ class FlowNodeSelection {
   init = () => {
     this.rootNodeSelectionDisposer = when(
       () => currentInstanceStore.state.instance?.id !== undefined,
-      () => this.setSelection(this.rootNode)
+      () => this.clearSelection()
     );
   };
 
@@ -42,12 +42,16 @@ class FlowNodeSelection {
     this.state.selection = selection;
   };
 
+  clearSelection = () => {
+    this.setSelection(this.rootNode);
+  };
+
   selectFlowNode = (selection: Selection) => {
     if (
       selection.flowNodeId === undefined ||
       (!this.areMultipleInstancesSelected && this.isSelected(selection))
     ) {
-      this.setSelection(this.rootNode);
+      this.clearSelection();
     } else {
       this.setSelection(selection);
     }

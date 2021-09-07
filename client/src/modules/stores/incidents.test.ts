@@ -115,6 +115,7 @@ describe('stores/incidents', () => {
         id: '2251799813700301',
         jobId: '2251799813699901',
         lastOperation: null,
+        isSelected: false,
       },
     ]);
   });

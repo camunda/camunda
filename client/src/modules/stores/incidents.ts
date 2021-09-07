@@ -16,6 +16,7 @@ import {
 import {fetchProcessInstanceIncidents} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {flowNodeSelectionStore} from './flowNodeSelection';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type FlowNode = {
@@ -46,6 +47,7 @@ type Incident = {
     processDefinitionId: string;
     processDefinitionName: string;
   };
+  isSelected: boolean;
 };
 type Response = {
   count: number;
@@ -220,7 +222,23 @@ class Incidents extends NetworkReconnectionHandler {
       flowNodeName: singleInstanceDiagramStore.getFlowNodeName(
         incident.flowNodeId
       ),
+      isSelected: flowNodeSelectionStore.isSelected({
+        flowNodeId: incident.flowNodeId,
+        flowNodeInstanceId: incident.flowNodeInstanceId,
+        isMultiInstance: false,
+      }),
     }));
+  }
+
+  isSingleIncidentSelected(flowNodeInstanceId: string) {
+    const selectedInstances = this.incidents.filter(
+      (incident) => incident.isSelected
+    );
+
+    return (
+      selectedInstances.length === 1 &&
+      selectedInstances[0].flowNodeInstanceId === flowNodeInstanceId
+    );
   }
 
   get flowNodes() {

@@ -57,25 +57,33 @@ describe('sortData', () => {
 });
 
 const incidents = [
-  createIncident({
-    id: '1',
-    creationTime: '2017-03-14T15:17:21.296+0000',
-    errorType: {id: 'NO_MORE_RETRIES', name: 'No more retries left'},
-    flowNodeName: 'Task B',
-  }),
-  createIncident({
-    id: '2',
-    creationTime: '2018-12-14T15:17:32.919+0000',
-    errorType: {id: 'IO_ERROR', name: 'I/O error'},
-    flowNodeName: 'Task A',
-  }),
-
-  createIncident({
-    id: '3',
-    creationTime: '2018-03-14T15:17:32.919+0000',
-    errorType: {id: 'IO_ERROR', name: 'I/O error'},
-    flowNodeName: 'Task C',
-  }),
+  {
+    ...createIncident({
+      id: '1',
+      creationTime: '2017-03-14T15:17:21.296+0000',
+      errorType: {id: 'NO_MORE_RETRIES', name: 'No more retries left'},
+      flowNodeName: 'Task B',
+    }),
+    isSelected: false,
+  },
+  {
+    ...createIncident({
+      id: '2',
+      creationTime: '2018-12-14T15:17:32.919+0000',
+      errorType: {id: 'IO_ERROR', name: 'I/O error'},
+      flowNodeName: 'Task A',
+    }),
+    isSelected: false,
+  },
+  {
+    ...createIncident({
+      id: '3',
+      creationTime: '2018-03-14T15:17:32.919+0000',
+      errorType: {id: 'IO_ERROR', name: 'I/O error'},
+      flowNodeName: 'Task C',
+    }),
+    isSelected: false,
+  },
 ];
 
 describe('sortIncidents', () => {

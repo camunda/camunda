@@ -18,6 +18,7 @@ import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {incidentsStore} from 'modules/stores/incidents';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
@@ -67,6 +68,7 @@ describe('IncidentsTable', () => {
   afterEach(() => {
     incidentsStore.reset();
     authenticationStore.reset();
+    flowNodeSelectionStore.reset();
   });
 
   it('should render the right column headers', async () => {
@@ -327,6 +329,57 @@ describe('IncidentsTable', () => {
       expect(
         screen.getByRole('button', {name: 'Sort by jobId'})
       ).toBeDisabled();
+    });
+  });
+
+  describe('Selection', () => {
+    it('should deselect selected incident', () => {
+      const incidents = [createIncident()];
+
+      incidentsStore.setIncidents({incidents, count: 1});
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: incidents[0].flowNodeId,
+        isMultiInstance: false,
+      });
+
+      render(<IncidentsTable />, {wrapper: Wrapper});
+      expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
+
+      userEvent.click(screen.getByRole('row', {selected: true}));
+      expect(screen.getByRole('row', {selected: false})).toBeInTheDocument();
+    });
+
+    it('should select single incident when multiple incidents are selected', () => {
+      const incidents = [
+        createIncident({flowNodeId: 'myTask'}),
+        createIncident({flowNodeId: 'myTask'}),
+      ];
+
+      incidentsStore.setIncidents({incidents, count: 2});
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: incidents[0].flowNodeId,
+        isMultiInstance: false,
+      });
+
+      render(<IncidentsTable />, {wrapper: Wrapper});
+      expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);
+
+      userEvent.click(
+        screen.getAllByRole('row', {name: 'Incident Condition error'})[0]
+      );
+
+      expect(
+        screen.getByRole('row', {
+          name: 'Incident Condition error',
+          selected: true,
+        })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('row', {
+          name: 'Incident Condition error',
+          selected: false,
+        })
+      ).toBeInTheDocument();
     });
   });
 });

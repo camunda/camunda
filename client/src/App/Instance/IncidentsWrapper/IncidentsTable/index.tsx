@@ -126,11 +126,13 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                   rootCauseInstance.instanceId === processInstanceId
                 : true;
 
+              //TODO: remove when IS_NEXT_INCIDENTS is removed
               const isSelected = flowNodeSelectionStore.isSelected({
                 flowNodeId: incident.flowNodeId,
                 flowNodeInstanceId: incident.flowNodeInstanceId,
                 isMultiInstance: false,
               });
+
               return (
                 <Styled.Transition
                   key={incident.id}
@@ -140,15 +142,23 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                 >
                   <Styled.IncidentTR
                     data-testid={`tr-incident-${incident.id}`}
-                    aria-selected={isSelected}
-                    isSelected={isSelected}
-                    onClick={() =>
-                      flowNodeSelectionStore.selectFlowNode({
-                        flowNodeId: incident.flowNodeId,
-                        flowNodeInstanceId: incident.flowNodeInstanceId,
-                        isMultiInstance: false,
-                      })
+                    aria-selected={
+                      IS_NEXT_INCIDENTS ? incident.isSelected : isSelected
                     }
+                    isSelected={
+                      IS_NEXT_INCIDENTS ? incident.isSelected : isSelected
+                    }
+                    onClick={() => {
+                      incidentsStore.isSingleIncidentSelected(
+                        incident.flowNodeInstanceId
+                      )
+                        ? flowNodeSelectionStore.clearSelection()
+                        : flowNodeSelectionStore.selectFlowNode({
+                            flowNodeId: incident.flowNodeId,
+                            flowNodeInstanceId: incident.flowNodeInstanceId,
+                            isMultiInstance: false,
+                          });
+                    }}
                     aria-label={`Incident ${
                       IS_NEXT_INCIDENTS
                         ? incident.errorType.name
