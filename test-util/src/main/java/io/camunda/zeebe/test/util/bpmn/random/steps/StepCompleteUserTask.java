@@ -8,27 +8,14 @@
 package io.camunda.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 
-public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
+public class StepCompleteUserTask extends AbstractExecutionStep {
 
-  private final String jobType;
   private final String elementId;
 
-  public StepActivateAndCompleteJob(final String jobType, final String elementId) {
-    this(jobType, elementId, Collections.emptyMap());
-  }
-
-  public StepActivateAndCompleteJob(
-      final String jobType, final String elementId, final Map<String, Object> variables) {
-    this.jobType = jobType;
-    this.variables.putAll(variables);
+  public StepCompleteUserTask(final String elementId) {
     this.elementId = elementId;
-  }
-
-  public String getJobType() {
-    return jobType;
   }
 
   public String getElementId() {
@@ -54,7 +41,7 @@ public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + jobType.hashCode();
+    result = 31 * result + elementId.hashCode();
     return result;
   }
 
@@ -62,16 +49,12 @@ public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    } else if (o == null || getClass() != o.getClass()) {
       return false;
-    }
-    if (!super.equals(o)) {
+    } else if (!super.equals(o)) {
       return false;
+    } else {
+      return elementId.equals(((StepCompleteUserTask) o).getElementId());
     }
-
-    final StepActivateAndCompleteJob that = (StepActivateAndCompleteJob) o;
-
-    return jobType.equals(that.jobType);
   }
 }
