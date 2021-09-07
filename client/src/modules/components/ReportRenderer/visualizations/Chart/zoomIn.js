@@ -120,7 +120,11 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
       container.appendChild(selectionLeft);
       container.appendChild(selectionRight);
 
-      chart.options.onHover = onHover;
+      const originalHover = chart.options.onHover;
+      chart.options.onHover = function (...args) {
+        originalHover?.(...args);
+        onHover.call(this, ...args);
+      };
       canvas.addEventListener('mousedown', mousedown);
     },
     destroy: function () {

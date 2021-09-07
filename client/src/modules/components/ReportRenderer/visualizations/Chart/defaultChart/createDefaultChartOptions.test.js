@@ -32,6 +32,7 @@ it('should create dataset option for barchart report', () => {
   expect(options).toEqual({
     backgroundColor: 'testColor',
     borderColor: 'testColor',
+    hoverBackgroundColor: 'testColor',
     borderWidth: 1,
     legendColor: 'testColor',
   });

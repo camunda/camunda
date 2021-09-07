@@ -348,6 +348,7 @@ export function createDatasetOptions({
       return {
         borderColor: color,
         backgroundColor: color,
+        hoverBackgroundColor: color,
         legendColor,
         borderWidth: 1,
       };

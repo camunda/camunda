@@ -70,5 +70,9 @@ function getStripedColor(color) {
     ctx.stroke();
   }
 
-  return ctx.createPattern(container, 'repeat');
+  const canvasPattern = ctx.createPattern(container, 'repeat');
+  // we need the color of the pattern in order to fade non selected bars on hover
+  canvasPattern.color = color;
+
+  return canvasPattern;
 }
