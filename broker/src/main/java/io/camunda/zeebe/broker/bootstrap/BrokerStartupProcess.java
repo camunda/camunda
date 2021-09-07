@@ -8,24 +8,37 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupProcess;
+import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class BrokerStartupProcess {
 
-  public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final List<StartupStep<BrokerStartupContext>> STARTUP_STEPS =
+      List.of(new MonitoringServerStep());
 
-  private final StartupProcess<BrokerStartupContext> startupProcess =
-      new StartupProcess<>(LOG, List.of(new MonitoringServerStep()));
+  private final StartupProcess<BrokerStartupContext> startupProcess;
+
   private BrokerStartupContext context;
   private final ConcurrencyControl concurrencyControl;
 
   public BrokerStartupProcess(final BrokerStartupContext brokerStartupContext) {
     concurrencyControl = brokerStartupContext.getConcurrencyControl();
     context = brokerStartupContext;
+
+    final var brokerStepMetrics = new BrokerStepMetrics();
+
+    final var decoratedSteps =
+        STARTUP_STEPS.stream()
+            .map(step -> new BrokerStepMetricDecorator(brokerStepMetrics, step))
+            .collect(Collectors.toList());
+    startupProcess = new StartupProcess<>(LOG, decoratedSteps);
   }
 
   public ActorFuture<BrokerContext> start() {
