@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -41,8 +40,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-
-  public static final String ACCESS_TOKENS = "access_tokens";
 
   @Autowired
   protected OperateProperties operateProperties;
@@ -76,7 +73,7 @@ public class SSOController {
 
   /**
    * Logged in callback -  Is called by auth0 with results of user authentication (GET) <br/>
-   * Redirects to root url if successful, otherwise it will redirected to an error url.
+   * Redirects to root url if successful, otherwise it will be redirected to an error url.
    * @param req
    * @param res
    * @throws IOException
@@ -89,25 +86,18 @@ public class SSOController {
           .noOfRetry(10)
           .delayInterval(500, TimeUnit.MILLISECONDS)
           .retryOn(IdentityVerificationException.class)
-          .retryConsumer(() -> retrieveToken(req, res))
+          .retryConsumer(() -> authenticationController.handle(req, res))
           .build()
           .retry();
-      authenticate(tokens);
-      saveTokens(req, tokens);
+      if (authenticate(tokens)) {
+        req.getSession(true).setMaxInactiveInterval(tokens.getExpiresIn().intValue());
+      }
       redirectToPage(req, res);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
       clearContextAndRedirectToNoPermission(req,res, t);
     }
-  }
-
-  private Tokens retrieveToken(final HttpServletRequest request, final HttpServletResponse response) throws IdentityVerificationException {
-    Tokens tokens = (Tokens) request.getSession().getAttribute(ACCESS_TOKENS);
-    if( tokens == null) {
-      tokens = authenticationController.handle(request, response);
-    }
-    return tokens;
   }
 
   private boolean authenticate(final Tokens tokens) {
@@ -124,12 +114,6 @@ public class SSOController {
     } else {
         res.sendRedirect(ROOT);
     }
-  }
-
-  private void saveTokens(final HttpServletRequest req,final Tokens tokens) {
-    HttpSession httpSession = req.getSession();
-    httpSession.setMaxInactiveInterval(tokens.getExpiresIn().intValue());
-    httpSession.setAttribute(ACCESS_TOKENS, tokens);
   }
 
   /**
