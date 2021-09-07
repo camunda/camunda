@@ -68,6 +68,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -464,7 +465,7 @@ public final class Broker implements AutoCloseable {
               atomix, partitionListener, zeebeState.getDeploymentState(), actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(atomix, topologyManager, actor);
+          new PartitionCommandSenderImpl(atomix, partitionListener);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
@@ -474,13 +475,22 @@ public final class Broker implements AutoCloseable {
       final LongPollingJobNotification jobsAvailableNotification =
           new LongPollingJobNotification(atomix.getEventService());
 
-      return EngineProcessors.createEngineProcessors(
-          processingContext,
-          clusterCfg.getPartitionsCount(),
-          subscriptionCommandSender,
-          deploymentDistributor,
-          deploymentRequestHandler,
-          jobsAvailableNotification::onJobsAvailable);
+      final var processor =
+          EngineProcessors.createEngineProcessors(
+              processingContext,
+              clusterCfg.getPartitionsCount(),
+              subscriptionCommandSender,
+              deploymentDistributor,
+              deploymentRequestHandler,
+              jobsAvailableNotification::onJobsAvailable);
+
+      return processor.withListener(
+          new StreamProcessorLifecycleAware() {
+            @Override
+            public void onClose() {
+              topologyManager.removeTopologyPartitionListener(partitionListener);
+            }
+          });
     };
   }
 
