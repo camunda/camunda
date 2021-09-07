@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.PartitionListener;
@@ -28,17 +29,20 @@ public class BrokerStartupContextImpl implements BrokerStartupContext {
   private final ActorSchedulingService actorSchedulingService;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
 
-  private BrokerHealthCheckService healthCheckService;
+  private final BrokerHealthCheckService healthCheckService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final SpringBrokerBridge springBrokerBridge,
       final ConcurrencyControl concurrencyControl,
-      final ActorSchedulingService actorSchedulingService) {
-    this.brokerInfo = brokerInfo;
-    this.springBrokerBridge = springBrokerBridge;
-    this.concurrencyControl = concurrencyControl;
-    this.actorSchedulingService = actorSchedulingService;
+      final ActorSchedulingService actorSchedulingService,
+      final BrokerHealthCheckService healthCheckService) {
+
+    this.brokerInfo = requireNonNull(brokerInfo);
+    this.springBrokerBridge = requireNonNull(springBrokerBridge);
+    this.concurrencyControl = requireNonNull(concurrencyControl);
+    this.actorSchedulingService = requireNonNull(actorSchedulingService);
+    this.healthCheckService = requireNonNull(healthCheckService);
   }
 
   @Override
@@ -67,11 +71,6 @@ public class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public void setHealthCheckService(final BrokerHealthCheckService healthCheckService) {
-    this.healthCheckService = healthCheckService;
-  }
-
-  @Override
   public void addPartitionListener(final PartitionListener listener) {
     partitionListeners.add(requireNonNull(listener));
   }
@@ -83,6 +82,6 @@ public class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public List<PartitionListener> getPartitionListeners() {
-    return partitionListeners;
+    return unmodifiableList(partitionListeners);
   }
 }

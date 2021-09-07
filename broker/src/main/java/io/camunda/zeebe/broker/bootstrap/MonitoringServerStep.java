@@ -46,8 +46,7 @@ final class MonitoringServerStep implements StartupStep<BrokerStartupContext> {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var brokerInfo = brokerStartupContext.getBrokerInfo();
 
-    final var healthCheckService = new BrokerHealthCheckService(brokerInfo);
-
+    final var healthCheckService = brokerStartupContext.getHealthCheckService();
     concurrencyControl.runOnCompletion(
         brokerStartupContext.scheduleActor(healthCheckService),
         (nil, error) ->
@@ -68,7 +67,6 @@ final class MonitoringServerStep implements StartupStep<BrokerStartupContext> {
       final var springBrokerBridge = brokerStartupContext.getSpringBrokerBridge();
       springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
       brokerStartupContext.addPartitionListener(healthCheckService);
-      brokerStartupContext.setHealthCheckService(healthCheckService);
       startupFuture.complete(brokerStartupContext);
     }
   }
@@ -79,28 +77,21 @@ final class MonitoringServerStep implements StartupStep<BrokerStartupContext> {
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
     final var healthCheckService = brokerShutdownContext.getHealthCheckService();
 
+    final var springBrokerBridge = brokerShutdownContext.getSpringBrokerBridge();
+    springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> null);
     brokerShutdownContext.removePartitionListener(healthCheckService);
     concurrencyControl.runOnCompletion(
         healthCheckService.closeAsync(),
         (nil, error) ->
             forwardExceptions(
-                () -> completeShutDown(brokerShutdownContext, shutdownFuture, error),
+                () -> {
+                  if (error != null) {
+                    shutdownFuture.completeExceptionally(error);
+                  } else {
+                    shutdownFuture.complete(brokerShutdownContext);
+                  }
+                },
                 shutdownFuture));
-  }
-
-  private void completeShutDown(
-      final BrokerStartupContext brokerShutdownContext,
-      final ActorFuture<BrokerStartupContext> shutdownFuture,
-      final Throwable error) {
-    if (error != null) {
-      shutdownFuture.completeExceptionally(error);
-    } else {
-      try {
-        brokerShutdownContext.setHealthCheckService(null);
-      } finally {
-        shutdownFuture.complete(brokerShutdownContext);
-      }
-    }
   }
 
   /**

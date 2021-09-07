@@ -28,8 +28,6 @@ public interface BrokerStartupContext {
 
   BrokerHealthCheckService getHealthCheckService();
 
-  void setHealthCheckService(BrokerHealthCheckService healthCheckService);
-
   void addPartitionListener(PartitionListener partitionListener);
 
   void removePartitionListener(PartitionListener partitionListener);

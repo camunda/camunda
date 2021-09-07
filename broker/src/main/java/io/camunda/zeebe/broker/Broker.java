@@ -12,6 +12,8 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
@@ -95,10 +97,15 @@ public final class Broker implements AutoCloseable {
 
     localBroker = createBrokerInfo(getConfig());
 
+    healthCheckService = new BrokerHealthCheckService(localBroker);
+
     scheduler.submitActor(brokerStartupActor);
 
-    brokerStartupProcess =
-        new BrokerStartupProcess(localBroker, springBrokerBridge, brokerStartupActor, scheduler);
+    final BrokerStartupContext startupContext =
+        new BrokerStartupContextImpl(
+            localBroker, springBrokerBridge, brokerStartupActor, scheduler, healthCheckService);
+
+    brokerStartupProcess = new BrokerStartupProcess(startupContext);
   }
 
   public void addPartitionListener(final PartitionListener listener) {
@@ -186,7 +193,6 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable migratedStartupSteps() {
     final var brokerContext = brokerStartupActor.call(() -> brokerStartupProcess.start()).join();
 
-    healthCheckService = brokerContext.getHealthCheckService();
     partitionListeners.addAll(brokerContext.getPartitionListeners());
 
     return () -> {

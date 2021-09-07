@@ -7,12 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import static java.util.Objects.requireNonNull;
-
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupProcess;
@@ -23,32 +18,18 @@ public final class BrokerStartupProcess {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  private final BrokerInfo brokerInfo;
-  private final SpringBrokerBridge springBrokerBridge;
-  private final ConcurrencyControl concurrencyControl;
-  private final ActorSchedulingService actorSchedulingService;
-
   private final StartupProcess<BrokerStartupContext> startupProcess =
       new StartupProcess<>(LOG, List.of(new MonitoringServerStep()));
   private BrokerStartupContext context;
+  private final ConcurrencyControl concurrencyControl;
 
-  public BrokerStartupProcess(
-      final BrokerInfo brokerInfo,
-      final SpringBrokerBridge springBrokerBridge,
-      final ConcurrencyControl concurrencyControl,
-      final ActorSchedulingService actorSchedulingService) {
-    this.brokerInfo = brokerInfo;
-    this.springBrokerBridge = springBrokerBridge;
-    this.concurrencyControl = requireNonNull(concurrencyControl);
-    this.actorSchedulingService = actorSchedulingService;
+  public BrokerStartupProcess(final BrokerStartupContext brokerStartupContext) {
+    concurrencyControl = brokerStartupContext.getConcurrencyControl();
+    context = brokerStartupContext;
   }
 
   public ActorFuture<BrokerContext> start() {
     final ActorFuture<BrokerContext> result = concurrencyControl.createFuture();
-
-    context =
-        new BrokerStartupContextImpl(
-            brokerInfo, springBrokerBridge, concurrencyControl, actorSchedulingService);
 
     final var startupFuture = startupProcess.startup(concurrencyControl, context);
 
