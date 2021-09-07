@@ -27,7 +27,7 @@ pipelineJob('camunda-optimize-example-repo-release') {
   parameters {
     stringParam('RELEASE_VERSION', '2.3.0', 'Version to release. Applied to pom.xml, Git tag and readme overview.')
     stringParam('DEVELOPMENT_VERSION', '2.4.0-SNAPSHOT', 'Next development version.')
-    stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'The branch used for the release checkout.')
   }
 
 }

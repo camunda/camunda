@@ -16,7 +16,7 @@ pipelineJob('elasticsearch_compatibility') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for ITs.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for ITs.')
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }
 
