@@ -5,17 +5,20 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
 
@@ -26,6 +29,7 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
       .toVersion("3.6.0")
       .addUpgradeSteps(migrateProcessInstances(dependencies, false))
       .addUpgradeSteps(migrateProcessInstances(dependencies, true))
+      .addUpgradeSteps(migrateReports())
       .build();
   }
 
@@ -55,4 +59,24 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
       "}";
     // @formatter:on
   }
+
+  private static List<UpgradeStep> migrateReports() {
+    return Stream.of(new SingleProcessReportIndex(), new SingleDecisionReportIndex())
+      .map(index -> new UpdateIndexStep(index, getReportMigrationScript()))
+      .collect(Collectors.toList());
+  }
+
+  private static String getReportMigrationScript() {
+    // @formatter:off
+    return
+      "if (ctx._source.data != null) {" +
+        "def configuration = ctx._source.data.configuration;" +
+        "if (configuration != null) {" +
+          "configuration.measureVisualizations = [\"frequency\": \"bar\", \"duration\": \"line\"];" +
+        "}" +
+      "}"
+      ;
+    // @formatter:on
+  }
+
 }

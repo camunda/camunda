@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.migrate35_36;
+package org.camunda.optimize.upgrade.migrate35to36;
 
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;

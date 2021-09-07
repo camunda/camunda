@@ -3,23 +3,24 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.report;
+package org.camunda.optimize.upgrade.migrate35to36.indices;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 
-public class SingleProcessReportIndex extends AbstractReportIndex {
+public class SingleDecisionReportIndexV7Old extends AbstractReportIndex {
 
-  public static final int VERSION = 8;
+  public static final int VERSION = 7;
 
   @Override
   public String getIndexName() {
-    return SINGLE_PROCESS_REPORT_INDEX_NAME;
+    return SINGLE_DECISION_REPORT_INDEX_NAME;
   }
 
   @Override
@@ -35,16 +36,16 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
         .field("type", "object")
         .field("dynamic", true)
         .startObject("properties")
-          .startObject(ProcessReportDataDto.Fields.view)
+          .startObject(DecisionReportDataDto.Fields.view)
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
-          .startObject(ProcessReportDataDto.Fields.groupBy)
+          .startObject(DecisionReportDataDto.Fields.groupBy)
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
-          .startObject(ProcessReportDataDto.Fields.distributedBy)
+          .startObject(DecisionReportDataDto.Fields.distributedBy)
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
-          .startObject(ProcessReportDataDto.Fields.filter)
+          .startObject(DecisionReportDataDto.Fields.filter)
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(CONFIGURATION)
