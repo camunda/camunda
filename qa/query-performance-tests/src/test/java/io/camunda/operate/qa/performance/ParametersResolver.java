@@ -180,7 +180,7 @@ public class ParametersResolver {
       //replace in body
       String body = testQuery.getBody();
       body = replacePlaceholdersInString(body);
-      if (!body.equals(testQuery.getBody())) {
+      if (body!= null && !body.equals(testQuery.getBody())) {
         testQuery.setBody(objectMapper.readTree(body));
       }
     } catch (IOException e) {

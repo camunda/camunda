@@ -100,12 +100,14 @@ public class ListViewZeebeRecordProcessor {
   //treePath by processInstanceKey cache
   private Map<String, String> treePathCache;
 
-  @PostConstruct
-  private void init() {
-    //cache must be able to contain all possible processInstanceKeys with there treePaths before
-    //the data is persisted: import batch size * number of partitions processed by current import node
-    treePathCache = new SoftHashMap<>(operateProperties.getElasticsearch().getBatchSize() *
-        partitionHolder.getPartitionIds().size());
+  private Map<String, String> getTreePathCache() {
+    if (treePathCache == null) {
+      //cache must be able to contain all possible processInstanceKeys with there treePaths before
+      //the data is persisted: import batch size * number of partitions processed by current import node
+      treePathCache = new SoftHashMap<>(operateProperties.getElasticsearch().getBatchSize() *
+          partitionHolder.getPartitionIds().size());
+    }
+    return treePathCache;
   }
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
@@ -204,7 +206,7 @@ public class ListViewZeebeRecordProcessor {
     if (piEntity.getTreePath() == null) {
       piEntity.setTreePath(PROCESS_INSTANCE_ID_PREFIX + ConversionUtils
           .toStringOrNull(recordValue.getProcessInstanceKey()));
-      treePathCache.put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()),
+      getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()),
           PROCESS_INSTANCE_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()));
     }
     return piEntity;
@@ -214,9 +216,9 @@ public class ListViewZeebeRecordProcessor {
     String parentTreePath = null;
 
     //search in cache
-    if (treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getParentProcessInstanceKey()))
+    if (getTreePathCache().get(ConversionUtils.toStringOrNull(recordValue.getParentProcessInstanceKey()))
         != null) {
-      parentTreePath = treePathCache
+      parentTreePath = getTreePathCache()
           .get(ConversionUtils.toStringOrNull(recordValue.getParentProcessInstanceKey()));
     }
     //query from ELS
@@ -234,7 +236,7 @@ public class ListViewZeebeRecordProcessor {
         CALL_ACTIVITY_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey()),
         PROCESS_INSTANCE_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()));
 
-    treePathCache.put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+    getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
 
     return treePath;
   }
