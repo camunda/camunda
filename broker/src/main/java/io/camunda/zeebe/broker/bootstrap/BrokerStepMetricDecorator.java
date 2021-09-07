@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static io.camunda.zeebe.util.sched.future.CompletableActorFuture.completedExceptionally;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -56,6 +56,7 @@ final class BrokerStepMetricDecorator implements StartupStep<BrokerStartupContex
       final BrokerStartupContext brokerStartupContext,
       final Function<BrokerStartupContext, ActorFuture<BrokerStartupContext>> functionToCall,
       final BiConsumer<String, Long> metricUpdater) {
+
     try {
       final long startTime = System.currentTimeMillis();
 
@@ -70,7 +71,7 @@ final class BrokerStepMetricDecorator implements StartupStep<BrokerStartupContex
 
       return future;
     } catch (final Throwable t) {
-      return CompletableActorFuture.completedExceptionally(t);
+      return completedExceptionally(t);
     }
   }
 }

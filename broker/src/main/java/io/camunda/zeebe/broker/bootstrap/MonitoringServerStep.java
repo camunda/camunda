@@ -23,8 +23,6 @@ final class MonitoringServerStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
-    final var brokerInfo = brokerStartupContext.getBrokerInfo();
-
     final var healthCheckService = brokerStartupContext.getHealthCheckService();
     concurrencyControl.runOnCompletion(
         brokerStartupContext.scheduleActor(healthCheckService),

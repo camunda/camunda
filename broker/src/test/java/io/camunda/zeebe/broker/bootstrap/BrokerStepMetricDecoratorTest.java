@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupStep;
@@ -25,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 class BrokerStepMetricDecoratorTest {
 
-  private static final ConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final String DELEGATE_STEP_NAME = "delegate step";
 
   private BrokerStartupContext mockBrokerStartupContext;
