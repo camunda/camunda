@@ -35,6 +35,12 @@ public interface TaskValidator {
         if (!taskBefore.getState().equals(TaskState.CREATED)) {
           throw new TaskValidationException("Task is not active");
         }
+
+        if (currentUser.isApiUser()) {
+          // JWT Token/API users are allowed to change task assignee
+          return;
+        }
+
         if (taskBefore.getAssignee() != null) {
           throw new TaskValidationException("Task is already assigned");
         }

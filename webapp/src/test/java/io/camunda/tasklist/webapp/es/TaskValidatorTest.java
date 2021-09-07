@@ -116,4 +116,103 @@ public class TaskValidatorTest {
             });
     Assertions.assertEquals("Task is not active", exception.getMessage());
   }
+
+  @Test
+  public void apiUserShouldBeAbleToAssignToDifferentUsers() throws TaskValidationException {
+    final UserDTO user = UserDTO.createUserDTO("APIUser", true);
+    final TaskEntity taskBefore = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+    TaskValidator.CAN_CLAIM.validate(taskBefore, user);
+  }
+
+  @Test
+  public void apiUserShouldBeAbleToReassignToAnotherUser() throws TaskValidationException {
+    final UserDTO user = UserDTO.createUserDTO("APIUser", true);
+    final TaskEntity taskBefore =
+        new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
+    TaskValidator.CAN_CLAIM.validate(taskBefore, user);
+  }
+
+  @Test
+  public void apiUserShouldNotBeAbleToClaimTaskIfTaskIsCompleted() throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
+              TaskValidator.CAN_CLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is not active", exception.getMessage());
+  }
+
+  @Test
+  public void apiUserShouldNotBeAbleToClaimTaskIfTaskIsCanceled() throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
+              TaskValidator.CAN_CLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is not active", exception.getMessage());
+  }
+
+  @Test
+  public void nonApiUserShouldNotBeAbleToReassignToAnotherUser() throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+              TaskValidator.CAN_CLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is already assigned", exception.getMessage());
+  }
+
+  @Test
+  public void usersShouldNotBeAbleToUnclaimNotClaimed() throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+              TaskValidator.CAN_UNCLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is not assigned", exception.getMessage());
+  }
+
+  @Test
+  public void usersShouldNotBeAbleToUnclaimTaskIfTaskIsCanceled() throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
+              TaskValidator.CAN_UNCLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is not active", exception.getMessage());
+  }
+
+  @Test
+  public void usersShouldNotBeAbleToUnclaimTaskIfTaskIsCompleted() throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
+              TaskValidator.CAN_UNCLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is not active", exception.getMessage());
+  }
 }

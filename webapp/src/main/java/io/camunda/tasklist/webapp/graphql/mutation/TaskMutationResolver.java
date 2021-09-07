@@ -92,11 +92,9 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     }
   }
 
-  public TaskDTO claimTask(String taskId) {
+  public TaskDTO claimTask(String taskId, String assignee) {
     final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
-    final String currentUsername = getCurrentUser().getUsername();
-    task.setAssignee(currentUsername);
-    taskReaderWriter.persistTaskAssignee(task, getCurrentUser());
+    taskReaderWriter.persistTaskClaim(task, getCurrentUser(), assignee);
     updateClaimedMetric(task);
     return task;
   }
@@ -108,7 +106,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
   public TaskDTO unclaimTask(String taskId) {
     final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
     task.setAssignee(null);
-    taskReaderWriter.persistTaskAssignee(task, null);
+    taskReaderWriter.persistTaskUnclaim(task);
     return task;
   }
 

@@ -38,6 +38,8 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       "mutation {completeTask(taskId: \"%s\", variables: [%s])" + TASK_RESULT_PATTERN + "}";
   public static final String CLAIM_TASK_MUTATION_PATTERN =
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
+  public static final String CLAIM_TASK_WITH_PARAM_MUTATION_PATTERN =
+      "mutation {claimTask(taskId: \"%s\", assignee: \"%s\")" + TASK_RESULT_PATTERN + "}";
   public static final String UNCLAIM_TASK_MUTATION_PATTERN =
       "mutation {unclaimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
@@ -281,6 +283,55 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
+  public void shouldFailNonApiUserClaimWithAssigneeParam() throws IOException {
+    tester
+        .having()
+        .and()
+        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 0, 1)
+        .when()
+        .getAllTasks();
+
+    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
+
+    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(false));
+    final Map<String, Object> errors =
+        tester
+            .when()
+            .claimTask(
+                String.format(
+                    CLAIM_TASK_WITH_PARAM_MUTATION_PATTERN,
+                    unclaimedTask.getId(),
+                    "anotherAssignee"))
+            .then()
+            .getByPath("$.errors[0]");
+    assertEquals(
+        "User doesn't have the permission to assign another user to this task",
+        errors.get("message"));
+  }
+
+  @Test
+  public void shouldFailClaimWhenAssigneeNotProvided() throws IOException {
+    tester
+        .having()
+        .and()
+        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 0, 1)
+        .when()
+        .getAllTasks();
+
+    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
+
+    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(true));
+    final Map<String, Object> errors =
+        tester
+            .when()
+            .claimTask(
+                String.format(CLAIM_TASK_WITH_PARAM_MUTATION_PATTERN, unclaimedTask.getId(), ""))
+            .then()
+            .getByPath("$.errors[0]");
+    assertEquals("Assignee must be specified", errors.get("message"));
+  }
+
+  @Test
   public void shouldFailClaimAlreadyAssigned() throws IOException {
     try {
       tester
@@ -333,6 +384,70 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     tester.getAllTasks();
     final TaskDTO claimedTaskObject = tester.getTasksByPath("$.data.tasks").get(0);
     assertEquals(getDefaultCurrentUser().getUsername(), claimedTaskObject.getAssignee());
+  }
+
+  @Test
+  public void shouldClaimTaskToAssigneeForAPIUser() throws IOException {
+    tester
+        .having()
+        .and()
+        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
+        .when()
+        .getAllTasks();
+
+    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
+    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(true));
+    final String assigneeID = "otherAssigneeID";
+
+    final Map<String, Object> claimedTask =
+        tester
+            .when()
+            .claimTask(
+                String.format(
+                    CLAIM_TASK_WITH_PARAM_MUTATION_PATTERN, unclaimedTask.getId(), assigneeID))
+            .then()
+            .getByPath("$.data.claimTask");
+
+    assertEquals(claimedTask.get("id"), unclaimedTask.getId());
+    final String assignee = (String) claimedTask.get("assignee");
+    assertEquals(assigneeID, assignee);
+
+    // query "Get tasks" immediately
+    tester.getAllTasks();
+    final TaskDTO claimedTaskObject = tester.getTasksByPath("$.data.tasks").get(0);
+    assertEquals(assigneeID, claimedTaskObject.getAssignee());
+  }
+
+  @Test
+  public void shouldClaimTaskNonApiUserWithSameUsername() throws IOException {
+    tester
+        .having()
+        .and()
+        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
+        .when()
+        .getAllTasks();
+
+    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
+    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(false));
+    final String assigneeID = "joe"; // verify whether same assignee as logged user works
+
+    final Map<String, Object> claimedTask =
+        tester
+            .when()
+            .claimTask(
+                String.format(
+                    CLAIM_TASK_WITH_PARAM_MUTATION_PATTERN, unclaimedTask.getId(), assigneeID))
+            .then()
+            .getByPath("$.data.claimTask");
+
+    assertEquals(claimedTask.get("id"), unclaimedTask.getId());
+    final String assignee = (String) claimedTask.get("assignee");
+    assertEquals(assigneeID, assignee);
+
+    // query "Get tasks" immediately
+    tester.getAllTasks();
+    final TaskDTO claimedTaskObject = tester.getTasksByPath("$.data.tasks").get(0);
+    assertEquals(assigneeID, claimedTaskObject.getAssignee());
   }
 
   @Test

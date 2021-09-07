@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -368,17 +369,28 @@ public class TaskReaderWriter {
     return taskBefore;
   }
 
-  public void persistTaskAssignee(TaskDTO task, final UserDTO currentUser) {
-    final TaskValidator taskValidator;
-    final String username;
-    if (currentUser != null) {
-      taskValidator = TaskValidator.CAN_CLAIM;
-      username = currentUser.getUsername();
-    } else {
-      taskValidator = TaskValidator.CAN_UNCLAIM;
-      username = null;
+  public void persistTaskClaim(TaskDTO task, final UserDTO currentUser, String assignee) {
+    if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
+      throw new TasklistRuntimeException("Assignee must be specified");
     }
-    updateTask(task.getId(), currentUser, taskValidator, asMap(TaskTemplate.ASSIGNEE, username));
+    if (StringUtils.isNotEmpty(assignee)
+        && !currentUser.isApiUser()
+        && !assignee.equals(currentUser.getUsername())) {
+      throw new TasklistRuntimeException(
+          "User doesn't have the permission to assign another user to this task");
+    }
+
+    if (StringUtils.isEmpty(assignee) && !currentUser.isApiUser()) {
+      assignee = currentUser.getUsername();
+    }
+
+    task.setAssignee(assignee);
+    updateTask(
+        task.getId(), currentUser, TaskValidator.CAN_CLAIM, asMap(TaskTemplate.ASSIGNEE, assignee));
+  }
+
+  public void persistTaskUnclaim(TaskDTO task) {
+    updateTask(task.getId(), null, TaskValidator.CAN_UNCLAIM, asMap(TaskTemplate.ASSIGNEE, null));
   }
 
   private void updateTask(

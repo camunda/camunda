@@ -103,7 +103,7 @@ type Mutation {
     # Complete a task with taskId and optional variables. Returns the task.
     completeTask(taskId: String!, variables: [VariableInput!]!): Task!
     # Claim a task with taskId to currently logged in user. Returns the task.
-    claimTask(taskId: String!): Task!
+    claimTask(taskId: String!, assignee: String): Task!
     # Unclaim a task with taskId. Returns the task.
-	unclaimTask(taskId: String!): Task!
+	  unclaimTask(taskId: String!): Task!
 }
