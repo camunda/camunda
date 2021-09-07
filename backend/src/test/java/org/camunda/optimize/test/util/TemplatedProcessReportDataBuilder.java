@@ -744,6 +744,33 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .build();
         break;
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_ASSIGNEE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedByType(DistributedByType.ASSIGNEE)
+          .definitions(definitions)
+          .build();
+        break;
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedByType(DistributedByType.CANDIDATE_GROUP)
+          .definitions(definitions)
+          .build();
+        break;
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedByType(DistributedByType.PROCESS)
+          .definitions(definitions)
+          .build();
+        break;
       case USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -811,24 +838,6 @@ public class TemplatedProcessReportDataBuilder {
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
           .definitions(definitions)
           .groupByDateInterval(groupByDateInterval)
-          .build();
-        break;
-      case USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_ASSIGNEE:
-        reportData = new ProcessReportDataBuilderHelper()
-          .viewEntity(ProcessViewEntity.USER_TASK)
-          .viewProperty(ViewProperty.FREQUENCY)
-          .groupByType(ProcessGroupByType.USER_TASKS)
-          .distributedByType(DistributedByType.ASSIGNEE)
-          .definitions(definitions)
-          .build();
-        break;
-      case USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
-        reportData = new ProcessReportDataBuilderHelper()
-          .viewEntity(ProcessViewEntity.USER_TASK)
-          .viewProperty(ViewProperty.FREQUENCY)
-          .groupByType(ProcessGroupByType.USER_TASKS)
-          .distributedByType(DistributedByType.CANDIDATE_GROUP)
-          .definitions(definitions)
           .build();
         break;
       case USER_TASK_FREQ_GROUP_BY_ASSIGNEE:
@@ -991,6 +1000,16 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.DURATION)
           .groupByType(ProcessGroupByType.USER_TASKS)
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .build();
+        break;
+      case USER_TASK_DUR_GROUP_BY_USER_TASK_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedByType(DistributedByType.PROCESS)
           .visualization(ProcessVisualization.TABLE)
           .definitions(definitions)
           .build();

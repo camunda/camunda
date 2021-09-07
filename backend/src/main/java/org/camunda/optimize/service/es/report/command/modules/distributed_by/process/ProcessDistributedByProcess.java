@@ -13,12 +13,14 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewUserTaskDuration;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewFrequency;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
@@ -127,9 +129,25 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
         .mapToDouble(result -> result.getViewMeasures().get(0).getValue())
         .sum();
       viewMeasures.add(CompositeCommandResult.ViewMeasure.builder().value(totalCount).build());
+    } else if (viewPart instanceof ProcessViewUserTaskDuration) {
+      for (UserTaskDurationTime userTaskDurationTime : context.getReportConfiguration().getUserTaskDurationTimes()) {
+        for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
+          Double mergedAggResult = calculateMergedAggregationResult(
+            processBuckets,
+            aggregationType,
+            userTaskDurationTime
+          );
+          viewMeasures.add(
+            CompositeCommandResult.ViewMeasure.builder()
+              .aggregationType(aggregationType)
+              .userTaskDurationTime(userTaskDurationTime)
+              .value(mergedAggResult)
+              .build());
+        }
+      }
     } else {
       for (AggregationType aggregationType : context.getReportConfiguration().getAggregationTypes()) {
-        Double mergedAggResult = calculateMergedAggregationResult(processBuckets, aggregationType);
+        Double mergedAggResult = calculateMergedAggregationResult(processBuckets, aggregationType, null);
         viewMeasures.add(
           CompositeCommandResult.ViewMeasure.builder()
             .aggregationType(aggregationType)
@@ -141,10 +159,12 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
   }
 
   private Double calculateMergedAggregationResult(final List<ProcessBucket> processBuckets,
-                                                  final AggregationType aggregationType) {
-    final Map<AggregationType, List<CompositeCommandResult.ViewMeasure>> measuresByAggType = processBuckets.stream()
+                                                  final AggregationType aggregationType,
+                                                  final UserTaskDurationTime userTaskDurationTime) {
+    Map<AggregationType, List<CompositeCommandResult.ViewMeasure>> measuresByAggType = processBuckets.stream()
       .map(ProcessBucket::getResult)
       .flatMap(results -> results.getViewMeasures().stream())
+      .filter(measure -> measure.getUserTaskDurationTime() == userTaskDurationTime)
       .collect(Collectors.groupingBy(CompositeCommandResult.ViewMeasure::getAggregationType));
     Double mergedAggResult;
     switch (aggregationType) {
