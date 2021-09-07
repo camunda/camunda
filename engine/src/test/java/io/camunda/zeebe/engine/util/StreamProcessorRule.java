@@ -11,8 +11,8 @@ import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -33,7 +33,6 @@ import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -138,22 +137,12 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory, r -> {});
-  }
-
-  public StreamProcessor startTypedStreamProcessor(
-      final StreamProcessorTestFactory factory,
-      final Consumer<TypedRecord<?>> onProcessedListener) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory, onProcessedListener);
-  }
-
-  public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
-    return startTypedStreamProcessor(startPartitionId, factory);
+    return streamProcessingComposite.startTypedStreamProcessor(factory);
   }
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
       final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(factory, r -> {});
+    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(factory);
   }
 
   public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
@@ -191,8 +180,8 @@ public final class StreamProcessorRule implements TestRule {
     return streams.getMockedResponseWriter();
   }
 
-  public Consumer<TypedRecord<?>> getProcessedListener() {
-    return streams.getMockedOnProcessedListener();
+  public StreamProcessorListener getMockStreamProcessorListener() {
+    return streams.getMockStreamProcessorListener();
   }
 
   public ControlledActorClock getClock() {

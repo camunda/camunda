@@ -79,11 +79,6 @@ class LifecycleRecordingActor extends Actor {
   }
 
   @SuppressWarnings("unchecked")
-  protected void runOnCompletion(final ActorFuture<Void> future, final BiConsumer consumer) {
-    actor.runOnCompletion(future, consumer);
-  }
-
-  @SuppressWarnings("unchecked")
   protected void runOnCompletion(final ActorFuture<Void> future) {
     actor.runOnCompletion(future, mock(BiConsumer.class));
   }

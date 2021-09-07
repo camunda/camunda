@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -21,8 +19,8 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTupl
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class BpmnEventPublicationBehavior {
@@ -79,18 +77,6 @@ public final class BpmnEventPublicationBehavior {
   public Either<Failure, CatchEventTuple> findErrorCatchEvent(
       final DirectBuffer errorCode, final BpmnElementContext context) {
     final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-    final CatchEventTuple catchEvent =
-        catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance);
-
-    if (catchEvent != null) {
-      return Either.right(catchEvent);
-    }
-
-    final var errorMessage =
-        String.format(
-            "Expected to throw an error event with the code '%s', but it was not caught.",
-            bufferAsString(errorCode));
-    final var failure = new Failure(errorMessage, ErrorType.UNHANDLED_ERROR_EVENT);
-    return Either.left(failure);
+    return catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance, Optional.empty());
   }
 }

@@ -21,8 +21,8 @@ public class ZeebeDbPartitionStep implements PartitionStep {
 
     final ZeebeDb zeebeDb;
     try {
-      context.getSnapshotController().recover();
-      zeebeDb = context.getSnapshotController().openDb();
+      context.getStateController().recover();
+      zeebeDb = context.getStateController().openDb();
     } catch (final Exception e) {
       Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
 
@@ -40,8 +40,13 @@ public class ZeebeDbPartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
-    // ZeebeDb is closed in the StateController's close()
     context.setZeebeDb(null);
+    try {
+      context.getStateController().closeDb();
+    } catch (final Exception e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+
     return CompletableActorFuture.completed(null);
   }
 

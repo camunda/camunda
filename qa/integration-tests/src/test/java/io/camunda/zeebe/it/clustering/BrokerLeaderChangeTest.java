@@ -14,7 +14,6 @@ import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.stream.Stream;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -64,18 +63,7 @@ public final class BrokerLeaderChangeTest {
     final var firstLeaderNodeId = firstLeaderInfo.getNodeId();
 
     // when
-    // restarting until we become leader again
-    do {
-      final var previousLeader = clusteringRule.getCurrentLeaderForPartition(1);
-      clusteringRule.stepDown(previousLeader.getNodeId(), 1);
-      Awaitility.await()
-          .pollInterval(Duration.ofMillis(100))
-          .atMost(Duration.ofSeconds(10))
-          .until(
-              () -> clusteringRule.getCurrentLeaderForPartition(1),
-              newLeader -> !previousLeader.equals(newLeader));
-
-    } while (clusteringRule.getCurrentLeaderForPartition(1).getNodeId() != firstLeaderNodeId);
+    clusteringRule.forceClusterToHaveNewLeader(firstLeaderNodeId);
 
     // then
     assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())

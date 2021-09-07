@@ -54,7 +54,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 public final class Broker implements AutoCloseable {
@@ -201,8 +200,12 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable addBrokerAdminService() {
-    final var adminService = new BrokerAdminServiceImpl(partitionManager.getPartitions());
+    final var adminService = new BrokerAdminServiceImpl();
     scheduleActor(adminService);
+
+    adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
+    adminService.injectPartitionInfoSource(partitionManager.getPartitions());
+
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
@@ -211,8 +214,7 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable actorSchedulerStep() {
     scheduler = brokerContext.getScheduler();
     scheduler.start();
-    return () ->
-        scheduler.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
+    return () -> scheduler.stop().get();
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
@@ -221,7 +223,7 @@ public final class Broker implements AutoCloseable {
     clusterServices = new ClusterServicesImpl(atomix);
 
     return () -> {
-      clusterServices.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
+      clusterServices.stop().get();
       testCompanionObject.atomix = null;
     };
   }
@@ -284,10 +286,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private void scheduleActor(final Actor actor) {
-    brokerContext
-        .getScheduler()
-        .submitActor(actor)
-        .join(brokerContext.getStepTimeout().toSeconds(), TimeUnit.SECONDS);
+    brokerContext.getScheduler().submitActor(actor).join();
   }
 
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {

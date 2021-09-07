@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
@@ -32,7 +33,7 @@ import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 /** Represents the state machine to replay events and rebuild the state. */
-public final class ReplayStateMachine {
+public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
@@ -78,6 +79,7 @@ public final class ReplayStateMachine {
   private ZeebeDbTransaction zeebeDbTransaction;
   private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
+  private final StreamProcessorListener streamProcessorListener;
 
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
@@ -93,6 +95,7 @@ public final class ReplayStateMachine {
     eventApplier = context.getEventApplier();
     keyGeneratorControls = context.getKeyGeneratorControls();
     lastProcessedPositionState = context.getLastProcessedPositionState();
+    streamProcessorListener = context.getStreamProcessorListener();
 
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     replayStrategy = new RecoverableRetryStrategy(actor);
@@ -125,17 +128,14 @@ public final class ReplayStateMachine {
     replayNextEvent();
 
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
-      logStream.registerRecordAvailableListener(this::recordAvailable);
+      logStream.registerRecordAvailableListener(this);
     }
 
     return recoveryFuture;
   }
 
-  /**
-   * Will be called by the LogStream#RecordAvailableListener, we will schedule the next replay of
-   * the record
-   */
-  private void recordAvailable() {
+  @Override
+  public void onRecordAvailable() {
     actor.call(
         () -> {
           if (currentState == State.AWAIT_RECORD) {
@@ -165,6 +165,8 @@ public final class ReplayStateMachine {
                     lastSourceEventPosition =
                         Math.max(lastSourceEventPosition, batchSourceEventPosition);
                     actor.submit(this::replayNextEvent);
+
+                    notifyReplayListener();
                   }
                 });
 
@@ -197,7 +199,7 @@ public final class ReplayStateMachine {
         () -> {
           batch.forEachRemaining(this::replayEvent);
 
-          if (batchSourceEventPosition > 0) {
+          if (batchSourceEventPosition > snapshotPosition) {
             lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
           }
         });
@@ -209,7 +211,8 @@ public final class ReplayStateMachine {
   }
 
   private void replayEvent(final LoggedEvent currentEvent) {
-    if (eventFilter.applies(currentEvent)) {
+    if (eventFilter.applies(currentEvent)
+        && currentEvent.getSourceEventPosition() > snapshotPosition) {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
 
@@ -284,10 +287,19 @@ public final class ReplayStateMachine {
   }
 
   private void applyCurrentEvent(final TypedRecord<?> currentEvent) {
-    if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
-      eventApplier.applyState(
-          currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
-      lastReplayedEventPosition = currentEvent.getPosition();
+    eventApplier.applyState(
+        currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
+    lastReplayedEventPosition = currentEvent.getPosition();
+  }
+
+  private void notifyReplayListener() {
+    try {
+      streamProcessorListener.onReplayed(lastReplayedEventPosition, lastReadRecordPosition);
+    } catch (final Exception e) {
+      LOG.error(
+          "Expected to invoke replay listener successfully, but an exception was thrown. [last-read-record-position: {}, last-replayed-event-position: {}]",
+          lastReadRecordPosition,
+          lastReplayedEventPosition);
     }
   }
 
@@ -297,6 +309,10 @@ public final class ReplayStateMachine {
 
   public long getLastReplayedEventPosition() {
     return lastReplayedEventPosition;
+  }
+
+  public void close() {
+    logStream.removeRecordAvailableListener(this);
   }
 
   private enum State {

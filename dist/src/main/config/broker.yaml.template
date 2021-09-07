@@ -32,14 +32,6 @@
 
 # zeebe:
   # broker:
-    # Sets the timeout for each start and closing step.
-    #
-    # Broker bootstrap and closing is divided in several individual steps.
-    # Each step should take at max the defined stepTimeout, otherwise the bootstrap is aborted.
-    #
-    # This setting can also be overridden using the environment variable ZEEBE_BROKER_STEPTIMEOUT.
-    # stepTimeout: 5m
-
     # gateway:
       # Enable the embedded gateway to start on broker startup.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_ENABLE.

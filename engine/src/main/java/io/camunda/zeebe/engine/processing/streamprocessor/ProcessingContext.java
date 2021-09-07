@@ -22,12 +22,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 public final class ProcessingContext implements ReadonlyProcessingContext {
+
+  private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
 
   private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
   private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
@@ -46,8 +46,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
-  private Consumer<TypedRecord<?>> onProcessedListener = record -> {};
-  private Consumer<LoggedEvent> onSkippedListener = record -> {};
+  private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
+
   private int maxFragmentSize;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
@@ -112,13 +112,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return commandResponseWriter;
   }
 
-  public ProcessingContext onProcessedListener(final Consumer<TypedRecord<?>> onProcessedListener) {
-    this.onProcessedListener = onProcessedListener;
-    return this;
-  }
-
-  public ProcessingContext onSkippedListener(final Consumer<LoggedEvent> onSkippedListener) {
-    this.onSkippedListener = onSkippedListener;
+  public ProcessingContext listener(final StreamProcessorListener streamProcessorListener) {
+    this.streamProcessorListener = streamProcessorListener;
     return this;
   }
 
@@ -208,12 +203,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return eventApplier;
   }
 
-  public Consumer<TypedRecord<?>> getOnProcessedListener() {
-    return onProcessedListener;
-  }
-
-  public Consumer<LoggedEvent> getOnSkippedListener() {
-    return onSkippedListener;
+  public StreamProcessorListener getStreamProcessorListener() {
+    return streamProcessorListener;
   }
 
   public void enableLogStreamWriter() {

@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -36,7 +35,6 @@ public final class BrokerCfg {
   private BackpressureCfg backpressure = new BackpressureCfg();
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
-  private Duration stepTimeout = Duration.ofMinutes(5);
   private boolean executionMetricsExporterEnabled;
 
   public void init(final String brokerBase) {
@@ -124,14 +122,6 @@ public final class BrokerCfg {
     return this;
   }
 
-  public Duration getStepTimeout() {
-    return stepTimeout;
-  }
-
-  public void setStepTimeout(final Duration stepTimeout) {
-    this.stepTimeout = stepTimeout;
-  }
-
   public boolean isExecutionMetricsExporterEnabled() {
     return executionMetricsExporterEnabled;
   }
@@ -167,8 +157,6 @@ public final class BrokerCfg {
         + backpressure
         + ", experimental="
         + experimental
-        + ", stepTimeout="
-        + stepTimeout
         + ", executionMetricsExporterEnabled="
         + executionMetricsExporterEnabled
         + '}';

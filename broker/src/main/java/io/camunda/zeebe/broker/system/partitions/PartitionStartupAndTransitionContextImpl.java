@@ -30,7 +30,6 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -109,17 +108,16 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public StateControllerImpl getSnapshotController() {
-    return stateController;
-  }
-
-  public void setSnapshotController(final StateControllerImpl controller) {
-    stateController = controller;
-  }
-
-  @Override
   public PartitionContext getPartitionContext() {
     return this;
+  }
+
+  public PartitionAdminControl getPartitionAdminControl() {
+    return new PartitionAdminControlImpl(
+        () -> getPartitionContext().getStreamProcessor(),
+        () -> getPartitionContext().getExporterDirector(),
+        () -> snapshotDirector,
+        () -> partitionProcessingState);
   }
 
   @Override
@@ -173,11 +171,13 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public StateControllerImpl getStateController() {
-    return null;
+    return stateController;
   }
 
   @Override
-  public void setStateController(final StateControllerImpl stateController) {}
+  public void setStateController(final StateControllerImpl stateController) {
+    this.stateController = stateController;
+  }
 
   @Override
   public LogDeletionService getLogDeletionService() {
@@ -240,13 +240,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public void triggerSnapshot() {
-    if (getSnapshotDirector() != null) {
-      getSnapshotDirector().forceSnapshot();
-    }
-  }
-
-  @Override
   public ExporterDirector getExporterDirector() {
     return exporterDirector;
   }
@@ -262,38 +255,13 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
-    partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
-  }
-
-  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
 
   @Override
-  public void pauseProcessing() throws IOException {
-    partitionProcessingState.pauseProcessing();
-  }
-
-  @Override
-  public void resumeProcessing() throws IOException {
-    partitionProcessingState.resumeProcessing();
-  }
-
-  @Override
-  public boolean shouldExport() {
-    return !partitionProcessingState.isExportingPaused();
-  }
-
-  @Override
-  public boolean pauseExporting() throws IOException {
-    return partitionProcessingState.pauseExporting();
-  }
-
-  @Override
-  public boolean resumeExporting() throws IOException {
-    return partitionProcessingState.resumeExporting();
+  public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
+    partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
   }
 
   public void setCurrentTerm(final long currentTerm) {
@@ -368,11 +336,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public PartitionProcessingState getPartitionProcessingState() {
-    return partitionProcessingState;
-  }
-
-  @Override
   public ActorControl getActorControl() {
     return actorControl;
   }
@@ -384,5 +347,9 @@ public class PartitionStartupAndTransitionContextImpl
 
   public int getMaxFragmentSize() {
     return maxFragmentSize;
+  }
+
+  public boolean shouldExport() {
+    return !partitionProcessingState.isExportingPaused();
   }
 }

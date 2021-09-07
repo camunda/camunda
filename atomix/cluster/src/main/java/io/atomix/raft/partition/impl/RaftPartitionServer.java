@@ -260,6 +260,13 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   }
 
   /**
+   * @see io.atomix.raft.impl.RaftContext#removeCommittedEntryListener(RaftCommittedEntryListener)
+   */
+  public void removeCommittedEntryListener(final RaftCommittedEntryListener commitListener) {
+    server.getContext().removeCommittedEntryListener(commitListener);
+  }
+
+  /**
    * @see
    *     io.atomix.raft.impl.RaftContext#addSnapshotReplicationListener(SnapshotReplicationListener)
    */
@@ -344,5 +351,9 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
+  }
+
+  public CompletableFuture<RaftServer> promote() {
+    return server.promote();
   }
 }

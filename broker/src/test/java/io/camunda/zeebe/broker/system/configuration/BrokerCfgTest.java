@@ -90,22 +90,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseDefaultStepTimeout() {
-    assertDefaultStepTimeout(Duration.ofMinutes(5));
-  }
-
-  @Test
-  public void shouldUseStepTimeout() {
-    assertStepTimeout("step-timeout-cfg", Duration.ofMinutes(2));
-  }
-
-  @Test
-  public void shouldUseStepTimeoutFromEnv() {
-    environment.put("zeebe.broker.stepTimeout", Duration.ofMinutes(1).toString());
-    assertDefaultStepTimeout(Duration.ofMinutes(1));
-  }
-
-  @Test
   public void shouldUseSpecifiedNodeId() {
     assertNodeId("specific-node-id", 123);
   }
@@ -717,16 +701,6 @@ public final class BrokerCfgTest {
   private void assertClusterName(final String configFileName, final String clusterName) {
     final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
-  }
-
-  private void assertDefaultStepTimeout(final Duration stepTimeout) {
-    assertStepTimeout("default", stepTimeout);
-    assertStepTimeout("empty", stepTimeout);
-  }
-
-  private void assertStepTimeout(final String configFileName, final Duration stepTimeout) {
-    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
-    assertThat(cfg.getStepTimeout()).isEqualTo(stepTimeout);
   }
 
   private void assertDefaultPorts(final int command, final int internal, final int monitoring) {
