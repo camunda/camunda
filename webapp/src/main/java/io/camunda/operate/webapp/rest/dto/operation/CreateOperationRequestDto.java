@@ -41,8 +41,9 @@ public class CreateOperationRequestDto {
     return operationType;
   }
 
-  public void setOperationType(OperationType operationType) {
+  public CreateOperationRequestDto setOperationType(OperationType operationType) {
     this.operationType = operationType;
+    return this;
   }
 
   public String getName() {

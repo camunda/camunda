@@ -7,18 +7,14 @@ package io.camunda.operate.webapp.es.writer;
 
 import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
 import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
+import static io.camunda.operate.util.CollectionUtil.map;
+import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
+import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
@@ -30,16 +26,24 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -49,8 +53,10 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -136,7 +142,6 @@ public class BatchOperationWriter {
       }
       return updateRequest;
     } catch (IOException e) {
-      logger.error("Error preparing the query to update operation", e);
       throw new PersistenceException(String.format("Error preparing the query to update operation [%s] for process instance id [%s]",
           operation.getId(), operation.getProcessInstanceKey()), e);
     }
@@ -151,10 +156,9 @@ public class BatchOperationWriter {
    * Schedule operations based of process instance query.
    * @param batchOperationRequest
    * @return
-   * @throws PersistenceException
    */
   public BatchOperationEntity scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest) {
-    logger.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest.toString());
+    logger.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest);
     try {
       //create batch operation with unique id
       final BatchOperationEntity batchOperation = createBatchOperationEntity(batchOperationRequest.getOperationType(), batchOperationRequest.getName());
@@ -162,13 +166,18 @@ public class BatchOperationWriter {
       //create single operations
       final int batchSize = operateProperties.getElasticsearch().getBatchSize();
       ConstantScoreQueryBuilder query = listViewReader.createProcessInstancesQuery(batchOperationRequest.getQuery());
-      final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
-        .source(new SearchSourceBuilder().query(query).size(batchSize).fetchSource(false));
+      QueryType queryType = QueryType.ONLY_RUNTIME;
+      if (batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)) {
+        queryType = QueryType.ALL;
+      }
+      final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
+            .source(new SearchSourceBuilder().query(query).size(batchSize).fetchSource(false));
+
       AtomicInteger operationsCount = new AtomicInteger();
       ElasticsearchUtil.scrollWith(searchRequest, esClient,
           searchHits -> {
             try {
-              final List<Long> processInstanceKeys = CollectionUtil.map(searchHits.getHits(),ElasticsearchUtil.searchHitIdToLong);
+              final List<Long> processInstanceKeys = map(searchHits.getHits(),ElasticsearchUtil.searchHitIdToLong);
               operationsCount.addAndGet(persistOperations(processInstanceKeys, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
             } catch (PersistenceException e) {
               throw new RuntimeException(e);
@@ -190,7 +199,6 @@ public class BatchOperationWriter {
       persistBatchOperationEntity(batchOperation);
 
       return batchOperation;
-
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }
@@ -201,7 +209,6 @@ public class BatchOperationWriter {
    * @param processInstanceKey
    * @param operationRequest
    * @return
-   * @throws PersistenceException
    */
   public BatchOperationEntity scheduleSingleOperation(long processInstanceKey, CreateOperationRequestDto operationRequest) {
     logger.debug("Creating operation: processInstanceKey [{}], operation type [{}]", processInstanceKey, operationRequest.getOperationType());
@@ -233,18 +240,18 @@ public class BatchOperationWriter {
         bulkRequest.add(
             getIndexVariableOperationRequest(
                 processInstanceKey,
-                ConversionUtils.toLongOrNull(operationRequest.getVariableScopeId()),
+                toLongOrNull(operationRequest.getVariableScopeId()),
                 operationType,
                 operationRequest.getVariableName(),
                 operationRequest.getVariableValue(),
                 batchOperation.getId()));
         operationsCount++;
       } else {
-        bulkRequest.add(getIndexOperationRequest(processInstanceKey, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), batchOperation.getId(), operationType));
+        bulkRequest.add(getIndexOperationRequest(processInstanceKey, toLongOrNull(operationRequest.getIncidentId()), batchOperation.getId(), operationType));
         operationsCount++;
       }
       //update process instance
-      bulkRequest.add(getUpdateProcessInstanceRequest(processInstanceKey, batchOperation.getId()));
+      bulkRequest.add(getUpdateProcessInstanceRequest(processInstanceKey, getListViewIndicesForProcessInstances(List.of(processInstanceKey)), batchOperation.getId()));
       //update instances_count and operations_count of batch operation
       batchOperation.setOperationsTotalCount(operationsCount);
       batchOperation.setInstancesCount(1);
@@ -259,11 +266,9 @@ public class BatchOperationWriter {
     }
   }
 
-  private Script getUpdateBatchOperationIdScript(String batchOperationId) {
-    Map<String,Object> paramsMap = new HashMap<>();
-    paramsMap.put("batchOperationId", batchOperationId);
-
-    String script = "if (ctx._source.batchOperationIds == null){"
+  private Script getUpdateBatchOperationIdScript(final String batchOperationId) {
+    final Map<String,Object> paramsMap = Map.of("batchOperationId", batchOperationId);
+    final String script = "if (ctx._source.batchOperationIds == null){"
         + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
         + "} else {"
         + "ctx._source.batchOperationIds.add(params.batchOperationId);"
@@ -307,26 +312,53 @@ public class BatchOperationWriter {
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
       incidentKeys = incidentReader.getIncidentKeysPerProcessInstance(processInstanceKeys);
     }
-
-    for (Long wiId : processInstanceKeys) {
+    Map<Long,String> processInstanceIdToIndexName = null;
+    try {
+      processInstanceIdToIndexName = getListViewIndicesForProcessInstances(processInstanceKeys);
+    } catch (IOException e) {
+      throw new NotFoundException("Couldn't find index names for process instances.", e);
+    }
+    for (Long processInstanceKey : processInstanceKeys) {
       //create single operations
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
-        final List<Long> allIncidentKeys = incidentKeys.get(wiId);
+        final List<Long> allIncidentKeys = incidentKeys.get(processInstanceKey);
         if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
           for (Long incidentKey: allIncidentKeys) {
-            bulkRequest.add(getIndexOperationRequest(wiId, incidentKey, batchOperationId, operationType));
+            bulkRequest.add(getIndexOperationRequest(processInstanceKey, incidentKey, batchOperationId, operationType));
             operationsCount++;
           }
         }
       } else {
-        bulkRequest.add(getIndexOperationRequest(wiId, ConversionUtils.toLongOrNull(incidentId), batchOperationId, operationType));
+        bulkRequest.add(getIndexOperationRequest(processInstanceKey, toLongOrNull(incidentId), batchOperationId, operationType));
         operationsCount++;
       }
       //update process instance
-      bulkRequest.add(getUpdateProcessInstanceRequest(wiId, batchOperationId));
+      bulkRequest.add(getUpdateProcessInstanceRequest(processInstanceKey, processInstanceIdToIndexName, batchOperationId));
     }
     ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
     return operationsCount;
+  }
+
+  private Map<Long,String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
+      throws IOException {
+    final List<String> processInstanceIdsAsStrings = map(processInstanceIds, Object::toString);
+
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, QueryType.ALL);
+    searchRequest.source().query(QueryBuilders.idsQuery().addIds(toSafeArrayOfStrings(processInstanceIdsAsStrings)));
+
+    final Map<Long,String> processInstanceId2IndexName = new HashMap<>();
+    ElasticsearchUtil.scrollWith(searchRequest, esClient, searchHits -> {
+      for(SearchHit searchHit: searchHits.getHits()){
+        final String indexName = searchHit.getIndex();
+        final Long id = Long.valueOf(searchHit.getId());
+        processInstanceId2IndexName.put(id, indexName);
+      }
+    });
+
+    if(processInstanceId2IndexName.isEmpty()){
+      throw new NotFoundException(String.format("Process instances %s doesn't exists.", processInstanceIds));
+    }
+    return processInstanceId2IndexName;
   }
 
   private IndexRequest getIndexVariableOperationRequest(
@@ -353,13 +385,16 @@ public class BatchOperationWriter {
     return createIndexRequest(operationEntity, processInstanceKey);
   }
 
-  private UpdateRequest getUpdateProcessInstanceRequest(Long processInstanceKey, String batchOperationId) {
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.BATCH_OPERATION_IDS, batchOperationId);
+  private UpdateRequest getUpdateProcessInstanceRequest(Long processInstanceKey,
+      final Map<Long, String> processInstanceIdToIndexName, String batchOperationId) {
+    final String processInstanceId = String.valueOf(processInstanceKey);
 
-      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(String.valueOf(processInstanceKey))
-          .script(getUpdateBatchOperationIdScript(batchOperationId))
-          .retryOnConflict(UPDATE_RETRY_COUNT);
+    final String indexForProcessInstance = getOrDefaultForNullValue(processInstanceIdToIndexName,
+        processInstanceKey, listViewTemplate.getFullQualifiedName());
+
+    return new UpdateRequest().index(indexForProcessInstance).id(processInstanceId)
+        .script(getUpdateBatchOperationIdScript(batchOperationId))
+        .retryOnConflict(UPDATE_RETRY_COUNT);
   }
 
   private OperationEntity createOperationEntity(Long processInstanceKey, OperationType operationType, String batchOperationId) {
@@ -378,7 +413,6 @@ public class BatchOperationWriter {
       return new IndexRequest(operationTemplate.getFullQualifiedName()).id(operationEntity.getId())
           .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
-      logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(
           String.format("Error preparing the query to insert operation [%s] for process instance id [%s]", operationEntity.getType(), processInstanceKey), e);
     }

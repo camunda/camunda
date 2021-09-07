@@ -372,6 +372,12 @@ public abstract class ElasticsearchUtil {
   }
 
   public static void scrollWith(SearchRequest searchRequest, RestHighLevelClient esClient,
+      Consumer<SearchHits> searchHitsProcessor) throws IOException {
+    scrollWith(searchRequest, esClient, searchHitsProcessor,
+        null, null);
+  }
+
+  public static void scrollWith(SearchRequest searchRequest, RestHighLevelClient esClient,
     Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor,
       Consumer<SearchHits> firstResponseConsumer) throws IOException {
 

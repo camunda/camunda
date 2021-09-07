@@ -36,7 +36,7 @@ import javax.validation.ConstraintViolationException;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(
-  classes = {TestApplicationWithNoBeans.class, ProcessInstanceRestService.class, JacksonConfig.class, OperateProperties.class}
+    classes = {TestApplicationWithNoBeans.class, ProcessInstanceRestService.class, JacksonConfig.class, OperateProperties.class}
 )
 public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 

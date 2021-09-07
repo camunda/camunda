@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.es.reader.BatchOperationReader;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.HttpURLConnection;
@@ -84,6 +85,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private OperationReader operationReader;
+
+  @Autowired
+  private BatchOperationReader batchOperationReader;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -892,7 +896,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
       .format("Too many process instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
     assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
   }
-
   private long startDemoProcessInstance() {
     String processId = "demoProcess";
     return tester.startProcessInstance(processId, "{\"a\": \"b\"}")

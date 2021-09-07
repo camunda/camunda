@@ -24,6 +24,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
@@ -86,6 +87,9 @@ public class ListViewZeebeRecordProcessor {
   private ProcessCache processCache;
 
   @Autowired
+  private OperationsManager operationsManager;
+
+  @Autowired
   private ElasticsearchQueries elasticsearchQueries;
 
   @Autowired
@@ -141,7 +145,7 @@ public class ListViewZeebeRecordProcessor {
           //complete operation
           if (intentStr.equals(ELEMENT_TERMINATED.name())) {
             //resolve corresponding operation
-            elasticsearchQueries.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
+            operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
           }
           piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity, treePathMap);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {

@@ -64,7 +64,7 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 
 @Api(tags = {"Process instances"})
 @SwaggerDefinition(tags = {
-  @Tag(name = "Process instances", description = "Process instances")
+    @Tag(name = "Process instances", description = "Process instances")
 })
 @RestController
 @RequestMapping(value = PROCESS_INSTANCE_URL)
@@ -116,7 +116,7 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
-  public BatchOperationEntity operation(@PathVariable String id,
+  public BatchOperationEntity operation(@PathVariable @ValidLongId String id,
       @RequestBody CreateOperationRequestDto operationRequest) {
     validateOperationRequest(operationRequest, id);
     return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
@@ -136,31 +136,31 @@ public class ProcessInstanceRestService {
   }
 
   private void validateOperationRequest(CreateOperationRequestDto operationRequest,
-      String processInstanceId) {
+     @ValidLongId String processInstanceId) {
     if (operationRequest.getOperationType() == null) {
       throw new InvalidRequestException("Operation type must be defined.");
     }
     if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationRequest.getOperationType())
         && (operationRequest.getVariableScopeId() == null
-            || operationRequest.getVariableName() == null
-            || operationRequest.getVariableName().isEmpty()
-            || operationRequest.getVariableValue() == null)) {
+        || operationRequest.getVariableName() == null
+        || operationRequest.getVariableName().isEmpty()
+        || operationRequest.getVariableValue() == null)) {
       throw new InvalidRequestException(
           "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
     }
     if (operationRequest.getOperationType().equals(ADD_VARIABLE)
         && (variableReader.getVariableByName(
-                processInstanceId,
-                operationRequest.getVariableScopeId(),
-                operationRequest.getVariableName())
-            != null
+        processInstanceId,
+        operationRequest.getVariableScopeId(),
+        operationRequest.getVariableName())
+        != null
         || !operationReader
-            .getOperations(
-                ADD_VARIABLE,
-                processInstanceId,
-                operationRequest.getVariableScopeId(),
-                operationRequest.getVariableName())
-            .isEmpty())) {
+        .getOperations(
+            ADD_VARIABLE,
+            processInstanceId,
+            operationRequest.getVariableScopeId(),
+            operationRequest.getVariableName())
+        .isEmpty())) {
       throw new InvalidRequestException(
           String.format(
               "Variable with the name \"%s\" already exists.", operationRequest.getVariableName()));

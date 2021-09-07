@@ -83,16 +83,18 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return endDate;
   }
 
-  public void setEndDate(OffsetDateTime endDate) {
+  public ProcessInstanceForListViewEntity setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
   }
 
   public ProcessInstanceState getState() {
     return state;
   }
 
-  public void setState(ProcessInstanceState state) {
+  public ProcessInstanceForListViewEntity setState(ProcessInstanceState state) {
     this.state = state;
+    return this;
   }
 
   public List<String> getBatchOperationIds() {

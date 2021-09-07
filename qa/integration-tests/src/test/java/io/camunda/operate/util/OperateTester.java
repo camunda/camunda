@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
@@ -19,6 +20,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -107,6 +110,10 @@ public class OperateTester {
   private Predicate<Object[]> processInstanceIsCompletedCheck;
 
   @Autowired
+  @Qualifier("processInstanceIsCanceledCheck")
+  private Predicate<Object[]> processInstanceIsCanceledCheck;
+
+  @Autowired
   @Qualifier("incidentIsActiveCheck")
   private Predicate<Object[]> incidentIsActiveCheck;
 
@@ -152,6 +159,7 @@ public class OperateTester {
   private ObjectMapper objectMapper;
 
   private boolean operationExecutorEnabled = true;
+  private BatchOperationDto operation;
 
   public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
@@ -165,6 +173,10 @@ public class OperateTester {
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
+  }
+
+  public BatchOperationDto getOperation() {
+    return operation;
   }
 
   public OperateTester createAndDeploySimpleProcess(String processId,String activityId) {
@@ -214,6 +226,11 @@ public class OperateTester {
 
   public OperateTester processInstanceIsCompleted() {
     elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
+    return this;
+  }
+
+  public OperateTester processInstanceIsCanceled() {
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     return this;
   }
 
@@ -298,6 +315,7 @@ public class OperateTester {
         mockMvcTestRule.getMockMvc().perform(postOperationRequest)
             .andExpect(status().is(HttpStatus.SC_OK))
             .andReturn();
+    operation = mockMvcTestRule.fromResponse(mvcResult, BatchOperationDto.class);
     return mvcResult;
   }
 
@@ -309,6 +327,12 @@ public class OperateTester {
         = new CreateBatchOperationRequestDto(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
     postOperation(batchOperationDto);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return this;
+  }
+
+  public OperateTester deleteProcessInstance() throws Exception {
+    postOperation(new CreateOperationRequestDto(OperationType.DELETE_PROCESS_INSTANCE));
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
   }
@@ -329,6 +353,7 @@ public class OperateTester {
       mockMvcTestRule.getMockMvc().perform(postOperationRequest)
         .andExpect(status().is(HttpStatus.SC_OK))
         .andReturn();
+    operation = mockMvcTestRule.fromResponse(mvcResult, BatchOperationDto.class);
     return mvcResult;
   }
 
@@ -380,6 +405,7 @@ public class OperateTester {
 
   public OperateTester executeOperations() throws Exception {
      executeOneBatch();
+     elasticsearchTestRule.refreshOperateESIndices();
      return this;
   }
 

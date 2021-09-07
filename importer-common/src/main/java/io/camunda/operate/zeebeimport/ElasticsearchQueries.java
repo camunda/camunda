@@ -7,7 +7,6 @@ package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
@@ -17,20 +16,14 @@ import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.OperationsManager;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -38,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -66,20 +58,6 @@ public class ElasticsearchQueries {
 
   @Autowired
   private ProcessIndex processType;
-
-  @Autowired
-  private OperationsManager operationsManager;
-
-  public void completeOperation(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType, BulkRequest bulkRequest)
-      throws PersistenceException {
-    List<OperationEntity> operations = getOperations(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
-    for (OperationEntity o: operations) {
-      if (o.getBatchOperationId() != null) {
-        operationsManager.updateFinishedInBatchOperation(o.getBatchOperationId(), bulkRequest);
-      }
-      completeOperation(o.getId(), bulkRequest);
-    }
-  }
 
   public List<OperationEntity> getOperations(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){
     if (processInstanceKey == null && zeebeCommandKey == null) {
@@ -109,22 +87,6 @@ public class ElasticsearchQueries {
       throw new OperateRuntimeException(message, e);
     }
   }
-
-  public void completeOperation(String operationId, BulkRequest bulkRequest) {
-    UpdateRequest updateRequest = new UpdateRequest().index(operationTemplate.getFullQualifiedName()).id(operationId)
-        .script(getUpdateOperationScript())
-        .retryOnConflict(UPDATE_RETRY_COUNT);
-    bulkRequest.add(updateRequest);
-  }
-
-  private Script getUpdateOperationScript() {
-    String script =
-        "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
-            "ctx._source.lockOwner = null;" +
-            "ctx._source.lockExpirationTime = null;";
-    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, Collections.emptyMap());
-  }
-
   public List<Long> queryProcessInstancesWithEmptyProcessVersion(Long processDefinitionKey) {
     QueryBuilder queryBuilder = constantScoreQuery(
         joinWithAnd(

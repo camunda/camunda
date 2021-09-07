@@ -16,6 +16,7 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.IncidentNotifier;
 import io.camunda.operate.zeebeimport.UpdateIncidentsFromProcessInstancesAction;
@@ -56,6 +57,9 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired
   private ElasticsearchQueries elasticsearchQueries;
+
+  @Autowired
+  private OperationsManager operationsManager;
 
   @Autowired
   private IncidentNotifier incidentNotifier;
@@ -101,7 +105,7 @@ public class IncidentZeebeRecordProcessor {
     if (intentStr.equals(Intent.RESOLVED.toString())) {
 
       //resolve corresponding operation
-      elasticsearchQueries.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
+      operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
 
       bulkRequest.add(getIncidentDeleteQuery(incidentKey));
     } else if (intentStr.equals(Intent.CREATED.toString())) {
