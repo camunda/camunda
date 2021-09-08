@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.MsgPackUtil;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepCompleteUserTask;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
@@ -76,6 +78,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepTriggerTimerStartEvent) {
       final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
       triggerTimerStartEvent(timerStep);
+    } else if (step instanceof StepCompleteUserTask) {
+      final StepCompleteUserTask stepCompleteUserTask = (StepCompleteUserTask) step;
+      completeUserTask(stepCompleteUserTask);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
@@ -97,7 +102,7 @@ public class ProcessExecutor {
   }
 
   private void activateAndCompleteJob(final StepActivateAndCompleteJob activateAndCompleteJob) {
-    waitForJobToBeCreated(activateAndCompleteJob.getJobType());
+    waitForJobToBeCreated(activateAndCompleteJob.getElementId());
 
     final Map<String, Object> variables = activateAndCompleteJob.getVariables();
     engineRule
@@ -110,7 +115,7 @@ public class ProcessExecutor {
   }
 
   private void activateAndFailJob(final StepActivateAndFailJob activateAndFailJob) {
-    waitForJobToBeCreated(activateAndFailJob.getJobType());
+    waitForJobToBeCreated(activateAndFailJob.getElementId());
 
     if (activateAndFailJob.isUpdateRetries()) {
       engineRule
@@ -153,7 +158,7 @@ public class ProcessExecutor {
   }
 
   private void activateAndTimeoutJob(final StepActivateAndTimeoutJob activateAndTimeoutJob) {
-    waitForJobToBeCreated(activateAndTimeoutJob.getJobType());
+    waitForJobToBeCreated(activateAndTimeoutJob.getElementId());
 
     engineRule.jobs().withType(activateAndTimeoutJob.getJobType()).withTimeout(100).activate();
 
@@ -173,7 +178,7 @@ public class ProcessExecutor {
 
   private void activateJobAndThrowError(
       final StepActivateJobAndThrowError stepActivateJobAndThrowError) {
-    waitForJobToBeCreated(stepActivateJobAndThrowError.getJobType());
+    waitForJobToBeCreated(stepActivateJobAndThrowError.getElementId());
 
     engineRule
         .jobs()
@@ -192,8 +197,8 @@ public class ProcessExecutor {
             });
   }
 
-  private void waitForJobToBeCreated(final String jobType) {
-    RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).await();
+  private Record<JobRecordValue> waitForJobToBeCreated(final String elementId) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED).withElementId(elementId).getFirst();
   }
 
   private void publishMessage(final StepPublishMessage publishMessage) {
@@ -257,6 +262,12 @@ public class ProcessExecutor {
     // think we've already reached a wait state, when in truth the timer trigger hasn't even been
     // processed and so we haven't actually moved on from the previous wait state
     RecordingExporter.timerRecords(TimerIntent.TRIGGERED).await();
+  }
+
+  private void completeUserTask(final StepCompleteUserTask completeUserTask) {
+    final Record<JobRecordValue> jobRecord = waitForJobToBeCreated(completeUserTask.getElementId());
+
+    engineRule.job().withKey(jobRecord.getKey()).complete();
   }
 
   private void resolveExpressionIncident(

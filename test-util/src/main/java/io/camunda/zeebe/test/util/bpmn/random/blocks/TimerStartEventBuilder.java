@@ -26,6 +26,7 @@ import java.util.Map;
 public class TimerStartEventBuilder implements StartEventBlockBuilder {
 
   private static final String VARIABLES_JOB_TYPE_SUFFIX = "_variables";
+  private static final String VARIABLES_ELEMENT_ID_SUFFIX = "_variables_task";
   private final String startEventId;
   private final Duration timeToAdd;
 
@@ -42,7 +43,7 @@ public class TimerStartEventBuilder implements StartEventBlockBuilder {
         .startEvent(startEventId)
         .timerWithDateExpression(dateExpression)
         .serviceTask(
-            startEventId + "_variables_task",
+            startEventId + VARIABLES_ELEMENT_ID_SUFFIX,
             b -> b.zeebeJobType(startEventId + VARIABLES_JOB_TYPE_SUFFIX));
   }
 
@@ -52,7 +53,10 @@ public class TimerStartEventBuilder implements StartEventBlockBuilder {
     final ExecutionPathSegment pathSegment = new ExecutionPathSegment();
     pathSegment.appendDirectSuccessor(new StepTriggerTimerStartEvent(timeToAdd));
     pathSegment.appendDirectSuccessor(
-        new StepActivateAndCompleteJob(startEventId + VARIABLES_JOB_TYPE_SUFFIX, variables));
+        new StepActivateAndCompleteJob(
+            startEventId + VARIABLES_JOB_TYPE_SUFFIX,
+            startEventId + VARIABLES_ELEMENT_ID_SUFFIX,
+            variables));
     return pathSegment;
   }
 }

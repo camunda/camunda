@@ -13,13 +13,19 @@ import java.util.Map;
 public final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
 
   private final String jobType;
+  private final String elementId;
 
-  public StepActivateAndTimeoutJob(final String jobType) {
+  public StepActivateAndTimeoutJob(final String jobType, final String elementId) {
     this.jobType = jobType;
+    this.elementId = elementId;
   }
 
   public String getJobType() {
     return jobType;
+  }
+
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
