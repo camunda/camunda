@@ -1,0 +1,25 @@
+{
+  "extends": ["config:base", ":rebaseStalePrs"],
+  "includePaths": ["client/**/**"],
+  "ignorePaths": ["client/pom.xml"],
+  "packageRules": [
+    {
+      "groupName": "definitelyTyped",
+      "matchPackagePrefixes": ["@types/"]
+    },
+    {
+      "extends": "monorepo:react",
+      "groupName": "react monorepo"
+    },
+    {
+      "extends": "monorepo:react-router",
+      "groupName": "react-router monorepo"
+    },
+    {
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    }
+  ]
+}
