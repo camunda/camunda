@@ -8,24 +8,30 @@
 package io.camunda.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
-public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
+public class StepThrowError extends AbstractExecutionStep {
 
-  private final String boundaryTimerEventId;
+  private final String elementId;
+  private final String errorCode;
 
-  public StepTriggerTimerBoundaryEvent(final String boundaryTimerEventId) {
-    this.boundaryTimerEventId = boundaryTimerEventId;
+  public StepThrowError(final String elementId, final String errorCode) {
+    this.elementId = elementId;
+    this.errorCode = errorCode;
+  }
+
+  public String getElementId() {
+    return elementId;
+  }
+
+  public String getErrorCode() {
+    return errorCode;
   }
 
   @Override
   protected Map<String, Object> updateVariables(
       final Map<String, Object> variables, final Duration activationDuration) {
-    final var result = new HashMap<>(variables);
-    result.put(boundaryTimerEventId, activationDuration.toString());
-    return result;
+    return variables;
   }
 
   @Override
@@ -35,12 +41,15 @@ public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
 
   @Override
   public Duration getDeltaTime() {
-    return DEFAULT_DELTA;
+    return VIRTUALLY_NO_TIME;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), boundaryTimerEventId);
+    int result = super.hashCode();
+    result = 31 * result + elementId.hashCode();
+    result = 31 * result + errorCode.hashCode();
+    return result;
   }
 
   @Override
@@ -54,11 +63,8 @@ public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
     if (!super.equals(o)) {
       return false;
     }
-    final StepTriggerTimerBoundaryEvent that = (StepTriggerTimerBoundaryEvent) o;
-    return boundaryTimerEventId.equals(that.boundaryTimerEventId);
-  }
 
-  public String getBoundaryTimerEventId() {
-    return boundaryTimerEventId;
+    final StepThrowError that = (StepThrowError) o;
+    return errorCode.equals(that.errorCode) && elementId.equals(that.elementId);
   }
 }

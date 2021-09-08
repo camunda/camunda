@@ -149,7 +149,7 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result = new StepActivateJobAndThrowError(jobType, errorCode, taskId);
     } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
-      result = new StepTriggerTimerBoundaryEvent(jobType, boundaryTimerEventId);
+      result = new StepTriggerTimerBoundaryEvent(boundaryTimerEventId);
     } else {
       result = new StepActivateAndCompleteJob(jobType, taskId);
     }
