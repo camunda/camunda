@@ -17,8 +17,10 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
+import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public class ProcessValidationUtil {
@@ -53,7 +55,11 @@ public class ProcessValidationUtil {
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =
         new ValidationVisitor(
-            ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
+            Stream.of(
+                    ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor),
+                    ZeebeDesignTimeValidators.VALIDATORS)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList()));
     walker.walk(visitor);
 
     return visitor.getValidationResult();
