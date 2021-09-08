@@ -117,8 +117,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       result.append(internalExecutionPath);
       if (hasBoundaryTimerEvent) {
         result.appendExecutionSuccessor(
-            new StepTriggerTimerBoundaryEvent(subProcessId, subProcessBoundaryTimerEventId),
-            activateSubProcess);
+            new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
       } // extend here for other boundary events
     }
     return result;

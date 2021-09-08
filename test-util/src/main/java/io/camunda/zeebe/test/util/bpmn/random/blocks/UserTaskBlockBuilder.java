@@ -16,7 +16,10 @@ import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepCompleteUserTask;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepThrowError;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import java.util.Random;
 
 /** Generates a user task */
@@ -71,12 +74,22 @@ public class UserTaskBlockBuilder implements BlockBuilder {
   @Override
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
-    result.appendDirectSuccessor(new StepCompleteUserTask(taskId));
+    final var activateStep = new StepActivateBPMNElement(taskId);
+    result.appendDirectSuccessor(activateStep);
 
     if (hasBoundaryTimerEvent) {
       // set an infinite timer as default; this can be overwritten by the execution path chosen
       result.setVariableDefault(
           boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+    }
+
+    if (hasBoundaryTimerEvent && random.nextBoolean()) {
+      result.appendExecutionSuccessor(
+          new StepTriggerTimerBoundaryEvent(boundaryTimerEventId), activateStep);
+    } else if (hasBoundaryErrorEvent && random.nextBoolean()) {
+      result.appendExecutionSuccessor(new StepThrowError(taskId, errorCode), activateStep);
+    } else {
+      result.appendExecutionSuccessor(new StepCompleteUserTask(taskId), activateStep);
     }
 
     return result;

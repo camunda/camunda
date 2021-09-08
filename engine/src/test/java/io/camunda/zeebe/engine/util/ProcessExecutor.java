@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepThrowError;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -81,6 +82,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepCompleteUserTask) {
       final StepCompleteUserTask stepCompleteUserTask = (StepCompleteUserTask) step;
       completeUserTask(stepCompleteUserTask);
+    } else if (step instanceof StepThrowError) {
+      final StepThrowError stepThrowError = (StepThrowError) step;
+      throwError(stepThrowError);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
@@ -268,6 +272,16 @@ public class ProcessExecutor {
     final Record<JobRecordValue> jobRecord = waitForJobToBeCreated(completeUserTask.getElementId());
 
     engineRule.job().withKey(jobRecord.getKey()).complete();
+  }
+
+  private void throwError(final StepThrowError stepThrowError) {
+    final Record<JobRecordValue> jobRecord = waitForJobToBeCreated(stepThrowError.getElementId());
+
+    engineRule
+        .job()
+        .withKey(jobRecord.getKey())
+        .withErrorCode(stepThrowError.getErrorCode())
+        .throwError();
   }
 
   private void resolveExpressionIncident(
