@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 
-public class RocksDbMetricExporterPartitionStep implements PartitionStartupStep {
+public class RockDbMetricExporterPartitionStartupStep implements PartitionStartupStep {
 
   @Override
   public String getName() {
