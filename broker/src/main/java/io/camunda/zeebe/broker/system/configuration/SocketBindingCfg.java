@@ -89,8 +89,8 @@ public class SocketBindingCfg {
         + "}";
   }
 
-  public static class CommandApiCfg extends SocketBindingCfg {
-    public CommandApiCfg() {
+  public static class ExternalApiCfg extends SocketBindingCfg {
+    public ExternalApiCfg() {
       super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
     }
   }

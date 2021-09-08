@@ -24,7 +24,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.commandapi.ExternalApiService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -59,7 +59,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final PushDeploymentRequestHandler deploymentRequestHandler;
   private final List<PartitionListener> partitionListeners;
   private final ClusterServices clusterServices;
-  private final CommandApiService commandApiService;
+  private final ExternalApiService externalApiService;
   private final ExporterRepository exporterRepository;
 
   public PartitionManagerImpl(
@@ -71,7 +71,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final PushDeploymentRequestHandler deploymentRequestHandler,
       final Consumer<DiskSpaceUsageListener> diskSpaceUsageListenerRegistry,
       final List<PartitionListener> partitionListeners,
-      final CommandApiService commandApiService,
+      final ExternalApiService externalApiService,
       final ExporterRepository exporterRepository) {
 
     snapshotStoreFactory =
@@ -84,7 +84,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.healthCheckService = healthCheckService;
     this.deploymentRequestHandler = deploymentRequestHandler;
     this.diskSpaceUsageListenerRegistry = diskSpaceUsageListenerRegistry;
-    this.commandApiService = commandApiService;
+    this.externalApiService = externalApiService;
     this.exporterRepository = exporterRepository;
 
     partitionGroup =
@@ -142,7 +142,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       brokerCfg,
                       localBroker,
                       deploymentRequestHandler,
-                      commandApiService,
+                      externalApiService,
                       snapshotStoreFactory,
                       clusterServices,
                       exporterRepository,

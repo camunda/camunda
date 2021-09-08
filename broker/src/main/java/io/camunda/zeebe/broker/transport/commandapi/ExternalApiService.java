@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import java.util.function.Consumer;
 
-public interface CommandApiService {
+public interface ExternalApiService {
 
   CommandResponseWriter newCommandResponseWriter();
 

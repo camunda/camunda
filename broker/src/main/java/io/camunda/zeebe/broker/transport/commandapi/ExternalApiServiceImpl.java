@@ -26,23 +26,23 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
-public final class CommandApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
+public final class ExternalApiServiceImpl extends Actor
+    implements PartitionListener, DiskSpaceUsageListener, ExternalApiService {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
-  private final CommandApiRequestHandler requestHandler;
+  private final CommandApiRequestHandler commandHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
   private final String actorName;
 
-  public CommandApiServiceImpl(
+  public ExternalApiServiceImpl(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
       final PartitionAwareRequestLimiter limiter) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
-    requestHandler = new CommandApiRequestHandler();
-    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    commandHandler = new CommandApiRequestHandler();
+    actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 
   @Override
@@ -79,8 +79,8 @@ public final class CommandApiServiceImpl extends Actor
                     if (error == null) {
 
                       final var requestLimiter = limiter.getLimiter(partitionId);
-                      requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
-                      serverTransport.subscribe(partitionId, RequestType.COMMAND, requestHandler);
+                      commandHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
                       future.complete(null);
                     } else {
                       Loggers.SYSTEM_LOGGER.error(
@@ -102,7 +102,7 @@ public final class CommandApiServiceImpl extends Actor
   private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
     return actor.call(
         () -> {
-          requestHandler.removePartition(partitionId);
+          commandHandler.removePartition(partitionId);
           cleanLeadingPartition(partitionId);
         });
   }
@@ -134,11 +134,11 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   public void onDiskSpaceNotAvailable() {
-    actor.run(requestHandler::onDiskSpaceNotAvailable);
+    actor.run(commandHandler::onDiskSpaceNotAvailable);
   }
 
   @Override
   public void onDiskSpaceAvailable() {
-    actor.run(requestHandler::onDiskSpaceAvailable);
+    actor.run(commandHandler::onDiskSpaceAvailable);
   }
 }
