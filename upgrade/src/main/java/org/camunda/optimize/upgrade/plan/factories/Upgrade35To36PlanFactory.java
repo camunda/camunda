@@ -73,6 +73,7 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
         "def configuration = ctx._source.data.configuration;" +
         "if (configuration != null) {" +
           "configuration.measureVisualizations = [\"frequency\": \"bar\", \"duration\": \"line\"];" +
+          "configuration.stackedBar = false;" +
         "}" +
       "}"
       ;

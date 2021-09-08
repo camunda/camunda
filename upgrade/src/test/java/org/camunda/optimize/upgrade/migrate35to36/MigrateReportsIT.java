@@ -44,6 +44,8 @@ public class MigrateReportsIT extends AbstractUpgrade35IT {
         final Map<String, Object> reportData = (Map<String, Object>) reportAsMap.get(SingleProcessReportIndex.DATA);
         final Map<String, Object> reportConfig =
           (Map<String, Object>) reportData.get(SingleProcessReportIndex.CONFIGURATION);
+        assertThat(reportConfig)
+          .containsEntry(SingleReportConfigurationDto.Fields.stackedBar, false);
         final Map<String, Object> measureVisualizationConfig =
           (Map<String, Object>) reportConfig.get(SingleReportConfigurationDto.Fields.measureVisualizations);
         assertThat(measureVisualizationConfig).isNotNull();
