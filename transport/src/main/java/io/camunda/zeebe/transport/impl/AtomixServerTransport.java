@@ -14,7 +14,7 @@ import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.util.EnumSet;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -30,7 +30,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
-  private final Int2ObjectHashMap<EnumSet<RequestType>> partitionsSubscriptions;
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
       partitionsRequestMap;
   private final AtomicLong requestCount;
@@ -40,7 +39,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   public AtomixServerTransport(final int nodeId, final MessagingService messagingService) {
     this.messagingService = messagingService;
-    partitionsSubscriptions = new Int2ObjectHashMap<>();
     partitionsRequestMap = new Int2ObjectHashMap<>();
     requestCount = new AtomicLong(0);
     reusableRequestBuffer = new UnsafeBuffer(0, 0);
@@ -74,11 +72,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           if (LOG.isTraceEnabled()) {
             LOG.trace("Subscribe for topic {}", topicName);
           }
-          subscribePartitionToRequestType(partitionId, requestType);
-          if (!partitionsRequestMap.containsKey(partitionId)) {
-            // init partitions request map only when it wasn't already initialized before
-            partitionsRequestMap.put(partitionId, new Long2ObjectHashMap<>());
-          }
+          partitionsRequestMap.computeIfAbsent(partitionId, id -> new Long2ObjectHashMap<>());
           messagingService.registerHandler(
               topicName,
               (sender, request) ->
@@ -91,17 +85,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     return actor.call(() -> removePartition(partitionId));
   }
 
-  private void subscribePartitionToRequestType(
-      final int partitionId, final RequestType requestType) {
-    final var requestTypes =
-        partitionsSubscriptions.getOrDefault(partitionId, EnumSet.noneOf(RequestType.class));
-    requestTypes.add(requestType);
-    partitionsSubscriptions.put(partitionId, requestTypes);
-  }
-
   private void removePartition(final int partitionId) {
-    partitionsSubscriptions
-        .remove(partitionId)
+    // to unsubscribe from the partition, we can simply unsubscribe from all possible request types
+    // for that partition id, even if we're not yet subscribed to some
+    Arrays.stream(RequestType.values())
         .forEach(
             requestType -> {
               final var topicName = topicName(partitionId, requestType);
@@ -194,6 +181,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   static String topicName(final int partitionId, final RequestType requestType) {
-    return String.format(API_TOPIC_FORMAT, requestType, partitionId);
+    return String.format(API_TOPIC_FORMAT, requestType.getId(), partitionId);
   }
 }
