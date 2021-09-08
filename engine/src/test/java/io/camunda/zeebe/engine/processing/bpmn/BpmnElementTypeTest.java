@@ -362,6 +362,17 @@ public final class BpmnElementTypeTest {
                   .endEvent()
                   .done();
             }
+          },
+          new BpmnElementTypeScenario(
+              "Intermediate throw event", BpmnElementType.INTERMEDIATE_THROW_EVENT) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .intermediateThrowEvent(elementId())
+                  .endEvent()
+                  .done();
+            }
           });
 
   @Rule

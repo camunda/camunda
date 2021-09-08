@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.container.SubProcessProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.event.BoundaryEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.event.EndEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.event.IntermediateCatchEventProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.event.IntermediateThrowEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.event.StartEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
@@ -60,6 +61,9 @@ public final class BpmnElementProcessors {
     processors.put(
         BpmnElementType.INTERMEDIATE_CATCH_EVENT,
         new IntermediateCatchEventProcessor(bpmnBehaviors));
+    processors.put(
+        BpmnElementType.INTERMEDIATE_THROW_EVENT,
+        new IntermediateThrowEventProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.END_EVENT, new EndEventProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.BOUNDARY_EVENT, new BoundaryEventProcessor(bpmnBehaviors));
   }

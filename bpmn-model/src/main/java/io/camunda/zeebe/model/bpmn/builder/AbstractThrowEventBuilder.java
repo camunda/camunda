@@ -22,11 +22,14 @@ import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 
 /** @author Sebastian Menski */
 public abstract class AbstractThrowEventBuilder<
         B extends AbstractThrowEventBuilder<B, E>, E extends ThrowEvent>
-    extends AbstractEventBuilder<B, E> {
+    extends AbstractEventBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
 
   protected AbstractThrowEventBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
@@ -131,5 +134,37 @@ public abstract class AbstractThrowEventBuilder<
 
     element.getEventDefinitions().add(eventDefinition);
     return new CompensateEventDefinitionBuilder(modelInstance, eventDefinition);
+  }
+
+  @Override
+  public B zeebeInputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeInput(expression, target);
+  }
+
+  @Override
+  public B zeebeOutputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeOutput(expression, target);
+  }
+
+  @Override
+  public B zeebeInput(final String source, final String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
+  }
+
+  @Override
+  public B zeebeOutput(final String source, final String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
   }
 }
