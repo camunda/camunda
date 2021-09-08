@@ -81,7 +81,7 @@ public final class PartitionFactory {
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
-          new RocksDbMetricExporterPartitionStep(),
+          PartitionStepMigrationHelper.fromStartupStep(new RocksDbMetricExporterPartitionStep()),
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
@@ -92,7 +92,7 @@ public final class PartitionFactory {
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
-          new RocksDbMetricExporterPartitionStep(),
+          PartitionStepMigrationHelper.fromStartupStep(new RocksDbMetricExporterPartitionStep()),
           new ExporterDirectorPartitionStep());
 
   private final ActorSchedulingService actorSchedulingService;

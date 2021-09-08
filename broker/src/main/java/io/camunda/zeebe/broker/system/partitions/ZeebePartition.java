@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
@@ -47,7 +48,11 @@ public final class ZeebePartition extends Actor
 
   private static final StartupProcess<PartitionStartupContext> STARTUP_PROCESS =
       new StartupProcess<>(
-          LOG, List.of(new StateControllerPartitionStep(), new LogDeletionPartitionStep()));
+          LOG,
+          List.of(
+              new StateControllerPartitionStep(),
+              new LogDeletionPartitionStep(),
+              new RocksDbMetricExporterPartitionStep()));
 
   private Role raftRole;
   private final String actorName;

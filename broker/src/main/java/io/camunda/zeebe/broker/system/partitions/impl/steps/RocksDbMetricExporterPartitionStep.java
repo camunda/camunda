@@ -9,43 +9,46 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static io.camunda.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_METRIC_EXPORTER_FACTORY;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 
-public class RocksDbMetricExporterPartitionStep implements PartitionStep {
-
-  @Override
-  public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
-    final var metricExporter =
-        DEFAULT_DB_METRIC_EXPORTER_FACTORY.apply(
-            Integer.toString(context.getPartitionId()), context::getZeebeDb);
-    final var metricsTimer =
-        context
-            .getActorControl()
-            .runAtFixedRate(
-                Duration.ofSeconds(5),
-                () -> {
-                  if (context.getZeebeDb() != null) {
-                    metricExporter.exportMetrics();
-                  }
-                });
-
-    context.setMetricsTimer(metricsTimer);
-    return CompletableActorFuture.completed(null);
-  }
-
-  @Override
-  public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
-    context.getMetricsTimer().cancel();
-    context.setMetricsTimer(null);
-    return CompletableActorFuture.completed(null);
-  }
+public class RocksDbMetricExporterPartitionStep implements PartitionStartupStep {
 
   @Override
   public String getName() {
     return "RocksDB metric timer";
+  }
+
+  @Override
+  public ActorFuture<PartitionStartupContext> startup(
+      final PartitionStartupContext partitionStartupContext) {
+    final var metricExporter =
+        DEFAULT_DB_METRIC_EXPORTER_FACTORY.apply(
+            Integer.toString(partitionStartupContext.getPartitionId()),
+            partitionStartupContext::getZeebeDb);
+    final var metricsTimer =
+        partitionStartupContext
+            .getActorControl()
+            .runAtFixedRate(
+                Duration.ofSeconds(5),
+                () -> {
+                  if (partitionStartupContext.getZeebeDb() != null) {
+                    metricExporter.exportMetrics();
+                  }
+                });
+
+    partitionStartupContext.setMetricsTimer(metricsTimer);
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<PartitionStartupContext> shutdown(
+      final PartitionStartupContext partitionStartupContext) {
+    partitionStartupContext.getMetricsTimer().cancel();
+    partitionStartupContext.setMetricsTimer(null);
+    return CompletableActorFuture.completed(null);
   }
 }
