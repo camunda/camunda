@@ -68,6 +68,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     clientRequest.write(buffer, 0);
 
     final var partitionId = clientRequest.getPartitionId();
+    final var requestType = clientRequest.getRequestType();
 
     final var requestFuture = new CompletableActorFuture<DirectBuffer>();
     final var requestContext =
@@ -75,6 +76,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
             requestFuture,
             nodeAddressSupplier,
             partitionId,
+            requestType,
             requestBytes,
             responseValidator,
             shouldRetry,

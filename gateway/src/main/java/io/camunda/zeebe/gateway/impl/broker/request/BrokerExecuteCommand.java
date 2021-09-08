@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.transport.RequestType;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -44,11 +45,6 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   public ValueType getValueType() {
     return request.getValueType();
-  }
-
-  @Override
-  public String getType() {
-    return type;
   }
 
   @Override
@@ -98,6 +94,16 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
       throw new UnsupportedBrokerResponseException(
           request.getValueType().name(), response.getValueType().name());
     }
+  }
+
+  @Override
+  public String getType() {
+    return type;
+  }
+
+  @Override
+  public RequestType getRequestType() {
+    return RequestType.COMMAND;
   }
 
   @Override

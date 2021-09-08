@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -102,6 +103,11 @@ public final class ExecuteCommandRequest implements ClientRequest {
   @Override
   public int getPartitionId() {
     return partitionId;
+  }
+
+  @Override
+  public RequestType getRequestType() {
+    return RequestType.COMMAND;
   }
 
   @Override
