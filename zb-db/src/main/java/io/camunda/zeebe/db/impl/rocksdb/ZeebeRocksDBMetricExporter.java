@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.prometheus.client.Gauge;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,12 +71,12 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
   };
 
   private final String partition;
-  private final ZeebeDb<ColumnFamilyType> database;
+  private final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier;
 
   public ZeebeRocksDBMetricExporter(
-      final String partition, final ZeebeDb<ColumnFamilyType> database) {
+      final String partition, final Supplier<ZeebeDb<ColumnFamilyType>> databaseSupplier) {
     this.partition = Objects.requireNonNull(partition);
-    this.database = Objects.requireNonNull(database);
+    this.databaseSupplier = databaseSupplier;
   }
 
   public void exportMetrics() {
@@ -92,10 +93,13 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
   private void exportMetrics(final RocksDBMetric[] metrics) {
     for (final RocksDBMetric metric : metrics) {
       try {
-        database
-            .getProperty(metric.getPropertyName())
-            .map(Double::parseDouble)
-            .ifPresent(value -> metric.exportValue(partition, value));
+        final var database = databaseSupplier.get();
+        if (database != null) {
+          database
+              .getProperty(metric.getPropertyName())
+              .map(Double::parseDouble)
+              .ifPresent(value -> metric.exportValue(partition, value));
+        }
       } catch (final Exception exception) {
         LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
       }
