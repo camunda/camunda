@@ -8,6 +8,7 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FNI;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -28,6 +29,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -67,16 +69,17 @@ public class UpdateIncidentsFromProcessInstancesAction implements Callable<Void>
           .source(new SearchSourceBuilder().query(query)
               .fetchSource(new String[]{ListViewTemplate.TREE_PATH, ListViewTemplate.KEY}, null));
       Map<String, String> treePathMap = new HashMap<>();
-      scrollWith(searchRequest, esClient, sh -> {
-        Arrays.stream(sh.getHits()).map(hit -> hit.getSourceAsMap())
-            .forEach(fieldMap -> treePathMap.put((String) fieldMap.get(ListViewTemplate.KEY),
-                (String) fieldMap.get(ListViewTemplate.TREE_PATH)));
-      }, null, null);
+      scrollWith(searchRequest, esClient, sh ->
+              Arrays.stream(sh.getHits()).map(SearchHit::getSourceAsMap)
+                  .forEach(fieldMap -> treePathMap.put(String.valueOf(fieldMap.get(ListViewTemplate.KEY)),
+                      (String) fieldMap.get(ListViewTemplate.TREE_PATH)))
+          , null, null);
 
       //update incidents with tree paths
       final String script = "String processInstanceKey = String.valueOf(ctx._source.processInstanceKey);"
           + "if (params.treePathMap.get(processInstanceKey) != null) {"
-          + "   ctx._source.treePath = params.treePathMap.get(processInstanceKey);"
+          + "   ctx._source.treePath = params.treePathMap.get(processInstanceKey) + '/" + FNI
+          + "_' + ctx._source.flowNodeInstanceKey;"
           + "}";
       UpdateByQueryRequest request = new UpdateByQueryRequest(incidentTemplate.getFullQualifiedName())
           .setQuery(termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, treePathMap.keySet()))

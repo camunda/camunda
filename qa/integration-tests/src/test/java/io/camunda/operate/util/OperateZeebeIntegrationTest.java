@@ -32,7 +32,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
-import io.camunda.operate.zeebeimport.cache.ProcessCache;
+import io.camunda.operate.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -102,6 +102,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   @Qualifier("incidentIsActiveCheck")
   protected Predicate<Object[]> incidentIsActiveCheck;
+
+  @Autowired
+  @Qualifier("incidentsInAnyInstanceAreActiveCheck")
+  protected Predicate<Object[]> incidentsInAnyInstanceAreActiveCheck;
 
   @Autowired
   @Qualifier("processInstanceIsCreatedCheck")

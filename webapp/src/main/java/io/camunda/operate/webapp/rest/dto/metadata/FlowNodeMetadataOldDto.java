@@ -5,13 +5,13 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import io.camunda.operate.entities.FlowNodeType;
 
-public class FlowNodeMetadataDto {
+@Deprecated
+public class FlowNodeMetadataOldDto {
 
   /**
    * These fields show, which exactly metadata is returned. E.g. in case flowNodeInstanceId is not null,
@@ -26,17 +26,13 @@ public class FlowNodeMetadataDto {
 
   private List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb = new ArrayList<>();
 
-  private FlowNodeInstanceMetadataDto instanceMetadata;
-
-  private Long incidentCount;
-
-  private IncidentDto incident;
+  private FlowNodeInstanceMetadataOldDto instanceMetadata;
 
   public String getFlowNodeInstanceId() {
     return flowNodeInstanceId;
   }
 
-  public FlowNodeMetadataDto setFlowNodeInstanceId(final String flowNodeInstanceId) {
+  public FlowNodeMetadataOldDto setFlowNodeInstanceId(final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     return this;
   }
@@ -45,7 +41,7 @@ public class FlowNodeMetadataDto {
     return flowNodeId;
   }
 
-  public FlowNodeMetadataDto setFlowNodeId(final String flowNodeId) {
+  public FlowNodeMetadataOldDto setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
   }
@@ -54,7 +50,7 @@ public class FlowNodeMetadataDto {
     return flowNodeType;
   }
 
-  public FlowNodeMetadataDto setFlowNodeType(final FlowNodeType flowNodeType) {
+  public FlowNodeMetadataOldDto setFlowNodeType(final FlowNodeType flowNodeType) {
     this.flowNodeType = flowNodeType;
     return this;
   }
@@ -63,7 +59,7 @@ public class FlowNodeMetadataDto {
     return instanceCount;
   }
 
-  public FlowNodeMetadataDto setInstanceCount(final Long instanceCount) {
+  public FlowNodeMetadataOldDto setInstanceCount(final Long instanceCount) {
     this.instanceCount = instanceCount;
     return this;
   }
@@ -72,38 +68,19 @@ public class FlowNodeMetadataDto {
     return breadcrumb;
   }
 
-  public FlowNodeMetadataDto setBreadcrumb(
+  public FlowNodeMetadataOldDto setBreadcrumb(
       final List<FlowNodeInstanceBreadcrumbEntryDto> breadcrumb) {
     this.breadcrumb = breadcrumb;
     return this;
   }
 
-  public FlowNodeInstanceMetadataDto getInstanceMetadata() {
+  public FlowNodeInstanceMetadataOldDto getInstanceMetadata() {
     return instanceMetadata;
   }
 
-  public FlowNodeMetadataDto setInstanceMetadata(
-      final FlowNodeInstanceMetadataDto instanceMetadata) {
+  public FlowNodeMetadataOldDto setInstanceMetadata(
+      final FlowNodeInstanceMetadataOldDto instanceMetadata) {
     this.instanceMetadata = instanceMetadata;
-    return this;
-  }
-
-  public Long getIncidentCount() {
-    return incidentCount;
-  }
-
-  public FlowNodeMetadataDto setIncidentCount(final Long incidentCount) {
-    this.incidentCount = incidentCount;
-    return this;
-  }
-
-  public IncidentDto getIncident() {
-    return incident;
-  }
-
-  public FlowNodeMetadataDto setIncident(
-      final IncidentDto incident) {
-    this.incident = incident;
     return this;
   }
 
@@ -115,34 +92,30 @@ public class FlowNodeMetadataDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final FlowNodeMetadataDto that = (FlowNodeMetadataDto) o;
+    final FlowNodeMetadataOldDto that = (FlowNodeMetadataOldDto) o;
     return Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
         Objects.equals(flowNodeId, that.flowNodeId) &&
         flowNodeType == that.flowNodeType &&
         Objects.equals(instanceCount, that.instanceCount) &&
         Objects.equals(breadcrumb, that.breadcrumb) &&
-        Objects.equals(instanceMetadata, that.instanceMetadata) &&
-        Objects.equals(incidentCount, that.incidentCount) &&
-        Objects.equals(incident, that.incident);
+        Objects.equals(instanceMetadata, that.instanceMetadata);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(flowNodeInstanceId, flowNodeId, flowNodeType, instanceCount, breadcrumb,
-        instanceMetadata, incidentCount, incident);
+        instanceMetadata);
   }
 
   @Override
   public String toString() {
-    return "FlowNodeMetadataDto{" +
+    return "FlowNodeMetadataOldDto{" +
         "flowNodeInstanceId='" + flowNodeInstanceId + '\'' +
         ", flowNodeId='" + flowNodeId + '\'' +
         ", flowNodeType=" + flowNodeType +
         ", instanceCount=" + instanceCount +
         ", breadcrumb=" + breadcrumb +
         ", instanceMetadata=" + instanceMetadata +
-        ", incidentCount=" + incidentCount +
-        ", incident=" + incident +
         '}';
   }
 }

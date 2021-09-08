@@ -5,12 +5,15 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.schema.templates.IncidentTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Predicate;
@@ -39,7 +42,10 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -72,6 +78,9 @@ public class ElasticsearchChecks {
 
   @Autowired
   private VariableTemplate variableTemplate;
+
+  @Autowired
+  private IncidentTemplate incidentTemplate;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -345,6 +354,36 @@ public class ElasticsearchChecks {
         return false;
       }
     };
+  }
+
+  /**
+   * Checks whether given amount of incidents exist and active.
+   * @return
+   */
+  @Bean(name = "incidentsInAnyInstanceAreActiveCheck")
+  public Predicate<Object[]> getIncidentsInAnyInstanceAreActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      Long count = (Long)objects[0];
+      try {
+        return getActiveIncidentsCount() == count;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  public long getActiveIncidentsCount() {
+    final QueryBuilder q = termQuery(STATE, IncidentState.ACTIVE.name());
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
+        .source(new SearchSourceBuilder().query(q));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**

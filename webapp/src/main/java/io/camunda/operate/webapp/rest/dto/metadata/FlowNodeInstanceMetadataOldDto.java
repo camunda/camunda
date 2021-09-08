@@ -5,14 +5,17 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
+import java.time.OffsetDateTime;
+import java.util.Map;
+import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
-import java.time.OffsetDateTime;
-import java.util.Map;
+import io.camunda.operate.util.ConversionUtils;
 
-public class FlowNodeInstanceMetadataDto {
+@Deprecated
+public class FlowNodeInstanceMetadataOldDto {
 
   /**
    * Flow node data.
@@ -35,11 +38,18 @@ public class FlowNodeInstanceMetadataDto {
   private OffsetDateTime jobDeadline;
   private Map<String, String> jobCustomHeaders;
 
+  /**
+   * Incident data.
+   */
+  private ErrorType incidentErrorType;
+  private String incidentErrorMessage;
+  private String jobId;
+
   public String getFlowNodeId() {
     return flowNodeId;
   }
 
-  public FlowNodeInstanceMetadataDto setFlowNodeId(final String flowNodeId) {
+  public FlowNodeInstanceMetadataOldDto setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
   }
@@ -48,7 +58,7 @@ public class FlowNodeInstanceMetadataDto {
     return flowNodeInstanceId;
   }
 
-  public FlowNodeInstanceMetadataDto setFlowNodeInstanceId(final String flowNodeInstanceId) {
+  public FlowNodeInstanceMetadataOldDto setFlowNodeInstanceId(final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     return this;
   }
@@ -57,7 +67,7 @@ public class FlowNodeInstanceMetadataDto {
     return flowNodeType;
   }
 
-  public FlowNodeInstanceMetadataDto setFlowNodeType(
+  public FlowNodeInstanceMetadataOldDto setFlowNodeType(
       final FlowNodeType flowNodeType) {
     this.flowNodeType = flowNodeType;
     return this;
@@ -67,7 +77,7 @@ public class FlowNodeInstanceMetadataDto {
     return startDate;
   }
 
-  public FlowNodeInstanceMetadataDto setStartDate(final OffsetDateTime startDate) {
+  public FlowNodeInstanceMetadataOldDto setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -76,7 +86,7 @@ public class FlowNodeInstanceMetadataDto {
     return endDate;
   }
 
-  public FlowNodeInstanceMetadataDto setEndDate(final OffsetDateTime endDate) {
+  public FlowNodeInstanceMetadataOldDto setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -85,7 +95,7 @@ public class FlowNodeInstanceMetadataDto {
     return calledProcessInstanceId;
   }
 
-  public FlowNodeInstanceMetadataDto setCalledProcessInstanceId(
+  public FlowNodeInstanceMetadataOldDto setCalledProcessInstanceId(
       final String calledProcessInstanceId) {
     this.calledProcessInstanceId = calledProcessInstanceId;
     return this;
@@ -95,7 +105,7 @@ public class FlowNodeInstanceMetadataDto {
     return calledProcessDefinitionName;
   }
 
-  public FlowNodeInstanceMetadataDto setCalledProcessDefinitionName(
+  public FlowNodeInstanceMetadataOldDto setCalledProcessDefinitionName(
       final String calledProcessDefinitionName) {
     this.calledProcessDefinitionName = calledProcessDefinitionName;
     return this;
@@ -105,7 +115,7 @@ public class FlowNodeInstanceMetadataDto {
     return eventId;
   }
 
-  public FlowNodeInstanceMetadataDto setEventId(final String eventId) {
+  public FlowNodeInstanceMetadataOldDto setEventId(final String eventId) {
     this.eventId = eventId;
     return this;
   }
@@ -150,9 +160,33 @@ public class FlowNodeInstanceMetadataDto {
     this.jobCustomHeaders = jobCustomHeaders;
   }
 
-  public static FlowNodeInstanceMetadataDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
+  public ErrorType getIncidentErrorType() {
+    return incidentErrorType;
+  }
+
+  public void setIncidentErrorType(ErrorType incidentErrorType) {
+    this.incidentErrorType = incidentErrorType;
+  }
+
+  public String getIncidentErrorMessage() {
+    return incidentErrorMessage;
+  }
+
+  public void setIncidentErrorMessage(String incidentErrorMessage) {
+    this.incidentErrorMessage = incidentErrorMessage;
+  }
+
+  public String getJobId() {
+    return jobId;
+  }
+
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
+  }
+
+  public static FlowNodeInstanceMetadataOldDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
       EventEntity eventEntity, String calledProcessInstanceId, String calledProcessDefinitionName) {
-    FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto();
+    FlowNodeInstanceMetadataOldDto metadataDto = new FlowNodeInstanceMetadataOldDto();
     //flow node instance data
     metadataDto.setFlowNodeInstanceId(flowNodeInstance.getId());
     metadataDto.setFlowNodeId(flowNodeInstance.getFlowNodeId());
@@ -170,8 +204,11 @@ public class FlowNodeInstanceMetadataDto {
     metadataDto.setEventId(eventEntity.getId());
     EventMetadataEntity eventMetadataEntity = eventEntity.getMetadata();
     if (eventMetadataEntity != null) {
+      metadataDto.setIncidentErrorMessage(eventMetadataEntity.getIncidentErrorMessage());
+      metadataDto.setIncidentErrorType(eventMetadataEntity.getIncidentErrorType());
       metadataDto.setJobCustomHeaders(eventMetadataEntity.getJobCustomHeaders());
       metadataDto.setJobDeadline(eventMetadataEntity.getJobDeadline());
+      metadataDto.setJobId(ConversionUtils.toStringOrNull(eventMetadataEntity.getJobKey()));
       metadataDto.setJobRetries(eventMetadataEntity.getJobRetries());
       metadataDto.setJobType(eventMetadataEntity.getJobType());
       metadataDto.setJobWorker(eventMetadataEntity.getJobWorker());
@@ -196,6 +233,9 @@ public class FlowNodeInstanceMetadataDto {
         ", jobWorker='" + jobWorker + '\'' +
         ", jobDeadline=" + jobDeadline +
         ", jobCustomHeaders=" + jobCustomHeaders +
+        ", incidentErrorType=" + incidentErrorType +
+        ", incidentErrorMessage='" + incidentErrorMessage + '\'' +
+        ", jobId='" + jobId + '\'' +
         '}';
   }
 }

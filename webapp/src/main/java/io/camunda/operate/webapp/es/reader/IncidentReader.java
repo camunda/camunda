@@ -23,8 +23,8 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeOldDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
@@ -152,7 +152,7 @@ public class IncidentReader extends AbstractReader {
       final List<IncidentEntity> incidents = scroll(searchRequest, IncidentEntity.class, aggs -> {
         ((Terms) aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
           ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(errorType.getTitle(), (int) b.getDocCount()));
+          incidentResponse.getErrorTypes().add(new IncidentErrorTypeOldDto(errorType.getTitle(), (int) b.getDocCount()));
         });
         ((Terms) aggs.get(flowNodesAggName)).getBuckets()
             .forEach(b -> incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int) b.getDocCount())));
@@ -160,7 +160,8 @@ public class IncidentReader extends AbstractReader {
 
       final Map<Long, List<OperationEntity>> operations = operationReader.getOperationsPerIncidentKey(processInstanceKey);
 
-      incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents, operations)));
+      incidentResponse.setIncidents(
+          IncidentOldDto.sortDefault(IncidentOldDto.createFrom(incidents, operations)));
       incidentResponse.setCount(incidents.size());
 
       return incidentResponse;

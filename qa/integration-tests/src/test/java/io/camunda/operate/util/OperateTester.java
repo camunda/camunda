@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -53,7 +54,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -116,6 +117,10 @@ public class OperateTester {
   @Autowired
   @Qualifier("incidentIsActiveCheck")
   private Predicate<Object[]> incidentIsActiveCheck;
+
+  @Autowired
+  @Qualifier("incidentsInAnyInstanceAreActiveCheck")
+  private Predicate<Object[]> incidentsInAnyInstanceAreActiveCheck;
 
   @Autowired
   @Qualifier("flowNodeIsActiveCheck")
@@ -252,6 +257,11 @@ public class OperateTester {
 
   public OperateTester incidentIsActive() {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    return this;
+  }
+
+  public OperateTester incidentsInAnyInstanceAreActive(long count) {
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, count);
     return this;
   }
 
@@ -492,6 +502,21 @@ public class OperateTester {
   }
 
   public FlowNodeMetadataDto getFlowNodeMetadataFromRest(String processInstanceId,
+      String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
+      throws Exception {
+    final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()
+        .setFlowNodeId(flowNodeId)
+        .setFlowNodeType(flowNodeType)
+        .setFlowNodeInstanceId(flowNodeInstanceId);
+    MvcResult mvcResult = postRequest(
+        String.format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata-new", processInstanceId),
+        request);
+    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+  }
+
+  @Deprecated
+  public FlowNodeMetadataOldDto getFlowNodeMetadataFromRestOld(String processInstanceId,
       String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
       throws Exception {
     final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()

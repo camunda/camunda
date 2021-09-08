@@ -20,7 +20,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import io.camunda.operate.zeebeimport.v1_2.processors.IncidentZeebeRecordProcessor;
@@ -146,7 +146,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertThat(incidentResponse).isNotNull();
     assertThat(incidentResponse.getCount()).isEqualTo(4);
     assertThat(incidentResponse.getIncidents()).hasSize(4);
-    assertThat(incidentResponse.getIncidents()).isSortedAccordingTo(IncidentDto.INCIDENT_DEFAULT_COMPARATOR);
+    assertThat(incidentResponse.getIncidents()).isSortedAccordingTo(IncidentOldDto.INCIDENT_DEFAULT_COMPARATOR);
     assertIncident(incidentResponse, errorMsg, activityId, ErrorType.JOB_NO_RETRIES);
     assertIncident(incidentResponse, "failed to evaluate expression '{taskOrderId:orderId}': no variable found for name 'orderId'", "upperTask", ErrorType.IO_MAPPING_ERROR);
     assertIncident(incidentResponse, "failed to evaluate expression 'clientId': no variable found for name 'clientId'", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
@@ -184,9 +184,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertIncident(IncidentResponseDto incidentResponse, String errorMsg, String activityId, ErrorType errorType) {
-    final Optional<IncidentDto> incidentOpt = incidentResponse.getIncidents().stream().filter(inc -> inc.getErrorType().equals(errorType.getTitle())).findFirst();
+    final Optional<IncidentOldDto> incidentOpt = incidentResponse.getIncidents().stream().filter(inc -> inc.getErrorType().equals(errorType.getTitle())).findFirst();
     assertThat(incidentOpt).isPresent();
-    final IncidentDto inc = incidentOpt.get();
+    final IncidentOldDto inc = incidentOpt.get();
     assertThat(inc.getId()).as(activityId + ".id").isNotNull();
     assertThat(inc.getCreationTime()).as(activityId + ".creationTime").isNotNull();
     assertThat(inc.getErrorMessage()).as(activityId + ".errorMessage").isEqualTo(errorMsg);

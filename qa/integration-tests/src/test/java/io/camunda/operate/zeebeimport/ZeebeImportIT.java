@@ -5,24 +5,15 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
@@ -38,14 +29,24 @@ import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -181,8 +182,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         String.valueOf(processInstanceKey),
         null, null, instances.get(instances.size() - 1).getId());
     FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
-    assertThat(flowNodeInstanceMetadata.getIncidentErrorMessage()).isEqualTo(incidentError);
-    assertThat(flowNodeInstanceMetadata.getIncidentErrorType()).isEqualTo(JOB_NO_RETRIES);
+    assertThat(flowNodeMetadata.getIncident().getErrorMessage()).isEqualTo(incidentError);
+    assertThat(flowNodeMetadata.getIncident().getErrorType().getId())
+        .isEqualTo(JOB_NO_RETRIES.name());
   }
 
   private void assertActivityInstanceTreeDto(final List<FlowNodeInstanceEntity> tree, final int childrenCount, final String activityId) {
@@ -376,6 +378,57 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeInstance.getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(flowNodeInstance.getEndDate()).isNotNull();
 
+  }
+
+  @Test
+  public void testIncidentMetadataForCallActivity() throws Exception {
+    //having process with call activity
+    final String parentProcessId = "parentProcess";
+    final String callActivity1Id = "callActivity1";
+    final String calledProcess1Id = "calledProcess";
+    final String callActivity2Id = "callActivity2";
+    final String calledProcess2Id = "process";
+    final String errorMsg = "Some error";
+    final BpmnModelInstance testProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(callActivity1Id)
+            .zeebeProcessId(calledProcess1Id)
+            .done();
+    final BpmnModelInstance testProcess2 =
+        Bpmn.createExecutableProcess(calledProcess1Id)
+            .startEvent()
+            .callActivity(callActivity2Id)
+            .zeebeProcessId(calledProcess2Id)
+            .done();
+    tester.deployProcess("single-task.bpmn")
+        .getProcessDefinitionKey();
+
+    final long parentProcessInstanceKey = tester.deployProcess(testProcess, "testProcess.bpmn")
+        .deployProcess(testProcess2, "testProcess2.bpmn")
+        .startProcessInstance(parentProcessId, null).getProcessInstanceKey();
+
+    sleepFor(2000L);
+
+    //create an incident
+    ZeebeTestUtil.failTask(getClient(), "task", getWorkerName(), 3, errorMsg);
+
+    //when
+    //1st load incident
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentsInAnyInstanceAreActiveCheck, 1L);
+
+    //and then process instance events
+    processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, parentProcessInstanceKey);
+
+    //when
+    //get metadata by flowNodeId from parent process instance
+    final String processInstanceId = String.valueOf(parentProcessInstanceKey);
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        processInstanceId, callActivity1Id, null, null);
+
+    //then one incident is returned
+    assertThat(flowNodeMetadata.getIncidentCount()).isEqualTo(1);
+    assertThat(flowNodeMetadata.getIncident().getErrorMessage()).isEqualTo(errorMsg);
   }
 
   @Test

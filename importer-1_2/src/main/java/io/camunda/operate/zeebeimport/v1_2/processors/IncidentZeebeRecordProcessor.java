@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.zeebeimport.v1_2.processors;
 
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
@@ -20,6 +21,7 @@ import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.IncidentNotifier;
 import io.camunda.operate.zeebeimport.UpdateIncidentsFromProcessInstancesAction;
+import io.camunda.operate.zeebeimport.util.TreePath;
 import io.camunda.operate.zeebeimport.v1_2.record.Intent;
 import io.camunda.operate.zeebeimport.v1_2.record.value.IncidentRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
@@ -135,10 +137,14 @@ public class IncidentZeebeRecordProcessor {
         if (processInstanceTreePath == null) {
           logger.warn("No tree path found for incident [{}], processInstanceKey [{}]",
               incident.getKey(), recordValue.getProcessInstanceKey());
-          incident.setTreePath(String.valueOf(recordValue.getProcessInstanceKey()));
+          final String treePath = new TreePath().startTreePath(
+              String.valueOf(recordValue.getProcessInstanceKey()))
+              .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey())).toString();
+          incident.setTreePath(treePath);
           processInstanceIdsForTreePathUpdate.add(String.valueOf(recordValue.getProcessInstanceKey()));
         } else {
-          incident.setTreePath(processInstanceTreePath);
+          incident.setTreePath(new TreePath(processInstanceTreePath).appendFlowNodeInstance(
+                  String.valueOf(incident.getFlowNodeInstanceKey())).toString());
         }
       }
       bulkRequest.add(getIncidentInsertQuery(incident));

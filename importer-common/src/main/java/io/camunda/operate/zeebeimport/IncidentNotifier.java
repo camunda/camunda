@@ -18,7 +18,7 @@ import java.util.Optional;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.zeebeimport.cache.ProcessCache;
+import io.camunda.operate.cache.ProcessCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

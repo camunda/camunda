@@ -8,6 +8,13 @@ package io.camunda.operate.data.develop;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.data.usertest.UserTestDataGenerator;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import java.io.IOException;
@@ -20,13 +27,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import javax.annotation.PostConstruct;
-import io.camunda.operate.data.usertest.UserTestDataGenerator;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.util.rest.StatefulRestTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -417,6 +417,10 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
       if (version == 3) {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(5) + "}"));
+        //call activity process
+        //these instances will call second version of called process
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process",
+            "{\"orders\": [" + random.nextInt(10) + ", " + random.nextInt(10) + "]}"));
       }
 
     }
@@ -464,6 +468,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion3();
     //deploy processes v.3
     ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_3.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/calledProcess_v_2.bpmn");
 
   }
 

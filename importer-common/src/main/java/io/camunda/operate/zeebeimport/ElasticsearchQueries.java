@@ -5,32 +5,6 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.util.ElasticsearchUtil.QueryType;
-import java.io.IOException;
-import java.util.List;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -38,6 +12,30 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
+import java.io.IOException;
+import java.util.List;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class ElasticsearchQueries {
@@ -106,32 +104,6 @@ public class ElasticsearchQueries {
     }
   }
 
-  /**
-   * Gets the process by id.
-   * @param processDefinitionKey
-   * @return
-   */
-  public ProcessEntity getProcess(Long processDefinitionKey) {
-    final SearchRequest searchRequest = new SearchRequest(processType.getAlias())
-        .source(new SearchSourceBuilder()
-            .query(QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey)));
-
-    try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().getTotalHits().value == 1) {
-        return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().getTotalHits().value > 1) {
-        throw new OperateRuntimeException(String.format("Could not find unique process with key '%s'.", processDefinitionKey));
-      } else {
-        throw new OperateRuntimeException(String.format("Could not find process with key '%s'.", processDefinitionKey));
-      }
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
   public String findProcessInstanceTreePath(final long parentProcessInstanceKey) {
     final SearchRequest searchRequest = ElasticsearchUtil
         .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
@@ -150,10 +122,6 @@ public class ElasticsearchQueries {
               e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-  }
-
-  private ProcessEntity fromSearchHit(String processString) {
-    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
   }
 
 }

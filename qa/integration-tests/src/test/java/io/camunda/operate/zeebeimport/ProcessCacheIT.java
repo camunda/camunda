@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.zeebeimport.cache.ProcessCache;
+import io.camunda.operate.cache.ProcessCache;
 import org.junit.After;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.SpyBean;

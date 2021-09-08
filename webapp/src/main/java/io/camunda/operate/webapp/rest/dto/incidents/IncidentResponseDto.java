@@ -12,9 +12,9 @@ public class IncidentResponseDto {
 
   private long count;
 
-  private List<IncidentDto> incidents = new ArrayList<>();
+  private List<IncidentOldDto> incidents = new ArrayList<>();
 
-  private List<IncidentErrorTypeDto> errorTypes = new ArrayList<>();
+  private List<IncidentErrorTypeOldDto> errorTypes = new ArrayList<>();
 
   private List<IncidentFlowNodeDto> flowNodes = new ArrayList<>();
 
@@ -26,19 +26,19 @@ public class IncidentResponseDto {
     this.count = count;
   }
 
-  public List<IncidentDto> getIncidents() {
+  public List<IncidentOldDto> getIncidents() {
     return incidents;
   }
 
-  public void setIncidents(List<IncidentDto> incidents) {
+  public void setIncidents(List<IncidentOldDto> incidents) {
     this.incidents = incidents;
   }
 
-  public List<IncidentErrorTypeDto> getErrorTypes() {
+  public List<IncidentErrorTypeOldDto> getErrorTypes() {
     return errorTypes;
   }
 
-  public void setErrorTypes(List<IncidentErrorTypeDto> errorTypes) {
+  public void setErrorTypes(List<IncidentErrorTypeOldDto> errorTypes) {
     this.errorTypes = errorTypes;
   }
 

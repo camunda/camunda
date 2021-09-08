@@ -5,21 +5,19 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
+import io.camunda.operate.entities.ErrorType;
 import java.util.Objects;
 
-public class IncidentErrorTypeDto {
+public class ErrorTypeDto implements Comparable<ErrorTypeDto> {
 
   private String id;
-
   private String name;
-
-  private int count;
 
   public String getId() {
     return id;
   }
 
-  public IncidentErrorTypeDto setId(final String id) {
+  public ErrorTypeDto setId(final String id) {
     this.id = id;
     return this;
   }
@@ -28,18 +26,13 @@ public class IncidentErrorTypeDto {
     return name;
   }
 
-  public IncidentErrorTypeDto setName(final String name) {
+  public ErrorTypeDto setName(final String name) {
     this.name = name;
     return this;
   }
 
-  public int getCount() {
-    return count;
-  }
-
-  public IncidentErrorTypeDto setCount(final int count) {
-    this.count = count;
-    return this;
+  public static ErrorTypeDto createFrom(ErrorType errorType) {
+    return new ErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
   }
 
   @Override
@@ -50,14 +43,30 @@ public class IncidentErrorTypeDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final IncidentErrorTypeDto that = (IncidentErrorTypeDto) o;
-    return count == that.count &&
-        Objects.equals(id, that.id) &&
+    final ErrorTypeDto that = (ErrorTypeDto) o;
+    return Objects.equals(id, that.id) &&
         Objects.equals(name, that.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, count);
+    return Objects.hash(id, name);
+  }
+
+  @Override
+  public String toString() {
+    return "ErrorTypeDto{" +
+        "id='" + id + '\'' +
+        ", name='" + name + '\'' +
+        '}';
+  }
+
+  @Override
+  public int compareTo(final ErrorTypeDto o) {
+    if (id != null) {
+      return id.compareTo(o.getId());
+    } else {
+      return 0;
+    }
   }
 }

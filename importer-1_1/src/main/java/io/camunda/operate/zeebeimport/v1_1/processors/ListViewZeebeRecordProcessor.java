@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperationType;
@@ -30,7 +31,7 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.UpdateIncidentsWithTreePathsAction;
-import io.camunda.operate.zeebeimport.cache.ProcessCache;
+import io.camunda.operate.zeebeimport.util.TreePath;
 import io.camunda.operate.zeebeimport.v1_1.record.Intent;
 import io.camunda.operate.zeebeimport.v1_1.record.RecordImpl;
 import io.camunda.operate.zeebeimport.v1_1.record.value.IncidentRecordValueImpl;
@@ -65,8 +66,6 @@ public class ListViewZeebeRecordProcessor {
   private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES = new HashSet<>();
-  private static final String PROCESS_INSTANCE_ID_PREFIX = "PI_";
-  private static final String CALL_ACTIVITY_ID_PREFIX = "CA_";
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
@@ -208,10 +207,11 @@ public class ListViewZeebeRecordProcessor {
       }
     }
     if (piEntity.getTreePath() == null) {
-      piEntity.setTreePath(PROCESS_INSTANCE_ID_PREFIX + ConversionUtils
-          .toStringOrNull(recordValue.getProcessInstanceKey()));
-      getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()),
-          PROCESS_INSTANCE_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()));
+      final String treePath = new TreePath().startTreePath(
+          ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
+      piEntity.setTreePath(treePath);
+      getTreePathCache()
+          .put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
     }
     return piEntity;
   }
@@ -236,9 +236,9 @@ public class ListViewZeebeRecordProcessor {
       throw new OperateRuntimeException(
           "Unable to find parent tree path for parent instance id " + recordValue.getParentProcessInstanceKey());
     }
-    String treePath = String.join("/", parentTreePath,
-        CALL_ACTIVITY_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey()),
-        PROCESS_INSTANCE_ID_PREFIX + ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()));
+    String treePath = new TreePath(parentTreePath).appendEntries(
+        ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey()),
+        ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
 
     getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
 

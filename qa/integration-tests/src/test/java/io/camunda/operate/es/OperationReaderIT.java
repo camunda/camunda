@@ -17,7 +17,7 @@ import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -97,7 +97,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
     MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(PROCESS_INSTANCE_ID_1));
     IncidentResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
-    List<IncidentDto> incidents = response.getIncidents();
+    List<IncidentOldDto> incidents = response.getIncidents();
     assertThat(incidents).hasSize(3);
     assertThat(incidents).filteredOn("id", INCIDENT_1)
         .allMatch(inc -> inc.isHasActiveOperation() == true &&

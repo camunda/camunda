@@ -46,7 +46,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.zeebeimport.cache.ProcessCache;
+import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
 import org.junit.Before;
 import org.junit.Test;

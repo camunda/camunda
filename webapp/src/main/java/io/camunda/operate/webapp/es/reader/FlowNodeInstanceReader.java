@@ -19,10 +19,14 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollIdsToList;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -35,6 +39,33 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
+import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.entities.EventEntity;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.EventTemplate;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
+import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataOldDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,24 +77,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.EventTemplate;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -108,6 +121,12 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private IncidentTemplate incidentTemplate;
+
+  @Autowired
+  private ProcessCache processCache;
 
   public Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstances(FlowNodeInstanceRequestDto request) {
     Map<String, FlowNodeInstanceResponseDto> response = new HashMap<>();
@@ -353,6 +372,17 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   }
 
+  @Deprecated
+  public FlowNodeMetadataOldDto getFlowNodeMetadataOld(String processInstanceId,
+      final FlowNodeMetadataRequestDto request) {
+    if (request.getFlowNodeId() != null) {
+      return getMetadataByFlowNodeIdOld(processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
+    } else if (request.getFlowNodeInstanceId() != null) {
+      return getMetadataByFlowNodeInstanceOldId(request.getFlowNodeInstanceId());
+    }
+    return null;
+  }
+
   public FlowNodeMetadataDto getFlowNodeMetadata(String processInstanceId,
       final FlowNodeMetadataRequestDto request) {
     if (request.getFlowNodeId() != null) {
@@ -361,6 +391,23 @@ public class FlowNodeInstanceReader extends AbstractReader {
       return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
     }
     return null;
+  }
+
+  @Deprecated
+  private FlowNodeMetadataOldDto getMetadataByFlowNodeInstanceOldId(final String flowNodeInstanceId) {
+
+    final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstanceEntity(flowNodeInstanceId);
+
+    final FlowNodeMetadataOldDto result = new FlowNodeMetadataOldDto();
+    result.setInstanceMetadata(buildInstanceMetadataOld(flowNodeInstance));
+    result.setFlowNodeInstanceId(flowNodeInstanceId);
+
+    //calculate breadcrumb
+    result.setBreadcrumb(
+        buildBreadcrumb(flowNodeInstance.getTreePath(), flowNodeInstance.getFlowNodeId(),
+            flowNodeInstance.getLevel()));
+
+    return result;
   }
 
   private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(final String flowNodeInstanceId) {
@@ -376,7 +423,137 @@ public class FlowNodeInstanceReader extends AbstractReader {
         buildBreadcrumb(flowNodeInstance.getTreePath(), flowNodeInstance.getFlowNodeId(),
             flowNodeInstance.getLevel()));
 
+    //find incidents information
+    searchForIncidents(result, flowNodeInstance.getProcessInstanceKey(), flowNodeInstance.getId());
+
     return result;
+  }
+
+  private void searchForIncidents(FlowNodeMetadataDto flowNodeMetadata,
+      final Long processInstanceKey, final String flowNodeInstanceId) {
+
+    final String treePath = getProcessInstanceTreePath(processInstanceKey);
+
+    final String incidentTreePath = new TreePath(treePath)
+        .appendFlowNodeInstance(flowNodeInstanceId).toString();
+    final QueryBuilder query = constantScoreQuery(termQuery(IncidentTemplate.TREE_PATH,
+        incidentTreePath));
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder().query(query));
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      flowNodeMetadata.setIncidentCount(response.getHits().getTotalHits().value);
+      if (response.getHits().getTotalHits().value == 1) {
+        final IncidentEntity incidentEntity = fromSearchHit(
+            response.getHits().getAt(0).getSourceAsString(), objectMapper,
+            IncidentEntity.class);
+        //find root cause instance information
+        ProcessInstanceReferenceDto rootCauseInstance = new ProcessInstanceReferenceDto();
+        rootCauseInstance.setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()));
+        rootCauseInstance.setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
+        rootCauseInstance.setProcessDefinitionName(
+            processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
+                "Unknown process"));
+        flowNodeMetadata.setIncident(
+            IncidentDto.createFrom(incidentEntity, rootCauseInstance));
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining incidents: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private void searchForIncidentsByFlowNodeIdAndType(FlowNodeMetadataDto flowNodeMetadata,
+      final Long processInstanceKey, final String flowNodeId, final FlowNodeType flowNodeType) {
+
+    final String treePath = getProcessInstanceTreePath(processInstanceKey);
+
+    final List<String> flowNodeInstanceIds = getFlowNodeInstanceIds(processInstanceKey, flowNodeId,
+        flowNodeType);
+
+    final List<String> flowNodeInstancesTreePaths = flowNodeInstanceIds.stream()
+        .map(id -> new TreePath(treePath).appendFlowNodeInstance(id).toString())
+        .collect(Collectors.toList());
+
+    final QueryBuilder query = constantScoreQuery(joinWithAnd(termQuery(IncidentTemplate.TREE_PATH,
+        treePath), termsQuery(ListViewTemplate.TREE_PATH, flowNodeInstancesTreePaths)));
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder().query(query));
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      flowNodeMetadata.setIncidentCount(response.getHits().getTotalHits().value);
+      if (response.getHits().getTotalHits().value == 1) {
+        final IncidentEntity incidentEntity = fromSearchHit(
+            response.getHits().getAt(0).getSourceAsString(), objectMapper,
+            IncidentEntity.class);
+        //find root cause instance information
+        ProcessInstanceReferenceDto rootCauseInstance = new ProcessInstanceReferenceDto();
+        rootCauseInstance.setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()));
+        rootCauseInstance.setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
+        rootCauseInstance.setProcessDefinitionName(
+            processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
+                "Unknown process"));
+        flowNodeMetadata.setIncident(
+            IncidentDto.createFrom(incidentEntity, rootCauseInstance));
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining incidents: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private List<String> getFlowNodeInstanceIds(final Long processInstanceKey,
+      final String flowNodeId, final FlowNodeType flowNodeType) {
+    final QueryBuilder query = constantScoreQuery(
+        joinWithAnd(
+            termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+            termQuery(FLOW_NODE_ID, flowNodeId),
+            termQuery(TYPE, flowNodeType)));
+
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(flowNodeInstanceTemplate, QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder()
+            .query(query)
+            .fetchSource(false));
+    try {
+      return scrollIdsToList(request, esClient);
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining flow node instances: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private String getProcessInstanceTreePath(final Long processInstanceKey) {
+    final QueryBuilder query = joinWithAnd(
+        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        termQuery(KEY, processInstanceKey));
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder().query(query)
+            .fetchSource(TREE_PATH, null));
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value > 0) {
+        return (String) response.getHits().getAt(0).getSourceAsMap()
+            .get(TREE_PATH);
+      } else {
+        throw new OperateRuntimeException(
+            String.format("Process instance not found: %s", processInstanceKey));
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining tree path for process instance: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   private FlowNodeInstanceEntity getFlowNodeInstanceEntity(final String flowNodeInstanceId) {
@@ -461,6 +638,61 @@ public class FlowNodeInstanceReader extends AbstractReader {
             flowNodeInstance.getLevel());
         if (bucketCurrentLevel.getDocCount() == 1) {
           result.setInstanceMetadata(buildInstanceMetadata(flowNodeInstance));
+          result.setFlowNodeInstanceId(flowNodeInstance.getId());
+          //scenario 1-2
+          result.setBreadcrumb(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
+          //find incidents information
+          searchForIncidents(result, flowNodeInstance.getProcessInstanceKey(), flowNodeInstance.getId());
+        } else {
+          result.setInstanceCount(bucketCurrentLevel.getDocCount());
+          result.setFlowNodeId(flowNodeInstance.getFlowNodeId());
+          result.setFlowNodeType(flowNodeInstance.getType());
+          //find incidents information
+          searchForIncidentsByFlowNodeIdAndType(result, flowNodeInstance.getProcessInstanceKey(),
+              flowNodeInstance.getFlowNodeId(), flowNodeInstance.getType());
+        }
+      }
+
+      return result;
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining metadata for flow node: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  @Deprecated
+  private FlowNodeMetadataOldDto getMetadataByFlowNodeIdOld(final String processInstanceId,
+      final String flowNodeId, final FlowNodeType flowNodeType) {
+
+    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
+    final TermQueryBuilder flowNodeIdQ = termQuery(FLOW_NODE_ID, flowNodeId);
+
+    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+        .query(constantScoreQuery(joinWithAnd(processInstanceIdQ, flowNodeIdQ)))
+        .sort(LEVEL, SortOrder.ASC)
+        .aggregation(getLevelsAggs())
+        .size(1);
+    if (flowNodeType != null) {
+      sourceBuilder.postFilter(termQuery(TYPE, flowNodeType));
+    }
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(flowNodeInstanceTemplate)
+        .source(sourceBuilder);
+
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+
+      final FlowNodeMetadataOldDto result = new FlowNodeMetadataOldDto();
+      final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstance(response);
+
+      final Terms levelsAgg = response.getAggregations().get(LEVELS_AGG_NAME);
+      if (levelsAgg != null && levelsAgg.getBuckets() != null && levelsAgg.getBuckets().size() > 0) {
+        final Bucket bucketCurrentLevel = getBucketFromLevel(levelsAgg.getBuckets(),
+            flowNodeInstance.getLevel());
+        if (bucketCurrentLevel.getDocCount() == 1) {
+          result.setInstanceMetadata(buildInstanceMetadataOld(flowNodeInstance));
           result.setFlowNodeInstanceId(flowNodeInstance.getId());
           //scenario 1-2
           result.setBreadcrumb(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
@@ -559,6 +791,28 @@ public class FlowNodeInstanceReader extends AbstractReader {
             calledProcessDefinitionName[0]);
   }
 
+  @Deprecated
+  private FlowNodeInstanceMetadataOldDto buildInstanceMetadataOld(final FlowNodeInstanceEntity flowNodeInstance) {
+    final EventEntity eventEntity = getEventEntity(flowNodeInstance.getId());
+    final String[] calledProcessInstanceId = {null};
+    final String[] calledProcessDefinitionName = {null};
+    if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
+      findCalledProcessInstance(flowNodeInstance.getId(),
+          sh -> {
+            calledProcessInstanceId[0] = sh.getId();
+            final Map<String, Object> source = sh.getSourceAsMap();
+            String processName = (String)source.get(ListViewTemplate.PROCESS_NAME);
+            if (processName == null) {
+              processName = (String)source.get(ListViewTemplate.BPMN_PROCESS_ID);
+            }
+            calledProcessDefinitionName[0] = processName;
+          });
+    }
+    return FlowNodeInstanceMetadataOldDto
+        .createFrom(flowNodeInstance, eventEntity, calledProcessInstanceId[0],
+            calledProcessDefinitionName[0]);
+  }
+
   private void findCalledProcessInstance(final String flowNodeInstanceId,
       Consumer<SearchHit> processInstanceConsumer) {
     final TermQueryBuilder parentFlowNodeInstanceQ = termQuery(PARENT_FLOW_NODE_INSTANCE_KEY,
@@ -591,6 +845,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
     try {
       final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value >= 1) {
+        //take last event
         eventEntity = fromSearchHit(response.getHits().getHits()[(int) (response.getHits().getTotalHits().value - 1)]
                 .getSourceAsString(), objectMapper, EventEntity.class);
       } else {

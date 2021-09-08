@@ -5,17 +5,19 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.util.ConversionUtils;
+import java.util.Objects;
 
 public class IncidentDto {
 
@@ -25,9 +27,10 @@ public class IncidentDto {
     }
     return o1.getErrorType().compareTo(o2.getErrorType());
   };
+
   private String id;
 
-  private String errorType;
+  private ErrorTypeDto errorType;
 
   private String errorMessage;
 
@@ -43,104 +46,140 @@ public class IncidentDto {
 
   private OperationDto lastOperation;
 
+  private ProcessInstanceReferenceDto rootCauseInstance;
+
   public String getId() {
     return id;
   }
 
-  public void setId(String id) {
+  public IncidentDto setId(final String id) {
     this.id = id;
+    return this;
   }
 
-  public String getErrorType() {
+  public ErrorTypeDto getErrorType() {
     return errorType;
   }
 
-  public void setErrorType(String errorType) {
+  public IncidentDto setErrorType(
+      final ErrorTypeDto errorType) {
     this.errorType = errorType;
+    return this;
   }
 
   public String getErrorMessage() {
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public IncidentDto setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
   }
 
   public String getFlowNodeId() {
     return flowNodeId;
   }
 
-  public void setFlowNodeId(String flowNodeId) {
+  public IncidentDto setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
   }
 
   public String getFlowNodeInstanceId() {
     return flowNodeInstanceId;
   }
 
-  public void setFlowNodeInstanceId(String flowNodeInstanceId) {
+  public IncidentDto setFlowNodeInstanceId(final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
+    return this;
   }
 
   public String getJobId() {
     return jobId;
   }
 
-  public void setJobId(String jobId) {
+  public IncidentDto setJobId(final String jobId) {
     this.jobId = jobId;
+    return this;
   }
 
   public OffsetDateTime getCreationTime() {
     return creationTime;
   }
 
-  public void setCreationTime(OffsetDateTime creationTime) {
+  public IncidentDto setCreationTime(final OffsetDateTime creationTime) {
     this.creationTime = creationTime;
+    return this;
   }
 
   public boolean isHasActiveOperation() {
     return hasActiveOperation;
   }
 
-  public void setHasActiveOperation(boolean hasActiveOperation) {
+  public IncidentDto setHasActiveOperation(final boolean hasActiveOperation) {
     this.hasActiveOperation = hasActiveOperation;
+    return this;
   }
 
   public OperationDto getLastOperation() {
     return lastOperation;
   }
 
-  public void setLastOperation(OperationDto lastOperation) {
+  public IncidentDto setLastOperation(final OperationDto lastOperation) {
     this.lastOperation = lastOperation;
+    return this;
+  }
+
+  public ProcessInstanceReferenceDto getRootCauseInstance() {
+    return rootCauseInstance;
+  }
+
+  public IncidentDto setRootCauseInstance(
+      final ProcessInstanceReferenceDto rootCauseInstance) {
+    this.rootCauseInstance = rootCauseInstance;
+    return this;
   }
 
   public static IncidentDto createFrom(IncidentEntity incidentEntity, List<OperationEntity> operations) {
+    return createFrom(incidentEntity, operations, null);
+  }
+
+  public static <T> IncidentDto createFrom(final IncidentEntity incidentEntity,
+      final ProcessInstanceReferenceDto rootCauseInstance) {
+    return createFrom(incidentEntity, Collections.emptyList(), rootCauseInstance);
+  }
+
+  public static IncidentDto createFrom(IncidentEntity incidentEntity,
+      List<OperationEntity> operations, final ProcessInstanceReferenceDto rootCauseInstance) {
     if (incidentEntity == null) {
       return null;
     }
 
-    IncidentDto incident = new IncidentDto();
-    incident.setId(incidentEntity.getId());
-    incident.setFlowNodeId(incidentEntity.getFlowNodeId());
-    incident.setFlowNodeInstanceId(ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()));
-    incident.setErrorMessage(incidentEntity.getErrorMessage());
-    incident.setErrorType(incidentEntity.getErrorType().getTitle());
-    incident.setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()));
-    incident.setCreationTime(incidentEntity.getCreationTime());
+    IncidentDto incident = new IncidentDto().setId(incidentEntity.getId())
+        .setFlowNodeId(incidentEntity.getFlowNodeId())
+        .setFlowNodeInstanceId(ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()))
+        .setErrorMessage(incidentEntity.getErrorMessage())
+        .setErrorType(ErrorTypeDto.createFrom(incidentEntity.getErrorType()))
+        .setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()))
+        .setCreationTime(incidentEntity.getCreationTime());
 
     if (operations != null && operations.size() > 0) {
       OperationEntity lastOperation = operations.get(0); // operations are
                                                          // sorted by start date
                                                          // descendant
-      incident.setLastOperation(OperationDto.createFrom(lastOperation));
+      incident.setLastOperation(OperationDto.createFrom(lastOperation))
+          .setHasActiveOperation(operations.stream().anyMatch(
+              o -> o.getState().equals(OperationState.SCHEDULED) || o.getState()
+                  .equals(OperationState.LOCKED) || o.getState().equals(OperationState.SENT)));
+    }
 
-      incident.setHasActiveOperation(operations.stream().anyMatch(
-          o -> o.getState().equals(OperationState.SCHEDULED) || o.getState().equals(OperationState.LOCKED) || o.getState().equals(OperationState.SENT)));
+    if (rootCauseInstance != null) {
+      incident.setRootCauseInstance(rootCauseInstance);
     }
 
     return incident;
   }
+
 
   public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities, Map<Long, List<OperationEntity>> operations) {
     List<IncidentDto> result = new ArrayList<>();
@@ -160,44 +199,31 @@ public class IncidentDto {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-
-    IncidentDto that = (IncidentDto) o;
-
-    if (hasActiveOperation != that.hasActiveOperation)
-      return false;
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
-    if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
-      return false;
-    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
-      return false;
-    if (flowNodeId != null ? !flowNodeId.equals(that.flowNodeId) : that.flowNodeId != null)
-      return false;
-    if (flowNodeInstanceId != null ? !flowNodeInstanceId.equals(that.flowNodeInstanceId) : that.flowNodeInstanceId != null)
-      return false;
-    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null)
-      return false;
-    if (creationTime != null ? !creationTime.equals(that.creationTime) : that.creationTime != null)
-      return false;
-    return lastOperation != null ? lastOperation.equals(that.lastOperation) : that.lastOperation == null;
+    }
+    final IncidentDto that = (IncidentDto) o;
+    return hasActiveOperation == that.hasActiveOperation &&
+        Objects.equals(id, that.id) &&
+        Objects.equals(errorType, that.errorType) &&
+        Objects.equals(errorMessage, that.errorMessage) &&
+        Objects.equals(flowNodeId, that.flowNodeId) &&
+        Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId) &&
+        Objects.equals(jobId, that.jobId) &&
+        Objects.equals(creationTime, that.creationTime) &&
+        Objects.equals(lastOperation, that.lastOperation) &&
+        Objects.equals(rootCauseInstance, that.rootCauseInstance);
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (errorType != null ? errorType.hashCode() : 0);
-    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
-    result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
-    result = 31 * result + (flowNodeInstanceId != null ? flowNodeInstanceId.hashCode() : 0);
-    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
-    result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
-    result = 31 * result + (hasActiveOperation ? 1 : 0);
-    result = 31 * result + (lastOperation != null ? lastOperation.hashCode() : 0);
-    return result;
+    return Objects
+        .hash(id, errorType, errorMessage, flowNodeId, flowNodeInstanceId, jobId, creationTime,
+            hasActiveOperation, lastOperation, rootCauseInstance);
   }
+
 }

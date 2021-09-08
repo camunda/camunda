@@ -31,6 +31,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -209,6 +210,15 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
+  @Deprecated
+  public FlowNodeMetadataOldDto getFlowNodeMetadataOld(@PathVariable @ValidLongId String processInstanceId,
+      @RequestBody FlowNodeMetadataRequestDto request) {
+    validateRequest(request);
+    return flowNodeInstanceReader.getFlowNodeMetadataOld(processInstanceId, request);
+  }
+
+  @ApiOperation("Get flow node metadata.")
+  @PostMapping("/{processInstanceId}/flow-node-metadata-new")
   public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,
       @RequestBody FlowNodeMetadataRequestDto request) {
     validateRequest(request);

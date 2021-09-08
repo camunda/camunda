@@ -6,6 +6,7 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.util.CollectionUtil.asMap;
+import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FNI;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -48,7 +49,8 @@ public class UpdateIncidentsWithTreePathsAction implements Callable<Void> {
       //update incidents with tree paths
       final String script = "String processInstanceKey = String.valueOf(ctx._source.processInstanceKey);"
           + "if (params.treePathMap.get(processInstanceKey) != null) {"
-          + "   ctx._source.treePath = params.treePathMap.get(processInstanceKey);"
+          + "   ctx._source.treePath = params.treePathMap.get(processInstanceKey) + '/" + FNI
+          + "_' + ctx._source.flowNodeInstanceKey;"
           + "}";
       UpdateByQueryRequest request = new UpdateByQueryRequest(incidentTemplate.getFullQualifiedName())
           .setQuery(termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, treePathMap.keySet()))
