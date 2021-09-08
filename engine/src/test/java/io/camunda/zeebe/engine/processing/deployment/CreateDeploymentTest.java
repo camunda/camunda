@@ -642,29 +642,6 @@ public final class CreateDeploymentTest {
                 + "'INVALID_CYCLE_EXPRESSION')\n");
   }
 
-  @Test
-  public void shouldRejectDeploymentWhenNoMessageReferenced() {
-    // given
-    final BpmnModelInstance definition =
-        Bpmn.createExecutableProcess("processId")
-            .startEvent("startEvent")
-            .messageEventDefinition()
-            .id("messageEvent")
-            .done();
-
-    // when
-    final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource("process.bpmn", definition).expectRejection().deploy();
-
-    // then
-    Assertions.assertThat(deployment)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Expected to deploy new resources, but encountered the following errors:\n"
-                + "'process.bpmn': - Element: messageEvent\n"
-                + "    - ERROR: Must reference a message\n");
-  }
-
   private ProcessMetadataValue findProcess(
       final List<ProcessMetadataValue> processes, final String processId) {
     return processes.stream()
