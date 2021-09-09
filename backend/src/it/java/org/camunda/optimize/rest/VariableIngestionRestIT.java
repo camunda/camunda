@@ -8,11 +8,14 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
+import org.camunda.optimize.jetty.IngestionQoSFilter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -264,6 +267,39 @@ public class VariableIngestionRestIT extends AbstractIT {
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertExternalVariablesArePersisted(Collections.singletonList(variable));
+  }
+
+  @Test
+  public void ingestExternalVariable_maxRequestsConfiguredReached() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setMaxRequests(0);
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+
+    // when
+    final Response response = ingestionClient.ingestVariablesAndReturnResponse(Collections.singletonList(variable));
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.TOO_MANY_REQUESTS.getStatusCode());
+    assertThat(response.getHeaderString(HttpHeaders.RETRY_AFTER)).isEqualTo(IngestionQoSFilter.RETRY_AFTER_SECONDS);
+    assertExternalVariablesArePersisted(Collections.emptyList());
+  }
+
+  @Test
+  public void ingestExternalVariables_maxRequestBytesReached() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setMaxBatchRequestBytes(1L);
+    final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
+      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .collect(toList());
+
+    // when
+    final ErrorResponseDto response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestExternalVariables(variables, ingestionClient.getVariableIngestionToken())
+      .execute(ErrorResponseDto.class, Response.Status.REQUEST_ENTITY_TOO_LARGE.getStatusCode());
+
+    // then
+    assertThat(response.getErrorMessage()).contains("Request too large");
+    assertExternalVariablesArePersisted(Collections.emptyList());
   }
 
   private void assertExternalVariablesArePersisted(final List<ExternalProcessVariableRequestDto> variables) {

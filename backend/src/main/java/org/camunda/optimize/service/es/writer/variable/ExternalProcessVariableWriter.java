@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -49,7 +48,6 @@ public class ExternalProcessVariableWriter {
                                                 final ExternalProcessVariableDto externalVariable) {
     try {
       bulkRequest.add(new IndexRequest(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME)
-                        .id(IdGenerator.getNextId())
                         .source(objectMapper.writeValueAsString(externalVariable), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.warn(
