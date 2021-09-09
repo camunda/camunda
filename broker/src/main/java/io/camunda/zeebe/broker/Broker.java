@@ -67,7 +67,7 @@ public final class Broker implements AutoCloseable {
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
 
-  private ClusterServicesImpl clusterServices;
+  private final ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private LeaderManagementRequestHandler managementRequestHandler;
   private ExternalApiServiceImpl externalApiService;
@@ -94,9 +94,15 @@ public final class Broker implements AutoCloseable {
     this.springBrokerBridge = springBrokerBridge;
     scheduler = this.systemContext.getScheduler();
 
+    final BrokerCfg brokerCfg = getConfig();
+
     localBroker = createBrokerInfo(getConfig());
 
     healthCheckService = new BrokerHealthCheckService(localBroker);
+
+    final var atomix = AtomixClusterFactory.fromConfiguration(brokerCfg);
+    testCompanionObject.atomix = atomix;
+    clusterServices = new ClusterServicesImpl(atomix);
 
     final BrokerStartupContextImpl startupContext =
         new BrokerStartupContextImpl(
@@ -156,13 +162,21 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
         "command api transport and handler",
         () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
-    startContext.addStep("cluster services", () -> clusterServices.start().join());
+    startContext.addStep(
+        "cluster services",
+        () -> {
+          clusterServices.start().join();
+
+          return () -> {
+            clusterServices.stop().get();
+            testCompanionObject.atomix = null;
+          };
+        });
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
           "embedded gateway",
@@ -230,17 +244,6 @@ public final class Broker implements AutoCloseable {
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
-  }
-
-  private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
-    final var atomix = AtomixClusterFactory.fromConfiguration(brokerCfg);
-    testCompanionObject.atomix = atomix;
-    clusterServices = new ClusterServicesImpl(atomix);
-
-    return () -> {
-      clusterServices.stop().get();
-      testCompanionObject.atomix = null;
-    };
   }
 
   private AutoCloseable commandApiTransportAndHandlerStep(
