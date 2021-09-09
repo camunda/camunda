@@ -12,7 +12,7 @@
     "date-fns": "^2.23.0",
     "final-form": "^4.20.2",
     "jsoneditor": "^9.5.5",
-    "lodash": "^4.17.21",
+    "lodash": "4.17.21",
     "mobx": "^6.3.3",
     "mobx-react": "^7.2.0",
     "msw-storybook-addon": "^1.2.0",
