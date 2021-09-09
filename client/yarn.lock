@@ -24,7 +24,7 @@
   dependencies:
     tunnel "0.0.6"
 
-"@apollo/client@^3.4.10":
+"@apollo/client@3.4.10":
   version "3.4.10"
   resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.4.10.tgz#cee9ed75b1bb7f391c55d79300ecf87096e59792"
   integrity sha512-b+8TT3jBM2BtEJi+V2FuLpvoYDZCY3baNYrgAgEyw4fjnuBCSRPY7qVjqriZAwMaGiTLtyVifGhmdeICQs4Eow==
