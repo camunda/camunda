@@ -347,6 +347,7 @@
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
       "duration": {
+        "sum": "Gesamtdauer: ",
         "avg": "Durchschnittliche Dauer: ",
         "min": "Mindestdauer: ",
         "median": "Mediane Dauer: ",

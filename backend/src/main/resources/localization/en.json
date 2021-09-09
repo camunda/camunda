@@ -347,6 +347,7 @@
       "targetDuration": "Target duration",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
       "duration": {
+        "sum": "Total duration: ",
         "avg": "Average duration: ",
         "min": "Minimum duration: ",
         "median": "Median duration: ",
