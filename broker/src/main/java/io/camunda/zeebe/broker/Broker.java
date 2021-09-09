@@ -40,7 +40,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.FileUtil;
@@ -70,7 +70,7 @@ public final class Broker implements AutoCloseable {
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private LeaderManagementRequestHandler managementRequestHandler;
-  private CommandApiService commandHandler;
+  private CommandApiServiceImpl commandHandler;
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
@@ -263,7 +263,7 @@ public final class Broker implements AutoCloseable {
       limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
     }
 
-    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
+    commandHandler = new CommandApiServiceImpl(serverTransport, localBroker, limiter);
     partitionListeners.add(commandHandler);
     scheduleActor(commandHandler);
     diskSpaceUsageListeners.add(commandHandler);
