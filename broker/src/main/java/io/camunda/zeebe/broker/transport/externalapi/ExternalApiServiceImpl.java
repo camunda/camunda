@@ -33,6 +33,7 @@ public final class ExternalApiServiceImpl extends Actor
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
+  private final QueryApiRequestHandler queryHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
   private final String actorName;
 
@@ -43,6 +44,7 @@ public final class ExternalApiServiceImpl extends Actor
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     commandHandler = new CommandApiRequestHandler();
+    queryHandler = new QueryApiRequestHandler();
     actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 
@@ -85,6 +87,8 @@ public final class ExternalApiServiceImpl extends Actor
                       final var requestLimiter = limiter.getLimiter(partitionId);
                       commandHandler.addPartition(partitionId, recordWriter, requestLimiter);
                       serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
+                      queryHandler.addPartition(partitionId, queryService);
+                      serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
                       future.complete(null);
                     } else {
                       Loggers.SYSTEM_LOGGER.error(
@@ -107,6 +111,7 @@ public final class ExternalApiServiceImpl extends Actor
     return actor.call(
         () -> {
           commandHandler.removePartition(partitionId);
+          queryHandler.removePartition(partitionId);
           cleanLeadingPartition(partitionId);
         });
   }
