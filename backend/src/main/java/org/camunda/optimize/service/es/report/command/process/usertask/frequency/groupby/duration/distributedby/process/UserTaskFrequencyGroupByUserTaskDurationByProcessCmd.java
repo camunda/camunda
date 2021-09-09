@@ -3,13 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.usertask.frequency.groupby.duration;
+package org.camunda.optimize.service.es.report.command.process.usertask.frequency.groupby.duration.distributedby.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByUserTask;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByProcess;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask.ProcessGroupByUserTaskDuration;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewUserTaskFrequency;
 import org.springframework.stereotype.Component;
@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class UserTaskFrequencyGroupByUserTaskDurationByUserTaskCmd extends ProcessCmd<List<HyperMapResultEntryDto>> {
+public class UserTaskFrequencyGroupByUserTaskDurationByProcessCmd extends ProcessCmd<List<HyperMapResultEntryDto>> {
 
-  public UserTaskFrequencyGroupByUserTaskDurationByUserTaskCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public UserTaskFrequencyGroupByUserTaskDurationByProcessCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
@@ -29,7 +29,7 @@ public class UserTaskFrequencyGroupByUserTaskDurationByUserTaskCmd extends Proce
       .processCommand()
       .view(ProcessViewUserTaskFrequency.class)
       .groupBy(ProcessGroupByUserTaskDuration.class)
-      .distributedBy(ProcessDistributedByUserTask.class)
+      .distributedBy(ProcessDistributedByProcess.class)
       .resultAsHyperMap()
       .build();
   }
