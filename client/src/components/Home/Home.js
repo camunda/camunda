@@ -125,6 +125,7 @@ export class Home extends React.Component {
             }
             bulkActions={[
               <BulkDeleter
+                type="delete"
                 deleteEntities={removeEntities}
                 checkConflicts={checkConflicts}
                 conflictMessage={t('common.deleter.affectedMessage.bulk.report')}

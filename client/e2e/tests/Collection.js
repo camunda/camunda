@@ -169,7 +169,7 @@ test('user permissions', async (t) => {
   await t.click(e.userTab);
   await t.click(Homepage.selectAllCheckbox);
   await t.click(Homepage.bulkMenu);
-  await t.click(Homepage.del(Homepage.bulkMenu));
+  await t.click(e.remove(Homepage.bulkMenu));
   await t.click(Homepage.modalConfirmbutton);
   await t.expect(Homepage.listItem.count).eql(1);
 
@@ -238,7 +238,7 @@ test('add, edit and delete sources', async (t) => {
   await t.click(Homepage.listItemCheckbox(e.processItem.nth(0)));
   await t.click(Homepage.listItemCheckbox(e.processItem.nth(1)));
   await t.click(Homepage.bulkMenu);
-  await t.click(Homepage.del(Homepage.bulkMenu));
+  await t.click(e.remove(Homepage.bulkMenu));
   await t.click(Homepage.modalConfirmbutton);
   await t.expect(Homepage.listItem.exists).notOk();
 });

@@ -139,7 +139,7 @@ export class EventsProcesses extends React.Component {
               <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
             </Dropdown>
           }
-          bulkActions={[<BulkDeleter deleteEntities={deleteProcesses} />]}
+          bulkActions={[<BulkDeleter type="delete" deleteEntities={deleteProcesses} />]}
           onChange={this.loadList}
           columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
           data={

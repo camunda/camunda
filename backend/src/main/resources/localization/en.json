@@ -1153,7 +1153,10 @@
         }
       },
       "areYouSure": "Are you sure you want to proceed?",
-      "areYouSureSelected": "Are you sure you want to delete the selected items?"
+      "areYouSureSelected": {
+        "delete": "Are you sure you want to delete the selected items?",
+        "remove": "Are you sure you want to remove the selected items?"
+      }
     },
     "unit": {
       "automatic": "automatic",

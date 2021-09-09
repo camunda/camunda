@@ -1153,7 +1153,10 @@
         }
       },
       "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?",
-      "areYouSureSelected": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?"
+      "areYouSureSelected": {
+        "delete": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?",
+        "remove": "Sind Sie sicher, dass Sie die ausgewählten Elemente entfernen möchten?"
+      }
     },
     "unit": {
       "automatic": "Automatisch",

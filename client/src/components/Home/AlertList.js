@@ -128,7 +128,7 @@ export default withErrorHandling(
               t('common.condition'),
               t('alert.recipient'),
             ]}
-            bulkActions={[<BulkDeleter deleteEntities={removeAlerts} />]}
+            bulkActions={[<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
             onChange={this.loadAlerts}
             data={
               !isLoading &&

@@ -118,6 +118,7 @@ export default withErrorHandling(
             }
             bulkActions={[
               <BulkDeleter
+                type="remove"
                 deleteEntities={async (selectedSources) =>
                   await removeSources(collection, selectedSources)
                 }

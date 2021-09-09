@@ -190,6 +190,7 @@ export class Collection extends React.Component {
               }
               bulkActions={[
                 <BulkDeleter
+                  type="delete"
                   deleteEntities={async (selected) => await removeEntities(selected, collection)}
                   checkConflicts={async (selected) => await checkConflicts(selected, collection)}
                   conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
