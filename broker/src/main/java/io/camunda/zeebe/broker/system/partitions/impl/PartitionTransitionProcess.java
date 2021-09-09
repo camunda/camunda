@@ -75,7 +75,7 @@ final class PartitionTransitionProcess {
 
           nextStep
               .transitionTo(context, term, role)
-              .onComplete((nil, error) -> onStepCompletion(future, error));
+              .onComplete((ok, error) -> onStepCompletion(future, error));
         });
   }
 
@@ -126,7 +126,7 @@ final class PartitionTransitionProcess {
 
           nextCleanupStep
               .prepareTransition(context, newTerm, newRole)
-              .onComplete((nil, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
+              .onComplete((ok, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
         });
   }
 

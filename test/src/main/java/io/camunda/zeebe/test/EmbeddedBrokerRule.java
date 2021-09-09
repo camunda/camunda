@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
@@ -36,9 +37,11 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.agrona.LangUtil;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -66,6 +69,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private final Duration timeout;
   private final File newTemporaryFolder;
   private String dataDirectory;
+  private SystemContext systemContext;
 
   @SafeVarargs
   public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
@@ -197,21 +201,26 @@ public class EmbeddedBrokerRule extends ExternalResource {
     if (broker != null) {
       broker.close();
       broker = null;
+      try {
+        systemContext.getScheduler().stop().get();
+      } catch (final InterruptedException | ExecutionException e) {
+        LangUtil.rethrowUnchecked(e);
+      }
+      systemContext = null;
       System.gc();
     }
   }
 
   public void startBroker() {
-    broker =
-        new Broker(
-            brokerCfg,
-            newTemporaryFolder.getAbsolutePath(),
-            controlledActorClock,
-            springBrokerBridge);
+    systemContext =
+        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+
+    broker = new Broker(systemContext, springBrokerBridge);
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     broker.addPartitionListener(new LeaderPartitionListener(latch));
 
+    systemContext.getScheduler().start();
     broker.start().join();
 
     try {
@@ -238,7 +247,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           });
     }
 
-    dataDirectory = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectory();
+    dataDirectory = broker.getSystemContext().getBrokerConfiguration().getData().getDirectory();
   }
 
   public void configureBroker(final BrokerCfg brokerCfg) {

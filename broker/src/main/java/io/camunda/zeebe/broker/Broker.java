@@ -12,6 +12,9 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.bootstrap.BrokerContext;
+import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
+import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
@@ -46,7 +49,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +63,7 @@ public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  private final SystemContext brokerContext;
+  private final SystemContext systemContext;
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
 
@@ -68,7 +71,7 @@ public final class Broker implements AutoCloseable {
   private CompletableFuture<Broker> startFuture;
   private LeaderManagementRequestHandler managementRequestHandler;
   private CommandApiService commandHandler;
-  private ActorScheduler scheduler;
+  private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private BrokerHealthCheckService healthCheckService;
@@ -79,19 +82,28 @@ public final class Broker implements AutoCloseable {
   private PartitionManagerImpl partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
+  // TODO make Broker class itself the actor
+  private final BrokerStartupActor brokerStartupActor;
+  private final BrokerInfo localBroker;
+  private BrokerContext brokerContext;
+  // TODO make Broker class itself the actor
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
-    brokerContext = systemContext;
+    this.systemContext = systemContext;
     partitionListeners = new ArrayList<>();
     this.springBrokerBridge = springBrokerBridge;
-  }
+    scheduler = this.systemContext.getScheduler();
 
-  public Broker(
-      final BrokerCfg cfg,
-      final String basePath,
-      final ActorClock clock,
-      final SpringBrokerBridge springBrokerBridge) {
-    this(new SystemContext(cfg, basePath, clock), springBrokerBridge);
+    localBroker = createBrokerInfo(getConfig());
+
+    healthCheckService = new BrokerHealthCheckService(localBroker);
+
+    final BrokerStartupContextImpl startupContext =
+        new BrokerStartupContextImpl(
+            localBroker, springBrokerBridge, scheduler, healthCheckService);
+
+    brokerStartupActor = new BrokerStartupActor(startupContext);
+    scheduler.submitActor(brokerStartupActor);
   }
 
   public void addPartitionListener(final PartitionListener listener) {
@@ -103,7 +115,7 @@ public final class Broker implements AutoCloseable {
       logBrokerStart();
 
       startFuture = new CompletableFuture<>();
-      LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::internalStart);
+      LogUtil.doWithMDC(systemContext.getDiagnosticContext(), this::internalStart);
     }
     return startFuture;
   }
@@ -140,12 +152,10 @@ public final class Broker implements AutoCloseable {
 
   private StartProcess initStart() {
     final BrokerCfg brokerCfg = getConfig();
-    final BrokerInfo localBroker = createBrokerInfo(brokerCfg);
 
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
-    startContext.addStep("actor scheduler", this::actorSchedulerStep);
-    startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
+    startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
         "command api transport and handler",
@@ -176,6 +186,17 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private AutoCloseable migratedStartupSteps() {
+    brokerContext = brokerStartupActor.start().join();
+
+    partitionListeners.addAll(brokerContext.getPartitionListeners());
+
+    return () -> {
+      brokerStartupActor.stop().join();
+      healthCheckService = null;
+    };
   }
 
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
@@ -209,12 +230,6 @@ public final class Broker implements AutoCloseable {
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
-  }
-
-  private AutoCloseable actorSchedulerStep() {
-    scheduler = brokerContext.getScheduler();
-    scheduler.start();
-    return () -> scheduler.stop().get();
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
@@ -286,15 +301,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private void scheduleActor(final Actor actor) {
-    brokerContext.getScheduler().submitActor(actor).join();
-  }
-
-  private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
-    healthCheckService = new BrokerHealthCheckService(localBroker);
-    springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
-    partitionListeners.add(healthCheckService);
-    scheduleActor(healthCheckService);
-    return () -> healthCheckService.close();
+    systemContext.getScheduler().submitActor(actor).join();
   }
 
   private AutoCloseable diskSpaceMonitorStep(final DataCfg data) {
@@ -373,13 +380,13 @@ public final class Broker implements AutoCloseable {
   }
 
   public BrokerCfg getConfig() {
-    return brokerContext.getBrokerConfiguration();
+    return systemContext.getBrokerConfiguration();
   }
 
   @Override
   public void close() {
     LogUtil.doWithMDC(
-        brokerContext.getDiagnosticContext(),
+        systemContext.getDiagnosticContext(),
         () -> {
           if (!isClosed && startFuture != null) {
             startFuture
@@ -416,8 +423,8 @@ public final class Broker implements AutoCloseable {
     return brokerAdminService;
   }
 
-  public SystemContext getBrokerContext() {
-    return brokerContext;
+  public SystemContext getSystemContext() {
+    return systemContext;
   }
 
   public PartitionManager getPartitionManager() {
@@ -427,5 +434,40 @@ public final class Broker implements AutoCloseable {
   @Deprecated // only used for test; temporary work around
   private static final class TestCompanionClass {
     private AtomixCluster atomix;
+  }
+
+  /**
+   * Temporary helper object. This object is needed during the transition of broker startup/shutdown
+   * steps to the new concept. Afterwards, the expectation is that this object will merge with the
+   * Broker and that then the Broker becomes the actor
+   */
+  private static final class BrokerStartupActor extends Actor {
+
+    private final BrokerStartupProcess brokerStartupProcess;
+
+    private final int nodeId;
+
+    private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
+      nodeId = startupContext.getBrokerInfo().getNodeId();
+      startupContext.setConcurrencyControl(actor);
+      brokerStartupProcess = new BrokerStartupProcess(startupContext);
+    }
+
+    @Override
+    public String getName() {
+      return buildActorName(nodeId, "Startup");
+    }
+
+    private ActorFuture<BrokerContext> start() {
+      final ActorFuture<BrokerContext> result = createFuture();
+      actor.run(() -> actor.runOnCompletion(brokerStartupProcess.start(), result));
+      return result;
+    }
+
+    private ActorFuture<Void> stop() {
+      final ActorFuture<Void> result = createFuture();
+      actor.run(() -> actor.runOnCompletion(brokerStartupProcess.stop(), result));
+      return result;
+    }
   }
 }
