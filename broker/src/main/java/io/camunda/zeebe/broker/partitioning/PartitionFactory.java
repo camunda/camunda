@@ -43,7 +43,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
-import io.camunda.zeebe.broker.transport.commandapi.ExternalApiService;
+import io.camunda.zeebe.broker.transport.externalapi.ExternalApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;

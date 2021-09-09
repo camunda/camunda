@@ -24,7 +24,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.broker.transport.commandapi.ExternalApiService;
+import io.camunda.zeebe.broker.transport.externalapi.ExternalApiService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.health.HealthStatus;

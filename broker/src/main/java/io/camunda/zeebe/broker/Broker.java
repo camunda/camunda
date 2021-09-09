@@ -40,7 +40,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.commandapi.ExternalApiServiceImpl;
+import io.camunda.zeebe.broker.transport.externalapi.ExternalApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.FileUtil;
