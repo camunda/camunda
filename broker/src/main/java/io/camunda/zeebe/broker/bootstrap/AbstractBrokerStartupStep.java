@@ -57,8 +57,8 @@ abstract class AbstractBrokerStartupStep implements StartupStep<BrokerStartupCon
 
       forwardExceptions(() -> runnable.accept(concurrencyControl, future), future);
       return future;
-    } catch (final Throwable t) {
-      return completedExceptionally(t);
+    } catch (final Exception e) {
+      return completedExceptionally(e);
     }
   }
   /**
@@ -68,8 +68,8 @@ abstract class AbstractBrokerStartupStep implements StartupStep<BrokerStartupCon
   final <V> void forwardExceptions(final Runnable r, final ActorFuture<V> future) {
     try {
       r.run();
-    } catch (final Throwable t) {
-      future.completeExceptionally(t);
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
     }
   }
 }

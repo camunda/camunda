@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BrokerStartupContextImpl implements BrokerStartupContext {
+public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final SpringBrokerBridge springBrokerBridge;

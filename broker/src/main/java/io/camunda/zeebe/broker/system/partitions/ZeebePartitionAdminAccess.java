@@ -38,8 +38,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
           try {
             adminControl.triggerSnapshot();
             completed.complete(null);
-          } catch (final Throwable t) {
-            completed.completeExceptionally(t);
+          } catch (final Exception e) {
+            completed.completeExceptionally(e);
           }
         });
 

@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import java.util.Collection;
 
+/** Context for components/actors managed directly by the Broker */
 public interface BrokerContext {
 
   BrokerHealthCheckService getHealthCheckService();

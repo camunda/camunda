@@ -247,7 +247,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           });
     }
 
-    dataDirectory = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectory();
+    dataDirectory = broker.getSystemContext().getBrokerConfiguration().getData().getDirectory();
   }
 
   public void configureBroker(final BrokerCfg brokerCfg) {

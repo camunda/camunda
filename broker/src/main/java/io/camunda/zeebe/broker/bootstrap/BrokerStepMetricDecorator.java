@@ -13,7 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupStep;
-import java.util.function.BiConsumer;
+import io.prometheus.client.Gauge.Timer;
 import java.util.function.Function;
 
 /**
@@ -41,37 +41,30 @@ final class BrokerStepMetricDecorator implements StartupStep<BrokerStartupContex
   @Override
   public ActorFuture<BrokerStartupContext> startup(
       final BrokerStartupContext brokerStartupContext) {
-    return callDelegateAndUpdateMetrics(
-        brokerStartupContext, delegate::startup, brokerStepMetrics::observeDurationForStarStep);
+    return callDelegateAndUpdateTimer(
+        brokerStartupContext, delegate::startup, brokerStepMetrics.createStartupTimer(getName()));
   }
 
   @Override
   public ActorFuture<BrokerStartupContext> shutdown(
       final BrokerStartupContext brokerStartupContext) {
-    return callDelegateAndUpdateMetrics(
-        brokerStartupContext, delegate::shutdown, brokerStepMetrics::observeDurationForCloseStep);
+    return callDelegateAndUpdateTimer(
+        brokerStartupContext, delegate::shutdown, brokerStepMetrics.createCloseTimer(getName()));
   }
 
-  private ActorFuture<BrokerStartupContext> callDelegateAndUpdateMetrics(
+  private ActorFuture<BrokerStartupContext> callDelegateAndUpdateTimer(
       final BrokerStartupContext brokerStartupContext,
       final Function<BrokerStartupContext, ActorFuture<BrokerStartupContext>> functionToCall,
-      final BiConsumer<String, Long> metricUpdater) {
+      final Timer timer) {
 
     try {
-      final long startTime = System.currentTimeMillis();
-
       final var concurrencyControl = brokerStartupContext.getConcurrencyControl();
       final var future = functionToCall.apply(brokerStartupContext);
-      concurrencyControl.runOnCompletion(
-          future,
-          (nil, error) -> {
-            final long durationStepStarting = System.currentTimeMillis() - startTime;
-            metricUpdater.accept(delegate.getName(), durationStepStarting);
-          });
+      concurrencyControl.runOnCompletion(future, (ok, error) -> timer.close());
 
       return future;
-    } catch (final Throwable t) {
-      return completedExceptionally(t);
+    } catch (final Exception e) {
+      return completedExceptionally(e);
     }
   }
 }

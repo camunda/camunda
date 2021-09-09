@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupStep;
+import io.prometheus.client.Gauge.Timer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,10 +34,17 @@ class BrokerStepMetricDecoratorTest {
   private BrokerStepMetricDecorator sut;
   private ActorFuture<BrokerStartupContext> startupFuture;
   private ActorFuture<BrokerStartupContext> shutdownFuture;
+  private Timer mockStartupTimer;
+  private Timer mockCloseTimer;
 
   @BeforeEach
   void setUp() {
+    mockStartupTimer = mock(Timer.class);
+    mockCloseTimer = mock(Timer.class);
+
     mockBrokerStepMetrics = mock(BrokerStepMetrics.class);
+    when(mockBrokerStepMetrics.createStartupTimer(any())).thenReturn(mockStartupTimer);
+    when(mockBrokerStepMetrics.createCloseTimer(any())).thenReturn(mockCloseTimer);
 
     mockBrokerStartupContext = mock(BrokerStartupContext.class);
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
@@ -59,7 +67,6 @@ class BrokerStepMetricDecoratorTest {
 
     // then
     verify(mockStep).startup(mockBrokerStartupContext);
-    verifyNoMoreInteractions(mockStep);
   }
 
   @Test
@@ -69,7 +76,6 @@ class BrokerStepMetricDecoratorTest {
 
     // then
     verify(mockStep).shutdown(mockBrokerStartupContext);
-    verifyNoMoreInteractions(mockStep);
   }
 
   @Test
@@ -79,8 +85,9 @@ class BrokerStepMetricDecoratorTest {
     startupFuture.complete(mockBrokerStartupContext);
 
     // then
-    verify(mockBrokerStepMetrics).observeDurationForStarStep(eq(DELEGATE_STEP_NAME), anyLong());
-    verifyNoMoreInteractions(mockBrokerStepMetrics);
+    verify(mockBrokerStepMetrics).createStartupTimer(eq(DELEGATE_STEP_NAME));
+    verify(mockStartupTimer).close();
+    verifyNoMoreInteractions(mockCloseTimer, mockStartupTimer, mockBrokerStepMetrics);
   }
 
   @Test
@@ -90,8 +97,9 @@ class BrokerStepMetricDecoratorTest {
     shutdownFuture.complete(mockBrokerStartupContext);
 
     // then
-    verify(mockBrokerStepMetrics).observeDurationForCloseStep(eq(DELEGATE_STEP_NAME), anyLong());
-    verifyNoMoreInteractions(mockBrokerStepMetrics);
+    verify(mockBrokerStepMetrics).createCloseTimer(eq(DELEGATE_STEP_NAME));
+    verify(mockCloseTimer).close();
+    verifyNoMoreInteractions(mockCloseTimer, mockStartupTimer, mockBrokerStepMetrics);
   }
 
   @Test
