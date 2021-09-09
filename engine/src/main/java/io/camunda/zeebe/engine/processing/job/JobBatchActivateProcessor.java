@@ -69,9 +69,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.keyGenerator = keyGenerator;
 
     this.maxRecordLength = maxRecordLength;
-    // we can only add the half of the max record length to the job batch
-    // because the jobs itself are also written to the same batch
-    maxJobBatchLength = (maxRecordLength - Long.BYTES) / 2;
+    maxJobBatchLength = maxRecordLength - Long.BYTES;
   }
 
   @Override
