@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.query.StateQueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -132,8 +133,9 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
+    final var queryService = new StateQueryService(getZeebeDb());
     return partitionListeners.stream()
-        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
+        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream(), queryService))
         .collect(Collectors.toList());
   }
 

@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -310,7 +311,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     @Override
     public ActorFuture<Void> onBecomingLeader(
-        final int partitionId, final long term, final LogStream logStream) {
+        final int partitionId,
+        final long term,
+        final LogStream logStream,
+        final QueryService queryService) {
       latch.countDown();
       return CompletableActorFuture.completed(null);
     }

@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimit
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -65,7 +66,10 @@ public final class ExternalApiServiceImpl extends Actor
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final QueryService queryService) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.call(
         () -> {

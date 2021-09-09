@@ -49,7 +49,7 @@ public class BrokerHealthCheckServiceTest {
         .isInstanceOf(IllegalStateException.class);
     assertThatThrownBy(() -> healthCheckService.onBecomingFollower(0, 0))
         .isInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> healthCheckService.onBecomingLeader(0, 0, null))
+    assertThatThrownBy(() -> healthCheckService.onBecomingLeader(0, 0, null, null))
         .isInstanceOf(IllegalStateException.class);
   }
 }
