@@ -20,27 +20,27 @@ import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final SpringBrokerBridge springBrokerBridge;
-  private final ConcurrencyControl concurrencyControl;
   private final ActorSchedulingService actorSchedulingService;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
+
+  private ConcurrencyControl concurrencyControl;
 
   private final BrokerHealthCheckService healthCheckService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final SpringBrokerBridge springBrokerBridge,
-      final ConcurrencyControl concurrencyControl,
       final ActorSchedulingService actorSchedulingService,
       final BrokerHealthCheckService healthCheckService) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
-    this.concurrencyControl = requireNonNull(concurrencyControl);
     this.actorSchedulingService = requireNonNull(actorSchedulingService);
     this.healthCheckService = requireNonNull(healthCheckService);
   }
@@ -58,6 +58,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public ConcurrencyControl getConcurrencyControl() {
     return concurrencyControl;
+  }
+
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = Objects.requireNonNull(concurrencyControl);
   }
 
   @Override

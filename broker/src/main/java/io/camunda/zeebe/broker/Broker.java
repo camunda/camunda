@@ -13,7 +13,6 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
-import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
@@ -57,7 +56,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
@@ -84,7 +82,6 @@ public final class Broker implements AutoCloseable {
   private PartitionManagerImpl partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
-  private final BrokerStartupProcess brokerStartupProcess;
   // TODO make Broker class itself the actor
   private final BrokerStartupActor brokerStartupActor;
   private final BrokerInfo localBroker;
@@ -101,14 +98,12 @@ public final class Broker implements AutoCloseable {
 
     healthCheckService = new BrokerHealthCheckService(localBroker);
 
-    brokerStartupActor = new BrokerStartupActor(localBroker.getNodeId());
-    scheduler.submitActor(brokerStartupActor);
-
-    final BrokerStartupContext startupContext =
+    final BrokerStartupContextImpl startupContext =
         new BrokerStartupContextImpl(
-            localBroker, springBrokerBridge, brokerStartupActor, scheduler, healthCheckService);
+            localBroker, springBrokerBridge, scheduler, healthCheckService);
 
-    brokerStartupProcess = new BrokerStartupProcess(startupContext);
+    brokerStartupActor = new BrokerStartupActor(startupContext);
+    scheduler.submitActor(brokerStartupActor);
   }
 
   public void addPartitionListener(final PartitionListener listener) {
@@ -194,12 +189,12 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable migratedStartupSteps() {
-    brokerContext = brokerStartupActor.call(brokerStartupProcess::start).join();
+    brokerContext = brokerStartupActor.start().join();
 
     partitionListeners.addAll(brokerContext.getPartitionListeners());
 
     return () -> {
-      brokerStartupActor.call(brokerStartupProcess::stop).join();
+      brokerStartupActor.stop().join();
       healthCheckService = null;
     };
   }
@@ -441,12 +436,21 @@ public final class Broker implements AutoCloseable {
     private AtomixCluster atomix;
   }
 
+  /**
+   * Temporary helper object. This object is needed during the transition of broker startup/shutdown
+   * steps to the new concept. Afterwards, the expectation is that this object will merge with the
+   * Broker and that then the Broker becomes the actor
+   */
   private static final class BrokerStartupActor extends Actor {
+
+    private final BrokerStartupProcess brokerStartupProcess;
 
     private final int nodeId;
 
-    private BrokerStartupActor(final int nodeId) {
-      this.nodeId = nodeId;
+    private BrokerStartupActor(final BrokerStartupContextImpl startupContext) {
+      nodeId = startupContext.getBrokerInfo().getNodeId();
+      startupContext.setConcurrencyControl(actor);
+      brokerStartupProcess = new BrokerStartupProcess(startupContext);
     }
 
     @Override
@@ -454,8 +458,16 @@ public final class Broker implements AutoCloseable {
       return buildActorName(nodeId, "Startup");
     }
 
-    public <V, T extends ActorFuture<V>> ActorFuture<V> call(final Callable<T> callable) {
-      return actor.call(callable).join();
+    private ActorFuture<BrokerContext> start() {
+      final ActorFuture<BrokerContext> result = createFuture();
+      actor.run(() -> actor.runOnCompletion(brokerStartupProcess.start(), result));
+      return result;
+    }
+
+    private ActorFuture<Void> stop() {
+      final ActorFuture<Void> result = createFuture();
+      actor.run(() -> actor.runOnCompletion(brokerStartupProcess.stop(), result));
+      return result;
     }
   }
 }
