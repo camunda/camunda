@@ -15067,10 +15067,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.15.3:
-  version "1.15.3"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.15.3.tgz#df62ef60a289fc56076f6d13aada3c76b8896ba9"
-  integrity sha512-HiHDLSew6y0+60tz4lssh5BqY9Jw0kZlk85GWYS0V9Tla+QL/kT+gSGCxUoBwfCt+ZwjfU1R6qs9qnGbkflvjw==
+testcafe@^1.16.0:
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.16.0.tgz#fba3c804e69129237ff49749b5ac5d320c2220b4"
+  integrity sha512-Fkx4gcCb7fxKVnLIEOGD89/qneB8hiQO0jmX8+XmfP89xo3JBBshA5ihO9rhSILxdJvd0ii/EqTDUKE7CFvHfg==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
