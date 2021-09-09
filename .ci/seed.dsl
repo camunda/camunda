@@ -129,7 +129,7 @@ if (ENVIRONMENT == 'prod') {
               // That to avoid running the same CI job twice (one for branch and one for PR).
               headWildcardFilter {
                 // Space-separated list of name patterns to consider.
-                includes 'master PR-* CI-*'
+                includes 'master PR-* CI-* maintenance/*'
                 excludes ''
               }
 
