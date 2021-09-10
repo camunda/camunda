@@ -13,6 +13,7 @@ import org.camunda.optimize.service.importing.ingested.service.ExternalVariableU
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -171,6 +172,68 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         assertThat(instance.getVariables())
           .extracting(SimpleProcessVariableDto::getName)
           .containsExactlyInAnyOrder(engineVariableName, externalVariable1.getName(), externalVariable2.getName());
+      });
+  }
+
+  @Test
+  public void ingestedVariableIsUpdated_multipleUpdatesInConsecutiveImports() {
+    // given two updates for the same variable which are ingested in separate batches and imported in two consecutive
+    // import rounds
+    ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable()
+      .setId("1")
+      .setValue("firstValue");
+
+    ingestionClient.ingestVariables(Collections.singletonList(variable));
+    importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
+
+    variable.setValue("secondValue");
+    ingestionClient.ingestVariables(Collections.singletonList(variable));
+
+    // when
+    importIngestedDataFromLastIndexRefreshIndicesBeforeAndAfter();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(
+      InstanceIndexUtil.getProcessInstanceIndexAliasName(variable.getProcessDefinitionKey())
+    )).isTrue();
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> {
+        assertThat(instance.getProcessInstanceId()).isEqualTo(variable.getProcessInstanceId());
+        assertThat(instance.getVariables())
+          .singleElement()
+          .extracting(SimpleProcessVariableDto.Fields.value)
+          .isEqualTo("secondValue");
+      });
+  }
+
+  @Test
+  public void ingestedVariableIsUpdated_multipleUpdatesInSameImport() {
+    // given two updates for the same variable which are ingested in separate batches but imported in the same import
+    // round
+    ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable()
+      .setId("1")
+      .setValue("firstValue");
+
+    ingestionClient.ingestVariables(Collections.singletonList(variable));
+    variable.setValue("secondValue");
+    ingestionClient.ingestVariables(Collections.singletonList(variable));
+
+    // when
+    importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.indexExists(
+      InstanceIndexUtil.getProcessInstanceIndexAliasName(variable.getProcessDefinitionKey())
+    )).isTrue();
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> {
+        assertThat(instance.getProcessInstanceId()).isEqualTo(variable.getProcessInstanceId());
+        assertThat(instance.getVariables())
+          .singleElement()
+          .extracting(SimpleProcessVariableDto.Fields.value)
+          .isEqualTo("secondValue");
       });
   }
 
