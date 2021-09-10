@@ -77,19 +77,24 @@ public final class QueryApiRequestHandler implements RequestHandler {
     }
 
     final Optional<DirectBuffer> bpmnProcessId;
-    if (requestDecoder.valueType() == ValueType.PROCESS) {
-      bpmnProcessId = queryService.getBpmnProcessIdForProcess(key);
-    } else {
-      // todo: add other value types
-      // todo: deal with this failure
-      return;
+    switch (requestDecoder.valueType()) {
+      case PROCESS:
+        bpmnProcessId = queryService.getBpmnProcessIdForProcess(key);
+        break;
+      default:
+        // todo: add other value types
+        // todo: deal with this failure
+        bpmnProcessId = Optional.empty();
+        break;
     }
 
     if (bpmnProcessId.isEmpty()) {
+      final String type = getValueTypeName(requestDecoder.valueType());
       errorResponseWriter
           .errorCode(ErrorCode.PROCESS_NOT_FOUND)
           .errorMessage(
-              "Expected to handle ExecuteQueryRequest, but no process found with key " + key)
+              String.format(
+                  "Expected to handle ExecuteQueryRequest, but no %s found with key %d", type, key))
           .tryWriteResponse(serverOutput, partitionId, requestId);
       return;
     }
@@ -97,6 +102,19 @@ public final class QueryApiRequestHandler implements RequestHandler {
     queryResponseWriter
         .bpmnProcessId(bpmnProcessId.get())
         .tryWriteResponse(serverOutput, partitionId, requestId);
+  }
+
+  private static String getValueTypeName(final ValueType valueType) {
+    switch (valueType) {
+      case PROCESS:
+        return "process";
+      case PROCESS_INSTANCE:
+        return "process instance";
+      case JOB:
+        return "job";
+      default:
+        return "element";
+    }
   }
 
   public void addPartition(final int partitionId, final QueryService queryService) {

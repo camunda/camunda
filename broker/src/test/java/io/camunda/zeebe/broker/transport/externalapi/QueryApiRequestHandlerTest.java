@@ -98,6 +98,56 @@ final class QueryApiRequestHandlerTest {
             "Expected to handle ExecuteQueryRequest, but no process found with key 1");
   }
 
+  @DisplayName("should respond with PROCESS_NOT_FOUND when no process instance with key exists")
+  @Test
+  void processInstanceNotFound() {
+    // given
+    final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
+    sut.addPartition(1, new QueryServiceReturning(null));
+
+    // when
+    final Either<ErrorResponse, ExecuteQueryResponse> response =
+        new AsyncExecuteQueryRequestSender(sut)
+            .sendRequest(
+                new ExecuteQueryRequest()
+                    .partitionId(1)
+                    .key(1)
+                    .valueType(ValueType.PROCESS_INSTANCE))
+            .join();
+
+    // then
+    EitherAssert.assertThat(response)
+        .isLeft()
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .containsExactly(
+            ErrorCode.PROCESS_NOT_FOUND,
+            "Expected to handle ExecuteQueryRequest, but no process instance found with key 1");
+  }
+
+  @DisplayName("should respond with PROCESS_NOT_FOUND when no job with key exists")
+  @Test
+  void jobNotFound() {
+    // given
+    final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
+    sut.addPartition(1, new QueryServiceReturning(null));
+
+    // when
+    final Either<ErrorResponse, ExecuteQueryResponse> response =
+        new AsyncExecuteQueryRequestSender(sut)
+            .sendRequest(new ExecuteQueryRequest().partitionId(1).key(1).valueType(ValueType.JOB))
+            .join();
+
+    // then
+    EitherAssert.assertThat(response)
+        .isLeft()
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .containsExactly(
+            ErrorCode.PROCESS_NOT_FOUND,
+            "Expected to handle ExecuteQueryRequest, but no job found with key 1");
+  }
+
   @DisplayName("should respond with bpmnProcessId when process found")
   @Test
   void processFound() {
