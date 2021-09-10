@@ -15,12 +15,14 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
   private final SpringBrokerBridge springBrokerBridge;
-  private final ActorSchedulingService actorSchedulingService;
+  private final ActorScheduler actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
 
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
@@ -44,18 +46,19 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
   private SubscriptionApiCommandMessageHandlerService subscriptionApiService;
+  private EmbeddedGatewayService embeddedGatewayService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
       final SpringBrokerBridge springBrokerBridge,
-      final ActorSchedulingService actorSchedulingService,
+      final ActorScheduler actorScheduler,
       final BrokerHealthCheckService healthCheckService) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
-    this.actorSchedulingService = requireNonNull(actorSchedulingService);
+    this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
   }
 
@@ -76,7 +79,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public ActorSchedulingService getActorSchedulingService() {
-    return actorSchedulingService;
+    return actorScheduler;
+  }
+
+  @Override
+  public ActorScheduler getActorScheduler() {
+    return actorScheduler;
   }
 
   @Override
@@ -173,5 +181,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setSubscriptionApiService(
       final SubscriptionApiCommandMessageHandlerService subscriptionApiService) {
     this.subscriptionApiService = subscriptionApiService;
+  }
+
+  @Override
+  public EmbeddedGatewayService getEmbeddedGatewayService() {
+    return embeddedGatewayService;
+  }
+
+  @Override
+  public void setEmbeddedGatewayService(final EmbeddedGatewayService embeddedGatewayService) {
+    this.embeddedGatewayService = embeddedGatewayService;
   }
 }

@@ -51,6 +51,10 @@ public final class BrokerStartupProcess {
     result.add(new SubscriptionApiStep());
     result.add(new ClusterServicesStep());
 
+    if (config.getGateway().isEnable()) {
+      result.add(new EmbeddedGatewayServiceStep());
+    }
+
     return result;
   }
 
@@ -93,6 +97,7 @@ public final class BrokerStartupProcess {
     return new BrokerContextImpl(
         bsc.getClusterServices(),
         bsc.getCommandApiService(),
+        bsc.getEmbeddedGatewayService(),
         bsc.getPartitionListeners(),
         bsc.getDiskSpaceUsageListeners());
   }

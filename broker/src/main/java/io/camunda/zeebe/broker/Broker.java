@@ -60,7 +60,6 @@ public final class Broker implements AutoCloseable {
   private LeaderManagementRequestHandler managementRequestHandler;
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
-  private EmbeddedGatewayService embeddedGatewayService;
   private BrokerHealthCheckService healthCheckService;
   private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
@@ -147,20 +146,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    if (brokerCfg.getGateway().isEnable()) {
-      startContext.addStep(
-          "embedded gateway",
-          () -> {
-            embeddedGatewayService =
-                new EmbeddedGatewayService(
-                    brokerCfg,
-                    scheduler,
-                    clusterServices.getMessagingService(),
-                    clusterServices.getMembershipService(),
-                    clusterServices.getEventService());
-            return embeddedGatewayService;
-          });
-    }
 
     startContext.addStep("disk space monitor", () -> diskSpaceMonitorStep(brokerCfg.getData()));
     startContext.addStep(
@@ -180,6 +165,7 @@ public final class Broker implements AutoCloseable {
 
     clusterServices = brokerContext.getClusterServices();
     testCompanionObject.atomix = clusterServices.getAtomixCluster();
+    testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
 
     return () -> {
       brokerStartupActor.stop().join();
@@ -326,8 +312,9 @@ public final class Broker implements AutoCloseable {
         });
   }
 
+  @Deprecated
   public EmbeddedGatewayService getEmbeddedGatewayService() {
-    return embeddedGatewayService;
+    return testCompanionObject.embeddedGatewayService;
   }
 
   // only used for tests
@@ -359,6 +346,7 @@ public final class Broker implements AutoCloseable {
   @Deprecated // only used for test; temporary work around
   private static final class TestCompanionClass {
     private AtomixCluster atomix;
+    private EmbeddedGatewayService embeddedGatewayService;
   }
 
   /**
