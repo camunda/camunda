@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.externalapi;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.ExternalApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
@@ -40,11 +41,12 @@ public final class ExternalApiServiceImpl extends Actor
   public ExternalApiServiceImpl(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
-      final PartitionAwareRequestLimiter limiter) {
+      final PartitionAwareRequestLimiter limiter,
+      final ExternalApiCfg externalApi) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     commandHandler = new CommandApiRequestHandler();
-    queryHandler = new QueryApiRequestHandler();
+    queryHandler = new QueryApiRequestHandler(externalApi.getQueryApi());
     actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 

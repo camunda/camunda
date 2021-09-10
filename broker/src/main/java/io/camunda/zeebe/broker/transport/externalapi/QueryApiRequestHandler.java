@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.externalapi;
 
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.ExternalApiCfg.QueryApiCfg;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ExecuteQueryRequestDecoder;
@@ -32,6 +33,11 @@ public final class QueryApiRequestHandler implements RequestHandler {
 
   private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
   private final QueryResponseWriter queryResponseWriter = new QueryResponseWriter();
+  private final QueryApiCfg config;
+
+  public QueryApiRequestHandler(final QueryApiCfg config) {
+    this.config = config;
+  }
 
   @Override
   public void onRequest(
@@ -41,6 +47,14 @@ public final class QueryApiRequestHandler implements RequestHandler {
       final DirectBuffer buffer,
       final int offset,
       final int length) {
+
+    if (!config.isEnabled()) {
+      errorResponseWriter
+          .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
+          .errorMessage("Expected to handle ExecuteQueryRequest, but QueryApi is disabled")
+          .tryWriteResponse(serverOutput, partitionId, requestId);
+      return;
+    }
 
     messageHeaderDecoder.wrap(buffer, offset);
 

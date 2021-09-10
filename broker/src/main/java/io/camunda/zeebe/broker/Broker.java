@@ -245,8 +245,8 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable commandApiTransportAndHandlerStep(
       final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
-    final var messagingService =
-        createMessagingService(brokerCfg.getCluster(), brokerCfg.getNetwork().getExternalApi());
+    final var externalApiCfg = brokerCfg.getNetwork().getExternalApi();
+    final var messagingService = createMessagingService(brokerCfg.getCluster(), externalApiCfg);
     messagingService.start().join();
     LOG.debug(
         "Bound command API to {}, using advertised address {} ",
@@ -263,7 +263,8 @@ public final class Broker implements AutoCloseable {
       limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
     }
 
-    externalApiService = new ExternalApiServiceImpl(serverTransport, localBroker, limiter);
+    externalApiService =
+        new ExternalApiServiceImpl(serverTransport, localBroker, limiter, externalApiCfg);
     partitionListeners.add(externalApiService);
     scheduleActor(externalApiService);
     diskSpaceUsageListeners.add(externalApiService);
