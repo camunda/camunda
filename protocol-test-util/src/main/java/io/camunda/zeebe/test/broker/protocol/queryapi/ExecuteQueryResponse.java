@@ -10,7 +10,6 @@ package io.camunda.zeebe.test.broker.protocol.queryapi;
 import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
 import io.camunda.zeebe.protocol.record.ExecuteQueryResponseDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponse;
 import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponseException;
@@ -21,18 +20,6 @@ public final class ExecuteQueryResponse implements BufferReader {
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteQueryResponseDecoder responseDecoder = new ExecuteQueryResponseDecoder();
   private final ErrorResponse errorResponse = new ErrorResponse(new MsgPackHelper());
-
-  public long getKey() {
-    return responseDecoder.key();
-  }
-
-  public int getPartitionId() {
-    return responseDecoder.partitionId();
-  }
-
-  public ValueType getValueType() {
-    return responseDecoder.valueType();
-  }
 
   public String getBpmnProcessId() {
     return responseDecoder.bpmnProcessId();
