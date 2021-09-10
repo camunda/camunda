@@ -141,19 +141,6 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
-   * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle
-   * phases.
-   *
-   * <p>Runnables submitted externally are executed while the actor is in the following actor
-   * lifecycle phases: {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param action
-   */
-  public void run(final Runnable action) {
-    scheduleRunnable(action, true);
-  }
-
-  /**
    * Run the provided runnable repeatedly until it calls {@link #done()}. To be used for jobs which
    * may experience backpressure.
    */
@@ -233,6 +220,20 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
+   * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle
+   * phases.
+   *
+   * <p>Runnables submitted externally are executed while the actor is in the following actor
+   * lifecycle phases: {@link ActorLifecyclePhase#STARTED}
+   *
+   * @param action
+   */
+  @Override
+  public void run(final Runnable action) {
+    scheduleRunnable(action, true);
+  }
+
+  /**
    * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such
    * that other other actions may be executed before this. This method is useful in case an actor is
    * in a (potentially endless) loop and it should be able to interrupt it.
@@ -242,7 +243,6 @@ public class ActorControl implements ConcurrencyControl {
    *
    * @param action the action to run.
    */
-  @Override
   public void submit(final Runnable action) {
     final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
     final ActorTask currentTask = currentActorRunner.getCurrentTask();

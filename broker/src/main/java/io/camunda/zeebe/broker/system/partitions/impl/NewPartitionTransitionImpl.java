@@ -72,7 +72,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
 
     final ActorFuture<Void> nextTransitionFuture = concurrencyControl.createFuture();
 
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           if (currentTransition != null) {
             LOG.info(
