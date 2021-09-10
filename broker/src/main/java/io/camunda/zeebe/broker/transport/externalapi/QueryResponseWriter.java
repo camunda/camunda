@@ -11,25 +11,23 @@ import io.camunda.zeebe.protocol.record.ExecuteQueryResponseEncoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
-import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class QueryResponseWriter implements BufferWriter {
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ExecuteQueryResponseEncoder responseEncoder = new ExecuteQueryResponseEncoder();
   private final ServerResponseImpl response = new ServerResponseImpl();
-
-  private DirectBuffer bpmnProcessId;
+  private final DirectBuffer bpmnProcessId = new UnsafeBuffer();
 
   public void tryWriteResponse(
-      final ServerOutput output, final int streamId, final long requestId) {
-    EnsureUtil.ensureNotNull("bpmnProcessId", bpmnProcessId);
+      final ServerOutput output, final int partitionId, final long requestId) {
 
     try {
-      response.reset().writer(this).setPartitionId(streamId).setRequestId(requestId);
+      response.reset().writer(this).setPartitionId(partitionId).setRequestId(requestId);
       output.sendResponse(response);
 
     } finally {
@@ -64,11 +62,11 @@ public final class QueryResponseWriter implements BufferWriter {
   }
 
   public void reset() {
-    bpmnProcessId = null;
+    bpmnProcessId.wrap(0, 0);
   }
 
   public QueryResponseWriter bpmnProcessId(final DirectBuffer bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+    this.bpmnProcessId.wrap(bpmnProcessId);
     return this;
   }
 }
