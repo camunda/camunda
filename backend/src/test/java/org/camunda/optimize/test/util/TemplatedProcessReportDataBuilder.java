@@ -801,6 +801,16 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .build();
         break;
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
       case USER_TASK_FREQ_GROUP_BY_USER_TASK_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -836,6 +846,16 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.END_DATE)
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK_END_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.PROCESS)
           .definitions(definitions)
           .groupByDateInterval(groupByDateInterval)
           .build();
@@ -945,6 +965,16 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .build();
         break;
+      case USER_TASK_DUR_GROUP_BY_USER_TASK_START_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.PROCESS)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
       case USER_TASK_DUR_GROUP_BY_USER_TASK_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -980,6 +1010,16 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.DURATION)
           .groupByType(ProcessGroupByType.END_DATE)
           .distributedByType(DistributedByType.CANDIDATE_GROUP)
+          .definitions(definitions)
+          .groupByDateInterval(groupByDateInterval)
+          .build();
+        break;
+      case USER_TASK_DUR_GROUP_BY_USER_TASK_END_DATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.PROCESS)
           .definitions(definitions)
           .groupByDateInterval(groupByDateInterval)
           .build();
