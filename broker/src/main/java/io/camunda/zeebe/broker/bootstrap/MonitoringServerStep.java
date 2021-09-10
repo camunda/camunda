@@ -15,7 +15,7 @@ final class MonitoringServerStep extends AbstractBrokerStartupStep {
 
   @Override
   public String getName() {
-    return "monitoring services";
+    return "Health Monitor";
   }
 
   @Override

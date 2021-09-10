@@ -22,7 +22,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
@@ -43,8 +43,7 @@ public class CommandApiServiceStepTest {
     commandApiCfg.setAdvertisedHost("localhost");
   }
 
-  private final ActorSchedulingService mockActorSchedulingService =
-      mock(ActorSchedulingService.class);
+  private final ActorScheduler mockActorSchedulingService = mock(ActorScheduler.class);
 
   private BrokerStartupContextImpl testBrokerStartupContext;
 
