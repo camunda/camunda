@@ -94,17 +94,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public SubscriptionApiCommandMessageHandlerService getSubscriptionApiService() {
-    return subscriptionApiService;
-  }
-
-  @Override
-  public void setSubscriptionApiService(
-      final SubscriptionApiCommandMessageHandlerService subscriptionApiService) {
-    this.subscriptionApiService = subscriptionApiService;
-  }
-
-  @Override
   public void addPartitionListener(final PartitionListener listener) {
     partitionListeners.add(requireNonNull(listener));
   }
@@ -173,5 +162,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setCommandApiMessagingService(
       final ManagedMessagingService commandApiMessagingService) {
     this.commandApiMessagingService = commandApiMessagingService;
+  }
+
+  @Override
+  public SubscriptionApiCommandMessageHandlerService getSubscriptionApiService() {
+    return subscriptionApiService;
+  }
+
+  @Override
+  public void setSubscriptionApiService(
+      final SubscriptionApiCommandMessageHandlerService subscriptionApiService) {
+    this.subscriptionApiService = subscriptionApiService;
   }
 }
