@@ -65,7 +65,7 @@ final class PartitionTransitionProcess {
       return;
     }
 
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           final var nextStep = pendingSteps.remove(0);
           startedSteps.push(nextStep);
@@ -115,7 +115,7 @@ final class PartitionTransitionProcess {
 
   private void proceedWithCleanup(
       final ActorFuture<Void> future, final long newTerm, final Role newRole) {
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           final var nextCleanupStep = startedSteps.pop();
 

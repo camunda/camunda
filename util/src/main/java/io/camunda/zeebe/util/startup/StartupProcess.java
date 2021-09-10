@@ -102,7 +102,7 @@ public final class StartupProcess<CONTEXT> {
       final ConcurrencyControl concurrencyControl, final CONTEXT context) {
 
     final var result = concurrencyControl.<CONTEXT>createFuture();
-    concurrencyControl.submit(() -> startupSynchronized(concurrencyControl, context, result));
+    concurrencyControl.run(() -> startupSynchronized(concurrencyControl, context, result));
 
     return result;
   }
@@ -116,7 +116,7 @@ public final class StartupProcess<CONTEXT> {
   public ActorFuture<CONTEXT> shutdown(
       final ConcurrencyControl concurrencyControl, final CONTEXT context) {
     final var result = concurrencyControl.<CONTEXT>createFuture();
-    concurrencyControl.submit(() -> shutdownSynchronized(concurrencyControl, context, result));
+    concurrencyControl.run(() -> shutdownSynchronized(concurrencyControl, context, result));
 
     return result;
   }

@@ -31,7 +31,7 @@ public interface ConcurrencyControl {
    *
    * @param action action to be invoked
    */
-  void submit(final Runnable action);
+  void run(final Runnable action);
 
   /**
    * Create a new future object

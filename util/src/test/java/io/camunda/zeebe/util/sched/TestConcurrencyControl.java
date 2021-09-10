@@ -40,7 +40,7 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   }
 
   @Override
-  public void submit(final Runnable action) {
+  public void run(final Runnable action) {
     action.run();
   }
 
