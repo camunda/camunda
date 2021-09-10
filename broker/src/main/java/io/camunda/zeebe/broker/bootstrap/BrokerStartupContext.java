@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -67,4 +68,9 @@ public interface BrokerStartupContext {
   ManagedMessagingService getCommandApiMessagingService();
 
   void setCommandApiMessagingService(ManagedMessagingService commandApiMessagingService);
+
+  SubscriptionApiCommandMessageHandlerService getSubscriptionApiService();
+
+  void setSubscriptionApiService(
+      SubscriptionApiCommandMessageHandlerService subscriptionApiService);
 }
