@@ -244,12 +244,12 @@ public class ActorControl implements ConcurrencyControl {
    * @param action the action to run.
    */
   public void submit(final Runnable action) {
-    final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
-    final ActorTask currentTask = currentActorRunner.getCurrentTask();
-
+    final ActorThread currentThread = ActorThread.current();
+    final ActorTask currentTask = currentThread == null ? null : currentThread.getCurrentTask();
     final ActorJob job;
-    if (currentTask == task) {
-      job = currentActorRunner.newJob();
+
+    if (currentThread != null && currentTask == task) {
+      job = currentThread.newJob();
     } else {
       job = new ActorJob();
     }
@@ -259,7 +259,7 @@ public class ActorControl implements ConcurrencyControl {
     job.onJobAddedToTask(task);
     task.submit(job);
 
-    if (currentTask == task) {
+    if (currentTask != null && currentTask == task) {
       yieldThread();
     }
   }
