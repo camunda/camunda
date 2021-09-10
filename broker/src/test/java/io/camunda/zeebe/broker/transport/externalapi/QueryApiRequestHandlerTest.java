@@ -70,8 +70,8 @@ final class QueryApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
         .containsExactly(
-            ErrorCode.INTERNAL_ERROR,
-            "Expected to handle ExecuteQueryRequest, but unable to access query service");
+            ErrorCode.PARTITION_LEADER_MISMATCH,
+            "Expected to handle client message on the leader of partition '9999', but this node is not the leader for it");
   }
 
   @DisplayName("should respond with PROCESS_NOT_FOUND when no process with key exists")

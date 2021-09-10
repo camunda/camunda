@@ -71,9 +71,7 @@ public final class QueryApiRequestHandler implements RequestHandler {
     final var queryService = queryServicePerPartition.get(partitionId);
     if (queryService == null) {
       errorResponseWriter
-          .errorCode(ErrorCode.INTERNAL_ERROR)
-          .errorMessage(
-              "Expected to handle ExecuteQueryRequest, but unable to access query service")
+          .partitionLeaderMismatch(partitionId)
           .tryWriteResponse(serverOutput, partitionId, requestId);
       return;
     }
