@@ -49,7 +49,7 @@ public final class JobEventProcessors {
             ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState, jobMetrics))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(zeebeState, jobMetrics))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
