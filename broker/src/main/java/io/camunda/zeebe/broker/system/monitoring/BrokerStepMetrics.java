@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Gauge.Timer;
 
 public class BrokerStepMetrics {
 
@@ -35,8 +36,16 @@ public class BrokerStepMetrics {
    * @param stepName the name of the step
    * @param startupDuration the step start duration in ms
    */
-  public void observeDurationForStarStep(String stepName, long startupDuration) {
+  public void observeDurationForStarStep(final String stepName, final long startupDuration) {
     STARTUP_METRIC.labels(stepName).set(startupDuration);
+  }
+
+  public Timer createStartupTimer(final String stepName) {
+    return STARTUP_METRIC.labels(stepName).startTimer();
+  }
+
+  public Timer createCloseTimer(final String stepName) {
+    return CLOSE_METRICS.labels(stepName).startTimer();
   }
 
   /**
@@ -45,7 +54,7 @@ public class BrokerStepMetrics {
    * @param stepName the name of the step
    * @param closeDuration the step close duration in ms
    */
-  public void observeDurationForCloseStep(String stepName, long closeDuration) {
+  public void observeDurationForCloseStep(final String stepName, final long closeDuration) {
     CLOSE_METRICS.labels(stepName).set(closeDuration);
   }
 }

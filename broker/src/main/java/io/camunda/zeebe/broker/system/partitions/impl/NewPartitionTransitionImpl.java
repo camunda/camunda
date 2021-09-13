@@ -72,7 +72,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
 
     final ActorFuture<Void> nextTransitionFuture = concurrencyControl.createFuture();
 
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           if (currentTransition != null) {
             LOG.info(
@@ -85,7 +85,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
             // has completed
             concurrencyControl.runOnCompletion(
                 currentTransitionFuture,
-                (nil, error) -> cleanupLastTransition(nextTransitionFuture, term, role));
+                (ok, error) -> cleanupLastTransition(nextTransitionFuture, term, role));
 
           } else {
             cleanupLastTransition(nextTransitionFuture, term, role);
@@ -102,7 +102,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
       final var cleanupFuture = lastTransition.cleanup(term, role);
       concurrencyControl.runOnCompletion(
           cleanupFuture,
-          (nil, error) -> {
+          (ok, error) -> {
             if (error != null) {
               LOG.error(
                   String.format("Error during transition clean up: %s", error.getMessage()), error);
@@ -123,7 +123,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
     currentTransitionFuture = nextTransitionFuture;
     concurrencyControl.runOnCompletion(
         currentTransitionFuture,
-        (nil, error) -> {
+        (ok, error) -> {
           lastTransition = currentTransition;
           currentTransition = null;
           currentTransitionFuture = null;

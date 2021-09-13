@@ -9,7 +9,6 @@ package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
-import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
@@ -82,25 +81,15 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     AbstractFlowNodeBuilder<?, ?> result = jobWorkerTaskBuilder;
 
     if (hasBoundaryEvents) {
-      final String joinGatewayId = "boundary_join_" + taskId;
-      final ExclusiveGatewayBuilder exclusiveGatewayBuilder =
-          jobWorkerTaskBuilder.exclusiveGateway(joinGatewayId);
+      final BoundaryEventBuilder boundaryEventBuilder =
+          new BoundaryEventBuilder(taskId, jobWorkerTaskBuilder);
 
       if (hasBoundaryErrorEvent) {
-        result =
-            ((AbstractJobWorkerTaskBuilder<?, ?>) exclusiveGatewayBuilder.moveToNode(taskId))
-                .boundaryEvent(boundaryErrorEventId, b -> b.error(errorCode))
-                .connectTo(joinGatewayId);
+        result = boundaryEventBuilder.connectBoundaryErrorEvent(boundaryErrorEventId, errorCode);
       }
 
       if (hasBoundaryTimerEvent) {
-        result =
-            ((AbstractJobWorkerTaskBuilder<?, ?>) exclusiveGatewayBuilder.moveToNode(taskId))
-                .boundaryEvent(
-                    /* the value of that variable will be calculated when the execution flow is
-                    known*/
-                    boundaryTimerEventId, b -> b.timerWithDurationExpression(boundaryTimerEventId))
-                .connectTo(joinGatewayId);
+        result = boundaryEventBuilder.connectBoundaryTimerEvent(boundaryTimerEventId);
       }
     }
 
@@ -137,12 +126,12 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     // If we already have a timer boundary event we should not timeout the job,
     // otherwise this makes the test too fragile (flaky).
     if (!hasBoundaryTimerEvent && random.nextBoolean()) {
-      result.appendDirectSuccessor(new StepActivateAndTimeoutJob(jobType));
+      result.appendDirectSuccessor(new StepActivateAndTimeoutJob(jobType, taskId));
     }
 
     if (random.nextBoolean()) {
       final boolean updateRetries = random.nextBoolean();
-      result.appendDirectSuccessor(new StepActivateAndFailJob(jobType, updateRetries));
+      result.appendDirectSuccessor(new StepActivateAndFailJob(jobType, updateRetries, taskId));
     }
 
     return result;
@@ -158,11 +147,11 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     final AbstractExecutionStep result;
 
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
-      result = new StepActivateJobAndThrowError(jobType, errorCode);
+      result = new StepActivateJobAndThrowError(jobType, errorCode, taskId);
     } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
-      result = new StepTriggerTimerBoundaryEvent(jobType, boundaryTimerEventId);
+      result = new StepTriggerTimerBoundaryEvent(boundaryTimerEventId);
     } else {
-      result = new StepActivateAndCompleteJob(jobType);
+      result = new StepActivateAndCompleteJob(jobType, taskId);
     }
 
     return result;

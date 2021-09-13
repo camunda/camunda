@@ -33,13 +33,13 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   public ActorFuture<Void> takeSnapshot() {
     final ActorFuture<Void> completed = concurrencyControl.createFuture();
 
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           try {
             adminControl.triggerSnapshot();
             completed.complete(null);
-          } catch (final Throwable t) {
-            completed.completeExceptionally(t);
+          } catch (final Exception e) {
+            completed.completeExceptionally(e);
           }
         });
 
@@ -49,7 +49,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   @Override
   public ActorFuture<Void> pauseExporting() {
     final ActorFuture<Void> completed = concurrencyControl.createFuture();
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           try {
             final var pauseStatePersisted = adminControl.pauseExporting();
@@ -70,7 +70,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   @Override
   public ActorFuture<Void> resumeExporting() {
     final ActorFuture<Void> completed = concurrencyControl.createFuture();
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           try {
             adminControl.resumeExporting();
@@ -90,7 +90,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   @Override
   public ActorFuture<Void> pauseProcessing() {
     final ActorFuture<Void> completed = concurrencyControl.createFuture();
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           try {
             adminControl.pauseProcessing();
@@ -111,7 +111,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   @Override
   public ActorFuture<Void> resumeProcessing() {
     final ActorFuture<Void> completed = concurrencyControl.createFuture();
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           try {
             adminControl.resumeProcessing();

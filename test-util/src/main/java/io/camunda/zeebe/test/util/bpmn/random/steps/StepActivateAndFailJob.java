@@ -14,10 +14,13 @@ public final class StepActivateAndFailJob extends AbstractExecutionStep {
 
   private final String jobType;
   private final boolean updateRetries;
+  private final String elementId;
 
-  public StepActivateAndFailJob(final String jobType, final boolean updateRetries) {
+  public StepActivateAndFailJob(
+      final String jobType, final boolean updateRetries, final String elementId) {
     this.jobType = jobType;
     this.updateRetries = updateRetries;
+    this.elementId = elementId;
   }
 
   public String getJobType() {
@@ -26,6 +29,10 @@ public final class StepActivateAndFailJob extends AbstractExecutionStep {
 
   public boolean isUpdateRetries() {
     return updateRetries;
+  }
+
+  public String getElementId() {
+    return elementId;
   }
 
   @Override

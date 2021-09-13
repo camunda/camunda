@@ -175,12 +175,12 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       closeFuture =
           CompletableFuture.runAsync(this::stopPartitions)
               .whenComplete(
-                  (nil, error) -> {
+                  (ok, error) -> {
                     logErrorIfApplicable(error);
                     partitionService.stop().join();
                   })
               .whenComplete(
-                  (nil, error) -> {
+                  (ok, error) -> {
                     logErrorIfApplicable(error);
                     partitionGroup = null;
                     partitionService = null;

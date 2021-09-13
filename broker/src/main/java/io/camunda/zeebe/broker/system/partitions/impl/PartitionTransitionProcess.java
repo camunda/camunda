@@ -65,7 +65,7 @@ final class PartitionTransitionProcess {
       return;
     }
 
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           final var nextStep = pendingSteps.remove(0);
           startedSteps.push(nextStep);
@@ -75,7 +75,7 @@ final class PartitionTransitionProcess {
 
           nextStep
               .transitionTo(context, term, role)
-              .onComplete((nil, error) -> onStepCompletion(future, error));
+              .onComplete((ok, error) -> onStepCompletion(future, error));
         });
   }
 
@@ -115,7 +115,7 @@ final class PartitionTransitionProcess {
 
   private void proceedWithCleanup(
       final ActorFuture<Void> future, final long newTerm, final Role newRole) {
-    concurrencyControl.submit(
+    concurrencyControl.run(
         () -> {
           final var nextCleanupStep = startedSteps.pop();
 
@@ -126,7 +126,7 @@ final class PartitionTransitionProcess {
 
           nextCleanupStep
               .prepareTransition(context, newTerm, newRole)
-              .onComplete((nil, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
+              .onComplete((ok, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
         });
   }
 

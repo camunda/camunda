@@ -14,11 +14,9 @@ import java.util.Objects;
 
 public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
 
-  private final String jobType;
   private final String boundaryTimerEventId;
 
-  public StepTriggerTimerBoundaryEvent(final String jobType, final String boundaryTimerEventId) {
-    this.jobType = jobType;
+  public StepTriggerTimerBoundaryEvent(final String boundaryTimerEventId) {
     this.boundaryTimerEventId = boundaryTimerEventId;
   }
 
@@ -42,7 +40,7 @@ public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), jobType, boundaryTimerEventId);
+    return Objects.hash(super.hashCode(), boundaryTimerEventId);
   }
 
   @Override
@@ -57,7 +55,7 @@ public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
       return false;
     }
     final StepTriggerTimerBoundaryEvent that = (StepTriggerTimerBoundaryEvent) o;
-    return jobType.equals(that.jobType) && boundaryTimerEventId.equals(that.boundaryTimerEventId);
+    return boundaryTimerEventId.equals(that.boundaryTimerEventId);
   }
 
   public String getBoundaryTimerEventId() {

@@ -14,18 +14,25 @@ import java.util.Map;
 public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
 
   private final String jobType;
+  private final String elementId;
 
-  public StepActivateAndCompleteJob(final String jobType) {
-    this(jobType, Collections.emptyMap());
+  public StepActivateAndCompleteJob(final String jobType, final String elementId) {
+    this(jobType, elementId, Collections.emptyMap());
   }
 
-  public StepActivateAndCompleteJob(final String jobType, final Map<String, Object> variables) {
+  public StepActivateAndCompleteJob(
+      final String jobType, final String elementId, final Map<String, Object> variables) {
     this.jobType = jobType;
     this.variables.putAll(variables);
+    this.elementId = elementId;
   }
 
   public String getJobType() {
     return jobType;
+  }
+
+  public String getElementId() {
+    return elementId;
   }
 
   @Override

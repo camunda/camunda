@@ -14,11 +14,14 @@ public class StepActivateJobAndThrowError extends AbstractExecutionStep {
 
   private final String jobType;
   private final String errorCode;
+  private final String elementId;
 
-  public StepActivateJobAndThrowError(final String jobType, final String errorCode) {
+  public StepActivateJobAndThrowError(
+      final String jobType, final String errorCode, final String elementId) {
     super();
     this.jobType = jobType;
     this.errorCode = errorCode;
+    this.elementId = elementId;
   }
 
   public String getJobType() {
@@ -27,6 +30,10 @@ public class StepActivateJobAndThrowError extends AbstractExecutionStep {
 
   public String getErrorCode() {
     return errorCode;
+  }
+
+  public String getElementId() {
+    return elementId;
   }
 
   @Override

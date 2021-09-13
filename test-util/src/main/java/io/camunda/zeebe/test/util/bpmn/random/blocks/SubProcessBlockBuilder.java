@@ -8,7 +8,6 @@
 package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
@@ -81,19 +80,11 @@ public class SubProcessBlockBuilder implements BlockBuilder {
 
     AbstractFlowNodeBuilder result = subProcessBuilderDone;
     if (hasBoundaryEvents) {
-      final String joinGatewayId = "boundary_join_" + subProcessId;
-      final ExclusiveGatewayBuilder exclusiveGatewayBuilder =
-          subProcessBuilderDone.exclusiveGateway(joinGatewayId);
+      final BoundaryEventBuilder boundaryEventBuilder =
+          new BoundaryEventBuilder(subProcessId, subProcessBuilderDone);
 
       if (hasBoundaryTimerEvent) {
-        result =
-            ((SubProcessBuilder) exclusiveGatewayBuilder.moveToNode(subProcessId))
-                .boundaryEvent(
-                    subProcessBoundaryTimerEventId,
-                    /* the value of that variable will be calculated when the execution flow is
-                    known*/
-                    b -> b.timerWithDurationExpression(subProcessBoundaryTimerEventId))
-                .connectTo(joinGatewayId);
+        result = boundaryEventBuilder.connectBoundaryTimerEvent(subProcessBoundaryTimerEventId);
       }
     }
 
@@ -126,8 +117,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       result.append(internalExecutionPath);
       if (hasBoundaryTimerEvent) {
         result.appendExecutionSuccessor(
-            new StepTriggerTimerBoundaryEvent(subProcessId, subProcessBoundaryTimerEventId),
-            activateSubProcess);
+            new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
       } // extend here for other boundary events
     }
     return result;

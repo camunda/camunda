@@ -86,7 +86,7 @@ public final class StartupProcess<CONTEXT> {
    *     null}
    * @param steps the steps to execute; must not be {@code null}
    */
-  public StartupProcess(final Logger logger, final List<StartupStep<CONTEXT>> steps) {
+  public StartupProcess(final Logger logger, final List<? extends StartupStep<CONTEXT>> steps) {
     this.steps = new ArrayDeque<>(Objects.requireNonNull(steps));
     this.logger = Objects.requireNonNull(logger);
   }
@@ -102,7 +102,7 @@ public final class StartupProcess<CONTEXT> {
       final ConcurrencyControl concurrencyControl, final CONTEXT context) {
 
     final var result = concurrencyControl.<CONTEXT>createFuture();
-    concurrencyControl.submit(() -> startupSynchronized(concurrencyControl, context, result));
+    concurrencyControl.run(() -> startupSynchronized(concurrencyControl, context, result));
 
     return result;
   }
@@ -116,7 +116,7 @@ public final class StartupProcess<CONTEXT> {
   public ActorFuture<CONTEXT> shutdown(
       final ConcurrencyControl concurrencyControl, final CONTEXT context) {
     final var result = concurrencyControl.<CONTEXT>createFuture();
-    concurrencyControl.submit(() -> shutdownSynchronized(concurrencyControl, context, result));
+    concurrencyControl.run(() -> shutdownSynchronized(concurrencyControl, context, result));
 
     return result;
   }

@@ -101,7 +101,7 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
   }
 
   @Override
-  public void submit(final Runnable action) {
-    actor.submit(action);
+  public void run(final Runnable action) {
+    actor.run(action);
   }
 }
