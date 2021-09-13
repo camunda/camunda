@@ -115,8 +115,6 @@ public final class DbJobState implements JobState, MutableJobState {
 
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
-
-    metrics.jobActivated(record.getType());
   }
 
   @Override

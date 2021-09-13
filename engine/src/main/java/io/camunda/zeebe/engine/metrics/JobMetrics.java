@@ -47,8 +47,8 @@ public final class JobMetrics {
     PENDING_JOBS.labels(partitionIdLabel, type).dec();
   }
 
-  public void jobActivated(final String type) {
-    jobEvent("activated", type);
+  public void jobActivated(final String type, final int activatedJobs) {
+    JOB_EVENTS.labels("activated", partitionIdLabel, type).inc(activatedJobs);
   }
 
   public void jobTimedOut(final String type) {
