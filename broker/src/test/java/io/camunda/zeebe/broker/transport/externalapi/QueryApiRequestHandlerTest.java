@@ -7,29 +7,52 @@
  */
 package io.camunda.zeebe.broker.transport.externalapi;
 
-import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.ExternalApiCfg.QueryApiCfg;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
-import io.camunda.zeebe.protocol.record.ExecuteQueryResponseDecoder;
-import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponse;
+import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponseException;
 import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryRequest;
 import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryResponse;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
+@SuppressWarnings("removal")
+@Execution(ExecutionMode.CONCURRENT)
 final class QueryApiRequestHandlerTest {
+  private final ActorScheduler scheduler =
+      ActorScheduler.newActorScheduler()
+          .setCpuBoundActorThreadCount(2)
+          .setIoBoundActorThreadCount(2)
+          .build();
+
+  @BeforeEach
+  void beforeEach() {
+    scheduler.start();
+  }
+
+  @AfterEach
+  void afterEach() throws Exception {
+    scheduler.close();
+  }
 
   @DisplayName("should respond with UNSUPPORTED_MESSAGE when QueryApi is disabled")
   @Test
@@ -48,15 +71,45 @@ final class QueryApiRequestHandlerTest {
         .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
         .containsExactly(
             ErrorCode.UNSUPPORTED_MESSAGE,
-            "Expected to handle ExecuteQueryRequest, but QueryApi is disabled");
+            "Failed to handle query as the query API is disabled; did you configure "
+                + "zeebe.broker.experimental.queryapi.enabled?");
   }
 
-  @DisplayName("should respond with INTERNAL_ERROR when partition is unknown")
+  @DisplayName("should respond with PARTITION_LEADER_MISMATCH when no service is registered")
   @Test
-  void unknownPartition() {
+  void noQueryServiceForPartition() {
     // given
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
-    sut.addPartition(1, new QueryServiceReturning(null));
+    sut.addPartition(1, mock(QueryService.class));
+
+    // when
+    final Either<ErrorResponse, ExecuteQueryResponse> response =
+        new AsyncExecuteQueryRequestSender(sut)
+            .sendRequest(new ExecuteQueryRequest().partitionId(9999))
+            .join();
+
+    // then
+    EitherAssert.assertThat(response)
+        .isLeft()
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .containsExactly(
+            ErrorCode.PARTITION_LEADER_MISMATCH,
+            "Expected to handle client message on the leader of partition '9999', but this node is not the leader for it");
+  }
+
+  @DisplayName("should respond with PARTITION_LEADER_MISMATCH when the service is closed")
+  @Test
+  void closedQueryService() {
+    // given
+    final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
+    sut.addPartition(
+        1,
+        mock(
+            QueryService.class,
+            i -> {
+              throw new ClosedServiceException();
+            }));
 
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
@@ -79,7 +132,7 @@ final class QueryApiRequestHandlerTest {
   void processNotFound() {
     // given
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
-    sut.addPartition(1, new QueryServiceReturning(null));
+    sut.addPartition(1, mock(QueryService.class));
 
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
@@ -95,7 +148,8 @@ final class QueryApiRequestHandlerTest {
         .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
         .containsExactly(
             ErrorCode.PROCESS_NOT_FOUND,
-            "Expected to handle ExecuteQueryRequest, but no process found with key 1");
+            "Expected to find the process ID for resource of type PROCESS with key 1, but no such "
+                + "resource was found");
   }
 
   @DisplayName("should respond with PROCESS_NOT_FOUND when no process instance with key exists")
@@ -103,7 +157,7 @@ final class QueryApiRequestHandlerTest {
   void processInstanceNotFound() {
     // given
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
-    sut.addPartition(1, new QueryServiceReturning(null));
+    sut.addPartition(1, mock(QueryService.class));
 
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
@@ -122,7 +176,8 @@ final class QueryApiRequestHandlerTest {
         .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
         .containsExactly(
             ErrorCode.PROCESS_NOT_FOUND,
-            "Expected to handle ExecuteQueryRequest, but no process instance found with key 1");
+            "Expected to find the process ID for resource of type PROCESS_INSTANCE with key 1, but "
+                + "no such resource was found");
   }
 
   @DisplayName("should respond with PROCESS_NOT_FOUND when no job with key exists")
@@ -130,7 +185,7 @@ final class QueryApiRequestHandlerTest {
   void jobNotFound() {
     // given
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
-    sut.addPartition(1, new QueryServiceReturning(null));
+    sut.addPartition(1, mock(QueryService.class));
 
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
@@ -145,15 +200,19 @@ final class QueryApiRequestHandlerTest {
         .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
         .containsExactly(
             ErrorCode.PROCESS_NOT_FOUND,
-            "Expected to handle ExecuteQueryRequest, but no job found with key 1");
+            "Expected to find the process ID for resource of type JOB with key 1, but no such "
+                + "resource was found");
   }
 
   @DisplayName("should respond with bpmnProcessId when process found")
   @Test
-  void processFound() {
+  void processFound() throws ClosedServiceException {
     // given
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
-    sut.addPartition(1, new QueryServiceReturning("OneProcessToFindThem"));
+    final var bpmnProcessId = BufferUtil.wrapString("OneProcessToFindThem");
+    final var queryService = mock(QueryService.class);
+    sut.addPartition(1, queryService);
+    when(queryService.getBpmnProcessIdForProcess(1)).thenReturn(Optional.of(bpmnProcessId));
 
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
@@ -170,19 +229,90 @@ final class QueryApiRequestHandlerTest {
         .isEqualTo("OneProcessToFindThem");
   }
 
-  private static QueryApiRequestHandler createQueryApiRequestHandler(final boolean enabled) {
+  @DisplayName("should respond with bpmnProcessId when job found")
+  @Test
+  void jobFound() throws ClosedServiceException {
+    // given
+    final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
+    final var bpmnProcessId = BufferUtil.wrapString("OneProcessToFindThem");
+    final var queryService = mock(QueryService.class);
+    sut.addPartition(1, queryService);
+
+    when(queryService.getBpmnProcessIdForJob(1)).thenReturn(Optional.of(bpmnProcessId));
+
+    // when
+    final Either<ErrorResponse, ExecuteQueryResponse> response =
+        new AsyncExecuteQueryRequestSender(sut)
+            .sendRequest(new ExecuteQueryRequest().partitionId(1).key(1).valueType(ValueType.JOB))
+            .join();
+
+    // then
+    EitherAssert.assertThat(response)
+        .isRight()
+        .extracting(Either::get)
+        .extracting(ExecuteQueryResponse::getBpmnProcessId)
+        .isEqualTo("OneProcessToFindThem");
+  }
+
+  @DisplayName("should respond with bpmnProcessId when process instance found")
+  @Test
+  void processInstanceFound() throws ClosedServiceException {
+    // given
+    final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
+    final var bpmnProcessId = BufferUtil.wrapString("OneProcessToFindThem");
+    final var queryService = mock(QueryService.class);
+    sut.addPartition(1, queryService);
+    when(queryService.getBpmnProcessIdForProcessInstance(1)).thenReturn(Optional.of(bpmnProcessId));
+
+    // when
+    final Either<ErrorResponse, ExecuteQueryResponse> response =
+        new AsyncExecuteQueryRequestSender(sut)
+            .sendRequest(
+                new ExecuteQueryRequest()
+                    .partitionId(1)
+                    .key(1)
+                    .valueType(ValueType.PROCESS_INSTANCE))
+            .join();
+
+    // then
+    EitherAssert.assertThat(response)
+        .isRight()
+        .extracting(Either::get)
+        .extracting(ExecuteQueryResponse::getBpmnProcessId)
+        .isEqualTo("OneProcessToFindThem");
+  }
+
+  @DisplayName("should return INTERNAL_ERROR on exception thrown while handling the request")
+  @Test
+  void internalError() {
+    // given
+    final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
+
+    // when
+    final Either<ErrorResponse, ExecuteQueryResponse> response =
+        new AsyncExecuteQueryRequestSender(sut).sendExplodingRequest().join();
+
+    // then
+    EitherAssert.assertThat(response)
+        .isLeft()
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .containsExactly(
+            ErrorCode.INTERNAL_ERROR,
+            "Failed to handle query due to internal error; see the broker logs for more");
+  }
+
+  private QueryApiRequestHandler createQueryApiRequestHandler(final boolean enabled) {
     final var config = new QueryApiCfg();
     config.setEnabled(enabled);
-    return new QueryApiRequestHandler(config);
+    final var requestHandler = new QueryApiRequestHandler(config, 0);
+    scheduler.submitActor(requestHandler);
+
+    return requestHandler;
   }
 
   private static final class AsyncExecuteQueryRequestSender {
-
     private final QueryApiRequestHandler sut;
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final ExecuteQueryResponseDecoder queryResponseDecoder =
-        new ExecuteQueryResponseDecoder();
-
     private int requestCount = 0;
 
     public AsyncExecuteQueryRequestSender(final QueryApiRequestHandler requestHandler) {
@@ -192,70 +322,40 @@ final class QueryApiRequestHandlerTest {
     private CompletableFuture<Either<ErrorResponse, ExecuteQueryResponse>> sendRequest(
         final ExecuteQueryRequest queryRequest) {
       final var future = new CompletableFuture<Either<ErrorResponse, ExecuteQueryResponse>>();
-      final ServerOutput serverOutput =
-          serverResponse -> {
-            // we need to write the serverResponse into a buffer in order to read it as SBE
-            final var bytes = new byte[serverResponse.getLength()];
-            final var buffer = new UnsafeBuffer(bytes);
-            serverResponse.write(buffer, 0);
+      final ServerOutput serverOutput = createServerOutput(future);
 
-            messageHeaderDecoder.wrap(buffer, 0);
-            // we can use the template id to determine the type of response that was send
-            switch (messageHeaderDecoder.templateId()) {
-              case ErrorResponseDecoder.TEMPLATE_ID:
-                future.complete(Either.left(decodeErrorResponse(buffer)));
-                break;
-              case ExecuteQueryResponseDecoder.TEMPLATE_ID:
-                future.complete(Either.right(decodeQueryResponse(buffer)));
-                break;
-              default:
-                throw new IllegalStateException(
-                    String.format(
-                        "Expected to decode a specific response type, but %d is an unknown template id",
-                        messageHeaderDecoder.templateId()));
-            }
-          };
       final var partitionId = queryRequest.getPartitionId();
       final var request = BufferUtil.createCopy(queryRequest);
       sut.onRequest(serverOutput, partitionId, requestCount++, request, 0, request.capacity());
       return future;
     }
 
-    private static ErrorResponse decodeErrorResponse(final UnsafeBuffer buffer) {
-      final var result = new ErrorResponse(new MsgPackHelper());
-      result.wrap(buffer, 0, buffer.capacity());
-      return result;
+    /**
+     * Sends a request which will raise an exception on the other side since it has a length of -1
+     */
+    private CompletableFuture<Either<ErrorResponse, ExecuteQueryResponse>> sendExplodingRequest() {
+      final var future = new CompletableFuture<Either<ErrorResponse, ExecuteQueryResponse>>();
+      final ServerOutput serverOutput = createServerOutput(future);
+
+      final var request = new UnsafeBuffer();
+      sut.onRequest(serverOutput, 1, requestCount++, request, 0, -1);
+      return future;
     }
 
-    private static ExecuteQueryResponse decodeQueryResponse(final UnsafeBuffer buffer) {
-      final var result = new ExecuteQueryResponse();
-      result.wrap(buffer, 0, buffer.capacity());
-      return result;
-    }
-  }
+    private ServerOutput createServerOutput(
+        final CompletableFuture<Either<ErrorResponse, ExecuteQueryResponse>> future) {
+      return serverResponse -> {
+        final var buffer = new ExpandableArrayBuffer();
+        serverResponse.write(buffer, 0);
 
-  private static final class QueryServiceReturning implements QueryService {
-
-    private final DirectBuffer bpmnProcessId;
-
-    public QueryServiceReturning(final String bpmnProcessId) {
-      this.bpmnProcessId = bpmnProcessId == null ? null : BufferUtil.wrapString(bpmnProcessId);
-    }
-
-    @Override
-    public Optional<DirectBuffer> getBpmnProcessIdForProcess(final long processKey) {
-      return Optional.ofNullable(bpmnProcessId);
-    }
-
-    @Override
-    public Optional<DirectBuffer> getBpmnProcessIdForProcessInstance(
-        final long processInstanceKey) {
-      return Optional.ofNullable(bpmnProcessId);
-    }
-
-    @Override
-    public Optional<DirectBuffer> getBpmnProcessIdForJob(final long jobKey) {
-      return Optional.ofNullable(bpmnProcessId);
+        final var response = new ExecuteQueryResponse();
+        try {
+          response.wrap(buffer, 0, buffer.capacity());
+          future.complete(Either.right(response));
+        } catch (final ErrorResponseException e) {
+          future.complete(Either.left(e.getErrorResponse()));
+        }
+      };
     }
   }
 }

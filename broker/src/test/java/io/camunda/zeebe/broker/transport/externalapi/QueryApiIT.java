@@ -17,10 +17,13 @@ import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponseException;
 import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryRequest;
 import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryResponse;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.ClientTransport;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
@@ -37,8 +40,7 @@ public final class QueryApiIT {
 
   public final ActorSchedulerRule actor = new ActorSchedulerRule();
   public final EmbeddedBrokerRule broker =
-      new EmbeddedBrokerRule(
-          cfg -> cfg.getNetwork().getExternalApi().getQueryApi().setEnabled(true));
+      new EmbeddedBrokerRule(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true));
   public final CommandApiRule command = new CommandApiRule(broker::getAtomixCluster);
 
   @Rule
@@ -66,7 +68,7 @@ public final class QueryApiIT {
   @Test
   public void shouldRespondWithErrorWhenDisabled() {
     // given
-    broker.getBrokerCfg().getNetwork().getExternalApi().getQueryApi().setEnabled(false);
+    broker.getBrokerCfg().getExperimental().getQueryApi().setEnabled(false);
 
     // when
     final DirectBuffer response =
@@ -87,11 +89,12 @@ public final class QueryApiIT {
         .extracting(ErrorResponseException::getErrorCode, ErrorResponseException::getErrorMessage)
         .containsExactly(
             ErrorCode.UNSUPPORTED_MESSAGE,
-            "Expected to handle ExecuteQueryRequest, but QueryApi is disabled");
+            "Failed to handle query as the query API is disabled; did you configure"
+                + " zeebe.broker.experimental.queryapi.enabled?");
   }
 
   @Test
-  public void shouldRespondWithBpmnProcessIdWhenFound() {
+  public void shouldRespondWithBpmnProcessIdWhenProcessFound() {
     // given
     final long key =
         command
@@ -102,13 +105,20 @@ public final class QueryApiIT {
                     .endEvent()
                     .done())
             .getProcessDefinitionKey();
+    assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.CREATED)
+                .withRecordKey(key)
+                .limit(1)
+                .exists())
+        .as("wait until the process definition actually exists in the state")
+        .isTrue();
 
     // when
     final DirectBuffer response =
         clientTransport
             .sendRequest(
                 () -> serverAddress,
-                // todo: consider whether partitionId is really necessary
                 new ExecuteQueryRequest().partitionId(1).key(key).valueType(ValueType.PROCESS),
                 Duration.ofSeconds(10))
             .join();
@@ -118,5 +128,67 @@ public final class QueryApiIT {
     assertThat(result)
         .extracting(ExecuteQueryResponse::getBpmnProcessId)
         .isEqualTo("OneProcessToRuleThemAll");
+  }
+
+  @Test
+  public void shouldRespondWithBpmnProcessIdWhenProcessInstanceFound() {
+    // given
+    final var client = command.partitionClient(1);
+    client.deploy(
+        Bpmn.createExecutableProcess("OneProcessToRuleThemAll")
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .endEvent()
+            .done());
+    final long key =
+        client
+            .createProcessInstance(r -> r.setBpmnProcessId("OneProcessToRuleThemAll"))
+            .getProcessInstanceKey();
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                .withProcessInstanceKey(key)
+                .filterRootScope()
+                .limit(1)
+                .exists())
+        .as("wait until the element instance actually exists in the state")
+        .isTrue();
+
+    // when
+    final DirectBuffer response =
+        clientTransport
+            .sendRequest(
+                () -> serverAddress,
+                new ExecuteQueryRequest()
+                    .partitionId(1)
+                    .key(key)
+                    .valueType(ValueType.PROCESS_INSTANCE),
+                Duration.ofSeconds(10))
+            .join();
+
+    final var result = new ExecuteQueryResponse();
+    result.wrap(response, 0, response.capacity());
+    assertThat(result)
+        .extracting(ExecuteQueryResponse::getBpmnProcessId)
+        .isEqualTo("OneProcessToRuleThemAll");
+  }
+
+  @Test
+  public void shouldRespondWithBpmnProcessIdWhenJobFound() {
+    // given
+    final var key = command.partitionClient(1).createJob("type");
+
+    // when
+    final DirectBuffer response =
+        clientTransport
+            .sendRequest(
+                () -> serverAddress,
+                new ExecuteQueryRequest().partitionId(1).key(key).valueType(ValueType.JOB),
+                Duration.ofSeconds(10))
+            .join();
+
+    final var result = new ExecuteQueryResponse();
+    result.wrap(response, 0, response.capacity());
+    assertThat(result).extracting(ExecuteQueryResponse::getBpmnProcessId).isEqualTo("process");
   }
 }
