@@ -11,12 +11,24 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class StreamProcessorTransitionStep implements PartitionTransitionStep {
+
+  private final StreamProcessorBuilder streamProcessorBuilder;
+
+  public StreamProcessorTransitionStep() {
+    streamProcessorBuilder = StreamProcessor.builder();
+  }
+
+  // Used for testing
+  public StreamProcessorTransitionStep(final StreamProcessorBuilder streamProcessorBuilder) {
+    this.streamProcessorBuilder = streamProcessorBuilder;
+  }
 
   @Override
   public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {
@@ -112,7 +124,7 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
-    return StreamProcessor.builder()
+    return streamProcessorBuilder
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
