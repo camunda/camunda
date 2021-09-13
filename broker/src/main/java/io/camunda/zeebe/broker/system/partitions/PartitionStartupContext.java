@@ -84,7 +84,7 @@ public interface PartitionStartupContext {
 
   void setLogStream(final LogStream logStream);
 
-  ZeebeDb<?> getZeebeDb();
+  ZeebeDb getZeebeDb();
 
   void setZeebeDb(final ZeebeDb<?> db);
 

@@ -16,7 +16,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;
 
-public class LogDeletionPartitionStep implements PartitionStartupStep {
+public class LogDeletionPartitionStartupStep implements PartitionStartupStep {
 
   @Override
   public String getName() {

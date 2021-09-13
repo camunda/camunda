@@ -35,12 +35,12 @@ import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -74,25 +74,27 @@ public final class PartitionFactory {
 
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStep()),
-          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStep()),
+          PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStartupStep()),
+          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStartupStep()),
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
-          new RocksDbMetricExporterPartitionStep(),
+          PartitionStepMigrationHelper.fromStartupStep(
+              new RockDbMetricExporterPartitionStartupStep()),
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStep()),
-          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStep()),
+          PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStartupStep()),
+          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStartupStep()),
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
-          new RocksDbMetricExporterPartitionStep(),
+          PartitionStepMigrationHelper.fromStartupStep(
+              new RockDbMetricExporterPartitionStartupStep()),
           new ExporterDirectorPartitionStep());
 
   private final ActorSchedulingService actorSchedulingService;

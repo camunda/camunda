@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class StateControllerPartitionStep implements PartitionStartupStep {
+public class StateControllerPartitionStartupStep implements PartitionStartupStep {
 
   @Override
   public String getName() {
