@@ -16,13 +16,13 @@ pipelineJob('upgrade-performance-static-dataset') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for performance tests.')
 
     choiceParam('SQL_DUMP', ['optimize_data-medium.sqlc', 'optimize_data-large.sqlc', 'optimize_data-stage.sqlc'])
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
     stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
     stringParam('PREV_ES_VERSION', '', 'Previous Elasticsearch version that was used in the old Optimize prior to the migration, defaults to reading it from pom.xml.')
-    stringParam('UPGRADE_TIMEOUT_MINUTES', '180', 'Timeout for the upgrade stage to complete in minutes.')
+    stringParam('UPGRADE_TIMEOUT_MINUTES', '240', 'Timeout for the upgrade stage to complete in minutes.')
   }
 
   properties {

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
@@ -38,6 +38,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 
 import java.time.ZoneId;
@@ -54,8 +55,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getDurationFilterScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_KEY;
@@ -110,7 +111,7 @@ public class ModelElementFilterQueryUtil {
     );
 
   private static final Map<Class<? extends ProcessFilterDto<?>>,
-    TriFunction<DateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
+    TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
     FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES =
     Map.of(
       FlowNodeStartDateFilterDto.class,
@@ -143,7 +144,11 @@ public class ModelElementFilterQueryUtil {
             createExecutedFlowNodeFilterQuery(filterData, viewFilterInstanceQuery);
           } else if (FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES.containsKey(filter.getClass())) {
             FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES.get(filter.getClass())
-              .apply((DateFilterDataDto<?>) filter.getData(), filterContext.getTimezone(), viewFilterInstanceQuery);
+              .apply(
+                (FlowNodeDateFilterDataDto<?>) filter.getData(),
+                filterContext.getTimezone(),
+                viewFilterInstanceQuery
+              );
           } else {
             FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES.get(filter.getClass()).apply(viewFilterInstanceQuery);
           }
@@ -299,27 +304,55 @@ public class ModelElementFilterQueryUtil {
       .must(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
   }
 
-  public static QueryBuilder createFlowNodeStartDateFilterQuery(final DateFilterDataDto<?> filterData,
-                                                                final ZoneId timezone,
-                                                                final BoolQueryBuilder queryBuilder) {
-    DateFilterQueryUtil.addFilters(
-      queryBuilder,
-      List.of(filterData),
-      nestedFieldReference(FLOW_NODE_START_DATE),
-      timezone
-    );
-    return queryBuilder;
+  public static QueryBuilder createFlowNodeStartDateFilterQuery(final FlowNodeDateFilterDataDto<?> filterData,
+                                                                final ZoneId timezone) {
+    return createFlowNodeStartDateFilterQuery(filterData, timezone, boolQuery());
   }
 
-  public static QueryBuilder createFlowNodeEndDateFilterQuery(final DateFilterDataDto<?> filterData,
+  public static QueryBuilder createFlowNodeStartDateFilterQuery(final FlowNodeDateFilterDataDto<?> filterData,
+                                                                final ZoneId timezone,
+                                                                final BoolQueryBuilder queryBuilder) {
+    return createFlowNodeDateFilterQuery(
+      filterData,
+      timezone,
+      queryBuilder,
+      nestedFieldReference(FLOW_NODE_START_DATE)
+    );
+  }
+
+  public static QueryBuilder createFlowNodeEndDateFilterQuery(final FlowNodeDateFilterDataDto<?> filterData,
+                                                              final ZoneId timezone) {
+    return createFlowNodeEndDateFilterQuery(filterData, timezone, boolQuery());
+  }
+
+  public static QueryBuilder createFlowNodeEndDateFilterQuery(final FlowNodeDateFilterDataDto<?> filterData,
                                                               final ZoneId timezone,
                                                               final BoolQueryBuilder queryBuilder) {
-    DateFilterQueryUtil.addFilters(
-      queryBuilder,
-      List.of(filterData),
-      nestedFieldReference(FLOW_NODE_END_DATE),
+    return createFlowNodeDateFilterQuery(filterData, timezone, queryBuilder, nestedFieldReference(FLOW_NODE_END_DATE));
+  }
+
+  private static QueryBuilder createFlowNodeDateFilterQuery(final FlowNodeDateFilterDataDto<?> filterData,
+                                                            final ZoneId timezone,
+                                                            final BoolQueryBuilder queryBuilder,
+                                                            final String nestedDateField) {
+    final Optional<RangeQueryBuilder> optionalDateRangeQuery = DateFilterQueryUtil.createRangeQuery(
+      filterData,
+      nestedDateField,
       timezone
     );
+    optionalDateRangeQuery.ifPresent(dateRangeQuery -> {
+      if (CollectionUtils.isEmpty(filterData.getFlowNodeIds())) {
+        queryBuilder.filter(dateRangeQuery);
+      } else {
+        queryBuilder.minimumShouldMatch(1);
+        filterData.getFlowNodeIds().forEach(flowNodeId -> {
+          final BoolQueryBuilder flowNodeQuery = boolQuery()
+            .must(termsQuery(nestedFieldReference(FLOW_NODE_ID), flowNodeId))
+            .must(dateRangeQuery);
+          queryBuilder.should(flowNodeQuery);
+        });
+      }
+    });
     return queryBuilder;
   }
 
@@ -343,24 +376,6 @@ public class ModelElementFilterQueryUtil {
       USER_TASK_CANDIDATE_GROUPS,
       queryBuilder
     );
-  }
-
-  private static QueryBuilder createFlowNodeDurationFilterQuery(
-    final FlowNodeDurationFiltersDataDto durationFilterData,
-    final BoolQueryBuilder queryBuilder) {
-    queryBuilder.minimumShouldMatch(1);
-    durationFilterData.forEach((flowNodeId, durationFilter) -> {
-      final BoolQueryBuilder particularFlowNodeQuery = boolQuery()
-        .must(termQuery(nestedFieldReference(FLOW_NODE_ID), flowNodeId))
-        .must(QueryBuilders.scriptQuery(getDurationFilterScript(
-          LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-          nestedFieldReference(FLOW_NODE_TOTAL_DURATION),
-          nestedFieldReference(FLOW_NODE_START_DATE),
-          durationFilter
-        )));
-      queryBuilder.should(particularFlowNodeQuery);
-    });
-    return queryBuilder;
   }
 
   private static QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto identityFilter,
@@ -396,6 +411,24 @@ public class ModelElementFilterQueryUtil {
     } else {
       return queryBuilder.must(identityQuery);
     }
+  }
+
+  private static QueryBuilder createFlowNodeDurationFilterQuery(
+    final FlowNodeDurationFiltersDataDto durationFilterData,
+    final BoolQueryBuilder queryBuilder) {
+    queryBuilder.minimumShouldMatch(1);
+    durationFilterData.forEach((flowNodeId, durationFilter) -> {
+      final BoolQueryBuilder particularFlowNodeQuery = boolQuery()
+        .must(termQuery(nestedFieldReference(FLOW_NODE_ID), flowNodeId))
+        .must(QueryBuilders.scriptQuery(getDurationFilterScript(
+          LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+          nestedFieldReference(FLOW_NODE_TOTAL_DURATION),
+          nestedFieldReference(FLOW_NODE_START_DATE),
+          durationFilter
+        )));
+      queryBuilder.should(particularFlowNodeQuery);
+    });
+    return queryBuilder;
   }
 
   private static void addFlowNodeStatusFilter(final BoolQueryBuilder boolQuery,
@@ -435,8 +468,8 @@ public class ModelElementFilterQueryUtil {
       )));
   }
 
-  public static void addFlowNodeIdFilter(final BoolQueryBuilder boolQuery,
-                                         final List<ProcessFilterDto<?>> filters) {
+  private static void addFlowNodeIdFilter(final BoolQueryBuilder boolQuery,
+                                          final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, ExecutedFlowNodeFilterDto.class)
       .map(ProcessFilterDto::getData)
       .forEach(executedFlowNodeFilterData -> boolQuery.filter(createExecutedFlowNodeFilterQuery(
@@ -445,9 +478,9 @@ public class ModelElementFilterQueryUtil {
       )));
   }
 
-  public static void addFlowNodeStartDateFilter(final BoolQueryBuilder boolQuery,
-                                                final ZoneId timezone,
-                                                final List<ProcessFilterDto<?>> filters) {
+  private static void addFlowNodeStartDateFilter(final BoolQueryBuilder boolQuery,
+                                                 final ZoneId timezone,
+                                                 final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, FlowNodeStartDateFilterDto.class)
       .map(ProcessFilterDto::getData)
       .forEach(flowNodeStartDateFilterData -> createFlowNodeStartDateFilterQuery(
@@ -457,9 +490,9 @@ public class ModelElementFilterQueryUtil {
       ));
   }
 
-  public static void addFlowNodeEndDateFilter(final BoolQueryBuilder boolQuery,
-                                              final ZoneId timezone,
-                                              final List<ProcessFilterDto<?>> filters) {
+  private static void addFlowNodeEndDateFilter(final BoolQueryBuilder boolQuery,
+                                               final ZoneId timezone,
+                                               final List<ProcessFilterDto<?>> filters) {
     findAllViewLevelFiltersOfType(filters, FlowNodeEndDateFilterDto.class)
       .map(ProcessFilterDto::getData)
       .forEach(flowNodeEndDateFilterData -> createFlowNodeEndDateFilterQuery(

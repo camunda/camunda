@@ -33,17 +33,17 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractEngineDataCle
     getIngestedEventCleanupConfiguration().setEnabled(true);
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToCleanupIngestedBeforeRollover =
-      eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeepIngestedBeforeRollover =
-      eventClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
+      ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
 
     embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
 
     final List<CloudEventRequestDto> eventsToCleanupIngestedAfterRollover =
-      eventClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
+      ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeepIngestedAfterRollover =
-      eventClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
+      ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when

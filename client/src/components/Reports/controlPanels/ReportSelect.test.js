@@ -71,12 +71,6 @@ it('should disable options which would create a wrong combination', () => {
   expect(node.find(Select.Option).first()).toBeDisabled();
 });
 
-it('should disable the variable groupby submenu if there are no variables', () => {
-  const node = shallow(<ReportSelect {...config} field="groupBy" />);
-
-  expect(node.find(Select.Submenu)).toBeDisabled();
-});
-
 it('should disable the variable view submenu if there are no variables', () => {
   const node = shallow(<ReportSelect {...config} />);
 
@@ -88,12 +82,12 @@ it('should match snapshot', async () => {
     type: 'process',
     field: 'view',
     value: 'foo',
-    variables: {inputVariable: [{id: 'test', type: 'date', name: 'testName'}]},
+    variables: {variable: [{id: 'test', type: 'Integer', name: 'testName'}]},
     disabled: false,
     onChange: jest.fn(),
   };
 
-  const node = shallow(<ReportSelect {...config} field="groupBy" />);
+  const node = shallow(<ReportSelect {...config} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -103,15 +97,15 @@ it('invoke onChange with the correct variable data', async () => {
     type: 'process',
     field: 'view',
     value: 'foo',
-    variables: {inputVariable: [{id: 'test', type: 'date', name: 'testName'}]},
+    variables: {variable: [{id: 'test', type: 'date', name: 'testName'}]},
     disabled: false,
     onChange: jest.fn(),
   };
 
-  const node = shallow(<ReportSelect {...config} field="groupBy" />);
+  const node = shallow(<ReportSelect {...config} />);
 
   const selectedOption = {
-    type: 'inputVariable',
+    type: 'variable',
     value: {id: 'test', name: 'testName', type: 'date'},
   };
   reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'none', data: selectedOption});

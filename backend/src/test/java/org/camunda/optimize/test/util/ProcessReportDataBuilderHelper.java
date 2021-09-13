@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDa
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -65,7 +66,7 @@ public class ProcessReportDataBuilderHelper {
 
   public ProcessReportDataDto build() {
     final ProcessGroupByDto<?> groupBy = createGroupBy();
-    final ProcessDistributedByDto<?> distributedBy = createDistributedBy();
+    final ProcessReportDistributedByDto<?> distributedBy = createDistributedBy();
     final ProcessViewDto view = new ProcessViewDto(viewEntity, viewProperty);
     if (processPartStart != null && processPartEnd != null) {
       processPart = createProcessPart(processPartStart, processPartEnd);
@@ -109,7 +110,7 @@ public class ProcessReportDataBuilderHelper {
     }
   }
 
-  private ProcessDistributedByDto<?> createDistributedBy() {
+  private ProcessReportDistributedByDto<?> createDistributedBy() {
     switch (distributedByType) {
       case NONE:
         return createDistributedByNone();
@@ -127,6 +128,8 @@ public class ProcessReportDataBuilderHelper {
         return createDistributedByStartDateDto(distributeByDateInterval);
       case END_DATE:
         return createDistributedByEndDateDto(distributeByDateInterval);
+      case PROCESS:
+        return new ProcessDistributedByDto();
       default:
         throw new OptimizeRuntimeException("Unsupported distributedBy type:" + distributedByType);
     }

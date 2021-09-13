@@ -104,7 +104,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     final Optional<AggregationBuilder> variableSubAggregation =
       variableAggregationService.createVariableSubAggregation(varAggContext);
 
-    if (!variableSubAggregation.isPresent()) {
+    if (variableSubAggregation.isEmpty()) {
       // if the report contains no instances and is distributed by date variable, this agg will not be present
       // as it is based on instance data
       return viewPart.createAggregations(context);

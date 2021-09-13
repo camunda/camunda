@@ -984,7 +984,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(version)
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_CANDIDATE)
       .build();
   }
 

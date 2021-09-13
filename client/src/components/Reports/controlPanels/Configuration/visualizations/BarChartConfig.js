@@ -16,24 +16,33 @@ export default function BarChartConfig({onChange, report}) {
   const {
     reportType,
     combined,
-    data: {configuration, distributedBy},
+    data: {configuration, groupBy, distributedBy, visualization},
     result,
   } = report;
 
   const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
   const isMultiMeasure = combined ? false : result?.measures.length > 1;
+  const isStackingPossible =
+    !combined &&
+    distributedBy.type !== 'none' &&
+    groupBy.type !== 'none' &&
+    ['barLine', 'bar'].includes(visualization);
+  const isStacked = isStackingPossible && configuration.stackedBar;
 
   return (
     <div className="BarChartConfig">
-      {!combined && !isMultiMeasure && distributedBy.type === 'none' && (
-        <fieldset className="colorSection">
-          <legend>{t('report.config.colorPicker.legend')}</legend>
-          <ColorPicker
-            selectedColor={configuration.color}
-            onChange={(color) => onChange({color: {$set: color}})}
-          />
-        </fieldset>
-      )}
+      {!combined &&
+        !isMultiMeasure &&
+        (distributedBy.type === 'none' ||
+          (distributedBy.type === 'process' && groupBy.type === 'none')) && (
+          <fieldset className="colorSection">
+            <legend>{t('report.config.colorPicker.legend')}</legend>
+            <ColorPicker
+              selectedColor={configuration.color}
+              onChange={(color) => onChange({color: {$set: color}})}
+            />
+          </fieldset>
+        )}
       <fieldset>
         <legend>{t('report.config.tooltips.legend')}</legend>
         <RelativeAbsoluteSelection
@@ -50,6 +59,16 @@ export default function BarChartConfig({onChange, report}) {
           }}
         />
       </fieldset>
+      {isStackingPossible && (
+        <fieldset className="stackedBars">
+          <legend>{t('report.config.stackedBars.legend')}</legend>
+          <Switch
+            checked={configuration.stackedBar}
+            onChange={({target: {checked}}) => onChange({stackedBar: {$set: checked}})}
+            label={t('report.config.stackedBars.enableStackedBars')}
+          />
+        </fieldset>
+      )}
       <fieldset>
         <legend>{t('report.config.axisLabels.legend')}</legend>
         <Input
@@ -67,7 +86,7 @@ export default function BarChartConfig({onChange, report}) {
           />
         )}
       </fieldset>
-      {!isMultiMeasure && (
+      {!isMultiMeasure && !isStacked && (
         <fieldset>
           <legend>
             <Switch

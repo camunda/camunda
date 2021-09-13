@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
@@ -59,7 +59,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
   @Builder.Default
-  protected ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
+  protected ProcessReportDistributedByDto<?> distributedBy = new ProcessReportDistributedByDto<>();
   protected ProcessVisualization visualization;
 
   public String getProcessDefinitionKey() {

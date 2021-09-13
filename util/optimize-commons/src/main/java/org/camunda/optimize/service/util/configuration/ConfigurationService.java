@@ -14,12 +14,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.SchedulerConfig;
 import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
@@ -41,6 +42,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
@@ -77,6 +79,7 @@ public class ConfigurationService {
   private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
   private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
+  private Integer elasticsearchResponseConsumerBufferLimitInMb;
   private ProxyConfiguration elasticSearchProxyConfig;
 
   // elasticsearch connection security
@@ -186,6 +189,8 @@ public class ConfigurationService {
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
   private TelemetryConfiguration telemetryConfiguration;
+
+  private ExternalVariableConfiguration externalVariableConfiguration;
 
   private GlobalCacheConfiguration caches;
 
@@ -334,6 +339,15 @@ public class ConfigurationService {
       );
     }
     return elasticsearchConnectionTimeout;
+  }
+
+  public int getElasticsearchResponseConsumerBufferLimitInMb() {
+    if (elasticsearchResponseConsumerBufferLimitInMb == null) {
+      elasticsearchResponseConsumerBufferLimitInMb = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB, Integer.class
+      );
+    }
+    return elasticsearchResponseConsumerBufferLimitInMb;
   }
 
   public ProxyConfiguration getElasticSearchProxyConfig() {
@@ -767,13 +781,15 @@ public class ConfigurationService {
       .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public boolean isImportEnabled(SchedulerConfig dataSourceDto) {
+  public boolean isImportEnabled(final SchedulerConfig dataSourceDto) {
     if (dataSourceDto instanceof EngineDataSourceDto) {
       final EngineDataSourceDto engineSource = (EngineDataSourceDto) dataSourceDto;
       return getEngineConfiguration(engineSource.getName()).map(EngineConfiguration::isImportEnabled)
         .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineSource.getName()));
     } else if (dataSourceDto instanceof ZeebeConfigDto) {
       return getConfiguredZeebe().isEnabled();
+    } else if (dataSourceDto instanceof IngestedDataSourceDto) {
+      return getExternalVariableConfiguration().getImportConfiguration().isEnabled();
     }
     throw new OptimizeConfigurationException("Invalid data import source");
   }
@@ -1007,7 +1023,7 @@ public class ConfigurationService {
   }
 
   @JsonIgnore
-  public EventIndexRolloverConfiguration getEventIndexRolloverConfiguration() {
+  public IndexRolloverConfiguration getEventIndexRolloverConfiguration() {
     return getEventBasedProcessConfiguration().getEventIndexRollover();
   }
 
@@ -1027,7 +1043,7 @@ public class ConfigurationService {
   }
 
   @JsonIgnore
-  public IngestionConfiguration getEventIngestionConfiguration() {
+  public EventIngestionConfiguration getEventIngestionConfiguration() {
     return getEventBasedProcessConfiguration().getEventIngestion();
   }
 
@@ -1049,6 +1065,26 @@ public class ConfigurationService {
       );
     }
     return telemetryConfiguration;
+  }
+
+  public ExternalVariableConfiguration getExternalVariableConfiguration() {
+    if (externalVariableConfiguration == null) {
+      externalVariableConfiguration = configJsonContext.read(
+        EXTERNAL_VARIABLE_CONFIGURATION,
+        ExternalVariableConfiguration.class
+      );
+    }
+    return externalVariableConfiguration;
+  }
+
+  @JsonIgnore
+  public VariableIngestionConfiguration getVariableIngestionConfiguration() {
+    return getExternalVariableConfiguration().getVariableIngestion();
+  }
+
+  @JsonIgnore
+  public IndexRolloverConfiguration getVariableIndexRolloverConfiguration() {
+    return getExternalVariableConfiguration().getVariableIndexRollover();
   }
 
   public GlobalCacheConfiguration getCaches() {

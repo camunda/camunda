@@ -14,7 +14,7 @@ export default function createDefaultChartConfig(props) {
   } = props.report;
 
   return {
-    type: visualization,
+    type: visualization === 'barLine' ? 'bar' : visualization,
     data: createDefaultChartData(props),
     options: createDefaultChartOptions(props),
     plugins: createPlugins(props),

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 
@@ -64,7 +64,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
       .build();
     reportData.setFilter(ProcessFilterBuilder.filter().noIncidents().add().buildList());
     ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();

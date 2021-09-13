@@ -30,7 +30,7 @@ public class NumberVariableAggregationService {
     }
 
     final Optional<Double> min = getBaselineForNumberVariableAggregation(context);
-    if (!min.isPresent()) {
+    if (min.isEmpty()) {
       // no valid baseline is set, return empty result
       return Optional.empty();
     }
@@ -80,7 +80,7 @@ public class NumberVariableAggregationService {
       ? Optional.ofNullable(context.getCustomBucketDto().getBaseline())
       : Optional.empty();
 
-    if (!combinedMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
+    if (combinedMinMaxStats.isEmpty() && baselineForSingleReport.isPresent()) {
       if (baselineForSingleReport.get() > context.getVariableRangeMinMaxStats().getMax()) {
         // if report is single report and invalid baseline is set, return empty result
         return Optional.empty();

@@ -63,6 +63,7 @@ public class ReportConstants {
   public static final String LINE_VISUALIZATION = "line";
   public static final String BADGE_VISUALIZATION = "badge";
   public static final String PIE_VISUALIZATION = "pie";
+  public static final String BAR_LINE_VISUALIZATION = "barLine";
 
   public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
 
@@ -80,6 +81,7 @@ public class ReportConstants {
   public static final String DISTRIBUTED_BY_VARIABLE = "variable";
   public static final String DISTRIBUTED_BY_START_DATE = "startDate";
   public static final String DISTRIBUTED_BY_END_DATE = "endDate";
+  public static final String DISTRIBUTED_BY_PROCESS = "process";
 
   public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
   public static final String WORK_USER_TASK_DURATION_TIME = "work";
@@ -132,6 +134,8 @@ public class ReportConstants {
   public static final String BOOLEAN_TYPE_LOWERCASE = "boolean";
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
+
+  public static final String GROUP_NONE_KEY = "____none";
 
   public static final List<VariableType> ALL_SUPPORTED_VARIABLE_TYPES = ImmutableList.copyOf(VariableType.values());
 

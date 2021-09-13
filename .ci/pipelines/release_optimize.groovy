@@ -1,6 +1,7 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
+// https://github.com/camunda/optimize-jenkins-shared-library
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
@@ -213,36 +214,46 @@ void runRelease(params) {
     pushChanges = 'false'
     skipDeploy='true'
   }
-  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-    sh("""
-    mvn -DpushChanges=${pushChanges} -DskipTests -Prelease,engine-latest release:prepare release:perform \
-    -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${
-      params.DEVELOPMENT_VERSION
-    } \
-    --settings=\$MAVEN_SETTINGS_XML '-Darguments=--settings=${MAVEN_SETTINGS_XML} -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
-    -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-  """)
-  }
 
-  sh ("""
-    # This is needed to not abort the job in case 'git diff' returns a status different from 0
-    set +e
-    # auto-update previousVersion property
-    if [ ! -z \"\${PREVIOUS_VERSION}\" ]; then
-      sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
-      git add pom.xml
+  withCredentials([usernamePassword(
+    credentialsId: optimizeUtils.defaultCredentialsId(),
+    usernameVariable: 'GITHUB_APP',
+    passwordVariable: 'GITHUB_ACCESS_TOKEN',
+  )]) {
+    configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+      sh("""
+      mvn -DpushChanges=${pushChanges} -DskipTests -Prelease,engine-latest release:prepare release:perform \
+      -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${
+        params.DEVELOPMENT_VERSION
+      } \
+      --settings=\$MAVEN_SETTINGS_XML '-Darguments=--settings=${MAVEN_SETTINGS_XML} -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
+      -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+    """)
+    }
 
-      git diff --staged --quiet
-      if [ \$? -ne 0 ]; then
-        git commit -m \"chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}\"
-        if [ \"${pushChanges}\" = \"true\" ]; then
-          git push origin ${params.BRANCH}
+    // Access Optimize repo using access token.
+    sh 'git remote set-url origin https://$GITHUB_APP:$GITHUB_ACCESS_TOKEN@github.com/camunda/camunda-optimize.git'
+
+    sh ("""
+      # This is needed to not abort the job in case 'git diff' returns a status different from 0
+      set +e
+      # auto-update previousVersion property
+      if [ ! -z \"\${PREVIOUS_VERSION}\" ]; then
+        sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
+        git add pom.xml
+
+        git diff --staged --quiet
+        if [ \$? -ne 0 ]; then
+          git commit -m \"chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}\"
+          if [ \"${pushChanges}\" = \"true\" ]; then
+            git push origin ${params.BRANCH}
+          fi
+        else
+          echo "Release version ${params.RELEASE_VERSION} did not change. Nothing to commit."
         fi
-      else
-        echo "Release version ${params.RELEASE_VERSION} did not change. Nothing to commit."
       fi
-    fi
-  """)
+    """)
+  }
 }
 
 /******** START PIPELINE *******/
@@ -283,19 +294,15 @@ pipeline {
         setBuildEnvVars()
 
         container('maven') {
-          sh ('''
-            # install git and ssh
+          sh ("""
+            # install git
             apt-get update && \
-            apt-get -y install git openssh-client
-
-            # setup ssh for github
-            mkdir -p ~/.ssh
-            ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+            apt-get -y install git
 
             # git config
             git config --global user.email "ci_automation@camunda.com"
-            git config --global user.name "camunda-jenkins"
-          ''')
+            git config --global user.name "${optimizeUtils.defaultCredentialsId()}"
+          """)
         }
       }
     }
@@ -305,9 +312,7 @@ pipeline {
       }
       steps {
         container('maven') {
-          sshagent(['camunda-jenkins-github-ssh']) {
-            runRelease(params)
-          }
+          runRelease(params)
         }
       }
       post {

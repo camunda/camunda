@@ -21,7 +21,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
@@ -51,7 +51,7 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
       .build();
   }
 

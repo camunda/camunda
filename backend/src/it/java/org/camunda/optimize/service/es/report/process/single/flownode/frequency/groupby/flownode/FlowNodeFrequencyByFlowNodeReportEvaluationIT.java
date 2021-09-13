@@ -42,7 +42,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -52,7 +51,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
@@ -763,12 +762,12 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME},
-        Collections.singletonList(Tuple.tuple(USER_TASK_1, 1.))
+        List.of(Tuple.tuple(USER_TASK_1, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Arrays.asList(
+        List.of(
           Tuple.tuple(USER_TASK_1, 1.),
           Tuple.tuple(USER_TASK_2, 1.),
           Tuple.tuple(USER_TASK_3, 1.)
@@ -777,12 +776,12 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_3, 1.))
+        List.of(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_3, 1.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Collections.singletonList(Tuple.tuple(USER_TASK_3, 1.))
+        List.of(Tuple.tuple(USER_TASK_3, 1.))
       )
     );
   }
@@ -829,12 +828,12 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID},
-        Collections.singletonList(Tuple.tuple(USER_TASK_1, 1.))
+        List.of(Tuple.tuple(USER_TASK_1, 1.))
       ),
       Arguments.of(
         IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Arrays.asList(
+        List.of(
           Tuple.tuple(USER_TASK_1, 1.),
           Tuple.tuple(USER_TASK_2, 1.),
           Tuple.tuple(USER_TASK_3, 1.)
@@ -843,12 +842,12 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Arrays.asList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_3, 1.))
+        List.of(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_3, 1.))
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Collections.singletonList(Tuple.tuple(USER_TASK_3, 1.))
+        List.of(Tuple.tuple(USER_TASK_3, 1.))
       )
     );
   }
@@ -966,7 +965,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(definitionVersions)
       .setTenantIds(tenantIds)
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
   }
 

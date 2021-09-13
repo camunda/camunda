@@ -576,7 +576,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateInvalidReportById() {
     // given
-    ProcessReportDataDto reportData = createProcessReportData(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+    ProcessReportDataDto reportData = createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
     reportData.setGroupBy(new NoneGroupByDto());
     reportData.setVisualization(ProcessVisualization.NUMBER);
     String id = addSingleProcessReportWithDefinition(reportData);
@@ -746,7 +746,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     String id;
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto = createProcessReportData(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+        ProcessReportDataDto processReportDataDto = createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
         processReportDataDto.setView(null);
         id = addSingleProcessReportWithDefinition(processReportDataDto);
         break;
@@ -996,7 +996,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       .createReportData()
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK);
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK);
     Optional.ofNullable(filters).ifPresent(reportBuilder::setFilter);
     final ProcessReportDataDto processReportDataDto = reportBuilder.build();
     processReportDataDto.getConfiguration().setXml(toXml(processModel));

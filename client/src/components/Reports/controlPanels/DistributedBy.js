@@ -5,20 +5,17 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import classnames from 'classnames';
+import update from 'immutability-helper';
 
-import {Select} from 'components';
+import {Select, Button, Icon} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
-import {loadVariables} from 'services';
+import {loadVariables, reportConfig} from 'services';
 
-export function DistributedBy({
-  report: {
-    data: {definitions, distributedBy, view, groupBy, visualization},
-  },
-  onChange,
-  mightFail,
-}) {
+export function DistributedBy({report, onChange, mightFail}) {
+  const {definitions, distributedBy, view, groupBy, visualization, configuration} = report.data;
   const {key, versions, tenantIds} = definitions?.[0] ?? {};
   const [variables, setVariables] = useState([]);
 
@@ -38,37 +35,77 @@ export function DistributedBy({
     }
   }, [view, groupBy, mightFail, key, versions, tenantIds, setVariables]);
 
-  if (canDistributeData(view, groupBy)) {
+  if (canDistributeData(view, groupBy, definitions)) {
+    const value = getValue(distributedBy);
+    const hasDistribution = value !== 'none';
+
     return (
-      <li className="DistributedBy">
-        <span className="label">{t('report.config.userTaskDistributedBy')}</span>
+      <li className="DistributedBy GroupBy">
+        <span className="label">{t('common.and')}</span>
         <Select
-          className="ReportSelect"
+          className={classnames('ReportSelect', {hasNoGrouping: !hasDistribution})}
           key={variables.length}
-          value={getValue(distributedBy)}
+          value={value}
+          label={!hasDistribution && '+ Add grouping'}
           onChange={(value) => {
             const change = {distributedBy: {$set: {type: value, value: null}}};
 
-            if (isInstanceDateReport(view, groupBy) && value !== 'none') {
-              const variable = variables.find(({name}) => name === value);
+            if (
+              isInstanceDateReport(view, groupBy) &&
+              value !== 'none' &&
+              value.startsWith('variable_')
+            ) {
+              const variable = variables.find(
+                ({name}) => name === value.substr('variable_'.length)
+              );
               change.distributedBy.$set = {type: 'variable', value: variable};
             }
 
-            if (isInstanceVariableReport(view, groupBy) && value !== 'none') {
+            if (
+              isInstanceVariableReport(view, groupBy) &&
+              value !== 'none' &&
+              value !== 'process'
+            ) {
               const [type, unit] = value.split('_');
               change.distributedBy.$set = {type, value: {unit}};
             }
 
-            if (value !== 'none' && !['line', 'table'].includes(visualization)) {
+            if (
+              !reportConfig.process.isAllowed(
+                update(report, {data: change}),
+                view,
+                groupBy,
+                visualization
+              )
+            ) {
               change.visualization = {$set: 'bar'};
+            }
+
+            if (value === 'process' && configuration.aggregationTypes.includes('median')) {
+              if (configuration.aggregationTypes.length === 1) {
+                change.configuration = {aggregationTypes: {$set: ['avg']}};
+              } else {
+                change.configuration = {
+                  aggregationTypes: {
+                    $set: configuration.aggregationTypes.filter((entry) => entry !== 'median'),
+                  },
+                };
+              }
             }
 
             onChange(change, true);
           }}
         >
-          <Select.Option value="none">{t('common.none')}</Select.Option>
-          {getOptionsFor(view.entity, groupBy.type, variables)}
+          {getOptionsFor(view.entity, groupBy.type, variables, definitions)}
         </Select>
+        {hasDistribution && (
+          <Button
+            className="removeGrouping"
+            onClick={() => onChange({distributedBy: {$set: {type: 'none', value: null}}}, true)}
+          >
+            <Icon type="close-small" />
+          </Button>
+        )}
       </li>
     );
   }
@@ -77,7 +114,7 @@ export function DistributedBy({
 
 function getValue(distributedBy) {
   if (distributedBy.type === 'variable') {
-    return distributedBy.value.name;
+    return 'variable_' + distributedBy.value.name;
   }
 
   if (['startDate', 'endDate'].includes(distributedBy.type)) {
@@ -88,9 +125,13 @@ function getValue(distributedBy) {
   return distributedBy.type;
 }
 
-function canDistributeData(view, groupBy) {
-  if (!view || !groupBy) {
+function canDistributeData(view, groupBy, definitions) {
+  if (!view || !groupBy || groupBy.type === 'none') {
     return false;
+  }
+
+  if (definitions.length > 1 && !['incident', 'variable', null].includes(view.entity)) {
+    return true;
   }
 
   if (view.entity === 'userTask') {
@@ -113,7 +154,7 @@ function canDistributeData(view, groupBy) {
   }
 }
 
-function getOptionsFor(view, groupBy, variables) {
+function getOptionsFor(view, groupBy, variables, definitions) {
   const options = [];
 
   if (view === 'userTask') {
@@ -153,7 +194,7 @@ function getOptionsFor(view, groupBy, variables) {
         <Select.Submenu key="variable" label="Variable">
           {variables.map(({name}, idx) => {
             return (
-              <Select.Option key={idx} value={name}>
+              <Select.Option key={idx} value={'variable_' + name}>
                 {name}
               </Select.Option>
             );
@@ -184,6 +225,14 @@ function getOptionsFor(view, groupBy, variables) {
         )
       );
     }
+  }
+
+  if (definitions.length > 1) {
+    options.push(
+      <Select.Option key="process" value="process">
+        {t('common.process.label')}
+      </Select.Option>
+    );
   }
 
   return options;

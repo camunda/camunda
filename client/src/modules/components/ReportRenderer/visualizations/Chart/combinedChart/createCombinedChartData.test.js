@@ -4,13 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
 import {getCombinedChartProps} from './service';
 import createCombinedChartData from './createCombinedChartData';
 
 jest.mock('../defaultChart/createDefaultChartOptions', () => ({createDatasetOptions: jest.fn()}));
 jest.mock('./service', () => ({getCombinedChartProps: jest.fn()}));
 
-const createReport = ({reportA, reportB, groupByType}, measures) => {
+const createReport = ({reportA, reportB, groupByType}, measures, visualization = 'line') => {
   getCombinedChartProps.mockReturnValue({
     reportsNames: ['report A', 'report B'],
     resultArr: [reportA.data, reportB.data],
@@ -44,7 +45,11 @@ const createReport = ({reportA, reportB, groupByType}, measures) => {
         {id: 'reportA', color: reportA.color},
         {id: 'reportB', color: reportB.color},
       ],
-      visualization: 'line',
+      visualization,
+      configuration: {
+        measureVisualizations: {frequency: 'line', duration: 'bar'},
+        stackedBar: true,
+      },
     },
     combined: true,
   };
@@ -130,11 +135,55 @@ it('should return a dataset for each measure value in multi measure reports', ()
     label: 'report A - Count',
     data: [123, null],
     formatter: expect.any(Function),
+    order: undefined,
+    stack: 0,
   });
   expect(chartData.datasets[2]).toEqual({
     yAxisID: 'axis-1',
     label: 'report A - Duration',
     data: [123, null],
     formatter: expect.any(Function),
+    order: undefined,
+    stack: 1,
   });
+});
+
+it('should assign line/bar visualization to dataset according to measureVisualizations configuration', () => {
+  createDatasetOptions.mockImplementation((options) => options);
+  const reportA = {
+    data: [{key: 'flowNode1', value: 123, label: 'Dec 2017'}],
+    color: 'blue',
+  };
+
+  const reportB = {
+    data: [{key: 'flowNode2', value: 5, label: 'Mar 2017'}],
+    color: 'yellow',
+  };
+
+  const measures = [
+    {
+      property: 'frequency',
+      data: [{key: 'flowNode1', value: [{key: 'assignee1', value: 123}]}],
+    },
+    {
+      property: 'duration',
+      data: [{key: 'flowNode1', value: [{key: 'assignee1', value: 5536205036}]}],
+    },
+  ];
+
+  const chartData = createCombinedChartData({
+    report: createReport({reportA, reportB}, measures, 'barLine'),
+    targetValue: false,
+    theme: 'light',
+  });
+
+  const getDataset = (label) => chartData.datasets.find((dataset) => dataset.label === label);
+  expect(getDataset('report A - Count').type).toBe('line');
+  expect(getDataset('report A - Count').order).toBe(0);
+  expect(getDataset('report B - Count').type).toBe('line');
+  expect(getDataset('report B - Count').order).toBe(0);
+  expect(getDataset('report A - Duration').type).toBe('bar');
+  expect(getDataset('report A - Duration').order).toBe(1);
+  expect(getDataset('report B - Duration').type).toBe('bar');
+  expect(getDataset('report B - Duration').order).toBe(1);
 });

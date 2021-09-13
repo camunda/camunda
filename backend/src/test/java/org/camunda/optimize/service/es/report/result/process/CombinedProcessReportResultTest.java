@@ -41,7 +41,7 @@ public class CombinedProcessReportResultTest {
 	public void testGetResultAsCsvForMapResult() {
 		// given
 		final ProcessReportDataDto processReportDataDto = createProcessReportDataForType(
-			ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE
+			ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE
 		);
 		final List<MapResultEntryDto> resultDtoMap = new ArrayList<>();
 		resultDtoMap.add(new MapResultEntryDto("900.0", 1.));
@@ -100,7 +100,7 @@ public class CombinedProcessReportResultTest {
 	public void testGetResultAsCsvForNumberResult() {
 		// given
 		final ProcessReportDataDto processReportDataDto = createProcessReportDataForType(
-			ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE
+			ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE
 		);
 		final List<NumberCommandResult> numberResults = Lists.newArrayList(
 			new NumberCommandResult(

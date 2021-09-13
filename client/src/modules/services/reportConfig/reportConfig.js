@@ -57,7 +57,10 @@ export default function reportConfig({view, groupBy, visualization, combinations
       return false;
     }
 
-    if (report.data.distributedBy.type !== 'none') {
+    if (report.data.distributedBy.type !== 'none' && viewGroup !== 'raw') {
+      if (targetVisualization === 'pie' && targetGroupBy.type === 'none') {
+        return true;
+      }
       if (['pie', 'heat'].includes(targetVisualization)) {
         // pie charts and heatmaps generally do not support distributed reports
         return false;
@@ -65,15 +68,23 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (viewGroup && groupGroup && visualizationGroup) {
-      return (
-        combinations[viewGroup] &&
-        combinations[viewGroup][groupGroup] &&
-        combinations[viewGroup][groupGroup].includes(visualizationGroup)
-      );
+      let isVisualizationAllowed =
+        combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
+
+      if (report.data.distributedBy.type === 'process' && viewGroup !== 'raw') {
+        isVisualizationAllowed = ['table', 'chart'].includes(visualizationGroup);
+      }
+
+      if (targetVisualization === 'barLine') {
+        // barLine is only supported for multi measure reports
+        return targetView.properties.length > 1 && isVisualizationAllowed;
+      } else {
+        return isVisualizationAllowed;
+      }
     }
 
     if (viewGroup && groupGroup) {
-      return combinations[viewGroup] && combinations[viewGroup][groupGroup];
+      return combinations[viewGroup]?.[groupGroup];
     }
 
     return true;
@@ -113,7 +124,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
   /**
    * Based on a given view (and optional groupby), returns the next payload data, if it is unambiguous.
    */
-  const getNext = (targetView, targetGroupBy) => {
+  const getNext = (targetView, targetGroupBy, oldVisualization) => {
     const viewGroup = getGroupFor(view, targetView);
 
     const groups = combinations[viewGroup];
@@ -121,9 +132,16 @@ export default function reportConfig({view, groupBy, visualization, combinations
     if (!targetGroupBy) {
       return getFirstOptionFor(groupBy, Object.keys(groups)[0]);
     } else if (targetGroupBy) {
-      const visualizations = groups[getGroupFor(groupBy, targetGroupBy)];
+      const possibleVisualizationGroups = groups[getGroupFor(groupBy, targetGroupBy)];
+      let visualizationGroup = possibleVisualizationGroups[0];
+      if (oldVisualization) {
+        const oldVisualizationGroup = getGroupFor(visualization, oldVisualization);
+        if (possibleVisualizationGroups.includes(oldVisualizationGroup)) {
+          visualizationGroup = oldVisualizationGroup;
+        }
+      }
 
-      return getFirstOptionFor(visualization, visualizations[0]);
+      return getFirstOptionFor(visualization, visualizationGroup);
     }
   };
 
@@ -171,7 +189,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
     }
 
     if (!isAllowed(props.report, newView, newGroup, visualization) || !visualization) {
-      changes.visualization = {$set: getNext(newView, newGroup)};
+      changes.visualization = {$set: getNext(newView, newGroup, visualization)};
     }
 
     return changes;

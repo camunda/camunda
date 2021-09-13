@@ -17,7 +17,7 @@ const {formatReportResult} = formatters;
 export default function HyperReportRenderer({report, ...rest}) {
   const result = getReportResult(report);
 
-  if (!result.data.length || result.data.some(({value}) => value.length === 0)) {
+  if (!result.data.length || result.instanceCount === 0) {
     const data = result.data.map((entry) => ({...entry, value: 0}));
     const emptyReport = update(report, {result: {measures: {$set: [{data}]}}});
     return <ProcessReportRenderer {...rest} report={emptyReport} />;
@@ -41,7 +41,7 @@ export default function HyperReportRenderer({report, ...rest}) {
           type: 'map',
           data: measure.data.map((datapoint) => ({
             ...datapoint,
-            value: datapoint.value.find((data) => data.key === key).value,
+            value: datapoint.value.find((data) => data.key === key)?.value,
           })),
         })),
       },
@@ -54,7 +54,7 @@ export default function HyperReportRenderer({report, ...rest}) {
     data: {
       configuration: report.data.configuration,
       reports: firstEntryResult.map(({key}) => ({id: key})),
-      visualization: getVisualization(report.data.visualization),
+      visualization: report.data.visualization,
     },
     result: {
       ...result,
@@ -64,13 +64,6 @@ export default function HyperReportRenderer({report, ...rest}) {
   };
 
   return <CombinedReportRenderer {...rest} report={convertedReport} />;
-}
-
-function getVisualization(visualization) {
-  if (['table', 'line'].includes(visualization)) {
-    return visualization;
-  }
-  return 'bar';
 }
 
 function formatResult(data, result) {

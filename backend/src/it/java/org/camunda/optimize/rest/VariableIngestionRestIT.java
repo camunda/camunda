@@ -1,0 +1,303 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.rest;
+
+import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
+import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.IngestionRestService.QUERY_PARAMETER_ACCESS_TOKEN;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+
+public class VariableIngestionRestIT extends AbstractIT {
+
+  @BeforeEach
+  public void before() {
+    dateFreezer().freezeDateAndReturn();
+  }
+
+  @Test
+  public void ingestExternalVariables() {
+    // given
+    final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
+      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .collect(toList());
+
+    // when
+    final Response response = ingestionClient.ingestVariablesAndReturnResponse(variables);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(variables);
+  }
+
+  @Test
+  public void ingestExternalVariables_ingestSameBatchTwice() {
+    // given
+    final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
+      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .collect(toList());
+    final OffsetDateTime ingestionTimestamp1 = LocalDateUtil.getCurrentDateTime();
+    final OffsetDateTime ingestionTimestamp2 = LocalDateUtil.getCurrentDateTime().minusDays(1);
+
+    // when
+    final Response response1 = ingestionClient.ingestVariablesAndReturnResponse(variables);
+    dateFreezer().dateToFreeze(ingestionTimestamp2).freezeDateAndReturn();
+    final Response response2 = ingestionClient.ingestVariablesAndReturnResponse(variables);
+
+    // then
+    assertThat(response1.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(response2.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Map.of(
+      ingestionTimestamp1.toInstant().toEpochMilli(),
+      variables,
+      ingestionTimestamp2.toInstant().toEpochMilli(),
+      variables
+    ));
+  }
+
+  @Test
+  public void ingestExternalVariables_ingestTwoDifferentBatches() {
+    // given
+    final List<ExternalProcessVariableRequestDto> variables1 = IntStream.range(0, 10)
+      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .collect(toList());
+    final List<ExternalProcessVariableRequestDto> variables2 = IntStream.range(20, 30)
+      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .collect(toList());
+    final OffsetDateTime ingestionTimestamp1 = LocalDateUtil.getCurrentDateTime();
+    final OffsetDateTime ingestionTimestamp2 = LocalDateUtil.getCurrentDateTime().minusDays(1);
+
+    // when
+    final Response response1 = ingestionClient.ingestVariablesAndReturnResponse(variables1);
+    dateFreezer().dateToFreeze(ingestionTimestamp2).freezeDateAndReturn();
+    final Response response2 = ingestionClient.ingestVariablesAndReturnResponse(variables2);
+
+    // then
+    assertThat(response1.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(response2.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Map.of(
+      ingestionTimestamp1.toInstant().toEpochMilli(),
+      variables1,
+      ingestionTimestamp2.toInstant().toEpochMilli(),
+      variables2
+    ));
+  }
+
+  @Test
+  public void ingestExternalVariables_emptyBatch() {
+    // when
+    final Response response = ingestionClient.ingestVariablesAndReturnResponse(Collections.emptyList());
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getAllStoredExternalProcessVariables()).isEmpty();
+  }
+
+  @Test
+  public void ingestExternalVariable_customAccessToken() {
+    // given
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+
+    final String accessToken = "aToken";
+    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
+
+    // when
+    final Response response =
+      ingestionClient.ingestVariablesAndReturnResponse(Collections.singletonList(variable), accessToken);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Collections.singletonList(variable));
+  }
+
+  @Test
+  public void ingestExternalVariable_accessTokenAsQueryParam() {
+    // given
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+
+    final String accessToken = "aToken";
+    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestExternalVariables(Collections.singletonList(variable), null)
+      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, accessToken)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Collections.singletonList(variable));
+  }
+
+  @Test
+  public void ingestExternalVariable_accessTokenUsingBearerScheme() {
+    // given
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+
+    final String accessToken = "aToken";
+    embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
+
+    // when
+    final Response ingestResponse =
+      ingestionClient.ingestVariablesAndReturnResponse(
+        Collections.singletonList(variable),
+        AUTH_COOKIE_TOKEN_VALUE_PREFIX + accessToken
+      );
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Collections.singletonList(variable));
+  }
+
+  @Test
+  public void ingestExternalVariable_incorrectToken() {
+    // given
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+
+    // when
+    final Response response =
+      ingestionClient.ingestVariablesAndReturnResponse(Collections.singletonList(variable), "falseToken");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+    assertThat(getAllStoredExternalProcessVariables()).isEmpty();
+  }
+
+  @Test
+  public void ingestExternalVariable_invalidVariable() {
+    // given
+    final ExternalProcessVariableRequestDto invalidVariable = new ExternalProcessVariableRequestDto()
+      .setId("")
+      .setName("  ")
+      .setValue("value")
+      .setType(null)
+      .setProcessInstanceId("")
+      .setProcessDefinitionKey(" ");
+
+    // when
+    final ValidationErrorResponseDto response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestExternalVariables(
+        Collections.singletonList(invalidVariable),
+        ingestionClient.getVariableIngestionToken()
+      )
+      .execute(ValidationErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+
+    // then
+    assertThat(response.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(response.getValidationErrors())
+      .hasSize(5)
+      .extracting(ValidationErrorResponseDto.ValidationError::getProperty)
+      .map(property -> property.split("\\.")[1])
+      .containsExactlyInAnyOrder(
+        ExternalProcessVariableRequestDto.Fields.id,
+        ExternalProcessVariableRequestDto.Fields.name,
+        ExternalProcessVariableRequestDto.Fields.type,
+        ExternalProcessVariableRequestDto.Fields.processInstanceId,
+        ExternalProcessVariableRequestDto.Fields.processDefinitionKey
+      );
+    assertThat(response.getValidationErrors())
+      .extracting(ValidationErrorResponseDto.ValidationError::getErrorMessage)
+      .doesNotContainNull();
+    assertThat(getAllStoredExternalProcessVariables()).isEmpty();
+  }
+
+  @Test
+  public void ingestExternalVariable_invalidAndValidVariables() {
+    // given
+    final ExternalProcessVariableRequestDto validVariable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto invalidVariable = ingestionClient.createExternalVariable();
+    invalidVariable.setId(null);
+
+    // when
+    final ValidationErrorResponseDto response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestExternalVariables(
+        List.of(validVariable, invalidVariable),
+        ingestionClient.getVariableIngestionToken()
+      )
+      .execute(ValidationErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+
+    // then
+    assertThat(response.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(response.getValidationErrors())
+      .hasSize(1)
+      .extracting(ValidationErrorResponseDto.ValidationError::getProperty)
+      .containsExactly("element[1]." + ExternalProcessVariableRequestDto.Fields.id);
+    assertThat(response.getValidationErrors())
+      .extracting(ValidationErrorResponseDto.ValidationError::getErrorMessage)
+      .doesNotContainNull();
+    assertThat(getAllStoredExternalProcessVariables()).isEmpty();
+  }
+
+  @Test
+  public void ingestExternalVariable_nullValueAllowed() {
+    // given
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    variable.setValue(null);
+
+    // when
+    final Response response =
+      ingestionClient.ingestVariablesAndReturnResponse(Collections.singletonList(variable));
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(Collections.singletonList(variable));
+  }
+
+  private void assertExternalVariablesArePersisted(final List<ExternalProcessVariableRequestDto> variables) {
+    final Map<Long, List<ExternalProcessVariableRequestDto>> variablesByIngestionTimestamp =
+      Map.of(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(), variables);
+    assertExternalVariablesArePersisted(variablesByIngestionTimestamp);
+  }
+
+  private void assertExternalVariablesArePersisted(final Map<Long, List<ExternalProcessVariableRequestDto>> variablesByIngestionTimestamp) {
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    final List<ExternalProcessVariableDto> expectedVariables = new ArrayList<>();
+    variablesByIngestionTimestamp.forEach((ingestionTimestamp, variables) -> {
+      final List<ExternalProcessVariableDto> varsPerTimestamp = variables.stream()
+        .map(variable -> new ExternalProcessVariableDto()
+          .setVariableId(variable.getId())
+          .setVariableName(variable.getName())
+          .setVariableType(variable.getType())
+          .setVariableValue(variable.getValue())
+          .setIngestionTimestamp(ingestionTimestamp)
+          .setProcessInstanceId(variable.getProcessInstanceId())
+          .setProcessDefinitionKey(variable.getProcessDefinitionKey())
+        )
+        .collect(Collectors.toList());
+      expectedVariables.addAll(varsPerTimestamp);
+    });
+    expectedVariables.sort(Comparator.comparing(ExternalProcessVariableDto::getIngestionTimestamp).reversed());
+    final List<ExternalProcessVariableDto> actualVariables = getAllStoredExternalProcessVariables();
+    assertThat(actualVariables).containsExactlyElementsOf(expectedVariables);
+  }
+
+  private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
+    );
+  }
+
+}

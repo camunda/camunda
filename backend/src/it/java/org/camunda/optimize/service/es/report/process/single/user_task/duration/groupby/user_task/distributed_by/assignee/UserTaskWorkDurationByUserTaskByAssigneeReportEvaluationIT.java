@@ -29,7 +29,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_ASSIGNEE;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
@@ -60,7 +60,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_USER_TASK_BY_ASSIGNEE)
       .build();
   }
 
@@ -144,19 +144,19 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
             .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
-            .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+            .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
           .groupByContains(USER_TASK_2)
             .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-            .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
+            .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULL_NAME)
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
           .groupByContains(USER_TASK_A)
             .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
-            .distributedByContains(SECOND_USER, null, SECOND_USER_FULLNAME)
+            .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
           .groupByContains(USER_TASK_B)
             .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-            .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULLNAME)
+            .distributedByContains(SECOND_USER, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULL_NAME)
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
           .add()
         .add();

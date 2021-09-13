@@ -11,8 +11,8 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.engine.ActivityTypes;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -75,7 +75,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     assertThat(storedEvents)
       .hasSize(6)
-      .usingElementComparatorIgnoringFields(
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
@@ -132,7 +132,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     assertThat(storedEvents)
       .hasSize(3)
-      .usingElementComparatorIgnoringFields(
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
@@ -291,7 +291,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     assertThat(storedEvents)
       .hasSize(6)
-      .usingElementComparatorIgnoringFields(
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
@@ -350,7 +350,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     assertThat(storedEvents)
       .hasSize(8)
-      .usingElementComparatorIgnoringFields(
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionVersion,
         CamundaActivityEventDto.Fields.engine,
@@ -429,7 +429,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     // then no additional events are stored
     List<CamundaActivityEventDto> storedEvents =
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
-    assertThat(storedEvents).usingFieldByFieldElementComparator().isEqualTo(initialStoredEvents);
+    assertThat(storedEvents).usingRecursiveFieldByFieldElementComparator().isEqualTo(initialStoredEvents);
   }
 
   @Test

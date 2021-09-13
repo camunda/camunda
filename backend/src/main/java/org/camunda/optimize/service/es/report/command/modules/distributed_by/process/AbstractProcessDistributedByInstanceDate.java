@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -100,7 +100,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
     dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
-  protected abstract ProcessDistributedByDto<DateDistributedByValueDto> getDistributedBy();
+  protected abstract ProcessReportDistributedByDto<DateDistributedByValueDto> getDistributedBy();
 
   public abstract String getDateField();
 

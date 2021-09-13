@@ -16,7 +16,7 @@ pipelineJob('dependency-check') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for dependency check')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for dependency check')
   }
 
   properties {

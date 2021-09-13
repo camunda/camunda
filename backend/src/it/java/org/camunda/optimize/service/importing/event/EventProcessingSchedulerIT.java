@@ -8,22 +8,21 @@ package org.camunda.optimize.service.importing.event;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class EventProcessingSchedulerIT extends AbstractIT {
 
   @Test
   public void verifyEventProcessingSchedulerIsDisabledByDefault() {
-    assertThat(embeddedOptimizeExtension.getDefaultEngineConfiguration().isEventImportEnabled(), is(false));
-    assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun(), is(false));
+    assertThat(embeddedOptimizeExtension.getDefaultEngineConfiguration().isEventImportEnabled()).isFalse();
+    assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun()).isFalse();
   }
 
   @Test
   public void testEventProcessingScheduledSuccessfully() {
     embeddedOptimizeExtension.getEventProcessingScheduler().startScheduling();
     try {
-      assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun(), is(true));
+      assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun()).isTrue();
     } finally {
       embeddedOptimizeExtension.getEventProcessingScheduler().stopScheduling();
     }
@@ -33,7 +32,7 @@ public class EventProcessingSchedulerIT extends AbstractIT {
   public void testEventProcessingScheduleStoppedSuccessfully() {
     embeddedOptimizeExtension.getEventProcessingScheduler().startScheduling();
     embeddedOptimizeExtension.getEventProcessingScheduler().stopScheduling();
-    assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun(), is(false));
+    assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun()).isFalse();
   }
   
 }

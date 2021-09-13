@@ -46,8 +46,9 @@ public class EmbeddedCamundaOptimizeIT extends AbstractIT {
     embeddedCamundaOptimize.destroyOptimize();
 
     optimizeApplicationThread.shutdown();
-    optimizeApplicationThread.awaitTermination(120, TimeUnit.SECONDS);
+    final boolean terminated = optimizeApplicationThread.awaitTermination(120, TimeUnit.SECONDS);
 
+    assertThat(terminated).isTrue();
     assertThat(threadsAfterStart).isNotEqualTo(baseThreadSet);
     assertThat(getCurrentThreads()).isEqualTo(baseThreadSet);
   }
@@ -66,6 +67,7 @@ public class EmbeddedCamundaOptimizeIT extends AbstractIT {
         && !thread.getName().contains("WebSocketClient")
         && !thread.getName().contains("Keep-Alive-Timer")
         && !thread.getName().contains("MockServer")
+        && !thread.getName().contains("globalEventExecutor")
       )
       .collect(Collectors.toSet());
   }

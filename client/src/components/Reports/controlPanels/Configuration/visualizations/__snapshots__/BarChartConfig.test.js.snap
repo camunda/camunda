@@ -59,6 +59,7 @@ exports[`it should display correct configuration for barchart 1`] = `
               "hideAbsoluteValue": false,
               "hideRelativeValue": false,
               "showInstanceCount": false,
+              "stackedBar": false,
               "targetValue": Object {
                 "active": false,
               },

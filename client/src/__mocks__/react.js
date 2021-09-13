@@ -41,6 +41,10 @@ export const runAllEffects = () => {
   }
 };
 
+beforeEach(() => {
+  outstandingEffects.length = 0;
+});
+
 export const runAllCleanups = () => {
   const numberOfEffects = outstandingCleanups.length;
 

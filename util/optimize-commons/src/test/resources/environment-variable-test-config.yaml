@@ -43,7 +43,11 @@ plugin:
 
 eventBasedProcess:
   eventIngestion:
-    accessToken: ${SECRET:Null}
+    accessToken: ${EVENT_INGESTION_SECRET:null}
 
 container:
   accessUrl: ${ACCESS_URL:null}
+
+externalVariable:
+  variableIngestion:
+    accessToken: ${VARIABLE_INGESTION_SECRET:null}

@@ -899,7 +899,6 @@ public class ProcessImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployProcessAndGetId(processModel);
   }
 
-  @SneakyThrows
   private OffsetDateTime getLastProcessInstanceImportTimestamp() {
     return elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
       PROCESS_INSTANCE_MULTI_ALIAS,

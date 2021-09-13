@@ -37,7 +37,7 @@ public class OptimizeElasticsearchClientFactory {
     final RestHighLevelClient esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
     final RequestOptionsProvider requestOptionsProvider =
-      new RequestOptionsProvider(elasticsearchCustomHeaderProvider.getPlugins());
+      new RequestOptionsProvider(elasticsearchCustomHeaderProvider.getPlugins(), configurationService);
     waitForElasticsearch(esClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("Elasticsearch client has successfully been started");
 

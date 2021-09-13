@@ -24,11 +24,14 @@ import org.camunda.optimize.service.importing.engine.handler.RunningUserTaskInst
 import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.UserOperationLogImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler;
+import org.camunda.optimize.service.importing.ingested.handler.IngestedImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -41,8 +44,13 @@ import java.util.stream.Collectors;
 @Component
 public class ImportIndexHandlerRegistry {
 
+  private IngestedImportIndexHandlerProvider ingestedImportIndexHandlerProvider = null;
   private Map<String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
   private Map<Integer, ZeebeImportIndexHandlerProvider> zeebeImportIndexHandlerProviderMap = new HashMap<>();
+
+  public void register(final IngestedImportIndexHandlerProvider ingestedImportIndexHandlerProvider) {
+    this.ingestedImportIndexHandlerProvider = ingestedImportIndexHandlerProvider;
+  }
 
   public void register(final String engineAlias,
                        final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider) {
@@ -52,6 +60,10 @@ public class ImportIndexHandlerRegistry {
   public void register(final int partitionId,
                        final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider) {
     zeebeImportIndexHandlerProviderMap.put(partitionId, zeebeImportIndexHandlerProvider);
+  }
+
+  public List<TimestampBasedIngestedDataImportIndexHandler> getTimestampBasedIngestedImportHandlers() {
+    return ingestedImportIndexHandlerProvider.getTimestampBasedIngestedDataHandlers();
   }
 
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
@@ -73,6 +85,10 @@ public class ImportIndexHandlerRegistry {
     return Optional.ofNullable(zeebeImportIndexHandlerProviderMap.get(partitionId))
       .map(ZeebeImportIndexHandlerProvider::getPositionBasedEngineHandlers)
       .orElse(Collections.emptyList());
+  }
+
+  public Collection<ImportIndexHandler<?, ?>> getAllIngestedImportHandlers() {
+    return ingestedImportIndexHandlerProvider.getAllHandlers();
   }
 
   public CompletedProcessInstanceImportIndexHandler getCompletedProcessInstanceImportIndexHandler(String engineAlias) {
@@ -151,7 +167,12 @@ public class ImportIndexHandlerRegistry {
     return getZeebeImportIndexHandler(partitionId, ZeebeProcessInstanceImportIndexHandler.class);
   }
 
+  public ExternalVariableUpdateImportIndexHandler getExternalVariableUpdateImportIndexHandler() {
+    return ingestedImportIndexHandlerProvider.getImportIndexHandler(ExternalVariableUpdateImportIndexHandler.class);
+  }
+
   public void reloadConfiguration() {
+    this.ingestedImportIndexHandlerProvider = null;
     this.engineImportIndexHandlerProviderMap = new HashMap<>();
     this.zeebeImportIndexHandlerProviderMap = new HashMap<>();
   }

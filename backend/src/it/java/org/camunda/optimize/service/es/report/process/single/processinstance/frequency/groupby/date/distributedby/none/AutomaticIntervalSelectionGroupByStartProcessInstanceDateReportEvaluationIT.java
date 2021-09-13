@@ -25,7 +25,7 @@ public class AutomaticIntervalSelectionGroupByStartProcessInstanceDateReportEval
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
   }
 

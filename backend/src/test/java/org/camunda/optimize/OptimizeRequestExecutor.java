@@ -48,6 +48,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
@@ -120,6 +121,7 @@ import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_
 import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -1501,7 +1503,7 @@ public class OptimizeRequestExecutor {
                                                                     final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
-    addSingleHeader(HttpHeaders.AUTHORIZATION, secret);
+    Optional.ofNullable(secret).ifPresent(s -> addSingleHeader(HttpHeaders.AUTHORIZATION, s));
     this.mediaType = mediaType;
     this.body = getBody(eventDtos);
     return this;
@@ -1584,6 +1586,16 @@ public class OptimizeRequestExecutor {
     this.path = "settings/";
     this.method = PUT;
     this.body = getBody(settingsDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildIngestExternalVariables(final List<ExternalProcessVariableRequestDto> externalVariables,
+                                                              final String accessToken) {
+    this.path = INGESTION_PATH + VARIABLE_SUB_PATH;
+    this.method = POST;
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(externalVariables);
     return this;
   }
 

@@ -80,9 +80,11 @@ public class ImportIT extends AbstractImportIT {
         .extracting(LoggingEvent::getThrowable)
         .extracting(Throwable::getMessage)
         .isNotEmpty()
-        .anyMatch(msg -> msg.contains("If you are experiencing failures due to too many nested documents, " +
-                                        "try carefully increasing the configured nested object limit (es.settings" +
-                                        ".index.nested_documents_limit). See Optimize documentation for details.")));
+        .anyMatch(msg -> msg.contains(
+          "If you are experiencing failures due to too many nested documents, try carefully increasing the configured" +
+            " nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of documents that" +
+            " have reached this limit during import (import.data.skipDataAfterNestedDocLimitReached). See Optimize" +
+            " documentation for details.")));
   }
 
   @Test

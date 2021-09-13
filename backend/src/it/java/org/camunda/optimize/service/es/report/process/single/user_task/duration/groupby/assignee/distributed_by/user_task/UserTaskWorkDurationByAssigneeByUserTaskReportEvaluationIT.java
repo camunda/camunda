@@ -25,7 +25,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE_BY_USER_TASK;
 
 public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluationIT {
@@ -54,7 +54,7 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_ASSIGNEE_BY_USER_TASK)
       .build();
   }
 
@@ -93,7 +93,7 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
           .distributedByContains(USER_TASK_2, null)
           .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
           .distributedByContains(USER_TASK_B, null)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
           .distributedByContains(USER_TASK_A, null)
@@ -120,7 +120,7 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
               .distributedByContains(USER_TASK_2, null)
               .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
               .distributedByContains(USER_TASK_B, null)
-            .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+            .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
               .distributedByContains(USER_TASK_1, null)
               .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
               .distributedByContains(USER_TASK_A, null)
@@ -142,7 +142,7 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
         .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
           .distributedByContains(USER_TASK_1, SET_DURATIONS[0], USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, SET_DURATIONS[1], USER_TASK_2_NAME)
       .doAssert(result);
@@ -169,7 +169,7 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
               USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-          .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+          .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(USER_TASK_2,SET_DURATIONS[0], USER_TASK_2_NAME)
           .add()

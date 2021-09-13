@@ -22,19 +22,50 @@ export function formatTooltip({
     return;
   }
 
+  const tooltipText = getTooltipText(
+    dataset.data[dataIndex],
+    formatter,
+    instanceCount,
+    alwaysShowAbsolute,
+    alwaysShowRelative,
+    isDuration
+  );
+
+  if (!tooltipText) {
+    return;
+  }
+
   const label = showLabel && dataset.label ? dataset.label + ': ' : '';
 
-  return (
-    label +
-    getTooltipText(
-      dataset.data[dataIndex],
-      formatter,
-      instanceCount,
-      alwaysShowAbsolute,
-      alwaysShowRelative,
-      isDuration
-    )
-  );
+  return label + tooltipText;
+}
+
+export function formatTooltipTitle(title, availableWidth) {
+  if (!title || !availableWidth) {
+    return '';
+  }
+
+  const widthPerCharacter = 7;
+  const charactersPerLine = Math.floor(availableWidth / widthPerCharacter);
+
+  const lines = [];
+  let remainingString = title;
+
+  while (remainingString.length > charactersPerLine) {
+    const currentString = remainingString.substr(0, charactersPerLine);
+    let lastSpaceIndex = currentString.lastIndexOf(' ');
+    const hasSuitableWhitespace = lastSpaceIndex !== -1;
+
+    if (!hasSuitableWhitespace) {
+      lastSpaceIndex = charactersPerLine;
+    }
+
+    lines.push(currentString.substr(0, lastSpaceIndex));
+    remainingString = remainingString.substr(lastSpaceIndex + hasSuitableWhitespace);
+  }
+  lines.push(remainingString);
+
+  return lines.join('\n');
 }
 
 export function getTooltipLabelColor({dataIndex, dataset}, type) {

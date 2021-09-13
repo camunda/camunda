@@ -99,7 +99,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count, DEFAULT_FULLNAME);
     }
     if (assignee2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count, SECOND_USER_FULLNAME);
+      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count, SECOND_USER_FULL_NAME);
     }
     groupByAsserter.doAssert(result);
   }
@@ -153,7 +153,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE;
+    return ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE_BY_ASSIGNEE;
   }
 
   @Override

@@ -211,7 +211,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
     String singleReportId = createNewSingleReport(reportDataDto);
 
@@ -220,7 +220,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     String singleReportId2 = createNewSingleReport(reportDataDto2);
 

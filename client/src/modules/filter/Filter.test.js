@@ -7,6 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {NodeDateFilter} from './modals';
 import Filter from './Filter';
 import {filterSameTypeExistingFilters} from './service';
 
@@ -180,4 +181,20 @@ it('should render two "Add Filter" dropdowns and all added filters if no filterL
   expect(node.find('ViewFilters')).toExist();
   expect(node.find('FilterList')).toExist();
   expect(node.find('FilterList').prop('data')).toEqual(filters);
+});
+
+it('should pass correct filter level to modal', () => {
+  const node = shallow(<Filter {...props} />);
+
+  node.find('InstanceFilters').prop('openNewFilterModal')('flowNodeStartDate')();
+
+  expect(node.find(NodeDateFilter).prop('filterLevel')).toBe('instance');
+  node.find(NodeDateFilter).prop('close')();
+
+  node.find('FilterList').prop('openEditFilterModal')({
+    type: 'flowNodeEndDate',
+    filterLevel: 'view',
+  })();
+
+  expect(node.find(NodeDateFilter).prop('filterLevel')).toBe('view');
 });

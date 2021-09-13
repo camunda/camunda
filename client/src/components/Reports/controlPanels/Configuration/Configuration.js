@@ -89,6 +89,11 @@ export default class Configuration extends React.Component {
           baseline: '0',
           baselineUnit: 'minute',
         },
+        measureVisualizations: {
+          frequency: 'bar',
+          duration: 'line',
+        },
+        stackedBar: false,
       }),
       true
     );

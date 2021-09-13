@@ -65,7 +65,22 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> extends
     return runImportRound(false);
   }
 
-  public abstract Future<Void> runImportRound(final boolean forceImport);
+  public Future<Void> runImportRound(final boolean forceImport) {
+    List<ImportMediator> currentImportRound = importMediators
+      .stream()
+      .filter(mediator -> forceImport || mediator.canImport())
+      .collect(Collectors.toList());
+    if (nothingToBeImported(currentImportRound)) {
+      this.isImporting = false;
+      if (!forceImport) {
+        doBackoff();
+      }
+      return CompletableFuture.completedFuture(null);
+    } else {
+      this.isImporting = true;
+      return executeImportRound(currentImportRound);
+    }
+  }
 
   public Future<Void> executeImportRound(List<ImportMediator> currentImportRound) {
     if (log.isDebugEnabled()) {

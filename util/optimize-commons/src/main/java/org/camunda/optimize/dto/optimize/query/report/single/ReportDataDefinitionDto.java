@@ -59,6 +59,12 @@ public class ReportDataDefinitionDto {
     this.key = key;
   }
 
+  public ReportDataDefinitionDto(final String identifier, final String key, final String displayName) {
+    this.identifier = identifier;
+    this.key = key;
+    this.displayName = displayName;
+  }
+
   public ReportDataDefinitionDto(final String identifier, final String key, final List<String> versions) {
     this.identifier = identifier;
     this.key = key;

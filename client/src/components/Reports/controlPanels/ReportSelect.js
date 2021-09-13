@@ -6,10 +6,11 @@
 
 import React from 'react';
 import equal from 'fast-deep-equal';
-import update from 'immutability-helper';
 
 import {Select} from 'components';
 import {reportConfig} from 'services';
+
+import {addVariables, isDataEqual} from './service';
 
 import './ReportSelect.scss';
 import {t} from 'translation';
@@ -18,9 +19,7 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
   const config = reportConfig[type];
   let options = config.options[field];
 
-  if (field === 'groupBy') {
-    options = addVariables(options, variables, (type, value) => ({type, value}));
-  } else if (field === 'view') {
+  if (field === 'view') {
     options = addVariables(
       options,
       variables,
@@ -93,37 +92,4 @@ function ReportSelect({type, field, value, disabled, onChange, variables, report
   );
 }
 
-export default React.memo(ReportSelect, (prevProps, nextProps) => {
-  const prevData = excludeConfig(prevProps.report.data);
-  const nextData = excludeConfig(nextProps.report.data);
-
-  if (equal(prevData, nextData) && equal(prevProps.variables, nextProps.variables)) {
-    return true;
-  }
-
-  return false;
-});
-
-function excludeConfig(data) {
-  return update(data, {$unset: ['configuration']});
-}
-
-function addVariables(options, variables, payloadFormatter, filter = () => true) {
-  return options.map((option) => {
-    const subOptions = option.options;
-    if (subOptions && typeof subOptions === 'string') {
-      return {
-        ...option,
-        options: variables[subOptions]?.filter(filter).map(({id, name, type}) => {
-          const value = id ? {id, name, type} : {name, type};
-          return {
-            key: subOptions + '_' + (id || name),
-            label: name,
-            data: payloadFormatter(subOptions, value),
-          };
-        }),
-      };
-    }
-    return option;
-  });
-}
+export default React.memo(ReportSelect, isDataEqual);

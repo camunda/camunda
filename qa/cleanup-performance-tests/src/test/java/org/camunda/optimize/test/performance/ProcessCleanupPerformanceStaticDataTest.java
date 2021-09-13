@@ -134,11 +134,11 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
           .size(10_000)
       );
 
-    SearchResponse camundaActvityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    SearchResponse camundaActivityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE));
 
-    while (camundaActvityEventsResponse.getHits().getHits().length > 0) {
-      final Set<Object> processInstanceIds = Arrays.stream(camundaActvityEventsResponse.getHits().getHits())
+    while (camundaActivityEventsResponse.getHits().getHits().length > 0) {
+      final Set<Object> processInstanceIds = Arrays.stream(camundaActivityEventsResponse.getHits().getHits())
         .map(SearchHit::getSourceAsMap)
         .map(hit -> hit.get(processInstanceField))
         .collect(Collectors.toSet());
@@ -147,8 +147,8 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
       final Integer finishedProcessInstanceCount = countFinishedProcessInstancedById(processInstanceIds);
       assertThat(finishedProcessInstanceCount).isZero();
 
-      camundaActvityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().scroll(
-        new SearchScrollRequest(camundaActvityEventsResponse.getScrollId()).scroll(SCROLL_KEEP_ALIVE)
+      camundaActivityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().scroll(
+        new SearchScrollRequest(camundaActivityEventsResponse.getScrollId()).scroll(SCROLL_KEEP_ALIVE)
       );
     }
   }

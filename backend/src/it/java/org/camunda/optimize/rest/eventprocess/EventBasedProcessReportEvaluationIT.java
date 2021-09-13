@@ -118,7 +118,7 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
     ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(savedInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(savedInstance.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     processReportDataDto.setFilter(filters);
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(processReportDataDto).getResult();

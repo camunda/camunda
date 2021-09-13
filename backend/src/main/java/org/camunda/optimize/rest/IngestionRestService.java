@@ -9,16 +9,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.variable.ExternalVariableService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
@@ -32,9 +37,11 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto.toExternalProcessVariableDtos;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 
 @AllArgsConstructor
 @Slf4j
@@ -43,13 +50,14 @@ import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 public class IngestionRestService {
   public static final String INGESTION_PATH = "/ingestion";
   public static final String EVENT_BATCH_SUB_PATH = "/event/batch";
+  public static final String VARIABLE_SUB_PATH = "/variable";
 
   public static final String CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH = "application/cloudevents-batch+json";
   public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
-  public static final String BEARER_PREFIX = "Bearer ";
 
   private final ConfigurationService configurationService;
   private final ExternalEventService externalEventService;
+  private final ExternalVariableService externalVariableService;
 
   @POST
   @Path(EVENT_BATCH_SUB_PATH)
@@ -57,8 +65,22 @@ public class IngestionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventRequestDto> cloudEventDtos) {
-    validateAccessToken(requestContext);
+    validateAccessToken(requestContext, getEventIngestionAccessToken());
     externalEventService.saveEventBatch(mapToEventDto(cloudEventDtos));
+  }
+
+  @POST
+  @Path(VARIABLE_SUB_PATH)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void ingestVariables(final @Context ContainerRequestContext requestContext,
+                              final @NotNull @Valid @RequestBody List<ExternalProcessVariableRequestDto> variableDtos) {
+    validateAccessToken(requestContext, getVariableIngestionAccessToken());
+    validateVariableType(variableDtos);
+    externalVariableService.storeExternalProcessVariables(
+      toExternalProcessVariableDtos(
+        LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+        variableDtos
+      ));
   }
 
   private List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
@@ -76,14 +98,22 @@ public class IngestionRestService {
         .source(cloudEventDto.getSource())
         .data(cloudEventDto.getData())
         .build())
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
-  private void validateAccessToken(final ContainerRequestContext requestContext) {
+  private void validateVariableType(final List<ExternalProcessVariableRequestDto> variables) {
+    if (variables.stream().anyMatch(variable -> !VariableHelper.isVariableTypeSupported(variable.getType()))) {
+      throw new BadRequestException(String.format(
+        "A given variable type is not supported. The type must always be one of: %s",
+        ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES
+      ));
+    }
+  }
+
+  private void validateAccessToken(final ContainerRequestContext requestContext, final String expectedAccessToken) {
     final MultivaluedMap<String, String> queryParameters = requestContext.getUriInfo().getQueryParameters();
     final String queryParameterAccessToken = queryParameters.getFirst(QUERY_PARAMETER_ACCESS_TOKEN);
 
-    final String expectedAccessToken = getAccessToken();
     if (!expectedAccessToken.equals(extractAuthorizationHeaderToken(requestContext))
       && !expectedAccessToken.equals(queryParameterAccessToken)) {
       throw new NotAuthorizedException("Invalid or no ingestion api secret provided.");
@@ -93,15 +123,19 @@ public class IngestionRestService {
   private String extractAuthorizationHeaderToken(ContainerRequestContext requestContext) {
     return Optional.ofNullable(requestContext.getHeaderString(HttpHeaders.AUTHORIZATION))
       .map(providedValue -> {
-        if (providedValue.startsWith(BEARER_PREFIX)) {
-          return providedValue.replaceFirst(BEARER_PREFIX, "");
+        if (providedValue.startsWith(AUTH_COOKIE_TOKEN_VALUE_PREFIX)) {
+          return providedValue.replaceFirst(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
         }
         return providedValue;
       }).orElse(null);
   }
 
-  private String getAccessToken() {
-    return configurationService.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken();
+  private String getEventIngestionAccessToken() {
+    return configurationService.getEventIngestionConfiguration().getAccessToken();
+  }
+
+  private String getVariableIngestionAccessToken() {
+    return configurationService.getVariableIngestionConfiguration().getAccessToken();
   }
 
   @Data

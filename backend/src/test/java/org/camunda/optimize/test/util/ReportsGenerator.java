@@ -56,7 +56,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 
 @Slf4j
@@ -181,7 +181,7 @@ public class ReportsGenerator {
         return DecisionFilterUtilHelper.createNumericInputVariableFilter(
           filterData.getInputName(),
           filterData.getInputType(),
-          LESS_THAN,
+          FilterOperator.LESS_THAN,
           Collections.singletonList("100")
         );
       case DATE:
@@ -214,7 +214,7 @@ public class ReportsGenerator {
         return DecisionFilterUtilHelper.createNumericOutputVariableFilter(
           filterData.getOutputName(),
           filterData.getOutputType(),
-          LESS_THAN,
+          FilterOperator.LESS_THAN,
           Collections.singletonList("100")
         );
       case DATE:

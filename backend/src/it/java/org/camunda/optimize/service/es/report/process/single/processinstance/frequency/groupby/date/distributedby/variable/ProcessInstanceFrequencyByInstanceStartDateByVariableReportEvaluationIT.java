@@ -15,7 +15,7 @@ public class ProcessInstanceFrequencyByInstanceStartDateByVariableReportEvaluati
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {
-    return ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE_BY_VARIABLE;
+    return ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE_BY_VARIABLE;
   }
 
   @Override

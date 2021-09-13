@@ -46,8 +46,8 @@ import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
-import org.camunda.optimize.test.optimize.EventClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
+import org.camunda.optimize.test.optimize.IngestionClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.ReportsGenerator;
@@ -76,7 +76,7 @@ public class Generator {
   private final ReportClient reportClient;
   private final AlertClient alertClient;
   private final DashboardClient dashboardClient;
-  private final EventClient eventClient;
+  private final IngestionClient ingestionClient;
   private final EventProcessClient eventProcessClient;
 
   public Generator() {
@@ -95,7 +95,7 @@ public class Generator {
     reportClient = new ReportClient(() -> requestExecutor);
     alertClient = new AlertClient(() -> requestExecutor);
     dashboardClient = new DashboardClient(() -> requestExecutor);
-    eventClient = new EventClient(() -> requestExecutor, () -> INGESTION_SECRET);
+    ingestionClient = new IngestionClient(() -> requestExecutor, () -> INGESTION_SECRET, () -> INGESTION_SECRET);
     eventProcessClient = new EventProcessClient(() -> requestExecutor);
   }
 
@@ -186,7 +186,7 @@ public class Generator {
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
@@ -254,13 +254,13 @@ public class Generator {
   private void ingestExternalEvents() {
     final List<CloudEventRequestDto> cloudEvents = IntStream.range(0, 10)
       .mapToObj(traceId -> Lists.newArrayList(
-        eventClient.createCloudEventDto().toBuilder()
+        ingestionClient.createCloudEventDto().toBuilder()
           .source("dataMigration")
           .group("test")
           .type("start")
           .traceid(String.valueOf(traceId))
           .build(),
-        eventClient.createCloudEventDto().toBuilder()
+        ingestionClient.createCloudEventDto().toBuilder()
           .source("dataMigration")
           .group("test")
           .type("end")
@@ -268,7 +268,7 @@ public class Generator {
           .build()
       )).flatMap(Collection::stream)
       .collect(Collectors.toList());
-    eventClient.ingestEventBatch(cloudEvents);
+    ingestionClient.ingestEventBatch(cloudEvents);
     refreshElasticSearch();
   }
 

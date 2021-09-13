@@ -6,7 +6,7 @@
 
 import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {numberParser} from 'services';
 
 export function convertFilterToState(filter) {
@@ -73,8 +73,8 @@ export function convertStateToFilter({
     case 'fixed':
       filter = {
         type: 'fixed',
-        start: startDate && format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
-        end: endDate && format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+        start: startDate && format(startOfDay(startDate), BACKEND_DATE_FORMAT),
+        end: endDate && format(endOfDay(endDate), BACKEND_DATE_FORMAT),
       };
       break;
     case 'custom':

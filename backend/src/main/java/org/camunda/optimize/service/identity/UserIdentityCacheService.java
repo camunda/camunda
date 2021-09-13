@@ -112,7 +112,7 @@ public class UserIdentityCacheService extends AbstractIdentityCacheService {
       // add all granted groups (as group grant wins over group revoke)
       // https://docs.camunda.org/manual/7.11/user-guide/process-engine/authorization-service/#authorization-precedence
       final Set<String> grantedGroupIdsNotYetImported = authorizedIdentities.getGrantedGroupIds().stream()
-        .filter(groupId -> !identityCache.getGroupIdentityById(groupId).isPresent())
+        .filter(groupId -> identityCache.getGroupIdentityById(groupId).isEmpty())
         .collect(Collectors.toSet());
       Iterables.partition(grantedGroupIdsNotYetImported, getCacheConfiguration().getMaxPageSize())
         .forEach(groupIdBatch -> identityCache.addIdentities(fetchGroupsById(engineContext, groupIdBatch)));
@@ -123,13 +123,13 @@ public class UserIdentityCacheService extends AbstractIdentityCacheService {
           identityCache::addIdentities,
           (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId),
           userDto -> !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
-            && !identityCache.getUserIdentityById(userDto.getId()).isPresent()
+            && identityCache.getUserIdentityById(userDto.getId()).isEmpty()
         ));
     }
 
     // finally add explicitly granted users, not yet in the cache already
     final Set<String> grantedUserIdsNotYetImported = authorizedIdentities.getGrantedUserIds().stream()
-      .filter(userId -> !identityCache.getUserIdentityById(userId).isPresent())
+      .filter(userId -> identityCache.getUserIdentityById(userId).isEmpty())
       .collect(Collectors.toSet());
     Iterables.partition(grantedUserIdsNotYetImported, getCacheConfiguration().getMaxPageSize())
       .forEach(userIdBatch -> identityCache.addIdentities(fetchUsersById(engineContext, userIdBatch)));

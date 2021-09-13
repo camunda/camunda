@@ -5,24 +5,50 @@
  */
 package org.camunda.optimize.service.es.filter.process.date.modelelement;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
-public class FixedFlowNodeStartDateFilterIT extends AbstractFlowNodeStartDateFilterIT {
+public class FixedFlowNodeStartDateFilterIT extends AbstractFixedFlowNodeDateFilterIT {
 
   @Override
-  protected List<ProcessFilterDto<?>> createDateFilterForDate1() {
-    return createFixedDateFilter(DATE_1);
+  protected void updateFlowNodeDate(final String instanceId, final String flowNodeId, final OffsetDateTime newDate) {
+    engineDatabaseExtension.changeFlowNodeStartDate(instanceId, flowNodeId, newDate);
   }
 
   @Override
-  protected List<ProcessFilterDto<?>> createDateFilterForDate2() {
-    return createFixedDateFilter(DATE_2);
+  protected ProcessGroupByType getDateReportGroupByType() {
+    return ProcessGroupByType.START_DATE;
+  }
+
+
+  @Override
+  protected List<ProcessFilterDto<?>> createFixedDateViewFilter(final OffsetDateTime startDate,
+                                                                final OffsetDateTime endDate) {
+    return ProcessFilterBuilder.filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(startDate)
+      .end(endDate)
+      .add()
+      .buildList();
   }
 
   @Override
-  protected List<ProcessFilterDto<?>> createInvalidFilter() {
-    return createFixedDateFilter(null);
+  protected List<ProcessFilterDto<?>> createFixedDateInstanceFilter(final List<String> flowNodeIds,
+                                                                    final OffsetDateTime startDate,
+                                                                    final OffsetDateTime endDate) {
+    return ProcessFilterBuilder.filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(flowNodeIds)
+      .start(startDate)
+      .end(endDate)
+      .add()
+      .buildList();
   }
 }

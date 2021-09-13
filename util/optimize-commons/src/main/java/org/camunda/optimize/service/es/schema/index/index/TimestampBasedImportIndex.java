@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.schema.index.index;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -21,7 +20,7 @@ public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
   public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = "lastImportExecutionTimestamp";
   public static final String TIMESTAMP_OF_LAST_ENTITY = "timestampOfLastEntity";
   public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
-  private static final String ENGINE = "engine";
+  public static final String ENGINE = "engine";
 
   @Override
   public String getIndexName() {

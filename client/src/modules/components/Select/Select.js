@@ -60,7 +60,7 @@ export default class Select extends React.Component {
     return (
       <Dropdown
         {...this.props}
-        label={this.getLabel() || t('common.select')}
+        label={this.props.label || this.getLabel() || t('common.select')}
         className={classnames('Select', this.props.className)}
       >
         {this.renderChildrenWithProps(children)}

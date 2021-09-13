@@ -55,6 +55,22 @@ it('should display date preview if the filter is a date filter', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should display date preview for decision date time filter', () => {
+  const data = [
+    {
+      type: 'evaluationDateTime',
+      data: {
+        type: 'relative',
+        value: 0,
+        unit: 'days',
+      },
+    },
+  ];
+
+  const node = shallow(<FilterList data={data} />);
+  expect(node.find('DateFilterPreview')).toExist();
+});
+
 it('should use the variables prop to resolve variable names', () => {
   const data = [
     {
@@ -344,4 +360,27 @@ describe('apply to handling', () => {
 
     expect(node.find('.appliedTo')).not.toExist();
   });
+});
+
+it('should display node date filter preview', () => {
+  const filterData = {
+    flowNodeIds: ['flowNode'],
+    value: 0,
+    unit: 'days',
+  };
+
+  const data = [
+    {
+      type: 'flowNodeStartDate',
+      filterLevel: 'instance',
+      data: filterData,
+      appliedTo: ['definition'],
+    },
+  ];
+
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
+
+  expect(node.find('DateFilterPreview').prop('filter')).toEqual(filterData);
+  expect(node.find('.content')).toIncludeText('flow node name');
 });

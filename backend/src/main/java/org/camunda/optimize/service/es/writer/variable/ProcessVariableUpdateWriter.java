@@ -194,15 +194,15 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     // @formatter:off
     String variableScript =
       "HashMap varIdToVar = new HashMap();" +
-      "for (def var : ctx._source.${variables}) {" +
-        "varIdToVar.put(var.id, var);" +
+      "for (def existingVar : ctx._source.${variables}) {" +
+        "varIdToVar.put(existingVar.id, existingVar);" +
       "}" +
-      "for (def var : params.${variableUpdatesFromEngine}) {" +
-        "varIdToVar.compute(var.id, (k, v) -> { " +
+      "for (def newVar : params.${variableUpdatesFromEngine}) {" +
+        "varIdToVar.compute(newVar.id, (k, v) -> { " +
         "  if (v == null) {" +
-        "    return var;"   +
+        "    return newVar;"   +
         "  } else {" +
-        "    return v.version > var.version ? v : var;" +
+        "    return v.version > newVar.version ? v : newVar;" +
         "  }" +
         "});" +
       "}" +
@@ -228,8 +228,9 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     return objectMapper.writeValueAsString(procInst);
   }
 
-  private boolean isVariableFromCaseDefinition(ProcessVariableDto variable) {
-    return variable.getProcessDefinitionId() == null;
+  private boolean isVariableFromCaseDefinition(final ProcessVariableDto variable) {
+    // if the variable instance is not related to a process instance we assume it's originating from a case definition
+    return variable.getProcessInstanceId() == null;
   }
 
 }

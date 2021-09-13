@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.elasticsearch.script.Script;
 
@@ -73,7 +73,7 @@ public class DurationScriptUtil {
         referenceDateFieldName
       )
         + " return (result != null " +
-        "&& result " + mapFilterOperator(durationFilterDto.getOperator()) + " params['filterDuration'])" +
+        "&& result " + durationFilterDto.getOperator().getId() + " params['filterDuration'])" +
         " || (" + durationFilterDto.isIncludeNull() + " && result == null)",
       params
     );
@@ -214,19 +214,4 @@ public class DurationScriptUtil {
     // @formatter:on
   }
 
-  private static String mapFilterOperator(final FilterOperator filterOperator) {
-    // maps Optimize filter operators to ES relational operators
-    switch (filterOperator) {
-      case LESS_THAN:
-        return "<";
-      case LESS_THAN_EQUALS:
-        return "<=";
-      case GREATER_THAN:
-        return ">";
-      case GREATER_THAN_EQUALS:
-        return ">=";
-      default:
-        throw new IllegalStateException("Uncovered duration filter operator: " + filterOperator);
-    }
-  }
 }

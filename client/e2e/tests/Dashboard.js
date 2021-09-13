@@ -7,6 +7,7 @@
 import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
+import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './Dashboard.elements.js';
 import * as Homepage from './Homepage.elements.js';
@@ -25,15 +26,48 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.click(e.option('Invoice Receipt with alternative correlation variable'));
 
   await t.takeScreenshot('dashboard/dashboardTemplate.png', {fullPage: true});
-  await t.maximizeWindow();
+  await t.resizeWindow(1200, 600);
 
   await t.click(e.modalConfirmbutton);
+
+  await t.takeScreenshot('dashboard/dashboard-dashboardEditActions.png', {fullPage: true});
+
+  await addAnnotation(
+    e.reportTile,
+    'Press and hold to\nmove your report\naround the\ndashboard area.'
+  );
+  await addAnnotation(
+    e.reportEditButton,
+    'Use the edit button to switch to\nthe Report Edit View',
+    {x: 0, y: -50}
+  );
+  await addAnnotation(
+    e.reportDeleteButton,
+    'Use the delete button to remove\nthe report from the dashboard.',
+    {x: 50, y: 0}
+  );
+  await addAnnotation(
+    e.reportResizeHandle,
+    'Use the resize handle to change the\nsize of the report.',
+    {x: 50, y: 0}
+  );
+
+  await t.takeElementScreenshot(e.body, 'dashboard/dashboard-reportEditActions.png', {
+    crop: {right: 750},
+  });
+
+  await clearAllAnnotations();
 
   await u.save(t);
 
   await t.expect(e.dashboardName.textContent).eql('Process performance overview');
   await t.expect(e.reportTile.nth(0).textContent).contains('Total Instances');
   await t.expect(e.reportTile.nth(1).textContent).contains('AVG Instance Duration');
+
+  await t.click(e.autoRefreshButton);
+
+  await t.takeScreenshot('dashboard/dashboard-viewMode-monitorFeatures.png', {fullPage: true});
+  await t.maximizeWindow();
 
   await u.gotoOverview(t);
 
@@ -91,13 +125,15 @@ test('cancel changes', async (t) => {
 // });
 
 test('sharing', async (t) => {
-  await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
-  await u.selectView(t, 'Raw Data');
-  await u.save(t);
-  await u.gotoOverview(t);
-  await u.createNewDashboard(t);
-  await u.addReportToDashboard(t, 'New Report');
+  await t.resizeWindow(1300, 750);
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Dashboard'));
+
+  await t.click(e.templateOption('Process performance overview'));
+
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.modalConfirmbutton);
 
   await u.save(t);
 
@@ -106,13 +142,14 @@ test('sharing', async (t) => {
   await t.click(e.shareButton);
   await t.click(e.shareSwitch);
 
+  await t.takeScreenshot('dashboard/dashboard-sharingPopover.png', {fullPage: true});
+
   const shareUrl = await e.shareUrl.value;
 
   await t.navigateTo(shareUrl);
 
-  await t.expect(e.report.visible).ok();
-  await t.expect(e.report.textContent).contains('invoice');
-  await t.expect(e.report.textContent).contains('Start Date');
+  await t.expect(e.reportTile.nth(0).visible).ok();
+  await t.expect(e.reportTile.nth(0).textContent).contains('Total Instances');
 });
 
 test('sharing header parameters', async (t) => {

@@ -113,7 +113,7 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
+    return ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE;
   }
 
   @Override

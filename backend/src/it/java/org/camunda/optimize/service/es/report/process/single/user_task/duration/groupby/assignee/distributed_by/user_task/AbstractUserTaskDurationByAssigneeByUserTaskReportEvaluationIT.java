@@ -118,7 +118,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
           .distributedByContains(USER_TASK_2, null)
           .distributedByContains(USER_TASK_A, 20.)
           .distributedByContains(USER_TASK_B, null)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, 20.)
           .distributedByContains(USER_TASK_A, null)
@@ -257,7 +257,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
           .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
           .distributedByContains(USER_TASK_2, null)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
       .doAssert(actualResult);
@@ -309,7 +309,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
           .distributedByContains(USER_TASK_2, null)
           .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS))
           .distributedByContains(USER_TASK_B, null)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
           .distributedByContains(USER_TASK_A, null)
@@ -375,7 +375,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
             .distributedByContains(USER_TASK_2, null)
             .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
             .distributedByContains(USER_TASK_B, null)
-          .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+          .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null)
             .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
             .distributedByContains(USER_TASK_A, null)
@@ -433,7 +433,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
           .distributedByContains(USER_TASK_1, SET_DURATIONS[0], USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, SET_DURATIONS[1], USER_TASK_2_NAME)
         .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
@@ -495,7 +495,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
               USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-          .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+          .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(USER_TASK_2,SET_DURATIONS[0], USER_TASK_2_NAME)
           .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
@@ -546,7 +546,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       // @formatter:off
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-          .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+          .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(
               USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_2_NAME
@@ -602,7 +602,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       // @formatter:off
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
-          .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+          .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(
               USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_2_NAME
@@ -653,7 +653,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
           .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(20., 40.), USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(40.), USER_TASK_2_NAME)
       .doAssert(actualResult);
@@ -699,7 +699,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
           .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(20., 40.), USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+        .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(40.), USER_TASK_2_NAME)
       .doAssert(actualResult);

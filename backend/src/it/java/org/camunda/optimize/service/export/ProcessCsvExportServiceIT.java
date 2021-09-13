@@ -354,7 +354,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
         .createReportData()
         .setProcessDefinitionKey(FAKE)
         .setProcessDefinitionVersion(FAKE)
-        .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
         .build();
     reportDataDto.setFilter(ProcessFilterBuilder.filter()
                               .runningFlowNodesOnly()
@@ -401,7 +401,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
           .build(),
         "/csv/process/single/pi_frequency_group_by_none.csv",
         "Process Instance Frequency Grouped By None"
@@ -411,7 +411,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
           .build(),
         "/csv/process/single/pi_frequency_group_by_none.csv",
         "Process Instance Frequency Grouped By None"
@@ -421,7 +421,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
           .build(),
         "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
         "Flow Node Frequency Grouped By Flow Node"
@@ -441,7 +441,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
           .build(),
         "/csv/process/single/flownode_duration_group_by_flownodes.csv",
         "Flow Node Duration Grouped By Flow Node"
@@ -471,7 +471,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
           .build(),
         "/csv/process/single/pi_frequency_group_by_none.csv",
         ';'
@@ -481,7 +481,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
           .build(),
         "/csv/process/single/flownode_frequency_group_by_flownodes_semicolon_delimiter.csv",
         ';'

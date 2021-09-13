@@ -17,7 +17,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE;
 
 public class UserTaskIdleDurationByAssigneeReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeReportEvaluationIT {
@@ -46,7 +46,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_ASSIGNEE)
+      .setReportDataType(USER_TASK_DUR_GROUP_BY_ASSIGNEE)
       .build();
   }
 

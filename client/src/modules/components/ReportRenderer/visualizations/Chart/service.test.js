@@ -4,46 +4,67 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {formatTooltip, calculateLinePosition, getTooltipLabelColor} from './service';
+import {
+  formatTooltip,
+  formatTooltipTitle,
+  calculateLinePosition,
+  getTooltipLabelColor,
+} from './service';
 
-it('should include the relative value in tooltips', () => {
-  const response = formatTooltip({
-    dataset: {data: [2.5]},
-    dataIndex: 0,
-    configuration: {},
-    formatter: (v) => v,
-    instanceCount: 5,
-    isDuration: false,
+describe('formatTooltip', () => {
+  it('should include the relative value in tooltips', () => {
+    const response = formatTooltip({
+      dataset: {data: [2.5]},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: false,
+    });
+
+    expect(response).toBe('2.5\u00A0(50%)');
   });
 
-  expect(response).toBe('2.5\u00A0(50%)');
-});
+  it('should return undefined tooltip for target line dataset', () => {
+    const response = formatTooltip({
+      dataset: {data: [2.5], isTarget: true},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: false,
+    });
 
-it('should return undefined tooltip for target line dataset', () => {
-  const response = formatTooltip({
-    dataset: {data: [2.5], isTarget: true},
-    dataIndex: 0,
-    configuration: {},
-    formatter: (v) => v,
-    instanceCount: 5,
-    isDuration: false,
+    expect(response).toBe(undefined);
   });
 
-  expect(response).toBe(undefined);
-});
+  it('should return undefined for null values', () => {
+    const response = formatTooltip({
+      dataset: {data: [null], label: 'testLabel'},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: true,
+      showLabel: true,
+    });
 
-it('should display a label before the data if specified', () => {
-  const response = formatTooltip({
-    dataset: {data: [2], label: 'testLabel'},
-    dataIndex: 0,
-    configuration: {},
-    formatter: (v) => v,
-    instanceCount: 5,
-    isDuration: true,
-    showLabel: true,
+    expect(response).toBe(undefined);
   });
 
-  expect(response).toBe('testLabel: 2');
+  it('should display a label before the data if specified', () => {
+    const response = formatTooltip({
+      dataset: {data: [2], label: 'testLabel'},
+      dataIndex: 0,
+      configuration: {},
+      formatter: (v) => v,
+      instanceCount: 5,
+      isDuration: true,
+      showLabel: true,
+    });
+
+    expect(response).toBe('testLabel: 2');
+  });
 });
 
 it('should generate correct colors in label tooltips for pie charts ', () => {
@@ -85,4 +106,28 @@ it('should calculate the correct position for the target value line', () => {
       },
     })
   ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
+});
+
+describe('formatTooltipTitle', () => {
+  it('should not change the title if enough space is available', () => {
+    expect(formatTooltipTitle('This is a sample tooltip title', 1000)).toBe(
+      'This is a sample tooltip title'
+    );
+  });
+
+  it('should wrap text at space characters', () => {
+    expect(formatTooltipTitle('This is a sample tooltip title', 100)).toBe(
+      'This is a\nsample\ntooltip title'
+    );
+  });
+
+  it('should handle strings without spaces well', () => {
+    expect(formatTooltipTitle('AAAAAAAAAAAAAAAAAAAAAAAAAAA', 100)).toBe(
+      'AAAAAAAAAAAAAA\nAAAAAAAAAAAAA'
+    );
+  });
+
+  it('should handle null values well', () => {
+    expect(formatTooltipTitle(null, null)).toBe('');
+  });
 });

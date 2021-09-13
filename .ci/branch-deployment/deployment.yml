@@ -11,6 +11,10 @@ metadata:
     branch: "@BRANCH@"
     changed: "@CHANGED@"
     team: optimize
+    camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+    camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
+  annotations:
+    camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -26,6 +30,10 @@ spec:
         app: "@BRANCH@-optimize-camunda-cloud"
         branch: "@BRANCH@"
         changed: "@CHANGED@"
+        camunda.cloud/source: "@CAMUNDA_CLOUD_SOURCE@"
+        camunda.cloud/managed-by: "@CAMUNDA_CLOUD_MANAGED_BY@"
+      annotations:
+        camunda.cloud/created-by: "@CAMUNDA_CLOUD_CREATED_BY@"
     spec:
       imagePullSecrets:
       - name: registry-camunda-cloud

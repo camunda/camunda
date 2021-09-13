@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -35,11 +36,11 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_ASSIGNEE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE;
 
 public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
 
@@ -58,7 +59,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using process instance frequency group by none as base for the setup but will modify view.properties
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     reportData.getView().setProperties(viewProperties);
 
@@ -112,7 +113,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using process instance frequency group by none as base for the setup but will modify view.properties
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     reportData.getView().setProperties(viewProperties);
     reportData.getConfiguration().setAggregationTypes(aggregationTypes);
@@ -154,7 +155,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using flow node frequency group by flow node as base for the setup but will modify view.properties
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.getView().setProperties(viewProperties);
 
@@ -200,7 +201,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using flow node frequency group by flow node as base for the setup but will modify view.properties
-      .setReportDataType(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.getView().setProperties(viewProperties);
     reportData.getConfiguration().setAggregationTypes(aggregationTypes);
@@ -243,7 +244,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using user task frequency group by user task as base for the setup but will modify view.properties,
       // aggregationTypes and userTaskDurationTimes
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK)
       .build();
     reportData.getView().setProperties(viewProperties);
     reportData.getConfiguration().setAggregationTypes(aggregationTypes);
@@ -300,7 +301,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using usertask frequency group by flow node as base for the setup but will modify view.properties
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE)
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .build();
     reportData.getView().setProperties(viewProperties);
@@ -355,7 +356,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using usertask frequency group by usertask startDate as base for the setup but will modify view.properties
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE)
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .build();
     reportData.getView().setProperties(viewProperties);
@@ -399,7 +400,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // using user task frequency group by user task distribute by assignee as base for the setup but will modify
       // view.properties, aggregationTypes and userTaskDurationTimes
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_BY_ASSIGNEE)
       .build();
     reportData.getView().setProperties(viewProperties);
     reportData.getConfiguration().setAggregationTypes(aggregationTypes);
@@ -449,7 +450,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       // as this is testing common report validation logic the type does not really matter
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     reportData.getView().setProperties(viewProperties);
 
@@ -478,6 +479,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     return AggregationType.values();
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> validMultiViewPropertyScenarios() {
     return Stream.of(
       Arguments.of(Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION)),
@@ -487,6 +489,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> invalidMultiViewPropertyScenarios() {
     return Stream.of(
       Arguments.of(Arrays.asList(ViewProperty.DURATION, ViewProperty.RAW_DATA)),
@@ -495,6 +498,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> multiAggregationScenarios() {
     return Stream.of(
       Arguments.of((Object) getSupportedAggregationTypes()),
@@ -504,6 +508,7 @@ public class MultiMeasureProcessReportIT extends AbstractProcessDefinitionIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> multiAggregationAndUserTaskTimeScenarios() {
     return Stream.of(
       Arguments.of(getSupportedAggregationTypes(), UserTaskDurationTime.values()),

@@ -42,6 +42,7 @@ import static org.camunda.optimize.rest.FlowNodeRestService.FLOW_NODE_PATH;
 import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static org.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.ProcessVariableRestService.PROCESS_VARIABLES_PATH;
@@ -108,6 +109,7 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
         ).permitAll()
         // public ingestion api
         .antMatchers(createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH)).permitAll()
+        .antMatchers(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH)).permitAll()
         // public share related resources
         .antMatchers(EXTERNAL_SUB_PATH).permitAll()
         .antMatchers(

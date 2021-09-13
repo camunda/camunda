@@ -54,7 +54,7 @@ public class AuthCookieService {
     NewCookie newCookie = new NewCookie(
       OPTIMIZE_AUTHORIZATION,
       AuthCookieService.createOptimizeAuthCookieValue(securityToken),
-      "/",
+      "/" + configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId(),
       null,
       1,
       null,

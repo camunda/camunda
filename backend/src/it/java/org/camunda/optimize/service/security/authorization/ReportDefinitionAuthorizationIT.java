@@ -543,7 +543,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     SingleProcessReportDefinitionRequestDto definitionDto = new SingleProcessReportDefinitionRequestDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);

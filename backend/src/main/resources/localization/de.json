@@ -249,6 +249,7 @@
     "downloadCSV": "CSV herunterladen",
     "measure": "Maß",
     "addMeasure": "Maß hinzufügen",
+    "addGrouping": "Gruppierung hinzufügen",
     "displayName": "Anzeigename",
     "displayNamePlaceholder": "Optionalen Anzeigenamen hinzufügen",
     "noSources": "Keine Datenquelle",
@@ -322,7 +323,8 @@
       "line": "Liniendiagramm",
       "pie": "Tortendiagramm",
       "table": "Tabelle",
-      "heat": "Heatmap"
+      "heat": "Heatmap",
+      "barLine": "Balken-/Liniendiagramm"
     },
     "processPart": {
       "label": "Prozessinstanz-Abschnitt",
@@ -449,7 +451,8 @@
         "min": "Minimum",
         "avg": "Durchschnitt",
         "median": "Median",
-        "max": "Maximum"
+        "max": "Maximum",
+        "multiProcessWarning": "Berichte die nach Prozess gruppiert sind unterstützen keine Median-Aggregation."
       },
       "aggregationShort": {
         "sum": "Se",
@@ -463,7 +466,6 @@
         "work": "Arbeitszeit",
         "total": "Summe"
       },
-      "userTaskDistributedBy": "Aufteilung",
       "colorPicker": {
         "legend": "Farbe"
       },
@@ -492,6 +494,10 @@
         "legend": "Linienpunkte",
         "enableMarkers": "Punktmarkierungen aktivieren"
       },
+      "stackedBars": {
+        "legend": "Anzeige",
+        "enableStackedBars": "Gestapelte Balken"
+      },
       "limitPrecision": {
         "legend": "Genauigkeit begrenzen",
         "numberOf": {
@@ -507,6 +513,11 @@
         "bucketSize": "Bucket Größe",
         "baseline": "Grundlinie",
         "invalidNumber": "Muss eine gültige Zahl sein"
+      },
+      "barLine": {
+        "visualizationSettings": "Visualisierungseinstellungen",
+        "bar": "Balken",
+        "line": "Linie"
       }
     },
     "viewByGroup": "{view} nach {group}",
@@ -648,7 +659,10 @@
           "label": "Ausreißer",
           "label-plural": "Ausreißer"
         },
-        "tookDuration": "Benötigte eine Dauer von"
+        "tookDuration": {
+          "singular": "benötigte eine Dauer von",
+          "plural": "benötigten eine Dauer von"
+        }
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
@@ -682,14 +696,14 @@
     },
     "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, ein Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
     "noInstances": "Keine Instanzen im aktuellen Filter haben das ausgewählte Gateway passiert.",
-    "gatewayInstances": "Von allen <b>{totalGateway} Instanzen</b>, die das Gateway <i class=\"gatewayName\"></i> passiert haben",
-    "branchDistribution": "<b>{count}</b> nahmen ({branchPercentage}%) den <i class=\"branchName\"></i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i class=\"endEventName\"></i>",
+    "gatewayInstances": "<b>{totalGateway} Instanzen</b> haben das Gateway <i class=\"gatewayName\"></i> passiert",
+    "branchDistribution": "<b>{count}</b> ({branchPercentage}%) nahmen den <i class=\"branchName\"></i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i class=\"endEventName\"></i>",
     "gatewayDistribution": "Verteilung von Instanzen am Gateway <i class=\"gatewayName\"></i>:",
     "endEventProbability": "Wahrscheinlichkeit, das Endereignis <i class=\"endEventName\"></i> zu erreichen bei diesem Verlauf:",
     "tooltip": {
       "totalInstances": "Prozessinstanzen insgesamt",
-      "reachedEnd": "Prozessinstanzen, die diesen Stand erreicht haben",
-      "reachedEndPercentage": "von Prozessinstanzen, die diesen Status erreicht haben"
+      "reachedEnd": "der Prozessinstanzen haben dieses Endereignis erreicht",
+      "reachedEndPercentage": "der Prozessinstanzen haben dieses Endereignis erreicht"
     }
   },
   "common": {
@@ -748,6 +762,7 @@
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
     "open": "Öffnen",
+    "for": "für",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -906,7 +921,7 @@
       },
       "types": {
         "instanceState": "Instanzstatus",
-        "date": "Datum",
+        "date": "Instanzdatum",
         "assignee": "Bearbeiter",
         "candidateGroup": "Potenzielle Gruppe",
         "startDate": "Startdatum",
@@ -926,7 +941,10 @@
         "openIncident": "mit offenen Zwischenfällen",
         "resolvedIncident": "mit gelösten Zwischenfällen",
         "flowNodeStatus": "Prozessknoten-Status",
-        "flowNodeSelection": "Prozessknotenauswahl"
+        "flowNodeSelection": "Prozessknotenauswahl",
+        "flowNodeDate": "Prozessknoten-Datum",
+        "flowNodeStartDate": "Prozessknoten Startdatum",
+        "flowNodeEndDate": "Prozessknoten Enddatum"
       },
       "list": {
         "appliedTo": "Angewendet auf",
@@ -1029,6 +1047,18 @@
           "notExecutedFlowNodes": "Nicht ausgeführte Prozessknoten",
           "canceledFlowNodes": "Abgebrochene Prozessknoten",
           "executingFlowNodes": "Laufende Prozessknoten"
+        }
+      },
+      "nodeDateModal": {
+        "info": {
+          "flowNodeStartDate": {
+            "instance": "Nur Instanzen anzeigen, in denen mindestens einer der ausgewählten Prozessknoten in diesem Zeitraum gestartet ist",
+            "view": "Nur Daten von Prozessknoten anzeigen, die in diesem Zeitraum gestartet sind"
+          },
+          "flowNodeEndDate": {
+            "instance": "Nur Instanzen anzeigen, in denen mindestens einer der ausgewählten Prozessknoten in diesem Zeitraum geendet ist",
+            "view": "Nur Daten von Prozessknoten anzeigen, die in diesem Zeitraum geendet sind"
+          }
         }
       },
       "assigneeModal": {

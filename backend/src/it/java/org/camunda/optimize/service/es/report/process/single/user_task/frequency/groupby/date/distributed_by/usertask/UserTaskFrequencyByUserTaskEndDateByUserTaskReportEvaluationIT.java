@@ -17,7 +17,7 @@ public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK;
+    return ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_END_DATE_BY_USER_TASK;
   }
 
   @Override

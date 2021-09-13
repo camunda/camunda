@@ -11,7 +11,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 export function FlowNodeResolver({definition, render, mightFail}) {
-  const [flowNodeNames, setFlowNodeNames] = useState({});
+  const [flowNodeNames, setFlowNodeNames] = useState(null);
 
   useEffect(() => {
     mightFail(

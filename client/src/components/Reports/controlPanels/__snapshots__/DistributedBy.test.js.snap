@@ -2,69 +2,69 @@
 
 exports[`should load and render variables for process instance count reports 1`] = `
 <li
-  className="DistributedBy"
+  className="DistributedBy GroupBy"
 >
   <span
     className="label"
   >
-    Distribution
+    and
   </span>
   <Select
     className="ReportSelect"
     key="3"
+    label={false}
     onChange={[Function]}
   >
-    <Option
-      value="none"
-    >
-      None
-    </Option>
     <Submenu
       key="variable"
       label="Variable"
     >
       <Option
         key="0"
-        value="var1"
+        value="variable_var1"
       >
         var1
       </Option>
       <Option
         key="1"
-        value="var2"
+        value="variable_var2"
       >
         var2
       </Option>
       <Option
         key="2"
-        value="var3"
+        value="variable_var3"
       >
         var3
       </Option>
     </Submenu>
   </Select>
+  <ForwardRef(Button)
+    className="removeGrouping"
+    onClick={[Function]}
+  >
+    <Icon
+      type="close-small"
+    />
+  </ForwardRef(Button)>
 </li>
 `;
 
 exports[`should match snapshot 1`] = `
 <li
-  className="DistributedBy"
+  className="DistributedBy GroupBy"
 >
   <span
     className="label"
   >
-    Distribution
+    and
   </span>
   <Select
     className="ReportSelect"
     key="0"
+    label={false}
     onChange={[Function]}
   >
-    <Option
-      value="none"
-    >
-      None
-    </Option>
     <Option
       key="assignee"
       value="assignee"
@@ -78,5 +78,13 @@ exports[`should match snapshot 1`] = `
       Candidate Group
     </Option>
   </Select>
+  <ForwardRef(Button)
+    className="removeGrouping"
+    onClick={[Function]}
+  >
+    <Icon
+      type="close-small"
+    />
+  </ForwardRef(Button)>
 </li>
 `;

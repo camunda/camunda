@@ -9,7 +9,12 @@ import {isDurationReport, formatters} from 'services';
 import {t} from 'translation';
 
 import {getFormattedTargetValue} from './service';
-import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
+import {
+  formatTooltip,
+  formatTooltipTitle,
+  getTooltipLabelColor,
+  canBeInterpolated,
+} from '../service';
 import {getColorFor, determineBarColor} from '../colorsUtils';
 
 const {createDurationFormattingOptions, duration} = formatters;
@@ -46,10 +51,11 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       break;
     case 'line':
     case 'bar':
+    case 'barLine':
       options = createBarOptions({
         targetValue,
+        visualization,
         configuration,
-        stacked: false,
         maxDuration: maxValue,
         groupedByDurationMaxValue,
         isDark,
@@ -75,6 +81,8 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         showLabel: true,
       }),
     labelColor: (tooltipItem) => getTooltipLabelColor(tooltipItem, visualization),
+    title: (tooltipItems) =>
+      formatTooltipTitle(tooltipItems?.[0]?.label, tooltipItems?.[0]?.chart.chartArea.width),
   };
 
   if (isPersistedTooltips) {
@@ -86,7 +94,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
     tooltipCallbacks.title = (tooltipItems) => {
-      return tooltipItems?.[0].label;
+      return formatTooltipTitle(tooltipItems?.[0].label, tooltipItems?.[0]?.chart.chartArea.width);
     };
   }
 
@@ -148,7 +156,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 export function createBarOptions({
   targetValue,
   configuration,
-  stacked,
   maxDuration,
   isDark,
   autoSkip,
@@ -156,8 +163,13 @@ export function createBarOptions({
   measures = [],
   entity,
   groupedByDurationMaxValue = false,
+  isCombined,
+  visualization,
 }) {
-  const targetLine = targetValue && getFormattedTargetValue(targetValue);
+  const isCombinedNumber = isCombined && visualization === 'number';
+  const stacked =
+    configuration.stackedBar && isCombined && ['bar', 'barLine'].includes(visualization);
+  const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
@@ -172,6 +184,7 @@ export function createBarOptions({
         text: configuration.yLabel,
         color: getColorFor('label', isDark),
         font: {
+          size: 14,
           weight: 'bold',
         },
       },
@@ -185,14 +198,13 @@ export function createBarOptions({
       suggestedMax: targetLine,
       id: 'axis-0',
       axis: 'y',
+      stacked,
     },
   };
 
   if (hasMultipleAxes) {
-    yAxes['axis-0'].title = {
-      display: true,
-      text: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
-    };
+    yAxes['axis-0'].title.display = true;
+    yAxes['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t('report.view.count')}`;
 
     yAxes['axis-1'] = {
       grid: {
@@ -203,6 +215,7 @@ export function createBarOptions({
         text: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
         color: getColorFor('label', isDark),
         font: {
+          size: 14,
           weight: 'bold',
         },
       },
@@ -235,6 +248,7 @@ export function createBarOptions({
           text: configuration.xLabel,
           color: getColorFor('label', isDark),
           font: {
+            size: 14,
             weight: 'bold',
           },
         },
@@ -246,7 +260,7 @@ export function createBarOptions({
             const width = this.maxWidth / allLabels.length;
             const widthPerCharacter = 7;
 
-            if (stacked && label.length > width / widthPerCharacter) {
+            if (isCombinedNumber && label.length > width / widthPerCharacter) {
               return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
             }
 
@@ -256,7 +270,7 @@ export function createBarOptions({
             ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
             : {}),
         },
-        stacked,
+        stacked: stacked || isCombinedNumber,
       },
     },
     spanGaps: true,
@@ -270,6 +284,8 @@ export function createBarOptions({
         labels: {
           color: getColorFor('label', isDark),
           boxWidth: 12,
+          // make sorting only by dataset index to ignore 'order' dataset option
+          sort: (a, b) => a.datasetIndex - b.datasetIndex,
         },
       },
     },
@@ -300,12 +316,13 @@ export function createDatasetOptions({
   isDark,
   measureCount = 1,
   datasetIdx = 0,
+  stackedBar,
 }) {
   let color = datasetColor;
   let legendColor = datasetColor;
   if (measureCount > 1) {
     legendColor = color = ColorPicker.getGeneratedColors(measureCount)[datasetIdx];
-  } else if (['bar', 'number'].includes(type) && targetValue) {
+  } else if (['bar', 'number'].includes(type) && !stackedBar && targetValue) {
     color = determineBarColor(targetValue, data, datasetColor, isStriped, isDark);
     legendColor = datasetColor;
   }
@@ -324,6 +341,7 @@ export function createDatasetOptions({
         fill: false,
         borderWidth: 2,
         legendColor: color,
+        type: 'line',
       };
     case 'bar':
     case 'number':

@@ -5,13 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.index;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
 @FieldNameConstants
 public class TimestampBasedImportIndexDto implements ImportIndexDto {

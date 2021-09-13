@@ -91,7 +91,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     assertThat(collectionClient.getReportsForCollection(collectionId)).isEqualTo(allReports);
     assertThat(dashboardClient.getDashboard(dashboardId)).isEqualTo(dashboard);
     assertThat(alertClient.getAllAlerts())
-      .usingElementComparatorIgnoringFields("triggered")
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields("triggered")
       .isEqualTo(allAlerts);
   }
 

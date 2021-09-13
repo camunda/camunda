@@ -70,7 +70,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
       .build();
     reportData.setFilter(filter);
     ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
@@ -105,7 +105,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.setFilter(filter);
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
@@ -148,7 +148,7 @@ public class OpenIncidentFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
       .build();
     reportData.setFilter(openIncidentFilter(filterLevel));
     ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();

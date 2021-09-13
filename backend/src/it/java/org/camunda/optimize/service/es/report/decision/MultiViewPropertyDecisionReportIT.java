@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,6 +57,7 @@ public class MultiViewPropertyDecisionReportIT extends AbstractDecisionDefinitio
     assertThat(resultDto.getMeasures()).extracting(MeasureResponseDto::getType).containsOnly(ResultType.NUMBER);
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> multiViewPropertyScenarios() {
     return Stream.of(
       Arguments.of(Arrays.asList(ViewProperty.FREQUENCY, ViewProperty.DURATION)),

@@ -21,6 +21,7 @@ export default function processDefaultData({report}) {
     },
     view,
     groupBy,
+    distributedBy,
   } = data;
 
   const groupedByDuration = groupBy.type === 'duration';
@@ -31,7 +32,11 @@ export default function processDefaultData({report}) {
 
   const selectedView = config.findSelectedOption(config.options.view, 'data', view);
   const viewString = t('report.view.' + selectedView.key.split('_')[0]);
-  const groupString = config.getLabelFor('groupBy', config.options.groupBy, groupBy);
+  let groupString = config.getLabelFor('groupBy', config.options.groupBy, groupBy);
+
+  if (groupBy.type === 'none' && distributedBy.type === 'process') {
+    groupString = 'Process';
+  }
 
   const head = [];
   const body = [];

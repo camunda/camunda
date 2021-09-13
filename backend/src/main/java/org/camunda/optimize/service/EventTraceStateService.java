@@ -8,9 +8,9 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.es.reader.EventTraceStateReader;
@@ -119,6 +119,9 @@ public class EventTraceStateService {
     return (tracedEventA, tracedEventB) -> {
       final EventTypeDto eventATypeDto = fromTracedEventDto(tracedEventA);
       final EventTypeDto eventBTypeDto = fromTracedEventDto(tracedEventB);
+      if (eventATypeDto.equals(eventBTypeDto)) {
+        return 0;
+      }
       final List<EventSequenceCountDto> eventSequencesContainingEventTypes =
         eventSequenceCountReader.getEventSequencesContainingBothEventTypes(eventATypeDto, eventBTypeDto);
       if (eventSequencesContainingEventTypes.isEmpty()) {
@@ -165,7 +168,11 @@ public class EventTraceStateService {
 
     // we might already have seen a new trace ID in this batch of events - this keeps linked events to a single trace
     if (existingTraceStateToAdd.isPresent()) {
-      existingTraceStateToAdd.get().getEventTrace().add(tracedEventToAdd);
+      final List<TracedEventDto> eventTrace = existingTraceStateToAdd.get().getEventTrace();
+      // In case duplicate events exist, we don't add the same traced event multiple times to the trace
+      if (!eventTrace.contains(tracedEventToAdd)) {
+        eventTrace.add(tracedEventToAdd);
+      }
     } else {
       EventTraceStateDto newTraceStateDto = EventTraceStateDto.builder()
         .traceId(event.getTraceId())
@@ -191,7 +198,9 @@ public class EventTraceStateService {
   private void addEventToTraceAndRecordAdjustments(final List<TracedEventDto> eventTrace,
                                                    final TracedEventDto tracedEventToAdd,
                                                    final Map<String, EventSequenceCountDto> requiredCountAdjustments) {
-    eventTrace.add(tracedEventToAdd);
+    if (!eventTrace.contains(tracedEventToAdd)) {
+      eventTrace.add(tracedEventToAdd);
+    }
     sortTracedEvents(eventTrace);
     int indexOfNewEvent = eventTrace.indexOf(tracedEventToAdd);
     TracedEventDto newPreviousEvent = (indexOfNewEvent == 0) ? null : eventTrace.get(indexOfNewEvent - 1);

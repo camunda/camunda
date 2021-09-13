@@ -34,6 +34,10 @@ public class AlertClient {
     return createAlert(createSimpleAlert(reportId));
   }
 
+  public String createAlertForReport(final String reportId, final int intervalValue, final String unit) {
+    return createAlert(createSimpleAlert(reportId, intervalValue, unit));
+  }
+
   public String createAlert(final AlertCreationRequestDto creationDto) {
     return getRequestExecutor()
       .buildCreateAlertRequest(creationDto)

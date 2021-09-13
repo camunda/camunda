@@ -14,6 +14,7 @@ Object {
       "labels": Object {
         "boxWidth": 12,
         "color": "#666",
+        "sort": [Function],
       },
       "onClick": [Function],
     },
@@ -25,6 +26,7 @@ Object {
         "color": "rgba(0,0,0,0.1)",
       },
       "id": "axis-0",
+      "stacked": undefined,
       "suggestedMax": undefined,
       "ticks": Object {
         "beginAtZero": true,
@@ -34,6 +36,7 @@ Object {
         "color": "#666",
         "display": false,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": undefined,
@@ -54,6 +57,7 @@ Object {
         "color": "#666",
         "display": false,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": undefined,
@@ -85,6 +89,7 @@ Object {
       "labels": Object {
         "boxWidth": 12,
         "color": "#666",
+        "sort": [Function],
       },
       "onClick": [Function],
     },
@@ -92,6 +97,7 @@ Object {
       "callbacks": Object {
         "label": [Function],
         "labelColor": [Function],
+        "title": [Function],
       },
       "enabled": true,
     },
@@ -104,13 +110,19 @@ Object {
         "color": "rgba(0,0,0,0.1)",
       },
       "id": "axis-0",
+      "stacked": undefined,
       "suggestedMax": undefined,
       "ticks": Object {
         "beginAtZero": true,
         "color": "#666",
       },
       "title": Object {
+        "color": "#666",
         "display": true,
+        "font": Object {
+          "size": 14,
+          "weight": "bold",
+        },
         "text": "Flow Node Count",
       },
     },
@@ -132,6 +144,7 @@ Object {
         "color": "#666",
         "display": true,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": "Flow Node Duration",
@@ -142,7 +155,7 @@ Object {
       "grid": Object {
         "color": "rgba(0,0,0,0.1)",
       },
-      "stacked": false,
+      "stacked": undefined,
       "ticks": Object {
         "autoSkip": false,
         "callback": [Function],
@@ -152,6 +165,7 @@ Object {
         "color": "#666",
         "display": false,
         "font": Object {
+          "size": 14,
           "weight": "bold",
         },
         "text": undefined,

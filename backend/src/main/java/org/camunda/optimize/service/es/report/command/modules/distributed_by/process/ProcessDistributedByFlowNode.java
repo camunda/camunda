@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.FlowNodeDistributedByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -45,7 +45,7 @@ public class ProcessDistributedByFlowNode extends ProcessDistributedByModelEleme
   }
 
   @Override
-  protected ProcessDistributedByDto getDistributedBy() {
+  protected ProcessReportDistributedByDto getDistributedBy() {
     return new FlowNodeDistributedByDto();
   }
 

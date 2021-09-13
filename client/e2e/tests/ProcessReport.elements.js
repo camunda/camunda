@@ -72,7 +72,7 @@ export const instanceCountSwitch = Selector('.Configuration .Switch');
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const flowNodeFilterButton = Selector('.Filter__dropdown .activateButton').nth(1);
 export const filterOption = (text) =>
-  Selector('.Filter__dropdown.is-open .DropdownOption').withText(text);
+  Selector('.Filter__dropdown.is-open .DropdownOption').withExactText(text);
 export const subFilterOption = (text) =>
   Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
 export const modalOption = (text) =>
@@ -85,7 +85,7 @@ export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child'
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
-export const distributedBySelect = Selector('.label').withText('Distribution').nextSibling();
+export const distributedBySelect = Selector('.DistributedBy .Select');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
@@ -99,7 +99,7 @@ export const versionAll = Selector('input[type="radio"]').nth(0);
 export const versionLatest = Selector('input[type="radio"]').nth(1);
 export const versionSpecific = Selector('input[type="radio"]').nth(2);
 export const versionCheckbox = (number) =>
-  Selector('.specificVersions input[type="checkbox"]').nth(-number);
+  Selector('.specificVersions input[type="checkbox"]').nth(number);
 export const tenantPopover = Selector('.TenantPopover');
 export const modalContainer = Selector('.Modal__content-container');
 export const aggregationTypeSelect = Selector('.AggregationType');
@@ -123,3 +123,4 @@ export const sectionToggle = (sectionName) =>
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist .label').withText(name);
+export const lineButton = Selector('.measureContainer .Button').withText('Line');

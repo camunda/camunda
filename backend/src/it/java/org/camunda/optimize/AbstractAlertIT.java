@@ -298,7 +298,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionRequestDto report = new SingleProcessReportDefinitionRequestDto();
     report.setData(reportData);

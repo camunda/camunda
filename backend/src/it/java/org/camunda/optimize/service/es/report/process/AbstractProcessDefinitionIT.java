@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -85,7 +85,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String SECOND_USERS_PASSWORD = SECOND_USER;
   protected static final String SECOND_USER_FIRST_NAME = "the";
   protected static final String SECOND_USER_LAST_NAME = "other";
-  protected static final String SECOND_USER_FULLNAME = SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
+  protected static final String SECOND_USER_FULL_NAME = SECOND_USER_FIRST_NAME + " " + SECOND_USER_LAST_NAME;
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
   protected static final String TEST_PROCESS = "aProcess";
 
@@ -483,7 +483,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected DurationFilterDataDto durationFilterData(final DurationFilterUnit unit, final Long value,
-                                                     final FilterOperator operator) {
+                                                     final ComparisonOperator operator) {
     return DurationFilterDataDto.builder().unit(unit).value(value).operator(operator).build();
   }
 
@@ -509,7 +509,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
         .flowNode(
           START_EVENT,
           DurationFilterDataDto.builder()
-            .operator(FilterOperator.GREATER_THAN)
+            .operator(ComparisonOperator.GREATER_THAN)
             .unit(DurationFilterUnit.HOURS)
             .value(1L)
             .build()
@@ -529,7 +529,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected static Triple<String, Double, String> createSecondUserTriple(final Double value) {
-    return Triple.of(SECOND_USER, value, SECOND_USER_FULLNAME);
+    return Triple.of(SECOND_USER, value, SECOND_USER_FULL_NAME);
   }
 
   protected static Triple<String, Double, String> createFirstGroupTriple(final Double value) {

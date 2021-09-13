@@ -15,7 +15,7 @@ public class ProcessInstanceFrequencyByVariableByEndDateReportEvaluationIT
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {
-    return ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_END_DATE;
+    return ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE_BY_END_DATE;
   }
 
   @Override

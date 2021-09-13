@@ -42,13 +42,11 @@ public class ReportRelationService {
     return conflictedItems;
   }
 
-
   public void handleDeleted(ReportDefinitionDto reportDefinition) {
     for (ReportReferencingService referencingService : referencingServices) {
       referencingService.handleReportDeleted(reportDefinition);
     }
   }
-
 
   public void handleUpdated(final String reportId,
                             final ReportDefinitionDto updateDefinition) {

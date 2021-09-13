@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -43,23 +44,24 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class MixedFilterIT extends AbstractFilterIT {
 
@@ -68,8 +70,8 @@ public class MixedFilterIT extends AbstractFilterIT {
   @Test
   public void applyCombinationOfFiltersForFinishedInstance() throws Exception {
     // given
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      BpmnModels.getSingleUserTaskDiagram());
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
@@ -136,8 +138,8 @@ public class MixedFilterIT extends AbstractFilterIT {
   @Test
   public void applyCombinationOfFiltersForInProgressInstance() throws Exception {
     // given
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      BpmnModels.getSingleUserTaskDiagram());
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
@@ -216,8 +218,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertReportWithIncompatibleFilters(reportType, result);
   }
 
-  @Disabled("Disabled as there currently are no incompatible duration viewLevel filters. " +
-    "To be adjusted with OPT-5349 and OPT-5350")
+  @Disabled("Disabled as there currently are no incompatible duration viewLevel filters. To be adjusted with OPT-5349" +
+    " and OPT-5350")
   @ParameterizedTest
   @MethodSource("reportTypesToEvaluate")
   public void testIncompatibleCombinationOfViewLevelFlowNodeDurationFilters(final ProcessReportDataType reportType) {
@@ -396,6 +398,60 @@ public class MixedFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("reportTypesToEvaluate")
+  public void testIncompatibleCombinationOfInstanceLevelFlowNodeDateFilters(final ProcessReportDataType reportType) {
+    // given
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
+      .filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(now)
+      .end(now)
+      .add()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(now.minusDays(1))
+      .end(now.minusDays(1))
+      .add()
+      .buildList();
+    ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when
+    filterList = ProcessFilterBuilder
+      .filter()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(1L, DateFilterUnit.YEARS)
+      .add()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(1L, DateFilterUnit.WEEKS)
+      .add()
+      .buildList();
+    result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
+  }
+
+  @ParameterizedTest
+  @MethodSource("reportTypesToEvaluate")
   public void viewLevelFlowNodeDateFilterCombinations(final ProcessReportDataType reportType) {
     // given
     final OffsetDateTime now = OffsetDateTime.parse("2021-05-05T00:00:00+02:00");
@@ -448,7 +504,6 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
     assertThat(result.getInstanceCount()).isEqualTo(1L);
 
-
     // when
     filterList = ProcessFilterBuilder
       .filter()
@@ -459,6 +514,86 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .relativeFlowNodeStartDate()
       .filterLevel(FilterApplicationLevel.VIEW)
+      .start(3L, DateFilterUnit.DAYS)
+      .add()
+      .buildList();
+    result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+  }
+
+  @ParameterizedTest
+  @MethodSource("reportTypesToEvaluate")
+  public void instanceLevelFlowNodeDateFilterCombinations(final ProcessReportDataType reportType) {
+    // given
+    final OffsetDateTime now = OffsetDateTime.parse("2021-05-05T00:00:00+02:00");
+    dateFreezer().dateToFreeze(now).freezeDateAndReturn();
+    ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto instance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance1.getId());
+    engineDatabaseExtension.changeAllFlowNodeStartDates(instance1.getId(), now.minusDays(1));
+
+    ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instance2.getId());
+    engineDatabaseExtension.changeAllFlowNodeStartDates(instance2.getId(), now.minusDays(6));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
+      .filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(now.minusDays(2))
+      .end(now)
+      .add()
+      .rollingFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(USER_TASK_1))
+      .start(1L, DateFilterUnit.DAYS)
+      .add()
+      .buildList();
+    ReportResultResponseDto<?> result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+
+    // when
+    filterList = ProcessFilterBuilder
+      .filter()
+      .rollingFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(1L, DateFilterUnit.WEEKS)
+      .add()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(USER_TASK_1))
+      .start(1L, DateFilterUnit.WEEKS)
+      .add()
+      .buildList();
+    result = evaluateReport(reportType, processDefinition, filterList);
+
+    // then
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+
+    // when
+    filterList = ProcessFilterBuilder
+      .filter()
+      .fixedFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(START_EVENT))
+      .start(now.minusDays(2))
+      .end(now)
+      .add()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(Collections.singletonList(USER_TASK_1))
       .start(3L, DateFilterUnit.DAYS)
       .add()
       .buildList();
@@ -490,7 +625,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .createReportData()
       .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_NONE)
       .build();
     ReportResultResponseDto<Double> numberResult = reportClient.evaluateNumberReport(reportData).getResult();
 
@@ -519,7 +654,7 @@ public class MixedFilterIT extends AbstractFilterIT {
   public void reportCreationWithInvalidFilters(List<ProcessFilterDto<?>> filters) {
     // given
     ProcessReportDataDto reportData = createReportWithDefinition(
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram()));
     reportData.setFilter(filters);
     SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto();
     definition.setData(reportData);
@@ -539,7 +674,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     // given
     final String reportId = reportClient.createEmptySingleProcessReport();
     ProcessReportDataDto reportData = createReportWithDefinition(
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram()));
     reportData.setFilter(filters);
     SingleProcessReportDefinitionRequestDto definition = new SingleProcessReportDefinitionRequestDto();
     definition.setData(reportData);
@@ -558,7 +693,7 @@ public class MixedFilterIT extends AbstractFilterIT {
   public void reportEvaluationWithValidApplicationLevelsForFilters(List<ProcessFilterDto<?>> filters) {
     // given
     ProcessReportDataDto reportData = createReportWithDefinition(
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram()));
     reportData.setFilter(filters);
 
     // when
@@ -573,7 +708,7 @@ public class MixedFilterIT extends AbstractFilterIT {
   public void reportEvaluationWithInvalidApplicationLevelsForFilters(List<ProcessFilterDto<?>> filters) {
     // given
     ProcessReportDataDto reportData = createReportWithDefinition(
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram()));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram()));
     reportData.setFilter(filters);
 
     // when
@@ -646,7 +781,7 @@ public class MixedFilterIT extends AbstractFilterIT {
         .filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
         .duration()
-        .operator(GREATER_THAN)
+        .operator(ComparisonOperator.GREATER_THAN)
         .unit(DurationFilterUnit.HOURS)
         .value(10L)
         .filterLevel(levelToApply)
@@ -659,7 +794,11 @@ public class MixedFilterIT extends AbstractFilterIT {
         .flowNodeDuration()
         .flowNode(
           "someId",
-          DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L).operator(GREATER_THAN).build()
+          DurationFilterDataDto.builder()
+            .unit(DurationFilterUnit.SECONDS)
+            .value(0L)
+            .operator(ComparisonOperator.GREATER_THAN)
+            .build()
         ).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().candidateGroups().id("someId").filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().assignee().id("someId").filterLevel(levelToApply).add().buildList()
@@ -669,12 +808,12 @@ public class MixedFilterIT extends AbstractFilterIT {
   @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<ProcessReportDataType> reportTypesToEvaluate() {
     return Stream.of(
-      COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
-      USER_TASK_FREQUENCY_GROUP_BY_USER_TASK,
+      FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+      USER_TASK_FREQ_GROUP_BY_USER_TASK,
       RAW_DATA,
-      COUNT_PROC_INST_FREQ_GROUP_BY_NONE,
+      PROC_INST_FREQ_GROUP_BY_NONE,
       VARIABLE_AGGREGATION_GROUP_BY_NONE,
-      INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE
+      INCIDENT_FREQ_GROUP_BY_FLOW_NODE
     );
   }
 
@@ -689,13 +828,13 @@ public class MixedFilterIT extends AbstractFilterIT {
       .setReportDataType(reportType)
       .setFilter(filter);
     switch (reportType) {
-      case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
-      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
-      case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
+      case FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK:
+      case INCIDENT_FREQ_GROUP_BY_FLOW_NODE:
         return reportClient.evaluateMapReport(dataBuilder.build()).getResult();
       case RAW_DATA:
         return reportClient.evaluateRawReport(dataBuilder.build()).getResult();
-      case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
+      case PROC_INST_FREQ_GROUP_BY_NONE:
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:
         dataBuilder.setVariableName("someName").setVariableType(VariableType.LONG);
         return reportClient.evaluateNumberReport(dataBuilder.build()).getResult();
@@ -712,13 +851,13 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(reportResult.getInstanceCountWithoutFilters()).isEqualTo(1L);
     // and the incompatible filters results in no data
     switch (reportType) {
-      case COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
-      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
-      case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
+      case FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE:
+      case USER_TASK_FREQ_GROUP_BY_USER_TASK:
+      case INCIDENT_FREQ_GROUP_BY_FLOW_NODE:
       case RAW_DATA:
         assertThat(((ReportResultResponseDto<List<?>>) reportResult).getFirstMeasureData()).isEmpty();
         break;
-      case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
+      case PROC_INST_FREQ_GROUP_BY_NONE:
         assertThat(((ReportResultResponseDto<Double>) reportResult).getFirstMeasureData()).isZero();
         break;
       case VARIABLE_AGGREGATION_GROUP_BY_NONE:

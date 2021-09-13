@@ -6,7 +6,7 @@
 
 import config from './index';
 
-jest.mock('./reportConfig', () => () => ({update: () => ({})}));
+jest.mock('./reportConfig', () => () => ({update: (type, data) => ({[type]: {$set: data}})}));
 
 describe('process update', () => {
   it('should reset aggregation type if its incompatible', () => {
@@ -142,6 +142,7 @@ describe('process update', () => {
         report: {
           data: {
             view: {entity: 'processInstance', properties: ['frequency']},
+            groupBy: {type: 'flowNodes'},
             distributedBy: {type: 'variable', value: {}},
             configuration: {},
           },

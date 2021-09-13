@@ -41,7 +41,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   protected GroupByPart<D> groupByPart;
   protected DistributedByPart<D> distributedByPart;
   protected OptimizeElasticsearchClient esClient;
-  protected Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
+  private Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
 
   protected ReportCmdExecutionPlan(final ViewPart<D> viewPart,
                                    final GroupByPart<D> groupByPart,
@@ -112,7 +112,6 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
         throw e;
       }
     }
-
     return retrieveQueryResult(response, executionContext);
   }
 

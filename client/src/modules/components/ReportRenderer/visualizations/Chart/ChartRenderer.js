@@ -10,8 +10,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 import './ChartRenderer.scss';
 
-Chart.defaults.font.defaultFontFamily =
-  "'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+Chart.defaults.font.family = "'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
 
 Chart.register(...registerables);
 

@@ -38,7 +38,7 @@ public class EventProcessInstanceImportSourceIndexHandler
 
   @Override
   public String getEngineAlias() {
-    return ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
+    return ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
   }
 
   @Override

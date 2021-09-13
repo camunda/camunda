@@ -7,7 +7,10 @@ metadata:
   labels:
     app: optimize-persistent
     team: optimize
-    camunda.cloud/managed-by: ci
+    camunda.cloud/source: "" # {"$openapi":"source"}
+    camunda.cloud/managed-by: "" # {"$openapi":"managed-by"}
+  annotations:
+    camunda.cloud/created-by: "" # {"$openapi":"created-by"}
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -21,7 +24,6 @@ spec:
     metadata:
       labels:
         app: optimize-persistent
-        camunda.cloud/managed-by: ci
     spec:
       imagePullSecrets:
       - name: registry-camunda-cloud

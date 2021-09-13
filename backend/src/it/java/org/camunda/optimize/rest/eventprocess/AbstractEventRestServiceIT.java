@@ -91,7 +91,7 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
   public void init() {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     embeddedOptimizeExtension.reloadConfiguration();
-    eventClient.ingestEventBatch(allEventDtos);
+    ingestionClient.ingestEventBatch(allEventDtos);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     processEventTracesAndSequences();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -113,7 +113,7 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
 
   private CloudEventRequestDto createEventDtoWithProperties(final String group, final String source,
                                                             final String type) {
-    return eventClient.createCloudEventDto()
+    return ingestionClient.createCloudEventDto()
       .toBuilder()
       .group(group)
       .source(source)

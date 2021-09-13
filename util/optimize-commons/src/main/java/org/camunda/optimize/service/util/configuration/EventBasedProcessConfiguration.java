@@ -9,7 +9,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ public class EventBasedProcessConfiguration {
   private List<String> authorizedUserIds;
   private List<String> authorizedGroupIds;
   private EventImportConfiguration eventImport;
-  private IngestionConfiguration eventIngestion;
-  private EventIndexRolloverConfiguration eventIndexRollover;
+  private EventIngestionConfiguration eventIngestion;
+  private IndexRolloverConfiguration eventIndexRollover;
 
 }

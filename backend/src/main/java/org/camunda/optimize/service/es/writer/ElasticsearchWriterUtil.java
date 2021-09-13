@@ -256,7 +256,7 @@ public class ElasticsearchWriterUtil {
 
     try {
       final TaskResponse.Status taskStatus = getTaskResponse(esClient, taskId).getTaskStatus();
-      log.debug("Deleted [{}] {}.", taskStatus.getDeleted(), deletedItemIdentifier);
+      log.debug("Deleted [{}] out of [{}] {}.", taskStatus.getDeleted(), taskStatus.getTotal(), deletedItemIdentifier);
       return taskStatus.getDeleted() > 0L;
     } catch (IOException e) {
       throw new OptimizeRuntimeException(
@@ -270,7 +270,7 @@ public class ElasticsearchWriterUtil {
     RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
     rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
 
-    log.info("Executing Rollover Request...");
+    log.info("Executing rollover request on {}", indexAliasName);
 
     try {
       RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
@@ -305,53 +305,61 @@ public class ElasticsearchWriterUtil {
   private static void doBulkRequestWithoutRetries(OptimizeElasticsearchClient esClient,
                                                   BulkRequest bulkRequest,
                                                   String itemName) {
-    try {
-      BulkResponse bulkResponse = esClient.bulk(bulkRequest);
-      if (bulkResponse.hasFailures()) {
-        throw new OptimizeRuntimeException(String.format(
-          "There were failures while performing bulk on %s.%n%s Message: %s",
-          itemName,
-          getHintForErrorMsg(bulkResponse),
-          bulkResponse.buildFailureMessage()
-        ));
+    if (bulkRequest.numberOfActions() > 0) {
+      try {
+        BulkResponse bulkResponse = esClient.bulk(bulkRequest);
+        if (bulkResponse.hasFailures()) {
+          throw new OptimizeRuntimeException(String.format(
+            "There were failures while performing bulk on %s.%n%s Message: %s",
+            itemName,
+            getHintForErrorMsg(bulkResponse),
+            bulkResponse.buildFailureMessage()
+          ));
+        }
+      } catch (IOException e) {
+        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
       }
-    } catch (IOException e) {
-      String reason = String.format("There were errors while performing a bulk on %s.", itemName);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
     }
   }
 
   private static void doBulkRequestWithNestedDocHandling(OptimizeElasticsearchClient esClient,
                                                          BulkRequest bulkRequest,
                                                          String itemName) {
-    try {
-      BulkResponse bulkResponse = esClient.bulk(bulkRequest);
-      if (bulkResponse.hasFailures()) {
-        if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-          log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
-                     " Removing failed items and retrying", itemName);
-          final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
-            .filter(BulkItemResponse::isFailed)
-            .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
-            .map(BulkItemResponse::getId)
-            .collect(Collectors.toSet());
-          bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
-          if (!bulkRequest.requests().isEmpty()) {
-            doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
+    if (bulkRequest.numberOfActions() > 0) {
+      try {
+        BulkResponse bulkResponse = esClient.bulk(bulkRequest);
+        if (bulkResponse.hasFailures()) {
+          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+            log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
+                       " Removing failed items and retrying", itemName);
+            final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
+              .filter(BulkItemResponse::isFailed)
+              .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
+              .map(BulkItemResponse::getId)
+              .collect(Collectors.toSet());
+            bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
+            if (!bulkRequest.requests().isEmpty()) {
+              doBulkRequestWithNestedDocHandling(esClient, bulkRequest, itemName);
+            }
+          } else {
+            throw new OptimizeRuntimeException(String.format(
+              "There were failures while performing bulk on %s. Message: %s",
+              itemName,
+              bulkResponse.buildFailureMessage()
+            ));
           }
-        } else {
-          throw new OptimizeRuntimeException(String.format(
-            "There were failures while performing bulk on %s. Message: %s",
-            itemName,
-            bulkResponse.buildFailureMessage()
-          ));
         }
+      } catch (IOException e) {
+        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
       }
-    } catch (IOException e) {
-      String reason = String.format("There were errors while performing a bulk on %s.", itemName);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
     }
   }
 
@@ -362,8 +370,9 @@ public class ElasticsearchWriterUtil {
   private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
     if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
       // exception potentially related to nested object limit
-      return "If you are experiencing failures due to too many nested documents, " +
-        "try carefully increasing the configured nested object limit (es.settings.index.nested_documents_limit). " +
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the " +
+        "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of " +
+        "documents that have reached this limit during import (import.data.skipDataAfterNestedDocLimitReached). " +
         "See Optimize documentation for details.";
     }
     return "";
@@ -399,14 +408,15 @@ public class ElasticsearchWriterUtil {
           final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
           progress = currentProgress;
           log.info(
-            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {})",
+            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed is {}",
             taskId,
             taskItemIdentifier,
             progress,
             taskStatus.getTotal(),
             taskStatus.getUpdated(),
             taskStatus.getCreated(),
-            taskStatus.getDeleted()
+            taskStatus.getDeleted(),
+            taskResponse.isCompleted()
           );
         }
         finished = taskResponse.isCompleted();

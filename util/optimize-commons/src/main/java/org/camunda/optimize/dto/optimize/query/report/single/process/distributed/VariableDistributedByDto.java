@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.distributed
 
 import java.util.Optional;
 
-public class VariableDistributedByDto extends ProcessDistributedByDto<VariableDistributedByValueDto> {
+public class VariableDistributedByDto extends ProcessReportDistributedByDto<VariableDistributedByValueDto> {
 
   public VariableDistributedByDto() {
     this.type = DistributedByType.VARIABLE;

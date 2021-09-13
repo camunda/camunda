@@ -276,6 +276,8 @@ es:
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a time out triggers.
     timeout: 10000
+    # Maximum size of the Elasticsearch response consumer heap buffer.
+    responseConsumerBufferLimitInMb: 100
     # a list of Elasticsearch nodes Optimize can connect to. If you  have built
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.
@@ -552,3 +554,20 @@ caches:
     maxSize: 1000
     # the time a read result will be cached
     defaultTtlMillis: 10000
+
+externalVariable:
+  import:
+    # Controls whether external ingested variable data is processed and imported into process instance data
+    enabled: false
+    # Determines the page size for the external variable import, that got ingested via the external variable API
+    maxPageSize: 10000
+  variableIngestion:
+    # Secret token to be provided to the external variable ingestion API.
+    # If set to `null`, a random token will be generated with each startup of Optimize and logged.
+    accessToken: ${OPTIMIZE_VARIABLE_INGESTION_ACCESS_TOKEN:null}
+  variableIndexRollover:
+    # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
+    # external variable index is required (whether the rollover is triggered depends on the conditions specified by maxIndexSizeGB).
+    scheduleIntervalInMinutes: 10
+    # A rollover is triggered when the size of the current external variable index matches or exceeds the maxIndexSizeGB threshold.
+    maxIndexSizeGB: 50

@@ -21,7 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.validation.DecisionFiltersMustReferenceExistingDefinitionsConstraint;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
   @Builder.Default
-  protected ProcessDistributedByDto<?> distributedBy = new NoneDistributedByDto();
+  protected ProcessReportDistributedByDto<?> distributedBy = new NoneDistributedByDto();
   protected DecisionVisualization visualization;
 
   public String getDecisionDefinitionKey() {

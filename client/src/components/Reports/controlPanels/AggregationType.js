@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Popover, Icon, Form, Switch} from 'components';
+import {Popover, Icon, Form, Switch, Tooltip} from 'components';
 import {t} from 'translation';
 
 import './AggregationType.scss';
@@ -17,7 +17,7 @@ const orders = {
 };
 
 export default function AggregationType({report, onChange}) {
-  const {configuration} = report;
+  const {configuration, distributedBy} = report;
   const {aggregationTypes} = report.configuration;
 
   const isDurationReport = report?.view?.properties.includes('duration');
@@ -104,19 +104,22 @@ export default function AggregationType({report, onChange}) {
               <h4>{t('report.config.aggregation.userTaskLegend')}</h4>
               <fieldset>
                 {orders.userTaskDurationTimes.map((type) => (
-                  <Switch
-                    key={type}
-                    label={t('report.config.userTaskDuration.' + type)}
-                    checked={hasAggregation('userTaskDurationTimes', type)}
-                    disabled={isLastAggregation('userTaskDurationTimes', type)}
-                    onChange={({target}) => {
-                      if (target.checked) {
-                        addAggregation('userTaskDurationTimes', type);
-                      } else {
-                        removeAggregation('userTaskDurationTimes', type);
-                      }
-                    }}
-                  />
+                  <div key={type}>
+                    <span>
+                      <Switch
+                        label={t('report.config.userTaskDuration.' + type)}
+                        checked={hasAggregation('userTaskDurationTimes', type)}
+                        disabled={isLastAggregation('userTaskDurationTimes', type)}
+                        onChange={({target}) => {
+                          if (target.checked) {
+                            addAggregation('userTaskDurationTimes', type);
+                          } else {
+                            removeAggregation('userTaskDurationTimes', type);
+                          }
+                        }}
+                      />
+                    </span>
+                  </div>
                 ))}
               </fieldset>
             </>
@@ -129,19 +132,33 @@ export default function AggregationType({report, onChange}) {
           </h4>
           <fieldset>
             {availableAggregations.map((type) => (
-              <Switch
-                key={type}
-                label={t('report.config.aggregation.' + type)}
-                checked={hasAggregation('aggregationTypes', type)}
-                disabled={isLastAggregation('aggregationTypes', type)}
-                onChange={({target}) => {
-                  if (target.checked) {
-                    addAggregation('aggregationTypes', type);
-                  } else {
-                    removeAggregation('aggregationTypes', type);
+              <div key={type}>
+                <Tooltip
+                  content={
+                    type === 'median' && distributedBy.type === 'process'
+                      ? t('report.config.aggregation.multiProcessWarning')
+                      : undefined
                   }
-                }}
-              />
+                >
+                  <span>
+                    <Switch
+                      label={t('report.config.aggregation.' + type)}
+                      checked={hasAggregation('aggregationTypes', type)}
+                      disabled={
+                        isLastAggregation('aggregationTypes', type) ||
+                        (type === 'median' && distributedBy.type === 'process')
+                      }
+                      onChange={({target}) => {
+                        if (target.checked) {
+                          addAggregation('aggregationTypes', type);
+                        } else {
+                          removeAggregation('aggregationTypes', type);
+                        }
+                      }}
+                    />
+                  </span>
+                </Tooltip>
+              </div>
             ))}
           </fieldset>
         </Form>

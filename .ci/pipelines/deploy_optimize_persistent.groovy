@@ -44,7 +44,7 @@ pipeline {
         }
         container('gcloud') {
           sh '''
-            gcloud components install kubectl --quiet
+            gcloud components install kubectl kustomize --quiet
           '''
         }
       }
@@ -56,10 +56,8 @@ pipeline {
       }
       steps {
         container('gcloud') {
-          dir('optimize') {
-            sh '''
-                kubectl apply -f .ci/persistent-deployment/elasticsearch
-            '''
+          dir('optimize/.ci/persistent-deployment/elasticsearch') {
+            deploy()
           }
         }
       }
@@ -71,10 +69,8 @@ pipeline {
       }
       steps {
         container('gcloud') {
-          dir('optimize') {
-            sh '''
-                kubectl apply -f .ci/persistent-deployment/optimize
-            '''
+          dir('optimize/.ci/persistent-deployment/optimize') {
+            deploy()
           }
         }
       }
@@ -89,4 +85,13 @@ pipeline {
       retriggerBuildIfDisconnected()
     }
   }
+}
+
+def deploy() {
+  sh """
+    kustomize cfg set . source jenkins
+    kustomize cfg set . managed-by ${JENKINS_DOMAIN}
+    kustomize cfg set . created-by ${BUILD_URL}
+    kubectl apply -k .
+  """
 }

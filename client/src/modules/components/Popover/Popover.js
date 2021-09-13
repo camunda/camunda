@@ -32,11 +32,14 @@ export default class Popover extends React.Component {
     document.body.appendChild(this.el);
     this.mounted = true;
     document.body.addEventListener('click', this.close, {capture: true});
+    new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
+    window.addEventListener('resize', this.fixPositioning);
   }
 
   componentWillUnmount() {
     document.body.removeChild(this.el);
     document.body.removeEventListener('click', this.close, {capture: true});
+    window.removeEventListener('resize', this.fixPositioning);
     this.mounted = false;
   }
 
@@ -48,7 +51,21 @@ export default class Popover extends React.Component {
         this.props.onClose?.();
       }
     }
+
+    this.fixPositioning();
   }
+
+  fixPositioning = () => {
+    const {renderInPortal} = this.props;
+    const overlay = this.el.querySelector('.overlay');
+    if (renderInPortal && overlay) {
+      const box = this.buttonRef.getBoundingClientRect();
+
+      overlay.style.left = box.left + 'px';
+      overlay.style.top = box.top + box.height + 'px';
+      overlay.style.width = box.width + 'px';
+    }
+  };
 
   toggleOpen = (evt) => {
     evt.preventDefault();
@@ -148,17 +165,7 @@ export default class Popover extends React.Component {
   createOverlay = () => {
     const {renderInPortal} = this.props;
     const {dialogStyles} = this.state;
-
-    let overlayStyles = {};
     let arrowStyles = {};
-    if (renderInPortal) {
-      const box = this.buttonRef.getBoundingClientRect();
-      overlayStyles = {
-        left: box.left,
-        width: box.width,
-        top: box.top + box.height,
-      };
-    }
 
     if (dialogStyles.bottom) {
       // flip arrow vertically
@@ -172,7 +179,6 @@ export default class Popover extends React.Component {
           Popover: renderInPortal,
         })}
         onClick={this.catchClick}
-        style={overlayStyles}
       >
         <span className="Popover__dialog-arrow-border" style={arrowStyles}>
           {' '}

@@ -21,12 +21,12 @@ import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
 import org.camunda.optimize.test.optimize.DefinitionClient;
 import org.camunda.optimize.test.optimize.EntitiesClient;
-import org.camunda.optimize.test.optimize.EventClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.test.optimize.ExportClient;
 import org.camunda.optimize.test.optimize.FlowNodeNamesClient;
 import org.camunda.optimize.test.optimize.IdentityClient;
 import org.camunda.optimize.test.optimize.ImportClient;
+import org.camunda.optimize.test.optimize.IngestionClient;
 import org.camunda.optimize.test.optimize.LocalizationClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
@@ -105,10 +105,6 @@ public abstract class AbstractIT {
   protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
   protected EventProcessClient eventProcessClient = new EventProcessClient(optimizeRequestExecutorSupplier);
   protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
-  protected EventClient eventClient = new EventClient(
-    optimizeRequestExecutorSupplier,
-    () -> embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken()
-  );
   protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
   protected UiConfigurationClient uiConfigurationClient = new UiConfigurationClient(optimizeRequestExecutorSupplier);
   protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
@@ -122,5 +118,10 @@ public abstract class AbstractIT {
   protected StatusClient statusClient = new StatusClient(optimizeRequestExecutorSupplier);
   protected LocalizationClient localizationClient = new LocalizationClient(optimizeRequestExecutorSupplier);
   protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
+  protected IngestionClient ingestionClient = new IngestionClient(
+    optimizeRequestExecutorSupplier,
+    () -> embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().getAccessToken(),
+    () -> embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken()
+  );
 
 }

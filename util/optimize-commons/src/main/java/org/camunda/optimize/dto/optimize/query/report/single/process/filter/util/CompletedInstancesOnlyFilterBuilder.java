@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public class CompletedInstancesOnlyFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
   private List<String> appliedTo;
 
@@ -21,7 +21,7 @@ public class CompletedInstancesOnlyFilterBuilder {
     this.filterBuilder = filterBuilder;
   }
 
-  static CompletedInstancesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  public static CompletedInstancesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
     return new CompletedInstancesOnlyFilterBuilder(filterBuilder);
   }
 

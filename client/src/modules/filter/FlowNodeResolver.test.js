@@ -30,3 +30,10 @@ it('should load flow node names and call render function with them', () => {
   expect(getFlowNodeNames).toHaveBeenCalledWith('key', 'all', null);
   expect(spy).toHaveBeenCalledWith({a: 'FlowNode A'});
 });
+
+it('should call render function with null if flow nodes are not loaded yet', () => {
+  const spy = jest.fn();
+  shallow(<FlowNodeResolver {...props} render={spy} />);
+
+  expect(spy).toHaveBeenCalledWith(null);
+});

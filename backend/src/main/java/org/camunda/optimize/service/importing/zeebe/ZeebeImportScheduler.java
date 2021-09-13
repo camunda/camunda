@@ -11,9 +11,6 @@ import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.ImportMediator;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ZeebeImportScheduler extends AbstractImportScheduler<ZeebeConfigDto> {
@@ -21,24 +18,6 @@ public class ZeebeImportScheduler extends AbstractImportScheduler<ZeebeConfigDto
   public ZeebeImportScheduler(final List<ImportMediator> importMediators,
                               final ZeebeConfigDto dataImportSourceDto) {
     super(importMediators, dataImportSourceDto);
-  }
-
-  @Override
-  public Future<Void> runImportRound(final boolean forceImport) {
-    List<ImportMediator> currentImportRound = importMediators
-      .stream()
-      .filter(mediator -> forceImport || mediator.canImport())
-      .collect(Collectors.toList());
-    if (nothingToBeImported(currentImportRound)) {
-      this.isImporting = false;
-      if (!forceImport) {
-        doBackoff();
-      }
-      return CompletableFuture.completedFuture(null);
-    } else {
-      this.isImporting = true;
-      return executeImportRound(currentImportRound);
-    }
   }
 
 }

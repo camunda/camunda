@@ -16,6 +16,7 @@ const configuration = {
   xLabel: '',
   yLabel: '',
   targetValue: {active: false},
+  stackedBar: false,
 };
 
 const barReport = {
@@ -84,4 +85,58 @@ it('should not show target value, color picker or y axis label for multi-measure
   expect(node.find('ColorPicker')).not.toExist();
   expect(node.find('[placeholder="xAxis"]')).not.toExist();
   expect(node.find('ChartTargetInput')).not.toExist();
+});
+
+it('should show stacked bar option for distributed bar chart reports', () => {
+  const node = shallow(<BarChartConfig report={barReport} />);
+
+  expect(node.find('.stackedBars')).not.toExist();
+
+  node.setProps({
+    report: {
+      ...barReport,
+      data: {
+        ...barReport.data,
+        distributedBy: {type: 'flowNode'},
+      },
+    },
+  });
+
+  expect(node.find('.stackedBars')).toExist();
+});
+
+it('should show goal line option and not show stacking option if current visualization cannot be stacked ', () => {
+  const node = shallow(<BarChartConfig report={barReport} />);
+
+  node.setProps({
+    report: {
+      ...barReport,
+      data: {
+        ...barReport.data,
+        visualization: 'line',
+        distributedBy: {type: 'flowNode'},
+        configuration: {...configuration, stackedBar: true},
+      },
+    },
+  });
+
+  expect(node.find('.stackedBars')).not.toExist();
+  expect(node.find('ChartTargetInput')).toExist();
+});
+
+it('should show Color Picker for distributed by process reports that are grouped by none', () => {
+  const node = shallow(
+    <BarChartConfig
+      report={{
+        ...barReport,
+        data: {
+          ...barReport.data,
+          groupBy: {type: 'none'},
+          distributedBy: {type: 'process', value: null},
+        },
+      }}
+    />
+  );
+
+  expect(node.find('ColorPicker')).toExist();
 });

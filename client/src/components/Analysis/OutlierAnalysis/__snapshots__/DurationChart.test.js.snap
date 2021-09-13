@@ -57,9 +57,6 @@ Object {
       },
     },
     "yAxis": Object {
-      "ticks": Object {
-        "callback": [Function],
-      },
       "title": Object {
         "display": true,
         "font": Object {

@@ -15,7 +15,12 @@ export default function createDefaultChartData(props) {
   const datasets = [];
   let labels = [];
 
-  const {result} = props.report;
+  const {
+    result,
+    data: {
+      configuration: {measureVisualizations},
+    },
+  } = props.report;
   const measures = result.measures;
 
   measures.forEach((measure, idx) => {
@@ -27,14 +32,21 @@ export default function createDefaultChartData(props) {
       color,
       isDark,
     } = extractDefaultChartData(props, idx);
+    let type = visualization;
+    let order;
+    if (visualization === 'barLine') {
+      type = measureVisualizations[measure.property];
+      order = type === 'line' ? 0 : 1;
+    }
 
     datasets.push({
       yAxisID: 'axis-' + getAxisIdx(measures, idx),
       label: getLabel(measure),
       data: formattedResult.map(({value}) => value),
       formatter: formatters[measure.property],
+      order,
       ...createDatasetOptions({
-        type: visualization,
+        type,
         data: formattedResult,
         targetValue,
         datasetColor: color,

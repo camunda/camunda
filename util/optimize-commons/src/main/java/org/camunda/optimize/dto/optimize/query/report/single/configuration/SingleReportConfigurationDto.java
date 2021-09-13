@@ -88,6 +88,10 @@ public class SingleReportConfigurationDto implements Combinable {
   private ReportSortingDto sorting = null;
   @Builder.Default
   private ProcessPartDto processPart = null;
+  @Builder.Default
+  private MeasureVisualizationsDto measureVisualizations = new MeasureVisualizationsDto();
+  @Builder.Default
+  private Boolean stackedBar = false;
 
   @JsonIgnore
   public String createCommandKey() {

@@ -6,27 +6,46 @@
 package org.camunda.optimize.service.es.filter.process.date.modelelement;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+public class RelativeFlowNodeStartDateFilterIT extends AbstractRelativeFlowNodeDateFilterIT {
 
-public class RelativeFlowNodeStartDateFilterIT extends AbstractFlowNodeStartDateFilterIT {
   @Override
-  protected List<ProcessFilterDto<?>> createDateFilterForDate1() {
-    dateFreezer().dateToFreeze(DATE_1).freezeDateAndReturn();
-    return createRelativeDateFilter(0L, DateFilterUnit.DAYS);
+  protected ProcessGroupByType getDateReportGroupByType() {
+    return ProcessGroupByType.START_DATE;
   }
 
   @Override
-  protected List<ProcessFilterDto<?>> createDateFilterForDate2() {
-    dateFreezer().dateToFreeze(DATE_2).freezeDateAndReturn();
-    return createRelativeDateFilter(0L, DateFilterUnit.DAYS);
+  protected void updateFlowNodeDate(final String instanceId, final String flowNodeId, final OffsetDateTime newDate) {
+    engineDatabaseExtension.changeFlowNodeStartDate(instanceId, flowNodeId, newDate);
   }
 
   @Override
-  protected List<ProcessFilterDto<?>> createInvalidFilter() {
-    return createRelativeDateFilter(null, null);
+  protected List<ProcessFilterDto<?>> createRelativeDateViewFilter(final Long value, final DateFilterUnit unit) {
+    return ProcessFilterBuilder.filter()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .start(value, unit)
+      .add()
+      .buildList();
   }
+
+  @Override
+  protected List<ProcessFilterDto<?>> createRelativeDateInstanceFilter(final List<String> flowNodeIds,
+                                                                       final Long value, final DateFilterUnit unit) {
+    return ProcessFilterBuilder.filter()
+      .relativeFlowNodeStartDate()
+      .filterLevel(FilterApplicationLevel.INSTANCE)
+      .flowNodeIds(flowNodeIds)
+      .start(value, unit)
+      .add()
+      .buildList();
+  }
+
 }

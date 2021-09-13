@@ -129,6 +129,42 @@ it('should allow only visualization options that make sense for the selected vie
   ).toBeFalsy();
 });
 
+it('should allow combo bar/line visualization only for multi measure reports', () => {
+  expect(
+    isAllowed(
+      report,
+      {
+        entity: 'processInstance',
+        properties: ['frequency'],
+      },
+      {
+        type: 'startDate',
+        value: {
+          unit: 'day',
+        },
+      },
+      'barLine'
+    )
+  ).toBeFalsy();
+
+  expect(
+    isAllowed(
+      report,
+      {
+        entity: 'flownode',
+        properties: ['count', 'duration'],
+      },
+      {
+        type: 'startDate',
+        value: {
+          unit: 'day',
+        },
+      },
+      'barLine'
+    )
+  ).toBeTruthy();
+});
+
 it('should forbid pie charts for distributed user task reports', () => {
   const report = {
     data: {
@@ -214,7 +250,7 @@ describe('update', () => {
     ).toEqual({groupBy: {$set: startDate}, configuration: {xLabel: {$set: 'Start Date'}}});
   });
 
-  it("should switch visualization when it's incompatible with the new group to one that is compatible", () => {
+  it("should switch visualization when it's incompatible with the new group to the first compatible one", () => {
     expect(
       update('groupBy', startDate, {
         report: {
@@ -279,5 +315,25 @@ describe('update', () => {
         },
       })
     ).toMatchSnapshot();
+  });
+
+  it('should automatically select new visualization in the same old visualization group if possible', () => {
+    expect(
+      update(
+        'view',
+        {entity: 'flowNode', properties: ['frequency']},
+        {
+          report: {
+            data: {
+              view: {entity: 'flowNode', properties: ['frequency', 'duration']},
+              groupBy: startDate,
+              visualization: 'barLine',
+              distributedBy: {type: 'none', value: null},
+              configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+            },
+          },
+        }
+      ).visualization
+    ).toEqual({$set: 'bar'});
   });
 });

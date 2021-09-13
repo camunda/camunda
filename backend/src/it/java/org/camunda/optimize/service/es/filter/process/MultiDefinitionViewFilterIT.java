@@ -73,7 +73,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
+      ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -128,7 +128,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
+      ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
     );
     reportData.setDefinitions(List.of(
       new ReportDataDefinitionDto(DEFINITION_IDENTIFIER_1, DEFINITION_KEY_1, List.of("1")),
@@ -184,7 +184,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
+      ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -234,7 +234,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
+      ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -297,7 +297,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE
+      ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -365,7 +365,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK
+      ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -427,7 +427,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK
+      ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -503,7 +503,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE
+      ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
@@ -571,7 +571,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
 
     // when
     final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
-      ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE
+      ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_ASSIGNEE
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()

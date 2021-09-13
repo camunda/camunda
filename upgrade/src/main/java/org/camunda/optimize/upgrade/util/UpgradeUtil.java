@@ -63,7 +63,7 @@ public class UpgradeUtil {
     OptimizeElasticsearchClient esClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
       indexNameService,
-      new RequestOptionsProvider(customHeaderProvider.getPlugins())
+      new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
     );
     ElasticsearchMetadataService metadataService = new ElasticsearchMetadataService(objectMapper);
     return new UpgradeExecutionDependencies(

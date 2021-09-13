@@ -12,8 +12,8 @@
 
   <properties>
     <jetty.version>9.4.43.v20210629</jetty.version>
-    <jersey.version>2.34</jersey.version>
-    <spring.security.version>5.5.1</spring.security.version>
+    <jersey.version>2.35</jersey.version>
+    <spring.security.version>5.5.2</spring.security.version>
     <it.test.excludedGroups />
     <test.forkCount />
 
@@ -265,7 +265,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.5.1</version>
+      <version>5.5.2</version>
     </dependency>
 
     <!-- Utilities -->
@@ -318,7 +318,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.4</version>
+      <version>1.6.5</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

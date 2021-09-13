@@ -16,7 +16,7 @@ pipelineJob('secured_es') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for the test.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'Branch to use for the test.')
   }
 
   properties {

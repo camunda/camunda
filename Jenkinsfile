@@ -1,7 +1,8 @@
 #!/usr/bin/env groovy
 
 // https://github.com/camunda/jenkins-global-shared-library
-@Library('camunda-ci') _
+// https://github.com/camunda/optimize-jenkins-shared-library
+@Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
@@ -360,7 +361,7 @@ pipeline {
       environment {
         CAM_REGISTRY     = credentials('repository-camunda-cloud')
         SONARCLOUD_TOKEN = credentials('sonarcloud-token')
-        GITHUB_TOKEN     = credentials('camunda-jenkins-github')
+        GITHUB_TOKEN     = credentials("${optimizeUtils.defaultCredentialsId()}")
       }
       failFast false
       parallel {
@@ -501,7 +502,7 @@ pipeline {
             expression {
               // first part of the expression covers pure branch builds,
               // the second covers PR builds where BRANCH_NAME is not available
-              BRANCH_NAME ==~ /master|prototype_zeebeint/ || CHANGE_BRANCH ==~ /master|prototype_zeebeint/ }
+              BRANCH_NAME ==~ /master/ || CHANGE_BRANCH ==~ /master/ }
           }
           environment {
             VERSION = readMavenPom().getVersion().replace('-SNAPSHOT', '')
@@ -535,18 +536,6 @@ pipeline {
             }
           }
         }
-      }
-    }
-    stage('Deploy to K8s') {
-      when {
-        expression {
-          getBranchName() ==~ /prototype_zeebeint/
-        }
-      }
-      steps {
-        build job: '/deploy-optimize-zeebeint-to-k8s', parameters: [
-          string(name: 'BRANCH', value: getBranchName()),
-        ]
       }
     }
   }
@@ -586,7 +575,7 @@ String getImageTag() {
 }
 
 String getBranchName() {
-  return (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'prototype_zeebeint') ? env.BRANCH_NAME : env.CHANGE_BRANCH
+  return (env.BRANCH_NAME == 'master') ? env.BRANCH_NAME : env.CHANGE_BRANCH
 }
 
 void integrationTestSteps(String engineVersion = 'latest') {

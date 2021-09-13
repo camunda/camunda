@@ -133,8 +133,8 @@ test('version selection', async (t) => {
   const latestNumber = +(await e.reportNumber.textContent);
 
   await t.click(e.versionSpecific);
-  await t.click(e.versionCheckbox(5));
-  await t.click(e.versionCheckbox(3));
+  await t.click(e.versionCheckbox(0));
+  await t.click(e.versionCheckbox(1));
   await t.click(e.versionCheckbox(2));
 
   await t.takeElementScreenshot(
@@ -264,12 +264,9 @@ test('should only enable valid combinations for process instance count grouped b
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('None').hasClass('disabled')).notOk();
   await t.expect(e.option('Start Date').hasClass('disabled')).notOk();
   await t.expect(e.option('Variable').hasClass('disabled')).notOk();
   await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
-
-  await t.click(e.option('None'));
 
   await t.click(e.visualizationDropdown);
 
@@ -277,6 +274,7 @@ test('should only enable valid combinations for process instance count grouped b
   await t.expect(e.option('Table').hasClass('disabled')).ok();
   await t.expect(e.option('Bar Chart').hasClass('disabled')).ok();
   await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(e.option('Bar/Line Chart').hasClass('disabled')).ok();
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -333,6 +331,7 @@ test('select process instance count grouped by end date', async (t) => {
   await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
   await t.expect(e.option('Pie Chart').hasClass('disabled')).notOk();
   await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(e.option('Bar/Line Chart').hasClass('disabled')).ok();
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
@@ -355,6 +354,7 @@ test('select process instance count grouped by variable', async (t) => {
   await t.expect(e.option('Line Chart').hasClass('disabled')).notOk();
   await t.expect(e.option('Pie Chart').hasClass('disabled')).notOk();
   await t.expect(e.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(e.option('Bar/Line Chart').hasClass('disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
@@ -391,7 +391,7 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
   await t.expect(e.option('Heatmap').hasClass('disabled')).notOk();
 });
 
-test('bar/line chart configuration', async (t) => {
+test('bar chart and line chart configuration', async (t) => {
   await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
 
@@ -417,7 +417,6 @@ test('bar/line chart configuration', async (t) => {
 
   await t.takeScreenshot('process/single-report/targetValue.png', {fullPage: true});
 
-  await t.click(e.configurationButton);
   await u.selectVisualization(t, 'Line Chart');
 
   await t.takeElementScreenshot(e.reportRenderer, 'process/single-report/targetline.png');
@@ -426,10 +425,40 @@ test('bar/line chart configuration', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.typeText(e.axisInputs('X Axis Label'), 'x axis label');
-  await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label');
+  await t.typeText(e.axisInputs('X Axis Label'), 'x axis label', {replace: true});
+  await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label', {replace: true});
 
   await t.expect(e.reportChart.visible).ok();
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.distributedBySelect);
+  await t.click(e.dropdownOption('Variable'));
+  await t.click(e.submenuOption('boolVar'));
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.selectSwitchLabel('Stacked bars'));
+
+  await t
+    .resizeWindow(1600, 800)
+    .takeScreenshot('process/single-report/stackedBar.png', {fullPage: true});
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.addMeasureButton);
+  await u.selectVisualization(t, 'Bar/Line Chart');
+
+  await t.click(e.configurationButton);
+
+  await t.takeScreenshot('process/single-report/barLine.png', {fullPage: true});
+
+  await t.click(e.lineButton);
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.maximizeWindow();
 });
 
 test('different visualizations', async (t) => {
@@ -618,7 +647,6 @@ test('should only enable valid combinations for user task', async (t) => {
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(e.option('None').hasClass('disabled')).ok();
   await t.expect(e.option('Flow Nodes').hasClass('disabled')).ok();
   await t.expect(e.option('User Task').hasClass('disabled')).notOk();
   await t.expect(e.option('Assignee').hasClass('disabled')).notOk();

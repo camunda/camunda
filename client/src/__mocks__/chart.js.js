@@ -12,7 +12,7 @@ const Chart = jest.fn(() => {
 
 Chart.defaults = {
   font: {
-    defaultFontFamily: '',
+    family: '',
   },
   set: jest.fn(),
 };

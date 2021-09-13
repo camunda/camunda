@@ -34,8 +34,6 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class DashboardImportIT extends AbstractExportImportIT {
@@ -87,7 +85,7 @@ public class DashboardImportIT extends AbstractExportImportIT {
     // the dashboard resources have been imported with correct IDs
     assertThat(importedDashboard.get().getReports())
       .hasSize(4)
-      .usingElementComparatorIgnoringFields(ReportLocationDto.Fields.id)
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ReportLocationDto.Fields.id)
       .containsAll(dashboardExport.getReports());
     assertThat(importedDashboard.get().getReportIds())
       .hasSize(3)

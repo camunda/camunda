@@ -45,6 +45,9 @@ function createMultiMeasureChartData(props) {
   const {
     report: {
       result: {measures},
+      data: {
+        configuration: {measureVisualizations, stackedBar},
+      },
     },
   } = props;
 
@@ -62,6 +65,13 @@ function createMultiMeasureChartData(props) {
       visualization,
     } = extractCombinedData(props, idx);
 
+    let type = visualization;
+    let order;
+    if (visualization === 'barLine') {
+      type = measureVisualizations[measure.property];
+      order = type === 'line' ? 0 : 1;
+    }
+
     unitedResults.forEach((report, index) => {
       datasets.push({
         yAxisID: 'axis-' + getAxisIdx(measures, idx),
@@ -70,13 +80,16 @@ function createMultiMeasureChartData(props) {
           reportsNames[index] + (measures.length > 1 ? ' - ' + getLabel(measure) : ''),
         data: report.map(({value}) => value),
         formatter: formatters[measure.property],
+        order,
+        stack: stackedBar ? idx : undefined,
         ...createDatasetOptions({
-          type: visualization,
+          type,
           data: report,
           targetValue,
           datasetColor: colors[idx * unitedResults.length + index],
           isStriped: true,
           isDark,
+          stackedBar,
         }),
       });
     });

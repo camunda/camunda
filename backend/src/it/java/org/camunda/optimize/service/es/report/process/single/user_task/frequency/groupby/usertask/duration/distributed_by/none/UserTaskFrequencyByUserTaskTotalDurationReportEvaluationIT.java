@@ -13,7 +13,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION;
 
 public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
   extends ModelElementFrequencyByModelElementDurationIT {
@@ -49,7 +49,7 @@ public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
       .createReportData()
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION)
+      .setReportDataType(USER_TASK_FREQ_GROUP_BY_USER_TASK_DURATION)
       // UserTaskDurationTime.TOTAL is default and is not set explicitly
       .build();
   }

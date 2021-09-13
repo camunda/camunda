@@ -1,0 +1,24 @@
+.NodeDateFilter {
+  .Modal__content {
+    display: flex;
+    flex-direction: column;
+
+    .diagramContainer {
+      flex-grow: 1;
+      display: flex;
+    }
+
+    > .Form {
+      max-width: 500px;
+
+      > .info {
+        font-size: 0.875em;
+        color: var(--grey-darken-23);
+      }
+    }
+  }
+
+  .Form:not(.compact) .DateRangeInput.FormGroup:not(.noSpacing) {
+    padding-top: 0;
+  }
+}

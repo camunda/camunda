@@ -176,7 +176,7 @@ test('pick a start date from the date picker', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Date'));
+  await t.click(Report.filterOption('Instance Date'));
   await t.click(Report.subFilterOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('Fixed Date'));
@@ -201,7 +201,7 @@ test('add relative current month start date filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Date'));
+  await t.click(Report.filterOption('Instance Date'));
   await t.click(Report.subFilterOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('This...'));
@@ -223,7 +223,7 @@ test('add rolling last 5 days end date filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Date'));
+  await t.click(Report.filterOption('Instance Date'));
   await t.click(Report.subFilterOption('End Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Report.option('Rolling'));
@@ -346,7 +346,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Date'));
+  await t.click(Report.filterOption('Instance Date'));
   await t.click(Report.subFilterOption('Start Date'));
 
   await t.click(Filter.dateTypeSelect);
@@ -484,4 +484,33 @@ test('multi definition filters', async (t) => {
 
   await t.expect(Report.controlPanel.textContent).contains('Assess Credit Worthiness');
   await t.expect(Report.controlPanel.textContent).contains('Register Application');
+});
+
+test('add flow node start date filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+  await u.selectView(t, 'Process Instance', 'Count');
+
+  await t.resizeWindow(1150, 800);
+
+  await t.click(Report.sectionToggle('Filters'));
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Flow Node Date'));
+  await t.click(Report.subFilterOption('Start Date'));
+
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Report.option('This...'));
+  await t.click(Filter.unitSelect);
+  await t.click(Report.option('year'));
+
+  await t.click(Report.flowNode('approveInvoice'));
+  await t.click(Report.flowNode('reviewInvoice'));
+
+  await t
+    .takeElementScreenshot(Report.modalContainer, 'process/filter/flowNode-date-filter.png')
+    .maximizeWindow();
+
+  await t.click(Report.primaryModalButton);
+  await t.expect(Report.reportRenderer.visible).ok();
 });

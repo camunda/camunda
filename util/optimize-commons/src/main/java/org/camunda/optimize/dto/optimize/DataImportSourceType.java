@@ -9,12 +9,15 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ENGINE_DATA_SOURCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENTS_DATA_SOURCE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INGESTED_DATA_SOURCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
 
 public enum DataImportSourceType {
   ENGINE(ENGINE_DATA_SOURCE),
   ZEEBE(ZEEBE_DATA_SOURCE),
-  EVENTS(EVENTS_DATA_SOURCE);
+  EVENTS(EVENTS_DATA_SOURCE),
+  INGESTED_DATA(INGESTED_DATA_SOURCE),
+  ;
 
   private final String id;
 

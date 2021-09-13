@@ -15,8 +15,8 @@ pipelineJob('camunda-optimize-release-test') {
       scm {
         git {
           remote {
-            github('camunda/camunda-optimize')
-            credentials('camunda-jenkins-github')
+            github 'camunda/camunda-optimize', 'https'
+            credentials 'github-optimize-app'
           }
           branches('master')
         }
@@ -27,7 +27,7 @@ pipelineJob('camunda-optimize-release-test') {
   parameters {
     stringParam('RELEASE_VERSION', '0.0.0', 'Version to release. Applied to pom.xml and Git tag.')
     stringParam('DEVELOPMENT_VERSION', '0.1.0-SNAPSHOT', 'Next development version.')
-    stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
+    stringParam('BRANCH', binding.variables.get('GIT_LOCAL_BRANCH', 'master'), 'The branch used for the release checkout.')
     booleanParam('PUSH_CHANGES', false, 'DO NOT SET THIS TO TRUE! If you do, you will perform an actual release.')
     booleanParam('RELEASE_EXAMPLE', false, 'Should an example repository be released.')
   }

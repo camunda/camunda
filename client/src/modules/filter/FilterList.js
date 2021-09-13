@@ -82,7 +82,11 @@ export default class FilterList extends React.Component {
 
     for (let i = 0; i < this.props.data.length; i++) {
       const filter = this.props.data[i];
-      if (filter.type.includes('Date')) {
+      if (
+        filter.type === 'startDate' ||
+        filter.type === 'endDate' ||
+        filter.type === 'evaluationDateTime'
+      ) {
         list.push(
           <li key={i} className="listItem">
             <ActionItem
@@ -96,6 +100,59 @@ export default class FilterList extends React.Component {
               <DateFilterPreview filterType={filter.type} filter={filter.data} />
               {this.appliedToSnippet(filter)}
             </ActionItem>
+          </li>
+        );
+      } else if (filter.type === 'flowNodeStartDate' || filter.type === 'flowNodeEndDate') {
+        list.push(
+          <li key={i} className="listItem">
+            <FlowNodeResolver
+              key={i}
+              definition={this.props.definitions.find(
+                ({identifier}) => identifier === filter.appliedTo[0]
+              )}
+              render={(flowNodeNames) => {
+                const allFlowNodesExist =
+                  filter.data.flowNodeIds &&
+                  checkAllFlowNodesExist(flowNodeNames, filter.data.flowNodeIds);
+                const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
+
+                let warning;
+                if (filter.filterLevel === 'instance') {
+                  if (!definitionIsValid) {
+                    warning = t('common.filter.list.invalidDefinition');
+                  } else if (!allFlowNodesExist) {
+                    warning = t('report.nonExistingFlowNode');
+                  }
+                }
+
+                return (
+                  <ActionItem
+                    type={getFilterLevelText(filter.filterLevel)}
+                    warning={warning}
+                    onEdit={!warning ? this.props.openEditFilterModal(filter) : undefined}
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      this.props.deleteFilter(filter);
+                    }}
+                  >
+                    <DateFilterPreview filterType={filter.type} filter={filter.data} />
+                    <br />
+                    {filter.data.flowNodeIds?.length > 0 && (
+                      <>
+                        <span>{t('common.for')} </span>
+                        {filter.data.flowNodeIds.map((id) => (
+                          <b key={id}>
+                            {flowNodeNames?.[id] || id}
+                            <br />
+                          </b>
+                        ))}
+                      </>
+                    )}
+                    {this.appliedToSnippet(filter)}
+                  </ActionItem>
+                );
+              }}
+            />
           </li>
         );
       } else {

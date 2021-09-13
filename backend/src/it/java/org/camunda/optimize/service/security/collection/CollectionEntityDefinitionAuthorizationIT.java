@@ -74,7 +74,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
       .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())
       .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
 
     final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();

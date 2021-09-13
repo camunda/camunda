@@ -10,19 +10,26 @@ exports[`should match snapshot 1`] = `
   <Option
     disabled={true}
     key="0"
-    value="none"
+    value="rawData"
   >
-    None
+    Raw Data
+  </Option>
+  <Option
+    disabled={true}
+    key="1"
+    value="pi_count"
+  >
+    Process Instance
   </Option>
   <Submenu
     disabled={true}
-    key="1"
+    key="2"
     label="Variable"
   >
     <Option
       disabled={true}
       key="0"
-      value="inputVariable_test"
+      value="variable_test"
     >
       testName
     </Option>

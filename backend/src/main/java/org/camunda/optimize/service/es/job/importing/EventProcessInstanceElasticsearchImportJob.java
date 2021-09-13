@@ -13,7 +13,7 @@ import java.util.List;
 
 public class EventProcessInstanceElasticsearchImportJob extends ElasticsearchImportJob<EventProcessInstanceDto> {
 
-  private EventProcessInstanceWriter eventProcessInstanceWriter;
+  private final EventProcessInstanceWriter eventProcessInstanceWriter;
 
   public EventProcessInstanceElasticsearchImportJob(final EventProcessInstanceWriter eventProcessInstanceWriter,
                                                     final Runnable callback) {

@@ -34,4 +34,5 @@ public class MedianAggregation implements AggregationStrategy {
   public AggregationType getAggregationType() {
     return AggregationType.MEDIAN;
   }
+
 }

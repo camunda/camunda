@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROC
 
 public class SingleProcessReportIndex extends AbstractReportIndex {
 
-  public static final int VERSION = 7;
+  public static final int VERSION = 8;
 
   @Override
   public String getIndexName() {

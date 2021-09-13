@@ -6,7 +6,12 @@
 
 import {isDurationReport, formatters} from 'services';
 
-import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
+import {
+  formatTooltip,
+  formatTooltipTitle,
+  getTooltipLabelColor,
+  canBeInterpolated,
+} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
 import {getColorFor} from '../colorsUtils';
 import {generateLegendLabels} from './service';
@@ -42,6 +47,8 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
         showLabel: !isNumber,
       }),
     labelColor: (tooltipItem) => getTooltipLabelColor(tooltipItem, visualization),
+    title: (tooltipItems) =>
+      formatTooltipTitle(tooltipItems?.[0]?.label, tooltipItems?.[0]?.chart.chartArea.width),
   };
 
   if (isPersistedTooltips) {
@@ -55,8 +62,8 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   return {
     ...createBarOptions({
       targetValue,
+      visualization,
       configuration,
-      stacked: isNumber,
       maxDuration,
       isDark,
       isPersistedTooltips,
@@ -64,6 +71,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       entity: view.entity,
       autoSkip: canBeInterpolated(groupBy),
       groupedByDurationMaxValue,
+      isCombined: true,
     }),
     plugins: {
       legend: {

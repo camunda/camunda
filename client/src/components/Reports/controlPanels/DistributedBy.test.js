@@ -143,7 +143,7 @@ it('should invoke onChange with the selected variable', () => {
   );
   runLastEffect();
 
-  node.find(Select).prop('onChange')('var1');
+  node.find(Select).prop('onChange')('variable_var1');
 
   expect(spy).toHaveBeenCalledWith(
     {
@@ -180,4 +180,112 @@ it('should invoke onChange with correct start date configuration', () => {
     },
     true
   );
+});
+
+it('should invoke onChange with correct process distribution for process instance variable reports', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <DistributedBy
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      report={{
+        data: {
+          ...data,
+          view: {entity: 'processInstance', properties: ['frequency']},
+          groupBy: {type: 'variable'},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+  runLastEffect();
+
+  node.find(Select).prop('onChange')('process');
+
+  expect(spy).toHaveBeenCalledWith(
+    {
+      distributedBy: {$set: {type: 'process', value: null}},
+      visualization: {$set: 'bar'},
+    },
+    true
+  );
+});
+
+it('should have a button to reset the distribution', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <DistributedBy
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      report={{
+        data: {
+          ...data,
+          distributedBy: {type: 'assignee', value: null},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+  runLastEffect();
+
+  node.find('.removeGrouping').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith(
+    {
+      distributedBy: {$set: {type: 'none', value: null}},
+    },
+    true
+  );
+});
+
+describe('distribute by process', () => {
+  it('should show a distributeByProcess option if there are multiple definitions', () => {
+    const node = shallow(<DistributedBy report={{data: {...data, definitions: [{}, {}]}}} />);
+
+    expect(node.find({value: 'process'})).toExist();
+  });
+
+  it('should remove median aggregation when distributing by process', () => {
+    const spy = jest.fn();
+    const node = shallow(
+      <DistributedBy
+        report={{
+          data: {
+            ...data,
+            definitions: [{}, {}],
+            configuration: {
+              aggregationTypes: ['avg', 'median', 'min'],
+              userTaskDurationTimes: ['total'],
+            },
+          },
+        }}
+        onChange={spy}
+      />
+    );
+
+    node.find(Select).simulate('change', 'process');
+
+    expect(spy.mock.calls[0][0].configuration.aggregationTypes).toEqual({$set: ['avg', 'min']});
+  });
+
+  it('should reset aggregation to average if median is the only aggregation when distributing by process', () => {
+    const spy = jest.fn();
+    const node = shallow(
+      <DistributedBy
+        report={{
+          data: {
+            ...data,
+            definitions: [{}, {}],
+            configuration: {
+              aggregationTypes: ['median'],
+              userTaskDurationTimes: ['total'],
+            },
+          },
+        }}
+        onChange={spy}
+      />
+    );
+
+    node.find(Select).simulate('change', 'process');
+
+    expect(spy.mock.calls[0][0].configuration.aggregationTypes).toEqual({$set: ['avg']});
+  });
 });

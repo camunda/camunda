@@ -415,7 +415,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.setGroupBy(new NoneGroupByDto());
     reportData.setVisualization(ProcessVisualization.NUMBER);

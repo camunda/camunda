@@ -249,6 +249,7 @@
     "downloadCSV": "Download CSV",
     "measure": "Measure",
     "addMeasure": "Add measure",
+    "addGrouping": "Add grouping",
     "displayName": "Display Name",
     "displayNamePlaceholder": "Add optional display name",
     "noSources": "No Data Sources",
@@ -322,7 +323,8 @@
       "line": "Line Chart",
       "pie": "Pie Chart",
       "table": "Table",
-      "heat": "Heatmap"
+      "heat": "Heatmap",
+      "barLine": "Bar/Line Chart"
     },
     "processPart": {
       "label": "Process Instance Part",
@@ -449,7 +451,8 @@
         "min": "Minimum",
         "avg": "Average",
         "median": "Median",
-        "max": "Maximum"
+        "max": "Maximum",
+        "multiProcessWarning": "Reports that are grouped by process cannot display median aggregations."
       },
       "aggregationShort": {
         "sum": "Sum",
@@ -463,7 +466,6 @@
         "work": "Work",
         "total": "Total"
       },
-      "userTaskDistributedBy": "Distribution",
       "colorPicker": {
         "legend": "Color"
       },
@@ -492,6 +494,10 @@
         "legend": "Line points",
         "enableMarkers": "Enable point markers"
       },
+      "stackedBars": {
+        "legend": "Display",
+        "enableStackedBars": "Stacked bars"
+      },
       "limitPrecision": {
         "legend": "Limit Precision",
         "numberOf": {
@@ -507,6 +513,11 @@
         "bucketSize": "Bucket Size",
         "baseline": "Baseline",
         "invalidNumber": "Must be a valid number"
+      },
+      "barLine": {
+        "visualizationSettings": "Visualization settings",
+        "bar": "Bar",
+        "line": "Line"
       }
     },
     "viewByGroup": "{view} by {group}",
@@ -648,7 +659,10 @@
           "label": "Outlier",
           "label-plural": "Outliers"
         },
-        "tookDuration": "Took a duration of"
+        "tookDuration": {
+          "singular": "took a duration of",
+          "plural": "took a duration of"
+        }
       },
       "notFound": "No outliers found for the selected process",
       "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",
@@ -748,6 +762,7 @@
     "selected": "Selected",
     "documentation": "documentation",
     "open": "Open",
+    "for": "for",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
@@ -906,7 +921,7 @@
       },
       "types": {
         "instanceState": "Process Instance State",
-        "date": "Date",
+        "date": "Instance Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
         "startDate": "Start Date",
@@ -926,7 +941,10 @@
         "openIncident": "Open Incidents",
         "resolvedIncident": "Resolved Incidents",
         "flowNodeStatus": "Flow Node State",
-        "flowNodeSelection": "Flow Node Selection"
+        "flowNodeSelection": "Flow Node Selection",
+        "flowNodeDate": "Flow Node Date",
+        "flowNodeStartDate": "Flow Node Start Date",
+        "flowNodeEndDate": "Flow Node End Date"
       },
       "list": {
         "appliedTo": "Applied to",
@@ -1029,6 +1047,18 @@
           "notExecutedFlowNodes": "Not executed Flow Nodes",
           "canceledFlowNodes": "Canceled Flow Nodes",
           "executingFlowNodes": "Running Flow Nodes"
+        }
+      },
+      "nodeDateModal": {
+        "info": {
+          "flowNodeStartDate": {
+            "instance": "Only display instances where at least on of the selected Flow Nodes started",
+            "view": "Only display data from Flow Nodes which started"
+          },
+          "flowNodeEndDate": {
+            "instance": "Only display instances where at least on of the selected Flow Nodes ended",
+            "view": "Only display data from Flow Nodes which ended"
+          }
         }
       },
       "assigneeModal": {

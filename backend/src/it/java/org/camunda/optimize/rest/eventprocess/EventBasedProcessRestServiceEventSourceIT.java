@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -415,7 +414,10 @@ public class EventBasedProcessRestServiceEventSourceIT extends AbstractEventProc
     assertThat(actualEventSources)
       .hasSameSizeAs(expectedEntries)
       .allSatisfy(source -> assertThat(source.getId()).isNotNull())
-      .usingElementComparatorIgnoringFields(EventSourceEntryDto.Fields.id, EventSourceEntryDto.Fields.configuration)
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
+        EventSourceEntryDto.Fields.id,
+        EventSourceEntryDto.Fields.configuration
+      )
       .containsExactlyInAnyOrderElementsOf(expectedEntries);
     final Map<String, EventSourceEntryDto<?>> sourcesByIdentifier = actualEventSources.stream()
       .collect(Collectors.toMap(EventSourceEntryDto::getSourceIdentifier, Function.identity()));

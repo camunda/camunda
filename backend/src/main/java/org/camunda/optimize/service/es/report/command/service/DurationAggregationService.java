@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -154,7 +154,7 @@ public class DurationAggregationService {
     final DistributedByPart<ProcessReportDataDto> distributedByPart,
     final Script durationCalculationScript,
     final MinMaxStatDto minMaxStats,
-    final BiFunction<FilterOperator, Double, QueryBuilder> limitingFilterCreator) {
+    final BiFunction<ComparisonOperator, Double, QueryBuilder> limitingFilterCreator) {
 
     if (minMaxStats.isEmpty()) {
       return Optional.empty();
@@ -172,7 +172,7 @@ public class DurationAggregationService {
     final double intervalInMillis = getIntervalInMillis(minValueInMillis, maxValueInMillis, customBucketDto);
 
     final BoolQueryBuilder limitingFilter = boolQuery()
-      .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis));
+      .filter(limitingFilterCreator.apply(ComparisonOperator.GREATER_THAN_EQUALS, minValueInMillis));
 
     final HistogramAggregationBuilder histogramAggregation = generateHistogramFromScript(
       DURATION_HISTOGRAM_AGGREGATION,
@@ -212,7 +212,7 @@ public class DurationAggregationService {
     }
   }
 
-  private ScriptQueryBuilder createUserTaskLimitingFilterQuery(final FilterOperator filterOperator,
+  private ScriptQueryBuilder createUserTaskLimitingFilterQuery(final ComparisonOperator filterOperator,
                                                                final UserTaskDurationTime userTaskDurationTime,
                                                                final double filterValueInMillis) {
     return createLimitingFilterQuery(
@@ -225,7 +225,7 @@ public class DurationAggregationService {
     );
   }
 
-  private ScriptQueryBuilder createEventLimitingFilterQuery(final FilterOperator filterOperator,
+  private ScriptQueryBuilder createEventLimitingFilterQuery(final ComparisonOperator filterOperator,
                                                             final double filterValueInMillis) {
     return createLimitingFilterQuery(
       filterOperator,
@@ -236,12 +236,12 @@ public class DurationAggregationService {
     );
   }
 
-  private ScriptQueryBuilder createProcessInstanceLimitingFilterQuery(final FilterOperator filterOperator,
+  private ScriptQueryBuilder createProcessInstanceLimitingFilterQuery(final ComparisonOperator filterOperator,
                                                                       final double filterValueInMillis) {
     return createLimitingFilterQuery(filterOperator, (long) filterValueInMillis, DURATION, START_DATE, false);
   }
 
-  private ScriptQueryBuilder createLimitingFilterQuery(final FilterOperator filterOperator,
+  private ScriptQueryBuilder createLimitingFilterQuery(final ComparisonOperator filterOperator,
                                                        final long filterValueInMillis,
                                                        final String durationFieldName,
                                                        final String referenceDateFieldName,

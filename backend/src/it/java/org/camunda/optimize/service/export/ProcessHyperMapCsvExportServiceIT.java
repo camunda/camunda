@@ -124,7 +124,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(version)
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_ASSIGNEE_BY_USER_TASK)
       .build();
   }
 
@@ -138,7 +138,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(version)
       .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
-      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK)
+      .setReportDataType(ProcessReportDataType.USER_TASK_DUR_GROUP_BY_ASSIGNEE_BY_USER_TASK)
       .build();
   }
 

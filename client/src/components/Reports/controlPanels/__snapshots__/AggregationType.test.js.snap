@@ -25,41 +25,76 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       Duration aggregations
     </h4>
     <fieldset>
-      <Switch
-        checked={false}
-        disabled={false}
+      <div
         key="sum"
-        label="Sum"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Sum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="min"
-        label="Minimum"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Minimum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="avg"
-        label="Average"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={true}
-        disabled={true}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Average"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="median"
-        label="Median"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={true}
+              disabled={true}
+              label="Median"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="max"
-        label="Maximum"
-        onChange={[Function]}
-      />
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Maximum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
     </fieldset>
   </Form>
 </Popover>
@@ -90,67 +125,117 @@ exports[`should render an user task duration selection for user task duration re
       User Task Duration
     </h4>
     <fieldset>
-      <Switch
-        checked={false}
-        disabled={false}
+      <div
         key="total"
-        label="Total"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Total"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
         key="work"
-        label="Work"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={true}
-        disabled={true}
+      >
+        <span>
+          <Switch
+            checked={false}
+            disabled={false}
+            label="Work"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
+      <div
         key="idle"
-        label="Idle"
-        onChange={[Function]}
-      />
+      >
+        <span>
+          <Switch
+            checked={true}
+            disabled={true}
+            label="Idle"
+            onChange={[Function]}
+          />
+        </span>
+      </div>
     </fieldset>
     <h4>
       Duration aggregations
     </h4>
     <fieldset>
-      <Switch
-        checked={false}
-        disabled={false}
+      <div
         key="sum"
-        label="Sum"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Sum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="min"
-        label="Minimum"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Minimum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="avg"
-        label="Average"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={true}
-        disabled={true}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Average"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="median"
-        label="Median"
-        onChange={[Function]}
-      />
-      <Switch
-        checked={false}
-        disabled={false}
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={true}
+              disabled={true}
+              label="Median"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
+      <div
         key="max"
-        label="Maximum"
-        onChange={[Function]}
-      />
+      >
+        <Tooltip>
+          <span>
+            <Switch
+              checked={false}
+              disabled={false}
+              label="Maximum"
+              onChange={[Function]}
+            />
+          </span>
+        </Tooltip>
+      </div>
     </fieldset>
   </Form>
 </Popover>

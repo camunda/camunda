@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {format} from 'dates';
+import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
 import {evaluateReport} from 'services';
@@ -139,5 +139,5 @@ export class Report extends React.Component {
 export default withErrorHandling(withUser(Report));
 
 function getFormattedNowDate() {
-  return format(new Date(), "y-MM-dd'T'HH:mm:ss.SSSXX");
+  return format(new Date(), BACKEND_DATE_FORMAT);
 }

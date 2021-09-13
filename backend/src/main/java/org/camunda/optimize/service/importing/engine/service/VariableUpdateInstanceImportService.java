@@ -87,8 +87,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
 
   private List<ProcessVariableDto> mapEngineEntitiesToOptimizeEntities(
     List<HistoricVariableUpdateInstanceDto> engineEntities) {
-    List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
-      (engineEntities);
+    List<PluginVariableDto> pluginVariableList =
+      mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates(engineEntities);
     for (VariableImportAdapter variableImportAdapter : variableImportAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
