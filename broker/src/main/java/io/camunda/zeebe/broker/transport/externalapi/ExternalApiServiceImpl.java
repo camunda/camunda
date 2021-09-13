@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.transport.externalapi;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.ExternalApiCfg;
+import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
@@ -37,16 +38,19 @@ public final class ExternalApiServiceImpl extends Actor
   private final QueryApiRequestHandler queryHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
   private final String actorName;
+  private final ActorSchedulingService scheduler;
 
   public ExternalApiServiceImpl(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
       final PartitionAwareRequestLimiter limiter,
-      final ExternalApiCfg externalApi) {
+      final ActorSchedulingService scheduler,
+      final QueryApiCfg queryApiCfg) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
+    this.scheduler = scheduler;
     commandHandler = new CommandApiRequestHandler();
-    queryHandler = new QueryApiRequestHandler(externalApi.getQueryApi());
+    queryHandler = new QueryApiRequestHandler(queryApiCfg, localBroker.getNodeId());
     actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 
@@ -56,11 +60,24 @@ public final class ExternalApiServiceImpl extends Actor
   }
 
   @Override
+  protected void onActorStarting() {
+    scheduler.submitActor(queryHandler);
+  }
+
+  @Override
   protected void onActorClosing() {
     for (final Integer leadPartition : leadPartitions) {
-      removeForPartitionId(leadPartition);
+      removeLeaderHandlers(leadPartition);
     }
     leadPartitions.clear();
+
+    actor.runOnCompletion(
+        queryHandler.closeAsync(),
+        (ok, error) -> {
+          if (error != null) {
+            Loggers.TRANSPORT_LOGGER.warn("Failed to close query API request handler", error);
+          }
+        });
   }
 
   @Override
@@ -80,17 +97,17 @@ public final class ExternalApiServiceImpl extends Actor
           leadPartitions.add(partitionId);
           limiter.addPartition(partitionId);
 
+          queryHandler.addPartition(partitionId, queryService);
+          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
+
           logStream
               .newLogStreamRecordWriter()
               .onComplete(
                   (recordWriter, error) -> {
                     if (error == null) {
-
                       final var requestLimiter = limiter.getLimiter(partitionId);
                       commandHandler.addPartition(partitionId, recordWriter, requestLimiter);
                       serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
-                      queryHandler.addPartition(partitionId, queryService);
-                      serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
                       future.complete(null);
                     } else {
                       Loggers.SYSTEM_LOGGER.error(
@@ -110,12 +127,13 @@ public final class ExternalApiServiceImpl extends Actor
   }
 
   private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
-    return actor.call(
-        () -> {
-          commandHandler.removePartition(partitionId);
-          queryHandler.removePartition(partitionId);
-          cleanLeadingPartition(partitionId);
-        });
+    return actor.call(() -> removeLeaderHandlers(partitionId));
+  }
+
+  private void removeLeaderHandlers(final int partitionId) {
+    commandHandler.removePartition(partitionId);
+    queryHandler.removePartition(partitionId);
+    cleanLeadingPartition(partitionId);
   }
 
   private void cleanLeadingPartition(final int partitionId) {

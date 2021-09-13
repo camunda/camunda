@@ -91,18 +91,8 @@ public class SocketBindingCfg {
 
   public static class ExternalApiCfg extends SocketBindingCfg {
 
-    private QueryApiCfg queryApi = new QueryApiCfg();
-
     public ExternalApiCfg() {
       super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
-    }
-
-    public QueryApiCfg getQueryApi() {
-      return queryApi;
-    }
-
-    public void setQueryApi(final QueryApiCfg queryApi) {
-      this.queryApi = queryApi;
     }
 
     @Override
@@ -117,26 +107,7 @@ public class SocketBindingCfg {
           + getAdvertisedHost()
           + ", advertisedPort="
           + getAdvertisedPort()
-          + ", queryApi="
-          + queryApi
           + '}';
-    }
-
-    public static class QueryApiCfg {
-      private boolean enabled = false;
-
-      public boolean isEnabled() {
-        return enabled;
-      }
-
-      public void setEnabled(final boolean enabled) {
-        this.enabled = enabled;
-      }
-
-      @Override
-      public String toString() {
-        return "QueryApiCfg{" + "enabled=" + enabled + '}';
-      }
     }
   }
 

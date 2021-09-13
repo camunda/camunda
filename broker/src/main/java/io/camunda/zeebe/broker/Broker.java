@@ -264,7 +264,12 @@ public final class Broker implements AutoCloseable {
     }
 
     externalApiService =
-        new ExternalApiServiceImpl(serverTransport, localBroker, limiter, externalApiCfg);
+        new ExternalApiServiceImpl(
+            serverTransport,
+            localBroker,
+            limiter,
+            scheduler,
+            brokerCfg.getExperimental().getQueryApi());
     partitionListeners.add(externalApiService);
     scheduleActor(externalApiService);
     diskSpaceUsageListeners.add(externalApiService);

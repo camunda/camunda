@@ -73,6 +73,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
+  private StateQueryService queryService;
 
   private long currentTerm;
   private Role currentRole;
@@ -133,9 +134,8 @@ public class PartitionStartupAndTransitionContextImpl
 
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
-    final var queryService = new StateQueryService(getZeebeDb());
     return partitionListeners.stream()
-        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream(), queryService))
+        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream(), getQueryService()))
         .collect(Collectors.toList());
   }
 
@@ -252,11 +252,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
-    return this;
-  }
-
-  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -264,6 +259,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
     partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
+  }
+
+  @Override
+  public StateQueryService getQueryService() {
+    return queryService;
   }
 
   public void setCurrentTerm(final long currentTerm) {
@@ -274,12 +274,22 @@ public class PartitionStartupAndTransitionContextImpl
     this.currentRole = currentRole;
   }
 
+  @Override
+  public void setQueryService(final StateQueryService queryService) {
+    this.queryService = queryService;
+  }
+
   public AtomixLogStorage getLogStorage() {
     return logStorage;
   }
 
   public void setLogStorage(final AtomixLogStorage logStorage) {
     this.logStorage = logStorage;
+  }
+
+  @Override
+  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
+    return this;
   }
 
   @Override
