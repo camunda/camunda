@@ -49,9 +49,10 @@ public interface PartitionTransitionStep {
    * the raft partition transitions faster than the Zeebe partition. In this case steps are
    * encouraged to cancel what they are doing
    *
+   * @param context
    * @param newRole target role to transition to
    */
-  default void onNewRaftRole(final Role newRole) {}
+  default void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {}
 
   /**
    * This method is a hook to prepare steps for a pending transition. This method is deprecated

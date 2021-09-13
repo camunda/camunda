@@ -29,4 +29,22 @@ public interface PartitionTransitionContext extends PartitionContext {
   List<PartitionListener> getPartitionListeners();
 
   PartitionContext getPartitionContext();
+
+  void setStreamProcessor(StreamProcessor streamProcessor);
+
+  void setCurrentTerm(long term);
+
+  void setCurrentRole(Role role);
+
+  ActorSchedulingService getActorSchedulingService();
+
+  ZeebeDb getZeebeDb();
+
+  CommandResponseWriter getCommandResponseWriter();
+
+  Consumer<TypedRecord<?>> getOnProcessedListener();
+
+  TypedRecordProcessorFactory getStreamProcessorFactory();
+
+  void setZeebeDb(ZeebeDb zeebeDb);
 }

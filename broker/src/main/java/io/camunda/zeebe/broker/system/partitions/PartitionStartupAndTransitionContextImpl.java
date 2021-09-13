@@ -272,6 +272,11 @@ public class PartitionStartupAndTransitionContextImpl
     this.currentRole = currentRole;
   }
 
+  @Override
+  public TypedRecordProcessorFactory getStreamProcessorFactory() {
+    return typedRecordProcessorsFactory::createTypedStreamProcessor;
+  }
+
   public AtomixLogStorage getLogStorage() {
     return logStorage;
   }
