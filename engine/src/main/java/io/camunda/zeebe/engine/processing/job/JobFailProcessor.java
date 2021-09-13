@@ -87,6 +87,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     final JobRecord failedJob = jobState.getJob(key);
     failedJob.setRetries(command.getValue().getRetries());
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    failedJob.setRetryBackoff(command.getValue().getRetryBackOff());
     commandControl.accept(JobIntent.FAILED, failedJob);
     jobMetrics.jobFailed(failedJob.getType());
   }

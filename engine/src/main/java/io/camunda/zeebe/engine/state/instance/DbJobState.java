@@ -54,6 +54,10 @@ public final class DbJobState implements JobState, MutableJobState {
   private final DbCompositeKey<DbLong, DbLong> deadlineJobKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
 
+  private final DbLong backoffKey;
+  private final DbCompositeKey<DbLong, DbLong> backoffJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> backoffColumnFamily;
+
   private final JobMetrics metrics;
 
   private Consumer<String> onJobsAvailableCallback;
@@ -82,6 +86,12 @@ public final class DbJobState implements JobState, MutableJobState {
     deadlinesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_DEADLINES, transactionContext, deadlineJobKey, DbNil.INSTANCE);
+
+    backoffKey = new DbLong();
+    backoffJobKey = new DbCompositeKey<>(backoffKey, jobKey);
+    backoffColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
 
     metrics = new JobMetrics(partitionId);
   }
@@ -114,6 +124,12 @@ public final class DbJobState implements JobState, MutableJobState {
 
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void makeActivable(final long key, final JobRecord record) {
+    updateJob(key, record, State.ACTIVATABLE);
+    backoffColumnFamily.delete(backoffJobKey);
   }
 
   @Override
@@ -167,8 +183,12 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void fail(final long key, final JobRecord updatedValue) {
-    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
-    updateJob(key, updatedValue, newState);
+    if (updatedValue.getRetries() > 0) {
+      backoffKey.wrapLong(updatedValue.getRetryBackOff() + System.currentTimeMillis());
+      backoffColumnFamily.put(backoffJobKey, DbNil.INSTANCE);
+    }
+
+    updateJob(key, updatedValue, State.FAILED);
   }
 
   @Override
@@ -218,17 +238,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void forEachTimedOutEntry(
       final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
-
-    deadlinesColumnFamily.whileTrue(
-        (compositeKey, zbNil) -> {
-          final long deadline = compositeKey.getFirst().getValue();
-          final boolean isDue = deadline < upperBound;
-          if (isDue) {
-            final long jobKey = compositeKey.getSecond().getValue();
-            return visitJob(jobKey, callback, () -> deadlinesColumnFamily.delete(compositeKey));
-          }
-          return false;
-        });
+    forEachTimedOut(deadlinesColumnFamily, callback, upperBound);
   }
 
   @Override
@@ -267,6 +277,12 @@ public final class DbJobState implements JobState, MutableJobState {
           // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
           return visitJob(jobKey, callback, () -> {});
         }));
+  }
+
+  @Override
+  public void forEachBackOffTimedOutJobs(
+      final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
+    forEachTimedOut(backoffColumnFamily, callback, upperBound);
   }
 
   @Override
@@ -334,5 +350,22 @@ public final class DbJobState implements JobState, MutableJobState {
   private void removeJobDeadline(final long deadline) {
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.delete(deadlineJobKey);
+  }
+
+  private void forEachTimedOut(
+      final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> columnFamily,
+      final BiFunction<Long, JobRecord, Boolean> callback,
+      final Long upperBound) {
+    columnFamily.whileTrue(
+        (key, value) -> {
+          final long deadline = key.getFirst().getValue();
+          final boolean isDue = deadline < upperBound;
+          if (isDue) {
+            final long jobKey = key.getSecond().getValue();
+            final boolean visitJob = visitJob(jobKey, callback, () -> columnFamily.delete(key));
+            return visitJob;
+          }
+          return false;
+        });
   }
 }

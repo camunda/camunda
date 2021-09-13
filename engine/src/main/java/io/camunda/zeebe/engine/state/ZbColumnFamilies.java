@@ -45,6 +45,7 @@ public enum ZbColumnFamilies {
   JOBS,
   JOB_STATES,
   JOB_DEADLINES,
+  JOB_BACKOFF,
   JOB_ACTIVATABLE,
 
   // message
