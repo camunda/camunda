@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -23,7 +25,9 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.TestActorFuture;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
@@ -39,6 +43,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDB;
   private StateController stateController;
+  private ExporterRepository exporterRepository;
 
   @Override
   public int getPartitionId() {
@@ -95,6 +100,30 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public void setDiskSpaceAvailable(final boolean b) {}
+
+  @Override
+  public void setExporterDirector(final ExporterDirector exporterDirector) {
+    this.exporterDirector = exporterDirector;
+  }
+
+  public void setExporterRepository(final ExporterRepository exporterRepository) {
+    this.exporterRepository = exporterRepository;
+  }
+
+  @Override
+  public PartitionMessagingService getMessagingService() {
+    return null;
+  }
+
+  @Override
+  public boolean shouldExport() {
+    return true;
+  }
+
+  @Override
+  public Collection<ExporterDescriptor> getExportedDescriptors() {
+    return Set.of();
+  }
 
   @Override
   public void setStreamProcessor(final StreamProcessor streamProcessor) {
@@ -188,11 +217,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     return null;
   }
 
-  public void setLogStream(final LogStream logStream) {
-    this.logStream = logStream;
-  }
-
   public void setStateController(final StateController stateController) {
     this.stateController = stateController;
+  }
+
+  public void setLogStream(final LogStream logStream) {
+    this.logStream = logStream;
   }
 }
