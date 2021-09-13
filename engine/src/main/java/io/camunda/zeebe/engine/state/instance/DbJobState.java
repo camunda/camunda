@@ -93,12 +93,6 @@ public final class DbJobState implements JobState, MutableJobState {
     metrics.jobCreated(record.getType());
   }
 
-  private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
-    resetVariablesAndUpdateJobRecord(key, record);
-    updateJobState(State.ACTIVATABLE);
-    makeJobActivatable(type, key);
-  }
-
   /**
    * <b>Note:</b> calling this method will reset the variables of the job record. Make sure to write
    * the job record to the log before updating it in the state.
@@ -187,6 +181,27 @@ public final class DbJobState implements JobState, MutableJobState {
     metrics.jobFailed(updatedValue.getType());
   }
 
+  @Override
+  public void resolve(final long key, final JobRecord updatedValue) {
+    updateJob(key, updatedValue, State.ACTIVATABLE);
+  }
+
+  @Override
+  public JobRecord updateJobRetries(final long jobKey, final int retries) {
+    final JobRecord job = getJob(jobKey);
+    if (job != null) {
+      job.setRetries(retries);
+      resetVariablesAndUpdateJobRecord(jobKey, job);
+    }
+    return job;
+  }
+
+  private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
+    resetVariablesAndUpdateJobRecord(key, record);
+    updateJobState(State.ACTIVATABLE);
+    makeJobActivatable(type, key);
+  }
+
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
     final long deadline = updatedValue.getDeadline();
@@ -208,11 +223,6 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void validateParameters(final DirectBuffer type) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
-  }
-
-  @Override
-  public void resolve(final long key, final JobRecord updatedValue) {
-    updateJob(key, updatedValue, State.ACTIVATABLE);
   }
 
   @Override
@@ -269,6 +279,18 @@ public final class DbJobState implements JobState, MutableJobState {
         }));
   }
 
+  @Override
+  public JobRecord getJob(final long key) {
+    jobKey.wrapLong(key);
+    final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
+    return jobState == null ? null : jobState.getRecord();
+  }
+
+  @Override
+  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
+    this.onJobsAvailableCallback = onJobsAvailableCallback;
+  }
+
   boolean visitJob(
       final long jobKey,
       final BiFunction<Long, JobRecord, Boolean> callback,
@@ -280,28 +302,6 @@ public final class DbJobState implements JobState, MutableJobState {
       return true; // we want to continue with the iteration
     }
     return callback.apply(jobKey, job);
-  }
-
-  @Override
-  public JobRecord updateJobRetries(final long jobKey, final int retries) {
-    final JobRecord job = getJob(jobKey);
-    if (job != null) {
-      job.setRetries(retries);
-      resetVariablesAndUpdateJobRecord(jobKey, job);
-    }
-    return job;
-  }
-
-  @Override
-  public JobRecord getJob(final long key) {
-    jobKey.wrapLong(key);
-    final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
-    return jobState == null ? null : jobState.getRecord();
-  }
-
-  @Override
-  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
-    this.onJobsAvailableCallback = onJobsAvailableCallback;
   }
 
   private void notifyJobAvailable(final DirectBuffer jobType) {
