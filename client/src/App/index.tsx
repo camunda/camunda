@@ -11,7 +11,7 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 import {NotificationProvider} from 'modules/notifications';
 
 import Authentication from './Authentication';
-import Header from './Header';
+import {Header} from './Header';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
 import {Instances} from './Instances';

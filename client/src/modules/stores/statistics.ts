@@ -8,12 +8,10 @@ import {
   makeObservable,
   observable,
   action,
-  autorun,
   IReactionDisposer,
   override,
 } from 'mobx';
 import {fetchProcessCoreStatistics} from 'modules/api/instances';
-import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {instancesStore} from 'modules/stores/instances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
@@ -53,15 +51,9 @@ class Statistics extends NetworkReconnectionHandler {
   init() {
     this.fetchStatistics();
 
-    this.pollingDisposer = autorun(() => {
-      if (currentInstanceStore.state.instance !== null) {
-        if (this.intervalId === null) {
-          this.startPolling();
-        }
-      } else {
-        this.stopPolling();
-      }
-    });
+    if (this.intervalId === null) {
+      this.startPolling();
+    }
 
     instancesStore.addCompletedOperationsHandler(() => this.fetchStatistics());
   }

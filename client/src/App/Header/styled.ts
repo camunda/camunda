@@ -4,30 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css, ThemedInterpolationFunction} from 'styled-components';
+import styled, {css} from 'styled-components';
 
-import {NavElement} from './NavElements';
-import * as Styled from './NavElements/styled';
-import BasicStateIcon from 'modules/components/StateIcon';
+import {ReactComponent as Logo} from 'modules/components/Icon/logo-2020-round.svg';
 
 const HEADER_HEIGHT = 56;
-
-const StateIcon = styled(BasicStateIcon)`
-  top: 0px;
-  min-width: 16px;
-  min-height: 16px;
-`;
-
-const FilterNavElement = styled(NavElement)`
-  ${Styled.NavigationLabel} {
-    margin-right: 3px;
-  }
-`;
-
-const NavListItem = styled.div`
-  display: flex;
-  align-items: center;
-`;
 
 const Header = styled.header`
   ${({theme}) => {
@@ -37,27 +18,10 @@ const Header = styled.header`
       display: flex;
       height: ${HEADER_HEIGHT}px;
       background-color: ${theme.colors.ui01};
-      padding: 9px 20px 21px 20px;
+      padding: 15px 20px;
       font-size: 15px;
       font-weight: 500;
       color: ${colors.color};
-      line-height: 19px;
-    `;
-  }}
-`;
-
-const Detail = styled.span`
-  ${({theme}) => {
-    const colors = theme.colors.header.details;
-
-    return css`
-      display: flex;
-      align-items: center;
-      align-self: center;
-      padding: 12px 0 12px 20px;
-      margin-left: 21px;
-      height: 50%;
-      border-left: 1px solid ${colors.borderColor};
     `;
   }}
 `;
@@ -67,36 +31,28 @@ const Menu = styled.ul`
   flex-wrap: wrap;
 `;
 
-const colors: ThemedInterpolationFunction = ({theme}) => {
-  const colors = theme.colors.header.skeleton;
-
-  return css`
-    background: ${colors.backgroundColor};
-  `;
-};
-
-const SkeletonBlock = styled.div`
-  height: 14px;
-  width: 120px;
-  ${colors};
+const LogoIcon = styled(Logo)`
+  ${({theme}) => {
+    return css`
+      color: ${theme.colors.logo};
+      width: 26px;
+      height: 26px;
+      cursor: pointer;
+    `;
+  }}
 `;
 
-const SkeletonCircle = styled.div`
-  border-radius: 50%;
-  margin-right: 11px;
-  height: 14px;
-  width: 14px;
-  ${colors};
+const Separator = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.header;
+
+    return css`
+      width: 1px;
+      height: 24px;
+      background-color: ${colors.separator};
+      margin: 0 20px;
+    `;
+  }}
 `;
 
-export {
-  HEADER_HEIGHT,
-  StateIcon,
-  FilterNavElement,
-  NavListItem,
-  Header,
-  Detail,
-  Menu,
-  SkeletonBlock,
-  SkeletonCircle,
-};
+export {HEADER_HEIGHT, Header, Menu, LogoIcon, Separator};

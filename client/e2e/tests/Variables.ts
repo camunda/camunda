@@ -297,8 +297,8 @@ test('Add variables', async (t) => {
   // go to instance page, filter and find the instance by added variable
   await t
     .click(
-      screen.queryByRole('listitem', {
-        name: /running instances/i,
+      screen.queryByRole('link', {
+        name: /view instances/i,
       })
     )
     .typeText(

@@ -21,41 +21,11 @@ fixture('Select Instances')
       .useRole(demoUser)
       .maximizeWindow()
       .click(
-        screen.queryByRole('listitem', {
-          name: /running instances/i,
+        screen.queryByRole('link', {
+          name: /view instances/i,
         })
       );
   });
-
-test('Selection of instances are removed on header navigation', async (t) => {
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
-    )
-    .ok();
-
-  await t
-    .click(screen.queryByRole('listitem', {name: 'Incidents'}))
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
-    )
-    .notOk();
-
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
-    )
-    .ok();
-
-  await t
-    .click(screen.queryByRole('listitem', {name: 'Running Instances'}))
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
-    )
-    .notOk();
-});
 
 test('Selection of instances are removed on filter selection', async (t) => {
   // select instances

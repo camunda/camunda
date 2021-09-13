@@ -136,9 +136,7 @@ const theme = Object.freeze({
         },
       },
       header: {
-        navElements: {
-          borderColor: rgba('#f6fcfb', 0.5),
-        },
+        separator: rgba(SEMANTIC_COLORS.white, 0.5),
         user: {
           backgroundColor: rgba(SEMANTIC_COLORS.badge02, 0.2),
         },
@@ -1058,9 +1056,7 @@ const theme = Object.freeze({
         },
       },
       header: {
-        navElements: {
-          borderColor: rgba(LIGHT_COLORS.ui06, 0.25),
-        },
+        separator: LIGHT_COLORS.ui05,
         user: {
           backgroundColor: rgba(LIGHT_COLORS.ui06, 0.09),
         },

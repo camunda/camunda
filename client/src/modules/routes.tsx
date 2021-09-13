@@ -72,6 +72,9 @@ const Locations = {
       Object.entries(storage.filters).forEach(([key, value]) => {
         params.set(key, value as string);
       });
+    } else {
+      params.set('active', 'true');
+      params.set('incidents', 'true');
     }
 
     return {

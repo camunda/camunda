@@ -21,9 +21,11 @@ fixture('Dashboard')
       .useRole(demoUser)
       .maximizeWindow()
       .click(
-        screen.queryByRole('listitem', {
-          name: /dashboard/i,
-        })
+        screen
+          .queryAllByRole('link', {
+            name: /dashboard/i,
+          })
+          .nth(0)
       );
   });
 
@@ -50,30 +52,6 @@ test('Statistics', async (t) => {
     .eql(1)
     .expect(activeInstancesCount)
     .eql(37);
-
-  await t
-    .expect(
-      within(
-        screen.queryByRole('listitem', {name: 'Running Instances'})
-      ).queryByTestId('badge').textContent
-    )
-    .eql('38');
-
-  await t
-    .expect(
-      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
-        'badge'
-      ).textContent
-    )
-    .eql('38');
-
-  await t
-    .expect(
-      within(screen.queryByRole('listitem', {name: 'Incidents'})).queryByTestId(
-        'badge'
-      ).textContent
-    )
-    .eql('1');
 });
 
 test('Navigation to Instances View', async (t) => {
@@ -94,13 +72,17 @@ test('Navigation to Instances View', async (t) => {
 
   await t
     .expect(
-      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
-        'badge'
-      ).textContent
+      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
     .eql(activeInstancesCount);
 
-  await t.click(screen.queryByRole('listitem', {name: 'Dashboard'}));
+  await t.click(
+    screen
+      .queryAllByRole('link', {
+        name: /dashboard/i,
+      })
+      .nth(0)
+  );
 
   await t
     .click(screen.queryByTestId('incident-instances-link'))
@@ -111,9 +93,7 @@ test('Navigation to Instances View', async (t) => {
 
   await t
     .expect(
-      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
-        'badge'
-      ).textContent
+      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
     .eql(instancesWithIncidentCount);
 });
@@ -143,11 +123,10 @@ test('Select instances by process', async (t) => {
     .ok()
     .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
     .ok();
+
   await t
     .expect(
-      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
-        'badge'
-      ).textContent
+      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
     .eql(totalInstanceCount.toString());
 });
@@ -176,9 +155,7 @@ test('Select instances by error message', async (t) => {
 
   await t
     .expect(
-      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
-        'badge'
-      ).textContent
+      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
     .eql(incidentCount);
 
@@ -222,9 +199,7 @@ test('Select instances by error message (expanded)', async (t) => {
 
   await t
     .expect(
-      within(screen.queryByRole('listitem', {name: 'Filters'})).queryByTestId(
-        'badge'
-      ).textContent
+      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
     .eql(incidentCount);
 

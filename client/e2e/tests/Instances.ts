@@ -22,8 +22,8 @@ fixture('Instances')
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser).click(
-      screen.queryByRole('listitem', {
-        name: /running instances/i,
+      screen.queryByRole('link', {
+        name: /view instances/i,
       })
     );
   });
@@ -32,8 +32,8 @@ test('Instances Page Initial Load', async (t) => {
   const {initialData} = t.fixtureCtx;
 
   await t.click(
-    screen.getByRole('listitem', {
-      name: /running instances/i,
+    screen.getByRole('link', {
+      name: /view instances/i,
     })
   );
 
@@ -95,8 +95,8 @@ test('Select flow node in diagram', async (t) => {
   const instance = initialData.instanceWithoutAnIncident;
 
   await t.click(
-    screen.getByRole('listitem', {
-      name: /running instances/i,
+    screen.getByRole('link', {
+      name: /view instances/i,
     })
   );
 

@@ -21,27 +21,13 @@ fixture('Instance')
     await t.useRole(demoUser);
   });
 
-test('Instance with an incident - header and instance header', async (t) => {
+test('Instance with an incident - instance header', async (t) => {
   const {
     initialData: {instanceWithIncident},
   } = t.fixtureCtx;
 
   const instanceId = instanceWithIncident.processInstanceKey;
   await t.navigateTo(`/instances/${instanceId}`);
-
-  await t
-    .expect(screen.queryByTestId('instance-header').exists)
-    .ok()
-    .expect(
-      within(screen.queryByRole('banner')).queryByTestId('state-icon-INCIDENT')
-        .exists
-    )
-    .ok()
-    .expect(
-      within(screen.queryByRole('banner')).queryByText(`Instance ${instanceId}`)
-        .exists
-    )
-    .ok();
 
   const withinInstanceHeader = within(screen.queryByTestId('instance-header'));
 
@@ -288,11 +274,6 @@ test('Instance with an incident - resolve incidents', async (t) => {
         'COMPLETED-icon'
       ).exists
     )
-    .ok()
-    .expect(
-      within(screen.queryByRole('banner')).queryByTestId('state-icon-COMPLETED')
-        .exists
-    )
     .ok();
 });
 
@@ -503,12 +484,7 @@ test('Instance with an incident - cancel an instance', async (t) => {
       within(screen.queryByTestId('instance-header')).queryByTestId('end-date')
         .textContent
     )
-    .match(DATE_REGEX)
-    .expect(
-      within(screen.queryByRole('banner')).queryByTestId('state-icon-CANCELED')
-        .exists
-    )
-    .ok();
+    .match(DATE_REGEX);
 });
 
 test('Instance without an incident', async (t) => {
@@ -525,17 +501,6 @@ test('Instance without an incident', async (t) => {
     .ok()
     .expect(screen.queryByTestId('incidents-banner').exists)
     .notOk()
-    .expect(
-      within(screen.queryByRole('banner')).queryByTestId('state-icon-ACTIVE')
-        .exists
-    )
-    .ok()
-    .expect(
-      within(screen.queryByRole('banner')).queryByText(
-        `Instance ${instanceWithoutAnIncident.processInstanceKey}`
-      ).exists
-    )
-    .ok()
     .expect(
       within(screen.queryByTestId('instance-header')).queryByTestId(
         'ACTIVE-icon'

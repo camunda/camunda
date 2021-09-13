@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {
@@ -21,6 +21,14 @@ import {Locations} from 'modules/routes';
 
 const MetricPanel = observer(() => {
   const {running, active, withIncidents, status} = statisticsStore.state;
+
+  useEffect(() => {
+    statisticsStore.init();
+
+    return () => {
+      statisticsStore.reset();
+    };
+  }, []);
 
   if (status === 'error') {
     return (

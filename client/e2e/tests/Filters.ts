@@ -24,45 +24,19 @@ fixture('Filters')
       .useRole(demoUser)
       .maximizeWindow()
       .click(
-        screen.queryByRole('listitem', {
-          name: /running instances/i,
+        screen.queryByRole('link', {
+          name: /view instances/i,
         })
       );
   });
 
 test('Navigating in header should affect filters and url correctly', async (t) => {
   await t.click(
-    screen.queryByRole('listitem', {
-      name: 'Incidents',
+    screen.queryByRole('link', {
+      name: /view instances/i,
     })
   );
-  await t
-    .expect(await getPathname())
-    .eql('/instances')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        incidents: 'true',
-      })
-    );
 
-  await t
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
-
-  await t.click(screen.queryByRole('listitem', {name: 'Running Instances'}));
   await t
     .expect(await getPathname())
     .eql('/instances')
@@ -1123,8 +1097,18 @@ test('Should set filters from url', async (t) => {
 
   // should navigate to dashboard and back, and see filters are still there
 
-  await t.click(screen.queryByRole('listitem', {name: 'Dashboard'}));
-  await t.click(screen.queryByRole('listitem', {name: 'Filters'}));
+  await t.click(
+    screen
+      .queryAllByRole('link', {
+        name: /dashboard/i,
+      })
+      .nth(0)
+  );
+  await t.click(
+    screen.queryByRole('link', {
+      name: /view instances/i,
+    })
+  );
 
   await t
     .expect(

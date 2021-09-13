@@ -56,7 +56,7 @@ import {
   flowNodeMetadata,
 } from 'modules/mocks/instanceDetailPage/processWithMultiInstance';
 
-import Header from 'App/Header';
+import {Header} from 'App/Header';
 import {statistics} from 'modules/mocks/statistics';
 import {user} from 'modules/mocks/user';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';

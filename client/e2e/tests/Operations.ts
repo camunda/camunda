@@ -20,8 +20,8 @@ fixture('Operations')
       .useRole(demoUser)
       .maximizeWindow()
       .click(
-        screen.queryByRole('listitem', {
-          name: /running instances/i,
+        screen.queryByRole('link', {
+          name: /view instances/i,
         })
       );
   });

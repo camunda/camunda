@@ -33,8 +33,8 @@ fixture('InstancesTable')
       .useRole(demoUser)
       .maximizeWindow()
       .click(
-        screen.queryByRole('listitem', {
-          name: /running instances/i,
+        screen.queryByRole('link', {
+          name: /view instances/i,
         })
       );
   });
@@ -59,8 +59,7 @@ test('Sorting', async (t) => {
       {paste: true}
     )
     .expect(
-      within(screen.queryByTestId('header-link-filters')).queryByTestId('badge')
-        .innerText
+      screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )
     .eql('3', {timeout: 10000});
 

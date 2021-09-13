@@ -15,7 +15,7 @@ import {mockGroupedProcesses} from 'modules/mocks/mockGroupedProcesses';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockProcessInstances} from 'modules/mocks/mockProcessInstances';
 import {mockBatchOperations} from 'modules/mocks/mockBatchOperations';
-import Header from 'App/Header';
+import {Header} from 'App/Header';
 import {statistics} from 'modules/mocks/statistics';
 import {user} from 'modules/mocks/user';
 

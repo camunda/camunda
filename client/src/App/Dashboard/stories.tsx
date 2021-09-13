@@ -10,13 +10,11 @@ import {MemoryRouter} from 'react-router-dom';
 import {Story} from '@storybook/react';
 
 import {Dashboard as DashboardComponent} from './index';
-import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
-import {useEffect} from 'react';
 import {statistics} from 'modules/mocks/statistics';
 import {incidentsByProcess} from 'modules/mocks/incidentsByProcess';
 import {incidentsByError} from 'modules/mocks/incidentsByError';
-import Header from 'App/Header';
+import {Header} from 'App/Header';
 import {user} from 'modules/mocks/user';
 
 export default {
@@ -24,11 +22,6 @@ export default {
 };
 
 const Success: Story = () => {
-  useEffect(() => {
-    statisticsStore.init();
-    return () => statisticsStore.reset();
-  }, []);
-
   return (
     <MemoryRouter>
       <Header />
@@ -55,11 +48,6 @@ Success.parameters = {
 };
 
 const Skeleton: Story = () => {
-  useEffect(() => {
-    statisticsStore.init();
-    return () => statisticsStore.reset();
-  }, []);
-
   return (
     <MemoryRouter>
       <Header />
@@ -86,11 +74,6 @@ Skeleton.parameters = {
 };
 
 const Error: Story = () => {
-  useEffect(() => {
-    statisticsStore.init();
-    return () => statisticsStore.reset();
-  }, []);
-
   return (
     <MemoryRouter>
       <Header />

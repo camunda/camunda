@@ -49,13 +49,12 @@ describe('Dashboard', () => {
 
     render(<Dashboard />, {wrapper: Wrapper});
 
-    await statisticsStore.fetchStatistics();
+    expect(
+      await screen.findByText('1087 Running Instances in total')
+    ).toBeInTheDocument();
 
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
     expect(screen.getByText('Operate Dashboard')).toBeInTheDocument();
-    expect(
-      screen.getByText('1087 Running Instances in total')
-    ).toBeInTheDocument();
     expect(screen.getByText('Instances by Process')).toBeInTheDocument();
     expect(screen.getByText('Incidents by Error Message')).toBeInTheDocument();
   });

@@ -16,7 +16,6 @@ import userEvent from '@testing-library/user-event';
 import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
-import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {statistics} from 'modules/mocks/statistics';
@@ -40,8 +39,6 @@ describe('<MetricPanel />', () => {
         res.once(ctx.json(statistics))
       )
     );
-
-    statisticsStore.reset();
   });
 
   it('should first display skeleton, then the statistics', async () => {
@@ -53,8 +50,6 @@ describe('<MetricPanel />', () => {
     expect(screen.getByTestId('total-instances-link')).toHaveTextContent(
       'Running Instances in total'
     );
-
-    statisticsStore.fetchStatistics();
 
     await waitForElementToBeRemoved(() => [
       screen.getByTestId('instances-bar-skeleton'),
@@ -69,7 +64,6 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(),
     });
 
-    statisticsStore.fetchStatistics();
     expect(screen.getByText('Instances with Incident')).toBeInTheDocument();
     expect(screen.getByText('Active Instances')).toBeInTheDocument();
     expect(
@@ -96,7 +90,7 @@ describe('<MetricPanel />', () => {
     const MOCK_HISTORY = createMemoryHistory({
       initialEntries: ['/?gseUrl=https://www.testUrl.com'],
     });
-    statisticsStore.fetchStatistics();
+
     render(<MetricPanel />, {
       wrapper: createWrapper(MOCK_HISTORY),
     });
@@ -141,7 +135,6 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
-    statisticsStore.fetchStatistics();
     userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
@@ -158,8 +151,6 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(),
     });
 
-    statisticsStore.fetchStatistics();
-
     expect(
       await screen.findByText('Process statistics could not be fetched')
     ).toBeInTheDocument();
@@ -174,8 +165,6 @@ describe('<MetricPanel />', () => {
     render(<MetricPanel />, {
       wrapper: createWrapper(),
     });
-
-    statisticsStore.fetchStatistics();
 
     expect(
       await screen.findByText('Process statistics could not be fetched')
