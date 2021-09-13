@@ -21,5 +21,6 @@ public class UserTaskDurationByUserTaskStartDateByProcessReportEvaluationIT
   protected ProcessGroupByType getGroupByType() {
     return ProcessGroupByType.START_DATE;
   }
+
 }
 

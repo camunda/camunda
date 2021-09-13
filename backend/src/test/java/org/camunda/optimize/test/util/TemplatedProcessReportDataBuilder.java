@@ -878,6 +878,16 @@ public class TemplatedProcessReportDataBuilder {
           .definitions(definitions)
           .build();
         break;
+      case USER_TASK_FREQ_GROUP_BY_ASSIGNEE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.ASSIGNEE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .build();
+        break;
       case USER_TASK_FREQ_GROUP_BY_CANDIDATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -893,6 +903,16 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.CANDIDATE_GROUP)
           .distributedByType(DistributedByType.USER_TASK)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .build();
+        break;
+      case USER_TASK_FREQ_GROUP_BY_CANDIDATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.CANDIDATE_GROUP)
+          .distributedByType(DistributedByType.PROCESS)
           .visualization(ProcessVisualization.TABLE)
           .definitions(definitions)
           .build();
@@ -1083,6 +1103,16 @@ public class TemplatedProcessReportDataBuilder {
           .definitions(definitions)
           .build();
         break;
+      case USER_TASK_DUR_GROUP_BY_ASSIGNEE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.ASSIGNEE)
+          .distributedByType(DistributedByType.PROCESS)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .build();
+        break;
       case USER_TASK_DUR_GROUP_BY_CANDIDATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -1098,6 +1128,16 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ViewProperty.DURATION)
           .groupByType(ProcessGroupByType.CANDIDATE_GROUP)
           .distributedByType(DistributedByType.USER_TASK)
+          .visualization(ProcessVisualization.TABLE)
+          .definitions(definitions)
+          .build();
+        break;
+      case USER_TASK_DUR_GROUP_BY_CANDIDATE_BY_PROCESS:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.CANDIDATE_GROUP)
+          .distributedByType(DistributedByType.PROCESS)
           .visualization(ProcessVisualization.TABLE)
           .definitions(definitions)
           .build();
