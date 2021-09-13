@@ -142,7 +142,6 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void complete(final long key, final JobRecord record) {
     delete(key, record);
-    metrics.jobCompleted(record.getType());
   }
 
   @Override
