@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
@@ -323,11 +324,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public Consumer<TypedRecord<?>> getOnProcessedListener() {
     return onProcessedListenerSupplier.get();
-  }
-
-  @Override
-  public TypedRecordProcessorsFactory getTypedRecordProcessorsFactory() {
-    return typedRecordProcessorsFactory;
   }
 
   @Override
