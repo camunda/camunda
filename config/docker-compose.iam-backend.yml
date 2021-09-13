@@ -33,6 +33,9 @@ services:
       CLIENTS_0_CLIENT_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       CLIENTS_0_LOGOUT_URL: http://localhost:8080/iam-logout-callback
       CLIENTS_0_BASE_URL: http://localhost:8080
+      IAM_CLIENT_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      IAM_CLIENT_BASE_URL: http://localhost:8080
+      IAM_CLIENT_LOGOUT_URL: http://localhost:8080/logout
       FEATURE_USER_MANAGEMENT: "true"
       FEATURE_SELF_SIGN_UP: "true"
     ports:
