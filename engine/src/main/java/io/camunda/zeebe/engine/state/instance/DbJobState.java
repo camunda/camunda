@@ -154,8 +154,6 @@ public final class DbJobState implements JobState, MutableJobState {
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
     makeJobNotActivatable(updatedValue.getTypeBuffer());
-
-    metrics.jobErrorThrown(updatedValue.getType());
   }
 
   @Override

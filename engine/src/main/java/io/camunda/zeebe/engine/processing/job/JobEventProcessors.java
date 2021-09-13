@@ -43,7 +43,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
-            new JobThrowErrorProcessor(zeebeState, eventPublicationBehavior, keyGenerator))
+            new JobThrowErrorProcessor(
+                zeebeState, eventPublicationBehavior, keyGenerator, jobMetrics))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
