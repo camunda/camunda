@@ -91,15 +91,16 @@ public final class ZeebeRocksDBMetricExporter<ColumnFamilyType extends Enum<Colu
   }
 
   private void exportMetrics(final RocksDBMetric[] metrics) {
+    final var database = databaseSupplier.get();
+    if (database == null) {
+      return;
+    }
     for (final RocksDBMetric metric : metrics) {
       try {
-        final var database = databaseSupplier.get();
-        if (database != null) {
-          database
-              .getProperty(metric.getPropertyName())
-              .map(Double::parseDouble)
-              .ifPresent(value -> metric.exportValue(partition, value));
-        }
+        database
+            .getProperty(metric.getPropertyName())
+            .map(Double::parseDouble)
+            .ifPresent(value -> metric.exportValue(partition, value));
       } catch (final Exception exception) {
         LOG.debug("Error occurred on exporting metric {}", metric.getPropertyName(), exception);
       }
