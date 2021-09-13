@@ -136,6 +136,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.FAILED, new JobFailedApplier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
+    register(JobIntent.MADE_ACTIVABLE, new JobActivatedApplier(state));
   }
 
   private void registerMessageAppliers(final MutableZeebeState state) {

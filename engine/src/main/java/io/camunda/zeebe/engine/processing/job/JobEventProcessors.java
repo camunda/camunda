@@ -63,12 +63,14 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(zeebeState, jobMetrics))
+        .onCommand(ValueType.JOB, JobIntent.MAKE_ACTIVABLE, new JobActivateProcessor(zeebeState))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
                 writers, zeebeState, zeebeState.getKeyGenerator(), maxRecordSize, jobMetrics))
         .withListener(new JobTimeoutTrigger(jobState))
+        .withListener(new JobBackoffTrigger(jobState))
         .withListener(
             new StreamProcessorLifecycleAware() {
               @Override

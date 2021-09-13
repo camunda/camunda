@@ -28,6 +28,8 @@ public interface JobState {
 
   void setJobsAvailableCallback(Consumer<String> callback);
 
+  void forEachBackOffTimedOutJobs(long upperBound, BiFunction<Long, JobRecord, Boolean> callback);
+
   enum State {
     ACTIVATABLE((byte) 0),
     ACTIVATED((byte) 1),

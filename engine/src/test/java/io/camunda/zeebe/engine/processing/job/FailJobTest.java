@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -120,10 +121,19 @@ public final class FailJobTest {
             .ofInstance(job.getValue().getProcessInstanceKey())
             .withRetries(3)
             .fail();
-    ENGINE.jobs().withType(jobType).activate();
 
     // then
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    // explicitly wait for polling
+    ENGINE.increaseTime(JobBackoffTrigger.POLLING_INTERVAL);
+
+    // verify that our job made activable
+    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).count()).isEqualTo(1);
+    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).getFirst().getKey())
+        .isEqualTo(jobKey);
+
+    ENGINE.jobs().withType(jobType).activate();
 
     // and the job is published again
     final var jobBatchActivations =
@@ -157,6 +167,42 @@ public final class FailJobTest {
             tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED),
             tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED));
+  }
+
+  @Test
+  public void shouldFailJobAndRetryWithBackOff() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Duration backOff = Duration.ofDays(1);
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getValue().getProcessInstanceKey())
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    // explicitly wait for polling
+    ENGINE.increaseTime(JobBackoffTrigger.POLLING_INTERVAL);
+
+    // verify that our job doesn't activable
+    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).exists()).isFalse();
+
+    ENGINE.increaseTime(backOff.plus(JobBackoffTrigger.POLLING_INTERVAL));
+
+    // verify that our job made activable
+    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).count()).isEqualTo(1);
+    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).getFirst().getKey())
+        .isEqualTo(jobKey);
   }
 
   @Test
