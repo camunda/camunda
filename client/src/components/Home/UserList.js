@@ -69,9 +69,9 @@ export default withErrorHandling(
         <div className="UserList">
           <EntityList
             name={t('home.userTitle')}
-            action={
+            action={(bulkActive) =>
               !readOnly && (
-                <Button main primary onClick={this.openAddUserModal}>
+                <Button main primary={!bulkActive} onClick={this.openAddUserModal}>
                   {t('common.add')}
                 </Button>
               )

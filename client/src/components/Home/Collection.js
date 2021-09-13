@@ -177,10 +177,11 @@ export class Collection extends React.Component {
           {homeTab && (
             <EntityList
               name={t('home.collectionTitle')}
-              action={
+              action={(bulkActive) =>
                 collection &&
                 collection.currentUserRole !== 'viewer' && (
                   <CreateNewButton
+                    primary={!bulkActive}
                     collection={collection.id}
                     createProcessReport={() => this.setState({creatingProcessReport: true})}
                     createDashboard={() => this.setState({creatingDashboard: true})}

@@ -109,9 +109,13 @@ export default withErrorHandling(
         <div className="SourcesList">
           <EntityList
             name={t('home.sources.title')}
-            action={
+            action={(bulkActive) =>
               !readOnly && (
-                <Button main primary onClick={() => this.setState({addingSource: true})}>
+                <Button
+                  main
+                  primary={!bulkActive}
+                  onClick={() => this.setState({addingSource: true})}
+                >
                   {t('common.add')}
                 </Button>
               )

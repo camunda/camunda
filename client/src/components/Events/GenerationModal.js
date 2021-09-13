@@ -48,12 +48,12 @@ export function GenerationModal({onClose, mightFail}) {
         </p>
         <EntityList
           embedded
-          action={
+          action={() => (
             <Button onClick={() => setOpenEventsSourceModal(true)}>
               <Icon type="plus" />
               {t('events.sources.add')}
             </Button>
-          }
+          )}
           name={t('events.addedSources')}
           empty={t('home.sources.notCreated')}
           data={sources.map((source) => {

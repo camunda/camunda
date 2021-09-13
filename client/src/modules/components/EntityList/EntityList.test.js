@@ -16,7 +16,7 @@ const props = {
   name: 'EntityList Name',
   empty: 'Empty Message',
   children: <div>Some additional Content</div>,
-  action: <button>Click Me</button>,
+  action: () => <button>Click Me</button>,
   data: [
     {
       id: 'aCollectionId',
@@ -288,4 +288,43 @@ it('should should reset the selection on data change', () => {
   runLastEffect();
 
   expect(node.find({isSelected: true})).not.toExist();
+});
+
+it('should show bulk operation dropdown', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="option" />} />);
+
+  expect(node.find('.bulkMenu Dropdown')).not.toExist();
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: true}});
+
+  expect(node.find('.bulkMenu Dropdown')).toExist();
+});
+
+it('should pass selected entries to dropdown options', () => {
+  const node = shallow(<EntityList {...props} bulkActions={<div className="option" />} />);
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: true}});
+
+  expect(node.find('.bulkMenu .option').prop('selectedEntries')).toEqual([props.data[0]]);
+});
+
+it('should pass the selection state to action', () => {
+  const spy = jest.fn();
+  const node = shallow(<EntityList {...props} action={spy} />);
+
+  expect(spy).toHaveBeenCalledWith(false);
+  spy.mockClear();
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: true}});
+
+  expect(spy).toHaveBeenCalledWith(true);
 });

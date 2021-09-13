@@ -126,7 +126,7 @@ it('should modify the collections name with the edit modal', async () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action').props.createProcessReport();
+  node.find('EntityList').prop('action')().props.createProcessReport();
 
   expect(node.find(ReportTemplateModal)).toExist();
 });
@@ -175,7 +175,7 @@ it('should hide create new button if the user role is viewer', () => {
   });
   const node = shallow(<Collection {...props} />);
 
-  expect(node.find('EntityList').prop('action')).toBe(false);
+  expect(node.find('EntityList').prop('action')()).toBe(false);
 });
 
 it('should load collection entities with sort parameters', () => {

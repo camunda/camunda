@@ -130,15 +130,15 @@ export class EventsProcesses extends React.Component {
           name={t('navigation.events')}
           empty={t('events.empty')}
           isLoading={!processes}
-          action={
-            <Dropdown main primary label={t('events.new')}>
+          action={(bulkActive) => (
+            <Dropdown main primary={!bulkActive} label={t('events.new')}>
               <Dropdown.Option onClick={this.toggleGenerationModal}>
                 {t('events.autogenerate')}
               </Dropdown.Option>
               <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
               <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
             </Dropdown>
-          }
+          )}
           bulkActions={[<BulkDeleter type="delete" deleteEntities={deleteProcesses} />]}
           onChange={this.loadList}
           columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}

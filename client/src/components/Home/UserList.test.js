@@ -57,7 +57,9 @@ it('should match snapshot', () => {
 it('should hide add button and edit menu when in readOnly mode', () => {
   const node = shallow(<UserList {...props} readOnly />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find(EntityList).prop('action')()).toBe(false);
+
+  expect(node.find(EntityList).prop('data')[0].actions).toBe(false);
 });
 
 it('should pass Entity to Deleter', () => {

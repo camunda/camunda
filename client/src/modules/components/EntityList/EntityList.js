@@ -13,8 +13,6 @@ import {LoadingIndicator, Icon, Dropdown, Tooltip, Input} from 'components';
 import SearchField from './SearchField';
 import ListItem from './ListItem';
 
-import BulkMenu from './BulkMenu';
-
 import './EntityList.scss';
 
 export default function EntityList({
@@ -78,9 +76,27 @@ export default function EntityList({
             </Dropdown>
           )}
           {bulkActions && (
-            <BulkMenu bulkActions={bulkActions} selectedEntries={selected} onChange={onChange} />
+            <div className="bulkMenu">
+              {selected.length > 0 && (
+                <Dropdown
+                  main
+                  primary
+                  label={`${selected.length} ${t(
+                    'common.itemSelected.' + (selected.length > 1 ? 'label-plural' : 'label')
+                  )}`}
+                >
+                  {React.Children.map(bulkActions, (child, idx) =>
+                    React.cloneElement(child, {
+                      key: idx,
+                      onDelete: onChange,
+                      selectedEntries: selected,
+                    })
+                  )}
+                </Dropdown>
+              )}
+            </div>
           )}
-          <div className="action">{action}</div>
+          <div className="action">{action?.(selected.length > 0)}</div>
         </div>
         {columns && hasResults && (
           <div className="columnHeaders">

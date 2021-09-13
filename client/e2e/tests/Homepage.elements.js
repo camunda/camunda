@@ -50,6 +50,6 @@ export const templateOption = (text) =>
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const selectAllCheckbox = Selector('.columnHeaders > input[type="checkbox"]');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
-export const bulkMenu = Selector('.BulkMenu');
-export const bulkDelete = Selector('.BulkMenu .DropdownOption');
+export const bulkMenu = Selector('.bulkMenu');
+export const bulkDelete = Selector('.bulkMenu .DropdownOption');
 export const listItem = Selector('.ListItem');

@@ -32,33 +32,3 @@ exports[`should match snapshot 1`] = `
   </Submenu>
 </Dropdown>
 `;
-
-exports[`should not show the collection option if it is in a collection 1`] = `
-<Dropdown
-  className="CreateNewButton"
-  label="Create New"
-  main={true}
-  primary={true}
->
-  <ForwardRef(DropdownOption)>
-    New Dashboard
-  </ForwardRef(DropdownOption)>
-  <Submenu
-    label="New Report"
-  >
-    <ForwardRef(DropdownOption)>
-      Process Report
-    </ForwardRef(DropdownOption)>
-    <ForwardRef(DropdownOption)
-      link="report/new-combined/edit"
-    >
-      Combined Process Report
-    </ForwardRef(DropdownOption)>
-    <ForwardRef(DropdownOption)
-      link="report/new-decision/edit"
-    >
-      Decision Report
-    </ForwardRef(DropdownOption)>
-  </Submenu>
-</Dropdown>
-`;

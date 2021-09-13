@@ -21,7 +21,7 @@ const props = {
 it('should add/remove a source from the list', () => {
   const node = shallow(<GenerationModal {...props} />);
 
-  node.find('EntityList').prop('action').props.onClick({});
+  node.find('EntityList').prop('action')().props.onClick({});
 
   node.find(EventsSourceModal).prop('onConfirm')([{type: 'external', configuration: {}}]);
 
@@ -36,7 +36,7 @@ it('should redirect to the process view on confirmation', () => {
   const sources = [{type: 'external', configuration: {}}];
   const node = shallow(<GenerationModal {...props} />);
 
-  node.find('EntityList').prop('action').props.onClick({});
+  node.find('EntityList').prop('action')().props.onClick({});
   node.find(EventsSourceModal).prop('onConfirm')(sources);
   node.find(Button).at(1).simulate('click');
 

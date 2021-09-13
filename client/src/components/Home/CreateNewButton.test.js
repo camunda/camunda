@@ -17,7 +17,7 @@ jest.mock('config', () => ({
 }));
 
 it('should match snapshot', async () => {
-  const node = shallow(<CreateNewButton />);
+  const node = shallow(<CreateNewButton primary />);
 
   await runLastEffect();
 
@@ -25,11 +25,11 @@ it('should match snapshot', async () => {
 });
 
 it('should not show the collection option if it is in a collection', async () => {
-  const node = shallow(<CreateNewButton collection="123" />);
+  const node = shallow(<CreateNewButton collection="123" createCollection="test" />);
 
   await runLastEffect();
 
-  expect(node).toMatchSnapshot();
+  expect(node.find({onClick: 'test'})).not.toExist();
 });
 
 it('should not show decision option in cloud environment', async () => {

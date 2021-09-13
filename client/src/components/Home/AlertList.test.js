@@ -172,7 +172,7 @@ it('should show information about alerts', async () => {
 it('should show create Alert button', () => {
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find(EntityList).prop('action')).toMatchSnapshot();
+  expect(node.find(EntityList).prop('action')()).toMatchSnapshot();
 });
 
 it('should Alert to Deleter', async () => {

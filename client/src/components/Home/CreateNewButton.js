@@ -18,6 +18,7 @@ export function CreateNewButton({
   collection,
   importEntity,
   user,
+  primary,
 }) {
   const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
 
@@ -28,7 +29,12 @@ export function CreateNewButton({
   }, []);
 
   return (
-    <Dropdown main primary label={t('home.createBtn.default')} className="CreateNewButton">
+    <Dropdown
+      main
+      primary={primary}
+      label={t('home.createBtn.default')}
+      className="CreateNewButton"
+    >
       {!collection && (
         <Dropdown.Option onClick={createCollection}>
           {t('home.createBtn.collection')}

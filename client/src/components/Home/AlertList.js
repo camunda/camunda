@@ -113,9 +113,9 @@ export default withErrorHandling(
         <div className="AlertList">
           <EntityList
             name={t('alert.label-plural')}
-            action={
+            action={(bulkActive) =>
               !readOnly && (
-                <Button main primary onClick={this.openAddAlertModal}>
+                <Button main primary={!bulkActive} onClick={this.openAddAlertModal}>
                   {t('alert.createNew')}
                 </Button>
               )
