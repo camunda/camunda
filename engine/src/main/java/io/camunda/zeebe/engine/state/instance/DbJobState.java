@@ -129,8 +129,6 @@ public final class DbJobState implements JobState, MutableJobState {
 
     createJob(key, record, type);
     removeJobDeadline(deadline);
-
-    metrics.jobTimedOut(record.getType());
   }
 
   @Override
