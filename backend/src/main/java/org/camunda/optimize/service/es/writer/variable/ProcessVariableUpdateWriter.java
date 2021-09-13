@@ -194,15 +194,15 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     // @formatter:off
     String variableScript =
       "HashMap varIdToVar = new HashMap();" +
-      "for (def var : ctx._source.${variables}) {" +
-        "varIdToVar.put(var.id, var);" +
+      "for (def existingVar : ctx._source.${variables}) {" +
+        "varIdToVar.put(existingVar.id, existingVar);" +
       "}" +
-      "for (def var : params.${variableUpdatesFromEngine}) {" +
-        "varIdToVar.compute(var.id, (k, v) -> { " +
+      "for (def newVar : params.${variableUpdatesFromEngine}) {" +
+        "varIdToVar.compute(newVar.id, (k, v) -> { " +
         "  if (v == null) {" +
-        "    return var;"   +
+        "    return newVar;"   +
         "  } else {" +
-        "    return v.version >= var.version ? v : var;" +
+        "    return v.version > newVar.version ? v : newVar;" +
         "  }" +
         "});" +
       "}" +

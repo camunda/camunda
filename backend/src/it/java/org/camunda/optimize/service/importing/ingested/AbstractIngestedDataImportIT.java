@@ -22,4 +22,10 @@ public class AbstractIngestedDataImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.importIngestedDataFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
+
+  protected void importIngestedDataFromLastIndexRefreshIndicesBeforeAndAfter() {
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importIngestedDataFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
 }

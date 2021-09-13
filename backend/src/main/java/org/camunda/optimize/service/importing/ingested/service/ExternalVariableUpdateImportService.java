@@ -18,8 +18,16 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toMap;
 
 @Slf4j
 public class ExternalVariableUpdateImportService implements ImportService<ExternalProcessVariableDto> {
@@ -65,7 +73,36 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   }
 
   private List<ProcessVariableDto> mapExternalEntitiesToOptimizeEntities(final List<ExternalProcessVariableDto> externalEntities) {
-    return externalEntities.stream().map(this::mapEngineEntityToOptimizeEntity).collect(Collectors.toList());
+    final List<ExternalProcessVariableDto> deduplicatedVariables = resolveDuplicateVariableUpdatesPerProcessInstance(
+      externalEntities);
+    return deduplicatedVariables.stream().map(this::mapEngineEntityToOptimizeEntity).collect(Collectors.toList());
+  }
+
+  private List<ExternalProcessVariableDto> resolveDuplicateVariableUpdatesPerProcessInstance(
+    final List<ExternalProcessVariableDto> externalEntities) {
+    // if we have more than one variable update for the same variable within one process instance, we only import the
+    // variable with the latest ingestion timestamp
+    List<ExternalProcessVariableDto> deduplicatedVariables = new ArrayList<>();
+    Map<String, List<ExternalProcessVariableDto>> variablesByProcessInstanceId = new HashMap<>();
+    for (ExternalProcessVariableDto variable : externalEntities) {
+      variablesByProcessInstanceId.putIfAbsent(variable.getProcessInstanceId(), new ArrayList<>());
+      variablesByProcessInstanceId.get(variable.getProcessInstanceId()).add(variable);
+    }
+    variablesByProcessInstanceId
+      .forEach((id, vars) -> deduplicatedVariables.addAll(resolveDuplicateVariableUpdates(vars)));
+    return deduplicatedVariables;
+  }
+
+  private Set<ExternalProcessVariableDto> resolveDuplicateVariableUpdates(final List<ExternalProcessVariableDto> externalEntities) {
+    return new HashSet<>(
+      externalEntities.stream().collect(toMap(
+        ExternalProcessVariableDto::getVariableId,
+        Function.identity(),
+        (var1, var2) ->
+          // if there is more than one update for the same variable, the update with the latest
+          // ingestion timestamp wins
+          var1.getIngestionTimestamp().compareTo(var2.getIngestionTimestamp()) > 0 ? var1 : var2
+      )).values());
   }
 
   private ProcessVariableDto mapEngineEntityToOptimizeEntity(final ExternalProcessVariableDto externalEntity) {

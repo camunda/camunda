@@ -243,6 +243,13 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
+  public void importIngestedDataFromLastIndex() {
+    final IngestedDataImportScheduler scheduler = getImportSchedulerManager().getIngestedDataImportScheduler()
+      .orElseThrow();
+    scheduler.runImportRound(true).get();
+  }
+
+  @SneakyThrows
   public void importAllZeebeEntitiesFromScratch() {
     try {
       resetImportStartIndexes();

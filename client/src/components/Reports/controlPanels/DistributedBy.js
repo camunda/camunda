@@ -61,7 +61,11 @@ export function DistributedBy({report, onChange, mightFail}) {
               change.distributedBy.$set = {type: 'variable', value: variable};
             }
 
-            if (isInstanceVariableReport(view, groupBy) && value !== 'none') {
+            if (
+              isInstanceVariableReport(view, groupBy) &&
+              value !== 'none' &&
+              value !== 'process'
+            ) {
               const [type, unit] = value.split('_');
               change.distributedBy.$set = {type, value: {unit}};
             }

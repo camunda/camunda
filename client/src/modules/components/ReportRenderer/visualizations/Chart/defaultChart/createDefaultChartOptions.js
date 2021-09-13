@@ -163,10 +163,12 @@ export function createBarOptions({
   measures = [],
   entity,
   groupedByDurationMaxValue = false,
-  isCombinedNumber,
+  isCombined,
   visualization,
 }) {
-  const stacked = configuration.stackedBar && ['bar', 'barLine'].includes(visualization);
+  const isCombinedNumber = isCombined && visualization === 'number';
+  const stacked =
+    configuration.stackedBar && isCombined && ['bar', 'barLine'].includes(visualization);
   const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)

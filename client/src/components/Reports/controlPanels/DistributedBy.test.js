@@ -182,6 +182,34 @@ it('should invoke onChange with correct start date configuration', () => {
   );
 });
 
+it('should invoke onChange with correct process distribution for process instance variable reports', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <DistributedBy
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      report={{
+        data: {
+          ...data,
+          view: {entity: 'processInstance', properties: ['frequency']},
+          groupBy: {type: 'variable'},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+  runLastEffect();
+
+  node.find(Select).prop('onChange')('process');
+
+  expect(spy).toHaveBeenCalledWith(
+    {
+      distributedBy: {$set: {type: 'process', value: null}},
+      visualization: {$set: 'bar'},
+    },
+    true
+  );
+});
+
 it('should have a button to reset the distribution', () => {
   const spy = jest.fn();
   const node = shallow(

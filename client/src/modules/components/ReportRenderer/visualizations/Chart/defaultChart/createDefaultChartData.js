@@ -18,7 +18,7 @@ export default function createDefaultChartData(props) {
   const {
     result,
     data: {
-      configuration: {measureVisualizations, stackedBar},
+      configuration: {measureVisualizations},
     },
   } = props.report;
   const measures = result.measures;
@@ -45,7 +45,6 @@ export default function createDefaultChartData(props) {
       data: formattedResult.map(({value}) => value),
       formatter: formatters[measure.property],
       order,
-      stack: stackedBar ? idx : undefined,
       ...createDatasetOptions({
         type,
         data: formattedResult,
