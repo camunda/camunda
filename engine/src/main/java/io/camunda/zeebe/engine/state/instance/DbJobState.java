@@ -177,8 +177,6 @@ public final class DbJobState implements JobState, MutableJobState {
   public void fail(final long key, final JobRecord updatedValue) {
     final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
     updateJob(key, updatedValue, newState);
-
-    metrics.jobFailed(updatedValue.getType());
   }
 
   @Override
