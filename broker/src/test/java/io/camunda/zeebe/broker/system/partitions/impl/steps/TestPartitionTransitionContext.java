@@ -13,8 +13,8 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -42,6 +42,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDB;
   private TestConcurrencyControl concurrencyControl;
+  private StateController stateController;
 
   @Override
   public int getPartitionId() {
@@ -172,8 +173,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public StateControllerImpl getStateController() {
-    return null;
+  public StateController getStateController() {
+    return stateController;
   }
 
   @Override
@@ -193,5 +194,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   public void setLogStream(final LogStream logStream) {
     this.logStream = logStream;
+  }
+
+  public void setStateController(final StateController stateController) {
+    this.stateController = stateController;
   }
 }

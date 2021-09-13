@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -30,7 +29,7 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   AsyncSnapshotDirector getSnapshotDirector();
 
-  StateControllerImpl getStateController();
+  StateController getStateController();
 
   ConstructableSnapshotStore getConstructableSnapshotStore();
 
