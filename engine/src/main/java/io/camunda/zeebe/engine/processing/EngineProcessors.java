@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -108,6 +109,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers);
 
+    final var jobMetrics = new JobMetrics(partitionId);
+
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
             zeebeState,
@@ -117,7 +120,8 @@ public final class EngineProcessors {
             catchEventBehavior,
             eventTriggerBehavior,
             writers,
-            timerChecker);
+            timerChecker,
+            jobMetrics);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -125,7 +129,8 @@ public final class EngineProcessors {
         onJobsAvailableCallback,
         eventPublicationBehavior,
         maxFragmentSize,
-        writers);
+        writers,
+        jobMetrics);
 
     addIncidentProcessors(
         zeebeState,
@@ -145,7 +150,8 @@ public final class EngineProcessors {
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final JobMetrics jobMetrics) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         expressionProcessor,
@@ -154,7 +160,8 @@ public final class EngineProcessors {
         catchEventBehavior,
         timerChecker,
         eventTriggerBehavior,
-        writers);
+        writers,
+        jobMetrics);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

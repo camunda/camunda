@@ -90,7 +90,6 @@ public final class DbJobState implements JobState, MutableJobState {
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
-    metrics.jobCreated(record.getType());
   }
 
   /**

@@ -27,11 +27,11 @@ public final class JobEventProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final int maxRecordSize,
-      final Writers writers) {
+      final Writers writers,
+      final JobMetrics jobMetrics) {
 
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
-    final var jobMetrics = new JobMetrics(zeebeState.getPartitionId());
 
     typedRecordProcessors
         .onCommand(
