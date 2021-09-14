@@ -184,6 +184,10 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     zeebeDB = zeebeDb;
   }
 
+  public void setRaftPartition(final RaftPartition raftPartition) {
+    this.raftPartition = raftPartition;
+  }
+
   @Override
   public AtomixLogStorage getLogStorage() {
     return logStorage;
