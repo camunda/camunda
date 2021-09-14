@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
@@ -32,6 +33,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
@@ -39,22 +41,24 @@ public class OutputMappingIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "processId";
-  private final BpmnModelInstance bpmnModelInstance;
-  private final String elementId;
-  private final boolean createsJob;
 
-  public OutputMappingIncidentTest(
-      final BpmnModelInstance bpmnModelInstance, final String elementId, final boolean createsJob) {
-    this.bpmnModelInstance = bpmnModelInstance;
-    this.elementId = elementId;
-    this.createsJob = createsJob;
-  }
+  @Parameter public String description;
+
+  @Parameter(1)
+  public BpmnModelInstance bpmnModelInstance;
+
+  @Parameter(2)
+  public String elementId;
+
+  @Parameter(3)
+  public boolean createsJob;
 
   @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
           {
+            "Service task",
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask(
@@ -66,6 +70,7 @@ public class OutputMappingIncidentTest {
             true
           },
           {
+            "Intermediate throw event",
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .intermediateThrowEvent(
@@ -153,6 +158,7 @@ public class OutputMappingIncidentTest {
     assertTrue(
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
             .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
             .exists());
     final Map<String, String> variables = ProcessInstances.getCurrentVariables(processInstanceKey);
@@ -197,6 +203,7 @@ public class OutputMappingIncidentTest {
     assertTrue(
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
             .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
             .exists());
   }
