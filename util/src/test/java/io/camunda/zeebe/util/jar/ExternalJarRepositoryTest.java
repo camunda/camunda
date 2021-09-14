@@ -20,8 +20,8 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
-final class ExporterJarRepositoryTest {
-  private final ExporterJarRepository jarRepository = new ExporterJarRepository();
+final class ExternalJarRepositoryTest {
+  private final ExternalJarRepository jarRepository = new ExternalJarRepository();
 
   @Test
   void shouldThrowExceptionOnLoadIfNotAJar(final @TempDir Path tempDir) throws IOException {
@@ -30,7 +30,7 @@ final class ExporterJarRepositoryTest {
     Files.writeString(fake, "foo");
 
     // then
-    assertThatThrownBy(() -> jarRepository.load(fake)).isInstanceOf(ExporterJarLoadException.class);
+    assertThatThrownBy(() -> jarRepository.load(fake)).isInstanceOf(ExternalJarLoadException.class);
   }
 
   @Test
@@ -40,7 +40,7 @@ final class ExporterJarRepositoryTest {
 
     // then
     assertThatThrownBy(() -> jarRepository.load(dummy))
-        .isInstanceOf(ExporterJarLoadException.class);
+        .isInstanceOf(ExternalJarLoadException.class);
   }
 
   @Test
@@ -53,7 +53,7 @@ final class ExporterJarRepositoryTest {
 
     // then
     assertThat(jarRepository.load(jarFile.getAbsolutePath()))
-        .isInstanceOf(ExporterJarClassLoader.class);
+        .isInstanceOf(ExternalJarClassLoader.class);
   }
 
   @Test

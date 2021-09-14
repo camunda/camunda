@@ -18,27 +18,27 @@ import org.slf4j.LoggerFactory;
  * Provides a class loader which isolates external exporters from other exporters, while exposing
  * our own code to ensure versions match at runtime.
  */
-public final class ExporterJarClassLoader extends URLClassLoader {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExporterJarClassLoader.class);
+public final class ExternalJarClassLoader extends URLClassLoader {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExternalJarClassLoader.class);
 
   private static final String JAVA_PACKAGE_PREFIX = "java.";
   private static final String JAR_URL_FORMAT = "jar:%s!/";
 
-  private ExporterJarClassLoader(final URL[] urls) {
+  private ExternalJarClassLoader(final URL[] urls) {
     super(urls);
   }
 
-  static ExporterJarClassLoader ofPath(final Path jarPath) throws ExporterJarLoadException {
+  static ExternalJarClassLoader ofPath(final Path jarPath) throws ExternalJarLoadException {
     final URL jarUrl;
 
     try {
       final String expandedPath = jarPath.toUri().toURL().toString();
       jarUrl = new URL(String.format(JAR_URL_FORMAT, expandedPath));
     } catch (final MalformedURLException e) {
-      throw new ExporterJarLoadException(jarPath, "bad JAR url", e);
+      throw new ExternalJarLoadException(jarPath, "bad JAR url", e);
     }
 
-    return new ExporterJarClassLoader(new URL[] {jarUrl});
+    return new ExternalJarClassLoader(new URL[] {jarUrl});
   }
 
   @Override

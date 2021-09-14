@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.util.jar.ExporterJarLoadException;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -59,7 +59,7 @@ final class ExporterRepositoryTest {
   }
 
   @Test
-  void shouldLoadInternalExporter() throws ExporterLoadException, ExporterJarLoadException {
+  void shouldLoadInternalExporter() throws ExporterLoadException, ExternalJarLoadException {
     // given
     final var config = new ExporterCfg();
     config.setClassName(ControlledTestExporter.class.getCanonicalName());

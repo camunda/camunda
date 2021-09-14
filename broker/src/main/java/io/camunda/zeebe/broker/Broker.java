@@ -21,7 +21,7 @@ import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
-import io.camunda.zeebe.util.jar.ExporterJarLoadException;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -376,7 +376,7 @@ public final class Broker implements AutoCloseable {
       final var exporterCfg = exporterEntry.getValue();
       try {
         exporterRepository.load(id, exporterCfg);
-      } catch (final ExporterLoadException | ExporterJarLoadException e) {
+      } catch (final ExporterLoadException | ExternalJarLoadException e) {
         throw new IllegalStateException(
             "Failed to load exporter with configuration: " + exporterCfg, e);
       }

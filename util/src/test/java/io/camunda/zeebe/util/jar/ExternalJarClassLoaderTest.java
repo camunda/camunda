@@ -19,13 +19,13 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 
 @Execution(ExecutionMode.CONCURRENT)
-final class ExporterJarClassLoaderTest {
+final class ExternalJarClassLoaderTest {
 
   @Test
   void shouldLoadClassesPackagedInJar(final @TempDir File tempDir) throws Exception {
     final var serviceClass = ExternalService.createUnloadedExporterClass();
     final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
-    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExternalJarClassLoader.ofPath(jarFile.toPath());
 
     // when
     final var loadedClass = classLoader.loadClass(ExternalService.CLASS_NAME);
@@ -41,7 +41,7 @@ final class ExporterJarClassLoaderTest {
       throws IOException, ClassNotFoundException {
     final var serviceClass = ExternalService.createUnloadedExporterClass();
     final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
-    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExternalJarClassLoader.ofPath(jarFile.toPath());
 
     // when
     final var loadedClass = classLoader.loadClass(Logger.class.getCanonicalName());

@@ -13,7 +13,7 @@ import org.agrona.LangUtil;
 /**
  * A collection of utilities to run an arbitrary {@link Runnable} with a specific thread context
  * class loader. This is required when side loading external code via the {@link
- * ExporterJarClassLoader}, as that code may be using the {@link Thread#getContextClassLoader()}.
+ * ExternalJarClassLoader}, as that code may be using the {@link Thread#getContextClassLoader()}.
  *
  * <p>As the same thread may be reused, it's also important to reset the thread afterwards to avoid
  * operations being run on the wrong class loader.

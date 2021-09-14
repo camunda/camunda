@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.exporter.repo;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
-import io.camunda.zeebe.util.jar.ExporterJarLoadException;
-import io.camunda.zeebe.util.jar.ExporterJarRepository;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
+import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -21,15 +21,15 @@ import org.slf4j.Logger;
 
 public final class ExporterRepository {
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-  private final ExporterJarRepository jarRepository;
+  private final ExternalJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;
 
   public ExporterRepository() {
-    this(new HashMap<>(), new ExporterJarRepository());
+    this(new HashMap<>(), new ExternalJarRepository());
   }
 
   public ExporterRepository(
-      final Map<String, ExporterDescriptor> exporters, final ExporterJarRepository jarRepository) {
+      final Map<String, ExporterDescriptor> exporters, final ExternalJarRepository jarRepository) {
     this.exporters = exporters;
     this.jarRepository = jarRepository;
   }
@@ -61,7 +61,7 @@ public final class ExporterRepository {
   }
 
   public ExporterDescriptor load(final String id, final ExporterCfg config)
-      throws ExporterLoadException, ExporterJarLoadException {
+      throws ExporterLoadException, ExternalJarLoadException {
     final ClassLoader classLoader;
     final Class<? extends Exporter> exporterClass;
 
