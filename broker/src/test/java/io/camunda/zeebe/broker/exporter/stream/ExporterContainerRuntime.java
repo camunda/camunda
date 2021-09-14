@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorScheduler;
