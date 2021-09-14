@@ -13,12 +13,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponse;
-import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponseException;
-import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryRequest;
-import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryResponse;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.EitherAssert;
@@ -68,7 +67,8 @@ final class QueryApiRequestHandlerTest {
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.UNSUPPORTED_MESSAGE,
             "Failed to handle query as the query API is disabled; did you configure "
@@ -85,14 +85,15 @@ final class QueryApiRequestHandlerTest {
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
-            .sendRequest(new ExecuteQueryRequest().partitionId(9999))
+            .sendRequest(new ExecuteQueryRequest().setPartitionId(9999))
             .join();
 
     // then
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PARTITION_LEADER_MISMATCH,
             "Expected to handle client message on the leader of partition '9999', but this node is not the leader for it");
@@ -114,17 +115,19 @@ final class QueryApiRequestHandlerTest {
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
-            .sendRequest(new ExecuteQueryRequest().partitionId(9999))
+            .sendRequest(new ExecuteQueryRequest().setPartitionId(9999))
             .join();
 
     // then
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PARTITION_LEADER_MISMATCH,
-            "Expected to handle client message on the leader of partition '9999', but this node is not the leader for it");
+            "Expected to handle client message on the leader of partition '9999', but this node is "
+                + "not the leader for it");
   }
 
   @DisplayName("should respond with PROCESS_NOT_FOUND when no process with key exists")
@@ -138,14 +141,18 @@ final class QueryApiRequestHandlerTest {
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
             .sendRequest(
-                new ExecuteQueryRequest().partitionId(1).key(1).valueType(ValueType.PROCESS))
+                new ExecuteQueryRequest()
+                    .setPartitionId(1)
+                    .setKey(1)
+                    .setValueType(ValueType.PROCESS))
             .join();
 
     // then
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PROCESS_NOT_FOUND,
             "Expected to find the process ID for resource of type PROCESS with key 1, but no such "
@@ -164,16 +171,17 @@ final class QueryApiRequestHandlerTest {
         new AsyncExecuteQueryRequestSender(sut)
             .sendRequest(
                 new ExecuteQueryRequest()
-                    .partitionId(1)
-                    .key(1)
-                    .valueType(ValueType.PROCESS_INSTANCE))
+                    .setPartitionId(1)
+                    .setKey(1)
+                    .setValueType(ValueType.PROCESS_INSTANCE))
             .join();
 
     // then
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PROCESS_NOT_FOUND,
             "Expected to find the process ID for resource of type PROCESS_INSTANCE with key 1, but "
@@ -190,14 +198,16 @@ final class QueryApiRequestHandlerTest {
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
-            .sendRequest(new ExecuteQueryRequest().partitionId(1).key(1).valueType(ValueType.JOB))
+            .sendRequest(
+                new ExecuteQueryRequest().setPartitionId(1).setKey(1).setValueType(ValueType.JOB))
             .join();
 
     // then
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.PROCESS_NOT_FOUND,
             "Expected to find the process ID for resource of type JOB with key 1, but no such "
@@ -218,7 +228,10 @@ final class QueryApiRequestHandlerTest {
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
             .sendRequest(
-                new ExecuteQueryRequest().partitionId(1).key(1).valueType(ValueType.PROCESS))
+                new ExecuteQueryRequest()
+                    .setPartitionId(1)
+                    .setKey(1)
+                    .setValueType(ValueType.PROCESS))
             .join();
 
     // then
@@ -243,7 +256,8 @@ final class QueryApiRequestHandlerTest {
     // when
     final Either<ErrorResponse, ExecuteQueryResponse> response =
         new AsyncExecuteQueryRequestSender(sut)
-            .sendRequest(new ExecuteQueryRequest().partitionId(1).key(1).valueType(ValueType.JOB))
+            .sendRequest(
+                new ExecuteQueryRequest().setPartitionId(1).setKey(1).setValueType(ValueType.JOB))
             .join();
 
     // then
@@ -269,9 +283,9 @@ final class QueryApiRequestHandlerTest {
         new AsyncExecuteQueryRequestSender(sut)
             .sendRequest(
                 new ExecuteQueryRequest()
-                    .partitionId(1)
-                    .key(1)
-                    .valueType(ValueType.PROCESS_INSTANCE))
+                    .setPartitionId(1)
+                    .setKey(1)
+                    .setValueType(ValueType.PROCESS_INSTANCE))
             .join();
 
     // then
@@ -296,7 +310,8 @@ final class QueryApiRequestHandlerTest {
     EitherAssert.assertThat(response)
         .isLeft()
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode, ErrorResponse::getErrorData)
+        .extracting(
+            ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
         .containsExactly(
             ErrorCode.INTERNAL_ERROR,
             "Failed to handle query due to internal error; see the broker logs for more");
@@ -348,12 +363,19 @@ final class QueryApiRequestHandlerTest {
         final var buffer = new ExpandableArrayBuffer();
         serverResponse.write(buffer, 0);
 
+        final var error = new ErrorResponse();
+        if (error.tryWrap(buffer)) {
+          error.wrap(buffer, 0, serverResponse.getLength());
+          future.complete(Either.left(error));
+          return;
+        }
+
         final var response = new ExecuteQueryResponse();
         try {
-          response.wrap(buffer, 0, buffer.capacity());
+          response.wrap(buffer, 0, serverResponse.getLength());
           future.complete(Either.right(response));
-        } catch (final ErrorResponseException e) {
-          future.complete(Either.left(e.getErrorResponse()));
+        } catch (final Exception e) {
+          future.completeExceptionally(e);
         }
       };
     }
