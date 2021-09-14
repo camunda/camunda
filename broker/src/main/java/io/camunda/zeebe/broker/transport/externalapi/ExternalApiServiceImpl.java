@@ -5,15 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.broker.transport.externalapi;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -21,28 +23,35 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
-public final class CommandApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
+public final class ExternalApiServiceImpl extends Actor
+    implements PartitionListener, DiskSpaceUsageListener, ExternalApiService {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
-  private final CommandApiRequestHandler requestHandler;
+  private final CommandApiRequestHandler commandHandler;
+  private final QueryApiRequestHandler queryHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
   private final String actorName;
+  private final ActorSchedulingService scheduler;
 
-  public CommandApiServiceImpl(
+  public ExternalApiServiceImpl(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
-      final PartitionAwareRequestLimiter limiter) {
+      final PartitionAwareRequestLimiter limiter,
+      final ActorSchedulingService scheduler,
+      final QueryApiCfg queryApiCfg) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
-    requestHandler = new CommandApiRequestHandler();
-    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    this.scheduler = scheduler;
+    commandHandler = new CommandApiRequestHandler();
+    queryHandler = new QueryApiRequestHandler(queryApiCfg, localBroker.getNodeId());
+    actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 
   @Override
@@ -51,11 +60,24 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
+  protected void onActorStarting() {
+    scheduler.submitActor(queryHandler);
+  }
+
+  @Override
   protected void onActorClosing() {
     for (final Integer leadPartition : leadPartitions) {
-      removeForPartitionId(leadPartition);
+      removeLeaderHandlers(leadPartition);
     }
     leadPartitions.clear();
+
+    actor.runOnCompletion(
+        queryHandler.closeAsync(),
+        (ok, error) -> {
+          if (error != null) {
+            Loggers.TRANSPORT_LOGGER.warn("Failed to close query API request handler", error);
+          }
+        });
   }
 
   @Override
@@ -65,22 +87,27 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final QueryService queryService) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
           leadPartitions.add(partitionId);
           limiter.addPartition(partitionId);
 
+          queryHandler.addPartition(partitionId, queryService);
+          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
+
           logStream
               .newLogStreamRecordWriter()
               .onComplete(
                   (recordWriter, error) -> {
                     if (error == null) {
-
                       final var requestLimiter = limiter.getLimiter(partitionId);
-                      requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
-                      serverTransport.subscribe(partitionId, RequestType.COMMAND, requestHandler);
+                      commandHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
                       future.complete(null);
                     } else {
                       Loggers.SYSTEM_LOGGER.error(
@@ -100,11 +127,13 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
-    return actor.call(
-        () -> {
-          requestHandler.removePartition(partitionId);
-          cleanLeadingPartition(partitionId);
-        });
+    return actor.call(() -> removeLeaderHandlers(partitionId));
+  }
+
+  private void removeLeaderHandlers(final int partitionId) {
+    commandHandler.removePartition(partitionId);
+    queryHandler.removePartition(partitionId);
+    cleanLeadingPartition(partitionId);
   }
 
   private void cleanLeadingPartition(final int partitionId) {
@@ -134,11 +163,11 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   public void onDiskSpaceNotAvailable() {
-    actor.run(requestHandler::onDiskSpaceNotAvailable);
+    actor.run(commandHandler::onDiskSpaceNotAvailable);
   }
 
   @Override
   public void onDiskSpaceAvailable() {
-    actor.run(requestHandler::onDiskSpaceAvailable);
+    actor.run(commandHandler::onDiskSpaceAvailable);
   }
 }

@@ -29,6 +29,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private RaftCfg raft = new RaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
+  private QueryApiCfg queryApi = new QueryApiCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -96,6 +97,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.partitioning = partitioning;
   }
 
+  public QueryApiCfg getQueryApi() {
+    return queryApi;
+  }
+
+  public void setQueryApi(final QueryApiCfg queryApi) {
+    this.queryApi = queryApi;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -109,6 +118,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + rocksdb
         + ", partitioning="
         + partitioning
+        + ", queryApi="
+        + queryApi
         + '}';
   }
 }

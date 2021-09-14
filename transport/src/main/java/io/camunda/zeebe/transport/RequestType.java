@@ -19,6 +19,7 @@ package io.camunda.zeebe.transport;
 public enum RequestType {
   // Supported request types
   COMMAND("command"),
+  QUERY("query"),
 
   // All other request types are considered unknown
   // This value exists mainly for testing purposes

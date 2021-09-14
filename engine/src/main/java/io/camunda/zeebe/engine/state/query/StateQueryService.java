@@ -27,6 +27,8 @@ public final class StateQueryService implements QueryService {
   private final ElementInstanceState instances;
   private final JobState jobs;
 
+  private volatile boolean isClosed;
+
   public StateQueryService(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
     final ZeebeState state = new ZeebeDbState(zeebeDb, zeebeDb.createContext());
     processes = state.getProcessState();
@@ -35,13 +37,22 @@ public final class StateQueryService implements QueryService {
   }
 
   @Override
+  public void close() {
+    isClosed = true;
+  }
+
+  @Override
   public Optional<DirectBuffer> getBpmnProcessIdForProcess(final long key) {
+    ensureServiceIsOpened();
+
     return Optional.ofNullable(processes.getProcessByKey(key))
         .map(DeployedProcess::getBpmnProcessId);
   }
 
   @Override
   public Optional<DirectBuffer> getBpmnProcessIdForProcessInstance(final long key) {
+    ensureServiceIsOpened();
+
     return Optional.ofNullable(instances.getInstance(key))
         .map(ElementInstance::getValue)
         .map(ProcessInstanceRecord::getBpmnProcessIdBuffer);
@@ -49,6 +60,14 @@ public final class StateQueryService implements QueryService {
 
   @Override
   public Optional<DirectBuffer> getBpmnProcessIdForJob(final long key) {
+    ensureServiceIsOpened();
+
     return Optional.ofNullable(jobs.getJob(key)).map(JobRecord::getBpmnProcessIdBuffer);
+  }
+
+  private void ensureServiceIsOpened() {
+    if (isClosed) {
+      throw new ClosedServiceException();
+    }
   }
 }
