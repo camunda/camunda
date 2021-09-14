@@ -31,6 +31,8 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   LogStream getLogStream();
 
+  void setLogStream(LogStream logStream);
+
   AsyncSnapshotDirector getSnapshotDirector();
 
   StateController getStateController();
@@ -70,4 +72,6 @@ public interface PartitionTransitionContext extends PartitionContext {
   AtomixLogStorage getLogStorage();
 
   void setLogStorage(AtomixLogStorage logStorage);
+
+  int getMaxFragmentSize();
 }
