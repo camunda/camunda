@@ -383,7 +383,6 @@ test('Remove fields when instance is canceled', async (t) => {
 
   await t
     .click(screen.queryByRole('button', {name: /^Cancel Instance/}))
-    .click(screen.queryByRole('button', {name: 'Apply'}))
     .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 

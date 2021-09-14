@@ -86,7 +86,7 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
         <TD>
           <Operations
             instance={instance}
-            isSelected={isSelected}
+            selected={isSelected}
             onOperation={() =>
               instancesStore.markInstancesWithActiveOperations({
                 ids: [instance.id],

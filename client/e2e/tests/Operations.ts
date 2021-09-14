@@ -68,13 +68,11 @@ test('Retry and Cancel single instance ', async (t) => {
   await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
 
   // cancel single instance using operation button
-  await t
-    .click(
-      screen.queryByRole('button', {
-        name: `Cancel Instance ${instance.processInstanceKey}`,
-      })
-    )
-    .click(screen.getByRole('button', {name: 'Apply'}));
+  await t.click(
+    screen.queryByRole('button', {
+      name: `Cancel Instance ${instance.processInstanceKey}`,
+    })
+  );
 
   await t
     .expect(screen.queryByTestId('operations-list').visible)

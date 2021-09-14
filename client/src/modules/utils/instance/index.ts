@@ -22,6 +22,16 @@ export const isRunning = (instance: any) => {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 };
 
+/**
+ * @returns the last operation from an operations list or an empty {}
+ * @param {*} operations array of operations
+ */
+export const getLatestOperation = (
+  operations: ReadonlyArray<InstanceOperationEntity> = []
+): InstanceOperationEntity | null => {
+  return operations.length > 0 ? operations[0] : null;
+};
+
 export function getProcessName(instance: ProcessInstanceEntity | null) {
   if (instance === null) {
     return '';

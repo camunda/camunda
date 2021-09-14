@@ -49,7 +49,7 @@ export const setProps = (
  * @returns a higher order function which executes the wrapped method x times;
  * @param {*} x number of times the method should be executed
  */
-const xTimes = (x: any) => (method: any) => {
+export const xTimes = (x: any) => (method: any) => {
   if (x > 0) {
     method(x);
     xTimes(x - 1)(method);

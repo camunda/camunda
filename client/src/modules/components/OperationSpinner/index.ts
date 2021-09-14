@@ -4,15 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import styled, {css} from 'styled-components';
 
 import Spinner from 'modules/components/Spinner';
 
-const OperationSpinner = styled<
-  React.FC<{isSelected?: boolean; title?: string}>
->(Spinner)`
-  ${({theme, isSelected = false}) => {
+const OperationSpinner = styled(Spinner)`
+  ${({theme, selected}) => {
     const colors = theme.colors.modules.operations;
 
     return css`
@@ -20,7 +17,7 @@ const OperationSpinner = styled<
       width: 14px;
       height: 14px;
       border: 2px solid
-        ${isSelected ? colors.selected.borderColor : colors.default.borderColor};
+        ${selected ? colors.selected.borderColor : colors.default.borderColor};
       border-right-color: transparent;
     `;
   }}

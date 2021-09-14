@@ -219,7 +219,6 @@ describe('InstanceHeader', () => {
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
     userEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    userEvent.click(screen.getByRole('button', {name: 'Apply'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
@@ -296,7 +295,6 @@ describe('InstanceHeader', () => {
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
     userEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    userEvent.click(screen.getByRole('button', {name: /Apply/}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
