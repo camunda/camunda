@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
@@ -44,6 +45,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ZeebeDb zeebeDB;
   private StateController stateController;
   private ExporterRepository exporterRepository;
+  private AtomixLogStorage logStorage;
 
   @Override
   public int getPartitionId() {
@@ -183,6 +185,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
+  public AtomixLogStorage getLogStorage() {
+    return logStorage;
+  }
+
+  @Override
+  public void setLogStorage(final AtomixLogStorage logStorage) {
+    this.logStorage = logStorage;
+  }
+
+  @Override
   public int getNodeId() {
     return 0;
   }
@@ -217,11 +229,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     return null;
   }
 
-  public void setStateController(final StateController stateController) {
-    this.stateController = stateController;
-  }
-
   public void setLogStream(final LogStream logStream) {
     this.logStream = logStream;
+  }
+
+  public void setStateController(final StateController stateController) {
+    this.stateController = stateController;
   }
 }
