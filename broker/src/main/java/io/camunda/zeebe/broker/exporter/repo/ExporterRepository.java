@@ -9,9 +9,9 @@ package io.camunda.zeebe.broker.exporter.repo;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
-import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
-import io.camunda.zeebe.broker.exporter.jar.ExporterJarRepository;
-import io.camunda.zeebe.broker.exporter.jar.ThreadContextUtil;
+import io.camunda.zeebe.util.jar.ExporterJarLoadException;
+import io.camunda.zeebe.util.jar.ExporterJarRepository;
+import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.util.Collections;

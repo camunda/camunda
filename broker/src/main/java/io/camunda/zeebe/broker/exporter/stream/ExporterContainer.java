@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
-import io.camunda.zeebe.broker.exporter.jar.ThreadContextUtil;
+import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.exporter.api.Exporter;

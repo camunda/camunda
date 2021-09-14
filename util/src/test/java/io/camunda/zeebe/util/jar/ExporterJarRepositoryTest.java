@@ -5,12 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.exporter.jar;
+package io.camunda.zeebe.util.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,10 +46,10 @@ final class ExporterJarRepositoryTest {
   @Test
   void shouldLoadClassLoaderForJar(final @TempDir File tempDir) throws IOException {
     // given
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
+    final var serviceClass = ExternalService.createUnloadedExporterClass();
 
     // when
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
 
     // then
     assertThat(jarRepository.load(jarFile.getAbsolutePath()))
@@ -60,8 +59,8 @@ final class ExporterJarRepositoryTest {
   @Test
   void shouldLoadClassLoaderCorrectlyOnlyOnce(final @TempDir File tempDir) throws Exception {
     // given
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var serviceClass = ExternalService.createUnloadedExporterClass();
+    final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
 
     // when
     final var classLoader = jarRepository.load(jarFile.toPath());

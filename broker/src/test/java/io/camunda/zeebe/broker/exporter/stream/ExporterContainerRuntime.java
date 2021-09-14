@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
+import io.camunda.zeebe.util.jar.ExporterJarLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;

@@ -5,12 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.exporter.jar;
+package io.camunda.zeebe.util.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
-import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.util.jar.ExternalService.Service;
 import java.io.File;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -24,24 +23,24 @@ final class ExporterJarClassLoaderTest {
 
   @Test
   void shouldLoadClassesPackagedInJar(final @TempDir File tempDir) throws Exception {
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var serviceClass = ExternalService.createUnloadedExporterClass();
+    final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final var loadedClass = classLoader.loadClass(ExternalExporter.EXPORTER_CLASS_NAME);
+    final var loadedClass = classLoader.loadClass(ExternalService.CLASS_NAME);
 
     // then
     final var constructor = loadedClass.getConstructor();
     assertThat(loadedClass.getDeclaredField("FOO").get(loadedClass)).isEqualTo("bar");
-    assertThat(constructor.newInstance()).isInstanceOf(Exporter.class);
+    assertThat(constructor.newInstance()).isInstanceOf(Service.class);
   }
 
   @Test
   void shouldUseSystemClassLoaderAsFallback(final @TempDir File tempDir)
       throws IOException, ClassNotFoundException {
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var serviceClass = ExternalService.createUnloadedExporterClass();
+    final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
