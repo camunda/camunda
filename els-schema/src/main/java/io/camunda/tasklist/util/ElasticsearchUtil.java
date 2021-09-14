@@ -366,7 +366,7 @@ public abstract class ElasticsearchUtil {
       clearScrollRequest.addScrollId(scrollId);
       try {
         esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
       }
     }
