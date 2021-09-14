@@ -108,10 +108,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.exporterDirector = exporterDirector;
   }
 
-  public void setExporterRepository(final ExporterRepository exporterRepository) {
-    this.exporterRepository = exporterRepository;
-  }
-
   @Override
   public PartitionMessagingService getMessagingService() {
     return null;
@@ -125,6 +121,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
     return Set.of();
+  }
+
+  @Override
+  public AtomixLogStorage getLogStorage() {
+    return logStorage;
+  }
+
+  @Override
+  public void setLogStorage(final AtomixLogStorage logStorage) {
+    this.logStorage = logStorage;
+  }
+
+  @Override
+  public int getMaxFragmentSize() {
+    return 1;
   }
 
   @Override
@@ -188,14 +199,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.raftPartition = raftPartition;
   }
 
-  @Override
-  public AtomixLogStorage getLogStorage() {
-    return logStorage;
-  }
-
-  @Override
-  public void setLogStorage(final AtomixLogStorage logStorage) {
-    this.logStorage = logStorage;
+  public void setExporterRepository(final ExporterRepository exporterRepository) {
+    this.exporterRepository = exporterRepository;
   }
 
   @Override
@@ -206,6 +211,10 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public LogStream getLogStream() {
     return logStream;
+  }
+
+  public void setLogStream(final LogStream logStream) {
+    this.logStream = logStream;
   }
 
   @Override
@@ -231,10 +240,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public PartitionContext getPartitionContext() {
     return null;
-  }
-
-  public void setLogStream(final LogStream logStream) {
-    this.logStream = logStream;
   }
 
   public void setStateController(final StateController stateController) {
