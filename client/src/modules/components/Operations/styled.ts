@@ -6,10 +6,10 @@
 
 import styled from 'styled-components';
 
-const Operations = styled.div`
+const OperationsContainer = styled.div`
   display: flex;
   align-items: center;
   margin-right: 37px;
 `;
 
-export {Operations};
+export {OperationsContainer};

@@ -458,6 +458,7 @@ test('Instance with an incident - cancel an instance', async (t) => {
         name: `Cancel Instance ${instanceId}`,
       })
     )
+    .click(screen.getByRole('button', {name: 'Apply'}))
     .expect(screen.queryByTestId('operation-spinner').exists)
     .ok()
     .expect(screen.queryByTestId('operation-spinner').exists)
