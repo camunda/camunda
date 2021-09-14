@@ -40,7 +40,6 @@ public class IntermediateThrowEventProcessor implements BpmnElementProcessor<Exe
 
   @Override
   public void onComplete(final ExecutableFlowNode element, final BpmnElementContext context) {
-    BpmnElementProcessor.super.onComplete(element, context);
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))

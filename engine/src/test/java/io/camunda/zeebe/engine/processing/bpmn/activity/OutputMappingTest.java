@@ -13,12 +13,8 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -76,7 +72,7 @@ public class OutputMappingTest {
   }
 
   @Test
-  public void shouldApplyOutputMappingOnReady() {
+  public void shouldApplyOutputMapping() {
     // given
     ENGINE.deployment().withXmlResource(bpmnModelInstance).deploy();
 
@@ -102,46 +98,5 @@ public class OutputMappingTest {
     final Map<String, String> variables =
         ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
     assertThat(variables).contains(entry("bar", "1"));
-  }
-
-  @Test
-  public void shouldCreateIncidentOnOutputMappingFailure() {
-    // given
-    ENGINE.deployment().withXmlResource(bpmnModelInstance).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    if (createsJob) {
-      ENGINE.job().withType("type").ofInstance(processInstanceKey).complete();
-    }
-
-    // then
-    final Record failureCommand =
-        RecordingExporter.processInstanceRecords()
-            .withElementId(elementId)
-            .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withIntent(IncidentIntent.CREATED)
-            .getFirst();
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
-
-    Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasBpmnProcessId(PROCESS_ID)
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasElementId(elementId)
-        .hasElementInstanceKey(failureCommand.getKey())
-        .hasVariableScopeKey(failureCommand.getKey());
-
-    assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
   }
 }
