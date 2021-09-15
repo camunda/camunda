@@ -22,7 +22,8 @@ public class ZeebeDbPartitionTransitionStep implements PartitionTransitionStep {
       final PartitionTransitionContext context, final long term, final Role targetRole) {
 
     final var currentRole = context.getCurrentRole();
-    if (currentRole == Role.LEADER || targetRole == Role.INACTIVE) {
+    if (context.getZeebeDb() != null
+        && (currentRole == Role.LEADER || targetRole == Role.INACTIVE)) {
       try {
         context.getStateController().closeDb();
         context.setZeebeDb(null);
