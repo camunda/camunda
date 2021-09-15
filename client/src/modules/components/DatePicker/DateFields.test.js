@@ -48,10 +48,8 @@ it('should set endDate on date change of end date input field', () => {
 it('should select date range popup on date input click', () => {
   const node = shallow(<DateFields {...props} enableAddButton={jest.fn()} />);
 
-  const evt = {nativeEvent: {stopImmediatePropagation: jest.fn()}};
-  node.instance().toggleDateRangeForStart(evt);
+  node.find(PickerDateInput).at(0).simulate('click');
 
-  expect(evt.nativeEvent.stopImmediatePropagation).toHaveBeenCalled();
   expect(node.state('popupOpen')).toBe(true);
   expect(node.state('currentlySelectedField')).toBe('startDate');
 });
@@ -83,4 +81,15 @@ it('should be possible to disable the date fields', () => {
   const dateInputs = node.find(PickerDateInput);
   expect(dateInputs.at(0).props('disabled')).toBeTruthy();
   expect(dateInputs.at(1).props('disabled')).toBeTruthy();
+});
+
+it('should not close popup when clicking inside it', () => {
+  const node = shallow(<DateFields {...props} />);
+
+  node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
+
+  node.find('.dateRangeContainer').simulate('mousedown');
+  node.instance().hidePopup();
+
+  expect(node.state('popupOpen')).toBe(true);
 });

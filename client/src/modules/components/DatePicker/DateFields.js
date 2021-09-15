@@ -22,23 +22,32 @@ export default class DateFields extends React.PureComponent {
     currentlySelectedField: null,
   };
 
+  dateFields = React.createRef();
+
   endDateField = React.createRef();
+
+  // Modals stop propagation of events on elements outside the modal
+  // Therefore, we need to attach the events on the modal instead of document
+  getContext = () => this.dateFields.current?.closest('.Modal') || document;
 
   componentDidUpdate() {
     const {popupOpen} = this.state;
 
+    const context = this.getContext();
+
     if (popupOpen) {
-      document.addEventListener('click', this.hidePopup);
-      document.addEventListener('keydown', this.closeOnEscape);
+      context.addEventListener('click', this.hidePopup);
+      context.addEventListener('keydown', this.closeOnEscape);
     } else {
-      document.removeEventListener('click', this.hidePopup);
-      document.removeEventListener('keydown', this.closeOnEscape);
+      context.removeEventListener('click', this.hidePopup);
+      context.removeEventListener('keydown', this.closeOnEscape);
     }
   }
 
   componentWillUnmount() {
-    document.removeEventListener('click', this.hidePopup);
-    document.removeEventListener('keydown', this.closeOnEscape);
+    const context = this.getContext();
+    context.removeEventListener('click', this.hidePopup);
+    context.removeEventListener('keydown', this.closeOnEscape);
   }
 
   handleKeyPress = (evt) => {
@@ -54,7 +63,7 @@ export default class DateFields extends React.PureComponent {
     const endDateObj = parseISO(endDate);
 
     return (
-      <div className="DateFields" onKeyDown={this.handleKeyPress}>
+      <div className="DateFields" ref={this.dateFields} onKeyDown={this.handleKeyPress}>
         <div className="inputContainer">
           <PickerDateInput
             className={classnames({
@@ -65,7 +74,7 @@ export default class DateFields extends React.PureComponent {
               this.setState({currentlySelectedField: 'startDate'});
             }}
             onSubmit={this.submitStart}
-            onClick={this.toggleDateRangeForStart}
+            onClick={() => this.toggleDateRangePopup('startDate')}
             value={startDate}
             isInvalid={!isDateValid(startDate)}
           />
@@ -79,14 +88,15 @@ export default class DateFields extends React.PureComponent {
               this.setState({currentlySelectedField: 'endDate'});
             }}
             onSubmit={this.submitEnd}
-            onClick={this.toggleDateRangeForEnd}
+            onClick={() => this.toggleDateRangePopup('endDate')}
             value={endDate}
             isInvalid={!isDateValid(endDate)}
           />
         </div>
         {(this.state.popupOpen || forceOpen) && (
           <div
-            onClick={this.stopClosingPopup}
+            onMouseDown={this.stopClosingPopup}
+            onKeyDown={({key}) => key === 'Enter' && this.stopClosingPopup()}
             className={classnames('dateRangeContainer', {
               dateRangeContainerLeft: this.isFieldSelected('startDate'),
               dateRangeContainerRight: this.isFieldSelected('endDate'),
@@ -134,16 +144,18 @@ export default class DateFields extends React.PureComponent {
     }
   };
 
-  stopClosingPopup = ({nativeEvent: event}) => {
-    // https://stackoverflow.com/questions/24415631/reactjs-syntheticevent-stoppropagation-only-works-with-react-events
-    event.stopImmediatePropagation();
+  stopClosingPopup = () => {
+    this.insideClick = true;
   };
 
-  hidePopup = () => {
-    this.setState({
-      popupOpen: false,
-      currentlySelectedField: null,
-    });
+  hidePopup = (evt) => {
+    if (!this.insideClick) {
+      this.setState({
+        popupOpen: false,
+        currentlySelectedField: null,
+      });
+    }
+    this.insideClick = false;
   };
 
   isFieldSelected(field) {
@@ -152,18 +164,7 @@ export default class DateFields extends React.PureComponent {
 
   setDate = (name) => (date) => this.props.onDateChange(name, date);
 
-  toggleDateRangeForStart = (event) => this.toggleDateRangePopup(event, 'startDate');
-  toggleDateRangeForEnd = (event) => this.toggleDateRangePopup(event, 'endDate');
-
-  toggleDateRangePopup = (event, field) => {
-    this.stopClosingPopup(event);
-
-    if (this.state.popupOpen) {
-      return this.setState({
-        currentlySelectedField: field,
-      });
-    }
-
+  toggleDateRangePopup = (field) => {
     this.setState({
       popupOpen: true,
       currentlySelectedField: field,
