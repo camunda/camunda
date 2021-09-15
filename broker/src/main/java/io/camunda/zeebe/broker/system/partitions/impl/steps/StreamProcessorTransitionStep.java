@@ -37,7 +37,7 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
     if (streamprocessor == null) {
       return;
     }
-    if (shouldCloseOnTransition(newRole, currentRole)) {
+    if (shouldInstallOnTransition(newRole, currentRole) || newRole == Role.INACTIVE) {
       // Right now this step has no value. But in future, we hope to remove `prepareTransition`
       // step. Then we will be closing the steps asynchronously. At that time we need to stop/pause
       // the services until the transition is complete.
@@ -45,21 +45,14 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
     }
   }
 
-  private boolean shouldCloseOnTransition(final Role newRole, final Role currentRole) {
-    return newRole == Role.LEADER
-        || (newRole == Role.FOLLOWER && currentRole != Role.CANDIDATE)
-        || newRole == Role.INACTIVE;
-  }
-
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var currentRole = context.getCurrentRole();
     final var streamprocessor = context.getStreamProcessor();
-    if (streamprocessor == null) {
-      return CompletableActorFuture.completed(null);
-    }
-    if (shouldCloseOnTransition(targetRole, currentRole)) {
+
+    if (streamprocessor != null
+        && (shouldInstallOnTransition(targetRole, currentRole) || targetRole == Role.INACTIVE)) {
       context.getComponentHealthMonitor().removeComponent(streamprocessor.getName());
       final ActorFuture<Void> future = streamprocessor.closeAsync();
       future.onComplete(
@@ -79,10 +72,8 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var currentRole = context.getCurrentRole();
 
-    if (targetRole == Role.LEADER
-        || (targetRole == Role.FOLLOWER && currentRole != Role.CANDIDATE)
+    if (shouldInstallOnTransition(targetRole, currentRole)
         || (context.getStreamProcessor() == null && targetRole != Role.INACTIVE)) {
-
       final StreamProcessor streamProcessor = createStreamProcessor(context, targetRole);
       final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
       final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
@@ -118,6 +109,12 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
   @Override
   public String getName() {
     return "StreamProcessor";
+  }
+
+  private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
+    return newRole == Role.LEADER
+        || (newRole == Role.FOLLOWER && currentRole != Role.CANDIDATE)
+        || (newRole == Role.CANDIDATE && currentRole != Role.FOLLOWER);
   }
 
   private StreamProcessor createStreamProcessor(
