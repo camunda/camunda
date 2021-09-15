@@ -29,13 +29,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 class StreamProcessorTransitionStepTest {
 
   TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
   final StreamProcessorBuilder streamProcessorBuilder = spy(StreamProcessorBuilder.class);
   final StreamProcessor streamProcessor = mock(StreamProcessor.class);
+  final StreamProcessor streamProcessorFromPrevRole = mock(StreamProcessor.class);
 
   private StreamProcessorTransitionStep step;
 
@@ -48,16 +48,19 @@ class StreamProcessorTransitionStepTest {
 
     when(streamProcessor.openAsync(anyBoolean())).thenReturn(TestActorFuture.completedFuture(null));
     when(streamProcessor.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
+    when(streamProcessorFromPrevRole.closeAsync())
+        .thenReturn(TestActorFuture.completedFuture(null));
 
     step = new StreamProcessorTransitionStep(streamProcessorBuilder);
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldReInstallStreamProcessor")
+  @MethodSource("provideTransitionsThatShouldCloseExistingStreamProcessor")
   void shouldCloseExistingStreamProcessor(final Role currentRole, final Role targetRole) {
     // given
-    if (currentRole != null) {
-      transitionTo(currentRole);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
     }
 
     // when
@@ -65,22 +68,25 @@ class StreamProcessorTransitionStepTest {
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
+    verify(streamProcessorFromPrevRole).closeAsync();
   }
 
   @ParameterizedTest
   @MethodSource("provideTransitionsThatShouldReInstallStreamProcessor")
   void shouldReInstallStreamProcessor(final Role currentRole, final Role targetRole) {
     // given
-    if (currentRole != null) {
-      transitionTo(currentRole);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
     }
-    Mockito.clearInvocations(streamProcessor);
 
     // when
     transitionTo(targetRole);
 
     // then
-    assertThat(transitionContext.getStreamProcessor()).isNotNull();
+    assertThat(transitionContext.getStreamProcessor())
+        .isNotNull()
+        .isNotEqualTo(streamProcessorFromPrevRole);
     verify(streamProcessor).openAsync(anyBoolean());
   }
 
@@ -88,29 +94,33 @@ class StreamProcessorTransitionStepTest {
   @MethodSource("provideTransitionsThatShouldDoNothing")
   void shouldNotCloseExistingStreamProcessor(final Role currentRole, final Role targetRole) {
     // given
-    transitionTo(currentRole);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+    }
 
     // when
     step.prepareTransition(transitionContext, 1, targetRole).join();
 
     // then
-    assertThat(transitionContext.getStreamProcessor()).isNotNull();
-    verify(streamProcessor, never()).closeAsync();
+    assertThat(transitionContext.getStreamProcessor()).isEqualTo(streamProcessorFromPrevRole);
+    verify(streamProcessorFromPrevRole, never()).closeAsync();
   }
 
   @ParameterizedTest
   @MethodSource("provideTransitionsThatShouldDoNothing")
   void shouldNotReInstallStreamProcessor(final Role currentRole, final Role targetRole) {
     // given
-    transitionTo(currentRole);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
+    }
 
     // when
     transitionTo(targetRole);
 
     // then
-    assertThat(transitionContext.getStreamProcessor()).isNotNull();
-    verify(streamProcessor).openAsync(anyBoolean());
-    verify(streamProcessor, never()).closeAsync();
+    assertThat(transitionContext.getStreamProcessor()).isEqualTo(streamProcessorFromPrevRole);
   }
 
   @ParameterizedTest
@@ -127,6 +137,13 @@ class StreamProcessorTransitionStepTest {
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
     verify(streamProcessor).closeAsync();
+  }
+
+  private static Stream<Arguments> provideTransitionsThatShouldCloseExistingStreamProcessor() {
+    return Stream.of(
+        Arguments.of(Role.FOLLOWER, Role.LEADER),
+        Arguments.of(Role.CANDIDATE, Role.LEADER),
+        Arguments.of(Role.LEADER, Role.FOLLOWER));
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldReInstallStreamProcessor() {
