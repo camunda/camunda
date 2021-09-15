@@ -106,8 +106,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
 
-    final var activatedJobs = record.getValue().getJobKeys().size();
-    jobMetrics.jobActivated(value.getType(), activatedJobs);
+    final var activatedJobsCount = record.getValue().getJobKeys().size();
+    jobMetrics.jobActivated(value.getType(), activatedJobsCount);
   }
 
   private void collectJobsToActivate(
