@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -31,8 +33,14 @@ public class MessageEventDefinitionValidator
   public void validate(
       final MessageEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
-    if (element.getMessage() == null) {
+
+    if (!isMessageEndEvent(element) && element.getMessage() == null) {
       validationResultCollector.addError(0, "Must reference a message");
     }
+  }
+
+  private boolean isMessageEndEvent(final MessageEventDefinition element) {
+    final ModelElementInstance parentElement = element.getParentElement();
+    return parentElement instanceof EndEvent;
   }
 }
