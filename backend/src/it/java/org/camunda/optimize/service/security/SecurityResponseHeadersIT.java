@@ -15,12 +15,23 @@ import javax.ws.rs.core.Response;
 import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
+import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
-public class SecurityRequestHeadersInResponseIT extends AbstractIT {
+public class SecurityResponseHeadersIT extends AbstractIT {
+
+  @Test
+  public void xFrameOptionsDisabled() {
+    // when
+    final Response authResponse = embeddedOptimizeExtension.rootTarget("/").request().get();
+
+    // then
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(authResponse.getHeaderString(X_FRAME_OPTIONS)).isNull();
+  }
 
   @Test
   public void responseContainsSecurityHeaders_https() {
