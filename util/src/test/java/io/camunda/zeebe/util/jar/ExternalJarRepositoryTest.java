@@ -5,12 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.exporter.jar;
+package io.camunda.zeebe.util.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,8 +20,8 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
-final class ExporterJarRepositoryTest {
-  private final ExporterJarRepository jarRepository = new ExporterJarRepository();
+final class ExternalJarRepositoryTest {
+  private final ExternalJarRepository jarRepository = new ExternalJarRepository();
 
   @Test
   void shouldThrowExceptionOnLoadIfNotAJar(final @TempDir Path tempDir) throws IOException {
@@ -31,7 +30,7 @@ final class ExporterJarRepositoryTest {
     Files.writeString(fake, "foo");
 
     // then
-    assertThatThrownBy(() -> jarRepository.load(fake)).isInstanceOf(ExporterJarLoadException.class);
+    assertThatThrownBy(() -> jarRepository.load(fake)).isInstanceOf(ExternalJarLoadException.class);
   }
 
   @Test
@@ -41,27 +40,27 @@ final class ExporterJarRepositoryTest {
 
     // then
     assertThatThrownBy(() -> jarRepository.load(dummy))
-        .isInstanceOf(ExporterJarLoadException.class);
+        .isInstanceOf(ExternalJarLoadException.class);
   }
 
   @Test
   void shouldLoadClassLoaderForJar(final @TempDir File tempDir) throws IOException {
     // given
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
+    final var serviceClass = ExternalService.createUnloadedExporterClass();
 
     // when
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
 
     // then
     assertThat(jarRepository.load(jarFile.getAbsolutePath()))
-        .isInstanceOf(ExporterJarClassLoader.class);
+        .isInstanceOf(ExternalJarClassLoader.class);
   }
 
   @Test
   void shouldLoadClassLoaderCorrectlyOnlyOnce(final @TempDir File tempDir) throws Exception {
     // given
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var serviceClass = ExternalService.createUnloadedExporterClass();
+    final var jarFile = serviceClass.toJar(new File(tempDir, "service.jar"));
 
     // when
     final var classLoader = jarRepository.load(jarFile.toPath());

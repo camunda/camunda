@@ -68,17 +68,8 @@ public final class ExporterCfg implements ConfigurationEntry {
   }
 
   @Override
-  public String toString() {
-    return "ExporterCfg{"
-        + ", jarPath='"
-        + jarPath
-        + '\''
-        + ", className='"
-        + className
-        + '\''
-        + ", args="
-        + args
-        + '}';
+  public int hashCode() {
+    return Objects.hash(jarPath, className, args);
   }
 
   @Override
@@ -96,7 +87,16 @@ public final class ExporterCfg implements ConfigurationEntry {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(jarPath, className, args);
+  public String toString() {
+    return "ExporterCfg{"
+        + ", jarPath='"
+        + jarPath
+        + '\''
+        + ", className='"
+        + className
+        + '\''
+        + ", args="
+        + args
+        + '}';
   }
 }

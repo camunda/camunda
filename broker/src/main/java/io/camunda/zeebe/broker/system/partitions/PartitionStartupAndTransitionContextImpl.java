@@ -252,6 +252,21 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public StateQueryService getQueryService() {
+    return queryService;
+  }
+
+  @Override
+  public void setQueryService(final StateQueryService queryService) {
+    this.queryService = queryService;
+  }
+
+  @Override
+  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
+    return this;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -259,11 +274,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
     partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
-  }
-
-  @Override
-  public StateQueryService getQueryService() {
-    return queryService;
   }
 
   public void setCurrentTerm(final long currentTerm) {
@@ -274,22 +284,12 @@ public class PartitionStartupAndTransitionContextImpl
     this.currentRole = currentRole;
   }
 
-  @Override
-  public void setQueryService(final StateQueryService queryService) {
-    this.queryService = queryService;
-  }
-
   public AtomixLogStorage getLogStorage() {
     return logStorage;
   }
 
   public void setLogStorage(final AtomixLogStorage logStorage) {
     this.logStorage = logStorage;
-  }
-
-  @Override
-  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
-    return this;
   }
 
   @Override
