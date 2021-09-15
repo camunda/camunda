@@ -89,9 +89,25 @@ public class SocketBindingCfg {
         + "}";
   }
 
-  public static class CommandApiCfg extends SocketBindingCfg {
-    public CommandApiCfg() {
+  public static class ExternalApiCfg extends SocketBindingCfg {
+
+    public ExternalApiCfg() {
       super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
+    }
+
+    @Override
+    public String toString() {
+      return "ExternalApiCfg{"
+          + "host='"
+          + getHost()
+          + '\''
+          + ", port="
+          + getPort()
+          + ", advertisedHost="
+          + getAdvertisedHost()
+          + ", advertisedPort="
+          + getAdvertisedPort()
+          + '}';
     }
   }
 

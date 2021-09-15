@@ -14,6 +14,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.LogUtil;
@@ -53,7 +54,10 @@ public final class TopologyManagerImpl extends Actor
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final QueryService queryService) {
     return setLeader(term, partitionId);
   }
 

@@ -38,12 +38,13 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.externalapi.ExternalApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
@@ -79,6 +80,7 @@ public final class PartitionFactory {
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
+          new QueryServiceStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
           PartitionStepMigrationHelper.fromStartupStep(
@@ -91,6 +93,7 @@ public final class PartitionFactory {
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
+          new QueryServiceStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
           PartitionStepMigrationHelper.fromStartupStep(
@@ -101,7 +104,7 @@ public final class PartitionFactory {
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
   private final PushDeploymentRequestHandler deploymentRequestHandler;
-  private final CommandApiService commandHApiService;
+  private final ExternalApiService externalApiService;
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
@@ -112,7 +115,7 @@ public final class PartitionFactory {
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
       final PushDeploymentRequestHandler deploymentRequestHandler,
-      final CommandApiService commandHApiService,
+      final ExternalApiService externalApiService,
       final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
@@ -121,7 +124,7 @@ public final class PartitionFactory {
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
     this.deploymentRequestHandler = deploymentRequestHandler;
-    this.commandHApiService = commandHApiService;
+    this.externalApiService = externalApiService;
     this.snapshotStoreFactory = snapshotStoreFactory;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
@@ -164,8 +167,8 @@ public final class PartitionFactory {
                   communicationService, membershipService, owningPartition.members()),
               actorSchedulingService,
               brokerCfg,
-              () -> commandHApiService.newCommandResponseWriter(),
-              () -> commandHApiService.getOnProcessedListener(partitionId),
+              () -> externalApiService.newCommandResponseWriter(),
+              () -> externalApiService.getOnProcessedListener(partitionId),
               snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
               snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
               typedRecordProcessorsFactory,

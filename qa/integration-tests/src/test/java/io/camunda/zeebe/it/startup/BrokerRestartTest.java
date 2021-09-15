@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -84,7 +85,10 @@ public class BrokerRestartTest {
 
     @Override
     public ActorFuture<Void> onBecomingLeader(
-        final int partitionId, final long term, final LogStream logStream) {
+        final int partitionId,
+        final long term,
+        final LogStream logStream,
+        final QueryService queryService) {
       this.logStream = logStream;
       return CompletableActorFuture.completed(null);
     }

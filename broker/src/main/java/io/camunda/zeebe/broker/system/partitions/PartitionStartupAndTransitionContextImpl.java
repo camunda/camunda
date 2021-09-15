@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.query.StateQueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -72,6 +73,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
+  private StateQueryService queryService;
 
   private long currentTerm;
   private Role currentRole;
@@ -133,7 +135,7 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
     return partitionListeners.stream()
-        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
+        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream(), getQueryService()))
         .collect(Collectors.toList());
   }
 
@@ -250,11 +252,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
-    return this;
-  }
-
-  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -262,6 +259,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
     partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
+  }
+
+  @Override
+  public StateQueryService getQueryService() {
+    return queryService;
   }
 
   public void setCurrentTerm(final long currentTerm) {
@@ -272,12 +274,22 @@ public class PartitionStartupAndTransitionContextImpl
     this.currentRole = currentRole;
   }
 
+  @Override
+  public void setQueryService(final StateQueryService queryService) {
+    this.queryService = queryService;
+  }
+
   public AtomixLogStorage getLogStorage() {
     return logStorage;
   }
 
   public void setLogStorage(final AtomixLogStorage logStorage) {
     this.logStorage = logStorage;
+  }
+
+  @Override
+  public PartitionStartupAndTransitionContextImpl createTransitionContext() {
+    return this;
   }
 
   @Override

@@ -31,6 +31,7 @@ public enum BpmnElementType {
   // Events
   START_EVENT("startEvent"),
   INTERMEDIATE_CATCH_EVENT("intermediateCatchEvent"),
+  INTERMEDIATE_THROW_EVENT("intermediateThrowEvent"),
   BOUNDARY_EVENT("boundaryEvent"),
   END_EVENT("endEvent"),
 
