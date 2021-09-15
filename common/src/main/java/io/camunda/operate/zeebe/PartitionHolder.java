@@ -30,7 +30,7 @@ public class PartitionHolder {
 
   private static final Logger logger = LoggerFactory.getLogger(PartitionHolder.class);
 
-  private List<Integer> partitionIds = new ArrayList<>();
+  protected List<Integer> partitionIds = new ArrayList<>();
 
   @Autowired
   private OperateProperties operateProperties;

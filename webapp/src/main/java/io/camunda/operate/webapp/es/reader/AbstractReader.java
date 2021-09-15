@@ -12,6 +12,7 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.entities.OperateEntity;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +32,11 @@ public class AbstractReader {
   protected <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz,
     Consumer<Aggregations> aggsProcessor) throws IOException {
     return ElasticsearchUtil.scroll(searchRequest, clazz, objectMapper, esClient, null, aggsProcessor);
+  }
+
+  protected <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz,
+      Consumer<SearchHits> searchHitsProcessor, Consumer<Aggregations> aggsProcessor) throws IOException {
+    return ElasticsearchUtil.scroll(searchRequest, clazz, objectMapper, esClient, searchHitsProcessor, aggsProcessor);
   }
 
 }

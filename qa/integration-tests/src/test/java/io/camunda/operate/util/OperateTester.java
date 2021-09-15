@@ -20,6 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
@@ -153,6 +157,9 @@ public class OperateTester {
 
   @Autowired
   protected IncidentReader incidentReader;
+
+  @Autowired
+  protected ListViewReader listViewReader;
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
@@ -528,6 +535,16 @@ public class OperateTester {
         request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
+  }
+
+  public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(String processId) {
+    final ListViewRequestDto request = TestUtil.createGetAllProcessInstancesRequest(q -> q.setProcessIds(
+        Arrays.asList(processId)));
+    request.setPageSize(100);
+    final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
+    assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
+    assertThat(listViewResponse.getProcessInstances()).hasSize(1);
+    return listViewResponse.getProcessInstances().get(0);
   }
 
   private MvcResult postRequest(String requestUrl, Object query) throws Exception {

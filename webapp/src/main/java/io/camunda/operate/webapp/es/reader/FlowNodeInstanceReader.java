@@ -19,14 +19,12 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollIdsToList;
+import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -52,7 +50,7 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -127,6 +125,12 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   @Autowired
   private ProcessCache processCache;
+
+  @Autowired
+  private ProcessInstanceReader processInstanceReader;
+
+  @Autowired
+  private IncidentReader incidentReader;
 
   public Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstances(FlowNodeInstanceRequestDto request) {
     Map<String, FlowNodeInstanceResponseDto> response = new HashMap<>();
@@ -424,15 +428,16 @@ public class FlowNodeInstanceReader extends AbstractReader {
             flowNodeInstance.getLevel()));
 
     //find incidents information
-    searchForIncidents(result, flowNodeInstance.getProcessInstanceKey(), flowNodeInstance.getId());
+    searchForIncidents(result, String.valueOf(flowNodeInstance.getProcessInstanceKey()),
+        flowNodeInstance.getId());
 
     return result;
   }
 
   private void searchForIncidents(FlowNodeMetadataDto flowNodeMetadata,
-      final Long processInstanceKey, final String flowNodeInstanceId) {
+      final String processInstanceId, final String flowNodeInstanceId) {
 
-    final String treePath = getProcessInstanceTreePath(processInstanceKey);
+    final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
     final String incidentTreePath = new TreePath(treePath)
         .appendFlowNodeInstance(flowNodeInstanceId).toString();
@@ -448,15 +453,14 @@ public class FlowNodeInstanceReader extends AbstractReader {
         final IncidentEntity incidentEntity = fromSearchHit(
             response.getHits().getAt(0).getSourceAsString(), objectMapper,
             IncidentEntity.class);
-        //find root cause instance information
-        ProcessInstanceReferenceDto rootCauseInstance = new ProcessInstanceReferenceDto();
-        rootCauseInstance.setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()));
-        rootCauseInstance.setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
-        rootCauseInstance.setProcessDefinitionName(
-            processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
-                "Unknown process"));
-        flowNodeMetadata.setIncident(
-            IncidentDto.createFrom(incidentEntity, rootCauseInstance));
+        final Map<String, IncidentDataHolder> incData = incidentReader
+            .collectFlowNodeDataForPropagatedIncidents(List.of(incidentEntity), processInstanceId,
+                treePath);
+        final IncidentDto incidentDto = IncidentDto
+            .createFrom(incidentEntity, Map.of(incidentEntity.getProcessDefinitionKey(),
+                processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
+                    FALLBACK_PROCESS_DEFINITION_NAME)), incData.get(incidentEntity.getId()));
+        flowNodeMetadata.setIncident(incidentDto);
       }
     } catch (IOException e) {
       final String message = String.format(
@@ -467,11 +471,11 @@ public class FlowNodeInstanceReader extends AbstractReader {
   }
 
   private void searchForIncidentsByFlowNodeIdAndType(FlowNodeMetadataDto flowNodeMetadata,
-      final Long processInstanceKey, final String flowNodeId, final FlowNodeType flowNodeType) {
+      final String processInstanceId, final String flowNodeId, final FlowNodeType flowNodeType) {
 
-    final String treePath = getProcessInstanceTreePath(processInstanceKey);
+    final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
-    final List<String> flowNodeInstanceIds = getFlowNodeInstanceIds(processInstanceKey, flowNodeId,
+    final List<String> flowNodeInstanceIds = getFlowNodeInstanceIds(processInstanceId, flowNodeId,
         flowNodeType);
 
     final List<String> flowNodeInstancesTreePaths = flowNodeInstanceIds.stream()
@@ -490,15 +494,14 @@ public class FlowNodeInstanceReader extends AbstractReader {
         final IncidentEntity incidentEntity = fromSearchHit(
             response.getHits().getAt(0).getSourceAsString(), objectMapper,
             IncidentEntity.class);
-        //find root cause instance information
-        ProcessInstanceReferenceDto rootCauseInstance = new ProcessInstanceReferenceDto();
-        rootCauseInstance.setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()));
-        rootCauseInstance.setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
-        rootCauseInstance.setProcessDefinitionName(
-            processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
-                "Unknown process"));
-        flowNodeMetadata.setIncident(
-            IncidentDto.createFrom(incidentEntity, rootCauseInstance));
+        final Map<String, IncidentDataHolder> incData = incidentReader
+            .collectFlowNodeDataForPropagatedIncidents(List.of(incidentEntity), processInstanceId,
+                treePath);
+        final IncidentDto incidentDto = IncidentDto
+            .createFrom(incidentEntity, Map.of(incidentEntity.getProcessDefinitionKey(),
+                processCache.getProcessNameOrBpmnProcessId(incidentEntity.getProcessDefinitionKey(),
+                    FALLBACK_PROCESS_DEFINITION_NAME)), incData.get(incidentEntity.getId()));
+        flowNodeMetadata.setIncident(incidentDto);
       }
     } catch (IOException e) {
       final String message = String.format(
@@ -508,11 +511,11 @@ public class FlowNodeInstanceReader extends AbstractReader {
     }
   }
 
-  private List<String> getFlowNodeInstanceIds(final Long processInstanceKey,
+  private List<String> getFlowNodeInstanceIds(final String processInstanceId,
       final String flowNodeId, final FlowNodeType flowNodeType) {
     final QueryBuilder query = constantScoreQuery(
         joinWithAnd(
-            termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey),
+            termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceId),
             termQuery(FLOW_NODE_ID, flowNodeId),
             termQuery(TYPE, flowNodeType)));
 
@@ -526,31 +529,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
     } catch (IOException e) {
       final String message = String.format(
           "Exception occurred, while obtaining flow node instances: %s",
-          e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private String getProcessInstanceTreePath(final Long processInstanceKey) {
-    final QueryBuilder query = joinWithAnd(
-        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-        termQuery(KEY, processInstanceKey));
-    final SearchRequest request = ElasticsearchUtil
-        .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
-        .source(new SearchSourceBuilder().query(query)
-            .fetchSource(TREE_PATH, null));
-    try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-      if (response.getHits().getTotalHits().value > 0) {
-        return (String) response.getHits().getAt(0).getSourceAsMap()
-            .get(TREE_PATH);
-      } else {
-        throw new OperateRuntimeException(
-            String.format("Process instance not found: %s", processInstanceKey));
-      }
-    } catch (IOException e) {
-      final String message = String.format(
-          "Exception occurred, while obtaining tree path for process instance: %s",
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -642,13 +620,15 @@ public class FlowNodeInstanceReader extends AbstractReader {
           //scenario 1-2
           result.setBreadcrumb(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
           //find incidents information
-          searchForIncidents(result, flowNodeInstance.getProcessInstanceKey(), flowNodeInstance.getId());
+          searchForIncidents(result, String.valueOf(flowNodeInstance.getProcessInstanceKey()),
+              flowNodeInstance.getId());
         } else {
           result.setInstanceCount(bucketCurrentLevel.getDocCount());
           result.setFlowNodeId(flowNodeInstance.getFlowNodeId());
           result.setFlowNodeType(flowNodeInstance.getType());
           //find incidents information
-          searchForIncidentsByFlowNodeIdAndType(result, flowNodeInstance.getProcessInstanceKey(),
+          searchForIncidentsByFlowNodeIdAndType(result,
+              String.valueOf(flowNodeInstance.getProcessInstanceKey()),
               flowNodeInstance.getFlowNodeId(), flowNodeInstance.getType());
         }
       }

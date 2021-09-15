@@ -686,7 +686,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when
     //get metadata by flowNodeId from calledProcess
-    final String calledProcessInstanceId1 = getSingleProcessInstanceByBpmnProcessId(
+    final String calledProcessInstanceId1 = tester.getSingleProcessInstanceByBpmnProcessId(
         String.valueOf(calledProcessDefinitionKey1)).getId();
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         calledProcessInstanceId1, callActivity2Id, null, null);
@@ -707,16 +707,6 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     incident = flowNodeMetadata.getIncident();
     assertSingleIncident(incident, calledProcess2Id, errorMsg);
 
-  }
-
-  protected ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(String processId) {
-    final ListViewRequestDto request = TestUtil.createGetAllProcessInstancesRequest(q -> q.setProcessIds(
-        Arrays.asList(processId)));
-    request.setPageSize(100);
-    final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
-    assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
-    assertThat(listViewResponse.getProcessInstances()).hasSize(1);
-    return listViewResponse.getProcessInstances().get(0);
   }
 
   /**
@@ -844,7 +834,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when
     //get metadata by flowNodeId from called process instance
-    final String calledProcessInstanceId1 = getSingleProcessInstanceByBpmnProcessId(
+    final String calledProcessInstanceId1 = tester.getSingleProcessInstanceByBpmnProcessId(
         String.valueOf(calledProcessDefinitionKey1)).getId();
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         calledProcessInstanceId1, callActivity2Id, null, null);
@@ -919,7 +909,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
     //when
     //get metadata by flowNodeId and flowNodeType=CALL_ACTIVITY from called process instance
-    final String calledProcessInstanceId1 = getSingleProcessInstanceByBpmnProcessId(
+    final String calledProcessInstanceId1 = tester.getSingleProcessInstanceByBpmnProcessId(
         String.valueOf(calledProcessDefinitionKey1)).getId();
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         calledProcessInstanceId1, callActivity2Id, CALL_ACTIVITY, null);

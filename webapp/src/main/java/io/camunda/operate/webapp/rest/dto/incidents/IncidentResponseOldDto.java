@@ -8,15 +8,16 @@ package io.camunda.operate.webapp.rest.dto.incidents;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IncidentResponseDto {
+@Deprecated
+public class IncidentResponseOldDto {
 
   private long count;
 
-  private List<IncidentDto> incidents = new ArrayList<>();
+  private List<IncidentOldDto> incidents = new ArrayList<>();
 
-  private List<IncidentErrorTypeDto> errorTypes = new ArrayList<>();
+  private List<IncidentErrorTypeOldDto> errorTypes = new ArrayList<>();
 
-  private List<IncidentFlowNodeDto> flowNodes = new ArrayList<>();
+  private List<IncidentFlowNodeOldDto> flowNodes = new ArrayList<>();
 
   public long getCount() {
     return count;
@@ -26,27 +27,27 @@ public class IncidentResponseDto {
     this.count = count;
   }
 
-  public List<IncidentDto> getIncidents() {
+  public List<IncidentOldDto> getIncidents() {
     return incidents;
   }
 
-  public void setIncidents(List<IncidentDto> incidents) {
+  public void setIncidents(List<IncidentOldDto> incidents) {
     this.incidents = incidents;
   }
 
-  public List<IncidentErrorTypeDto> getErrorTypes() {
+  public List<IncidentErrorTypeOldDto> getErrorTypes() {
     return errorTypes;
   }
 
-  public void setErrorTypes(List<IncidentErrorTypeDto> errorTypes) {
+  public void setErrorTypes(List<IncidentErrorTypeOldDto> errorTypes) {
     this.errorTypes = errorTypes;
   }
 
-  public List<IncidentFlowNodeDto> getFlowNodes() {
+  public List<IncidentFlowNodeOldDto> getFlowNodes() {
     return flowNodes;
   }
 
-  public void setFlowNodes(List<IncidentFlowNodeDto> flowNodes) {
+  public void setFlowNodes(List<IncidentFlowNodeOldDto> flowNodes) {
     this.flowNodes = flowNodes;
   }
 
@@ -57,7 +58,7 @@ public class IncidentResponseDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    IncidentResponseDto that = (IncidentResponseDto) o;
+    IncidentResponseOldDto that = (IncidentResponseOldDto) o;
 
     if (count != that.count)
       return false;

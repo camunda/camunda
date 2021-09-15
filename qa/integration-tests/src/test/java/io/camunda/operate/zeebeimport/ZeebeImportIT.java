@@ -297,6 +297,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
+    sleepFor(500L);
     final long incidentKey = getOnlyIncidentKey();
 
     //when update retries
@@ -349,7 +350,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-
+    sleepFor(500L);
     final long incidentKey = getOnlyIncidentKey();
 
     //when update retries

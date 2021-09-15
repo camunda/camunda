@@ -137,10 +137,10 @@ public class OperationReader extends AbstractReader {
     return termQuery(OperationTemplate.USERNAME, userService.getCurrentUsername());
   }
 
-  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(Long processInstanceKey) {
+  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    TermQueryBuilder processInstanceKeysQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
+    TermQueryBuilder processInstanceKeysQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceKeysQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)

@@ -9,6 +9,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.webapp.es.reader.IncidentReader.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import java.time.OffsetDateTime;
@@ -18,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class IncidentDto {
 
@@ -27,6 +29,8 @@ public class IncidentDto {
     }
     return o1.getErrorType().compareTo(o2.getErrorType());
   };
+
+  public static final String FALLBACK_PROCESS_DEFINITION_NAME = "Unknown process";
 
   private String id;
 
@@ -140,17 +144,14 @@ public class IncidentDto {
     return this;
   }
 
-  public static IncidentDto createFrom(IncidentEntity incidentEntity, List<OperationEntity> operations) {
-    return createFrom(incidentEntity, operations, null);
-  }
-
   public static <T> IncidentDto createFrom(final IncidentEntity incidentEntity,
-      final ProcessInstanceReferenceDto rootCauseInstance) {
-    return createFrom(incidentEntity, Collections.emptyList(), rootCauseInstance);
+      final Map<Long, String> processNames, IncidentDataHolder incidentData) {
+    return createFrom(incidentEntity, Collections.emptyList(), processNames, incidentData);
   }
 
   public static IncidentDto createFrom(IncidentEntity incidentEntity,
-      List<OperationEntity> operations, final ProcessInstanceReferenceDto rootCauseInstance) {
+      List<OperationEntity> operations, Map<Long, String> processNames,
+      IncidentDataHolder incidentData) {
     if (incidentEntity == null) {
       return null;
     }
@@ -173,24 +174,41 @@ public class IncidentDto {
                   .equals(OperationState.LOCKED) || o.getState().equals(OperationState.SENT)));
     }
 
-    if (rootCauseInstance != null) {
+    //do not return root cause when it's a "local" incident
+    if (incidentData != null && incident.getFlowNodeInstanceId() != incidentData
+        .getFinalFlowNodeInstanceId()) {
+      incident.setFlowNodeId(incidentData.getFinalFlowNodeId());
+      incident.setFlowNodeInstanceId(incidentData.getFinalFlowNodeInstanceId());
+
+      final ProcessInstanceReferenceDto rootCauseInstance = new ProcessInstanceReferenceDto()
+          .setInstanceId(String.valueOf(incidentEntity.getProcessInstanceKey()))
+          .setProcessDefinitionId(String.valueOf(incidentEntity.getProcessDefinitionKey()));
+      if (processNames != null
+          && processNames.get(incidentEntity.getProcessDefinitionKey()) != null) {
+        rootCauseInstance
+            .setProcessDefinitionName(processNames.get(incidentEntity.getProcessDefinitionKey()));
+      } else {
+        rootCauseInstance.setProcessDefinitionName(FALLBACK_PROCESS_DEFINITION_NAME);
+      }
       incident.setRootCauseInstance(rootCauseInstance);
     }
 
     return incident;
   }
 
-
-  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities, Map<Long, List<OperationEntity>> operations) {
-    List<IncidentDto> result = new ArrayList<>();
+  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities,
+      Map<Long, List<OperationEntity>> operations,
+      Map<Long, String> processNames,
+      Map<String, IncidentDataHolder> incidentData) {
     if (incidentEntities != null) {
-      for (IncidentEntity incidentEntity : incidentEntities) {
-        if (incidentEntity != null) {
-          result.add(createFrom(incidentEntity, operations.get(incidentEntity.getKey())));
-        }
-      }
+      return incidentEntities.stream()
+          .filter(inc -> inc != null)
+          .map(inc ->
+              createFrom(inc, operations.get(inc.getKey()), processNames,
+                  incidentData.get(inc.getId())))
+          .collect(Collectors.toList());
     }
-    return result;
+    return new ArrayList<>();
   }
 
   public static List<IncidentDto> sortDefault(List<IncidentDto> incidents) {

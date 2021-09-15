@@ -5,28 +5,33 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import java.io.IOException;
-import org.apache.lucene.search.join.ScoreMode;
-import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import java.io.IOException;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -67,6 +72,9 @@ public class ProcessInstanceReader extends AbstractReader {
   private ListViewTemplate listViewTemplate;
 
   @Autowired
+  private IncidentTemplate incidentTemplate;
+
+  @Autowired
   private OperationReader operationReader;
 
   /**
@@ -104,7 +112,7 @@ public class ProcessInstanceReader extends AbstractReader {
       final ProcessInstanceForListViewEntity processInstance = searchProcessInstanceByKey(processInstanceKey);
 
       return ListViewProcessInstanceDto.createFrom(processInstance,
-            activityInstanceWithIncidentExists(processInstanceKey),
+            incidentExists(processInstance.getTreePath()),
             operationReader.getOperationsByProcessInstanceKey(processInstanceKey)
       );
     } catch (IOException e) {
@@ -122,7 +130,7 @@ public class ProcessInstanceReader extends AbstractReader {
   public ProcessInstanceForListViewEntity getProcessInstanceByKey(Long processInstanceKey) {
     try {
       final ProcessInstanceForListViewEntity processInstance = searchProcessInstanceByKey(processInstanceKey);
-      if (activityInstanceWithIncidentExists(processInstanceKey)) {
+      if (incidentExists(processInstance.getTreePath())) {
           processInstance.setState(ProcessInstanceState.INCIDENT);
       }
       return processInstance;
@@ -155,14 +163,16 @@ public class ProcessInstanceReader extends AbstractReader {
     }
   }
 
-  private boolean activityInstanceWithIncidentExists(Long processInstanceKey) throws IOException {
+  private boolean incidentExists(String treePath) throws IOException {
 
-    final TermQueryBuilder processInstanceKeyQuery = termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final ExistsQueryBuilder existsIncidentQ = existsQuery(ListViewTemplate.INCIDENT_KEY);
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(
+        IncidentTemplate.TREE_PATH, treePath);
+    final TermQueryBuilder activeIncidentQ = termQuery(IncidentTemplate.STATE,
+        IncidentState.ACTIVE);
 
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(joinWithAnd(processInstanceKeyQuery, existsIncidentQ)))
+        .query(constantScoreQuery(joinWithAnd(processInstanceKeyQuery, activeIncidentQ)))
         .fetchSource(ListViewTemplate.ID, null));
     final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
@@ -190,5 +200,31 @@ public class ProcessInstanceReader extends AbstractReader {
       throw new OperateRuntimeException(message, e);
     }
   }
+
+  public String getProcessInstanceTreePath(final String processInstanceId) {
+    final QueryBuilder query = joinWithAnd(
+        termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        termQuery(KEY, processInstanceId));
+    final SearchRequest request = ElasticsearchUtil
+        .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
+        .source(new SearchSourceBuilder().query(query)
+            .fetchSource(TREE_PATH, null));
+    try {
+      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value > 0) {
+        return (String) response.getHits().getAt(0).getSourceAsMap()
+            .get(TREE_PATH);
+      } else {
+        throw new OperateRuntimeException(
+            String.format("Process instance not found: %s", processInstanceId));
+      }
+    } catch (IOException e) {
+      final String message = String.format(
+          "Exception occurred, while obtaining tree path for process instance: %s",
+          e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
 
 }

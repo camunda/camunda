@@ -5,26 +5,27 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
-public class IncidentFlowNodeDto {
+@Deprecated
+public class IncidentFlowNodeOldDto {
 
-  private String id;
+  private String flowNodeId;
 
   private int count;
 
-  public IncidentFlowNodeDto() {
+  public IncidentFlowNodeOldDto() {
   }
 
-  public IncidentFlowNodeDto(String flowNodeId, int count) {
-    this.id = flowNodeId;
+  public IncidentFlowNodeOldDto(String flowNodeId, int count) {
+    this.flowNodeId = flowNodeId;
     this.count = count;
   }
 
-  public String getId() {
-    return id;
+  public String getFlowNodeId() {
+    return flowNodeId;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setFlowNodeId(String flowNodeId) {
+    this.flowNodeId = flowNodeId;
   }
 
   public int getCount() {
@@ -42,16 +43,16 @@ public class IncidentFlowNodeDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    IncidentFlowNodeDto that = (IncidentFlowNodeDto) o;
+    IncidentFlowNodeOldDto that = (IncidentFlowNodeOldDto) o;
 
     if (count != that.count)
       return false;
-    return id != null ? id.equals(that.id) : that.id == null;
+    return flowNodeId != null ? flowNodeId.equals(that.flowNodeId) : that.flowNodeId == null;
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
+    int result = flowNodeId != null ? flowNodeId.hashCode() : 0;
     result = 31 * result + count;
     return result;
   }

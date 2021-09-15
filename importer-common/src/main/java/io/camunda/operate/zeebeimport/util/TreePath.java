@@ -8,6 +8,9 @@ package io.camunda.operate.zeebeimport.util;
 import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FNI;
 import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.PI;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 /**
  * Class represents call tree path to store sequence of calls in case of call activities.
@@ -60,6 +63,14 @@ public class TreePath {
 
   public TreePath appendEntries(String flowNodeInstanceId, String processInstanceId) {
     return appendFlowNodeInstance(flowNodeInstanceId).appendProcessInstance(processInstanceId);
+  }
+
+  public static String extractCallActivityId(final String treePath, String currentTreePath) {
+    final Pattern fniPattern = Pattern
+        .compile(String.format("%s/FNI_(\\d*)/.*", currentTreePath));
+    final Matcher matcher = fniPattern.matcher(treePath);
+    matcher.matches();
+    return matcher.group(1);
   }
 
   @Override

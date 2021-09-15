@@ -293,7 +293,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getId()).isNotNull();
 
     //check incidents
-    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKey(processInstanceKey).getIncidents();
+    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKeyOld(processInstanceKey).getIncidents();
     assertThat(incidents).hasSize(1);
     assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(true);
     final OperationDto lastOperation = incidents.get(0).getLastOperation();
@@ -641,7 +641,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1);
 
     //check incidents
-    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKey(processInstanceKey).getIncidents();
+    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKeyOld(processInstanceKey).getIncidents();
     assertThat(incidents).hasSize(0);
 
     //check batch operation progress
@@ -764,7 +764,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getId()).isNotNull();
 
     //check incidents
-    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKey(processInstanceKey).getIncidents();
+    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKeyOld(processInstanceKey).getIncidents();
     assertThat(incidents).hasSize(1);
     assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(false);
     final OperationDto lastOperation = incidents.get(0).getLastOperation();

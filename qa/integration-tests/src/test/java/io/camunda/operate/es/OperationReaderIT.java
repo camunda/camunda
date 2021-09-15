@@ -18,7 +18,7 @@ import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -95,7 +95,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
     when(userService.getCurrentUsername()).thenReturn(USER_1);
 
     MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(PROCESS_INSTANCE_ID_1));
-    IncidentResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    IncidentResponseOldDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
     List<IncidentOldDto> incidents = response.getIncidents();
     assertThat(incidents).hasSize(3);

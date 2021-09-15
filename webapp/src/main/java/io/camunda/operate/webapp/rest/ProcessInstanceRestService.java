@@ -26,6 +26,7 @@ import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -183,8 +184,15 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get incidents by process instance id")
   @GetMapping("/{id}/incidents")
+  @Deprecated
+  public IncidentResponseOldDto queryIncidentsByProcessInstanceIdOld(@PathVariable @ValidLongId String id) {
+    return incidentReader.getIncidentsByProcessInstanceKeyOld(Long.valueOf(id));
+  }
+
+  @ApiOperation("Get incidents by process instance id")
+  @GetMapping("/{id}/incidents-new")
   public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable @ValidLongId String id) {
-    return incidentReader.getIncidentsByProcessInstanceKey(Long.valueOf(id));
+    return incidentReader.getIncidentsByProcessInstanceKey(id);
   }
 
   @ApiOperation("Get sequence flows by process instance id")

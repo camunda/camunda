@@ -8,14 +8,7 @@ package io.camunda.operate.util;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
 import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
-import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.function.Consumer;
+
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -24,14 +17,23 @@ import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.zeebeimport.util.TreePath;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
+import java.util.function.Consumer;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
@@ -177,6 +179,8 @@ public abstract class TestUtil {
     processInstance.setProcessInstanceKey(processInstanceKey);
     processInstance.setKey(processInstanceKey);
     processInstance.setPartitionId(1);
+    processInstance
+        .setTreePath(new TreePath().startTreePath(processInstanceKey.toString()).toString());
     return processInstance;
   }
 
