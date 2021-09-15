@@ -156,50 +156,6 @@ public final class MappingIncidentTest {
   }
 
   @Test
-  public void shouldCreateIncidentForOutputMappingFailure() {
-    // given
-    ENGINE.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
-
-    ENGINE
-        .job()
-        .withType("test")
-        .ofInstance(processInstanceKey)
-        .withVariables(VARIABLES_JSON)
-        .complete();
-
-    // then
-    final Record failureCommand =
-        RecordingExporter.processInstanceRecords()
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withIntent(IncidentIntent.CREATED)
-            .getFirst();
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
-
-    Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
-        .hasBpmnProcessId("process")
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasElementId("failingTask")
-        .hasElementInstanceKey(failureCommand.getKey())
-        .hasVariableScopeKey(failureCommand.getKey());
-
-    assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("no variable found for name 'foo'");
-  }
-
-  @Test
   public void shouldResolveIncidentForInputMappingFailure() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();

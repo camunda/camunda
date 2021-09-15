@@ -330,6 +330,14 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(IntermediateThrowEvent.class, id).builder();
   }
 
+  public IntermediateThrowEventBuilder intermediateThrowEvent(
+      final String id, final Consumer<IntermediateThrowEventBuilder> builderConsumer) {
+    final IntermediateThrowEventBuilder builder =
+        createTarget(IntermediateThrowEvent.class, id).builder();
+    builderConsumer.accept(builder);
+    return builder;
+  }
+
   public CallActivityBuilder callActivity() {
     return createTarget(CallActivity.class).builder();
   }
