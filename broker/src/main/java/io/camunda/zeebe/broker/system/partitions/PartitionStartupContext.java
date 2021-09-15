@@ -53,8 +53,6 @@ public interface PartitionStartupContext {
 
   Consumer<TypedRecord<?>> getOnProcessedListener();
 
-  TypedRecordProcessorsFactory getTypedRecordProcessorsFactory();
-
   ExporterRepository getExporterRepository();
 
   List<PartitionListener> getPartitionListeners();

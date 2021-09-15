@@ -68,7 +68,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
 
     // notify steps immediately that a transition is coming; steps are encouraged to cancel any
     // ongoing activity at this point in time
-    steps.forEach(step -> step.onNewRaftRole(role));
+    steps.forEach(step -> step.onNewRaftRole(context, role));
 
     final ActorFuture<Void> nextTransitionFuture = concurrencyControl.createFuture();
 
@@ -124,6 +124,10 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
     concurrencyControl.runOnCompletion(
         currentTransitionFuture,
         (ok, error) -> {
+          if (error == null) {
+            context.setCurrentTerm(term);
+            context.setCurrentRole(role);
+          }
           lastTransition = currentTransition;
           currentTransition = null;
           currentTransitionFuture = null;

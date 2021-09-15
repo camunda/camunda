@@ -13,8 +13,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -78,14 +76,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
         .nodeId(state.getNodeId())
         .commandResponseWriter(state.getCommandResponseWriter())
         .listener(processedCommand -> state.getOnProcessedListener().accept(processedCommand))
-        .streamProcessorFactory(
-            processingContext -> {
-              final ActorControl actor = processingContext.getActor();
-              final MutableZeebeState zeebeState = processingContext.getZeebeState();
-              return state
-                  .getTypedRecordProcessorsFactory()
-                  .createTypedStreamProcessor(actor, zeebeState, processingContext);
-            })
+        .streamProcessorFactory(state.getStreamProcessorFactory())
         .streamProcessorMode(streamProcessorMode)
         .build();
   }

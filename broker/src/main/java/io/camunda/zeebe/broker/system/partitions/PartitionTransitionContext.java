@@ -7,12 +7,19 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.List;
+import java.util.function.Consumer;
 
 public interface PartitionTransitionContext extends PartitionContext {
 
@@ -22,11 +29,29 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   AsyncSnapshotDirector getSnapshotDirector();
 
-  StateControllerImpl getStateController();
+  StateController getStateController();
 
   ConstructableSnapshotStore getConstructableSnapshotStore();
 
   List<PartitionListener> getPartitionListeners();
 
   PartitionContext getPartitionContext();
+
+  void setStreamProcessor(StreamProcessor streamProcessor);
+
+  void setCurrentTerm(long term);
+
+  void setCurrentRole(Role role);
+
+  ActorSchedulingService getActorSchedulingService();
+
+  ZeebeDb getZeebeDb();
+
+  CommandResponseWriter getCommandResponseWriter();
+
+  Consumer<TypedRecord<?>> getOnProcessedListener();
+
+  TypedRecordProcessorFactory getStreamProcessorFactory();
+
+  void setZeebeDb(ZeebeDb zeebeDb);
 }
