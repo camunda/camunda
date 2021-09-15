@@ -24,6 +24,7 @@ const instance: ProcessInstanceEntity = {
   operations: [],
   sortValues: ['', ''],
   parentInstanceId: null,
+  callHierarchy: [],
 };
 
 const instanceWithActiveOperation: ProcessInstanceEntity = {
@@ -39,6 +40,7 @@ const instanceWithActiveOperation: ProcessInstanceEntity = {
   operations: [],
   sortValues: ['', ''],
   parentInstanceId: null,
+  callHierarchy: [],
 };
 
 const mockInstances = [instance, instanceWithActiveOperation];

@@ -639,6 +639,7 @@ const instance = {
   operations: [],
   parentInstanceId: null,
   sortValues: null,
+  breadcrumb: [],
 };
 
 const sequenceFlows = [

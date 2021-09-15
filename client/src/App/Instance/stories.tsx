@@ -17,6 +17,8 @@ import {
   flowNodeStates,
   instance,
   sequenceFlows,
+  callHierarchy,
+  longCallHierarchy,
 } from 'modules/mocks/instanceDetailPage/runningInstance';
 
 import {
@@ -325,6 +327,72 @@ MultiInstanceSelected.parameters = {
   ],
 };
 
+const ChildInstance: Story = () => {
+  return (
+    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+      <Header />
+      <Route path="/instances/:processInstanceId">
+        <InstanceDetail />
+      </Route>
+    </MemoryRouter>
+  );
+};
+
+ChildInstance.parameters = {
+  msw: [
+    ...mocks,
+    rest.get('/api/process-instances/:id', (_, res, ctx) =>
+      res(ctx.json({...instance, callHierarchy}))
+    ),
+    rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
+      res(ctx.json(sequenceFlows))
+    ),
+    rest.get('/api/process-instances/:id/flow-node-states', (_, res, ctx) =>
+      res(ctx.json(flowNodeStates))
+    ),
+    rest.post('/api/flow-node-instances', (_, res, ctx) =>
+      res(ctx.json(flowNodeInstances))
+    ),
+    rest.get('/api/processes/:id/xml', (_, res, ctx) => res(ctx.text(xml))),
+    rest.post('/api/process-instances/:id/variables', (_, res, ctx) =>
+      res(ctx.json([]))
+    ),
+  ],
+};
+
+const ChildInstanceWithLongParentHierarchy: Story = () => {
+  return (
+    <MemoryRouter initialEntries={['/instances/2251799813685591']}>
+      <Header />
+      <Route path="/instances/:processInstanceId">
+        <InstanceDetail />
+      </Route>
+    </MemoryRouter>
+  );
+};
+
+ChildInstanceWithLongParentHierarchy.parameters = {
+  msw: [
+    ...mocks,
+    rest.get('/api/process-instances/:id', (_, res, ctx) =>
+      res(ctx.json({...instance, callHierarchy: longCallHierarchy}))
+    ),
+    rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
+      res(ctx.json(sequenceFlows))
+    ),
+    rest.get('/api/process-instances/:id/flow-node-states', (_, res, ctx) =>
+      res(ctx.json(flowNodeStates))
+    ),
+    rest.post('/api/flow-node-instances', (_, res, ctx) =>
+      res(ctx.json(flowNodeInstances))
+    ),
+    rest.get('/api/processes/:id/xml', (_, res, ctx) => res(ctx.text(xml))),
+    rest.post('/api/process-instances/:id/variables', (_, res, ctx) =>
+      res(ctx.json([]))
+    ),
+  ],
+};
+
 export {
   RunningInstance,
   Error,
@@ -333,4 +401,6 @@ export {
   CompletedInstance,
   CanceledInstance,
   MultiInstanceSelected,
+  ChildInstance,
+  ChildInstanceWithLongParentHierarchy,
 };

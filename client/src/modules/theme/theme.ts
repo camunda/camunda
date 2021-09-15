@@ -137,6 +137,10 @@ const theme = Object.freeze({
       },
       header: {
         separator: rgba(SEMANTIC_COLORS.white, 0.5),
+        breadcrumb: {
+          color: SEMANTIC_COLORS.white,
+          borderColor: DARK_COLORS.ui04,
+        },
         user: {
           backgroundColor: rgba(SEMANTIC_COLORS.badge02, 0.2),
         },
@@ -1057,6 +1061,10 @@ const theme = Object.freeze({
       },
       header: {
         separator: LIGHT_COLORS.ui05,
+        breadcrumb: {
+          color: LIGHT_COLORS.ui06,
+          borderColor: LIGHT_COLORS.ui05,
+        },
         user: {
           backgroundColor: rgba(LIGHT_COLORS.ui06, 0.09),
         },

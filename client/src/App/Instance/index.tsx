@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
@@ -23,6 +23,8 @@ import {autorun} from 'mobx';
 import {useInstancePageParams} from './useInstancePageParams';
 import {useHistory} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
+import {IS_BREADCRUMB_VISIBLE} from 'modules/feature-flags';
+import {Breadcrumb} from './Breadcrumb';
 
 import * as Styled from './styled';
 
@@ -57,8 +59,10 @@ const Instance = observer(() => {
   }, [history, notifications, processInstanceId]);
 
   const {instance} = currentInstanceStore.state;
+
   return (
     <Styled.Instance>
+      {IS_BREADCRUMB_VISIBLE && <Breadcrumb />}
       <VisuallyHiddenH1>
         {instance && `Operate Instance ${instance.id}`}
       </VisuallyHiddenH1>

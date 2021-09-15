@@ -35,6 +35,7 @@ const mockInstances = [
     operations: [],
     sortValues: ['withoutIncidentsProcess', '2251799813685625'],
     parentInstanceId: null,
+    callHierarchy: [],
   } as const,
   {
     id: '2251799813685627',
@@ -49,6 +50,7 @@ const mockInstances = [
     operations: [],
     sortValues: ['withoutIncidentsProcess', '2251799813685627'],
     parentInstanceId: null,
+    callHierarchy: [],
   } as const,
 ];
 

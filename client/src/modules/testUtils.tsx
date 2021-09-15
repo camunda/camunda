@@ -185,6 +185,7 @@ export const createInstance = (options = {}): ProcessInstanceEntity => {
     operations: [createOperation()],
     sortValues: [],
     parentInstanceId: null,
+    callHierarchy: [],
     ...options,
   } as const;
 };

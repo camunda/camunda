@@ -61,7 +61,70 @@ const instance = {
   operations: [],
   parentInstanceId: null,
   sortValues: null,
+  callHierarchy: [],
 };
+
+const callHierarchy = [
+  {
+    instanceId: '546546543276',
+    processDefinitionName: 'Parent Process Name',
+  },
+  {
+    instanceId: '968765314354',
+    processDefinitionName: '1st level Child Process Name',
+  },
+  {
+    instanceId: '2251799813685447',
+    processDefinitionName: '2nd level Child Process Name',
+  },
+];
+
+const longCallHierarchy = [
+  {
+    instanceId: '546546543276',
+    processDefinitionName: 'Parent Process Name',
+  },
+  {
+    instanceId: '968765314354',
+    processDefinitionName: '1st level Child Process Name',
+  },
+  {
+    instanceId: '2251799813685447',
+    processDefinitionName: '2nd level Child Process Name',
+  },
+  {
+    instanceId: '3',
+    processDefinitionName: '3rd level Child Process Name',
+  },
+  {
+    instanceId: '4',
+    processDefinitionName: '4th level Child Process Name',
+  },
+  {
+    instanceId: '5',
+    processDefinitionName: '5th level Child Process Name',
+  },
+  {
+    instanceId: '6',
+    processDefinitionName: '6tg level Child Process Name',
+  },
+  {
+    instanceId: '7',
+    processDefinitionName: '7th level Child Process Name',
+  },
+  {
+    instanceId: '8',
+    processDefinitionName: '8th level Child Process Name',
+  },
+  {
+    instanceId: '9',
+    processDefinitionName: '9th level Child Process Name',
+  },
+  {
+    instanceId: '10',
+    processDefinitionName: '10th level Child Process Name',
+  },
+];
 
 const sequenceFlows = [
   {
@@ -141,4 +204,12 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-export {flowNodeInstances, flowNodeStates, instance, sequenceFlows, xml};
+export {
+  flowNodeInstances,
+  flowNodeStates,
+  instance,
+  sequenceFlows,
+  xml,
+  callHierarchy,
+  longCallHierarchy,
+};

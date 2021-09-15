@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
+import {IS_BREADCRUMB_VISIBLE, IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {RequestHandler, rest} from 'msw';
 import {incidentsStore} from 'modules/stores/incidents';
 
@@ -139,6 +139,41 @@ const handlers: RequestHandler[] = [
       }
     }
   ),
+
+  rest.get('/api/process-instances/core-statistics', async (req, res, ctx) => {
+    const response = await ctx.fetch(req);
+    return res(ctx.json(await response.json()));
+  }),
+
+  rest.get('/api/process-instances/:id', async (req, res, ctx) => {
+    const response = await ctx.fetch(req);
+
+    if (!IS_BREADCRUMB_VISIBLE) {
+      return res(ctx.json(await response.json()));
+    }
+
+    const parsedResponse = await response.json();
+
+    return res(
+      ctx.json({
+        ...parsedResponse,
+        callHierarchy: [
+          {
+            instanceId: '546546543276',
+            processDefinitionName: 'Parent Process Name',
+          },
+          {
+            instanceId: '968765314354',
+            processDefinitionName: '1st level Child Process Name',
+          },
+          {
+            instanceId: '2251799813685447',
+            processDefinitionName: '2nd level Child Process Name',
+          },
+        ],
+      })
+    );
+  }),
 ];
 
 export {handlers};

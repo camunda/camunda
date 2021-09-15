@@ -17,6 +17,7 @@ const instance: ProcessInstanceEntity = {
   operations: [],
   sortValues: [],
   parentInstanceId: null,
+  callHierarchy: [],
 };
 
 export {instance};

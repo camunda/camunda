@@ -91,6 +91,7 @@ const instance = {
   operations: [],
   parentInstanceId: null,
   sortValues: null,
+  callHierarchy: [],
 };
 
 const sequenceFlows = [
