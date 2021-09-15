@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

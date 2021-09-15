@@ -21,8 +21,8 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -38,7 +38,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private StreamProcessor streamProcessor;
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDB;
-  private TestConcurrencyControl concurrencyControl;
   private StateController stateController;
 
   @Override
@@ -53,12 +52,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
-    return null;
+    return List.of(TestActorFuture.completedFuture(null));
   }
 
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingFollower(final long newTerm) {
-    return null;
+    return List.of(TestActorFuture.completedFuture(null));
   }
 
   @Override
@@ -91,7 +90,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public boolean shouldProcess() {
-    return false;
+    return true;
   }
 
   @Override
