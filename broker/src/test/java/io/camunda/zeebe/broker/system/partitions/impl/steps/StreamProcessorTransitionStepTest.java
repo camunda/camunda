@@ -98,12 +98,13 @@ class StreamProcessorTransitionStepTest {
     if (currentRole != null && currentRole != Role.INACTIVE) {
       transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
     }
+    final var existingStreamProcessor = transitionContext.getStreamProcessor();
 
     // when
     step.prepareTransition(transitionContext, 1, targetRole).join();
 
     // then
-    assertThat(transitionContext.getStreamProcessor()).isEqualTo(streamProcessorFromPrevRole);
+    assertThat(transitionContext.getStreamProcessor()).isEqualTo(existingStreamProcessor);
     verify(streamProcessorFromPrevRole, never()).closeAsync();
   }
 
@@ -115,12 +116,12 @@ class StreamProcessorTransitionStepTest {
     if (currentRole != null && currentRole != Role.INACTIVE) {
       transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
     }
-
+    final var existingStreamProcessor = transitionContext.getStreamProcessor();
     // when
     transitionTo(targetRole);
 
     // then
-    assertThat(transitionContext.getStreamProcessor()).isEqualTo(streamProcessorFromPrevRole);
+    assertThat(transitionContext.getStreamProcessor()).isEqualTo(existingStreamProcessor);
   }
 
   @ParameterizedTest
@@ -129,37 +130,46 @@ class StreamProcessorTransitionStepTest {
       names = {"FOLLOWER", "LEADER", "CANDIDATE"})
   void shouldCloseStreamProcessorWhenTransitioningToInactive(final Role currentRole) {
     // given
-    transitionTo(currentRole);
+    transitionContext.setCurrentRole(currentRole);
+    transitionContext.setStreamProcessor(streamProcessorFromPrevRole);
 
     // when
     transitionTo(Role.INACTIVE);
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
-    verify(streamProcessor).closeAsync();
+    verify(streamProcessorFromPrevRole).closeAsync();
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldCloseExistingStreamProcessor() {
     return Stream.of(
         Arguments.of(Role.FOLLOWER, Role.LEADER),
         Arguments.of(Role.CANDIDATE, Role.LEADER),
-        Arguments.of(Role.LEADER, Role.FOLLOWER));
+        Arguments.of(Role.LEADER, Role.FOLLOWER),
+        Arguments.of(Role.LEADER, Role.INACTIVE),
+        Arguments.of(Role.FOLLOWER, Role.INACTIVE),
+        Arguments.of(Role.CANDIDATE, Role.INACTIVE));
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldReInstallStreamProcessor() {
     return Stream.of(
         Arguments.of(null, Role.FOLLOWER),
         Arguments.of(null, Role.LEADER),
+        Arguments.of(null, Role.CANDIDATE),
         Arguments.of(Role.FOLLOWER, Role.LEADER),
         Arguments.of(Role.CANDIDATE, Role.LEADER),
         Arguments.of(Role.LEADER, Role.FOLLOWER),
+        Arguments.of(Role.LEADER, Role.CANDIDATE),
         Arguments.of(Role.INACTIVE, Role.FOLLOWER),
-        Arguments.of(Role.INACTIVE, Role.LEADER));
+        Arguments.of(Role.INACTIVE, Role.LEADER),
+        Arguments.of(Role.INACTIVE, Role.CANDIDATE));
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
     return Stream.of(
-        Arguments.of(Role.CANDIDATE, Role.FOLLOWER), Arguments.of(Role.FOLLOWER, Role.CANDIDATE));
+        Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
+        Arguments.of(Role.FOLLOWER, Role.CANDIDATE),
+        Arguments.of(null, Role.INACTIVE));
   }
 
   private void transitionTo(final Role role) {
