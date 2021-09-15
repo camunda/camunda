@@ -22,7 +22,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 class ZeebeDbPartitionTransitionStepTest {
 
@@ -30,6 +29,7 @@ class ZeebeDbPartitionTransitionStepTest {
 
   private final StateController stateController = mock(StateController.class);
   private final ZeebeDb zeebeDb = mock(ZeebeDb.class);
+  private final ZeebeDb zeebeDbFromPrevRole = mock(ZeebeDb.class);
 
   private ZeebeDbPartitionTransitionStep step;
 
@@ -46,14 +46,17 @@ class ZeebeDbPartitionTransitionStepTest {
   @MethodSource("provideTransitionsThatShouldDoNothing")
   void shouldNotCloseZeebeDb(final Role currentRole, final Role targetRole) throws Exception {
     // given
-    transitionTo(currentRole);
-    Mockito.clearInvocations(stateController);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+    }
+    final var existingZeebeDb = transitionContext.getZeebeDb();
 
     // when
     step.prepareTransition(transitionContext, 1, targetRole);
 
     // then
-    assertThat(transitionContext.getZeebeDb()).isNotNull();
+    assertThat(transitionContext.getZeebeDb()).isEqualTo(existingZeebeDb);
     verify(stateController, never()).closeDb();
   }
 
@@ -61,14 +64,17 @@ class ZeebeDbPartitionTransitionStepTest {
   @MethodSource("provideTransitionsThatShouldDoNothing")
   void shouldNotReInstallZeebeDb(final Role currentRole, final Role targetRole) throws Exception {
     // given
-    transitionTo(currentRole);
-    Mockito.clearInvocations(stateController);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+    }
+    final var existingZeebeDb = transitionContext.getZeebeDb();
 
     // when
     transitionTo(targetRole);
 
     // then
-    assertThat(transitionContext.getZeebeDb()).isNotNull();
+    assertThat(transitionContext.getZeebeDb()).isEqualTo(existingZeebeDb);
     verify(stateController, never()).closeDb();
   }
 
@@ -76,8 +82,10 @@ class ZeebeDbPartitionTransitionStepTest {
   @MethodSource("provideTransitionsThatShouldCloseZeebeDb")
   void shouldCloseExistingZeebeDb(final Role currentRole, final Role targetRole) throws Exception {
     // given
-    transitionTo(currentRole);
-    Mockito.clearInvocations(stateController);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+    }
 
     // when
     step.prepareTransition(transitionContext, 1, targetRole);
@@ -91,16 +99,17 @@ class ZeebeDbPartitionTransitionStepTest {
   @MethodSource("provideTransitionsThatShouldReInstallZeebeDb")
   void shouldInstallZeebeDb(final Role currentRole, final Role targetRole) throws Exception {
     // given
-    if (currentRole != null) {
-      transitionTo(currentRole);
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setZeebeDb(zeebeDbFromPrevRole);
     }
-    Mockito.clearInvocations(stateController);
+    final var existingZeebeDb = transitionContext.getZeebeDb();
 
     // when
     transitionTo(targetRole);
 
     // then
-    assertThat(transitionContext.getZeebeDb()).isNotNull();
+    assertThat(transitionContext.getZeebeDb()).isNotEqualTo(existingZeebeDb);
     verify(stateController).openDb();
   }
 
