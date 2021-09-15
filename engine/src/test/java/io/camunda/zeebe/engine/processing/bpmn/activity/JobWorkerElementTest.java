@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.JobWorkerTaskBuilder;
-import io.camunda.zeebe.engine.util.JobWorkerTaskBuilderProvider;
+import io.camunda.zeebe.engine.util.JobWorkerElementBuilder;
+import io.camunda.zeebe.engine.util.JobWorkerElementBuilderProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -40,11 +40,11 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Verifies the behavior of tasks that are based on jobs and should be processed by job workers. For
- * example, service tasks.
+ * Verifies the behavior of elements that are based on jobs and should be processed by job workers.
+ * For example, service tasks.
  */
 @RunWith(Parameterized.class)
-public final class JobWorkerTaskTest {
+public final class JobWorkerElementTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -54,21 +54,19 @@ public final class JobWorkerTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @Parameter public JobWorkerTaskBuilder taskBuilder;
+  @Parameter public JobWorkerElementBuilder elementBuilder;
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> parameters() {
-    return JobWorkerTaskBuilderProvider.buildersAsParameters();
+    return JobWorkerElementBuilderProvider.buildersAsParameters();
   }
 
   private BpmnModelInstance process(
-      final Consumer<AbstractJobWorkerTaskBuilder<?, ?>> taskModifier) {
+      final Consumer<ZeebeJobWorkerElementBuilder<?>> elementModifier) {
     final var processBuilder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent();
 
-    final var jobWorkerTaskBuilder = taskBuilder.build(processBuilder).id("task");
-    taskModifier.accept(jobWorkerTaskBuilder);
-
-    return jobWorkerTaskBuilder.endEvent().done();
+    final var jobWorkerElementBuilder = elementBuilder.build(processBuilder, elementModifier);
+    return jobWorkerElementBuilder.id("task").done();
   }
 
   @Test
@@ -83,7 +81,7 @@ public final class JobWorkerTaskTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(taskBuilder.getTaskType())
+                .withElementType(elementBuilder.getElementType())
                 .limit(3))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
@@ -95,12 +93,12 @@ public final class JobWorkerTaskTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withElementType(taskBuilder.getTaskType())
+            .withElementType(elementBuilder.getElementType())
             .getFirst();
 
     Assertions.assertThat(taskActivating.getValue())
         .hasElementId("task")
-        .hasBpmnElementType(taskBuilder.getTaskType())
+        .hasBpmnElementType(elementBuilder.getElementType())
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey);
@@ -122,7 +120,7 @@ public final class JobWorkerTaskTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementType(taskBuilder.getTaskType())
+            .withElementType(elementBuilder.getElementType())
             .getFirst();
 
     final Record<JobRecordValue> jobCreated =
@@ -169,7 +167,7 @@ public final class JobWorkerTaskTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            process(t -> t.zeebeJobType("taskWithVariables").zeebeInputExpression("x", "y")))
+            process(t -> t.zeebeInputExpression("x", "y").zeebeJobType("taskWithVariables")))
         .deploy();
 
     // when
@@ -215,9 +213,8 @@ public final class JobWorkerTaskTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(taskBuilder.getTaskType(), ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple(taskBuilder.getTaskType(), ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(elementBuilder.getElementType(), ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(elementBuilder.getElementType(), ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
