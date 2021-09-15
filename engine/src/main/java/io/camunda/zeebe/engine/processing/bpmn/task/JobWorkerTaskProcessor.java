@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 
@@ -56,7 +57,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
-        .flatMap(ok -> evaluateJobExpressions(element, context))
+        .flatMap(ok -> evaluateJobExpressions(element.getJobWorkerProperties(), context))
         .ifRightOrLeft(
             jobTypeAndRetries -> {
               jobBehavior.createNewJob(
@@ -114,15 +115,15 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+      final JobWorkerProperties jobWorkerProperties, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
 
     return expressionBehavior
-        .evaluateStringExpression(element.getType(), scopeKey)
+        .evaluateStringExpression(jobWorkerProperties.getType(), scopeKey)
         .flatMap(
             jobType ->
                 expressionBehavior
-                    .evaluateLongExpression(element.getRetries(), scopeKey)
+                    .evaluateLongExpression(jobWorkerProperties.getRetries(), scopeKey)
                     .map(retries -> new Tuple<>(jobType, retries)));
   }
 }
