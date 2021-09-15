@@ -192,6 +192,7 @@ Object {
       "display": true,
       "labels": Object {
         "color": "#666",
+        "generateLabels": [Function],
       },
     },
     "tooltip": Object {

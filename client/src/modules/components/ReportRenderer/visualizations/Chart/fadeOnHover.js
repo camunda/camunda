@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {color} from 'chart.js/helpers';
 import deepEqual from 'fast-deep-equal';
-import tinycolor from 'tinycolor2';
 
 const COLOR_FADE_OPACITY = 0.15;
 
@@ -23,26 +23,30 @@ export default function fadeOnHover({visualization, isStacked}) {
     if (visualization === 'pie') {
       const dataIndexes = datasets.map((el) => el.index);
       chart.data.datasets.forEach((dataset, datasetIdx) => {
+        dataset.hovered = false;
         dataset.backgroundColor = dataset.backgroundColor.map((color, dataIdx) => {
           if (
             datasets.length === 0 ||
             (datasetIndexes.includes(datasetIdx) && dataIndexes.includes(dataIdx))
           ) {
+            dataset.hovered = true;
             return getOriginal(dataset, 'backgroundColor')[dataIdx];
           } else {
-            return getFadded(dataset, 'backgroundColor')[dataIdx];
+            return getFaded(dataset, 'backgroundColor')[dataIdx];
           }
         });
       });
     } else {
       const datasetStacks = datasets.map((el) => chart.data.datasets[el.datasetIndex].stack);
       chart.data.datasets.forEach((dataset, i) => {
-        let getColor = getFadded;
+        dataset.hovered = true;
+        let getColor = getFaded;
         if (
           datasets.length === 0 ||
           datasetIndexes.includes(i) ||
           (isStacked && dataset.type !== 'line' && datasetStacks.includes(dataset.stack))
         ) {
+          dataset.hovered = false;
           getColor = getOriginal;
         }
 
@@ -68,7 +72,7 @@ export default function fadeOnHover({visualization, isStacked}) {
     return dataset['original-' + property];
   }
 
-  function getFadded(dataset, property) {
+  function getFaded(dataset, property) {
     const originalColor = getOriginal(dataset, property);
     if (Array.isArray(originalColor)) {
       return originalColor.map((color) => {
@@ -114,6 +118,6 @@ export default function fadeOnHover({visualization, isStacked}) {
   };
 }
 
-function addAlpha(color, opacity) {
-  return tinycolor(color).setAlpha(opacity).toString();
+function addAlpha(colorString, opacity) {
+  return color(colorString).alpha(opacity).rgbString();
 }

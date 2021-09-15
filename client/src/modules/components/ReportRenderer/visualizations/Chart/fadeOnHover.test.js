@@ -6,8 +6,8 @@
 
 import fadeOnHover from './fadeOnHover';
 
-jest.mock('tinycolor2', () => () => ({
-  setAlpha: () => ({toString: () => 'fadded'}),
+jest.mock('chart.js/helpers', () => ({
+  color: () => ({alpha: () => ({rgbString: () => 'fadded'})}),
 }));
 
 function simulateEvent(node, evt, payload = {}) {
@@ -60,12 +60,14 @@ it('should fadeout background color of the non hovered bar datasets', () => {
 
   expect(chart.data.datasets).toEqual([
     {
+      hovered: true,
       backgroundColor: ['fadded', 'fadded'],
       borderColor: ['fadded', 'fadded'],
       'original-backgroundColor': ['red', 'blue'],
       'original-borderColor': ['blue', 'red'],
     },
     {
+      hovered: false,
       backgroundColor: ['green', 'yellow'],
       borderColor: ['green', 'yellow'],
       'original-backgroundColor': ['green', 'yellow'],

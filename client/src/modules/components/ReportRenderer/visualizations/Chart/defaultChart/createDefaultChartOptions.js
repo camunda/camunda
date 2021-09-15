@@ -98,18 +98,21 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     };
   }
 
-  if (visualization === 'pie' && groupedByDurationMaxValue) {
+  if (visualization === 'pie') {
     options.plugins.legend.labels.generateLabels = (chart) => {
       // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
+      // we also need it to render the legends based on the hovered dataset in order to fade out only non hovered legends
       // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
       const data = chart.data;
       if (data.labels.length && data.datasets.length) {
         return data.labels.map(function (label, i) {
-          const meta = chart.getDatasetMeta(0);
+          // the 'hovered' property is provided by a plugin
+          const hoveredDatasetIdx = data.datasets.findIndex((dataset) => dataset.hovered);
+          const meta = chart.getDatasetMeta(hoveredDatasetIdx > 0 ? hoveredDatasetIdx : 0);
           const style = meta.controller.getStyle(i);
 
           return {
-            text: duration(label),
+            text: groupedByDurationMaxValue ? duration(label) : label,
             fillStyle: style.backgroundColor,
             strokeStyle: style.borderColor,
             lineWidth: style.borderWidth,
