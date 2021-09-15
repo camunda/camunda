@@ -22,18 +22,20 @@ import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 
 /** @author Sebastian Menski */
 public abstract class AbstractThrowEventBuilder<
         B extends AbstractThrowEventBuilder<B, E>, E extends ThrowEvent>
-    extends AbstractEventBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
+    extends AbstractEventBuilder<B, E> implements ZeebeJobWorkerElementBuilder<B> {
+
+  private final ZeebeJobWorkerPropertiesBuilder<B> jobWorkerPropertiesBuilder;
+  private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
 
   protected AbstractThrowEventBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    jobWorkerPropertiesBuilder = new ZeebeJobWorkerPropertiesBuilderImpl<>(myself);
+    variablesMappingBuilder = new ZeebeVariableMappingBuilderImpl<>(myself);
   }
 
   /**
@@ -137,34 +139,47 @@ public abstract class AbstractThrowEventBuilder<
   }
 
   @Override
+  public B zeebeJobType(final String type) {
+    return jobWorkerPropertiesBuilder.zeebeJobType(type);
+  }
+
+  @Override
+  public B zeebeJobTypeExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobTypeExpression(expression);
+  }
+
+  @Override
+  public B zeebeJobRetries(final String retries) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetries(retries);
+  }
+
+  @Override
+  public B zeebeJobRetriesExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetriesExpression(expression);
+  }
+
+  @Override
+  public B zeebeTaskHeader(final String key, final String value) {
+    return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
+  }
+
+  @Override
   public B zeebeInputExpression(final String sourceExpression, final String target) {
-    final String expression = asZeebeExpression(sourceExpression);
-    return zeebeInput(expression, target);
+    return variablesMappingBuilder.zeebeInputExpression(sourceExpression, target);
   }
 
   @Override
   public B zeebeOutputExpression(final String sourceExpression, final String target) {
-    final String expression = asZeebeExpression(sourceExpression);
-    return zeebeOutput(expression, target);
+    return variablesMappingBuilder.zeebeOutputExpression(sourceExpression, target);
   }
 
   @Override
   public B zeebeInput(final String source, final String target) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
-    input.setSource(source);
-    input.setTarget(target);
-
-    return myself;
+    return variablesMappingBuilder.zeebeInput(source, target);
   }
 
   @Override
   public B zeebeOutput(final String source, final String target) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
-    input.setSource(source);
-    input.setTarget(target);
-
-    return myself;
+    return variablesMappingBuilder.zeebeOutput(source, target);
   }
 }
