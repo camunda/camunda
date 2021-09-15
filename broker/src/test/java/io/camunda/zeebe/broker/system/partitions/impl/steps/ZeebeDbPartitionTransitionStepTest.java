@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ZeebeDbPartitionTransitionStepTest {
@@ -79,7 +80,7 @@ class ZeebeDbPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldCloseZeebeDb")
+  @MethodSource("provideTransitionsThatShouldCloseExistingZeebeDb")
   void shouldCloseExistingZeebeDb(final Role currentRole, final Role targetRole) throws Exception {
     // given
     transitionContext.setCurrentRole(currentRole);
@@ -96,8 +97,8 @@ class ZeebeDbPartitionTransitionStepTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTransitionsThatShouldReInstallZeebeDb")
-  void shouldInstallZeebeDb(final Role currentRole, final Role targetRole) throws Exception {
+  @MethodSource("provideTransitionsThatShouldInstallZeebeDb")
+  void shouldInstallZeebeDb(final Role currentRole, final Role targetRole) {
     // given
     transitionContext.setCurrentRole(currentRole);
     if (currentRole != null && currentRole != Role.INACTIVE) {
@@ -113,25 +114,49 @@ class ZeebeDbPartitionTransitionStepTest {
     verify(stateController).openDb();
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      names = {"FOLLOWER", "LEADER", "CANDIDATE"})
+  void shouldCloseZeebeDBWhenTransitioningToInactive(final Role currentRole) throws Exception {
+    // given
+    transitionContext.setCurrentRole(currentRole);
+    transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+
+    // when
+    transitionTo(Role.INACTIVE);
+
+    // then
+    assertThat(transitionContext.getZeebeDb()).isNull();
+    verify(stateController).closeDb();
+    verify(stateController, never()).openDb();
+  }
+
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
     return Stream.of(
         Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
         Arguments.of(Role.FOLLOWER, Role.CANDIDATE),
-        Arguments.of(Role.CANDIDATE, Role.LEADER));
+        Arguments.of(Role.CANDIDATE, Role.LEADER),
+        Arguments.of(Role.FOLLOWER, Role.LEADER),
+        Arguments.of(null, Role.INACTIVE));
   }
 
-  private static Stream<Arguments> provideTransitionsThatShouldReInstallZeebeDb() {
+  private static Stream<Arguments> provideTransitionsThatShouldInstallZeebeDb() {
     return Stream.of(
         Arguments.of(null, Role.FOLLOWER),
         Arguments.of(null, Role.LEADER),
+        Arguments.of(null, Role.CANDIDATE),
         Arguments.of(Role.LEADER, Role.FOLLOWER),
+        Arguments.of(Role.LEADER, Role.CANDIDATE),
         Arguments.of(Role.INACTIVE, Role.FOLLOWER),
-        Arguments.of(Role.INACTIVE, Role.LEADER));
+        Arguments.of(Role.INACTIVE, Role.LEADER),
+        Arguments.of(Role.INACTIVE, Role.CANDIDATE));
   }
 
-  private static Stream<Arguments> provideTransitionsThatShouldCloseZeebeDb() {
+  private static Stream<Arguments> provideTransitionsThatShouldCloseExistingZeebeDb() {
     return Stream.of(
         Arguments.of(Role.LEADER, Role.FOLLOWER),
+        Arguments.of(Role.LEADER, Role.CANDIDATE),
         Arguments.of(Role.LEADER, Role.INACTIVE),
         Arguments.of(Role.FOLLOWER, Role.INACTIVE),
         Arguments.of(Role.CANDIDATE, Role.INACTIVE));
