@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
-import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
@@ -100,7 +99,11 @@ public final class Broker implements AutoCloseable {
 
     final BrokerStartupContextImpl startupContext =
         new BrokerStartupContextImpl(
-            localBroker, springBrokerBridge, scheduler, healthCheckService);
+            localBroker,
+            systemContext.getBrokerConfiguration(),
+            springBrokerBridge,
+            scheduler,
+            healthCheckService);
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);
@@ -156,7 +159,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
         "command api transport and handler",
         () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
@@ -192,6 +194,9 @@ public final class Broker implements AutoCloseable {
     brokerContext = brokerStartupActor.start().join();
 
     partitionListeners.addAll(brokerContext.getPartitionListeners());
+
+    clusterServices = brokerContext.getClusterServices();
+    testCompanionObject.atomix = clusterServices.getAtomixCluster();
 
     return () -> {
       brokerStartupActor.stop().join();
@@ -230,17 +235,6 @@ public final class Broker implements AutoCloseable {
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
-  }
-
-  private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
-    final var atomix = AtomixClusterFactory.fromConfiguration(brokerCfg);
-    testCompanionObject.atomix = atomix;
-    clusterServices = new ClusterServicesImpl(atomix);
-
-    return () -> {
-      clusterServices.stop().get();
-      testCompanionObject.atomix = null;
-    };
   }
 
   private AutoCloseable commandApiTransportAndHandlerStep(

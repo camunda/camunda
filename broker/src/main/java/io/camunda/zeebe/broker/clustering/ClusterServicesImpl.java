@@ -49,4 +49,8 @@ public class ClusterServicesImpl implements ClusterServices {
   public ClusterCommunicationService getCommunicationService() {
     return atomixCluster.getCommunicationService();
   }
+
+  public AtomixCluster getAtomixCluster() {
+    return atomixCluster;
+  }
 }

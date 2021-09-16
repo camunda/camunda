@@ -8,13 +8,14 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import java.util.Collection;
 
 /** Context for components/actors managed directly by the Broker */
 public interface BrokerContext {
 
-  BrokerHealthCheckService getHealthCheckService();
-
   Collection<? extends PartitionListener> getPartitionListeners();
+
+  // TODO change this to ClusterServices after migration
+  ClusterServicesImpl getClusterServices();
 }

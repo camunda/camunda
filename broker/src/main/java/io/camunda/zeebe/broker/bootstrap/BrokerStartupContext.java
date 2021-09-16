@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.Actor;
@@ -25,6 +27,8 @@ public interface BrokerStartupContext {
 
   BrokerInfo getBrokerInfo();
 
+  BrokerCfg getBrokerConfiguration();
+
   SpringBrokerBridge getSpringBrokerBridge();
 
   ConcurrencyControl getConcurrencyControl();
@@ -38,4 +42,8 @@ public interface BrokerStartupContext {
   void removePartitionListener(PartitionListener partitionListener);
 
   List<PartitionListener> getPartitionListeners();
+
+  ClusterServicesImpl getClusterServices();
+
+  void setClusterServices(ClusterServicesImpl o);
 }
