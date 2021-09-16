@@ -19,7 +19,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.state.query.StateQueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -102,10 +101,6 @@ public interface PartitionStartupContext {
   ExporterDirector getExporterDirector();
 
   void setExporterDirector(ExporterDirector director);
-
-  StateQueryService getQueryService();
-
-  void setQueryService(final StateQueryService queryService);
 
   // can be called any time after bootstrap has completed
   PartitionStartupAndTransitionContextImpl createTransitionContext();
