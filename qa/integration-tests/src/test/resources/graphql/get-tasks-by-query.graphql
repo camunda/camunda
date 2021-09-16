@@ -3,6 +3,7 @@ query getTasks($query: TaskQuery!){
         id
         name
         processName
+        taskDefinitionId
         creationTime
         completionTime
         assignee

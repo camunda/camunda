@@ -273,7 +273,13 @@ public class TaskReaderWriter {
     if (taskId != null) {
       idsQuery = idsQuery().addIds(taskId);
     }
-    QueryBuilder jointQ = joinWithAnd(stateQ, assignedQ, assigneeQ, idsQuery);
+
+    QueryBuilder taskDefinitionQ = null;
+    if (query.getTaskDefinitionId() != null) {
+      taskDefinitionQ = termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, query.getTaskDefinitionId());
+    }
+
+    QueryBuilder jointQ = joinWithAnd(stateQ, assignedQ, assigneeQ, idsQuery, taskDefinitionQ);
     if (jointQ == null) {
       jointQ = matchAllQuery();
     }

@@ -431,6 +431,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals("1", response.get("$.data.tasks.length()"));
     assertNotNull(response.get("$.data.tasks[0].id"));
     assertEquals(flowNodeBpmnId, response.get("$.data.tasks[0].name"));
+    assertEquals(flowNodeBpmnId, response.get("$.data.tasks[0].taskDefinitionId"));
     assertEquals(bpmnProcessId, response.get("$.data.tasks[0].processName"));
     assertNotNull(response.get("$.data.tasks[0].creationTime"));
     assertNotNull(response.get("$.data.tasks[0].completionTime"));
@@ -497,6 +498,26 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals(2, tasksAfterOneClaimed.size());
     assertThat(tasksAfterOneClaimed)
         .isSortedAccordingTo(comparing(TaskDTO::getCreationTime).reversed());
+  }
+
+  @Test
+  public void shouldReturnTaskBasedOnTaskDefinitionId() throws IOException {
+    // when #1
+    final List<TaskDTO> tasks =
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, "taskA", 3, 0)
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, "taskB", 3, 0)
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, "taskC", 3, 0)
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, "taskD", 3, 0)
+            .then()
+            .getCreatedTasks();
+    assertEquals(12, tasks.size());
+
+    final List<TaskDTO> tasksByQuery =
+        tester.getTasksByQuery("{tasks(query: {taskDefinitionId: \"taskB\"}) {id}}");
+
+    assertEquals(3, tasksByQuery.size());
   }
 
   @Test

@@ -4,6 +4,8 @@ type Task {
     id: ID!
     # Name of the task
     name: String!
+    # Task Definition ID (node BPMN id) of the process
+    taskDefinitionId: String!
     # Name of the process
     processName: String!
     # When was the task created
@@ -46,6 +48,8 @@ input TaskQuery {
     assignee: String
     #Size of tasks page (default: 50).
     pageSize: Int
+    # Task definition ID - what's the BPMN flow node?
+    taskDefinitionId: String
     #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly after this values plus same sort values.
     searchAfter: [String!]
     #Array of values copied from `sortValues` of one of the tasks, query will return page of tasks going directly after this values.

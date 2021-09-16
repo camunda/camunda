@@ -54,6 +54,10 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
     return taskName;
   }
 
+  public String getTaskDefinitionId(TaskDTO task) {
+    return task.getFlowNodeBpmnId();
+  }
+
   private Set<String> getFieldNames(DataFetchingEnvironment dataFetchingEnvironment) {
     return dataFetchingEnvironment.getSelectionSet().getFields().stream()
         .map(SelectedField::getName)
