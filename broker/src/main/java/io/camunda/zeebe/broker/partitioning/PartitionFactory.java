@@ -72,7 +72,7 @@ public final class PartitionFactory {
    * code is based on LEADER_STEPS and FOLLOWER steps. The new code is based on TRANSITION_STEPS and
    * ZeebePartition.STARTUP_PROCESS
    */
-  public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = false;
+  public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = true;
 
   // will probably be executed in parallel
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
