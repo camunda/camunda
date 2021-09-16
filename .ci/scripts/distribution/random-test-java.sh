@@ -15,6 +15,10 @@ MAVEN_PROPERTIES=(
 )
 tmpfile=$(mktemp)
 
+export PROCESS_COUNT=10
+export EXECUTION_COUNT=100
+export REPLAY_EXECUTION_COUNT=5
+
 if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DforkCount=$SUREFIRE_FORK_COUNT")
   # if we know the fork count, we can limit the max heap for each fork to ensure we're not OOM killed

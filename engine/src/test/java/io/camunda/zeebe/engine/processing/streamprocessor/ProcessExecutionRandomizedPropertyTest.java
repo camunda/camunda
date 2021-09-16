@@ -41,8 +41,9 @@ public class ProcessExecutionRandomizedPropertyTest {
    * Increasing the maximum number of blocks, depth or branches could increase the number of
    * possible paths exponentially
    */
-  private static final int PROCESS_COUNT = 10;
-  private static final int EXECUTION_PATH_COUNT = 100;
+  private static final String PROCESS_COUNT = System.getenv().getOrDefault("PROCESS_COUNT", "3");
+  private static final String EXECUTION_PATH_COUNT =
+      System.getenv().getOrDefault("EXECUTION_PATH_COUNT", "30");
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
   @Parameter public TestDataRecord record;
 
@@ -83,6 +84,7 @@ public class ProcessExecutionRandomizedPropertyTest {
 
   @Parameters(name = "{0}")
   public static Collection<TestDataGenerator.TestDataRecord> getTestRecords() {
-    return TestDataGenerator.generateTestRecords(PROCESS_COUNT, EXECUTION_PATH_COUNT);
+    return TestDataGenerator.generateTestRecords(
+        Integer.parseInt(PROCESS_COUNT), Integer.parseInt(EXECUTION_PATH_COUNT));
   }
 }
