@@ -139,12 +139,15 @@ public class IncidentZeebeRecordProcessor {
               incident.getKey(), recordValue.getProcessInstanceKey());
           final String treePath = new TreePath().startTreePath(
               String.valueOf(recordValue.getProcessInstanceKey()))
+              .appendFlowNode(incident.getFlowNodeId())
               .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey())).toString();
           incident.setTreePath(treePath);
           processInstanceIdsForTreePathUpdate.add(String.valueOf(recordValue.getProcessInstanceKey()));
         } else {
-          incident.setTreePath(new TreePath(processInstanceTreePath).appendFlowNodeInstance(
-                  String.valueOf(incident.getFlowNodeInstanceKey())).toString());
+          incident.setTreePath(new TreePath(processInstanceTreePath)
+              .appendFlowNode(incident.getFlowNodeId())
+              .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey()))
+              .toString());
         }
       }
       bulkRequest.add(getIncidentInsertQuery(incident));

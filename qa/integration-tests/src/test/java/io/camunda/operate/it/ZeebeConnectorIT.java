@@ -5,7 +5,6 @@
  */
 package io.camunda.operate.it;
 
-import io.camunda.operate.util.PartitionHolderMock;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import io.camunda.operate.property.OperateProperties;
@@ -25,8 +24,6 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -36,11 +33,6 @@ import org.springframework.test.util.ReflectionTestUtils;
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         OperateProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500"})
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-//@ComponentScan (
-//    excludeFilters = {
-//        @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = PartitionHolderMock.class)
-//    }
-//)
 public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   @Rule
@@ -102,7 +94,6 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   }
 
   private List<Integer> getPartitionIds() {
-    partitionHolder.getPartitionIds();
     return (List<Integer>) ReflectionTestUtils
         .getField(partitionHolder, "partitionIds");
   }

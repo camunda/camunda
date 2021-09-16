@@ -23,7 +23,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_N
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollIdsToList;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -429,17 +428,18 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     //find incidents information
     searchForIncidents(result, String.valueOf(flowNodeInstance.getProcessInstanceKey()),
-        flowNodeInstance.getId());
+        flowNodeInstance.getFlowNodeId(), flowNodeInstance.getId());
 
     return result;
   }
 
   private void searchForIncidents(FlowNodeMetadataDto flowNodeMetadata,
-      final String processInstanceId, final String flowNodeInstanceId) {
+      final String processInstanceId, final String flowNodeId, final String flowNodeInstanceId) {
 
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
     final String incidentTreePath = new TreePath(treePath)
+        .appendFlowNode(flowNodeId)
         .appendFlowNodeInstance(flowNodeInstanceId).toString();
     final QueryBuilder query = constantScoreQuery(termQuery(IncidentTemplate.TREE_PATH,
         incidentTreePath));
@@ -475,15 +475,11 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
-    final List<String> flowNodeInstanceIds = getFlowNodeInstanceIds(processInstanceId, flowNodeId,
-        flowNodeType);
+    final String flowNodeInstancesTreePath = new TreePath(treePath)
+        .appendFlowNode(flowNodeId).toString();
 
-    final List<String> flowNodeInstancesTreePaths = flowNodeInstanceIds.stream()
-        .map(id -> new TreePath(treePath).appendFlowNodeInstance(id).toString())
-        .collect(Collectors.toList());
-
-    final QueryBuilder query = constantScoreQuery(joinWithAnd(termQuery(IncidentTemplate.TREE_PATH,
-        treePath), termsQuery(ListViewTemplate.TREE_PATH, flowNodeInstancesTreePaths)));
+    final QueryBuilder query = constantScoreQuery(termQuery(IncidentTemplate.TREE_PATH,
+        flowNodeInstancesTreePath));
     final SearchRequest request = ElasticsearchUtil
         .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
@@ -506,29 +502,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
     } catch (IOException e) {
       final String message = String.format(
           "Exception occurred, while obtaining incidents: %s",
-          e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private List<String> getFlowNodeInstanceIds(final String processInstanceId,
-      final String flowNodeId, final FlowNodeType flowNodeType) {
-    final QueryBuilder query = constantScoreQuery(
-        joinWithAnd(
-            termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceId),
-            termQuery(FLOW_NODE_ID, flowNodeId),
-            termQuery(TYPE, flowNodeType)));
-
-    final SearchRequest request = ElasticsearchUtil
-        .createSearchRequest(flowNodeInstanceTemplate, QueryType.ONLY_RUNTIME)
-        .source(new SearchSourceBuilder()
-            .query(query)
-            .fetchSource(false));
-    try {
-      return scrollIdsToList(request, esClient);
-    } catch (IOException e) {
-      final String message = String.format(
-          "Exception occurred, while obtaining flow node instances: %s",
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
@@ -621,7 +594,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
           result.setBreadcrumb(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
           //find incidents information
           searchForIncidents(result, String.valueOf(flowNodeInstance.getProcessInstanceKey()),
-              flowNodeInstance.getId());
+              flowNodeInstance.getFlowNodeId(), flowNodeInstance.getId());
         } else {
           result.setInstanceCount(bucketCurrentLevel.getDocCount());
           result.setFlowNodeId(flowNodeInstance.getFlowNodeId());

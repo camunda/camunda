@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.zeebeimport.util;
 
+import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FN;
 import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FNI;
 import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.PI;
 
@@ -18,9 +19,9 @@ import java.util.regex.Pattern;
  * PI = Process instance, FNI = Flow node instance.
  *
  * If we have a process with call activity, then tree path for child process instance will be build
- * as PI_<parent_process_instance_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>,
+ * as PI_<parent_process_instance_id>/FN_<call_activity_id>/</call_activity_id>FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>,
  * for the incident in child instance we will have tree path as
- * PI_<parent_process_instance_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>/FNI<flow_node_instance_id_where_incident_happenned>.
+ * PI_<parent_process_instance_id>/FN_<call_activity_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>/FN_<flow_node_id>/FNI<flow_node_instance_id_where_incident_happenned>.
  *
  */
 public class TreePath {
@@ -40,9 +41,9 @@ public class TreePath {
     return this;
   }
 
-  private TreePath appendEntry(String newEntry, TreePathEntryType type) {
+  public TreePath appendFlowNode(String newEntry) {
     if (newEntry != null) {
-      treePath.append(String.format("/%s_%s", type, newEntry));
+      treePath.append(String.format("/%s_%s", FN, newEntry));
     }
     return this;
   }
@@ -61,13 +62,14 @@ public class TreePath {
     return this;
   }
 
-  public TreePath appendEntries(String flowNodeInstanceId, String processInstanceId) {
-    return appendFlowNodeInstance(flowNodeInstanceId).appendProcessInstance(processInstanceId);
+  public TreePath appendEntries(String callActivityId, String flowNodeInstanceId, String processInstanceId) {
+    return appendFlowNode(callActivityId).appendFlowNodeInstance(flowNodeInstanceId)
+        .appendProcessInstance(processInstanceId);
   }
 
-  public static String extractCallActivityId(final String treePath, String currentTreePath) {
+  public static String extractFlowNodeInstanceId(final String treePath, String currentTreePath) {
     final Pattern fniPattern = Pattern
-        .compile(String.format("%s/FNI_(\\d*)/.*", currentTreePath));
+        .compile(String.format("%s/FN_[^/]*/FNI_(\\d*)/.*", currentTreePath));
     final Matcher matcher = fniPattern.matcher(treePath);
     matcher.matches();
     return matcher.group(1);
@@ -86,7 +88,11 @@ public class TreePath {
     /**
      * Flow node instance.
      */
-    FNI
+    FNI,
+    /**
+     * Flow node.
+     */
+    FN
   }
 
 }

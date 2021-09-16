@@ -222,7 +222,7 @@ public class IncidentReader extends AbstractReader {
       IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
       if (!String.valueOf(inc.getProcessInstanceKey()).equals(processInstanceId)) {
         final String callActivityInstanceId = TreePath
-            .extractCallActivityId(inc.getTreePath(), currentTreePath);
+            .extractFlowNodeInstanceId(inc.getTreePath(), currentTreePath);
         incData.setFinalFlowNodeInstanceId(callActivityInstanceId);
         flowNodeInstanceIdsSet.add(callActivityInstanceId);
       } else {
