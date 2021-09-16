@@ -67,7 +67,7 @@
     "@types/history": "4.7.9",
     "@types/jest": "27.0.1",
     "@types/jsoneditor": "8.6.1",
-    "@types/lodash": "4.14.172",
+    "@types/lodash": "4.14.173",
     "@types/node": "16.7.10",
     "@types/node-fetch": "2.5.12",
     "@types/react": "17.0.21",
