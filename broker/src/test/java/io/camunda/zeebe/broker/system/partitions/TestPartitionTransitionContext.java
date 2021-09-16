@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -46,6 +47,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private StateController stateController;
   private ExporterRepository exporterRepository;
   private AtomixLogStorage logStorage;
+  private BrokerCfg brokerCfg;
+  private AsyncSnapshotDirector snapshotDirector;
 
   @Override
   public int getPartitionId() {
@@ -219,7 +222,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public AsyncSnapshotDirector getSnapshotDirector() {
-    return null;
+    return snapshotDirector;
+  }
+
+  @Override
+  public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
+    this.snapshotDirector = snapshotDirector;
+  }
+
+  @Override
+  public BrokerCfg getBrokerCfg() {
+    return brokerCfg;
+  }
+
+  public void setBrokerCfg(final BrokerCfg brokerCfg) {
+    this.brokerCfg = brokerCfg;
   }
 
   @Override
