@@ -46,7 +46,7 @@ public final class ZeebePartition extends Actor
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  private static final StartupProcess<PartitionStartupContext> STARTUP_PROCESS =
+  private final StartupProcess<PartitionStartupContext> startupProcess =
       new StartupProcess<>(
           LOG,
           List.of(
@@ -205,7 +205,7 @@ public final class ZeebePartition extends Actor
   @Override
   public void onActorStarting() {
     if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-      STARTUP_PROCESS
+      startupProcess
           .startup(actor, startupContext)
           .onComplete(
               (newStartupContext, error) -> {
@@ -257,7 +257,7 @@ public final class ZeebePartition extends Actor
                   .removeComponent(context.getRaftPartition().name());
 
               if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-                STARTUP_PROCESS
+                startupProcess
                     .shutdown(actor, startupContext)
                     .onComplete(
                         (newStartupContext, error) -> {
