@@ -810,7 +810,7 @@ public final class ClusteringRule extends ExternalResource {
                 + " with previous snapshot: "
                 + previousSnapshot)
         .pollInterval(Duration.ofMillis(100))
-        .atMost(Duration.ofMinutes(1))
+        .atMost(Duration.ofMinutes(3))
         .until(
             () -> getSnapshot(broker, 1),
             latestSnapshot ->
