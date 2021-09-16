@@ -19,15 +19,14 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DurationFilterIT extends AbstractDurationFilterIT {
 
   @Test
-  public void testGetReportWithMixedDurationCriteria () throws Exception {
+  public void testGetReportWithMixedDurationCriteria() {
     // given
     long daysToShift = 0L;
     long durationInSec = 2L;
@@ -59,8 +58,9 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
       .buildList();
     gte.addAll(lt);
     reportData.setFilter(gte);
-    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result =
+      reportClient.evaluateRawReport(
+        reportData);
 
     // then
     assertResult(processInstance, result);
@@ -88,7 +88,8 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
                            .buildList());
 
 
-    assertThat(reportClient.evaluateReportAndReturnResponse(reportData).getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(reportClient.evaluateReportAndReturnResponse(reportData).getStatus())
+      .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
 }

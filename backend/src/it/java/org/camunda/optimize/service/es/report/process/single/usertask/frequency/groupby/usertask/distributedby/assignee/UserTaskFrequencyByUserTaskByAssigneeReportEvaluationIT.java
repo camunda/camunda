@@ -45,6 +45,9 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
@@ -55,12 +58,6 @@ import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 
 public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -93,11 +90,11 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
@@ -140,7 +137,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -165,7 +162,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult =
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult =
       reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -206,7 +203,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -315,7 +313,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -380,7 +379,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -420,8 +420,10 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult1 = reportClient.evaluateHyperMapReport(
+      reportData1).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult2 = reportClient.evaluateHyperMapReport(
+      reportData2).getResult();
 
     // then
     // @formatter:off
@@ -462,10 +464,11 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
-    assertThat(actualResult.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(actualResult.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -474,25 +477,28 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
-    assertThat(actualResult.getFirstMeasureData().size(), is(0));
+    assertThat(actualResult.getFirstMeasureData()).hasSize(0);
   }
 
   public static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(IN, new String[]{SECOND_USER}, 1L,
-        ImmutableMap.builder().put(USER_TASK_2, Collections.singletonList(createSecondUserTriple(1.))).build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_2, Collections.singletonList(createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 1L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(NOT_IN, new String[]{SECOND_USER}, 1L,
-        ImmutableMap.builder().put(USER_TASK_1, Lists.newArrayList(createDefaultUserTriple(1.))).build()
+                   ImmutableMap.builder().put(USER_TASK_1, Lists.newArrayList(createDefaultUserTriple(1.))).build()
       ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L, Collections.emptyMap())
     );
@@ -524,7 +530,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -549,22 +556,22 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   public static Stream<Arguments> instanceLevelAssigneeFilterScenarios() {
     return Stream.of(
       Arguments.of(IN, new String[]{SECOND_USER}, 1L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 2L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(NOT_IN, new String[]{SECOND_USER}, 2L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, 0L,
                    ImmutableMap.builder()
@@ -601,7 +608,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -624,22 +632,27 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   public static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
-        ImmutableMap.builder()
-          .put(USER_TASK_2, Collections.singletonList(createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_2, Collections.singletonList(createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 1L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Collections.singletonList(createDefaultUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Collections.singletonList(createDefaultUserTriple(1.)))
+                     .build()
       ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L, Collections.emptyMap())
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        0L,
+        Collections.emptyMap()
+      )
     );
   }
 
@@ -671,7 +684,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.VIEW).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()
@@ -696,28 +710,28 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
   public static Stream<Arguments> instanceLevelCandidateGroupFilterScenarios() {
     return Stream.of(
       Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 1L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(null), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 2L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(NOT_IN, new String[]{SECOND_CANDIDATE_GROUP_ID}, 2L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
-          .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Arrays.asList(createDefaultUserTriple(2.), createSecondUserTriple(null)))
+                     .put(USER_TASK_2, Arrays.asList(createDefaultUserTriple(1.), createSecondUserTriple(1.)))
+                     .build()
       ),
       Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID}, 0L,
-        ImmutableMap.builder()
-          .put(USER_TASK_1, Collections.emptyList())
-          .put(USER_TASK_2, Collections.emptyList())
-          .build()
+                   ImmutableMap.builder()
+                     .put(USER_TASK_1, Collections.emptyList())
+                     .put(USER_TASK_2, Collections.emptyList())
+                     .build()
       )
     );
   }
@@ -752,7 +766,8 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .filter().candidateGroups().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(candidateGroupFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     final HyperMapAsserter.MeasureAdder hyperMapAsserter = HyperMapAsserter.asserter()

@@ -16,9 +16,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class NonSuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
 
@@ -39,15 +38,16 @@ public class NonSuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().nonSuspendedInstancesOnly().add().buildList());
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData)
+      .getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData()).hasSize(1);
     List<String> resultProcDefIds = result.getData()
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
 
-    assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
+    assertThat(resultProcDefIds).contains(secondProcInst.getId());
   }
 }

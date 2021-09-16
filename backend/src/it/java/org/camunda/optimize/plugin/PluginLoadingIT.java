@@ -20,12 +20,10 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class PluginLoadingIT extends AbstractIT {
 
@@ -49,14 +47,14 @@ public class PluginLoadingIT extends AbstractIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     final SharedTestPluginVariableDto optimizeLoadedTest = new SharedTestPluginVariableDto();
-    assertThat(optimizeLoadedTest.getId(), is("optimize-class"));
+    assertThat(optimizeLoadedTest.getId()).isEqualTo("optimize-class");
 
     // when
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
-    assertThat(plugins.size(), is(1));
+    assertThat(plugins).hasSize(1);
 
     plugins.stream().findFirst().ifPresent(
       plugin -> {
@@ -68,15 +66,13 @@ public class PluginLoadingIT extends AbstractIT {
          * assert that the class of the plugin is loaded and not the one of Optimize.
          */
         final PluginVariableDto pluginLoadedTest = pluginVariableDtos.get(0);
-        assertThat(pluginLoadedTest.getClass().getName(), is(optimizeLoadedTest.getClass().getName()));
-        assertThat(
-          pluginLoadedTest.getClass().getClassLoader().getClass().getName(),
-          is(not(optimizeLoadedTest.getClass().getClassLoader().getClass().getName()))
-        );
-        assertThat(pluginLoadedTest.getId(), is("plugin-class"));
+        assertThat(pluginLoadedTest.getClass().getName()).isEqualTo(optimizeLoadedTest.getClass().getName());
+        assertThat(pluginLoadedTest.getClass().getClassLoader().getClass().getName())
+          .isNotEqualTo(optimizeLoadedTest.getClass().getClassLoader().getClass().getName());
+        assertThat(pluginLoadedTest.getId()).isEqualTo("plugin-class");
 
         // plugin classes that do not exist in Optimize are also loaded from the plugin
-        assertThat(pluginVariableDtos.get(1).getId(), is("also-plugin-class"));
+        assertThat(pluginVariableDtos.get(1).getId()).isEqualTo("also-plugin-class");
       }
     );
   }
@@ -93,13 +89,13 @@ public class PluginLoadingIT extends AbstractIT {
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
-    assertThat(plugins.size(), is(2));
+    assertThat(plugins).hasSize(2);
 
     plugins.forEach(plugin -> {
       // each plugin uses their own classes with the same names but different methods
       // tests if exceptions are thrown
       plugin.adaptVariables(Collections.emptyList());
-      assertThat(plugin.getClass().getName(), is(basePackage + ".IndependentTestPlugin"));
+      assertThat(plugin.getClass().getName()).isEqualTo(basePackage + ".IndependentTestPlugin");
     });
   }
 
@@ -115,7 +111,7 @@ public class PluginLoadingIT extends AbstractIT {
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
-    assertThat(plugins.size(), is(1));
+    assertThat(plugins).hasSize(1);
 
 
     /* plugin uses old jackson databind version with a deprecated method that got removed in later version
@@ -159,7 +155,7 @@ public class PluginLoadingIT extends AbstractIT {
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
-    assertThat(plugins.size(), is(0));
+    assertThat(plugins).isEmpty();
   }
 
   @Test
@@ -172,7 +168,7 @@ public class PluginLoadingIT extends AbstractIT {
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
-    assertThat(plugins.size(), is(0));
+    assertThat(plugins).isEmpty();
   }
 
   @Test
@@ -186,14 +182,14 @@ public class PluginLoadingIT extends AbstractIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(pluginProvider.getPlugins().size(), is(0));
+    assertThat(pluginProvider.getPlugins()).isEmpty();
 
     // when
     configurationService.setPluginDirectory("target/testPluginsValid");
     embeddedOptimizeExtension.reloadConfiguration();
 
     // then
-    assertThat(pluginProvider.getPlugins().size(), is(1));
+    assertThat(pluginProvider.getPlugins()).hasSize(1);
   }
 
 

@@ -9,8 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
@@ -22,15 +22,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @AllArgsConstructor
 public class AnalysisClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
   public Response getProcessDefinitionCorrelationRawResponse(BranchAnalysisRequestDto branchAnalysisRequestDto) {
-    return getProcessDefinitionCorrelationRawResponseAsUser(branchAnalysisRequestDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
+    return getProcessDefinitionCorrelationRawResponseAsUser(
+      branchAnalysisRequestDto,
+      DEFAULT_USERNAME,
+      DEFAULT_USERNAME
+    );
   }
 
   public Response getProcessDefinitionCorrelationRawResponseAsUser(BranchAnalysisRequestDto branchAnalysisRequestDto,
@@ -123,11 +127,11 @@ public class AnalysisClient {
       flowNodeId,
       lowerOutlierBound
     );
-    assertThat(variableTermDtosActivityRawResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(variableTermDtosActivityRawResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String jsonString = variableTermDtosActivityRawResponse.readEntity(String.class);
     try {
-      return new ObjectMapper().readValue(jsonString, new TypeReference<List<VariableTermDto>>() {
+      return new ObjectMapper().readValue(jsonString, new TypeReference<>() {
       });
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException(e);

@@ -15,9 +15,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
@@ -41,17 +40,19 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData).hasSize(2);
     List<String> resultProcDefIds = resultData
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
 
-    assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
-    assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
+    assertThat(resultProcDefIds).contains(firstProcInst.getId());
+    assertThat(resultProcDefIds).contains(secondProcInst.getId());
   }
 
   @Test
@@ -76,17 +77,19 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData).hasSize(2);
     List<String> resultProcDefIds = resultData
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
 
-    assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
-    assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
+    assertThat(resultProcDefIds).contains(firstProcInst.getId());
+    assertThat(resultProcDefIds).contains(secondProcInst.getId());
   }
 
   @Test
@@ -105,17 +108,19 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledInstancesOnly().add().buildList());
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
-    assertThat(resultData.size(), is(2));
+    assertThat(resultData).hasSize(2);
     List<String> resultProcDefIds = resultData
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
 
-    assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
-    assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
+    assertThat(resultProcDefIds).contains(firstProcInst.getId());
+    assertThat(resultProcDefIds).contains(secondProcInst.getId());
   }
 
 }

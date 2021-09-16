@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -32,7 +31,6 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.hamcrest.CoreMatchers.is;
 
 public class ProcessInstanceFrequencyByProcessInstanceRunningDateReportEvaluationIT
   extends AbstractProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT {
@@ -187,13 +185,13 @@ public class ProcessInstanceFrequencyByProcessInstanceRunningDateReportEvaluatio
                                           OffsetDateTime now,
                                           ChronoUnit unit,
                                           Double expectedValue) {
-    MatcherAssert.assertThat(resultData.size(), is(size));
+    assertThat(resultData).hasSize(size);
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
-        MatcherAssert.assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        MatcherAssert.assertThat(resultData.get(i).getValue(), is(expectedValue));
+        assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
+        assertThat(resultData.get(i).getValue()).isEqualTo(expectedValue);
       });
   }
 

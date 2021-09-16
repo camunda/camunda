@@ -18,10 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
@@ -41,10 +38,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     alertClient.deleteAlert(id);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(0)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(0);
   }
 
   @Test
@@ -58,10 +52,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     reportClient.deleteReport(simpleAlert.getReportId(), true);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(0)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(0);
   }
 
   @Test
@@ -75,7 +66,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     embeddedOptimizeExtension.startOptimize();
 
     // then
-    assertThat(alertClient.getAllAlerts().get(0).getReminder(), is(nullValue()));
+    assertThat(alertClient.getAllAlerts().get(0).getReminder()).isNull();
   }
 
   @Test
@@ -95,23 +86,19 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
-
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(2)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(2);
 
     // when
-    SingleProcessReportDefinitionRequestDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
+    SingleProcessReportDefinitionRequestDto report = getProcessNumberReportDefinitionDto(
+      collectionId,
+      processDefinition
+    );
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     reportClient.updateSingleProcessReport(simpleAlert.getReportId(), report, true);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(0)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(0);
   }
 
   @Test
@@ -135,11 +122,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
-
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(greaterThanOrEqualTo(2))
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames())
+      .hasSizeGreaterThanOrEqualTo(2);
 
     // when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
@@ -148,10 +132,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteReminderJob(id);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(1)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(1);
   }
 
   @Test
@@ -162,11 +143,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
-
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(greaterThanOrEqualTo(2))
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames())
+      .hasSizeGreaterThanOrEqualTo(2);
 
     // when
     simpleAlert.getCheckInterval().setValue(30);
@@ -175,19 +153,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(1)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(1);
 
     // when
     triggerAndCompleteCheckJob(id);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(2)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(2);
   }
 
   @Test
@@ -201,10 +173,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(2)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(2);
   }
 
   @Test
@@ -224,7 +193,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     // then
     OffsetDateTime nextTimeReminderIsExecuted = getNextReminderExecutionTime(id);
     OffsetDateTime upperBoundary = OffsetDateTime.now().plusSeconds(2L); // 1 second is too unstable
-    assertThat(nextTimeReminderIsExecuted.isBefore(upperBoundary), is(true));
+    assertThat(nextTimeReminderIsExecuted).isBefore(upperBoundary);
   }
 
   @Test
@@ -240,10 +209,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     embeddedOptimizeExtension.stopOptimize();
     embeddedOptimizeExtension.startOptimize();
 
-    assertThat(
-      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
-      is(2)
-    );
+    assertThat(embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames()).hasSize(2);
   }
 
 }

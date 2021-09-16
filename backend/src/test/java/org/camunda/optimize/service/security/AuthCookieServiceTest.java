@@ -15,9 +15,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AuthCookieServiceTest {
 
@@ -34,14 +33,13 @@ public class AuthCookieServiceTest {
     Optional<String> token = AuthCookieService.getToken(requestMock);
 
     // then
-    assertThat(token.isPresent(), is(true));
-    assertThat(token.get(), is("test"));
+    assertThat(token).isPresent().get().isEqualTo("test");
   }
 
   @Test
   public void getTokenExceptionFromContainerRequestContext() {
     ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
-    assertThat(AuthCookieService.getToken(requestMock), is(Optional.empty()));
+    assertThat(AuthCookieService.getToken(requestMock)).isEmpty();
   }
 
   @Test
@@ -56,13 +54,12 @@ public class AuthCookieServiceTest {
     Optional<String> token = AuthCookieService.getToken(servletRequestMock);
 
     // then
-    assertThat(token.isPresent(), is(true));
-    assertThat(token.get(), is("test"));
+    assertThat(token).isPresent().get().isEqualTo("test");
   }
 
   @Test
   public void getTokenExceptionFromHttpServletRequest() {
     HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
-    assertThat(AuthCookieService.getToken(servletRequestMock), is(Optional.empty()));
+    assertThat(AuthCookieService.getToken(servletRequestMock)).isEmpty();
   }
 }

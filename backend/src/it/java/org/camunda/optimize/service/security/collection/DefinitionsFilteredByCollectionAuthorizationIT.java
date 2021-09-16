@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseD
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.util.BpmnModels;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -24,7 +23,6 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-import static org.hamcrest.CoreMatchers.is;
 
 public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractCollectionRoleIT {
 
@@ -69,7 +67,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
       .execute();
 
     // then
-    MatcherAssert.assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -115,7 +113,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
       .execute();
 
     // then
-    MatcherAssert.assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -161,7 +159,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
       .execute();
 
     // then
-    MatcherAssert.assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private void deployAndImportSimpleProcess(final String definitionKey) {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
@@ -19,8 +20,6 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ApplicationAuthorizationServiceIT extends AbstractIT {
 
@@ -333,11 +332,12 @@ public class ApplicationAuthorizationServiceIT extends AbstractIT {
   private void validateUserIsNotAuthorized(String user, String password) {
     Response response = embeddedOptimizeExtension.authenticateUserRequest(user, password);
 
-    assertThat(response.getStatus(),is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
+
   private void validateThatUserCanBeAuthenticated(String user, String password) {
     Response response = embeddedOptimizeExtension.authenticateUserRequest(user, password);
 
-    assertThat(response.getStatus(),is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 }

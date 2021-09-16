@@ -7,22 +7,23 @@ package org.camunda.optimize.service.metadata;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class VersionTest {
+
   @Test
   public void testStripSnapshot() {
-    assertThat(Version.stripToPlainVersion("2.2.0-SNAPSHOT"), is("2.2.0"));
+    assertThat(Version.stripToPlainVersion("2.2.0-SNAPSHOT")).isEqualTo("2.2.0");
   }
 
   @Test
   public void testStripAlpha() {
-    assertThat(Version.stripToPlainVersion("2.2.0-alpha3"), is("2.2.0"));
+    assertThat(Version.stripToPlainVersion("2.2.0-alpha3")).isEqualTo("2.2.0");
   }
 
   @Test
   public void testStripAlreadyCleanVersion() {
-    assertThat(Version.stripToPlainVersion("2.2.0"), is("2.2.0"));
+    assertThat(Version.stripToPlainVersion("2.2.0")).isEqualTo("2.2.0");
   }
+
 }

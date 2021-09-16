@@ -15,11 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class AbstractDurationFilterIT extends AbstractFilterIT {
 
@@ -55,13 +52,13 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
   protected void assertResult(ProcessInstanceEngineDto processInstance,
                               AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult) {
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
-    assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
-    assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
-    assertThat(resultDataDto.getView(), is(notNullValue()));
+    assertThat(resultDataDto.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
+    assertThat(resultDataDto.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
+    assertThat(resultDataDto.getView()).isNotNull();
     final List<RawDataProcessInstanceDto> resultData = evaluationResult.getResult().getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
     final RawDataProcessInstanceDto rawDataProcessInstanceDto = resultData.get(0);
-    assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
+    assertThat(rawDataProcessInstanceDto.getProcessInstanceId()).isEqualTo(processInstance.getId());
   }
 }

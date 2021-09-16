@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
@@ -54,10 +55,6 @@ import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -91,11 +88,11 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
@@ -169,11 +166,11 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
@@ -449,7 +446,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
       reportData).getResult();
 
     // then
-    assertThat(actualResult.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(actualResult.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -462,7 +459,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
       reportData).getResult();
 
     // then
-    assertThat(actualResult.getFirstMeasureData().size(), is(0));
+    assertThat(actualResult.getFirstMeasureData()).hasSize(0);
   }
 
   @ParameterizedTest

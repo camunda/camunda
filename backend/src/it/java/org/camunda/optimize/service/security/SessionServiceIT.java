@@ -15,20 +15,16 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 public class SessionServiceIT extends AbstractIT {
 
   @Test
   public void verifyTerminatedSessionCleanupIsScheduledAfterStartup() {
-    assertThat(getTerminatedSessionService().isCleanupScheduled(), is(true));
+    assertThat(getTerminatedSessionService().isCleanupScheduled()).isTrue();
   }
 
   @Test
@@ -48,7 +44,8 @@ public class SessionServiceIT extends AbstractIT {
     getTerminatedSessionService().cleanup();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(0));
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
+      .isEqualTo(0);
   }
 
   @Test
@@ -66,7 +63,7 @@ public class SessionServiceIT extends AbstractIT {
         .buildLogOutRequest()
         .withGivenAuthToken(firstToken)
         .execute();
-    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     final Response getPrivateReportsResponse =
@@ -76,7 +73,7 @@ public class SessionServiceIT extends AbstractIT {
         .withGivenAuthToken(secondToken)
         .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -90,7 +87,8 @@ public class SessionServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(1));
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
+      .isEqualTo(1);
   }
 
   @Test
@@ -107,7 +105,7 @@ public class SessionServiceIT extends AbstractIT {
         .buildLogOutRequest()
         .withGivenAuthToken(token)
         .execute();
-    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     final Response getPrivateReportsResponse =
@@ -117,7 +115,7 @@ public class SessionServiceIT extends AbstractIT {
         .withGivenAuthToken(token)
         .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -139,7 +137,7 @@ public class SessionServiceIT extends AbstractIT {
       .withGivenAuthToken(firstToken)
       .execute();
 
-    assertThat(getNewAuthTokenForSameSessionResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(getNewAuthTokenForSameSessionResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     LocalDateUtil.reset();
 
     final NewCookie newAuthCookie = getNewAuthTokenForSameSessionResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
@@ -151,7 +149,7 @@ public class SessionServiceIT extends AbstractIT {
         .buildLogOutRequest()
         .withGivenAuthToken(firstToken)
         .execute();
-    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(logoutResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     final Response getPrivateReportsResponse =
@@ -161,7 +159,7 @@ public class SessionServiceIT extends AbstractIT {
         .withGivenAuthToken(newToken)
         .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -178,7 +176,7 @@ public class SessionServiceIT extends AbstractIT {
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
       .execute();
-    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
@@ -189,7 +187,7 @@ public class SessionServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -206,7 +204,7 @@ public class SessionServiceIT extends AbstractIT {
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
       .execute();
-    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
@@ -218,16 +216,13 @@ public class SessionServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
-    assertThat(testAuthenticationResponse.getCookies().keySet(), hasItem(OPTIMIZE_AUTHORIZATION));
+    assertThat(testAuthenticationResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(testAuthenticationResponse.getCookies()).containsKey(OPTIMIZE_AUTHORIZATION);
     final NewCookie newAuthCookie = testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
     final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
-    assertThat(newToken, is(not(equalTo(firstToken))));
-    assertThat(
-      newAuthCookie.getExpiry().toInstant().truncatedTo(ChronoUnit.SECONDS),
-      is(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes).toInstant().truncatedTo(ChronoUnit.SECONDS))
-    );
-
+    assertThat(newToken).isNotEqualTo(firstToken);
+    assertThat(newAuthCookie.getExpiry().toInstant().truncatedTo(ChronoUnit.SECONDS)).isEqualTo(
+      LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes).toInstant().truncatedTo(ChronoUnit.SECONDS));
   }
 
   @Test
@@ -251,7 +246,7 @@ public class SessionServiceIT extends AbstractIT {
 
       // then
 
-      assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+      assertThat(getPrivateReportsResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     } finally {
       embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(
         embeddedOptimizeExtension.getOptimizeElasticClient()

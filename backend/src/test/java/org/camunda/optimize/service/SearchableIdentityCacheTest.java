@@ -21,11 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SearchableIdentityCacheTest {
@@ -52,7 +48,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(userIdentity);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(userIdentity.getId()).getResult();
-    assertThat(searchResult.size(), is(1));
+    assertThat(searchResult).hasSize(1);
   }
 
   @Test
@@ -62,9 +58,9 @@ public class SearchableIdentityCacheTest {
     final UserDto userIdentity2 = new UserDto("otherfrodo", "Frodo", "Frodo", "frodo.baggins@camunda.com");
     cache.addIdentity(userIdentity2);
 
-    final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(userIdentity1.getId()).getResult();
-    assertThat(searchResult.size(), is(2));
-    assertThat(searchResult, contains(userIdentity1, userIdentity2));
+    final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(userIdentity1.getId())
+      .getResult();
+    assertThat(searchResult).hasSize(2).containsExactly(userIdentity1, userIdentity2);
   }
 
   @Test
@@ -123,7 +119,7 @@ public class SearchableIdentityCacheTest {
 
     final List<IdentityWithMetadataResponseDto> searchResult =
       cache.searchIdentities(userIdentity.getFirstName() + " " + userIdentity.getLastName()).getResult();
-    assertThat(searchResult.size(), is(1));
+    assertThat(searchResult).hasSize(1);
   }
 
   @Test
@@ -138,7 +134,7 @@ public class SearchableIdentityCacheTest {
       cache.searchIdentities(
         userIdentity.getFirstName().substring(0, 4) + " " + userIdentity.getLastName().substring(0, 2)
       ).getResult();
-    assertThat(searchResult.size(), is(1));
+    assertThat(searchResult).hasSize(1);
   }
 
   @Test
@@ -150,8 +146,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(userIdentity2);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities("fro").getResult();
-    assertThat(searchResult.size(), is(2));
-    assertThat(searchResult, contains(userIdentity1, userIdentity2));
+    assertThat(searchResult).hasSize(2).containsExactly(userIdentity1, userIdentity2);
   }
 
   @Test
@@ -163,8 +158,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(userIdentity2);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities("Frod").getResult();
-    assertThat(searchResult.size(), is(2));
-    assertThat(searchResult, contains(userIdentity1, userIdentity2));
+    assertThat(searchResult).hasSize(2).containsExactly(userIdentity1, userIdentity2);
   }
 
   @Test
@@ -176,8 +170,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(userIdentity2);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities("Frodo").getResult();
-    assertThat(searchResult.size(), is(2));
-    assertThat(searchResult, contains(userIdentity1, userIdentity2));
+    assertThat(searchResult).hasSize(2).containsExactly(userIdentity1, userIdentity2);
   }
 
   @Test
@@ -186,7 +179,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(group);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(group.getId()).getResult();
-    assertThat(searchResult, contains(group));
+    assertThat(searchResult).containsExactly(group);
   }
 
   @Test
@@ -197,8 +190,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(group2);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(group1.getId()).getResult();
-    assertThat(searchResult.size(), is(2));
-    assertThat(searchResult, contains(group1, group2));
+    assertThat(searchResult).hasSize(2).containsExactly(group1, group2);
   }
 
   @Test
@@ -209,8 +201,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(group2);
 
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(group1.getId()).getResult();
-    assertThat(searchResult.size(), is(2));
-    assertThat(searchResult, contains(group1, group2));
+    assertThat(searchResult).hasSize(2).containsExactly(group1, group2);
   }
 
   @Test
@@ -243,13 +234,13 @@ public class SearchableIdentityCacheTest {
 
     final long cacheSizeInBytes = cache.getCacheSizeInBytes();
     final long cacheSizeInMb = cacheSizeInBytes / (1024L * 1024L);
-    assertThat(cacheSizeInMb, is(lessThan(50L)));
+    assertThat(cacheSizeInMb).isLessThan(50L);
 
     final long beforeSearchMillis = System.currentTimeMillis();
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities("Cla").getResult();
     final long afterSearchMillis = System.currentTimeMillis();
-    assertThat(searchResult.size(), is(greaterThan(0)));
-    assertThat(afterSearchMillis - beforeSearchMillis, is(lessThan(1000L)));
+    assertThat(searchResult.size()).isPositive();
+    assertThat(afterSearchMillis - beforeSearchMillis).isLessThan(1000L);
   }
 
   @Test
@@ -287,11 +278,13 @@ public class SearchableIdentityCacheTest {
 
   private void verifyCaseInsensitiveSearchResults(final String searchTerm, final int expectedResultCount) {
     final List<IdentityWithMetadataResponseDto> searchResult = cache.searchIdentities(searchTerm).getResult();
-    assertThat(searchResult.size(), is(expectedResultCount));
-    final List<IdentityWithMetadataResponseDto> searchResultUpperCase = cache.searchIdentities(searchTerm.toUpperCase()).getResult();
-    assertThat(searchResultUpperCase.size(), is(expectedResultCount));
-    final List<IdentityWithMetadataResponseDto> searchResultLowerCase = cache.searchIdentities(searchTerm.toLowerCase()).getResult();
-    assertThat(searchResultLowerCase.size(), is(expectedResultCount));
+    assertThat(searchResult).hasSize(expectedResultCount);
+    final List<IdentityWithMetadataResponseDto> searchResultUpperCase = cache.searchIdentities(searchTerm.toUpperCase())
+      .getResult();
+    assertThat(searchResultUpperCase).hasSize(expectedResultCount);
+    final List<IdentityWithMetadataResponseDto> searchResultLowerCase = cache.searchIdentities(searchTerm.toLowerCase())
+      .getResult();
+    assertThat(searchResultLowerCase).hasSize(expectedResultCount);
   }
 
   private void assertSearchResultsPresentForPartialSearchTerm(final String searchTerm, final int mininumTermLength) {

@@ -32,7 +32,6 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.util.BpmnModels;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,18 +46,13 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 
-@SuppressWarnings(SAME_PARAM_VALUE)
 public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
@@ -101,13 +95,14 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.DURATION));
-    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTimes(), contains(getUserTaskDurationTime()));
-    assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
+    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTimes())
+      .containsExactly(getUserTaskDurationTime());
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.USER_TASK);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
@@ -188,13 +183,14 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getFirstProperty(), is(ViewProperty.DURATION));
-    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTimes(), contains(getUserTaskDurationTime()));
-    assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.DURATION);
+    assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTimes())
+      .containsExactly(getUserTaskDurationTime());
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.USER_TASK);
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     assertHyperMap_ForOneProcessInstanceWithUnassignedTasks(actualResult);
@@ -672,7 +668,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     // given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(2));
+    assertThat(latestDefinition.getVersion()).isEqualTo(2);
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
                                                                                                            .getId());
@@ -714,7 +710,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(3));
+    assertThat(latestDefinition.getVersion()).isEqualTo(3);
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
                                                                                                            .getId());
@@ -759,7 +755,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     // given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(2));
+    assertThat(latestDefinition.getVersion()).isEqualTo(2);
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
                                                                                                            .getId());
@@ -797,7 +793,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
-    assertThat(latestDefinition.getVersion(), is(3));
+    assertThat(latestDefinition.getVersion()).isEqualTo(3);
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension
       .startProcessInstance(firstDefinition.getId());
@@ -924,7 +920,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
       .getResult();
 
     // then
-    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -984,7 +980,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
       .getResult();
 
     // then
-    assertThat(result.getFirstMeasureData().size(), is(0));
+    assertThat(result.getFirstMeasureData()).hasSize(0);
   }
 
   @Data
@@ -1065,7 +1061,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
       reportData).getResult();
 
     // then
-    assertThat(actualResult.getFirstMeasureData().size(), is(1));
+    assertThat(actualResult.getFirstMeasureData()).hasSize(1);
     assertEvaluateReportWithFlowNodeStatusFilters(actualResult, flowNodeStatusTestValues);
   }
 
@@ -1172,8 +1168,8 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // then
     ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
-    assertThat(actualResult.getFirstMeasureData(), is(notNullValue()));
-    assertThat(actualResult.getFirstMeasureData().size(), is(0));
+    assertThat(actualResult.getFirstMeasureData()).isNotNull();
+    assertThat(actualResult.getFirstMeasureData()).hasSize(0);
 
     // when
     reportData = createReport(processDefinition);
@@ -1181,8 +1177,8 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getFirstMeasureData(), is(notNullValue()));
-    assertThat(actualResult.getFirstMeasureData().size(), is(1));
+    assertThat(actualResult.getFirstMeasureData()).isNotNull();
+    assertThat(actualResult.getFirstMeasureData()).hasSize(1);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -1208,7 +1204,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1221,7 +1217,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -1234,7 +1230,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();

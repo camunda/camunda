@@ -15,8 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Period;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CleanupConfigurationTest {
 
@@ -24,7 +23,7 @@ public class CleanupConfigurationTest {
   public void testGetCleanupConfigurationNormalizeCronExpression() {
     final CleanupConfiguration underTest = new CleanupConfiguration("* * * * *", Period.ZERO);
 
-    assertThat(underTest.getCronTrigger(), is("0 * * * * *"));
+    assertThat(underTest.getCronTrigger()).isEqualTo("0 * * * * *");
   }
 
   @Test
@@ -41,8 +40,8 @@ public class CleanupConfigurationTest {
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getProcessDefinitionCleanupConfigurationForKey("unknownKey");
 
-    assertThat(configForUnknownKey.getCleanupMode(), is(defaultMode));
-    assertThat(configForUnknownKey.getTtl(), is(defaultTtl));
+    assertThat(configForUnknownKey.getCleanupMode()).isEqualTo(defaultMode);
+    assertThat(configForUnknownKey.getTtl()).isEqualTo(defaultTtl);
   }
 
   @Test
@@ -65,8 +64,8 @@ public class CleanupConfigurationTest {
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getProcessDefinitionCleanupConfigurationForKey(key);
 
-    assertThat(configForUnknownKey.getCleanupMode(), is(defaultMode));
-    assertThat(configForUnknownKey.getTtl(), is(customTtl));
+    assertThat(configForUnknownKey.getCleanupMode()).isEqualTo(defaultMode);
+    assertThat(configForUnknownKey.getTtl()).isEqualTo(customTtl);
   }
 
   @Test
@@ -89,8 +88,8 @@ public class CleanupConfigurationTest {
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getProcessDefinitionCleanupConfigurationForKey(key);
 
-    assertThat(configForUnknownKey.getCleanupMode(), is(customMode));
-    assertThat(configForUnknownKey.getTtl(), is(defaultTtl));
+    assertThat(configForUnknownKey.getCleanupMode()).isEqualTo(customMode);
+    assertThat(configForUnknownKey.getTtl()).isEqualTo(defaultTtl);
   }
 
   @Test
@@ -106,7 +105,7 @@ public class CleanupConfigurationTest {
     final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getDecisionDefinitionCleanupConfigurationForKey("unknownKey");
 
-    assertThat(configForUnknownKey.getTtl(), is(defaultTtl));
+    assertThat(configForUnknownKey.getTtl()).isEqualTo(defaultTtl);
   }
 
   @Test
@@ -128,7 +127,7 @@ public class CleanupConfigurationTest {
     final DecisionDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getDecisionDefinitionCleanupConfigurationForKey(key);
 
-    assertThat(configForUnknownKey.getTtl(), is(customTtl));
+    assertThat(configForUnknownKey.getTtl()).isEqualTo(customTtl);
   }
 
 }

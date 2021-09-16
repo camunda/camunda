@@ -15,13 +15,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.plugin.PluginVersionChecker.OPTIMIZE_VERSION_FILE_NAME;
 import static org.camunda.optimize.plugin.PluginVersionChecker.OPTIMIZE_VERSION_KEY;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -69,7 +68,7 @@ public class PluginVersionCheckerTest {
       OptimizeRuntimeException.class,
       () -> validatePluginVersion(classLoader)
     );
-    assertThat(exception.getMessage(), is(buildMissingPluginVersionMessage(Version.VERSION)));
+    assertThat(exception.getMessage()).isEqualTo(buildMissingPluginVersionMessage(Version.VERSION));
   }
 
   @Test
@@ -86,10 +85,8 @@ public class PluginVersionCheckerTest {
       OptimizeRuntimeException.class,
       () -> validatePluginVersion(classLoader)
     );
-    assertThat(exception.getMessage(), is(buildUnsupportedPluginVersionMessage(
-      "nope_definitely_not_valid",
-      Version.VERSION
-    )));
+    assertThat(exception.getMessage()).isEqualTo(buildUnsupportedPluginVersionMessage(
+      "nope_definitely_not_valid", Version.VERSION));
   }
 
   @Test
@@ -106,7 +103,7 @@ public class PluginVersionCheckerTest {
       OptimizeRuntimeException.class,
       () -> validatePluginVersion(classLoader)
     );
-    assertThat(exception.getMessage(), is(buildMissingPluginVersionMessage(Version.VERSION)));
+    assertThat(exception.getMessage()).isEqualTo(buildMissingPluginVersionMessage(Version.VERSION));
   }
 
   @Test

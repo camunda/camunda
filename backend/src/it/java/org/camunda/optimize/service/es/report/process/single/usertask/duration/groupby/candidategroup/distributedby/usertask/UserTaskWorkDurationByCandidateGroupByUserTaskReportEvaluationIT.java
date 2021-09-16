@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.single.usertask.duration.groupby.candidategroup.distributedby.usertask;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -21,11 +20,10 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_CANDIDATE_BY_USER_TASK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByCandidateGroupByUserTaskReportEvaluationIT {
@@ -61,10 +59,8 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithFlowNodeStatusFilters(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
                                                                final FlowNodeStatusTestValues expectedValues) {
-    assertThat(
-      MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID).get(),
-      is(expectedValues.getExpectedWorkDurationValues())
-    );
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID))
+      .isPresent().get().isEqualTo(expectedValues.getExpectedWorkDurationValues());
   }
 
   @Override
@@ -107,7 +103,7 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
   @Override
   protected void assertHyperMap_ForSeveralProcessInstancesWithAllAggregationTypes(
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
-    Assertions.assertThat(actualResult.getMeasures())
+    assertThat(actualResult.getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)
       .containsExactly(getSupportedAggregationTypes());
     final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()
@@ -155,7 +151,7 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
   protected void assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
     // @formatter:off
-    Assertions.assertThat(result.getMeasures())
+    assertThat(result.getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)
       .containsExactly(getSupportedAggregationTypes());
     final HyperMapAsserter hyperMapAsserter = HyperMapAsserter.asserter()

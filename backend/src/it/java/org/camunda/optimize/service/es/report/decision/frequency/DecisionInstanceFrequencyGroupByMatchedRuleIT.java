@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
@@ -44,10 +45,6 @@ import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_2_ID;
 import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_3_ID;
 import static org.camunda.optimize.util.DmnModels.INVOICE_RULE_4_ID;
 import static org.camunda.optimize.util.DmnModels.createDecideDishDecisionDefinition;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecisionDefinitionIT {
 
@@ -91,14 +88,18 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(6L));
+    assertThat(result.getInstanceCount()).isEqualTo(6L);
 
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData().size(), is(4));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_1_ID).get().getValue(), is(2.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_2_ID).get().getValue(), is(1.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_3_ID).get().getValue(), is(2.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_4_ID).get().getValue(), is(1.));
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(4);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_1_ID).get().getValue())
+      .isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_2_ID).get().getValue())
+      .isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_3_ID).get().getValue())
+      .isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_4_ID).get().getValue())
+      .isEqualTo(1.);
   }
 
   @Test
@@ -138,17 +139,14 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
+    assertThat(resultData).hasSize(4);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @Test
@@ -188,16 +186,14 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
+    assertThat(resultData).hasSize(4);
     final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
-    assertThat(
-      bucketValues,
-      contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -246,13 +242,17 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(8L));
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData().size(), is(4));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_1_ID).get().getValue(), is(4.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_2_ID).get().getValue(), is(1.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_3_ID).get().getValue(), is(2.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_4_ID).get().getValue(), is(1.));
+    assertThat(result.getInstanceCount()).isEqualTo(8L);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(4);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_1_ID).get().getValue())
+      .isEqualTo(4.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_2_ID).get().getValue())
+      .isEqualTo(1.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_3_ID).get().getValue())
+      .isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), INVOICE_RULE_4_ID).get().getValue())
+      .isEqualTo(1.);
   }
 
   @Test
@@ -283,15 +283,16 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
         INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getKey(), is(INVOICE_RULE_2_ID));
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getKey()).isEqualTo(INVOICE_RULE_2_ID);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -319,11 +320,13 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(3L));
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData().size(), is(2));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), BEVERAGES_RULE_1_ID).get().getValue(), is(2.));
-    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), BEVERAGES_RULE_2_ID).get().getValue(), is(1.));
+    assertThat(result.getInstanceCount()).isEqualTo(3L);
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(result.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), BEVERAGES_RULE_1_ID).get().getValue())
+      .isEqualTo(2.);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), BEVERAGES_RULE_2_ID).get().getValue())
+      .isEqualTo(1.);
   }
 
   @Test
@@ -351,11 +354,10 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     ).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(2.));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1).extracting(MapResultEntryDto::getValue).containsExactly(2.);
   }
 
   @Test
@@ -380,7 +382,7 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -397,7 +399,7 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -414,7 +416,7 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private DecisionDefinitionEngineDto deployDishDecisionDefinition() {
@@ -424,7 +426,7 @@ public class DecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecis
   private HashMap<String, InputVariableEntry> createDishInputs(final String season,
                                                                final Integer guestCount,
                                                                final boolean withChildren) {
-    return new HashMap<String, InputVariableEntry>() {{
+    return new HashMap<>() {{
       put(INPUT_SEASON_ID, new InputVariableEntry(INPUT_SEASON_ID, "Season", VariableType.STRING, season));
       put(
         INPUT_NUMBER_OF_GUESTS_ID,
