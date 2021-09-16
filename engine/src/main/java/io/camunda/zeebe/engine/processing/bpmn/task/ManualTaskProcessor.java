@@ -31,8 +31,8 @@ public class ManualTaskProcessor implements BpmnElementProcessor<ExecutableActiv
 
   @Override
   public void onActivate(final ExecutableActivity element, final BpmnElementContext context) {
-    stateTransitionBehavior.transitionToActivated(context);
-    stateTransitionBehavior.completeElement(context);
+    final var activated = stateTransitionBehavior.transitionToActivated(context);
+    stateTransitionBehavior.completeElement(activated);
   }
 
   @Override
