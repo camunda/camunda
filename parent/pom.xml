@@ -71,9 +71,9 @@
     <version.netty-tcnative>2.0.43.Final</version.netty-tcnative>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.12.0</version.prometheus>
-    <version.protobuf>3.17.3</version.protobuf>
+    <version.protobuf>3.18.0</version.protobuf>
     <version.protobuf-common>2.5.0</version.protobuf-common>
-    <version.micrometer>1.7.3</version.micrometer>
+    <version.micrometer>1.7.4</version.micrometer>
     <version.rocksdbjni>6.22.1.1</version.rocksdbjni>
     <version.sbe>1.24.0</version.sbe>
     <version.scala-parser>2.0.0</version.scala-parser>
