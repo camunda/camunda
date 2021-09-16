@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.Collection;
@@ -65,4 +66,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   boolean shouldExport();
 
   Collection<ExporterDescriptor> getExportedDescriptors();
+
+  AtomixLogStorage getLogStorage();
+
+  void setLogStorage(AtomixLogStorage logStorage);
 }
