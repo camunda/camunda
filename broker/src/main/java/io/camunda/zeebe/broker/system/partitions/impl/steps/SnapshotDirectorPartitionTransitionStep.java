@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
@@ -51,9 +50,21 @@ public class SnapshotDirectorPartitionTransitionStep implements PartitionTransit
       final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
       final AsyncSnapshotDirector director;
       if (targetRole == Role.LEADER) {
-        director = createSnapshotDirectorOfLeader(context, server, snapshotPeriod);
+        director =
+            AsyncSnapshotDirector.ofProcessingMode(
+                context.getNodeId(),
+                context.getPartitionId(),
+                context.getStreamProcessor(),
+                context.getStateController(),
+                snapshotPeriod);
       } else {
-        director = createSnapshotDirectorOfFollower(context, snapshotPeriod);
+        director =
+            AsyncSnapshotDirector.ofReplayMode(
+                context.getNodeId(),
+                context.getPartitionId(),
+                context.getStreamProcessor(),
+                context.getStateController(),
+                snapshotPeriod);
       }
 
       final var future = context.getActorSchedulingService().submitActor(director);
@@ -62,6 +73,9 @@ public class SnapshotDirectorPartitionTransitionStep implements PartitionTransit
             if (error == null) {
               context.setSnapshotDirector(director);
               context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+              if (targetRole == Role.LEADER) {
+                server.addCommittedEntryListener(director);
+              }
             }
           });
       return future;
@@ -74,32 +88,6 @@ public class SnapshotDirectorPartitionTransitionStep implements PartitionTransit
   @Override
   public String getName() {
     return "AsyncSnapshotDirector";
-  }
-
-  private AsyncSnapshotDirector createSnapshotDirectorOfLeader(
-      final PartitionTransitionContext context,
-      final RaftPartitionServer server,
-      final Duration snapshotPeriod) {
-    final var director =
-        AsyncSnapshotDirector.ofProcessingMode(
-            context.getNodeId(),
-            context.getPartitionId(),
-            context.getStreamProcessor(),
-            context.getStateController(),
-            snapshotPeriod);
-
-    server.addCommittedEntryListener(director);
-    return director;
-  }
-
-  private AsyncSnapshotDirector createSnapshotDirectorOfFollower(
-      final PartitionTransitionContext context, final Duration snapshotPeriod) {
-    return AsyncSnapshotDirector.ofReplayMode(
-        context.getNodeId(),
-        context.getPartitionId(),
-        context.getStreamProcessor(),
-        context.getStateController(),
-        snapshotPeriod);
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
