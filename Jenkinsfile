@@ -277,7 +277,7 @@ pipeline {
                                 }
 
                                 failure {
-                                    zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/surefire-reports/**"
+                                    zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/failsafe-reports/**"
                                     zip zipFile: 'test-errors-it.zip', archive: true, glob: "**/hs_err_*.log"
                                 }
                             }
