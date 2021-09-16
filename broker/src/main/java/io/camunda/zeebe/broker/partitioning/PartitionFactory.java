@@ -35,15 +35,22 @@ import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServicePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -68,8 +75,15 @@ public final class PartitionFactory {
   public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = false;
 
   // will probably be executed in parallel
-  private static final List<PartitionTransitionStep> TRANSITION_STEPS = List.of();
-  // preparation for future step
+  private static final List<PartitionTransitionStep> TRANSITION_STEPS =
+      List.of(
+          new LogStoragePartitionTransitionStep(),
+          new LogStreamPartitionTransitionStep(),
+          new ZeebeDbPartitionTransitionStep(),
+          new QueryServicePartitionTransitionStep(),
+          new StreamProcessorTransitionStep(),
+          new SnapshotDirectorPartitionTransitionStep(),
+          new ExporterDirectorPartitionTransitionStep());
 
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
