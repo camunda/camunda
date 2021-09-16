@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -364,5 +366,10 @@ public class PartitionStartupAndTransitionContextImpl
 
   public boolean shouldExport() {
     return !partitionProcessingState.isExportingPaused();
+  }
+
+  @Override
+  public Collection<ExporterDescriptor> getExportedDescriptors() {
+    return getExporterRepository().getExporters().values();
   }
 }
