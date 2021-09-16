@@ -278,6 +278,10 @@ public class ElasticsearchClient {
     final HttpHost[] httpHosts = urlsToHttpHosts(configuration.url);
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
+            .setRequestConfigCallback(
+                b ->
+                    b.setConnectTimeout(configuration.requestTimeoutMs)
+                        .setSocketTimeout(configuration.requestTimeoutMs))
             .setHttpClientConfigCallback(this::setHttpClientConfigCallback);
 
     return builder.build();
