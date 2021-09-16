@@ -63,6 +63,7 @@ public final class SimpleBrokerStartTest {
     assignSocketAddresses(brokerCfg);
     final var systemContext =
         new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    systemContext.getScheduler().start();
 
     final var broker = new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
@@ -90,7 +91,6 @@ public final class SimpleBrokerStartTest {
         });
 
     // when
-    systemContext.getScheduler().start();
     broker.start().join();
 
     // then

@@ -226,6 +226,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     }
     systemContext =
         new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    systemContext.getScheduler().start();
     broker = new Broker(systemContext, springBrokerBridge);
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
@@ -234,7 +235,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       broker.addPartitionListener(listener);
     }
 
-    systemContext.getScheduler().start();
     broker.start().join();
 
     try {
