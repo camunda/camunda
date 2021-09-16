@@ -108,6 +108,7 @@ public class ElasticsearchExporterJobRecordIT
 
     final var processInstanceKey = exporterBrokerRule.createProcessInstance("process", Map.of());
 
+    await("index templates need to be created").untilAsserted(this::assertIndexSettings);
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
