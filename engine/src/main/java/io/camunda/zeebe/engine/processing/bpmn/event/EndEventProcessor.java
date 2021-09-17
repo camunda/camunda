@@ -19,12 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
-import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
-import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
 
@@ -36,7 +31,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
 
-  private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnJobBehavior jobBehavior;
@@ -46,7 +40,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
 
-    expressionBehavior = bpmnBehaviors.expressionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
@@ -147,30 +140,10 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
-          .flatMap(ok -> evaluateJobExpressions(element.getJobWorkerProperties(), activating))
+          .flatMap(ok -> jobBehavior.createNewJob(activating, element))
           .ifRightOrLeft(
-              jobTypeAndRetries -> {
-                jobBehavior.createNewJob(
-                    activating,
-                    element,
-                    jobTypeAndRetries.getLeft(),
-                    jobTypeAndRetries.getRight().intValue());
-                stateTransitionBehavior.transitionToActivated(activating);
-              },
+              ok -> stateTransitionBehavior.transitionToActivated(activating),
               failure -> incidentBehavior.createIncident(failure, activating));
-    }
-
-    private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
-        final JobWorkerProperties jobWorkerProperties, final BpmnElementContext context) {
-      final var scopeKey = context.getElementInstanceKey();
-
-      return expressionBehavior
-          .evaluateStringExpression(jobWorkerProperties.getType(), scopeKey)
-          .flatMap(
-              jobType ->
-                  expressionBehavior
-                      .evaluateLongExpression(jobWorkerProperties.getRetries(), scopeKey)
-                      .map(retries -> new Tuple<>(jobType, retries)));
     }
 
     @Override

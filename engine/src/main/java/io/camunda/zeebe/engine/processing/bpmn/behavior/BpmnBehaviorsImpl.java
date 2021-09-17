@@ -92,7 +92,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
     jobBehavior =
         new BpmnJobBehavior(
-            zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers, jobMetrics);
+            zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers, expressionBehavior, jobMetrics);
   }
 
   @Override
