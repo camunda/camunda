@@ -12,7 +12,9 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
@@ -54,6 +56,16 @@ public class PartitionTransitionImpl implements PartitionTransition {
   @Override
   public ActorFuture<Void> toInactive() {
     return enqueueTransition(INACTIVE_TERM, Role.INACTIVE, EMPTY_LIST);
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    // Do nothing. Added for completion. This class will be deleted eventually.
+  }
+
+  @Override
+  public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
+    // Do nothing. Added for completion. This class will be deleted eventually.
   }
 
   /**

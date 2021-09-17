@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,6 +76,11 @@ public final class PartitionFactory {
    */
   public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = true;
 
+  private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS =
+      List.of(
+          new StateControllerPartitionStartupStep(),
+          new LogDeletionPartitionStartupStep(),
+          new RockDbMetricExporterPartitionStartupStep());
   // will probably be executed in parallel
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(
@@ -198,7 +205,8 @@ public final class PartitionFactory {
       final ZeebePartition zeebePartition =
           new ZeebePartition(
               partitionStartupAndTransitionContext,
-              FEATURE_TOGGLE_USE_NEW_CODE ? newTransitionBehavior : transitionBehavior);
+              FEATURE_TOGGLE_USE_NEW_CODE ? newTransitionBehavior : transitionBehavior,
+              STARTUP_STEPS);
 
       healthCheckService.registerMonitoredPartition(
           zeebePartition.getPartitionId(), zeebePartition);
