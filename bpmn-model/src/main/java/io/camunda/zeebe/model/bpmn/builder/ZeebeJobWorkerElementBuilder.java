@@ -15,14 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.builder;
 
-/** A fluent builder for elements with variable mappings. */
-public interface ZeebeVariablesMappingBuilder<B> {
-
-  B zeebeInputExpression(String sourceExpression, String target);
-
-  B zeebeOutputExpression(String sourceExpression, String target);
-
-  B zeebeInput(String source, String target);
-
-  B zeebeOutput(String source, String target);
-}
+/**
+ * A fluent builder for elements that are based on jobs and are processed by job workers (e.g.
+ * service tasks).
+ */
+public interface ZeebeJobWorkerElementBuilder<T extends ZeebeJobWorkerElementBuilder<T>>
+    extends ZeebeJobWorkerPropertiesBuilder<T>, ZeebeVariablesMappingBuilder<T> {}

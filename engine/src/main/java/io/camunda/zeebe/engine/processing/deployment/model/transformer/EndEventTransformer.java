@@ -12,8 +12,13 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 
 public final class EndEventTransformer implements ModelElementTransformer<EndEvent> {
+
+  private final JobWorkerElementTransformer<EndEvent> jobWorkerElementTransformer =
+      new JobWorkerElementTransformer<>(EndEvent.class);
 
   @Override
   public Class<EndEvent> getType() {
@@ -27,6 +32,10 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, endEvent);
+    }
+
+    if (isMessageEvent(element) && hasTaskDefinition(element)) {
+      jobWorkerElementTransformer.transform(element, context);
     }
   }
 
@@ -51,5 +60,14 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     final var error = errorEventDefinition.getError();
     final var executableError = context.getError(error.getId());
     executableElement.setError(executableError);
+  }
+
+  private boolean isMessageEvent(final EndEvent element) {
+    return element.getEventDefinitions().stream()
+        .anyMatch(MessageEventDefinition.class::isInstance);
+  }
+
+  private boolean hasTaskDefinition(final EndEvent element) {
+    return element.getSingleExtensionElement(ZeebeTaskDefinition.class) != null;
   }
 }
