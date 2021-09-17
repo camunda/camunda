@@ -18,7 +18,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Supplier;
 
-public class StreamProcessorTransitionStep implements PartitionTransitionStep {
+public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
 
   private final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier;
 
@@ -27,7 +27,7 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
   }
 
   // Used for testing
-  public StreamProcessorTransitionStep(
+  StreamProcessorTransitionStep(
       final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier) {
     this.streamProcessorBuilderSupplier = streamProcessorBuilderSupplier;
   }
