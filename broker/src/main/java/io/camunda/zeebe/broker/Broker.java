@@ -22,15 +22,12 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
@@ -39,9 +36,6 @@ import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.netty.util.NetUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -61,9 +55,7 @@ public final class Broker implements AutoCloseable {
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private BrokerHealthCheckService healthCheckService;
-  private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
-  private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private BrokerAdminService brokerAdminService;
   private PartitionManagerImpl partitionManager;
 
@@ -146,12 +138,9 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-
-    startContext.addStep("disk space monitor", () -> diskSpaceMonitorStep(brokerCfg.getData()));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep("zeebe partitions", () -> partitionsStep(brokerCfg, localBroker));
-    startContext.addStep("register diskspace usage listeners", this::addDiskSpaceUsageListeners);
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
@@ -161,11 +150,11 @@ public final class Broker implements AutoCloseable {
     brokerContext = brokerStartupActor.start().join();
 
     partitionListeners.addAll(brokerContext.getPartitionListeners());
-    diskSpaceUsageListeners.addAll(brokerContext.getDiskSpaceUsageListeners());
 
     clusterServices = brokerContext.getClusterServices();
     testCompanionObject.atomix = clusterServices.getAtomixCluster();
     testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
+    testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
 
     return () -> {
       brokerStartupActor.stop().join();
@@ -206,33 +195,8 @@ public final class Broker implements AutoCloseable {
     return adminService;
   }
 
-  private void addDiskSpaceUsageListeners() {
-    diskSpaceUsageListeners.forEach(diskSpaceUsageMonitor::addDiskUsageListener);
-  }
-
   private void scheduleActor(final Actor actor) {
     systemContext.getScheduler().submitActor(actor).join();
-  }
-
-  private AutoCloseable diskSpaceMonitorStep(final DataCfg data) {
-    /* the folder needs to be created at this point. If it doesn't exist, then the DiskSpaceUsageMonitor
-     * will calculate the wrong watermark, as a non-existing folder has a total size of 0
-     */
-    try {
-      FileUtil.ensureDirectoryExists(new File(data.getDirectory()).toPath());
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to create data directory", e);
-    }
-
-    diskSpaceUsageMonitor = new DiskSpaceUsageMonitor(data);
-    if (data.isDiskUsageMonitoringEnabled()) {
-      scheduleActor(diskSpaceUsageMonitor);
-      diskSpaceUsageListeners.forEach(l -> diskSpaceUsageMonitor.addDiskUsageListener(l));
-      return () -> diskSpaceUsageMonitor.close();
-    } else {
-      LOG.info("Skipping start of disk space usage monitor, as it is disabled by configuration");
-      return () -> {};
-    }
   }
 
   private AutoCloseable managementRequestStep(final BrokerInfo localBroker) {
@@ -243,7 +207,7 @@ public final class Broker implements AutoCloseable {
             clusterServices.getEventService());
     scheduleActor(managementRequestHandler);
     partitionListeners.add(managementRequestHandler);
-    diskSpaceUsageListeners.add(managementRequestHandler);
+    brokerContext.addDiskSpaceUsageListener(managementRequestHandler);
     return managementRequestHandler;
   }
 
@@ -256,7 +220,7 @@ public final class Broker implements AutoCloseable {
             clusterServices,
             healthCheckService,
             managementRequestHandler.getPushDeploymentRequestHandler(),
-            diskSpaceUsageListeners::add,
+            brokerContext::addDiskSpaceUsageListener,
             partitionListeners,
             brokerContext.getCommandApiService(),
             buildExporterRepository(brokerCfg));
@@ -328,7 +292,7 @@ public final class Broker implements AutoCloseable {
   }
 
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
-    return diskSpaceUsageMonitor;
+    return testCompanionObject.diskSpaceUsageMonitor;
   }
 
   public BrokerAdminService getBrokerAdminService() {
@@ -347,6 +311,7 @@ public final class Broker implements AutoCloseable {
   private static final class TestCompanionClass {
     private AtomixCluster atomix;
     private EmbeddedGatewayService embeddedGatewayService;
+    private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   }
 
   /**

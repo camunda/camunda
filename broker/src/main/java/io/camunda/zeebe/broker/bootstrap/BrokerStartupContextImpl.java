@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -38,9 +39,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerHealthCheckService healthCheckService;
 
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
-  private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
 
   private ConcurrencyControl concurrencyControl;
+  private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private ClusterServicesImpl clusterServices;
   private AtomixServerTransport commandApiServerTransport;
   private ManagedMessagingService commandApiMessagingService;
@@ -128,17 +129,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   @Override
   public void addDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
-    diskSpaceUsageListeners.add(requireNonNull(listener));
+    if (diskSpaceUsageMonitor != null) {
+      diskSpaceUsageMonitor.addDiskUsageListener(listener);
+    }
   }
 
   @Override
   public void removeDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
-    diskSpaceUsageListeners.remove((requireNonNull(listener)));
-  }
-
-  @Override
-  public List<DiskSpaceUsageListener> getDiskSpaceUsageListeners() {
-    return unmodifiableList(diskSpaceUsageListeners);
+    if (diskSpaceUsageMonitor != null) {
+      diskSpaceUsageMonitor.removeDiskUsageListener(listener);
+    }
   }
 
   @Override
@@ -191,5 +191,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setEmbeddedGatewayService(final EmbeddedGatewayService embeddedGatewayService) {
     this.embeddedGatewayService = embeddedGatewayService;
+  }
+
+  @Override
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
   }
 }
