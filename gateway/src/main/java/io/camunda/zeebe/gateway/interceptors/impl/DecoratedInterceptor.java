@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
-import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
@@ -19,15 +17,7 @@ import org.agrona.LangUtil;
 
 /**
  * Decorates third-party interceptors in order to ensure that the thread context class loader is
- * correctly set (required for interceptors loaded from external, isolated JARs), and provide
- * additional context.
- *
- * <p>It will inject the following context values to all interceptors further down the chain:
- *
- * <ul>
- *   <li>{@link InterceptorUtil#getContextExecutor()} ()} => a serializing executor which wraps
- *       every call with {@link ThreadContextUtil#runWithClassLoader(Runnable, ClassLoader)}
- * </ul>
+ * correctly set (required for interceptors loaded from external, isolated JARs).
  */
 public final class DecoratedInterceptor implements ServerInterceptor {
   private final ServerInterceptor delegate;
@@ -47,12 +37,9 @@ public final class DecoratedInterceptor implements ServerInterceptor {
       final ServerCall<ReqT, RespT> call,
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
-    final var executor = new TclAwareExecutor(classLoader);
-    final var context = Context.current().withValue(InterceptorUtil.getExecutorKey(), executor);
-
     try {
       return ThreadContextUtil.callWithClassLoader(
-          () -> context.call(() -> delegate.interceptCall(call, headers, next)), classLoader);
+          () -> delegate.interceptCall(call, headers, next), classLoader);
     } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
       throw new UnsupportedOperationException(
