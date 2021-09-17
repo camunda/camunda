@@ -44,5 +44,10 @@ public interface PartitionTransition {
    */
   void setConcurrencyControl(ConcurrencyControl concurrencyControl);
 
+  /**
+   * Sets the transition context
+   *
+   * @param transitionContext the context to be used
+   */
   void updateTransitionContext(PartitionTransitionContext transitionContext);
 }
