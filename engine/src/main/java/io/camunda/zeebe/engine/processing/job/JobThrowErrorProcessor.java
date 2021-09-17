@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -50,11 +51,13 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
+  private final JobMetrics jobMetrics;
 
   public JobThrowErrorProcessor(
       final ZeebeState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final JobMetrics jobMetrics) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -66,6 +69,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     this.eventPublicationBehavior = eventPublicationBehavior;
+    this.jobMetrics = jobMetrics;
   }
 
   @Override
@@ -81,6 +85,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final long jobKey,
       final Intent intent,
       final JobRecord job) {
+    jobMetrics.jobErrorThrown(job.getType());
 
     final var serviceTaskInstanceKey = job.getElementId();
 

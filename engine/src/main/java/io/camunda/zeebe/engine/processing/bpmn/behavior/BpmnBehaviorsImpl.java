@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
@@ -52,7 +53,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final EventTriggerBehavior eventTriggerBehavior,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookup,
-      final Writers writers) {
+      final Writers writers,
+      final JobMetrics jobMetrics) {
 
     stateWriter = writers.state();
     final var commandWriter = writers.command();
@@ -89,7 +91,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnBufferedMessageStartEventBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
     jobBehavior =
-        new BpmnJobBehavior(zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers);
+        new BpmnJobBehavior(
+            zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers, jobMetrics);
   }
 
   @Override

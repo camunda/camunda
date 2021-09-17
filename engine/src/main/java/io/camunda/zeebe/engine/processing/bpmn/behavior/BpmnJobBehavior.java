@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -27,13 +28,18 @@ public final class BpmnJobBehavior {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final JobState jobState;
+  private final JobMetrics jobMetrics;
 
   public BpmnJobBehavior(
-      final KeyGenerator keyGenerator, final JobState jobState, final Writers writers) {
+      final KeyGenerator keyGenerator,
+      final JobState jobState,
+      final Writers writers,
+      final JobMetrics jobMetrics) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.jobMetrics = jobMetrics;
   }
 
   public void createNewJob(
@@ -55,6 +61,7 @@ public final class BpmnJobBehavior {
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+    jobMetrics.jobCreated(jobType);
   }
 
   public void cancelJob(final long jobKey) {
