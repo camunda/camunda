@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
@@ -51,18 +52,21 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     final ExecutableJobWorkerTask userTask =
         process.getElementById(element.getId(), ExecutableJobWorkerTask.class);
 
-    transformTaskDefinition(userTask);
+    final var jobWorkerProperties = new JobWorkerProperties();
+    userTask.setJobWorkerProperties(jobWorkerProperties);
 
-    transformTaskHeaders(element, userTask);
+    transformTaskDefinition(jobWorkerProperties);
+
+    transformTaskHeaders(element, jobWorkerProperties);
   }
 
-  private void transformTaskDefinition(final ExecutableJobWorkerTask userTask) {
-    userTask.setType(new StaticExpression(Protocol.USER_TASK_JOB_TYPE));
-    userTask.setRetries(new StaticExpression("1"));
+  private void transformTaskDefinition(final JobWorkerProperties jobWorkerProperties) {
+    jobWorkerProperties.setType(new StaticExpression(Protocol.USER_TASK_JOB_TYPE));
+    jobWorkerProperties.setRetries(new StaticExpression("1"));
   }
 
   private void transformTaskHeaders(
-      final UserTask element, final ExecutableJobWorkerTask userTask) {
+      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
     final Map<String, String> taskHeaders = new HashMap<>();
 
     collectModelTaskHeaders(element, taskHeaders);
@@ -71,7 +75,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     if (!taskHeaders.isEmpty()) {
       final DirectBuffer encodedHeaders = encode(taskHeaders);
-      userTask.setEncodedHeaders(encodedHeaders);
+      jobWorkerProperties.setEncodedHeaders(encodedHeaders);
     }
   }
 

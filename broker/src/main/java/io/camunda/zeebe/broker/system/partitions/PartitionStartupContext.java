@@ -53,8 +53,6 @@ public interface PartitionStartupContext {
 
   Consumer<TypedRecord<?>> getOnProcessedListener();
 
-  TypedRecordProcessorsFactory getTypedRecordProcessorsFactory();
-
   ExporterRepository getExporterRepository();
 
   List<PartitionListener> getPartitionListeners();
@@ -105,9 +103,9 @@ public interface PartitionStartupContext {
 
   void setExporterDirector(ExporterDirector director);
 
-  void setQueryService(final StateQueryService queryService);
-
   StateQueryService getQueryService();
+
+  void setQueryService(final StateQueryService queryService);
 
   // can be called any time after bootstrap has completed
   PartitionStartupAndTransitionContextImpl createTransitionContext();

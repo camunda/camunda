@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.builder;
 
+/** A fluent builder for elements with variable mappings. */
 public interface ZeebeVariablesMappingBuilder<B> {
 
   B zeebeInputExpression(String sourceExpression, String target);

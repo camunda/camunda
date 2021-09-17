@@ -8,29 +8,32 @@
 package io.camunda.zeebe.broker.transport.externalapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.camunda.zeebe.test.broker.protocol.commandapi.ErrorResponseException;
-import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryRequest;
-import io.camunda.zeebe.test.broker.protocol.queryapi.ExecuteQueryResponse;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,20 +78,19 @@ public final class QueryApiIT {
         clientTransport
             .sendRequest(
                 () -> serverAddress,
-                new ExecuteQueryRequest().partitionId(1).key(123L).valueType(ValueType.PROCESS),
+                new Request().partitionId(1).key(123L).valueType(ValueType.PROCESS),
                 Duration.ofSeconds(10))
             .join();
 
     // then
     assertThat(response).isNotNull();
-    final var result = new ExecuteQueryResponse();
+    final var result = new ErrorResponse();
     final var length = response.capacity();
-    assertThatThrownBy(() -> result.wrap(response, 0, length))
-        .isInstanceOf(ErrorResponseException.class)
-        .extracting(ErrorResponseException.class::cast)
-        .extracting(ErrorResponseException::getErrorCode, ErrorResponseException::getErrorMessage)
-        .containsExactly(
-            ErrorCode.UNSUPPORTED_MESSAGE,
+    result.wrap(response, 0, length);
+
+    assertThat(result.getErrorCode()).isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
+    assertThat(BufferUtil.bufferAsString(result.getErrorData()))
+        .isEqualTo(
             "Failed to handle query as the query API is disabled; did you configure"
                 + " zeebe.broker.experimental.queryapi.enabled?");
   }
@@ -119,7 +121,7 @@ public final class QueryApiIT {
         clientTransport
             .sendRequest(
                 () -> serverAddress,
-                new ExecuteQueryRequest().partitionId(1).key(key).valueType(ValueType.PROCESS),
+                new Request().partitionId(1).key(key).valueType(ValueType.PROCESS),
                 Duration.ofSeconds(10))
             .join();
 
@@ -159,10 +161,7 @@ public final class QueryApiIT {
         clientTransport
             .sendRequest(
                 () -> serverAddress,
-                new ExecuteQueryRequest()
-                    .partitionId(1)
-                    .key(key)
-                    .valueType(ValueType.PROCESS_INSTANCE),
+                new Request().partitionId(1).key(key).valueType(ValueType.PROCESS_INSTANCE),
                 Duration.ofSeconds(10))
             .join();
 
@@ -183,12 +182,51 @@ public final class QueryApiIT {
         clientTransport
             .sendRequest(
                 () -> serverAddress,
-                new ExecuteQueryRequest().partitionId(1).key(key).valueType(ValueType.JOB),
+                new Request().partitionId(1).key(key).valueType(ValueType.JOB),
                 Duration.ofSeconds(10))
             .join();
 
     final var result = new ExecuteQueryResponse();
     result.wrap(response, 0, response.capacity());
     assertThat(result).extracting(ExecuteQueryResponse::getBpmnProcessId).isEqualTo("process");
+  }
+
+  private static final class Request implements ClientRequest {
+    private final ExecuteQueryRequest request = new ExecuteQueryRequest();
+
+    public Request partitionId(final int partitionId) {
+      request.setPartitionId(partitionId);
+      return this;
+    }
+
+    public Request key(final long key) {
+      request.setKey(key);
+      return this;
+    }
+
+    public Request valueType(final ValueType valueType) {
+      request.setValueType(valueType);
+      return this;
+    }
+
+    @Override
+    public int getPartitionId() {
+      return request.getPartitionId();
+    }
+
+    @Override
+    public RequestType getRequestType() {
+      return RequestType.QUERY;
+    }
+
+    @Override
+    public int getLength() {
+      return request.getLength();
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      request.write(buffer, offset);
+    }
   }
 }

@@ -49,11 +49,9 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
@@ -202,9 +200,9 @@ public final class PartitionFactory {
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,
       final PushDeploymentRequestHandler deploymentRequestHandler) {
-    return (ActorControl actor,
-        MutableZeebeState zeebeState,
-        ProcessingContext processingContext) -> {
+    return (ProcessingContext processingContext) -> {
+      final var actor = processingContext.getActor();
+
       final LogStream stream = processingContext.getLogStream();
 
       final TopologyPartitionListenerImpl partitionListener =

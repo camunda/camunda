@@ -283,12 +283,13 @@ public final class ClusteringRule extends ExternalResource {
         new SystemContext(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
     systemContexts.put(nodeId, systemContext);
 
+    systemContext.getScheduler().start();
+
     final Broker broker = new Broker(systemContext, getSpringBrokerBridge(nodeId));
 
     broker.addPartitionListener(new LeaderListener(partitionLatch, nodeId));
     new Thread(
             () -> {
-              systemContext.getScheduler().start();
               broker.start();
             })
         .start();

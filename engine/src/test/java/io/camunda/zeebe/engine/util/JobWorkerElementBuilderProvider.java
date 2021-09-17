@@ -17,11 +17,11 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 /**
- * An argument provider for {@link JobWorkerTaskBuilder}. It can be used for tests that verify the
- * behavior of tasks that are based on jobs and should be processed by job workers. For example,
- * service tasks.
+ * An argument provider for {@link JobWorkerElementBuilder}. It can be used for tests that verify
+ * the behavior of elements that are based on jobs and should be processed by job workers. For
+ * example, service tasks.
  */
-public final class JobWorkerTaskBuilderProvider implements ArgumentsProvider {
+public final class JobWorkerElementBuilderProvider implements ArgumentsProvider {
 
   @Override
   public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)
@@ -29,13 +29,18 @@ public final class JobWorkerTaskBuilderProvider implements ArgumentsProvider {
     return builders().map(Arguments::of);
   }
 
-  public static Stream<JobWorkerTaskBuilder> builders() {
+  public static Stream<JobWorkerElementBuilder> builders() {
     return Stream.of(
-        JobWorkerTaskBuilder.of(BpmnElementType.SERVICE_TASK, AbstractFlowNodeBuilder::serviceTask),
-        JobWorkerTaskBuilder.of(
+        JobWorkerElementBuilder.of(
+            BpmnElementType.SERVICE_TASK, AbstractFlowNodeBuilder::serviceTask),
+        JobWorkerElementBuilder.of(
             BpmnElementType.BUSINESS_RULE_TASK, AbstractFlowNodeBuilder::businessRuleTask),
-        JobWorkerTaskBuilder.of(BpmnElementType.SCRIPT_TASK, AbstractFlowNodeBuilder::scriptTask),
-        JobWorkerTaskBuilder.of(BpmnElementType.SEND_TASK, AbstractFlowNodeBuilder::sendTask));
+        JobWorkerElementBuilder.of(
+            BpmnElementType.SCRIPT_TASK, AbstractFlowNodeBuilder::scriptTask),
+        JobWorkerElementBuilder.of(BpmnElementType.SEND_TASK, AbstractFlowNodeBuilder::sendTask),
+        JobWorkerElementBuilder.of(
+            BpmnElementType.END_EVENT,
+            process -> process.endEvent().messageEventDefinition().messageEventDefinitionDone()));
   }
 
   public static Collection<Object[]> buildersAsParameters() {

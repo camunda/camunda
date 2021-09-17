@@ -22,9 +22,6 @@ import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,9 +32,12 @@ public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
     extends AbstractFlowNodeBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
 
+  private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
+
   protected AbstractActivityBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    variablesMappingBuilder = new ZeebeVariableMappingBuilderImpl<>(myself);
   }
 
   public BoundaryEventBuilder boundaryEvent() {
@@ -143,33 +143,21 @@ public abstract class AbstractActivityBuilder<
 
   @Override
   public B zeebeInputExpression(final String sourceExpression, final String target) {
-    final String expression = asZeebeExpression(sourceExpression);
-    return zeebeInput(expression, target);
+    return variablesMappingBuilder.zeebeInputExpression(sourceExpression, target);
   }
 
   @Override
   public B zeebeOutputExpression(final String sourceExpression, final String target) {
-    final String expression = asZeebeExpression(sourceExpression);
-    return zeebeOutput(expression, target);
+    return variablesMappingBuilder.zeebeOutputExpression(sourceExpression, target);
   }
 
   @Override
   public B zeebeInput(final String source, final String target) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
-    input.setSource(source);
-    input.setTarget(target);
-
-    return myself;
+    return variablesMappingBuilder.zeebeInput(source, target);
   }
 
   @Override
   public B zeebeOutput(final String source, final String target) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
-    input.setSource(source);
-    input.setTarget(target);
-
-    return myself;
+    return variablesMappingBuilder.zeebeOutput(source, target);
   }
 }

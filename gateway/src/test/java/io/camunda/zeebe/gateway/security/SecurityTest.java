@@ -125,11 +125,14 @@ public final class SecurityTest {
 
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
     final var atomix = AtomixCluster.builder().build();
+    final var actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler.start();
+
     return new Gateway(
         gatewayCfg,
         atomix.getMessagingService(),
         atomix.getMembershipService(),
         atomix.getEventService(),
-        ActorScheduler.newActorScheduler().build());
+        actorScheduler);
   }
 }

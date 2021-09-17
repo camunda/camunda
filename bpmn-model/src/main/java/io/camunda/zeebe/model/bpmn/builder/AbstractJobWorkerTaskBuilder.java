@@ -18,9 +18,6 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Task;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
 /**
  * A builder for tasks that are based on jobs and should be processed by job workers. For example,
@@ -28,41 +25,39 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
  */
 public abstract class AbstractJobWorkerTaskBuilder<
         B extends AbstractJobWorkerTaskBuilder<B, T>, T extends Task>
-    extends AbstractTaskBuilder<B, T> {
+    extends AbstractTaskBuilder<B, T> implements ZeebeJobWorkerElementBuilder<B> {
+
+  private final ZeebeJobWorkerPropertiesBuilder<B> jobWorkerPropertiesBuilder;
 
   protected AbstractJobWorkerTaskBuilder(
       final BpmnModelInstance modelInstance, final T element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    // delegates to the element builder but keeping this class for backward compatibility
+    jobWorkerPropertiesBuilder = new ZeebeJobWorkerPropertiesBuilderImpl<>(myself);
   }
 
+  @Override
   public B zeebeJobType(final String type) {
-    final ZeebeTaskDefinition taskDefinition =
-        getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
-    taskDefinition.setType(type);
-    return myself;
+    return jobWorkerPropertiesBuilder.zeebeJobType(type);
   }
 
+  @Override
   public B zeebeJobTypeExpression(final String expression) {
-    return zeebeJobType(asZeebeExpression(expression));
+    return jobWorkerPropertiesBuilder.zeebeJobTypeExpression(expression);
   }
 
+  @Override
   public B zeebeJobRetries(final String retries) {
-    final ZeebeTaskDefinition taskDefinition =
-        getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
-    taskDefinition.setRetries(retries);
-    return myself;
+    return jobWorkerPropertiesBuilder.zeebeJobRetries(retries);
   }
 
+  @Override
   public B zeebeJobRetriesExpression(final String expression) {
-    return zeebeJobRetries(asZeebeExpression(expression));
+    return jobWorkerPropertiesBuilder.zeebeJobRetriesExpression(expression);
   }
 
+  @Override
   public B zeebeTaskHeader(final String key, final String value) {
-    final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
-    final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);
-    header.setKey(key);
-    header.setValue(value);
-
-    return myself;
+    return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
   }
 }

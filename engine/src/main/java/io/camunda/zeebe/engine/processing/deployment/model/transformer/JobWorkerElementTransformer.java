@@ -12,11 +12,12 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
-import io.camunda.zeebe.model.bpmn.instance.Task;
+import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -29,7 +30,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public final class JobWorkerTaskTransformer<T extends Task> implements ModelElementTransformer<T> {
+public final class JobWorkerElementTransformer<T extends FlowElement>
+    implements ModelElementTransformer<T> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
@@ -39,7 +41,7 @@ public final class JobWorkerTaskTransformer<T extends Task> implements ModelElem
 
   private final Class<T> type;
 
-  public JobWorkerTaskTransformer(final Class<T> type) {
+  public JobWorkerElementTransformer(final Class<T> type) {
     this.type = type;
   }
 
@@ -52,16 +54,20 @@ public final class JobWorkerTaskTransformer<T extends Task> implements ModelElem
   public void transform(final T element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
-    final ExecutableJobWorkerTask serviceTask =
-        process.getElementById(element.getId(), ExecutableJobWorkerTask.class);
+    final ExecutableJobWorkerElement jobWorkerElement =
+        process.getElementById(element.getId(), ExecutableJobWorkerElement.class);
 
-    transformTaskDefinition(element, serviceTask, context);
+    final var jobWorkerProperties = new JobWorkerProperties();
+    jobWorkerElement.setJobWorkerProperties(jobWorkerProperties);
 
-    transformTaskHeaders(element, serviceTask);
+    transformTaskDefinition(element, jobWorkerProperties, context);
+    transformTaskHeaders(element, jobWorkerProperties);
   }
 
   private void transformTaskDefinition(
-      final T element, final ExecutableJobWorkerTask serviceTask, final TransformContext context) {
+      final T element,
+      final JobWorkerProperties jobWorkerProperties,
+      final TransformContext context) {
     final ZeebeTaskDefinition taskDefinition =
         element.getSingleExtensionElement(ZeebeTaskDefinition.class);
 
@@ -69,15 +75,16 @@ public final class JobWorkerTaskTransformer<T extends Task> implements ModelElem
     final Expression jobTypeExpression =
         expressionLanguage.parseExpression(taskDefinition.getType());
 
-    serviceTask.setType(jobTypeExpression);
+    jobWorkerProperties.setType(jobTypeExpression);
 
     final Expression retriesExpression =
         expressionLanguage.parseExpression(taskDefinition.getRetries());
 
-    serviceTask.setRetries(retriesExpression);
+    jobWorkerProperties.setRetries(retriesExpression);
   }
 
-  private void transformTaskHeaders(final T element, final ExecutableJobWorkerTask serviceTask) {
+  private void transformTaskHeaders(
+      final T element, final JobWorkerProperties jobWorkerProperties) {
     final ZeebeTaskHeaders taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
 
     if (taskHeaders != null) {
@@ -94,7 +101,7 @@ public final class JobWorkerTaskTransformer<T extends Task> implements ModelElem
 
       if (!validHeaders.isEmpty()) {
         final DirectBuffer encodedHeaders = encode(validHeaders);
-        serviceTask.setEncodedHeaders(encodedHeaders);
+        jobWorkerProperties.setEncodedHeaders(encodedHeaders);
       }
     }
   }
