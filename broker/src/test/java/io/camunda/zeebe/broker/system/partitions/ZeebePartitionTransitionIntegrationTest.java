@@ -52,6 +52,7 @@ public class ZeebePartitionTransitionIntegrationTest {
     when(ctx.getRaftPartition()).thenReturn(raftPartition);
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
+    when(ctx.createTransitionContext()).thenReturn(ctx);
   }
 
   @Test
