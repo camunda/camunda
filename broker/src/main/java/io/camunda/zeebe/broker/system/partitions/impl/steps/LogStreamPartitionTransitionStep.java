@@ -83,7 +83,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
 
   @Override
   public String getName() {
-    return "logstream";
+    return "LogStream";
   }
 
   private ActorFuture<LogStream> buildLogstream(

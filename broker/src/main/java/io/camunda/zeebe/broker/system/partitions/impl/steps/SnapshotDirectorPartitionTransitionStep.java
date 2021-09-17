@@ -87,7 +87,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
 
   @Override
   public String getName() {
-    return "AsyncSnapshotDirector";
+    return "SnapshotDirector";
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {

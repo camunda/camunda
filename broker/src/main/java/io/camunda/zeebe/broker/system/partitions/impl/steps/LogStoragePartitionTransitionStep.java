@@ -65,7 +65,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
 
   @Override
   public String getName() {
-    return "logstorage";
+    return "LogStorage";
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
