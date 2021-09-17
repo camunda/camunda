@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 public final class JobWorkerTaskProcessor implements BpmnElementProcessor<ExecutableJobWorkerTask> {
 
   private final BpmnIncidentBehavior incidentBehavior;
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -36,7 +34,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     incidentBehavior = behaviors.incidentBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
-    stateBehavior = behaviors.stateBehavior();
     jobBehavior = behaviors.jobBehavior();
   }
 
@@ -73,13 +70,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   @Override
   public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
 
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    final long jobKey = elementInstance.getJobKey();
-    if (jobKey > 0) {
-      jobBehavior.cancelJob(jobKey);
-      incidentBehavior.resolveJobIncident(jobKey);
-    }
-
+    jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 

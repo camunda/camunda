@@ -34,6 +34,8 @@ public final class BpmnJobBehavior {
   private final TypedCommandWriter commandWriter;
   private final JobState jobState;
   private final ExpressionProcessor expressionBehavior;
+  private final BpmnStateBehavior stateBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
   private final JobMetrics jobMetrics;
 
   public BpmnJobBehavior(
@@ -41,12 +43,16 @@ public final class BpmnJobBehavior {
       final JobState jobState,
       final Writers writers,
       final ExpressionProcessor expressionBehavior,
+      final BpmnStateBehavior stateBehavior,
+      final BpmnIncidentBehavior incidentBehavior,
       final JobMetrics jobMetrics) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.stateBehavior = stateBehavior;
+    this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
   }
 
@@ -99,7 +105,17 @@ public final class BpmnJobBehavior {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
   }
 
-  public void cancelJob(final long jobKey) {
+  public void cancelJob(final BpmnElementContext context) {
+
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final long jobKey = elementInstance.getJobKey();
+    if (jobKey > 0) {
+      writeJobCancelCommand(jobKey);
+      incidentBehavior.resolveJobIncident(jobKey);
+    }
+  }
+
+  private void writeJobCancelCommand(final long jobKey) {
     final State state = jobState.getState(jobKey);
 
     if (state == State.ACTIVATABLE || state == State.ACTIVATED || state == State.FAILED) {

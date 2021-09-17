@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
@@ -30,8 +29,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
-
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnJobBehavior jobBehavior;
 
@@ -39,8 +36,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
-
-    stateBehavior = bpmnBehaviors.stateBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
   }
@@ -160,14 +155,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onTerminate(
         final ExecutableEndEvent element, final BpmnElementContext terminating) {
 
-      if (element.getJobWorkerProperties() != null) {
-        final var elementInstance = stateBehavior.getElementInstance(terminating);
-        final long jobKey = elementInstance.getJobKey();
-        if (jobKey > 0) {
-          jobBehavior.cancelJob(jobKey);
-          incidentBehavior.resolveJobIncident(jobKey);
-        }
-      }
+      jobBehavior.cancelJob(terminating);
     }
   }
 }
