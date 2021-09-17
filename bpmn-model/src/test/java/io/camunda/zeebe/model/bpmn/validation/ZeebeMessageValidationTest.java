@@ -21,7 +21,6 @@ import static java.util.Collections.singletonList;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
@@ -99,10 +98,6 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
-      },
-      {
-        Bpmn.createExecutableProcess("process").startEvent().endEvent().message("foo").done(),
-        singletonList(expect(EndEvent.class, "End events must be one of: none or error"))
       },
       {
         Bpmn.createExecutableProcess("process")

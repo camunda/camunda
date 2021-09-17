@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -46,6 +47,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private StateController stateController;
   private ExporterRepository exporterRepository;
   private AtomixLogStorage logStorage;
+  private BrokerCfg brokerCfg;
+  private AsyncSnapshotDirector snapshotDirector;
 
   @Override
   public int getPartitionId() {
@@ -108,10 +111,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.exporterDirector = exporterDirector;
   }
 
-  public void setExporterRepository(final ExporterRepository exporterRepository) {
-    this.exporterRepository = exporterRepository;
-  }
-
   @Override
   public PartitionMessagingService getMessagingService() {
     return null;
@@ -125,6 +124,21 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
     return Set.of();
+  }
+
+  @Override
+  public AtomixLogStorage getLogStorage() {
+    return logStorage;
+  }
+
+  @Override
+  public void setLogStorage(final AtomixLogStorage logStorage) {
+    this.logStorage = logStorage;
+  }
+
+  @Override
+  public int getMaxFragmentSize() {
+    return 1;
   }
 
   @Override
@@ -188,14 +202,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.raftPartition = raftPartition;
   }
 
-  @Override
-  public AtomixLogStorage getLogStorage() {
-    return logStorage;
-  }
-
-  @Override
-  public void setLogStorage(final AtomixLogStorage logStorage) {
-    this.logStorage = logStorage;
+  public void setExporterRepository(final ExporterRepository exporterRepository) {
+    this.exporterRepository = exporterRepository;
   }
 
   @Override
@@ -208,9 +216,27 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     return logStream;
   }
 
+  public void setLogStream(final LogStream logStream) {
+    this.logStream = logStream;
+  }
+
   @Override
   public AsyncSnapshotDirector getSnapshotDirector() {
-    return null;
+    return snapshotDirector;
+  }
+
+  @Override
+  public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
+    this.snapshotDirector = snapshotDirector;
+  }
+
+  @Override
+  public BrokerCfg getBrokerCfg() {
+    return brokerCfg;
+  }
+
+  public void setBrokerCfg(final BrokerCfg brokerCfg) {
+    this.brokerCfg = brokerCfg;
   }
 
   @Override
@@ -231,10 +257,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public PartitionContext getPartitionContext() {
     return null;
-  }
-
-  public void setLogStream(final LogStream logStream) {
-    this.logStream = logStream;
   }
 
   public void setStateController(final StateController stateController) {

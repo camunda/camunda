@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.JobWorkerTaskBuilder;
-import io.camunda.zeebe.engine.util.JobWorkerTaskBuilderProvider;
+import io.camunda.zeebe.engine.util.JobWorkerElementBuilder;
+import io.camunda.zeebe.engine.util.JobWorkerElementBuilderProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JobWorkerTaskIncidentTest {
+public class JobWorkerElementIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -47,23 +47,23 @@ public class JobWorkerTaskIncidentTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @Parameter public JobWorkerTaskBuilder taskBuilder;
+  @Parameter public JobWorkerElementBuilder elementBuilder;
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> parameters() {
-    return JobWorkerTaskBuilderProvider.buildersAsParameters();
+    return JobWorkerElementBuilderProvider.buildersAsParameters();
   }
 
   private BpmnModelInstance process(
-      final Consumer<AbstractJobWorkerTaskBuilder<?, ?>> taskModifier) {
+      final Consumer<ZeebeJobWorkerElementBuilder<?>> elementModifier) {
     final var processBuilder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent();
 
-    // default job type, can be overridden by taskModifier
-    final var jobWorkerTaskBuilder =
-        taskBuilder.build(processBuilder).id("task").zeebeJobType("test");
-    taskModifier.accept(jobWorkerTaskBuilder);
+    // default job type, can be overridden by elementModifier
+    final var jobWorkerElementBuilder =
+        elementBuilder.build(
+            processBuilder, element -> elementModifier.accept(element.zeebeJobType("test")));
 
-    return jobWorkerTaskBuilder.endEvent().done();
+    return jobWorkerElementBuilder.id("task").done();
   }
 
   // ----- JobType related tests
@@ -80,7 +80,7 @@ public class JobWorkerTaskIncidentTest {
     final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(taskBuilder.getTaskType())
+            .withElementType(elementBuilder.getElementType())
             .getFirst();
 
     // then
@@ -109,7 +109,7 @@ public class JobWorkerTaskIncidentTest {
     final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(taskBuilder.getTaskType())
+            .withElementType(elementBuilder.getElementType())
             .getFirst();
 
     // then
@@ -182,7 +182,7 @@ public class JobWorkerTaskIncidentTest {
     final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(taskBuilder.getTaskType())
+            .withElementType(elementBuilder.getElementType())
             .getFirst();
 
     // then
@@ -214,7 +214,7 @@ public class JobWorkerTaskIncidentTest {
     final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(taskBuilder.getTaskType())
+            .withElementType(elementBuilder.getElementType())
             .getFirst();
 
     // then

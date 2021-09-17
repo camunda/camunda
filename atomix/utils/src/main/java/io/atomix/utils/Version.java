@@ -49,7 +49,7 @@ public final class Version implements Comparable<Version> {
    */
   public static Version from(final String version) {
     final String[] fields = version.split("[.-]", 4);
-    checkArgument(fields.length >= 3, "version number is invalid");
+    checkArgument(fields.length >= 3, String.format("version number is invalid :%s", version));
     return new Version(
         parseInt(fields[0]),
         parseInt(fields[1]),

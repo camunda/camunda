@@ -11,6 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -30,6 +31,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   int getNodeId();
 
   LogStream getLogStream();
+
+  void setLogStream(LogStream logStream);
 
   AsyncSnapshotDirector getSnapshotDirector();
 
@@ -70,4 +73,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   AtomixLogStorage getLogStorage();
 
   void setLogStorage(AtomixLogStorage logStorage);
+
+  int getMaxFragmentSize();
+
+  void setSnapshotDirector(AsyncSnapshotDirector snapshotDirector);
+
+  BrokerCfg getBrokerCfg();
 }
