@@ -131,13 +131,14 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
           if (currentRoleFuture.join() == Role.LEADER) {
             final var streamProcessor = streamProcessorFuture.join();
             final var exporterDirector = exporterDirectorFuture.join();
-            if (!streamProcessor.isPresent() || !exporterDirector.isPresent()) {
+            if (streamProcessor.isEmpty() || exporterDirector.isEmpty()) {
               partitionStatus.completeExceptionally(
                   new IllegalStateException(
                       "No streamprocessor or exporter found for leader partition."));
+            } else {
+              getLeaderPartitionStatus(
+                  partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
             }
-            getLeaderPartitionStatus(
-                partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
 
           } else {
             getFollowerPartitionStatus(partition, partitionStatus);
