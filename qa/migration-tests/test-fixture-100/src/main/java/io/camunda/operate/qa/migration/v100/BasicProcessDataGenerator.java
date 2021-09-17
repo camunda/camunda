@@ -100,7 +100,7 @@ public class BasicProcessDataGenerator {
       }
       logger.info("{} operations of type {} started", COUNT_OF_RESOLVE_OPERATION, OperationType.RESOLVE_INCIDENT);
 
-//      waitTillSomeInstancesAreArchived();
+      waitTillSomeInstancesAreArchived();
 
       try {
         esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);

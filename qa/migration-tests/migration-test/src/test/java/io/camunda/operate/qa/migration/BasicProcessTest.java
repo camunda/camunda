@@ -5,10 +5,17 @@
  */
 package io.camunda.operate.qa.migration;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.Set;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
+import static io.camunda.operate.util.CollectionUtil.chooseOne;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.IncidentEntity;
@@ -17,6 +24,7 @@ import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.qa.migration.util.AbstractMigrationTest;
@@ -29,20 +37,13 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.List;
+import java.util.Set;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.util.CollectionUtil.chooseOne;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class BasicProcessTest extends AbstractMigrationTest {
 
@@ -122,6 +123,16 @@ public class BasicProcessTest extends AbstractMigrationTest {
     SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias());
     int processInstancesCount = BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT;
 
+    searchRequest.source().query(joinWithAnd(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceIds)));
+    List<ProcessInstanceForListViewEntity> processInstances = entityReader
+        .searchEntitiesFor(searchRequest, ProcessInstanceForListViewEntity.class);
+
+    processInstances.forEach(pi -> {
+      assertThat(pi.getTreePath()).isNotNull();
+      assertThat(pi).matches(p -> p.getTreePath().equals("PI_" + p.getProcessInstanceKey()));
+    });
+
     //  Variables list
     searchRequest.source().query(joinWithAnd(termQuery(JOIN_RELATION, VARIABLES_JOIN_RELATION),
         termsQuery(ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceIds)));
@@ -148,6 +159,13 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
     IncidentEntity randomIncident = chooseOne(incidents);
     assertThat(randomIncident.getErrorMessageHash()).isNotNull();
+
+    incidents.forEach(inc -> {
+      assertThat(inc.getTreePath()).isNotNull();
+      assertThat(inc).matches(i -> i.getTreePath().equals(
+          "PI_" + i.getProcessInstanceKey() + "/FN_" + i.getFlowNodeId() + "/FNI_" + i
+              .getFlowNodeInstanceKey()));
+    });
   }
 
   @Test
