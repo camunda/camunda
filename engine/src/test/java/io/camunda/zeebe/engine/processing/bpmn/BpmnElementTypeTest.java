@@ -373,6 +373,16 @@ public final class BpmnElementTypeTest {
                   .endEvent()
                   .done();
             }
+          },
+          new BpmnElementTypeScenario("Manual Task", BpmnElementType.MANUAL_TASK) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .manualTask(elementId())
+                  .endEvent()
+                  .done();
+            }
           });
 
   @Rule

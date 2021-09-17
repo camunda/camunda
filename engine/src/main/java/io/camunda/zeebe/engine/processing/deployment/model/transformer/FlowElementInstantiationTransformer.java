@@ -34,6 +34,7 @@ import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
@@ -74,6 +75,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
     ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(IntermediateThrowEvent.class, ExecutableFlowNode::new);
+    ELEMENT_FACTORIES.put(ManualTask.class, ExecutableActivity::new);
   }
 
   @Override

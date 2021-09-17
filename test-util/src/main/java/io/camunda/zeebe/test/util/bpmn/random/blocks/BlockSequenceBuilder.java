@@ -40,6 +40,7 @@ public class BlockSequenceBuilder implements BlockBuilder {
           new ReceiveTaskBlockBuilder.Factory(),
           new CallActivityBlockBuilder.Factory(),
           new UserTaskBlockBuilder.Factory(),
+          new ManualTaskBlockBuilder.Factory(),
           new IntermediateThrowEventBlockBuilder.Factory());
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
