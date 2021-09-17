@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1626769482411,
+  "iteration": 1631863702889,
   "links": [],
   "panels": [
     {
@@ -533,6 +533,7 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:254",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -541,6 +542,7 @@
               "show": true
             },
             {
+              "$$hashKey": "object:255",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1369,9 +1371,10 @@
               "values": false
             },
             "showThresholdLabels": false,
-            "showThresholdMarkers": true
+            "showThresholdMarkers": true,
+            "text": {}
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"} - zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"}",
@@ -1401,7 +1404,7 @@
           "fontSize": "80%",
           "gridPos": {
             "h": 4,
-            "w": 4,
+            "w": 7,
             "x": 12,
             "y": 2
           },
@@ -1482,8 +1485,8 @@
           "fontSize": "80%",
           "gridPos": {
             "h": 4,
-            "w": 4,
-            "x": 16,
+            "w": 5,
+            "x": 19,
             "y": 2
           },
           "id": 200,
@@ -1551,6 +1554,146 @@
           "type": "table-old"
         },
         {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows how many records are not exported yet.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1000
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 0,
+            "y": 6
+          },
+          "id": 194,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "mean"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "7.4.5",
+          "targets": [
+            {
+              "expr": "sum (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - sum (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
+              "format": "time_series",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Exporter {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Number of records not exported",
+          "type": "gauge"
+        },
+        {
+          "columns": [],
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the last exported position which was committed by the given exporter per partition.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fontSize": "80%",
+          "gridPos": {
+            "h": 6,
+            "w": 7,
+            "x": 5,
+            "y": 6
+          },
+          "id": 199,
+          "pageSize": null,
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "hidden"
+            },
+            {
+              "alias": "Position",
+              "align": "center",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "pattern": "Value",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            },
+            {
+              "alias": "Partition",
+              "align": "center",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "mappingType": 1,
+              "pattern": "partition",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum by (exporter, partition) (zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "format": "table",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Last updated exported position",
+          "transform": "table",
+          "type": "table-old"
+        },
+        {
           "columns": [],
           "datasource": "${DS_PROMETHEUS}",
           "description": "Shows the last processed position by the stream processor per partition.",
@@ -1562,10 +1705,10 @@
           },
           "fontSize": "80%",
           "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 20,
-            "y": 2
+            "h": 12,
+            "w": 5,
+            "x": 12,
+            "y": 6
           },
           "id": 198,
           "pageSize": null,
@@ -1638,126 +1781,9 @@
           "type": "table-old"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
-          "description": "Shows how many records are not exported yet.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1000
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 5,
-            "x": 0,
-            "y": 6
-          },
-          "id": 194,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "mean"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true
-          },
-          "pluginVersion": "7.0.3",
-          "targets": [
-            {
-              "expr": "sum (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - sum (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
-              "format": "time_series",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "Exporter {{partition}}",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Number of records not exported",
-          "type": "gauge"
-        },
-        {
-          "datasource": "${DS_PROMETHEUS}",
-          "description": "Shows how many records the stream processor has not processed yet.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1000
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 7,
-            "x": 5,
-            "y": 6
-          },
-          "id": 189,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "last"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true
-          },
-          "pluginVersion": "7.0.3",
-          "targets": [
-            {
-              "expr": "zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"} - zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"}",
-              "format": "time_series",
-              "instant": true,
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "Partition {{partition}}",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Number of records not processed",
-          "type": "gauge"
-        },
-        {
           "columns": [],
           "datasource": "${DS_PROMETHEUS}",
-          "description": "Shows the last exported position which was committed by the given exporter per partition.",
+          "description": "Shows the last replayed source position by the stream processor per partition and pod",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -1766,12 +1792,12 @@
           },
           "fontSize": "80%",
           "gridPos": {
-            "h": 6,
+            "h": 12,
             "w": 7,
-            "x": 12,
+            "x": 17,
             "y": 6
           },
-          "id": 199,
+          "id": 268,
           "pageSize": null,
           "showHeader": true,
           "sort": {
@@ -1821,7 +1847,7 @@
           ],
           "targets": [
             {
-              "expr": "sum by (exporter, partition) (zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "sum by (partition, pod) (zeebe_replay_last_source_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -1831,9 +1857,69 @@
           ],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Last updated exported position",
+          "title": "Last replayed source position",
           "transform": "table",
           "type": "table-old"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows how many records the stream processor has not processed yet.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1000
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 0,
+            "y": 12
+          },
+          "id": 189,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "7.4.5",
+          "targets": [
+            {
+              "expr": "zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"} - zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "Partition {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Number of records not processed",
+          "type": "gauge"
         },
         {
           "columns": [],
@@ -1848,9 +1934,9 @@
           "fontSize": "80%",
           "gridPos": {
             "h": 6,
-            "w": 5,
-            "x": 19,
-            "y": 6
+            "w": 7,
+            "x": 5,
+            "y": 12
           },
           "id": 201,
           "pageSize": null,
@@ -1951,7 +2037,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 26
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -2015,7 +2101,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 26
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -2074,7 +2160,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -2084,7 +2171,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 8
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2102,9 +2189,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -2177,7 +2265,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -2187,7 +2276,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 8
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2205,9 +2294,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -2278,9 +2368,11 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "description": "Processed commands by the leading Stream Processor",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -2288,9 +2380,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 6,
-            "w": 12,
+            "w": 9,
             "x": 0,
-            "y": 14
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 4,
@@ -2308,9 +2400,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -2320,25 +2413,19 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(zeebe_stream_processor_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}) by (action, processor)",
+              "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (action, partition)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{processor}} ({{action}})",
+              "legendFormat": "Partition {{partition}} ({{action}})",
               "refId": "A"
-            },
-            {
-              "expr": "sum(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}) by (action, processor)",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "exporter ({{action}})",
-              "refId": "B"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Stream Processor Events",
+          "title": "Processed Commands",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2354,14 +2441,16 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:142",
               "format": "short",
               "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
+              "max": "5000",
+              "min": "0",
               "show": true
             },
             {
+              "$$hashKey": "object:143",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2381,9 +2470,11 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "description": "Exported Records by the leading Stream Processor",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -2391,12 +2482,12 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 14
+            "w": 7,
+            "x": 9,
+            "y": 37
           },
           "hiddenSeries": false,
-          "id": 5,
+          "id": 266,
           "legend": {
             "avg": false,
             "current": false,
@@ -2411,9 +2502,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -2423,25 +2515,20 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(zeebe_stream_processor_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (action, processor)",
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition, pod)",
               "format": "time_series",
+              "hide": false,
+              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{processor}} ({{action}})",
+              "legendFormat": "{{pod}} Partition {{partition}}",
               "refId": "A"
-            },
-            {
-              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (action, processor)",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "exporter ({{action}})",
-              "refId": "B"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Stream Processor Events per second (range = 1m)",
+          "title": "Exported Records",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2457,14 +2544,119 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:142",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": "5000",
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:143",
               "format": "short",
               "label": null,
               "logBase": 1,
               "max": null,
               "min": null,
               "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Replayed events by the following Stream Processor",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 16,
+            "y": 37
+          },
+          "hiddenSeries": false,
+          "id": 267,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_replay_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition, pod)",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} Partition {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Replayed Events",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:142",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": "5000",
+              "min": "0",
+              "show": true
             },
             {
+              "$$hashKey": "object:143",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2486,7 +2678,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -2494,9 +2687,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 5,
-            "w": 12,
+            "w": 24,
             "x": 0,
-            "y": 20
+            "y": 43
           },
           "hiddenSeries": false,
           "id": 15,
@@ -2514,9 +2707,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -2552,102 +2746,6 @@
           "timeRegions": [],
           "timeShift": null,
           "title": "Running Process Instances",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "$DS_PROMETHEUS",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 5,
-            "w": 12,
-            "x": 12,
-            "y": 20
-          },
-          "hiddenSeries": false,
-          "id": 18,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "links": [],
-          "nullPointMode": "null",
-          "options": {
-            "dataLinks": []
-          },
-          "percentage": false,
-          "pointradius": 5,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(zeebe_stream_processor_events_total{namespace=~\"$namespace\", action=~\"skipped|processed\", partition=~\"$partition\", pod=~\"$pod\"}) - sum(zeebe_exporter_events_total{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"})",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Events processed but not exported",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Stream Processor vs Exporter",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -4584,7 +4682,8 @@
           "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -4612,9 +4711,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4833,6 +4933,76 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between writing the command to the dispatcher and processing the record.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 28,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Overall Processing Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
           "description": "Time taken to process a record",
           "fieldConfig": {
             "defaults": {
@@ -4844,7 +5014,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 30
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4903,7 +5073,7 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
-          "description": "Time taken to append a record to the log",
+          "description": "Time taken to replay a batch of events",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -4914,12 +5084,12 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 30
           },
           "heatmap": {},
           "hideZeroBuckets": true,
           "highlightCards": true,
-          "id": 234,
+          "id": 269,
           "legend": {
             "show": false
           },
@@ -4927,7 +5097,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_replay_event_batch_replay_duration_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4935,7 +5105,7 @@
               "refId": "A"
             }
           ],
-          "title": "Record write latency",
+          "title": "Batch Event Replay Duration",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -4984,7 +5154,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 37
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5043,7 +5213,7 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
-          "description": "Shows the time (latency) between writing the command to the dispatcher and processing the record.",
+          "description": "Time taken to append a record to the log",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -5054,12 +5224,12 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 37
           },
           "heatmap": {},
           "hideZeroBuckets": true,
           "highlightCards": true,
-          "id": 28,
+          "id": 234,
           "legend": {
             "show": false
           },
@@ -5067,7 +5237,7 @@
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
+              "expr": "sum(increase(zeebe_log_appender_append_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -5075,7 +5245,7 @@
               "refId": "A"
             }
           ],
-          "title": "Overall Processing Latency",
+          "title": "Record write latency",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -9762,7 +9932,7 @@
       "type": "row"
     }
   ],
-  "refresh": false,
+  "refresh": "10s",
   "schemaVersion": 27,
   "style": "dark",
   "tags": [],
@@ -9902,5 +10072,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 16
+  "version": 18
 }
