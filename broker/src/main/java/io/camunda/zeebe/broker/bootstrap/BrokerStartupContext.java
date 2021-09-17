@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -60,8 +61,6 @@ public interface BrokerStartupContext {
 
   void removeDiskSpaceUsageListener(DiskSpaceUsageListener listener);
 
-  List<DiskSpaceUsageListener> getDiskSpaceUsageListeners();
-
   CommandApiServiceImpl getCommandApiService();
 
   void setCommandApiService(CommandApiServiceImpl commandApiService);
@@ -82,4 +81,8 @@ public interface BrokerStartupContext {
   EmbeddedGatewayService getEmbeddedGatewayService();
 
   void setEmbeddedGatewayService(EmbeddedGatewayService embeddedGatewayService);
+
+  DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
+
+  void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
 }
