@@ -1388,6 +1388,11 @@
               <includes>
                 <include>**/*RandomizedPropertyTest.java</include>
               </includes>
+              <systemPropertyVariables>
+                <processCount>10</processCount>
+                <executionCount>100</executionCount>
+                <replayExecutionCount>5</replayExecutionCount>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>
