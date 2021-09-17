@@ -15734,10 +15734,10 @@ url@^0.11.0:
     punycode "1.3.2"
     querystring "0.2.0"
 
-use-deep-compare-effect@^1.6.1:
-  version "1.6.1"
-  resolved "https://registry.yarnpkg.com/use-deep-compare-effect/-/use-deep-compare-effect-1.6.1.tgz#061a0ac5400aa0461e33dddfaa2a98bca873182a"
-  integrity sha512-VB3b+7tFI81dHm8buGyrpxi8yBhzYZdyMX9iBJra7SMFMZ4ci4FJ1vFc1nvChiB1iLv4GfjqaYfvbNEpTT1rFQ==
+use-deep-compare-effect@^1.7.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/use-deep-compare-effect/-/use-deep-compare-effect-1.7.0.tgz#74fdb0e0a5ec022528658d6c5ca87eac88855675"
+  integrity sha512-EGABICbpS552cy6iOjAVGHmfJQr/2ZRThW08rdjv/EZVdm0BjIG2e/VjMpt/lnL+e+GzHc9/a2VzWbiC5rHhdg==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@types/react" "^17.0.0"
