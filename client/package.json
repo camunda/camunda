@@ -73,7 +73,7 @@
     "@types/react": "17.0.21",
     "@types/react-dom": "17.0.9",
     "@types/react-router-dom": "5.1.9",
-    "@types/react-transition-group": "4.4.2",
+    "@types/react-transition-group": "4.4.3",
     "@types/styled-components": "5.1.14",
     "babel-loader": "8.1.0",
     "enzyme": "3.11.0",
