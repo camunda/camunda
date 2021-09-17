@@ -21,7 +21,7 @@ public final class BrokerStartupProcess {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final List<StartupStep<BrokerStartupContext>> STARTUP_STEPS =
-      List.of(new MonitoringServerStep());
+      List.of(new MonitoringServerStep(), new ClusterServicesCreationStep());
 
   private final StartupProcess<BrokerStartupContext> startupProcess;
 
@@ -77,6 +77,6 @@ public final class BrokerStartupProcess {
   }
 
   private BrokerContext createBrokerContext(final BrokerStartupContext bsc) {
-    return new BrokerContextImpl(bsc.getHealthCheckService(), bsc.getPartitionListeners());
+    return new BrokerContextImpl(bsc.getClusterServices(), bsc.getPartitionListeners());
   }
 }

@@ -11,29 +11,28 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import java.util.Collection;
 import java.util.List;
 
 public final class BrokerContextImpl implements BrokerContext {
 
-  private final BrokerHealthCheckService healthCheckService;
+  private final ClusterServicesImpl clusterServices;
   private final List<PartitionListener> partitionListeners;
 
   public BrokerContextImpl(
-      final BrokerHealthCheckService healthCheckService,
-      final List<PartitionListener> partitionListeners) {
-    this.healthCheckService = requireNonNull(healthCheckService);
+      final ClusterServicesImpl clusterServices, final List<PartitionListener> partitionListeners) {
+    this.clusterServices = requireNonNull(clusterServices);
     this.partitionListeners = unmodifiableList(requireNonNull(partitionListeners));
-  }
-
-  @Override
-  public BrokerHealthCheckService getHealthCheckService() {
-    return healthCheckService;
   }
 
   @Override
   public Collection<? extends PartitionListener> getPartitionListeners() {
     return partitionListeners;
+  }
+
+  @Override
+  public ClusterServicesImpl getClusterServices() {
+    return clusterServices;
   }
 }

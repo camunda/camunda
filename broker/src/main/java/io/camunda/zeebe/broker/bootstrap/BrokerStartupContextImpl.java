@@ -12,6 +12,8 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.Actor;
@@ -25,6 +27,7 @@ import java.util.Objects;
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
+  private final BrokerCfg configuration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorSchedulingService;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
@@ -32,14 +35,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ConcurrencyControl concurrencyControl;
 
   private final BrokerHealthCheckService healthCheckService;
+  private ClusterServicesImpl clusterServices;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
+      final BrokerCfg configuration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorSchedulingService actorSchedulingService,
       final BrokerHealthCheckService healthCheckService) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
+    this.configuration = requireNonNull(configuration);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
     this.actorSchedulingService = requireNonNull(actorSchedulingService);
     this.healthCheckService = requireNonNull(healthCheckService);
@@ -48,6 +54,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerInfo getBrokerInfo() {
     return brokerInfo;
+  }
+
+  @Override
+  public BrokerCfg getBrokerConfiguration() {
+    return configuration;
   }
 
   @Override
@@ -87,5 +98,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public List<PartitionListener> getPartitionListeners() {
     return unmodifiableList(partitionListeners);
+  }
+
+  @Override
+  public ClusterServicesImpl getClusterServices() {
+    return clusterServices;
+  }
+
+  @Override
+  public void setClusterServices(final ClusterServicesImpl clusterServices) {
+    this.clusterServices = clusterServices;
   }
 }

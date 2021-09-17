@@ -28,6 +28,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -479,6 +481,32 @@ class SegmentedJournalTest {
             file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(
             file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+  }
+
+  @Test
+  void shouldNotFailOnResetAndOpeningReaderConcurrently() throws InterruptedException {
+    // given
+    final var latch = new CountDownLatch(2);
+    final var journal = openJournal(2);
+    journal.append(data);
+    journal.append(data);
+
+    // when
+    new Thread(
+            () -> {
+              journal.reset(100);
+              latch.countDown();
+            })
+        .start();
+    new Thread(
+            () -> {
+              journal.openReader();
+              latch.countDown();
+            })
+        .start();
+
+    // then
+    assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 
   @Test
