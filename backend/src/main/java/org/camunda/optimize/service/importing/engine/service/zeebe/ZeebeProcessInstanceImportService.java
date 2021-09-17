@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.job.importing.ZeebeProcessInstanceElastic
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
-import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;
@@ -175,7 +174,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
   private FlowNodeInstanceDto createSkeletonFlowNodeInstance(final ZeebeProcessInstanceRecordDto zeebeProcessInstanceRecordDto) {
     final ZeebeProcessInstanceDataDto zeebeInstanceRecord = zeebeProcessInstanceRecordDto.getValue();
     return new FlowNodeInstanceDto(
-      String.valueOf(zeebeInstanceRecord.getProcessDefinitionKey()),
+      String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
       String.valueOf(zeebeInstanceRecord.getVersion()),
       null,
       String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
