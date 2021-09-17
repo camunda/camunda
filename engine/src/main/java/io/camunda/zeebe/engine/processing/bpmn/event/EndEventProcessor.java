@@ -103,21 +103,16 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      transitionUntilCompleted(element, activating).ifLeft(incidentBehavior::createIncident);
-    }
-
-    // there's some duplication here with ExclusiveGatewayProcessor where we want to short circuit
-    // and
-    // go directly from activated -> completed, which could be dry'd up
-    // TODO(npepinpe): candidate for clean up for https://github.com/camunda-cloud/zeebe/issues/6202
-    private Either<Tuple<Failure, BpmnElementContext>, BpmnElementContext> transitionUntilCompleted(
-        final ExecutableEndEvent element, final BpmnElementContext activating) {
+      // there's some duplication here with ExclusiveGatewayProcessor where we want to short circuit
+      // and go directly from activated -> completed, which could be dry'd up
+      // TODO(npepinpe): candidate for clean up for
+      // https://github.com/camunda-cloud/zeebe/issues/6202
 
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      return stateTransitionBehavior
+      stateTransitionBehavior
           .transitionToCompleted(element, completing)
-          .mapLeft(failure -> new Tuple<>(failure, completing));
+          .ifLeft(failure -> incidentBehavior.createIncident(failure, completing));
     }
   }
 
