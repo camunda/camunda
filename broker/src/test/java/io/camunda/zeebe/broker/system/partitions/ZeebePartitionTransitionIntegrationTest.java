@@ -57,7 +57,7 @@ public class ZeebePartitionTransitionIntegrationTest {
   @Test
   public void shouldTransitionToAndCloseInSequence() {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
+    final ZeebePartition partition = new ZeebePartition(ctx, transition, List.of());
     schedulerRule.submitActor(partition);
     partition.onNewRole(Role.LEADER, 1);
     partition.onNewRole(Role.FOLLOWER, 1);

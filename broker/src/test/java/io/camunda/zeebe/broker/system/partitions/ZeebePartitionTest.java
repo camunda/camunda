@@ -25,9 +25,11 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +46,7 @@ public class ZeebePartitionTest {
   private PartitionTransition transition;
   private CriticalComponentsHealthMonitor healthMonitor;
   private RaftPartition raft;
+  private ZeebePartition partition;
 
   @Before
   public void setup() {
@@ -60,12 +63,14 @@ public class ZeebePartitionTest {
     when(ctx.getRaftPartition()).thenReturn(raft);
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
+    when(ctx.createTransitionContext()).thenReturn(ctx);
+
+    partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }
 
   @Test
   public void shouldInstallLeaderPartition() {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
     schedulerRule.submitActor(partition);
 
     // when
@@ -80,7 +85,6 @@ public class ZeebePartitionTest {
   public void shouldCallOnFailureOnAddFailureListenerAndUnhealthy() {
     // given
     when(healthMonitor.getHealthStatus()).thenReturn(HealthStatus.UNHEALTHY);
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onFailure();
     schedulerRule.submitActor(partition);
@@ -96,7 +100,6 @@ public class ZeebePartitionTest {
   @Test
   public void shouldCallOnRecoveredOnAddFailureListenerAndHealthy() {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onRecovered();
 
@@ -116,7 +119,6 @@ public class ZeebePartitionTest {
   @Test
   public void shouldStepDownAfterFailedLeaderTransition() throws InterruptedException {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
     final CountDownLatch latch = new CountDownLatch(1);
 
     when(transition.toLeader(anyLong()))
@@ -154,7 +156,6 @@ public class ZeebePartitionTest {
   @Test
   public void shouldGoInactiveAfterFailedFollowerTransition() throws InterruptedException {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
     final CountDownLatch latch = new CountDownLatch(1);
 
     when(transition.toFollower(anyLong()))
@@ -189,7 +190,6 @@ public class ZeebePartitionTest {
   @Test
   public void shouldGoInactiveIfTransitionHasUnrecoverableFailure() throws InterruptedException {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
     final CountDownLatch latch = new CountDownLatch(1);
     when(transition.toLeader(anyLong()))
         .thenReturn(
@@ -229,6 +229,36 @@ public class ZeebePartitionTest {
     @Override
     public ActorFuture<Void> toInactive() {
       return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+      // Do nothing
+    }
+
+    @Override
+    public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
+      // Do nothing
+    }
+  }
+
+  private static class NoopStartupStep implements PartitionStartupStep {
+
+    @Override
+    public String getName() {
+      return "noop";
+    }
+
+    @Override
+    public ActorFuture<PartitionStartupContext> startup(
+        final PartitionStartupContext partitionStartupContext) {
+      return CompletableActorFuture.completed(partitionStartupContext);
+    }
+
+    @Override
+    public ActorFuture<PartitionStartupContext> shutdown(
+        final PartitionStartupContext partitionStartupContext) {
+      return CompletableActorFuture.completed(partitionStartupContext);
     }
   }
 }
