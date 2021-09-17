@@ -257,6 +257,8 @@ public final class ClusteringRule extends ExternalResource {
                 LOG.error("Failed to close broker: ", e);
               }
             });
+    systemContexts.values().forEach(ctx -> ctx.getScheduler().stop());
+    systemContexts.clear();
     brokers.clear();
     brokerCfgs.clear();
     logstreams.clear();
