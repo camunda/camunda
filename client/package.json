@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "3.4.11",
-    "@bpmn-io/form-js": "0.4.3",
+    "@bpmn-io/form-js": "0.4.4",
     "@camunda-cloud/common-ui": "0.0.17-rc3",
     "@camunda-cloud/common-ui-react": "0.0.17-rc3",
     "date-fns": "2.23.0",
@@ -86,7 +86,7 @@
     "jest-junit": "12.2.0",
     "lint-staged": "11.1.2",
     "msw": "0.35.0",
-    "prettier": "2.4.0",
+    "prettier": "2.4.1",
     "react-scripts": "4.0.3",
     "testcafe": "1.16.0",
     "typescript": "4.4.3",
