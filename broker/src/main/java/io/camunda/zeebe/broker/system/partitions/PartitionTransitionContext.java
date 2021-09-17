@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -79,4 +80,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setSnapshotDirector(AsyncSnapshotDirector snapshotDirector);
 
   BrokerCfg getBrokerCfg();
+
+  QueryService getQueryService();
+
+  void setQueryService(QueryService queryService);
 }

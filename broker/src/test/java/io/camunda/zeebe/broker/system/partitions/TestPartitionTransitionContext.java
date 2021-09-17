@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -49,6 +50,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private AtomixLogStorage logStorage;
   private BrokerCfg brokerCfg;
   private AsyncSnapshotDirector snapshotDirector;
+  private QueryService queryService;
 
   @Override
   public int getPartitionId() {
@@ -233,6 +235,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public BrokerCfg getBrokerCfg() {
     return brokerCfg;
+  }
+
+  @Override
+  public QueryService getQueryService() {
+    return queryService;
+  }
+
+  @Override
+  public void setQueryService(final QueryService queryService) {
+    this.queryService = queryService;
   }
 
   public void setBrokerCfg(final BrokerCfg brokerCfg) {

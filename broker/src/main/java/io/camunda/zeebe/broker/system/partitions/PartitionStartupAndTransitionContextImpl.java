@@ -23,7 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.camunda.zeebe.engine.state.query.StateQueryService;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -76,7 +76,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
-  private StateQueryService queryService;
+  private QueryService queryService;
 
   private long currentTerm;
   private Role currentRole;
@@ -255,12 +255,12 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public StateQueryService getQueryService() {
+  public QueryService getQueryService() {
     return queryService;
   }
 
   @Override
-  public void setQueryService(final StateQueryService queryService) {
+  public void setQueryService(final QueryService queryService) {
     this.queryService = queryService;
   }
 
