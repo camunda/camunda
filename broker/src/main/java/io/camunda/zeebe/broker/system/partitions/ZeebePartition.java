@@ -16,10 +16,6 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionFactory;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
-import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -32,6 +28,7 @@ import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.startup.StartupProcess;
+import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,13 +43,7 @@ public final class ZeebePartition extends Actor
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  private static final StartupProcess<PartitionStartupContext> STARTUP_PROCESS =
-      new StartupProcess<>(
-          LOG,
-          List.of(
-              new StateControllerPartitionStartupStep(),
-              new LogDeletionPartitionStartupStep(),
-              new RockDbMetricExporterPartitionStartupStep()));
+  private final StartupProcess<PartitionStartupContext> startupProcess;
 
   private Role raftRole;
   private final String actorName;
@@ -69,19 +60,22 @@ public final class ZeebePartition extends Actor
 
   public ZeebePartition(
       final PartitionStartupAndTransitionContextImpl transitionContext,
-      final PartitionTransition transition) {
+      final PartitionTransition transition,
+      final List<StartupStep<PartitionStartupContext>> startupSteps) {
     context = transitionContext.getPartitionContext();
     adminControl = transitionContext.getPartitionAdminControl();
 
     this.transition = transition;
     startupContext = transitionContext;
 
+    startupProcess = new StartupProcess<>(LOG, startupSteps);
+
     transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
 
     // todo remove after migration
     if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-      ((NewPartitionTransitionImpl) transition).setConcurrencyControl(actor);
+      transition.setConcurrencyControl(actor);
     }
     // todo remove after migration
 
@@ -205,7 +199,7 @@ public final class ZeebePartition extends Actor
   @Override
   public void onActorStarting() {
     if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-      STARTUP_PROCESS
+      startupProcess
           .startup(actor, startupContext)
           .onComplete(
               (newStartupContext, error) -> {
@@ -218,8 +212,7 @@ public final class ZeebePartition extends Actor
                 startupContext = newStartupContext;
                 final var transitionContext = startupContext.createTransitionContext();
 
-                ((NewPartitionTransitionImpl) transition)
-                    .updateTransitionContext(transitionContext);
+                transition.updateTransitionContext(transitionContext);
 
                 context = transitionContext.getPartitionContext();
 
@@ -257,7 +250,7 @@ public final class ZeebePartition extends Actor
                   .removeComponent(context.getRaftPartition().name());
 
               if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-                STARTUP_PROCESS
+                startupProcess
                     .shutdown(actor, startupContext)
                     .onComplete(
                         (newStartupContext, error) -> {

@@ -41,7 +41,7 @@ public class RockDbMetricExporterPartitionStartupStep implements PartitionStartu
                 });
 
     partitionStartupContext.setMetricsTimer(metricsTimer);
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(partitionStartupContext);
   }
 
   @Override
@@ -49,6 +49,6 @@ public class RockDbMetricExporterPartitionStartupStep implements PartitionStartu
       final PartitionStartupContext partitionStartupContext) {
     partitionStartupContext.getMetricsTimer().cancel();
     partitionStartupContext.setMetricsTimer(null);
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(partitionStartupContext);
   }
 }

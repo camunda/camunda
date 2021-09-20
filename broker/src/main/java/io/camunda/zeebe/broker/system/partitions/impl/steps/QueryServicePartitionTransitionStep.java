@@ -57,6 +57,6 @@ public final class QueryServicePartitionTransitionStep implements PartitionTrans
 
   @Override
   public String getName() {
-    return "queryService";
+    return "QueryService";
   }
 }

@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 
-public class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
+public final class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
   @Override
   public ActorFuture<Void> prepareTransition(
@@ -87,7 +87,7 @@ public class SnapshotDirectorPartitionTransitionStep implements PartitionTransit
 
   @Override
   public String getName() {
-    return "AsyncSnapshotDirector";
+    return "SnapshotDirector";
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {

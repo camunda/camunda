@@ -15,7 +15,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class ZeebeDbPartitionTransitionStep implements PartitionTransitionStep {
+public final class ZeebeDbPartitionTransitionStep implements PartitionTransitionStep {
 
   @Override
   public ActorFuture<Void> prepareTransition(

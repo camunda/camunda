@@ -16,18 +16,20 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.function.Supplier;
 
-public class StreamProcessorTransitionStep implements PartitionTransitionStep {
+public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
 
-  private final StreamProcessorBuilder streamProcessorBuilder;
+  private final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier;
 
   public StreamProcessorTransitionStep() {
-    streamProcessorBuilder = StreamProcessor.builder();
+    this(StreamProcessor::builder);
   }
 
   // Used for testing
-  public StreamProcessorTransitionStep(final StreamProcessorBuilder streamProcessorBuilder) {
-    this.streamProcessorBuilder = streamProcessorBuilder;
+  StreamProcessorTransitionStep(
+      final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier) {
+    this.streamProcessorBuilderSupplier = streamProcessorBuilderSupplier;
   }
 
   @Override
@@ -121,7 +123,8 @@ public class StreamProcessorTransitionStep implements PartitionTransitionStep {
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
-    return streamProcessorBuilder
+    return streamProcessorBuilderSupplier
+        .get()
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())

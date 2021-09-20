@@ -19,7 +19,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Collection;
 
-public class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
+public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 

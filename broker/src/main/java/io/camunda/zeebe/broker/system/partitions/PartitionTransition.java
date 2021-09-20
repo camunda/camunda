@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 public interface PartitionTransition {
@@ -35,4 +36,18 @@ public interface PartitionTransition {
    * @return an ActorFuture completed when the transition is complete
    */
   ActorFuture<Void> toInactive();
+
+  /**
+   * Sets the ConcurrencyControl through which tasks are executed.
+   *
+   * @param concurrencyControl the concurrency control
+   */
+  void setConcurrencyControl(ConcurrencyControl concurrencyControl);
+
+  /**
+   * Sets the transition context
+   *
+   * @param transitionContext the context to be used
+   */
+  void updateTransitionContext(PartitionTransitionContext transitionContext);
 }

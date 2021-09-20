@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 
-public class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
+public final class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
 
@@ -65,7 +65,7 @@ public class LogStoragePartitionTransitionStep implements PartitionTransitionSte
 
   @Override
   public String getName() {
-    return "logstorage";
+    return "LogStorage";
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
