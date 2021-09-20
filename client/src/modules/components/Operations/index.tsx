@@ -14,6 +14,7 @@ import OperationItems from 'modules/components/OperationItems';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import {OperationsContainer} from './styled';
+import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal';
 
 type Props = {
   instance: ProcessInstanceEntity;
@@ -40,10 +41,8 @@ const Operations: React.FC<Props> = observer(
       onOperation?.();
     };
 
-    const [
-      isConfirmCancellationModalVisible,
-      setConfirmCancellationModalVisible,
-    ] = useState(false);
+    const [isCancellationModalVisible, setIsCancellationModalVisible] =
+      useState(false);
 
     return (
       <OperationsContainer>
@@ -68,21 +67,29 @@ const Operations: React.FC<Props> = observer(
           {isRunning(instance) && (
             <OperationItems.Item
               type={OPERATION_TYPE.CANCEL_PROCESS_INSTANCE}
-              onClick={() => setConfirmCancellationModalVisible(true)}
+              onClick={() => setIsCancellationModalVisible(true)}
               title={`Cancel Instance ${instance.id}`}
             />
           )}
         </OperationItems>
-        <ConfirmOperationModal
-          bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}
-          onApplyClick={() => {
-            setConfirmCancellationModalVisible(false);
-            handleClick(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE);
-          }}
-          isVisible={isConfirmCancellationModalVisible}
-          onModalClose={() => setConfirmCancellationModalVisible(false)}
-          onCancelClick={() => setConfirmCancellationModalVisible(false)}
-        />
+        {instance.parentInstanceId === null ? (
+          <ConfirmOperationModal
+            bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}
+            onApplyClick={() => {
+              setIsCancellationModalVisible(false);
+              handleClick(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE);
+            }}
+            isVisible={isCancellationModalVisible}
+            onModalClose={() => setIsCancellationModalVisible(false)}
+            onCancelClick={() => setIsCancellationModalVisible(false)}
+          />
+        ) : (
+          <CalledInstanceCancellationModal
+            onModalClose={() => setIsCancellationModalVisible(false)}
+            isVisible={isCancellationModalVisible}
+            parentInstanceId={instance.parentInstanceId}
+          />
+        )}
       </OperationsContainer>
     );
   }

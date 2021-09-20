@@ -4,7 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rest} from 'msw';
 import {instancesStore} from 'modules/stores/instances';
@@ -13,6 +18,8 @@ import {mockServer} from 'modules/mock-server/node';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {MemoryRouter, Router} from 'react-router';
+import {createMemoryHistory} from 'history';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -167,11 +174,7 @@ describe('Operations', () => {
 
       jest.runOnlyPendingTimers();
 
-      await waitFor(() =>
-        expect(
-          screen.queryByTestId('operation-spinner')
-        ).not.toBeInTheDocument()
-      );
+      await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
 
       instancesStore.reset();
 
@@ -210,8 +213,87 @@ describe('Operations', () => {
 
       userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
-      await waitFor(() =>
-        expect(screen.queryByText(modalText)).not.toBeInTheDocument()
+      await waitForElementToBeRemoved(screen.getByText(modalText));
+    });
+
+    it('should show modal when trying to cancel called instance', async () => {
+      const onOperationMock = jest.fn();
+
+      const Wrapper: React.FC = ({children}) => {
+        return (
+          <ThemeProvider>
+            <MemoryRouter>{children}</MemoryRouter>
+          </ThemeProvider>
+        );
+      };
+
+      const modalText =
+        /To cancel this instance, the parent instance.*needs to be canceled. When the parent is canceled all the called instances will be canceled automatically./;
+
+      render(
+        <Operations
+          instance={{
+            ...instanceMock,
+            state: 'INCIDENT',
+            parentInstanceId: '6755399441058622',
+          }}
+          onOperation={onOperationMock}
+        />,
+        {wrapper: Wrapper}
+      );
+
+      userEvent.click(
+        screen.getByRole('button', {name: 'Cancel Instance instance_1'})
+      );
+
+      expect(screen.getByText(modalText)).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Cancel'})
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: 'Apply'})
+      ).not.toBeInTheDocument();
+
+      userEvent.click(screen.getByRole('button', {name: 'Close'}));
+
+      await waitForElementToBeRemoved(screen.getByText(modalText));
+    });
+
+    it('should redirect to linked parent instance', () => {
+      const mockHistory = createMemoryHistory();
+      const parentInstanceId = '6755399441058622';
+
+      const Wrapper: React.FC = ({children}) => {
+        return (
+          <ThemeProvider>
+            <Router history={mockHistory}>{children}</Router>
+          </ThemeProvider>
+        );
+      };
+
+      render(
+        <Operations
+          instance={{
+            ...instanceMock,
+            state: 'INCIDENT',
+            parentInstanceId,
+          }}
+        />,
+        {wrapper: Wrapper}
+      );
+
+      userEvent.click(
+        screen.getByRole('button', {name: 'Cancel Instance instance_1'})
+      );
+
+      userEvent.click(
+        screen.getByRole('link', {
+          name: `View parent instance ${parentInstanceId}`,
+        })
+      );
+
+      expect(mockHistory.location.pathname).toBe(
+        `/instances/${parentInstanceId}`
       );
     });
   });
