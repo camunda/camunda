@@ -99,6 +99,15 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- required, as the tool is not capable of looking up the generated sources by itself -->
+          <sourcepath>${project.basedir}/src/main;${project.basedir}/target/generated-sources/annotations</sourcepath>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
