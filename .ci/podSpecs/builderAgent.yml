@@ -44,11 +44,11 @@ spec:
               resource: limits.cpu
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 2
+          memory: 4Gi
         requests:
-          cpu: 4
-          memory: 8Gi
+          cpu: 2
+          memory: 4Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
       env:
