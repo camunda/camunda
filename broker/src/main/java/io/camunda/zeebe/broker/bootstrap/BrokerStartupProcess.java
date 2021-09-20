@@ -52,7 +52,9 @@ public final class BrokerStartupProcess {
     }
 
     result.add(new MonitoringServerStep());
+    result.add(new BrokerAdminServiceStep());
     result.add(new ClusterServicesCreationStep());
+
     result.add(new CommandApiServiceStep());
     result.add(new SubscriptionApiStep());
     result.add(new ClusterServicesStep());
@@ -63,7 +65,6 @@ public final class BrokerStartupProcess {
 
     result.add(new LeaderManagementRequestHandlerStep());
     result.add(new PartitionManagerStep());
-    result.add(new BrokerAdminServiceStep());
 
     return result;
   }
