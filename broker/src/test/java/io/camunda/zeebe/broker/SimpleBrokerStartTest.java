@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,9 +66,8 @@ public final class SimpleBrokerStartTest {
         new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
     systemContext.getScheduler().start();
 
-    final var broker = new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
-    broker.addPartitionListener(
+    final var listener =
         new PartitionListener() {
           @Override
           public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
@@ -88,7 +88,9 @@ public final class SimpleBrokerStartTest {
           public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
             return CompletableActorFuture.completed(null);
           }
-        });
+        };
+    final var broker =
+        new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, Collections.singletonList(listener));
 
     // when
     broker.start().join();
