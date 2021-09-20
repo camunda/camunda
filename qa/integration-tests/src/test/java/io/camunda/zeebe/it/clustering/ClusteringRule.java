@@ -68,6 +68,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -287,9 +288,12 @@ public final class ClusteringRule extends ExternalResource {
 
     systemContext.getScheduler().start();
 
-    final Broker broker = new Broker(systemContext, getSpringBrokerBridge(nodeId));
+    final Broker broker =
+        new Broker(
+            systemContext,
+            getSpringBrokerBridge(nodeId),
+            Collections.singletonList(new LeaderListener(partitionLatch, nodeId)));
 
-    broker.addPartitionListener(new LeaderListener(partitionLatch, nodeId));
     new Thread(
             () -> {
               broker.start();

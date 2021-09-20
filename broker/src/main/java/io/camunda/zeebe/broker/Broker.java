@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.netty.util.NetUtil;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -65,8 +66,15 @@ public final class Broker implements AutoCloseable {
   // TODO make Broker class itself the actor
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
+    this(systemContext, springBrokerBridge, Collections.emptyList());
+  }
+
+  public Broker(
+      final SystemContext systemContext,
+      final SpringBrokerBridge springBrokerBridge,
+      final List<PartitionListener> additionalPartitionListeners) {
     this.systemContext = systemContext;
-    partitionListeners = new ArrayList<>();
+    partitionListeners = new ArrayList<>(additionalPartitionListeners);
     this.springBrokerBridge = springBrokerBridge;
     scheduler = this.systemContext.getScheduler();
 
@@ -84,10 +92,6 @@ public final class Broker implements AutoCloseable {
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);
-  }
-
-  public void addPartitionListener(final PartitionListener listener) {
-    partitionListeners.add(listener);
   }
 
   public synchronized CompletableFuture<Broker> start() {
