@@ -345,7 +345,7 @@ public class AtomixTransportTest {
 
     // when
     retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
-    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder());
+    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
 
     // then
     final var response = requestFuture.join();
@@ -355,8 +355,8 @@ public class AtomixTransportTest {
   @Test
   public void shouldOnlyHandleRequestsOfSubscribedTypes() {
     // given
-    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder());
-    serverTransport.subscribe(0, RequestType.UNKNOWN, new FailingResponder());
+    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
+    serverTransport.subscribe(0, RequestType.UNKNOWN, new FailingResponder()).join();
 
     // when
     final var requestFuture =
