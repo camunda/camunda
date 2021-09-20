@@ -8,8 +8,9 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 
 /** Context for components/actors managed directly by the Broker */
@@ -27,5 +28,7 @@ public interface BrokerContext {
    */
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
-  PartitionManagerImpl getPartitionManager();
+  PartitionManager getPartitionManager();
+
+  BrokerAdminService getBrokerAdminService();
 }

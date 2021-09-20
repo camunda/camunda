@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
-import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -51,7 +50,6 @@ public final class Broker implements AutoCloseable {
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private BrokerHealthCheckService healthCheckService;
-  private final SpringBrokerBridge springBrokerBridge;
   private BrokerAdminService brokerAdminService;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
@@ -70,7 +68,6 @@ public final class Broker implements AutoCloseable {
       final SpringBrokerBridge springBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
     this.systemContext = systemContext;
-    this.springBrokerBridge = springBrokerBridge;
     scheduler = this.systemContext.getScheduler();
 
     localBroker = createBrokerInfo(getConfig());
@@ -132,13 +129,8 @@ public final class Broker implements AutoCloseable {
   }
 
   private StartProcess initStart() {
-    final BrokerCfg brokerCfg = getConfig();
-
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
-
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep("upgrade manager", this::addBrokerAdminService);
-
     return startContext;
   }
 
@@ -149,6 +141,7 @@ public final class Broker implements AutoCloseable {
     testCompanionObject.atomix = clusterServices.getAtomixCluster();
     testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
     testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
+    brokerAdminService = brokerContext.getBrokerAdminService();
 
     return () -> {
       brokerStartupActor.stop().join();
@@ -175,23 +168,6 @@ public final class Broker implements AutoCloseable {
       result.setVersion(version);
     }
     return result;
-  }
-
-  private AutoCloseable addBrokerAdminService() {
-    final var adminService = new BrokerAdminServiceImpl();
-    scheduleActor(adminService);
-
-    final var partitionManager = brokerContext.getPartitionManager();
-    adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
-    adminService.injectPartitionInfoSource(partitionManager.getPartitions());
-
-    brokerAdminService = adminService;
-    springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
-    return adminService;
-  }
-
-  private void scheduleActor(final Actor actor) {
-    systemContext.getScheduler().submitActor(actor).join();
   }
 
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
