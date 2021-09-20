@@ -3,7 +3,8 @@
 * [Build Zeebe from source](#build-zeebe-from-source)
 * [Report issues or contact developers](#report-issues-or-contact-developers)
 * [GitHub Issue Guidelines](#github-issue-guidelines)
-* [Create a Pull Request](#create-a-pull-request)
+* [Starting on an Issue](#starting-on-an-issue)
+* [Creating a Pull Request](#creating-a-pull-request)
 * [Commit Message Guidelines](#commit-message-guidelines)
 * [Contributor License Agreement](#contributor-license-agreement)
 * [Licenses](#licenses)
@@ -68,7 +69,7 @@ describes:
 - a problem, how we can reproduce it and what would be the expected behavior
 - a change and the intention how this would improve the system
 
-## Create a Pull Request
+## Starting on an issue
 
 Zeebe follows a
 [gitflow](https://nvie.com/posts/a-successful-git-branching-model/) process.
@@ -111,25 +112,30 @@ To work on an issue, follow the following steps:
    ```
    git push --force-with-lease
    ```
+
+## Creating a pull request
+
 1. To start the review process create a new pull request on GitHub from your
    branch to the `develop` branch. Give it a meaningful name and describe
    your changes in the body of the pull request. Lastly add a link to the issue
    this pull request closes, i.e. by writing in the description `closes #123`
-1. Assign the pull request to one developer to review, if you are not sure who
+2. Assign the pull request to one developer to review, if you are not sure who
    should review the issue skip this step. Someone will assign a reviewer for
    you.
-1. The reviewer will look at the pull request in the following days and give
-   you either feedback or accept the changes.
+3. The reviewer will look at the pull request in the following days and give
+   you either feedback or accept the changes. Your reviewer might use
+   [emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)
+   during the reviewing process.
     1. If there are changes requested address them in a new commit. Notify the
        reviewer in a comment if the pull request is ready for review again. If
        the changes are accepted squash them again in the related commit and force push.
-       Then initiate a merge by writing a comment with the contet `bors r+`.
-    1. If no changes are requested the reviewer will initiate a merge by adding a
-       comment with the content `bors r+`.
-1. When a merge is initiated, a bot will merge your branch with the latest
+       Then initiate a merge by writing a comment with the content `bors merge`.
+    2. If no changes are requested the reviewer will initiate a merge by adding a
+       comment with the content `bors merge`.
+5. When a merge is initiated, a bot will merge your branch with the latest
    develop and run the CI on it.
     1. If everything goes well the branch is merged and deleted and the issue
-       and pull request are cloesed.
+       and pull request are closed.
     2. If there are merge conflicts the author of the pull request has to
        manually rebase `develop` into the issue branch and retrigger a merge
        attempt.
