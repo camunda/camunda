@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -48,6 +49,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private CommandApiServiceImpl commandApiService;
   private SubscriptionApiCommandMessageHandlerService subscriptionApiService;
   private EmbeddedGatewayService embeddedGatewayService;
+  private LeaderManagementRequestHandler leaderManagementRequestHandler;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -201,5 +203,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public LeaderManagementRequestHandler getLeaderManagementRequestHandler() {
+    return leaderManagementRequestHandler;
+  }
+
+  @Override
+  public void setLeaderManagementRequestHandler(
+      final LeaderManagementRequestHandler leaderManagementRequestHandler) {
+    this.leaderManagementRequestHandler = leaderManagementRequestHandler;
   }
 }

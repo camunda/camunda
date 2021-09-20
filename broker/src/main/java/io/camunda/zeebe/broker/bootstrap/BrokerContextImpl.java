@@ -13,6 +13,8 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
+import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -26,17 +28,20 @@ public final class BrokerContextImpl implements BrokerContext {
   private final EmbeddedGatewayService embeddedGatewayService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final List<PartitionListener> partitionListeners;
+  private final LeaderManagementRequestHandler leaderManagementRequestHandler;
 
   public BrokerContextImpl(
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final ClusterServicesImpl clusterServices,
       final CommandApiService commandApiService,
       final EmbeddedGatewayService embeddedGatewayService,
+      final LeaderManagementRequestHandler leaderManagementRequestHandler,
       final List<PartitionListener> partitionListeners) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
     this.commandApiService = requireNonNull(commandApiService);
     this.embeddedGatewayService = embeddedGatewayService;
+    this.leaderManagementRequestHandler = requireNonNull(leaderManagementRequestHandler);
 
     this.partitionListeners = unmodifiableList(requireNonNull(partitionListeners));
   }
@@ -71,5 +76,10 @@ public final class BrokerContextImpl implements BrokerContext {
   @Override
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
     return diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public PushDeploymentRequestHandler getPushDeploymentRequestHandler() {
+    return leaderManagementRequestHandler.getPushDeploymentRequestHandler();
   }
 }
