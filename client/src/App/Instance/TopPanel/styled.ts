@@ -32,9 +32,9 @@ const Pane = styled(SplitPaneComponent.Pane)`
     const colors = theme.colors.topPanel.pane;
 
     return css`
-      border-top: none;
+      border-bottom: 1px solid ${colors.borderColor};
       background-color: ${colors.backgroundColor};
-      ${pseudoBorder}
+
       ${expandState === 'DEFAULT'
         ? css`
             height: 50%;

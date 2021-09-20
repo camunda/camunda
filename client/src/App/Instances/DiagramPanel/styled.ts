@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import EmptyMessage from '../EmptyMessage';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 
@@ -24,4 +24,15 @@ const PaneHeader = styled(SplitPaneComponent.Pane.Header)`
   border-radius: inherit;
 `;
 
-export {EmptyMessageWrapper, DiagramEmptyMessage, PaneHeader};
+const PaneBody = styled(SplitPaneComponent.Pane.Body)`
+  ${({theme}) => {
+    const colors = theme.colors.modules.panel;
+
+    return css`
+      position: relative;
+      border-bottom: 1px solid ${colors.borderColor};
+    `;
+  }}
+`;
+
+export {EmptyMessageWrapper, DiagramEmptyMessage, PaneHeader, PaneBody};

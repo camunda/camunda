@@ -69,7 +69,7 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
       <Styled.PaneHeader>
         <span>{processName ?? 'Process'}</span>
       </Styled.PaneHeader>
-      <SplitPane.Pane.Body style={{position: 'relative'}}>
+      <Styled.PaneBody>
         {isDiagramLoading ? (
           <SpinnerSkeleton data-testid="diagram-spinner" />
         ) : (
@@ -117,7 +117,7 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
             expandState={props.expandState}
           />
         ) : null}
-      </SplitPane.Pane.Body>
+      </Styled.PaneBody>
     </SplitPane.Pane>
   );
 });

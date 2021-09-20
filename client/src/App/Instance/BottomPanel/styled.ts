@@ -58,7 +58,15 @@ const Pills = styled.div`
 const PaneHeader = styled(SplitPane.Pane.Header)`
   display: flex;
   align-items: center;
-  border-bottom: none;
+
+  ${({expandState}) => {
+    return css`
+      ${expandState === 'COLLAPSED' &&
+      css`
+        border-bottom: none;
+      `}
+    `;
+  }}
 `;
 
 const Section = styled.div`

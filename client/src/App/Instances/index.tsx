@@ -101,9 +101,8 @@ const Instances: React.FC = observer(() => {
     <Styled.Instances>
       <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
       <Styled.Content>
-        <Styled.FilterSection>
-          <Filters />
-        </Styled.FilterSection>
+        <Filters />
+        <Styled.Separator />
         <Styled.SplitPane
           titles={{top: 'Process', bottom: 'Instances'}}
           expandedPaneId="instancesExpandedPaneId"

@@ -7,19 +7,33 @@
 import styled, {css} from 'styled-components';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
-const HEADER_HEIGHT = 56;
+const HEADER_HEIGHT = 57;
 const METRIC_PANEL_HEIGHT = 234;
+const TILES_TOP_PADDING = 20;
+const TILES_BOTTOM_PADDING = 10;
 
 const Container = styled.main`
-  padding: 0 20px 0;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  ${({theme}) => {
+    const colors = theme.colors.dashboard;
+
+    return css`
+      display: flex;
+      flex-direction: column;
+      background-color: ${colors.backgroundColor};
+      height: calc(100vh - ${HEADER_HEIGHT}px);
+    `;
+  }}
 `;
 
 const TileWrapper = styled.div`
   display: flex;
-  height: calc(100vh - ${HEADER_HEIGHT + METRIC_PANEL_HEIGHT}px);
+  height: calc(
+    100vh -
+      ${HEADER_HEIGHT +
+      TILES_TOP_PADDING +
+      METRIC_PANEL_HEIGHT +
+      TILES_BOTTOM_PADDING}px
+  );
 `;
 
 const PanelStyles = ({theme}: any) => {
@@ -104,8 +118,19 @@ const TileContent = styled.div`
 `;
 
 const Footer = styled.div`
-  padding: 12px 0;
-  text-align: right;
+  ${({theme}) => {
+    const colors = theme.colors.dashboard.footer;
+
+    return css`
+      background-color: ${colors.backgroundColor};
+      padding: 12px 20px;
+      text-align: right;
+    `;
+  }}
+`;
+
+const Tiles = styled.div`
+  padding: ${TILES_TOP_PADDING}px 20px 10px;
 `;
 
 export {
@@ -116,4 +141,5 @@ export {
   TileTitle,
   TileContent,
   Footer,
+  Tiles,
 };

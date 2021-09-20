@@ -22,7 +22,6 @@ const Dropdown = styled(DefaultDropdown)`
 `;
 
 const ProfileDropdown = styled.span`
-  margin-top: 7px;
   display: flex;
   align-items: center;
   margin-left: auto;

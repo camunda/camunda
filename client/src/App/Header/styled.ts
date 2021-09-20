@@ -6,38 +6,18 @@
 
 import styled, {css} from 'styled-components';
 
-import {ReactComponent as Logo} from 'modules/components/Icon/logo-2020-round.svg';
+const HEADER_HEIGHT = 57;
 
-const HEADER_HEIGHT = 56;
-
-const Header = styled.header`
+const Menu = styled.ul`
   ${({theme}) => {
     const colors = theme.colors.header;
 
     return css`
       display: flex;
-      height: ${HEADER_HEIGHT}px;
-      background-color: ${theme.colors.ui01};
-      padding: 15px 20px;
+      flex-wrap: wrap;
       font-size: 15px;
       font-weight: 500;
       color: ${colors.color};
-    `;
-  }}
-`;
-
-const Menu = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
-`;
-
-const LogoIcon = styled(Logo)`
-  ${({theme}) => {
-    return css`
-      color: ${theme.colors.logo};
-      width: 26px;
-      height: 26px;
-      cursor: pointer;
     `;
   }}
 `;
@@ -55,4 +35,4 @@ const Separator = styled.div`
   }}
 `;
 
-export {HEADER_HEIGHT, Header, Menu, LogoIcon, Separator};
+export {HEADER_HEIGHT, Menu, Separator};

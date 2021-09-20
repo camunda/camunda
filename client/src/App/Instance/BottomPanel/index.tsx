@@ -32,7 +32,7 @@ export default class BottomPanel extends React.PureComponent<Props> {
   render() {
     return (
       <Styled.Pane {...this.props}>
-        <Styled.PaneHeader>
+        <Styled.PaneHeader expandState={this.props.expandState}>
           <Styled.Headline>Instance History</Styled.Headline>
           <Styled.Pills>
             <TimeStampPill />

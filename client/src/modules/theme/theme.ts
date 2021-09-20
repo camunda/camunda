@@ -108,9 +108,10 @@ const theme = Object.freeze({
         },
       },
       dashboard: {
+        backgroundColor: DARK_COLORS.button06,
         panelStyles: {
           borderColor: DARK_COLORS.ui04,
-          backgroundColor: DARK_COLORS.ui02,
+          backgroundColor: DARK_COLORS.ui03,
         },
         metricPanelWrapper: {
           color: rgba(SEMANTIC_COLORS.white, 0.9),
@@ -133,6 +134,9 @@ const theme = Object.freeze({
           success: {
             color: rgba(SEMANTIC_COLORS.allIsWell, 0.9),
           },
+        },
+        footer: {
+          backgroundColor: DARK_COLORS.ui01,
         },
       },
       header: {
@@ -306,6 +310,7 @@ const theme = Object.freeze({
         },
         pane: {
           backgroundColor: DARK_COLORS.ui02,
+          borderColor: DARK_COLORS.ui04,
         },
       },
       instance: {
@@ -357,6 +362,7 @@ const theme = Object.freeze({
         },
       },
       operationsPanel: {
+        borderColor: DARK_COLORS.ui04,
         skeleton: {
           entry: {
             backgroundColor: DARK_COLORS.ui03,
@@ -1032,6 +1038,7 @@ const theme = Object.freeze({
         },
       },
       dashboard: {
+        backgroundColor: LIGHT_COLORS.ui02,
         panelStyles: {
           borderColor: LIGHT_COLORS.ui05,
           backgroundColor: LIGHT_COLORS.ui04,
@@ -1057,6 +1064,9 @@ const theme = Object.freeze({
           success: {
             color: rgba(SEMANTIC_COLORS.allIsWell, 0.9),
           },
+        },
+        footer: {
+          backgroundColor: LIGHT_COLORS.ui01,
         },
       },
       header: {
@@ -1230,6 +1240,7 @@ const theme = Object.freeze({
         },
         pane: {
           backgroundColor: LIGHT_COLORS.ui04,
+          borderColor: LIGHT_COLORS.ui05,
         },
       },
       instance: {
@@ -1281,6 +1292,7 @@ const theme = Object.freeze({
         },
       },
       operationsPanel: {
+        borderColor: LIGHT_COLORS.ui05,
         skeleton: {
           entry: {
             backgroundColor: LIGHT_COLORS.ui04,

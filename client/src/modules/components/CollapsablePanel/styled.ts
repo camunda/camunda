@@ -28,12 +28,11 @@ const Collapsable = styled.div<CollapsableProps>`
     const isRight = panelPosition === PANEL_POSITION.RIGHT;
 
     return css`
-      border-radius: ${isRight ? '3px 0 0 0' : '0 3px 0 0'};
       position: relative;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      width: ${isCollapsed ? COLLAPSABLE_PANEL_MIN_WIDTH : `${maxWidth}px`};
+      min-width: ${isCollapsed ? COLLAPSABLE_PANEL_MIN_WIDTH : `${maxWidth}px`};
       height: 100%;
       background-color: ${colors.backgroundColor};
       transition: width 0.2s ease-out;

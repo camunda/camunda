@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
@@ -27,10 +27,6 @@ const Content = styled.div`
   width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
-const FilterSection = styled.div`
-  margin-right: 1px;
-`;
-
 const SplitPane = styled(SplitPaneComponent)`
   border-radius: 3px 0 0 0;
   width: 100%;
@@ -44,4 +40,15 @@ const PaneHeader = styled(SplitPane.Pane.Header)`
   border-radius: inherit;
 `;
 
-export {Instances, Content, FilterSection, SplitPane, Pane, PaneHeader};
+const Separator = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.panel;
+
+    return css`
+      width: 1px;
+      background-color: ${colors.borderColor};
+    `;
+  }}
+`;
+
+export {Instances, Content, SplitPane, Pane, PaneHeader, Separator};

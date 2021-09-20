@@ -15,8 +15,6 @@ const Panel = styled.div`
       display: flex;
       flex-direction: column;
       width: 100%;
-      border: solid 1px ${colors.borderColor};
-      border-bottom: none;
       background-color: ${colors.backgroundColor};
     `;
   }}

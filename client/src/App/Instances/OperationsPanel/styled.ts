@@ -5,6 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import CollapsablePanelBase from 'modules/components/CollapsablePanel';
 
 type OperationsListProps = {
   isInitialLoadComplete?: boolean;
@@ -44,4 +45,14 @@ const EmptyMessage = styled.div`
   }}
 `;
 
-export {OperationsList, EmptyMessage};
+const CollapsablePanel = styled(CollapsablePanelBase)`
+  ${({theme}) => {
+    const colors = theme.colors.operationsPanel;
+
+    return css`
+      border-left: 1px solid ${colors.borderColor};
+    `;
+  }}
+`;
+
+export {OperationsList, EmptyMessage, CollapsablePanel};

@@ -7,11 +7,10 @@
 import React, {useEffect} from 'react';
 
 import {PANEL_POSITION} from 'modules/constants';
-import CollapsablePanel from 'modules/components/CollapsablePanel';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
 import {operationsStore} from 'modules/stores/operations';
-import * as Styled from './styled';
+import {CollapsablePanel, OperationsList, EmptyMessage} from './styled';
 import * as CONSTANTS from './constants';
 import OperationsEntry from './OperationsEntry';
 import Skeleton from './Skeleton';
@@ -54,7 +53,7 @@ const OperationsPanel: React.FC<Props> = observer(
           verticalLabelOffset={27}
           scrollable
         >
-          <Styled.OperationsList
+          <OperationsList
             data-testid="operations-list"
             isInitialLoadComplete={status === 'fetched'}
           >
@@ -63,18 +62,16 @@ const OperationsPanel: React.FC<Props> = observer(
               <OperationsEntry key={operation.id} operation={operation} />
             ))}
             {operations.length === 0 && status === 'fetched' && (
-              <Styled.EmptyMessage>
-                {CONSTANTS.EMPTY_MESSAGE}
-              </Styled.EmptyMessage>
+              <EmptyMessage>{CONSTANTS.EMPTY_MESSAGE}</EmptyMessage>
             )}
             {status === 'error' && (
-              <Styled.EmptyMessage>
+              <EmptyMessage>
                 <StatusMessage variant="error">
                   Operations could not be fetched
                 </StatusMessage>
-              </Styled.EmptyMessage>
+              </EmptyMessage>
             )}
-          </Styled.OperationsList>
+          </OperationsList>
         </CollapsablePanel>
       </InfiniteScroller>
     );

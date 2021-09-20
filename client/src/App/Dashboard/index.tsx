@@ -19,6 +19,7 @@ import {
   TileTitle,
   TileContent,
   Footer,
+  Tiles,
 } from './styled';
 
 function Dashboard() {
@@ -29,23 +30,26 @@ function Dashboard() {
   return (
     <Container>
       <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
-      <MetricPanelWrapper>
-        <MetricPanel />
-      </MetricPanelWrapper>
-      <TileWrapper>
-        <Tile>
-          <TileTitle>Instances by Process</TileTitle>
-          <TileContent>
-            <InstancesByProcess />
-          </TileContent>
-        </Tile>
-        <Tile>
-          <TileTitle>Incidents by Error Message</TileTitle>
-          <TileContent>
-            <IncidentsByError />
-          </TileContent>
-        </Tile>
-      </TileWrapper>
+      <Tiles>
+        <MetricPanelWrapper>
+          <MetricPanel />
+        </MetricPanelWrapper>
+        <TileWrapper>
+          <Tile>
+            <TileTitle>Instances by Process</TileTitle>
+            <TileContent>
+              <InstancesByProcess />
+            </TileContent>
+          </Tile>
+          <Tile>
+            <TileTitle>Incidents by Error Message</TileTitle>
+            <TileContent>
+              <IncidentsByError />
+            </TileContent>
+          </Tile>
+        </TileWrapper>
+      </Tiles>
+
       <Footer>
         <Copyright />
       </Footer>

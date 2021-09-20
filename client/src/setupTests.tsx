@@ -22,6 +22,7 @@ class MockJSONEditor {
 }
 
 jest.mock('jsoneditor', () => MockJSONEditor);
+jest.mock('jsoneditor/dist/jsoneditor.css', () => undefined);
 jest.mock('brace/theme/tomorrow_night', () => undefined);
 jest.mock('brace/theme/tomorrow', () => undefined);
 jest.mock('modules/utils/date/formatDate');
@@ -29,6 +30,7 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
   const React = require('react');
 
   return {
+    ...jest.requireActual('@camunda-cloud/common-ui-react'),
     CmNotificationContainer: React.forwardRef(
       function CmNotificationContainer() {
         return null;
