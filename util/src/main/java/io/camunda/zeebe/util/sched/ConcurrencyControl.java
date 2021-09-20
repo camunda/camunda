@@ -27,7 +27,7 @@ public interface ConcurrencyControl {
   <T> void runOnCompletion(final ActorFuture<T> future, final BiConsumer<T, Throwable> callback);
 
   /**
-   * Schedules an action to be invoked
+   * Schedules an action to be invoked (must be called from an actor thread)
    *
    * @param action action to be invoked
    */

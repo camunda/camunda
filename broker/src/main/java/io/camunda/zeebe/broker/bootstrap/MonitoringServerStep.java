@@ -25,7 +25,7 @@ final class MonitoringServerStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var healthCheckService = brokerStartupContext.getHealthCheckService();
     concurrencyControl.runOnCompletion(
-        brokerStartupContext.scheduleActor(healthCheckService),
+        brokerStartupContext.getActorSchedulingService().submitActor(healthCheckService),
         (ok, error) ->
             forwardExceptions(
                 () ->
@@ -45,16 +45,13 @@ final class MonitoringServerStep extends AbstractBrokerStartupStep {
     brokerShutdownContext.removePartitionListener(healthCheckService);
     concurrencyControl.runOnCompletion(
         healthCheckService.closeAsync(),
-        (ok, error) ->
-            forwardExceptions(
-                () -> {
-                  if (error != null) {
-                    shutdownFuture.completeExceptionally(error);
-                  } else {
-                    shutdownFuture.complete(brokerShutdownContext);
-                  }
-                },
-                shutdownFuture));
+        (ok, error) -> {
+          if (error != null) {
+            shutdownFuture.completeExceptionally(error);
+          } else {
+            shutdownFuture.complete(brokerShutdownContext);
+          }
+        });
   }
 
   private void completeStartup(

@@ -10,29 +10,26 @@ package io.camunda.zeebe.transport;
 import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 
 public final class TransportFactory {
 
-  // we need to schedule the transports, but Actor is not an interface
-  // which means we need to schedule in the factory otherwise we can return the transport interface
-  // types
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulingService actorSchedulingService;
 
-  public TransportFactory(final ActorScheduler actorScheduler) {
-    this.actorScheduler = actorScheduler;
+  public TransportFactory(final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
   }
 
   public ServerTransport createServerTransport(
       final int nodeId, final MessagingService messagingService) {
     final var atomixServerTransport = new AtomixServerTransport(nodeId, messagingService);
-    actorScheduler.submitActor(atomixServerTransport);
+    actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }
 
   public ClientTransport createClientTransport(final MessagingService messagingService) {
     final var atomixClientTransportAdapter = new AtomixClientTransportAdapter(messagingService);
-    actorScheduler.submitActor(atomixClientTransportAdapter);
+    actorSchedulingService.submitActor(atomixClientTransportAdapter);
     return atomixClientTransportAdapter;
   }
 }
