@@ -7,37 +7,49 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.bootstrap.ClusterServicesCreationStep.Input;
 import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Objects;
 
-final class ClusterServicesCreationStep extends AbstractBrokerStartupStep {
+final class ClusterServicesCreationStep
+    extends AbstractTypedBrokerStartupStep<Input, ClusterServicesImpl> {
 
-  @Override
-  void startupInternal(
-      final BrokerStartupContext brokerStartupContext,
-      final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> startupFuture) {
-    final var atomix =
-        AtomixClusterFactory.fromConfiguration(brokerStartupContext.getBrokerConfiguration());
-
-    final var clusterServices = new ClusterServicesImpl(atomix);
-
-    brokerStartupContext.setClusterServices(clusterServices);
-    startupFuture.complete(brokerStartupContext);
+  ClusterServicesCreationStep() {
+    super(
+        Input::new,
+        (context, clusterServices) -> {
+          context.setClusterServices(clusterServices);
+          return context;
+        });
   }
 
   @Override
-  void shutdownInternal(
-      final BrokerStartupContext brokerShutdownContext,
+  void startupTyped(
+      final Input input,
       final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> shutdownFuture) {
+      final ActorFuture<ClusterServicesImpl> startupFuture) {
 
-    final var clusterServices = brokerShutdownContext.getClusterServices();
+    final var atomix = AtomixClusterFactory.fromConfiguration(input.getBrokerConfiguration());
+
+    final var clusterServices = new ClusterServicesImpl(atomix);
+
+    startupFuture.complete(clusterServices);
+  }
+
+  @Override
+  void shutdownTyped(
+      final Input input,
+      final ConcurrencyControl concurrencyControl,
+      final ActorFuture<ClusterServicesImpl> shutdownFuture) {
+
+    final var clusterServices = input.getClusterServices();
 
     if (clusterServices == null) {
-      shutdownFuture.complete(brokerShutdownContext);
+      shutdownFuture.complete(null);
       return;
     }
 
@@ -50,7 +62,6 @@ final class ClusterServicesCreationStep extends AbstractBrokerStartupStep {
           } else {
             concurrencyControl.run(
                 () -> {
-                  brokerShutdownContext.setClusterServices(null);
                   shutdownFuture.complete(null);
                 });
           }
@@ -61,4 +72,25 @@ final class ClusterServicesCreationStep extends AbstractBrokerStartupStep {
   public String getName() {
     return "Cluster Services (Creation)";
   }
+
+  protected static final class Input {
+
+    private final BrokerCfg configuration;
+    private final ClusterServicesImpl clusterServices;
+
+    Input(final BrokerStartupContext context) {
+      configuration = Objects.requireNonNull(context.getBrokerConfiguration());
+      clusterServices = context.getClusterServices();
+    }
+
+    public BrokerCfg getBrokerConfiguration() {
+      return configuration;
+    }
+
+    public ClusterServicesImpl getClusterServices() {
+      return clusterServices;
+    }
+  }
+
+  protected static final class Output {}
 }
