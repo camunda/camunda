@@ -89,15 +89,15 @@ public class SocketBindingCfg {
         + "}";
   }
 
-  public static class ExternalApiCfg extends SocketBindingCfg {
+  public static class CommandApiCfg extends SocketBindingCfg {
 
-    public ExternalApiCfg() {
+    public CommandApiCfg() {
       super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
     }
 
     @Override
     public String toString() {
-      return "ExternalApiCfg{"
+      return "CommandApiCfg{"
           + "host='"
           + getHost()
           + '\''
