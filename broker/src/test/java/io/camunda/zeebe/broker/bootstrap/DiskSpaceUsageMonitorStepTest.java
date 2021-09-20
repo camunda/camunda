@@ -40,7 +40,7 @@ public class DiskSpaceUsageMonitorStepTest {
     mockActorSchedulingService = mock(ActorSchedulingService.class);
     mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
 
-    when(mockBrokerStartupContext.getBrokerConfig()).thenReturn(TEST_BROKER_CONFIG);
+    when(mockBrokerStartupContext.getBrokerConfiguration()).thenReturn(TEST_BROKER_CONFIG);
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockBrokerStartupContext.getActorSchedulingService())
         .thenReturn(mockActorSchedulingService);
