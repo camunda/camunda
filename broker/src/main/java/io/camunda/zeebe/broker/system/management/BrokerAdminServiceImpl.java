@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -113,7 +114,12 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
           }
         });
 
-    return future.join();
+    try {
+      return future.get(5, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LOG.warn("Error when querying partition status", e);
+      return Map.of();
+    }
   }
 
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
