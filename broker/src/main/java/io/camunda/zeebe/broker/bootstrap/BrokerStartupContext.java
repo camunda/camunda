@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -98,4 +99,8 @@ public interface BrokerStartupContext {
   PartitionManagerImpl getPartitionManager();
 
   void setPartitionManager(PartitionManagerImpl partitionManager);
+
+  BrokerAdminServiceImpl getBrokerAdminService();
+
+  void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService);
 }
