@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
@@ -234,10 +236,12 @@ final class ProcessInstanceElementActivatingApplier
       final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
 
       final var hasEvents = !eventSupplier.getEvents().isEmpty();
-      if (hasEvents) {
+      if (hasEvents || flowElement instanceof ExecutableJobWorkerElement) {
         eventScopeInstanceState.createInstance(
             elementInstanceKey, eventSupplier.getInterruptingElementIds());
       }
+    } else if (flowElement instanceof ExecutableJobWorkerElement) {
+      eventScopeInstanceState.createInstance(elementInstanceKey, Collections.emptyList());
     }
   }
 }

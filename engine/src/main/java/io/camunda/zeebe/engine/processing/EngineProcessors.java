@@ -130,7 +130,8 @@ public final class EngineProcessors {
         eventPublicationBehavior,
         maxFragmentSize,
         writers,
-        jobMetrics);
+        jobMetrics,
+        eventTriggerBehavior);
 
     addIncidentProcessors(
         zeebeState,
