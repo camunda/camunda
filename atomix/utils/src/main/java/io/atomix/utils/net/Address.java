@@ -143,11 +143,15 @@ public final class Address {
     if (resolve || socketAddress.isUnresolved()) {
       // the constructor will by default attempt to resolve the host, and will fallback to the an
       // unresolved address if it couldn't
-      socketAddress = new InetSocketAddress(host, port);
-      return socketAddress.getAddress();
+      return resolve().getAddress();
     }
 
     return socketAddress.getAddress();
+  }
+
+  public InetSocketAddress resolve() {
+    socketAddress = new InetSocketAddress(host, port);
+    return socketAddress;
   }
 
   public InetSocketAddress socketAddress() {
