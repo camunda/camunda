@@ -169,7 +169,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       recoverFromSnapshot();
       exporterDistributionService =
           new ExporterPositionsDistributionService(
-              state::setPosition, partitionMessagingService, exporterPositionsTopic);
+              this::consumeExporterPositionFromLeader,
+              partitionMessagingService,
+              exporterPositionsTopic);
 
       // Initialize containers irrespective of if it is Active or Passive mode
       initContainers();
@@ -236,6 +238,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       for (final var listener : listeners) {
         listener.onFailure();
       }
+    }
+  }
+
+  private void consumeExporterPositionFromLeader(
+      final String exporterId, final long receivedPosition) {
+    if (state.getPosition(exporterId) < receivedPosition) {
+      state.setPosition(exporterId, receivedPosition);
     }
   }
 

@@ -105,4 +105,39 @@ public final class ExporterDirectorDistributionTest {
               assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
             });
   }
+
+  @Test
+  public void shouldNotResetExporterPositionWhenOldPositionReceived() throws Exception {
+    // given
+    exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
+    startExporters(exporterDescriptors);
+    final long position = 10L;
+
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_1, position);
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_2, position);
+
+    activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
+
+    final var passiveExporterState = passiveExporters.getExportersState();
+    Awaitility.await("Active Director has distributed positions and passive has received it")
+        .untilAsserted(
+            () -> {
+              assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+              assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+            });
+
+    // when
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_1, position - 1);
+    activeExporters.getExportersState().setPosition(EXPORTER_ID_2, position + 1);
+
+    activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
+    Awaitility.await("Active Director has distributed positions and passive has received it")
+        .untilAsserted(
+            () ->
+                assertThat(passiveExporterState.getPosition(EXPORTER_ID_2))
+                    .isEqualTo(position + 1));
+
+    // then - the exported position should not go back
+    assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+  }
 }
