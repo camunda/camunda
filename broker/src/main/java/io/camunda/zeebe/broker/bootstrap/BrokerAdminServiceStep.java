@@ -39,10 +39,6 @@ final class BrokerAdminServiceStep extends AbstractBrokerStartupStep {
 
           forwardExceptions(
               () -> {
-                final var partitionManager = brokerStartupContext.getPartitionManager();
-                adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
-                adminService.injectPartitionInfoSource(partitionManager.getPartitions());
-
                 brokerStartupContext
                     .getSpringBrokerBridge()
                     .registerBrokerAdminServiceSupplier(() -> adminService);
