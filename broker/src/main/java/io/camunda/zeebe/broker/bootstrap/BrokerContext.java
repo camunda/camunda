@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -35,4 +36,6 @@ public interface BrokerContext {
    * @return disk space usage monitor. May be {@code null} if disabled in configuration
    */
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
+
+  PushDeploymentRequestHandler getPushDeploymentRequestHandler();
 }

@@ -24,7 +24,6 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -51,7 +50,6 @@ public final class Broker implements AutoCloseable {
 
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
-  private LeaderManagementRequestHandler managementRequestHandler;
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private BrokerHealthCheckService healthCheckService;
@@ -138,8 +136,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep(
-        "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep("zeebe partitions", () -> partitionsStep(brokerCfg, localBroker));
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
@@ -199,18 +195,6 @@ public final class Broker implements AutoCloseable {
     systemContext.getScheduler().submitActor(actor).join();
   }
 
-  private AutoCloseable managementRequestStep(final BrokerInfo localBroker) {
-    managementRequestHandler =
-        new LeaderManagementRequestHandler(
-            localBroker,
-            clusterServices.getCommunicationService(),
-            clusterServices.getEventService());
-    scheduleActor(managementRequestHandler);
-    partitionListeners.add(managementRequestHandler);
-    brokerContext.addDiskSpaceUsageListener(managementRequestHandler);
-    return managementRequestHandler;
-  }
-
   private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
     partitionManager =
         new PartitionManagerImpl(
@@ -219,7 +203,7 @@ public final class Broker implements AutoCloseable {
             localBroker,
             clusterServices,
             healthCheckService,
-            managementRequestHandler.getPushDeploymentRequestHandler(),
+            brokerContext.getPushDeploymentRequestHandler(),
             brokerContext::addDiskSpaceUsageListener,
             partitionListeners,
             brokerContext.getCommandApiService(),

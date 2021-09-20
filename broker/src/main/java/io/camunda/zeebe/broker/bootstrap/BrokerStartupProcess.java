@@ -61,6 +61,8 @@ public final class BrokerStartupProcess {
       result.add(new EmbeddedGatewayServiceStep());
     }
 
+    result.add(new LeaderManagementRequestHandlerStep());
+
     return result;
   }
 
@@ -105,6 +107,7 @@ public final class BrokerStartupProcess {
         bsc.getClusterServices(),
         bsc.getCommandApiService(),
         bsc.getEmbeddedGatewayService(),
+        bsc.getLeaderManagementRequestHandler(),
         bsc.getPartitionListeners());
   }
 }
