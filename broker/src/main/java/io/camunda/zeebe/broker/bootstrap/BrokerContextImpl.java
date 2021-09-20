@@ -12,18 +12,27 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import java.util.Collection;
 import java.util.List;
 
 public final class BrokerContextImpl implements BrokerContext {
 
   private final ClusterServicesImpl clusterServices;
+  private final CommandApiService commandApiService;
   private final List<PartitionListener> partitionListeners;
+  private final List<DiskSpaceUsageListener> diskSpaceUsageListeners;
 
   public BrokerContextImpl(
-      final ClusterServicesImpl clusterServices, final List<PartitionListener> partitionListeners) {
+      final ClusterServicesImpl clusterServices,
+      final CommandApiService commandApiService,
+      final List<PartitionListener> partitionListeners,
+      final List<DiskSpaceUsageListener> diskSpaceUsageListeners) {
     this.clusterServices = requireNonNull(clusterServices);
+    this.commandApiService = requireNonNull(commandApiService);
     this.partitionListeners = unmodifiableList(requireNonNull(partitionListeners));
+    this.diskSpaceUsageListeners = diskSpaceUsageListeners;
   }
 
   @Override
@@ -34,5 +43,15 @@ public final class BrokerContextImpl implements BrokerContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
+  }
+
+  @Override
+  public CommandApiService getCommandApiService() {
+    return commandApiService;
+  }
+
+  @Override
+  public List<DiskSpaceUsageListener> getDiskSpaceUsageListeners() {
+    return diskSpaceUsageListeners;
   }
 }

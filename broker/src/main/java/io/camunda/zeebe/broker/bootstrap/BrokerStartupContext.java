@@ -7,15 +7,18 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.List;
 
 /**
@@ -31,9 +34,9 @@ public interface BrokerStartupContext {
 
   SpringBrokerBridge getSpringBrokerBridge();
 
-  ConcurrencyControl getConcurrencyControl();
+  ActorSchedulingService getActorSchedulingService();
 
-  ActorFuture<Void> scheduleActor(Actor actor);
+  ConcurrencyControl getConcurrencyControl();
 
   BrokerHealthCheckService getHealthCheckService();
 
@@ -46,4 +49,22 @@ public interface BrokerStartupContext {
   ClusterServicesImpl getClusterServices();
 
   void setClusterServices(ClusterServicesImpl o);
+
+  void addDiskSpaceUsageListener(DiskSpaceUsageListener listener);
+
+  void removeDiskSpaceUsageListener(DiskSpaceUsageListener listener);
+
+  List<DiskSpaceUsageListener> getDiskSpaceUsageListeners();
+
+  CommandApiServiceImpl getCommandApiService();
+
+  void setCommandApiService(CommandApiServiceImpl commandApiService);
+
+  AtomixServerTransport getCommandApiServerTransport();
+
+  void setCommandApiServerTransport(AtomixServerTransport commandApiServerTransport);
+
+  ManagedMessagingService getCommandApiMessagingService();
+
+  void setCommandApiMessagingService(ManagedMessagingService commandApiMessagingService);
 }

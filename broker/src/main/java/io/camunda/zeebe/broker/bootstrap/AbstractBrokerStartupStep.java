@@ -61,6 +61,7 @@ abstract class AbstractBrokerStartupStep implements StartupStep<BrokerStartupCon
       return completedExceptionally(e);
     }
   }
+
   /**
    * helper function that forwards exceptions thrown by a synchronous block of code to a future
    * object
@@ -71,5 +72,20 @@ abstract class AbstractBrokerStartupStep implements StartupStep<BrokerStartupCon
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
+  }
+
+  /**
+   * helper function that consumes the result of a previous future. If the previous future completed
+   * exceptionally, this exception is forwarded to the future passed in as argument. Otherwise, it
+   * executed the runnable.
+   */
+  final <V> BiConsumer<Void, Throwable> proceed(final Runnable r, final ActorFuture<V> future) {
+    return (ok, error) -> {
+      if (error != null) {
+        future.completeExceptionally(error);
+      } else {
+        forwardExceptions(r, future);
+      }
+    };
   }
 }

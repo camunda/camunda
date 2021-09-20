@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import java.util.Collection;
 
 /** Context for components/actors managed directly by the Broker */
@@ -18,4 +20,8 @@ public interface BrokerContext {
 
   // TODO change this to ClusterServices after migration
   ClusterServicesImpl getClusterServices();
+
+  CommandApiService getCommandApiService();
+
+  Collection<? extends DiskSpaceUsageListener> getDiskSpaceUsageListeners();
 }

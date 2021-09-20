@@ -8,10 +8,6 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.messaging.ManagedMessagingService;
-import io.atomix.cluster.messaging.MessagingConfig;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
@@ -27,20 +23,14 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -69,7 +59,6 @@ public final class Broker implements AutoCloseable {
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private LeaderManagementRequestHandler managementRequestHandler;
-  private CommandApiServiceImpl commandApiService;
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
@@ -159,9 +148,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep(
-        "command api transport and handler",
-        () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     startContext.addStep("cluster services", () -> clusterServices.start().join());
@@ -194,6 +180,7 @@ public final class Broker implements AutoCloseable {
     brokerContext = brokerStartupActor.start().join();
 
     partitionListeners.addAll(brokerContext.getPartitionListeners());
+    diskSpaceUsageListeners.addAll(brokerContext.getDiskSpaceUsageListeners());
 
     clusterServices = brokerContext.getClusterServices();
     testCompanionObject.atomix = clusterServices.getAtomixCluster();
@@ -235,55 +222,6 @@ public final class Broker implements AutoCloseable {
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
-  }
-
-  private AutoCloseable commandApiTransportAndHandlerStep(
-      final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
-    final var commandApiCfg = brokerCfg.getNetwork().getCommandApi();
-    final var messagingService = createMessagingService(brokerCfg.getCluster(), commandApiCfg);
-    messagingService.start().join();
-    LOG.debug(
-        "Bound command API to {}, using advertised address {} ",
-        messagingService.bindingAddresses(),
-        messagingService.address());
-
-    final var transportFactory = new TransportFactory(scheduler);
-    final var serverTransport =
-        transportFactory.createServerTransport(localBroker.getNodeId(), messagingService);
-
-    final BackpressureCfg backpressureCfg = brokerCfg.getBackpressure();
-    PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
-    if (backpressureCfg.isEnabled()) {
-      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
-    }
-
-    commandApiService =
-        new CommandApiServiceImpl(
-            serverTransport,
-            localBroker,
-            limiter,
-            scheduler,
-            brokerCfg.getExperimental().getQueryApi());
-    partitionListeners.add(commandApiService);
-    scheduleActor(commandApiService);
-    diskSpaceUsageListeners.add(commandApiService);
-
-    return () -> {
-      commandApiService.close();
-      serverTransport.close();
-      messagingService.stop().join();
-    };
-  }
-
-  private ManagedMessagingService createMessagingService(
-      final ClusterCfg clusterCfg, final SocketBindingCfg socketCfg) {
-    final var messagingConfig = new MessagingConfig();
-    messagingConfig.setInterfaces(List.of(socketCfg.getHost()));
-    messagingConfig.setPort(socketCfg.getPort());
-    return new NettyMessagingService(
-        clusterCfg.getClusterName(),
-        Address.from(socketCfg.getAdvertisedHost(), socketCfg.getAdvertisedPort()),
-        messagingConfig);
   }
 
   private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {
@@ -348,7 +286,7 @@ public final class Broker implements AutoCloseable {
             managementRequestHandler.getPushDeploymentRequestHandler(),
             diskSpaceUsageListeners::add,
             partitionListeners,
-            commandApiService,
+            brokerContext.getCommandApiService(),
             buildExporterRepository(brokerCfg));
 
     partitionManager.start().join();

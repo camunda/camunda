@@ -10,16 +10,18 @@ package io.camunda.zeebe.broker.bootstrap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
+import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -31,11 +33,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorSchedulingService;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
+  private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
+  private CommandApiServiceImpl commandApiService;
 
   private ConcurrencyControl concurrencyControl;
 
   private final BrokerHealthCheckService healthCheckService;
   private ClusterServicesImpl clusterServices;
+  private AtomixServerTransport commandApiServerTransport;
+  private ManagedMessagingService commandApiMessagingService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -67,17 +73,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
+  public ActorSchedulingService getActorSchedulingService() {
+    return actorSchedulingService;
+  }
+
+  @Override
   public ConcurrencyControl getConcurrencyControl() {
     return concurrencyControl;
   }
 
   public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
     this.concurrencyControl = Objects.requireNonNull(concurrencyControl);
-  }
-
-  @Override
-  public ActorFuture<Void> scheduleActor(final Actor actor) {
-    return actorSchedulingService.submitActor(actor);
   }
 
   @Override
@@ -108,5 +114,51 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setClusterServices(final ClusterServicesImpl clusterServices) {
     this.clusterServices = clusterServices;
+  }
+
+  @Override
+  public void addDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
+    diskSpaceUsageListeners.add(requireNonNull(listener));
+  }
+
+  @Override
+  public void removeDiskSpaceUsageListener(final DiskSpaceUsageListener listener) {
+    diskSpaceUsageListeners.remove((requireNonNull(listener)));
+  }
+
+  @Override
+  public List<DiskSpaceUsageListener> getDiskSpaceUsageListeners() {
+    return unmodifiableList(diskSpaceUsageListeners);
+  }
+
+  @Override
+  public CommandApiServiceImpl getCommandApiService() {
+    return commandApiService;
+  }
+
+  @Override
+  public void setCommandApiService(final CommandApiServiceImpl commandApiService) {
+    this.commandApiService = commandApiService;
+  }
+
+  @Override
+  public AtomixServerTransport getCommandApiServerTransport() {
+    return commandApiServerTransport;
+  }
+
+  @Override
+  public void setCommandApiServerTransport(final AtomixServerTransport commandApiServerTransport) {
+    this.commandApiServerTransport = commandApiServerTransport;
+  }
+
+  @Override
+  public ManagedMessagingService getCommandApiMessagingService() {
+    return commandApiMessagingService;
+  }
+
+  @Override
+  public void setCommandApiMessagingService(
+      final ManagedMessagingService commandApiMessagingService) {
+    this.commandApiMessagingService = commandApiMessagingService;
   }
 }

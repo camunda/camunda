@@ -8,19 +8,20 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 public class MonitoringServerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
@@ -28,6 +29,7 @@ public class MonitoringServerStepTest {
   private SpringBrokerBridge mockSpringBrokerBridge;
   private BrokerStartupContext mockBrokerStartupContext;
   private BrokerHealthCheckService mockHealthCheckService;
+  private ActorSchedulingService mockActorSchedulingService;
 
   private ActorFuture<BrokerStartupContext> future;
 
@@ -37,6 +39,7 @@ public class MonitoringServerStepTest {
   void setUp() {
     mockSpringBrokerBridge = mock(SpringBrokerBridge.class);
     mockBrokerStartupContext = mock(BrokerStartupContext.class);
+    mockActorSchedulingService = mock(ActorSchedulingService.class);
 
     mockHealthCheckService = mock(BrokerHealthCheckService.class);
     when(mockHealthCheckService.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
@@ -44,8 +47,10 @@ public class MonitoringServerStepTest {
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockSpringBrokerBridge);
     when(mockBrokerStartupContext.getHealthCheckService()).thenReturn(mockHealthCheckService);
+    when(mockBrokerStartupContext.getActorSchedulingService())
+        .thenReturn(mockActorSchedulingService);
 
-    when(mockBrokerStartupContext.scheduleActor(Mockito.any()))
+    when(mockActorSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
     future = CONCURRENCY_CONTROL.createFuture();
@@ -67,7 +72,7 @@ public class MonitoringServerStepTest {
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    verify(mockBrokerStartupContext).scheduleActor(mockHealthCheckService);
+    verify(mockActorSchedulingService).submitActor(mockHealthCheckService);
   }
 
   @Test
