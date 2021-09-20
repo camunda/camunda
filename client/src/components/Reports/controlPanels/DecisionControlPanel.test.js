@@ -214,10 +214,10 @@ it('should allow collapsing sections', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
   node.find('.source').find(Button).simulate('click');
-  expect(node.find('.source')).toHaveClassName('hidden');
+  expect(node.find('.source')).toHaveClassName('collapsed');
 
   node.find('.source').find(Button).simulate('click');
-  expect(node.find('.source')).not.toHaveClassName('hidden');
+  expect(node.find('.source')).not.toHaveClassName('collapsed');
 });
 
 it('should add new variables to includedColumns when switching definition/version', async () => {

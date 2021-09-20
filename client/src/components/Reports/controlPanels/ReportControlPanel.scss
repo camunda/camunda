@@ -54,7 +54,7 @@
     }
   }
 
-  .hidden .sectionTitle {
+  .collapsed .sectionTitle {
     margin-bottom: 0;
   }
 
@@ -63,7 +63,7 @@
     padding-top: 9px;
     border-top: 1px solid var(--silver-darken-87);
 
-    &.hidden {
+    &.collapsed {
       padding-bottom: 0;
 
       > :not(.sectionTitle) {

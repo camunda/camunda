@@ -149,7 +149,7 @@ export class DecisionControlPanel extends React.Component {
       <div className="DecisionControlPanel ReportControlPanel">
         <div className="controlSections" style={{overflow: 'initial'}}>
           {/* manual style override will be removed once decision reports use multi-definition setup */}
-          <section className={classnames('select', 'source', {hidden: !showSource})}>
+          <section className={classnames('select', 'source', {collapsed: !showSource})}>
             <Button
               className="sectionTitle"
               onClick={() => {
@@ -171,7 +171,7 @@ export class DecisionControlPanel extends React.Component {
               onChange={this.changeDefinition}
             />
           </section>
-          <section className={classnames('reportSetup', {hidden: !showSetup})}>
+          <section className={classnames('reportSetup', {collapsed: !showSetup})}>
             <Button
               className="sectionTitle"
               onClick={() => {
@@ -202,7 +202,7 @@ export class DecisionControlPanel extends React.Component {
               />
             </ul>
           </section>
-          <section className={classnames('filter', {hidden: !showFilter})}>
+          <section className={classnames('filter', {collapsed: !showFilter})}>
             <Button
               className="sectionTitle"
               onClick={() => {

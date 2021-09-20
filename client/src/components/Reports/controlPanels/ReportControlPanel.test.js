@@ -472,10 +472,10 @@ it('should allow collapsing sections', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
   node.find('.source .sectionTitle').simulate('click');
-  expect(node.find('.source')).toHaveClassName('hidden');
+  expect(node.find('.source')).toHaveClassName('collapsed');
 
   node.find('.source .sectionTitle').simulate('click');
-  expect(node.find('.source')).not.toHaveClassName('hidden');
+  expect(node.find('.source')).not.toHaveClassName('collapsed');
 });
 
 it('should reset columnOrder only when changing definition', async () => {

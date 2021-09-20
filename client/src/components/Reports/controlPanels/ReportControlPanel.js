@@ -322,7 +322,7 @@ export default withErrorHandling(
       return (
         <div className="ReportControlPanel">
           <div className="controlSections">
-            <section className={classnames('select', 'source', {hidden: !showSource})}>
+            <section className={classnames('select', 'source', {collapsed: !showSource})}>
               <div
                 tabIndex="0"
                 className="sectionTitle"
@@ -357,7 +357,7 @@ export default withErrorHandling(
                 onRemove={this.removeDefinition}
               />
             </section>
-            <section className={classnames('reportSetup', {hidden: !showSetup})}>
+            <section className={classnames('reportSetup', {collapsed: !showSetup})}>
               <Button
                 className="sectionTitle"
                 onClick={() => {
@@ -431,7 +431,7 @@ export default withErrorHandling(
                 )}
               </ul>
             </section>
-            <section className={classnames('filter', {hidden: !showFilter})}>
+            <section className={classnames('filter', {collapsed: !showFilter})}>
               <Button
                 className="sectionTitle"
                 onClick={() => {
