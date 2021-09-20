@@ -4,118 +4,87 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {isEqual} from 'lodash';
+import React, {useState} from 'react';
 import {OPERATION_TYPE} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
-
-import {
-  getLatestOperation,
-  isWithIncident,
-  isRunning,
-} from 'modules/utils/instance';
-
+import {isWithIncident, isRunning} from 'modules/utils/instance';
 import OperationItems from 'modules/components/OperationItems';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
-
-import * as Styled from './styled';
+import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
+import {OperationsContainer} from './styled';
 
 type Props = {
   instance: ProcessInstanceEntity;
-  selected?: boolean;
+  isSelected?: boolean;
   onOperation?: () => void;
   onFailure?: () => void;
   forceSpinner?: boolean;
 };
 
-type State = {
-  operationType: InstanceOperationEntity['type'] | undefined;
-};
-
-const Operations = observer(
-  class Operations extends React.Component<Props, State> {
-    static defaultProps = {
-      forceSpinner: false,
-    };
-
-    state = {operationType: undefined};
-
-    componentDidMount = () => {
-      const {operations} = this.props.instance;
-      if (operations.length > 0) {
-        const operation = getLatestOperation(operations);
-        this.setState({
-          operationType: operation?.type,
-        });
-      }
-    };
-
-    componentDidUpdate = (prevProps: any) => {
-      const {operations} = this.props.instance;
-      if (!isEqual(operations, prevProps.instance.operations)) {
-        // change failed operation icons when new page is loaded;
-        const operation = getLatestOperation(operations);
-        this.setState({
-          operationType: operation?.type,
-        });
-      }
-    };
-
-    handleOnClick = async (operationType: InstanceOperationEntity['type']) => {
+const Operations: React.FC<Props> = observer(
+  ({instance, onOperation, onFailure, forceSpinner, isSelected = false}) => {
+    const handleClick = async (
+      operationType: InstanceOperationEntity['type']
+    ) => {
       operationsStore.applyOperation({
-        instanceId: this.props.instance.id,
+        instanceId: instance.id,
         payload: {
           operationType,
         },
         onError: () => {
-          this.props.onFailure?.();
+          onFailure?.();
         },
       });
-      this.props.onOperation?.();
+      onOperation?.();
     };
 
-    renderItem = (operationType: InstanceOperationEntity['type']) => {
-      const ariaLabelMap = {
-        [OPERATION_TYPE.CANCEL_PROCESS_INSTANCE]: 'Cancel',
-        [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry',
-      };
+    const [
+      isConfirmCancellationModalVisible,
+      setConfirmCancellationModalVisible,
+    ] = useState(false);
 
-      return (
-        <OperationItems.Item
-          type={operationType}
-          onClick={() => this.handleOnClick(operationType)}
-          // @ts-expect-error ts-migrate(2339) FIXME: Property 'instance' does not exist on type 'Readon... Remove this comment to see the full error message
-          title={`${ariaLabelMap[operationType]} Instance ${this.props.instance.id}`}
-        />
-      );
-    };
-
-    render() {
-      const {instance, selected, forceSpinner} = this.props;
-
-      return (
-        <Styled.Operations>
-          {(forceSpinner ||
-            instancesStore.instanceIdsWithActiveOperations.includes(
-              instance.id
-            )) && (
-            <OperationSpinner
-              selected={selected}
-              title={`Instance ${instance.id} has scheduled Operations`}
-              data-testid="operation-spinner"
+    return (
+      <OperationsContainer>
+        {(forceSpinner ||
+          instancesStore.instanceIdsWithActiveOperations.includes(
+            instance.id
+          )) && (
+          <OperationSpinner
+            isSelected={isSelected}
+            title={`Instance ${instance.id} has scheduled Operations`}
+            data-testid="operation-spinner"
+          />
+        )}
+        <OperationItems>
+          {isWithIncident(instance) && (
+            <OperationItems.Item
+              type={OPERATION_TYPE.RESOLVE_INCIDENT}
+              onClick={() => handleClick(OPERATION_TYPE.RESOLVE_INCIDENT)}
+              title={`Retry Instance ${instance.id}`}
             />
           )}
-          <OperationItems>
-            {isWithIncident(instance) &&
-              this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
-            {isRunning(instance) &&
-              this.renderItem(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE)}
-          </OperationItems>
-        </Styled.Operations>
-      );
-    }
+          {isRunning(instance) && (
+            <OperationItems.Item
+              type={OPERATION_TYPE.CANCEL_PROCESS_INSTANCE}
+              onClick={() => setConfirmCancellationModalVisible(true)}
+              title={`Cancel Instance ${instance.id}`}
+            />
+          )}
+        </OperationItems>
+        <ConfirmOperationModal
+          bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}
+          onApplyClick={() => {
+            setConfirmCancellationModalVisible(false);
+            handleClick(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE);
+          }}
+          isVisible={isConfirmCancellationModalVisible}
+          onModalClose={() => setConfirmCancellationModalVisible(false)}
+          onCancelClick={() => setConfirmCancellationModalVisible(false)}
+        />
+      </OperationsContainer>
+    );
   }
 );
 

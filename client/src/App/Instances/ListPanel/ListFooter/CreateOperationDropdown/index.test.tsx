@@ -72,7 +72,11 @@ describe('CreateOperationDropdown', () => {
     userEvent.click(screen.getByRole('button', {name: 'Retry'}));
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
-    expect(screen.getByText('About to retry 2 Instances.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'About to retry 2 Instances. In case there are called instances, these will be canceled too.'
+      )
+    ).toBeInTheDocument();
     expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
@@ -98,7 +102,9 @@ describe('CreateOperationDropdown', () => {
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
     expect(
-      screen.getByText('About to cancel 2 Instances.')
+      screen.getByText(
+        'About to cancel 2 Instances. In case there are called instances, these will be canceled too.'
+      )
     ).toBeInTheDocument();
     expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
     expect(

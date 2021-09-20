@@ -6,9 +6,16 @@
 
 import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import ConfirmOperationModal from './index';
-import {mockProps} from './index.setup';
+import {ConfirmOperationModal} from './index';
 import userEvent from '@testing-library/user-event';
+
+const mockProps = {
+  onModalClose: jest.fn(),
+  onApplyClick: jest.fn(),
+  onCancelClick: jest.fn(),
+  isVisible: true,
+  bodyText: 'My Content',
+};
 
 describe('ConfirmOperationModal', () => {
   it('should render', () => {

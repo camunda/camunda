@@ -275,7 +275,10 @@ test('End Date filter', async (t) => {
       within(screen.queryByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1);
-  await t.click(screen.queryByRole('button', {name: /cancel instance/i}));
+  await t
+    .click(screen.queryByRole('button', {name: /cancel instance/i}))
+    .click(screen.queryByRole('button', {name: 'Apply'}));
+
   // wait for operation to be completed
   await t
     .expect(
@@ -447,7 +450,9 @@ test('Operation ID filter', async (t) => {
       within(screen.queryByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1);
-  await t.click(screen.queryByRole('button', {name: /cancel instance/i}));
+  await t
+    .click(screen.queryByRole('button', {name: /cancel instance/i}))
+    .click(screen.queryByRole('button', {name: 'Apply'}));
   // wait for operation to be completed
   await t
     .expect(

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createInstance, xTimes, createOperation} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
 import {STATE} from 'modules/constants';
 
 import * as instanceUtils from './index';
@@ -67,34 +67,6 @@ describe('instance utils', () => {
 
       // then
       expect(instanceName).toBe(instance.bpmnProcessId);
-    });
-  });
-
-  describe('getLatestOperation', () => {
-    let mockOperations: any;
-
-    const createMockOperations = (amount: any, array: any) =>
-      xTimes(amount)((counter: any) => {
-        array.push(
-          createOperation({startDate: `2018-10-1${counter}T09:20:38.661Z`})
-        );
-      });
-
-    it('should return null when no operations are available', () => {
-      mockOperations = [];
-      createMockOperations(0, mockOperations);
-      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual(null);
-    });
-
-    it('should retrun operations sorted in ascending order by startDate', () => {
-      // Create Mock Data
-      mockOperations = [];
-      createMockOperations(3, mockOperations);
-      const latestDate = `2018-10-13T09:20:38.661Z`;
-
-      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual(
-        createOperation({startDate: latestDate})
-      );
     });
   });
 });

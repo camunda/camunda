@@ -5,6 +5,7 @@
  */
 
 import {render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {rest} from 'msw';
 import {instancesStore} from 'modules/stores/instances';
 import {Operations} from './index';
@@ -181,6 +182,37 @@ describe('Operations', () => {
 
       jest.clearAllTimers();
       jest.useRealTimers();
+    });
+  });
+
+  describe('Cancel Operation', () => {
+    it('should show cancel confirmation modal', async () => {
+      const modalText =
+        'About to cancel Instance instance_1. In case there are called instances, these will be canceled too.';
+
+      render(
+        <Operations
+          instance={{
+            ...instanceMock,
+            state: 'INCIDENT',
+          }}
+        />,
+        {wrapper: ThemeProvider}
+      );
+
+      userEvent.click(
+        screen.getByRole('button', {name: 'Cancel Instance instance_1'})
+      );
+
+      expect(screen.getByText(modalText));
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+
+      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+
+      await waitFor(() =>
+        expect(screen.queryByText(modalText)).not.toBeInTheDocument()
+      );
     });
   });
 });

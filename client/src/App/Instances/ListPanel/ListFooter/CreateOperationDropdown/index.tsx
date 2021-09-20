@@ -14,7 +14,7 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
 import * as Styled from './styled';
-import ConfirmOperationModal from '../ConfirmOperationModal';
+import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import useOperationApply from './useOperationApply';
 
 const ACTION_NAMES = {
@@ -55,7 +55,10 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
     `About to ${
       // @ts-expect-error ts-migrate(2538) FIXME: Type 'null' cannot be used as an index type.
       ACTION_NAMES[modalMode]
-    } ${pluralSuffix(selectedCount, 'Instance')}.`;
+    } ${pluralSuffix(
+      selectedCount,
+      'Instance'
+    )}. In case there are called instances, these will be canceled too.`;
 
   return (
     <Styled.DropdownContainer

@@ -250,6 +250,7 @@ describe('ListPanel', () => {
       screen.queryByTitle(/has scheduled operations/i)
     ).not.toBeInTheDocument();
     userEvent.click(screen.getByTitle('Cancel Instance 1'));
+    userEvent.click(screen.getByTitle('Apply'));
     expect(
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
