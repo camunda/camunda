@@ -14,10 +14,12 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import java.util.Properties;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 public final class DefaultZeebeDbFactory {
 
-  public static final BiFunction<String, ZeebeDb<ZbColumnFamilies>, ZeebeRocksDBMetricExporter>
+  public static final BiFunction<
+          String, Supplier<ZeebeDb<ZbColumnFamilies>>, ZeebeRocksDBMetricExporter>
       DEFAULT_DB_METRIC_EXPORTER_FACTORY = ZeebeRocksDBMetricExporter::new;
 
   /**

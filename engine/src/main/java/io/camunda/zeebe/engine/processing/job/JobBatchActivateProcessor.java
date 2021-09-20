@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -53,12 +54,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final long maxJobBatchLength;
 
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
+  private final JobMetrics jobMetrics;
 
   public JobBatchActivateProcessor(
       final Writers writers,
       final ZeebeState state,
       final KeyGenerator keyGenerator,
-      final long maxRecordLength) {
+      final long maxRecordLength,
+      final JobMetrics jobMetrics) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -70,6 +73,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     this.maxRecordLength = maxRecordLength;
     maxJobBatchLength = maxRecordLength - Long.BYTES;
+    this.jobMetrics = jobMetrics;
   }
 
   @Override
@@ -101,6 +105,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
+
+    final var activatedJobsCount = record.getValue().getJobKeys().size();
+    jobMetrics.jobActivated(value.getType(), activatedJobsCount);
   }
 
   private void collectJobsToActivate(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
@@ -20,7 +21,9 @@ import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -30,6 +33,7 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -72,6 +76,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
+  private QueryService queryService;
 
   private long currentTerm;
   private Role currentRole;
@@ -133,7 +138,7 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
     return partitionListeners.stream()
-        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
+        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream(), getQueryService()))
         .collect(Collectors.toList());
   }
 
@@ -250,6 +255,16 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public QueryService getQueryService() {
+    return queryService;
+  }
+
+  @Override
+  public void setQueryService(final QueryService queryService) {
+    this.queryService = queryService;
+  }
+
+  @Override
   public PartitionStartupAndTransitionContextImpl createTransitionContext() {
     return this;
   }
@@ -270,6 +285,11 @@ public class PartitionStartupAndTransitionContextImpl
 
   public void setCurrentRole(final Role currentRole) {
     this.currentRole = currentRole;
+  }
+
+  @Override
+  public TypedRecordProcessorFactory getStreamProcessorFactory() {
+    return typedRecordProcessorsFactory::createTypedStreamProcessor;
   }
 
   public AtomixLogStorage getLogStorage() {
@@ -321,11 +341,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public TypedRecordProcessorsFactory getTypedRecordProcessorsFactory() {
-    return typedRecordProcessorsFactory;
-  }
-
-  @Override
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
   }
@@ -351,5 +366,10 @@ public class PartitionStartupAndTransitionContextImpl
 
   public boolean shouldExport() {
     return !partitionProcessingState.isExportingPaused();
+  }
+
+  @Override
+  public Collection<ExporterDescriptor> getExportedDescriptors() {
+    return getExporterRepository().getExporters().values();
   }
 }

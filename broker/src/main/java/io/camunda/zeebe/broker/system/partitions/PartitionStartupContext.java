@@ -52,8 +52,6 @@ public interface PartitionStartupContext {
 
   Consumer<TypedRecord<?>> getOnProcessedListener();
 
-  TypedRecordProcessorsFactory getTypedRecordProcessorsFactory();
-
   ExporterRepository getExporterRepository();
 
   List<PartitionListener> getPartitionListeners();
@@ -84,7 +82,7 @@ public interface PartitionStartupContext {
 
   void setLogStream(final LogStream logStream);
 
-  ZeebeDb<?> getZeebeDb();
+  ZeebeDb getZeebeDb();
 
   void setZeebeDb(final ZeebeDb<?> db);
 

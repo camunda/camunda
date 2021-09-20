@@ -31,6 +31,7 @@ public enum BpmnElementType {
   // Events
   START_EVENT("startEvent"),
   INTERMEDIATE_CATCH_EVENT("intermediateCatchEvent"),
+  INTERMEDIATE_THROW_EVENT("intermediateThrowEvent"),
   BOUNDARY_EVENT("boundaryEvent"),
   END_EVENT("endEvent"),
 
@@ -38,6 +39,7 @@ public enum BpmnElementType {
   SERVICE_TASK("serviceTask"),
   RECEIVE_TASK("receiveTask"),
   USER_TASK("userTask"),
+  MANUAL_TASK("manualTask"),
 
   // Gateways
   EXCLUSIVE_GATEWAY("exclusiveGateway"),

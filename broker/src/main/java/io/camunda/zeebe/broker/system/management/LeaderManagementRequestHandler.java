@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -67,7 +68,10 @@ public final class LeaderManagementRequestHandler extends Actor
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final QueryService queryService) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.submit(
         () ->

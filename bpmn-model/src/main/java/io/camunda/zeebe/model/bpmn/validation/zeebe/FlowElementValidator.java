@@ -26,6 +26,8 @@ import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.camunda.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
@@ -63,6 +65,8 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
     SUPPORTED_ELEMENT_TYPES.add(SubProcess.class);
     SUPPORTED_ELEMENT_TYPES.add(CallActivity.class);
     SUPPORTED_ELEMENT_TYPES.add(UserTask.class);
+    SUPPORTED_ELEMENT_TYPES.add(IntermediateThrowEvent.class);
+    SUPPORTED_ELEMENT_TYPES.add(ManualTask.class);
 
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);

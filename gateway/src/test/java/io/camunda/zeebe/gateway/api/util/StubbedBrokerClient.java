@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public final class StubbedBrokerClient implements BrokerClient {
@@ -67,7 +68,15 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request, final Duration requestTimeout) {
-    throw new UnsupportedOperationException("not implemented");
+    final CompletableFuture<BrokerResponse<T>> result = new CompletableFuture<>();
+
+    sendRequestWithRetry(
+        request,
+        (key, response) ->
+            result.complete(new BrokerResponse<>(response, Protocol.decodePartitionId(key), key)),
+        result::completeExceptionally);
+
+    return result.orTimeout(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
   }
 
   @Override

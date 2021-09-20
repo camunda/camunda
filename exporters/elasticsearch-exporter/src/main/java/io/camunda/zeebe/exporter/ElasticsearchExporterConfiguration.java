@@ -18,6 +18,9 @@ public class ElasticsearchExporterConfiguration {
   /** Comma-separated Elasticsearch http urls */
   public String url = DEFAULT_URL;
 
+  /** The request timeout for the elastic search client. The timeout unit is milliseconds. */
+  public int requestTimeoutMs = 30_000;
+
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -62,6 +63,7 @@ public final class SimpleBrokerStartTest {
     assignSocketAddresses(brokerCfg);
     final var systemContext =
         new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    systemContext.getScheduler().start();
 
     final var broker = new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
@@ -74,7 +76,10 @@ public final class SimpleBrokerStartTest {
 
           @Override
           public ActorFuture<Void> onBecomingLeader(
-              final int partitionId, final long term, final LogStream logStream) {
+              final int partitionId,
+              final long term,
+              final LogStream logStream,
+              final QueryService queryService) {
             leaderLatch.countDown();
             return CompletableActorFuture.completed(null);
           }
@@ -86,7 +91,6 @@ public final class SimpleBrokerStartTest {
         });
 
     // when
-    systemContext.getScheduler().start();
     broker.start().join();
 
     // then

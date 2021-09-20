@@ -19,13 +19,14 @@ import org.agrona.DirectBuffer;
  * than it's intended purpose.
  */
 @Deprecated(forRemoval = true, since = "1.2")
-public interface QueryService {
+public interface QueryService extends AutoCloseable {
 
   /**
    * Queries the state for the bpmn process id of a specific process.
    *
    * @param processKey The key of the process
    * @return Optionally the bpmn process id if found, otherwise an empty optional
+   * @throws ClosedServiceException if the service is already closed
    */
   Optional<DirectBuffer> getBpmnProcessIdForProcess(long processKey);
 
@@ -34,6 +35,7 @@ public interface QueryService {
    *
    * @param processInstanceKey The key of the process instance
    * @return Optionally the bpmn process id if found, otherwise an empty optional
+   * @throws ClosedServiceException if the service is already closed
    */
   Optional<DirectBuffer> getBpmnProcessIdForProcessInstance(long processInstanceKey);
 
@@ -42,6 +44,9 @@ public interface QueryService {
    *
    * @param jobKey The key of the job
    * @return Optionally the bpmn process id if found, otherwise an empty optional
+   * @throws ClosedServiceException if the service is already closed
    */
   Optional<DirectBuffer> getBpmnProcessIdForJob(long jobKey);
+
+  final class ClosedServiceException extends RuntimeException {}
 }

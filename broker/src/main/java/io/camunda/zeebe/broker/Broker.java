@@ -17,11 +17,9 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
-import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
-import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -40,13 +38,14 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
+import io.camunda.zeebe.broker.transport.externalapi.ExternalApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -70,7 +69,7 @@ public final class Broker implements AutoCloseable {
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private LeaderManagementRequestHandler managementRequestHandler;
-  private CommandApiServiceImpl commandHandler;
+  private ExternalApiServiceImpl externalApiService;
   private final ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
@@ -100,7 +99,11 @@ public final class Broker implements AutoCloseable {
 
     final BrokerStartupContextImpl startupContext =
         new BrokerStartupContextImpl(
-            localBroker, springBrokerBridge, scheduler, healthCheckService);
+            localBroker,
+            systemContext.getBrokerConfiguration(),
+            springBrokerBridge,
+            scheduler,
+            healthCheckService);
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);
@@ -156,7 +159,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
         "command api transport and handler",
         () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
@@ -193,6 +195,9 @@ public final class Broker implements AutoCloseable {
 
     partitionListeners.addAll(brokerContext.getPartitionListeners());
 
+    clusterServices = brokerContext.getClusterServices();
+    testCompanionObject.atomix = clusterServices.getAtomixCluster();
+
     return () -> {
       brokerStartupActor.stop().join();
       healthCheckService = null;
@@ -206,7 +211,7 @@ public final class Broker implements AutoCloseable {
         new BrokerInfo(
             clusterCfg.getNodeId(),
             NetUtil.toSocketAddressString(
-                brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
+                brokerCfg.getNetwork().getExternalApi().getAdvertisedAddress()));
 
     result
         .setClusterSize(clusterCfg.getClusterSize())
@@ -232,21 +237,10 @@ public final class Broker implements AutoCloseable {
     return adminService;
   }
 
-  private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
-    final var atomix = AtomixClusterFactory.fromConfiguration(brokerCfg);
-    testCompanionObject.atomix = atomix;
-    clusterServices = new ClusterServicesImpl(atomix);
-
-    return () -> {
-      clusterServices.stop().get();
-      testCompanionObject.atomix = null;
-    };
-  }
-
   private AutoCloseable commandApiTransportAndHandlerStep(
       final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
-    final var messagingService =
-        createMessagingService(brokerCfg.getCluster(), brokerCfg.getNetwork().getCommandApi());
+    final var externalApiCfg = brokerCfg.getNetwork().getExternalApi();
+    final var messagingService = createMessagingService(brokerCfg.getCluster(), externalApiCfg);
     messagingService.start().join();
     LOG.debug(
         "Bound command API to {}, using advertised address {} ",
@@ -263,13 +257,19 @@ public final class Broker implements AutoCloseable {
       limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
     }
 
-    commandHandler = new CommandApiServiceImpl(serverTransport, localBroker, limiter);
-    partitionListeners.add(commandHandler);
-    scheduleActor(commandHandler);
-    diskSpaceUsageListeners.add(commandHandler);
+    externalApiService =
+        new ExternalApiServiceImpl(
+            serverTransport,
+            localBroker,
+            limiter,
+            scheduler,
+            brokerCfg.getExperimental().getQueryApi());
+    partitionListeners.add(externalApiService);
+    scheduleActor(externalApiService);
+    diskSpaceUsageListeners.add(externalApiService);
 
     return () -> {
-      commandHandler.close();
+      externalApiService.close();
       serverTransport.close();
       messagingService.stop().join();
     };
@@ -348,7 +348,7 @@ public final class Broker implements AutoCloseable {
             managementRequestHandler.getPushDeploymentRequestHandler(),
             diskSpaceUsageListeners::add,
             partitionListeners,
-            commandHandler,
+            externalApiService,
             buildExporterRepository(brokerCfg));
 
     partitionManager.start().join();
@@ -370,7 +370,7 @@ public final class Broker implements AutoCloseable {
       final var exporterCfg = exporterEntry.getValue();
       try {
         exporterRepository.load(id, exporterCfg);
-      } catch (final ExporterLoadException | ExporterJarLoadException e) {
+      } catch (final ExporterLoadException | ExternalJarLoadException e) {
         throw new IllegalStateException(
             "Failed to load exporter with configuration: " + exporterCfg, e);
       }

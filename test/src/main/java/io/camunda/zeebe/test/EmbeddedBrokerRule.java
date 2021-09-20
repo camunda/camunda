@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -136,7 +137,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
     final NetworkCfg network = brokerCfg.getNetwork();
     brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
-    network.getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
+    network.getExternalApi().setPort(SocketUtil.getNextAddress().getPort());
     network.getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
     network.getMonitoringApi().setPort(SocketUtil.getNextAddress().getPort());
   }
@@ -214,13 +215,13 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void startBroker() {
     systemContext =
         new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    systemContext.getScheduler().start();
 
     broker = new Broker(systemContext, springBrokerBridge);
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     broker.addPartitionListener(new LeaderPartitionListener(latch));
 
-    systemContext.getScheduler().start();
     broker.start().join();
 
     try {
@@ -296,7 +297,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     @Override
     public ActorFuture<Void> onBecomingLeader(
-        final int partitionId, final long term, final LogStream logStream) {
+        final int partitionId,
+        final long term,
+        final LogStream logStream,
+        final QueryService queryService) {
       latch.countDown();
       return CompletableActorFuture.completed(null);
     }

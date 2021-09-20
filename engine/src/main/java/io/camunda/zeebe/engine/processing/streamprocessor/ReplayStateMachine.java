@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.engine.metrics.ReplayMetrics;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
@@ -83,6 +85,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private State currentState = State.AWAIT_RECORD;
   private final BooleanSupplier shouldPause;
+  private final ReplayMetrics replayMetrics;
 
   public ReplayStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldReplayNext) {
@@ -102,6 +105,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     streamProcessorMode = context.getProcessorMode();
     logStream = context.getLogStream();
     logStreamBatchReader = new LogStreamBatchReaderImpl(context.getLogStreamReader());
+    replayMetrics = new ReplayMetrics(logStream.getPartitionId());
   }
 
   /**
@@ -153,6 +157,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       if (logStreamBatchReader.hasNext()) {
         currentState = State.REPLAY_EVENT;
 
+        final var replayStartTime = ActorClock.currentTimeMillis();
         final var batch = logStreamBatchReader.next();
         replayStrategy
             .runWithRetry(() -> tryToReplayBatch(batch), abortCondition)
@@ -161,9 +166,11 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
                   if (failure != null) {
                     throw new RuntimeException(failure);
                   } else {
+                    replayMetrics.replayDuration(replayStartTime, ActorClock.currentTimeMillis());
                     // the position should be visible only after the batch is replayed successfully
                     lastSourceEventPosition =
                         Math.max(lastSourceEventPosition, batchSourceEventPosition);
+                    replayMetrics.setLastSourcePosition(lastSourceEventPosition);
                     actor.submit(this::replayNextEvent);
 
                     notifyReplayListener();
@@ -241,6 +248,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    * <p>It will schedule the next replay iteration.
    */
   private void onRecordReplayed(final LoggedEvent currentEvent) {
+    replayMetrics.event();
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
     final var currentRecordKey = currentEvent.getKey();

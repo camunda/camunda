@@ -100,7 +100,7 @@ public final class PartitionTestClient {
 
     TestUtil.waitUntil(
         () ->
-            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+            RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
                 .withRecordKey(key)
                 .exists());
 

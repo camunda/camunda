@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -27,34 +28,40 @@ public final class BpmnJobBehavior {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final JobState jobState;
+  private final JobMetrics jobMetrics;
 
   public BpmnJobBehavior(
-      final KeyGenerator keyGenerator, final JobState jobState, final Writers writers) {
+      final KeyGenerator keyGenerator,
+      final JobState jobState,
+      final Writers writers,
+      final JobMetrics jobMetrics) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.jobMetrics = jobMetrics;
   }
 
   public void createNewJob(
       final BpmnElementContext context,
-      final ExecutableJobWorkerTask serviceTask,
+      final ExecutableJobWorkerElement jobWorkerElement,
       final String jobType,
       final int retries) {
 
     jobRecord
         .setType(jobType)
         .setRetries(retries)
-        .setCustomHeaders(serviceTask.getEncodedHeaders())
+        .setCustomHeaders(jobWorkerElement.getJobWorkerProperties().getEncodedHeaders())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(serviceTask.getId())
+        .setElementId(jobWorkerElement.getId())
         .setElementInstanceKey(context.getElementInstanceKey());
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+    jobMetrics.jobCreated(jobType);
   }
 
   public void cancelJob(final long jobKey) {

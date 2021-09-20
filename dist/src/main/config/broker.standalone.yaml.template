@@ -460,6 +460,7 @@
         #
         # args:
         #   url: http://localhost:9200
+        #   requestTimeoutMs: 1000
         #
         #   bulk:
         #     delay: 5

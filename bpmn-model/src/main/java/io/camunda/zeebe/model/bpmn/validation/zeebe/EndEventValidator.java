@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +28,7 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class EndEventValidator implements ModelElementValidator<EndEvent> {
 
   private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENT_DEFINITIONS =
-      Arrays.asList(ErrorEventDefinition.class);
+      Arrays.asList(ErrorEventDefinition.class, MessageEventDefinition.class);
 
   @Override
   public Class<EndEvent> getElementType() {
@@ -57,7 +58,8 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
     eventDefinitions.forEach(
         def -> {
           if (SUPPORTED_EVENT_DEFINITIONS.stream().noneMatch(type -> type.isInstance(def))) {
-            validationResultCollector.addError(0, "End events must be one of: none or error");
+            validationResultCollector.addError(
+                0, "End events must be one of: none, error or message");
           }
         });
   }

@@ -8,9 +8,11 @@
 package io.camunda.zeebe.engine.state.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.Records;
@@ -18,11 +20,15 @@ import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @ExtendWith(ZeebeStateExtension.class)
 final class StateQueryServiceTest {
@@ -35,6 +41,23 @@ final class StateQueryServiceTest {
   @BeforeEach
   void setup() {
     sut = new StateQueryService(db);
+  }
+
+  @ParameterizedTest(name = "[{index}] should throw ClosedServiceException when closed")
+  @MethodSource("provideOperations")
+  void shouldFailWhenServiceIsClosed(final Consumer<StateQueryService> operation) {
+    // given
+    sut.close();
+
+    // when - then
+    assertThatCode(() -> operation.accept(sut)).isInstanceOf(ClosedServiceException.class);
+  }
+
+  private static Stream<Consumer<StateQueryService>> provideOperations() {
+    return Stream.of(
+        svc -> svc.getBpmnProcessIdForJob(1),
+        svc -> svc.getBpmnProcessIdForProcess(1),
+        svc -> svc.getBpmnProcessIdForProcessInstance(1));
   }
 
   @Nested

@@ -103,6 +103,16 @@
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
   </sbe:message>
 
+  <sbe:message name="ExecuteQueryRequest" id="30">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="key" id="2" type="uint64"/>
+    <field name="valueType" id="3" type="ValueType"/>
+  </sbe:message>
+
+  <sbe:message name="ExecuteQueryResponse" id="31">
+    <data name="bpmnProcessId" id="1" type="varDataEncoding"/>
+  </sbe:message>
+
   <!-- L2 Common Messages 200 - 399 -->
 
   <sbe:message name="RecordMetadata" id="200" description="Descriptor for Record Metadata">

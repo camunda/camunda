@@ -9,12 +9,9 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.util.sched.ActorControl;
 
 @FunctionalInterface
 public interface TypedRecordProcessorsFactory {
 
-  TypedRecordProcessors createTypedStreamProcessor(
-      ActorControl actor, MutableZeebeState zeebeState, ProcessingContext processingContext);
+  TypedRecordProcessors createTypedStreamProcessor(ProcessingContext processingContext);
 }
