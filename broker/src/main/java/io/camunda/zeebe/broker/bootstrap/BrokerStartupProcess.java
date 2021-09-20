@@ -62,6 +62,7 @@ public final class BrokerStartupProcess {
     }
 
     result.add(new LeaderManagementRequestHandlerStep());
+    result.add(new PartitionManagerStep());
 
     return result;
   }
@@ -105,9 +106,7 @@ public final class BrokerStartupProcess {
     return new BrokerContextImpl(
         bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
-        bsc.getCommandApiService(),
         bsc.getEmbeddedGatewayService(),
-        bsc.getLeaderManagementRequestHandler(),
-        bsc.getPartitionListeners());
+        bsc.getPartitionManager());
   }
 }

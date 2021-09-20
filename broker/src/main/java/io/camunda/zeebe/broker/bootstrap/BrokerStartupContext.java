@@ -12,6 +12,8 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
@@ -90,4 +92,10 @@ public interface BrokerStartupContext {
   LeaderManagementRequestHandler getLeaderManagementRequestHandler();
 
   void setLeaderManagementRequestHandler(final LeaderManagementRequestHandler handler);
+
+  ExporterRepository getExporterRepository();
+
+  PartitionManagerImpl getPartitionManager();
+
+  void setPartitionManager(PartitionManagerImpl partitionManager);
 }
