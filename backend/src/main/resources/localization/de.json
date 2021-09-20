@@ -551,6 +551,8 @@
       "processPerformance_subTitle": "Prozessentwicklungen und -Dauern",
       "humanPerformance": "Benutzeraufgabenübersicht",
       "humanPerformance_subTitle": "Benutzeraufgabenanzahlen und -Dauern",
+      "humanBottleneckAnalysis": "Engpassanalyse für Benutzeraufgaben",
+      "humanBottleneckAnalysis_subTitle": "Beheben Sie Engpässe, um die Gesamtprozesszeit zu reduzieren",
       "totalInstances": "Alle Instanzen",
       "avgDuration": "Durchschnittliche Instanzdauer",
       "instanceTrends": "Instanzentwicklungen",
@@ -560,7 +562,16 @@
       "idleTime": "Wartezeit",
       "workTime": "Arbeitszeit",
       "tasksStarted": "Gestartete Aufgaben pro Monat",
-      "tasksCompleted": "Abgeschlossene Aufgaben pro Monat"
+      "tasksCompleted": "Abgeschlossene Aufgaben pro Monat",
+      "bottleneckLocation": "Wo ist mein Engpass?",
+      "bottleneckSeverity": "Wie schlimm ist mein Engpass?",
+      "assigneeVariation": "Wie wirkt sich der Bearbeiter auf den Engpass aus?",
+      "durationImprovement": "Verbessert sich der Engpass?",
+      "userTaskImprovement": "Werden Benutzeraufgaben effizienter?",
+      "upstreamWork": "Wird Arbeit reibungslos an den Engpass geliefert? (Zu tun: Bearbeiten Sie den Filter, um alle Prozessknoten VOR dem Engpass einzuschließen)",
+      "bottleneckQueue": "Wie viele Aufgaben warten an meinem Engpass? (Zu tun: Bearbeiten Sie den Filter, um den Prozessknoten AM Engpass auszuwählen)",
+      "workerProductivity": "Wie produktiv sind meine Arbeiter?",
+      "workDuration": "Wie lange dauert jede Benutzeraufgabe?"
     },
     "addButton": {
       "addReport": "Einen Report hinzufügen",
