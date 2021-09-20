@@ -37,7 +37,6 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
-import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -45,6 +44,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import javax.ws.rs.core.Response
+import java.util.function.Consumer
 import java.util.function.Function
 import java.util.stream.Collectors
 
@@ -97,7 +97,7 @@ class PostMigrationTest {
 
     assertThat(allAlerts)
       .isNotEmpty()
-      .allSatisfy(alertDefinitionDto -> assertThat(alertDefinitionDto).isNotNull());
+      .allSatisfy((alertDefinitionDto -> assertThat(alertDefinitionDto).isNotNull()) as Consumer<AlertDefinitionDto>);
   }
 
   @Test
@@ -116,7 +116,7 @@ class PostMigrationTest {
     for (EntityResponseDto collection : collections) {
       final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collection.getId());
       for (EntityResponseDto entity : collectionEntities.stream()
-        .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
+        .filter(entityDto -> EntityType.REPORT == entityDto.getEntityType())
         .collect(Collectors.toList())) {
         final long startMillis = System.currentTimeMillis();
         Response response = null;
@@ -132,10 +132,10 @@ class PostMigrationTest {
         }
         if (response != null) {
           final JsonNode jsonResponse = response.readEntity(JsonNode.class);
-          if (Response.Status.OK.getStatusCode().equals(response.getStatus())) {
+          if (Response.Status.OK.getStatusCode() == response.getStatus()) {
             assertThat(jsonResponse.hasNonNull(AuthorizedSingleReportEvaluationResponseDto.Fields.result.name())).isTrue();
-          } else if (Response.Status.BAD_REQUEST.getStatusCode().equals(response.getStatus())
-            && jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText().equals(TooManyBucketsException.ERROR_CODE)) {
+          } else if (Response.Status.BAD_REQUEST.getStatusCode() == response.getStatus()
+            && jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText() == TooManyBucketsException.ERROR_CODE) {
             assertThat(jsonResponse.get(ErrorResponseDto.Fields.errorCode).asText())
               .isEqualTo(TooManyBucketsException.ERROR_CODE);
             log.warn("Encountered too many buckets for reportId: {}", entity.getId());
@@ -160,11 +160,11 @@ class PostMigrationTest {
     final Map<String, Long> eventProcessInstanceCounts = retrieveEventProcessInstanceCounts(allEventProcessMappings);
     assertThat(eventProcessInstanceCounts.entrySet())
       .isNotEmpty()
-      .allSatisfy(entry -> {
+      .allSatisfy((Map.Entry<String, Long> entry) -> {
         assertThat(entry.getValue())
           .withFailMessage("Event process with key %s did not contain instances.", entry.getKey())
-          .isGreaterThan(0L);
-      });
+          .isGreaterThan(0L)
+      } as Consumer<Map.Entry<String, Long>>)
   }
 
   @Test
@@ -222,7 +222,7 @@ class PostMigrationTest {
     assertThat(allEventProcessMappings)
       .isNotEmpty()
       .extracting((Function<EventProcessMappingDto, EventProcessState>) EventProcessMappingDto::getState)
-      .allSatisfy(eventProcessState -> assertThat(eventProcessState == EventProcessState.PUBLISHED));
+      .allSatisfy((eventProcessState -> assertThat(eventProcessState == EventProcessState.PUBLISHED)) as Consumer<EventProcessState>);
   }
 
   private static void waitForOldIndexToBeCleanedUp(final String processMappingId) {
