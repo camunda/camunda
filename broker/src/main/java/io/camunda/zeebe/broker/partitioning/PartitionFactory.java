@@ -44,7 +44,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
-import io.camunda.zeebe.broker.transport.externalapi.ExternalApiService;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
@@ -102,7 +102,7 @@ public final class PartitionFactory {
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
   private final PushDeploymentRequestHandler deploymentRequestHandler;
-  private final ExternalApiService externalApiService;
+  private final CommandApiService commandApiService;
   private final FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
@@ -113,7 +113,7 @@ public final class PartitionFactory {
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
       final PushDeploymentRequestHandler deploymentRequestHandler,
-      final ExternalApiService externalApiService,
+      final CommandApiService commandApiService,
       final FileBasedSnapshotStoreFactory snapshotStoreFactory,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
@@ -122,7 +122,7 @@ public final class PartitionFactory {
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
     this.deploymentRequestHandler = deploymentRequestHandler;
-    this.externalApiService = externalApiService;
+    this.commandApiService = commandApiService;
     this.snapshotStoreFactory = snapshotStoreFactory;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
@@ -165,8 +165,8 @@ public final class PartitionFactory {
                   communicationService, membershipService, owningPartition.members()),
               actorSchedulingService,
               brokerCfg,
-              () -> externalApiService.newCommandResponseWriter(),
-              () -> externalApiService.getOnProcessedListener(partitionId),
+              () -> commandApiService.newCommandResponseWriter(),
+              () -> commandApiService.getOnProcessedListener(partitionId),
               snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
               snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
               typedRecordProcessorsFactory,

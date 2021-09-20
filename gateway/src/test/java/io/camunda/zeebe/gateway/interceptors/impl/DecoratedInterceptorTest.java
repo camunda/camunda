@@ -9,15 +9,12 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.internal.NoopServerCall;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -39,26 +36,8 @@ final class DecoratedInterceptorTest {
     assertThat(interceptor.threadContextClassLoader).isSameAs(classLoader);
   }
 
-  @Test
-  void shouldSetContextExecutor() {
-    // given
-    final var interceptor = new TestInterceptor();
-    final var classLoader = new ClassLoader("testLoader", getClass().getClassLoader()) {};
-    final var decorated = new DecoratedInterceptor(interceptor, classLoader);
-    final AtomicReference<ClassLoader> tcl = new AtomicReference<>();
-
-    // when
-    decorated.interceptCall(new NoopServerCall<>() {}, new Metadata(), (call, headers) -> null);
-    interceptor.contextExecutor.execute(
-        () -> tcl.set(Thread.currentThread().getContextClassLoader()));
-
-    // then
-    assertThat(tcl.get()).isSameAs(classLoader);
-  }
-
   private static final class TestInterceptor implements ServerInterceptor {
     private ClassLoader threadContextClassLoader;
-    private Executor contextExecutor;
 
     @Override
     public <ReqT, RespT> Listener<ReqT> interceptCall(
@@ -66,7 +45,6 @@ final class DecoratedInterceptorTest {
         final Metadata headers,
         final ServerCallHandler<ReqT, RespT> next) {
       threadContextClassLoader = Thread.currentThread().getContextClassLoader();
-      contextExecutor = InterceptorUtil.getContextExecutor();
       return next.startCall(call, headers);
     }
   }

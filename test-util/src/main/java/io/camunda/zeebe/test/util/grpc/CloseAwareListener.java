@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.interceptors.util;
+package io.camunda.zeebe.test.util.grpc;
 
 import io.grpc.ForwardingServerCallListener.SimpleForwardingServerCallListener;
 import io.grpc.ServerCall.Listener;
@@ -14,7 +14,7 @@ import io.grpc.ServerCall.Listener;
  * Utility interceptor which stops forwarding any callbacks to its delegate when closed in order to
  * prevent errors.
  */
-class CloseAwareListener<ReqT> extends SimpleForwardingServerCallListener<ReqT> {
+public class CloseAwareListener<ReqT> extends SimpleForwardingServerCallListener<ReqT> {
   protected volatile boolean isClosed;
 
   public CloseAwareListener(final Listener<ReqT> delegate) {

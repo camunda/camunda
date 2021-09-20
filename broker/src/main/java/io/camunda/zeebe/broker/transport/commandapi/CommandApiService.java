@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.externalapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import java.util.function.Consumer;
 
-public interface ExternalApiService {
+public interface CommandApiService {
 
   CommandResponseWriter newCommandResponseWriter();
 

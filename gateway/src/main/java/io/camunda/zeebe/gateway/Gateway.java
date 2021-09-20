@@ -18,8 +18,10 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -181,6 +183,7 @@ public final class Gateway {
 
   private ServerServiceDefinition applyInterceptors(final GatewayGrpcService service) {
     final var repository = new InterceptorRepository().load(gatewayCfg.getInterceptors());
+    final var queryApi = new QueryApiImpl(brokerClient);
     final List<ServerInterceptor> interceptors =
         repository.instantiate().map(DecoratedInterceptor::decorate).collect(Collectors.toList());
 
@@ -188,6 +191,7 @@ public final class Gateway {
     // configured, such that the first configured interceptor is the outermost interceptor in the
     // chain
     Collections.reverse(interceptors);
+    interceptors.add(new ContextInjectingInterceptor(queryApi));
 
     if (gatewayCfg.getMonitoring().isEnabled()) {
       final var interceptor = MonitoringServerInterceptor.create(Configuration.allMetrics());

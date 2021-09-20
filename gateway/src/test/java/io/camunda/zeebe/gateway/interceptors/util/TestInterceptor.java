@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.interceptors.util;
 
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.test.util.grpc.CloseAwareListener;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;

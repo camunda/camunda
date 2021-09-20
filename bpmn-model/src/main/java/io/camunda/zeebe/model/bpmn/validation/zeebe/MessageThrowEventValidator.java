@@ -16,29 +16,28 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class MessageEndEventValidator implements ModelElementValidator<EndEvent> {
+public class MessageThrowEventValidator implements ModelElementValidator<ThrowEvent> {
 
-  private final ExtensionElementsValidator<EndEvent, ZeebeTaskDefinition>
+  private final ExtensionElementsValidator<ThrowEvent, ZeebeTaskDefinition>
       extensionElementsValidator =
-          ExtensionElementsValidator.verifyThat(EndEvent.class)
+          ExtensionElementsValidator.verifyThat(ThrowEvent.class)
               .hasSingleExtensionElement(
                   ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION);
 
   @Override
-  public Class<EndEvent> getElementType() {
-    return EndEvent.class;
+  public Class<ThrowEvent> getElementType() {
+    return ThrowEvent.class;
   }
 
   @Override
   public void validate(
-      final EndEvent element, final ValidationResultCollector validationResultCollector) {
+      final ThrowEvent element, final ValidationResultCollector validationResultCollector) {
 
     if (isMessageThrowEvent(element)) {
       // a message throw event must have a task definition

@@ -12,11 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.interceptors.util.ContextInspectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.util.TestInterceptor;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -97,6 +99,28 @@ final class InterceptorIT {
           .isInstanceOf(StatusRuntimeException.class)
           .withMessage("PERMISSION_DENIED: Aborting because of test");
     }
+  }
+
+  @Test
+  void shouldInjectQueryApiViaContext() throws IOException {
+    // given
+    final var interceptorCfg = new InterceptorCfg();
+    interceptorCfg.setId("test");
+    interceptorCfg.setClassName(ContextInspectingInterceptor.class.getName());
+    config.getInterceptors().add(interceptorCfg);
+
+    // when
+    gateway.start();
+    try (final var client = createZeebeClient()) {
+      try {
+        client.newTopologyRequest().send().join();
+      } catch (final ClientStatusException ignored) {
+        // ignore any errors, we just really care that the interceptor was called
+      }
+    }
+
+    // then
+    assertThat(ContextInspectingInterceptor.CONTEXT_QUERY_API.get()).isNotNull();
   }
 
   private BrokerClientImpl getBrokerClient(final GatewayCfg gatewayConfig) {

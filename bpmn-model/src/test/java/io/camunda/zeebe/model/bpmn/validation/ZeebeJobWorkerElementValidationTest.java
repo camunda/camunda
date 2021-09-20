@@ -20,6 +20,7 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
@@ -114,7 +115,13 @@ public class ZeebeJobWorkerElementValidationTest {
         JobWorkerElementBuilder.of("sendTask", AbstractFlowNodeBuilder::sendTask),
         JobWorkerElementBuilder.of(
             "message end event",
-            process -> process.endEvent().messageEventDefinition().messageEventDefinitionDone()));
+            process ->
+                process.endEvent("message", AbstractThrowEventBuilder::messageEventDefinition)),
+        JobWorkerElementBuilder.of(
+            "intermediate message throw event",
+            process ->
+                process.intermediateThrowEvent(
+                    "message", AbstractThrowEventBuilder::messageEventDefinition)));
   }
 
   private static final class JobWorkerElementBuilder {

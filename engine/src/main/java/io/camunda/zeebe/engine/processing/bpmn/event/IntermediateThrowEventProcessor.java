@@ -11,35 +11,52 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 
-public class IntermediateThrowEventProcessor implements BpmnElementProcessor<ExecutableFlowNode> {
+public class IntermediateThrowEventProcessor
+    implements BpmnElementProcessor<ExecutableIntermediateThrowEvent> {
 
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public IntermediateThrowEventProcessor(final BpmnBehaviors bpmnBehaviors) {
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
-  public Class<ExecutableFlowNode> getType() {
-    return ExecutableFlowNode.class;
+  public Class<ExecutableIntermediateThrowEvent> getType() {
+    return ExecutableIntermediateThrowEvent.class;
   }
 
   @Override
-  public void onActivate(final ExecutableFlowNode element, final BpmnElementContext context) {
-    final var activated = stateTransitionBehavior.transitionToActivated(context);
-    stateTransitionBehavior.completeElement(activated);
+  public void onActivate(
+      final ExecutableIntermediateThrowEvent element, final BpmnElementContext context) {
+
+    if (element.getJobWorkerProperties() != null) {
+      variableMappingBehavior
+          .applyInputMappings(context, element)
+          .flatMap(ok -> jobBehavior.createNewJob(context, element))
+          .ifRightOrLeft(
+              ok -> stateTransitionBehavior.transitionToActivated(context),
+              failure -> incidentBehavior.createIncident(failure, context));
+
+    } else {
+      final var activated = stateTransitionBehavior.transitionToActivated(context);
+      stateTransitionBehavior.completeElement(activated);
+    }
   }
 
   @Override
-  public void onComplete(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public void onComplete(
+      final ExecutableIntermediateThrowEvent element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
@@ -49,7 +66,13 @@ public class IntermediateThrowEventProcessor implements BpmnElementProcessor<Exe
   }
 
   @Override
-  public void onTerminate(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableIntermediateThrowEvent element, final BpmnElementContext context) {
+
+    if (element.getJobWorkerProperties() != null) {
+      jobBehavior.cancelJob(context);
+    }
+
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);

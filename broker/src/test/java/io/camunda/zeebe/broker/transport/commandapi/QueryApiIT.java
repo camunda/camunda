@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.externalapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,7 +56,7 @@ public final class QueryApiIT {
   public void setup() {
     serverAddress =
         NetUtil.toSocketAddressString(
-            broker.getBrokerCfg().getNetwork().getExternalApi().getAddress());
+            broker.getBrokerCfg().getNetwork().getCommandApi().getAddress());
     final var messagingService =
         new NettyMessagingService(
             broker.getBrokerCfg().getCluster().getClusterName(),

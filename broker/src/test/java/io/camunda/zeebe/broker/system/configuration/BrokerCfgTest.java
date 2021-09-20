@@ -712,8 +712,8 @@ public final class BrokerCfgTest {
       final String configFileName, final int command, final int internal, final int monitoring) {
     final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg network = brokerCfg.getNetwork();
-    assertThat(network.getExternalApi().getAddress().getPort()).isEqualTo(command);
-    assertThat(network.getExternalApi().getAdvertisedAddress().getPort()).isEqualTo(command);
+    assertThat(network.getCommandApi().getAddress().getPort()).isEqualTo(command);
+    assertThat(network.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(command);
     assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
   }
@@ -738,7 +738,7 @@ public final class BrokerCfgTest {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
-    assertThat(networkCfg.getExternalApi().getAddress().getHostString()).isEqualTo(command);
+    assertThat(networkCfg.getCommandApi().getAddress().getHostString()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
@@ -746,15 +746,15 @@ public final class BrokerCfgTest {
   private void assertAdvertisedHost(final String configFileName, final String host) {
     final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
-    assertThat(networkCfg.getExternalApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
   }
 
   private void assertAdvertisedAddress(
       final String configFileName, final String host, final int port) {
     final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
-    assertThat(networkCfg.getExternalApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
-    assertThat(networkCfg.getExternalApi().getAdvertisedAddress().getPort()).isEqualTo(port);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(port);
   }
 
   private void assertDefaultContactPoints(final String... contactPoints) {

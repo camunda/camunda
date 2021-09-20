@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -40,7 +41,13 @@ public final class JobWorkerElementBuilderProvider implements ArgumentsProvider 
         JobWorkerElementBuilder.of(BpmnElementType.SEND_TASK, AbstractFlowNodeBuilder::sendTask),
         JobWorkerElementBuilder.of(
             BpmnElementType.END_EVENT,
-            process -> process.endEvent().messageEventDefinition().messageEventDefinitionDone()));
+            process ->
+                process.endEvent("message", AbstractThrowEventBuilder::messageEventDefinition)),
+        JobWorkerElementBuilder.of(
+            BpmnElementType.INTERMEDIATE_THROW_EVENT,
+            process ->
+                process.intermediateThrowEvent(
+                    "message", AbstractThrowEventBuilder::messageEventDefinition)));
   }
 
   public static Collection<Object[]> buildersAsParameters() {

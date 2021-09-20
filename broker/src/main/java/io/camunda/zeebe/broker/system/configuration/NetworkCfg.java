@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
-import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.ExternalApiCfg;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import java.util.Optional;
@@ -26,7 +26,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private String advertisedHost;
 
-  private final ExternalApiCfg commandApi = new ExternalApiCfg();
+  private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
   private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
@@ -77,13 +77,7 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
-  public ExternalApiCfg getExternalApi() {
-    return commandApi;
-  }
-
-  /** @deprecated replaced by {@link #getExternalApi()}. Exists only for backwards compatibility. */
-  @Deprecated(forRemoval = true)
-  public ExternalApiCfg getCommandApi() {
+  public CommandApiCfg getCommandApi() {
     return commandApi;
   }
 
