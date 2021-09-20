@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.netty.util.NetUtil;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -46,7 +44,6 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final SystemContext systemContext;
-  private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
 
   private ClusterServicesImpl clusterServices;
@@ -56,7 +53,6 @@ public final class Broker implements AutoCloseable {
   private BrokerHealthCheckService healthCheckService;
   private final SpringBrokerBridge springBrokerBridge;
   private BrokerAdminService brokerAdminService;
-  private PartitionManagerImpl partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
   // TODO make Broker class itself the actor
@@ -74,7 +70,6 @@ public final class Broker implements AutoCloseable {
       final SpringBrokerBridge springBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
     this.systemContext = systemContext;
-    partitionListeners = new ArrayList<>(additionalPartitionListeners);
     this.springBrokerBridge = springBrokerBridge;
     scheduler = this.systemContext.getScheduler();
 
@@ -88,7 +83,9 @@ public final class Broker implements AutoCloseable {
             systemContext.getBrokerConfiguration(),
             springBrokerBridge,
             scheduler,
-            healthCheckService);
+            healthCheckService,
+            buildExporterRepository(getConfig()),
+            additionalPartitionListeners);
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);
@@ -140,7 +137,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep("zeebe partitions", () -> partitionsStep(brokerCfg, localBroker));
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
@@ -148,8 +144,6 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable migratedStartupSteps() {
     brokerContext = brokerStartupActor.start().join();
-
-    partitionListeners.addAll(brokerContext.getPartitionListeners());
 
     clusterServices = brokerContext.getClusterServices();
     testCompanionObject.atomix = clusterServices.getAtomixCluster();
@@ -187,6 +181,7 @@ public final class Broker implements AutoCloseable {
     final var adminService = new BrokerAdminServiceImpl();
     scheduleActor(adminService);
 
+    final var partitionManager = brokerContext.getPartitionManager();
     adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
     adminService.injectPartitionInfoSource(partitionManager.getPartitions());
 
@@ -197,29 +192,6 @@ public final class Broker implements AutoCloseable {
 
   private void scheduleActor(final Actor actor) {
     systemContext.getScheduler().submitActor(actor).join();
-  }
-
-  private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
-    partitionManager =
-        new PartitionManagerImpl(
-            scheduler,
-            brokerCfg,
-            localBroker,
-            clusterServices,
-            healthCheckService,
-            brokerContext.getPushDeploymentRequestHandler(),
-            brokerContext::addDiskSpaceUsageListener,
-            partitionListeners,
-            brokerContext.getCommandApiService(),
-            buildExporterRepository(brokerCfg));
-
-    partitionManager.start().join();
-
-    return () -> {
-      partitionManager.stop().join();
-      partitionManager = null;
-      // TODO shutdown snapshot store
-    };
   }
 
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
@@ -292,7 +264,7 @@ public final class Broker implements AutoCloseable {
   }
 
   public PartitionManager getPartitionManager() {
-    return partitionManager;
+    return brokerContext.getPartitionManager();
   }
 
   @Deprecated // only used for test; temporary work around

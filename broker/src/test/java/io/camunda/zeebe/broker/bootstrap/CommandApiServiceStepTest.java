@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +62,9 @@ public class CommandApiServiceStepTest {
             TEST_BROKER_CONFIG,
             mock(SpringBrokerBridge.class),
             mockActorSchedulingService,
-            mock(BrokerHealthCheckService.class));
+            mock(BrokerHealthCheckService.class),
+            mock(ExporterRepository.class),
+            Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 

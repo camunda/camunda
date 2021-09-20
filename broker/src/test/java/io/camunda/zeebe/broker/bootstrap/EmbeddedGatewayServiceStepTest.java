@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -67,7 +69,9 @@ public class EmbeddedGatewayServiceStepTest {
               TEST_BROKER_CONFIG,
               mock(SpringBrokerBridge.class),
               actorScheduler,
-              mock(BrokerHealthCheckService.class));
+              mock(BrokerHealthCheckService.class),
+              mock(ExporterRepository.class),
+              Collections.emptyList());
 
       testBrokerStartupContext.setClusterServices(
           mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS));
@@ -127,7 +131,9 @@ public class EmbeddedGatewayServiceStepTest {
               TEST_BROKER_CONFIG,
               mock(SpringBrokerBridge.class),
               mock(ActorScheduler.class),
-              mock(BrokerHealthCheckService.class));
+              mock(BrokerHealthCheckService.class),
+              mock(ExporterRepository.class),
+              Collections.emptyList());
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
