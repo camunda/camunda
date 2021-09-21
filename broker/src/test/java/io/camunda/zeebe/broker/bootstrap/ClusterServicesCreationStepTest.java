@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import org.mockito.Mockito;
 public class ClusterServicesCreationStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_CONFIGURATION = new BrokerCfg();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
 
@@ -55,11 +57,9 @@ public class ClusterServicesCreationStepTest {
   void shouldCompleteFutureOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
     assertThat(future.join()).isNotNull();
   }
 
@@ -77,11 +77,9 @@ public class ClusterServicesCreationStepTest {
   void shouldCompleteFutureOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
     assertThat(future.join()).isNotNull();
   }
 

@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 
-public final class BrokerContextImpl implements BrokerContext {
+final class BrokerContextImpl implements BrokerContext {
 
   private final ClusterServicesImpl clusterServices;
   private final EmbeddedGatewayService embeddedGatewayService;
@@ -23,7 +23,7 @@ public final class BrokerContextImpl implements BrokerContext {
   private final PartitionManager partitionManager;
   private final BrokerAdminService brokerAdminService;
 
-  public BrokerContextImpl(
+  BrokerContextImpl(
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final ClusterServicesImpl clusterServices,
       final EmbeddedGatewayService embeddedGatewayService,

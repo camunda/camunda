@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -18,13 +19,15 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class MonitoringServerStepTest {
+class MonitoringServerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private SpringBrokerBridge mockSpringBrokerBridge;
   private BrokerStartupContext mockBrokerStartupContext;
@@ -62,14 +65,15 @@ public class MonitoringServerStepTest {
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
   void shouldScheduleHealthMonitorActorOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockActorSchedulingService).submitActor(mockHealthCheckService);
@@ -79,6 +83,7 @@ public class MonitoringServerStepTest {
   void shouldRegisterHealthMonitorAsPartitionListenerOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockBrokerStartupContext).addPartitionListener(mockHealthCheckService);
@@ -88,6 +93,7 @@ public class MonitoringServerStepTest {
   void shouldRegisterHealthMonitorInSpringBrokerBridgeOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     final var argumentCaptor = ArgumentCaptor.forClass(Supplier.class);
@@ -103,14 +109,15 @@ public class MonitoringServerStepTest {
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
   void shouldStopHealthCheckServiceOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockHealthCheckService).closeAsync();
@@ -120,6 +127,7 @@ public class MonitoringServerStepTest {
   void shouldUnregisterHealthCheckServiceAsPartitionListenerOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockBrokerStartupContext).removePartitionListener(mockHealthCheckService);
@@ -129,6 +137,7 @@ public class MonitoringServerStepTest {
   void shouldUnregisterHealthMonitorInSpringBrokerBridgeOnStartup() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     final var argumentCaptor = ArgumentCaptor.forClass(Supplier.class);

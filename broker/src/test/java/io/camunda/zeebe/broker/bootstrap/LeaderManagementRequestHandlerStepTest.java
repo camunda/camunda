@@ -20,13 +20,15 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-public class LeaderManagementRequestHandlerStepTest {
+class LeaderManagementRequestHandlerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
   private ActorSchedulingService mockActorSchedulingService;
@@ -66,11 +68,10 @@ public class LeaderManagementRequestHandlerStepTest {
   void shouldCompleteFutureOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
@@ -113,11 +114,10 @@ public class LeaderManagementRequestHandlerStepTest {
   void shouldCompleteFutureOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test

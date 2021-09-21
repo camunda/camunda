@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import org.mockito.Mockito;
 
 final class BrokerAdminServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
   private ActorSchedulingService mockActorSchedulingService;
@@ -70,11 +72,10 @@ final class BrokerAdminServiceStepTest {
   void shouldCompleteFutureOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
@@ -111,11 +112,10 @@ final class BrokerAdminServiceStepTest {
   void shouldCompleteFutureOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
