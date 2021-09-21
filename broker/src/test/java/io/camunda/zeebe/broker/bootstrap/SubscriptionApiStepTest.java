@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class SubscriptionApiStepTest {
+class SubscriptionApiStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
 
   private BrokerStartupContext mockBrokerStartupContext;

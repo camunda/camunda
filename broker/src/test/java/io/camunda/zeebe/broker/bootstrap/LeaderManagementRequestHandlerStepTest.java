@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-public class LeaderManagementRequestHandlerStepTest {
+class LeaderManagementRequestHandlerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
 
   private BrokerStartupContext mockBrokerStartupContext;

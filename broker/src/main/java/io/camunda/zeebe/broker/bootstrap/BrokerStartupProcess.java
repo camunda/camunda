@@ -57,6 +57,7 @@ public final class BrokerStartupProcess {
 
     result.add(new CommandApiServiceStep());
     result.add(new SubscriptionApiStep());
+
     result.add(new ClusterServicesStep());
 
     if (config.getGateway().isEnable()) {

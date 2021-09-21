@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -22,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class DiskSpaceUsageMonitorStepTest {
+class DiskSpaceUsageMonitorStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
 
@@ -58,9 +59,9 @@ public class DiskSpaceUsageMonitorStepTest {
   void shouldCompleteFutureOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
     assertThat(future.isCompletedExceptionally()).isFalse();
   }
 
@@ -79,9 +80,9 @@ public class DiskSpaceUsageMonitorStepTest {
   void shouldCompleteFutureOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
     assertThat(future.isCompletedExceptionally()).isFalse();
   }
 
@@ -89,6 +90,7 @@ public class DiskSpaceUsageMonitorStepTest {
   void shouldStopHealthCheckServiceOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockDiskSpaceUsageMonitor).closeAsync();

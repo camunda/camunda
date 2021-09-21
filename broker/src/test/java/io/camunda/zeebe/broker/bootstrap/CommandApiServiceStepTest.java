@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-public class CommandApiServiceStepTest {
+class CommandApiServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final BrokerInfo TEST_BROKER_INFO = new BrokerInfo(0, "localhost");

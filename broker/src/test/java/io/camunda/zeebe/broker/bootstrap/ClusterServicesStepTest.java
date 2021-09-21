@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ClusterServicesStepTest {
+class ClusterServicesStepTest {
 
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
 
@@ -48,9 +49,9 @@ public class ClusterServicesStepTest {
   void shouldCompleteFutureOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
     assertThat(future.isCompletedExceptionally()).isFalse();
   }
 
@@ -58,6 +59,7 @@ public class ClusterServicesStepTest {
   void shouldStartClusterServicesOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockClusterServices).start();
@@ -67,9 +69,9 @@ public class ClusterServicesStepTest {
   void shouldCompleteFutureOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
-    assertThat(future.isDone()).isTrue();
     assertThat(future.isCompletedExceptionally()).isFalse();
   }
 
@@ -77,6 +79,7 @@ public class ClusterServicesStepTest {
   void shouldStopClusterServicesOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockClusterServices).stop();
