@@ -11,8 +11,6 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
-import io.camunda.zeebe.broker.bootstrap.CloseProcess;
-import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
@@ -48,7 +46,6 @@ public final class Broker implements AutoCloseable {
   private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private final ActorScheduler scheduler;
-  private CloseProcess closeProcess;
   private BrokerHealthCheckService healthCheckService;
   private BrokerAdminService brokerAdminService;
 
@@ -110,10 +107,13 @@ public final class Broker implements AutoCloseable {
   }
 
   private void internalStart() {
-    final StartProcess startProcess = initStart();
-
     try {
-      closeProcess = startProcess.start();
+      brokerContext = brokerStartupActor.start().join();
+
+      testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
+      testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
+      brokerAdminService = brokerContext.getBrokerAdminService();
+
       startFuture.complete(this);
       healthCheckService.setBrokerStarted();
     } catch (final Exception bootStrapException) {
@@ -128,27 +128,8 @@ public final class Broker implements AutoCloseable {
     }
   }
 
-  private StartProcess initStart() {
-    final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
-    startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    return startContext;
-  }
-
-  private AutoCloseable migratedStartupSteps() {
-    brokerContext = brokerStartupActor.start().join();
-
     clusterServices = brokerContext.getClusterServices();
     testCompanionObject.atomix = clusterServices.getAtomixCluster();
-    testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
-    testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
-    brokerAdminService = brokerContext.getBrokerAdminService();
-
-    return () -> {
-      brokerStartupActor.stop().join();
-      healthCheckService = null;
-    };
-  }
-
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
     final var clusterCfg = brokerCfg.getCluster();
 
@@ -202,7 +183,8 @@ public final class Broker implements AutoCloseable {
             startFuture
                 .thenAccept(
                     b -> {
-                      closeProcess.closeReverse();
+                      brokerStartupActor.stop().join();
+                      healthCheckService = null;
                       isClosed = true;
                       testCompanionObject.atomix = null;
                       LOG.info("Broker shut down.");
