@@ -5,6 +5,12 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
+import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.zeebeimport.util.TreePath;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,11 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.webapp.rest.dto.OperationDto;
 
 public class ListViewProcessInstanceDto {
 
@@ -38,6 +39,8 @@ public class ListViewProcessInstanceDto {
   private List<OperationDto> operations = new ArrayList<>();
 
   private String parentInstanceId;
+
+  private String rootInstanceId;
 
   /**
    * Sort values, define the position of process instance in the list and may be used to search
@@ -144,6 +147,15 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
+  public String getRootInstanceId() {
+    return rootInstanceId;
+  }
+
+  public ListViewProcessInstanceDto setRootInstanceId(final String rootInstanceId) {
+    this.rootInstanceId = rootInstanceId;
+    return this;
+  }
+
   public String[] getSortValues() {
     return sortValues;
   }
@@ -190,6 +202,14 @@ public class ListViewProcessInstanceDto {
           .map(String::valueOf)
           .toArray(String[]::new));
     }
+
+    if (processInstanceEntity.getTreePath() != null) {
+      final String rootInstanceId = new TreePath(processInstanceEntity.getTreePath())
+          .extractRootInstanceId();
+      if (!processInstanceEntity.getId().equals(rootInstanceId)) {
+        processInstance.setRootInstanceId(rootInstanceId);
+      }
+    }
     return processInstance;
   }
 
@@ -228,6 +248,7 @@ public class ListViewProcessInstanceDto {
         Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
         Objects.equals(operations, that.operations) &&
         Objects.equals(parentInstanceId, that.parentInstanceId) &&
+        Objects.equals(rootInstanceId, that.rootInstanceId) &&
         Arrays.equals(sortValues, that.sortValues);
   }
 
@@ -235,7 +256,7 @@ public class ListViewProcessInstanceDto {
   public int hashCode() {
     int result = Objects
         .hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
-            hasActiveOperation, operations, parentInstanceId);
+            hasActiveOperation, operations, parentInstanceId, rootInstanceId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

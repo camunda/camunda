@@ -9,6 +9,8 @@ import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FN;
 import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.FNI;
 import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.PI;
 
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,6 +75,19 @@ public class TreePath {
     final Matcher matcher = fniPattern.matcher(treePath);
     matcher.matches();
     return matcher.group(1);
+  }
+
+  public String extractRootInstanceId() {
+    final Pattern piPattern = Pattern.compile("PI_(\\d*).*");
+    final Optional<Matcher> firstMatch = Arrays.stream(treePath.toString().split("/"))
+        .map(piPattern::matcher)
+        .filter(Matcher::matches)
+        .findFirst();
+    if (firstMatch.isPresent()) {
+      return firstMatch.get().group(1);
+    } else {
+      return null;
+    }
   }
 
   @Override

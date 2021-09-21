@@ -60,11 +60,11 @@ public abstract class TestUtil {
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId) {
-    return createProcessInstance(state, processId, null);
+    return createProcessInstance(state, processId, null, null);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
-      Long parentInstanceKey) {
+      Long parentInstanceKey, String treePath) {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
 
     processInstance.setStartDate(DateUtil.getRandomStartDate());
@@ -90,6 +90,11 @@ public abstract class TestUtil {
     }
     processInstance.setPartitionId(1);
     processInstance.setParentProcessInstanceKey(parentInstanceKey);
+    if (treePath != null) {
+      processInstance.setTreePath(treePath);
+    } else {
+      processInstance.setTreePath(new TreePath().startTreePath(processInstance.getId()).toString());
+    }
     return processInstance;
   }
 

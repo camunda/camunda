@@ -16,12 +16,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperateEntity;
@@ -40,6 +34,12 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
@@ -63,6 +63,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private String batchOperationId = "batchOperationId";
   private Long parentInstanceKey1 = 111L;
   private Long parentInstanceKey2 = 222L;
+  private String rootInstanceId = "333";
 
   @Test
   public void testQueryAllRunning() throws Exception {
@@ -665,6 +666,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID)
         .containsExactlyInAnyOrder(runningInstance.getId(), completedInstance.getId());
+    assertThat(response.getProcessInstances()).extracting("rootInstanceId")
+        .containsExactly(rootInstanceId, rootInstanceId);
   }
 
   @Test
@@ -1061,6 +1064,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getProcessInstances().size()).isEqualTo(1);
     assertThat(response.getProcessInstances().get(0).getEndDate()).isNotNull();
     assertThat(response.getProcessInstances().get(0).getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
+    assertThat(response.getProcessInstances()).extracting("rootInstanceId")
+        .containsOnlyNulls();
   }
 
   @Test
@@ -1186,7 +1191,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //running instance with one activity and without incidents
     final Long processDefinitionKey = 27L;
     runningInstance = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey,
-        parentInstanceKey1);
+        parentInstanceKey1, "PI_" + rootInstanceId
+            + "/FI_someFlowNode/FNI_958398/PI_" + parentInstanceKey1
+            + "/FI_anotherFlowNode/FNI_45345/PI_9898");
     runningInstance.setBatchOperationIds(Arrays.asList("a", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance1 = TestUtil
         .createFlowNodeInstance(runningInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE);
@@ -1195,7 +1202,9 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //completed instance with one activity and without incidents
     completedInstance = createProcessInstance(ProcessInstanceState.COMPLETED, processDefinitionKey,
-        parentInstanceKey1);
+        parentInstanceKey1, "PI_" + rootInstanceId
+            + "/FI_someFlowNode/FNI_958398/PI_" + parentInstanceKey1
+            + "/FI_anotherFlowNode/FNI_45345/PI_9898");
     completedInstance.setBatchOperationIds(Arrays.asList("b", batchOperationId));
     final FlowNodeInstanceForListViewEntity activityInstance2 = TestUtil
         .createFlowNodeInstance(completedInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED);

@@ -680,6 +680,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstance).isNotNull();
     assertThat(processInstance.getParentInstanceId())
         .isEqualTo(String.valueOf(parentProcessInstanceKey));
+    assertThat(processInstance.getRootInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
   }
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
