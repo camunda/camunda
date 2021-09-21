@@ -24,6 +24,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
+import io.camunda.zeebe.util.sched.ManualConcurrencyControl;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletionException;
@@ -214,10 +215,69 @@ class NewPartitionTransitionImplTest {
     verify(mockStep1, never()).transitionTo(mockContext, secondTerm, secondRole);
     verify(mockStep2, never()).transitionTo(mockContext, secondTerm, secondRole);
 
-    assertThatThrownBy(() -> secondTransitionFuture.join())
+    assertThatThrownBy(secondTransitionFuture::join)
         .isInstanceOf(CompletionException.class)
         .getCause()
         .isSameAs(testException);
+  }
+
+  /**
+   * This test case was introduced in response to https://github.com/camunda-cloud/zeebe/issues/7873
+   *
+   * <p>In this issue, two transitions B and C were enqueued in short sequence, while another
+   * transition A was still running. Both transitions encountered the same current transition A, and
+   * both enqueued follow-up tasks to cancel the current transition and create a new one. However,
+   * the two transitions were not aware of each other. I.e. when transition C was enqueued it wasn't
+   * aware that transition B was scheduled to run in the future. Likewise, when transition B started
+   * executing its logic it was unaware that another transition C had been scheduled, which would
+   * supersede transition B.
+   *
+   * <p>What should happen is that when transition C is scheduled, it not only cancels the currently
+   * running transition A, but also nullifies any other transitions scheduled to run after A that
+   * have not started yet
+   */
+  @Test
+  void shouldSkipIntermediateTransitionsWhenNewTransitionIsEnqueued() {
+    // given
+    final var manualConcurrencyControl = new ManualConcurrencyControl();
+
+    final var step1CountdownLatch = new CountDownLatch(1);
+    final var step1 = new WaitingTransitionStep(TEST_CONCURRENCY_CONTROL, step1CountdownLatch);
+    final var spyStep1 = spy(step1);
+
+    final var sut = new NewPartitionTransitionImpl(of(spyStep1), mockContext);
+    sut.setConcurrencyControl(manualConcurrencyControl);
+
+    final var transitionAFuture = sut.transitionTo(1, Role.FOLLOWER);
+    manualConcurrencyControl.play();
+
+    // when
+    final var transitionBFuture = sut.transitionTo(2, Role.CANDIDATE);
+    final var transitionCFuture = sut.transitionTo(3, Role.LEADER);
+
+    step1CountdownLatch.countDown();
+    manualConcurrencyControl.play();
+
+    await().until(transitionAFuture::isDone);
+
+    manualConcurrencyControl.play();
+
+    await().until(transitionBFuture::isDone);
+    await().until(transitionCFuture::isDone);
+
+    // then
+    assertThat(transitionAFuture.isCompletedExceptionally()).isFalse();
+    assertThat(transitionBFuture.isCompletedExceptionally()).isFalse();
+    assertThat(transitionCFuture.isCompletedExceptionally()).isFalse();
+
+    // transition A is executed
+    verify(spyStep1).transitionTo(mockContext, 1, Role.FOLLOWER);
+    // transition B is skipped
+    verify(spyStep1, never()).prepareTransition(mockContext, 2, Role.CANDIDATE);
+    verify(spyStep1, never()).transitionTo(mockContext, 2, Role.CANDIDATE);
+    // transition C is executed
+    verify(spyStep1).prepareTransition(mockContext, 3, Role.LEADER);
+    verify(spyStep1).transitionTo(mockContext, 3, Role.LEADER);
   }
 
   private final class WaitingTransitionStep implements PartitionTransitionStep {
