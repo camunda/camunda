@@ -40,6 +40,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import org.slf4j.MDC;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
 public final class RaftClusterContext implements RaftCluster, AutoCloseable {
@@ -124,6 +125,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     raft.getThreadContext()
         .execute(
             () -> {
+              MDC.put("partitionId", Integer.toString(raft.getPartitionId()));
               // Transition the server to the appropriate state for the local member type.
               raft.transition(localMember.getType());
 
