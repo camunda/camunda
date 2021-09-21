@@ -21,6 +21,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -64,6 +65,12 @@ class NoopSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public Path getPath() {
     return null;
+  }
+
+  @Override
+  public ActorFuture<Void> copySnapshot(
+      final PersistedSnapshot snapshot, final Path targetDirectory) {
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
