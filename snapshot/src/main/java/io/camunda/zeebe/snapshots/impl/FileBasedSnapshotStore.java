@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -264,6 +265,36 @@ public final class FileBasedSnapshotStore extends Actor
   @Override
   public Path getPath() {
     return snapshotsDirectory;
+  }
+
+  @Override
+  public ActorFuture<Void> copySnapshot(
+      final PersistedSnapshot snapshot, final Path targetDirectory) {
+    final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          if (!Files.exists(snapshot.getPath())) {
+            result.completeExceptionally(
+                String.format(
+                    "Expected to copy snapshot %s to directory %s, but snapshot directory %s does not exits. Snapshot may have been deleted.",
+                    snapshot.getId(), targetDirectory, snapshot.getPath()),
+                new FileNotFoundException());
+          } else {
+            try {
+              LOGGER.info("Copying {} to {}", snapshot.getPath(), targetDirectory);
+              FileUtil.copySnapshot(targetDirectory, snapshot.getPath());
+              result.complete(null);
+            } catch (final Exception e) {
+              result.completeExceptionally(
+                  String.format(
+                      "Failed to copy snapshot %s to directory %s.",
+                      snapshot.getId(), targetDirectory),
+                  e);
+            }
+          }
+        });
+
+    return result;
   }
 
   @Override
