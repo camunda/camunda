@@ -10,17 +10,32 @@ package io.camunda.zeebe.util.sched;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class Actor implements CloseableSilently, AsyncClosable, ConcurrencyControl {
 
+  public static String ACTOR_PROP_NAME = "actor-name";
+  public static String ACTOR_PROP_PARTITION_ID = "partitionId";
+
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
 
   public String getName() {
     return getClass().getName();
+  }
+
+  /**
+   * @return a map which defines the context where the actor is run. Per default it just returns a
+   *     map with the actor name. Ideally sub classes add more context, like the partition id etc.
+   */
+  public Map<String, String> getContext() {
+    final var context = new HashMap<String, String>();
+    context.put(ACTOR_PROP_NAME, getName());
+    return context;
   }
 
   public boolean isActorClosed() {
