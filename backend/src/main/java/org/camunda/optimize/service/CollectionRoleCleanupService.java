@@ -30,12 +30,16 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
 
   @Override
   public void onFinishIdentitySync(final SearchableIdentityCache newIdentityCache) {
-    final List<CollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
-    for (final CollectionDefinitionDto collection : allCollections) {
-      final Set<String> roleIdsToRemove = collectNonExistingIdentityRoleIds(newIdentityCache, collection);
-      if (!roleIdsToRemove.isEmpty()) {
-        removeRolesFromCollections(collection.getId(), roleIdsToRemove);
+    if (newIdentityCache.getSize() > 0) {
+      final List<CollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
+      for (final CollectionDefinitionDto collection : allCollections) {
+        final Set<String> roleIdsToRemove = collectNonExistingIdentityRoleIds(newIdentityCache, collection);
+        if (!roleIdsToRemove.isEmpty()) {
+          removeRolesFromCollections(collection.getId(), roleIdsToRemove);
+        }
       }
+    } else {
+      log.info("Identity cache is empty, will thus not perform collection role cleanup.");
     }
   }
 
