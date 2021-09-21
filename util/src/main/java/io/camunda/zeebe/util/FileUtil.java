@@ -8,12 +8,10 @@
 package io.camunda.zeebe.util;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
-import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.CopyOption;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -141,32 +139,15 @@ public final class FileUtil {
     public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
         throws IOException {
       final Path newDirectory = targetPath.resolve(sourcePath.relativize(dir));
-      try {
-        Files.copy(dir, newDirectory);
-      } catch (final FileAlreadyExistsException ioException) {
-        LOG.error("Problem on copying snapshot to runtime.", ioException);
-        return SKIP_SUBTREE; // skip processing
-      }
-
+      Files.copy(dir, newDirectory);
       return CONTINUE;
     }
 
     @Override
-    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) {
+    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+        throws IOException {
       final Path newFile = targetPath.resolve(sourcePath.relativize(file));
-
-      try {
-        Files.copy(file, newFile);
-      } catch (final IOException ioException) {
-        LOG.error("Problem on copying {} to {}.", file, newFile, ioException);
-      }
-
-      return CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFileFailed(final Path file, final IOException exc) {
-      LOG.error("Problem on copying snapshot to runtime.", exc);
+      Files.copy(file, newFile);
       return CONTINUE;
     }
 
