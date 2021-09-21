@@ -10,7 +10,7 @@
     "date-fns": "2.24.0",
     "final-form": "4.20.2",
     "final-form-arrays": "3.0.2",
-    "graphql": "15.5.3",
+    "graphql": "15.6.0",
     "mobx": "6.3.3",
     "mobx-react-lite": "3.2.1",
     "polished": "4.1.3",
