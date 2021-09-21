@@ -13,11 +13,20 @@ import {numberParser} from 'services';
 import './DateRangeInput.scss';
 
 export default function DateRangeInput({type, unit, startDate, endDate, customNum, onChange}) {
+  const isFixed = ['before', 'between', 'after'].includes(type);
   return (
     <Form.Group className="DateRangeInput">
       <Form.InputGroup className="selectGroup">
         <Select
-          onChange={(type) => onChange({type, unit: type === 'custom' ? 'days' : ''})}
+          onChange={(type) =>
+            onChange({
+              type,
+              unit: type === 'custom' ? 'days' : '',
+              startDate: null,
+              endDate: null,
+              valid: false,
+            })
+          }
           value={type}
         >
           <Select.Option value="today">{t('common.filter.dateModal.unit.today')}</Select.Option>
@@ -26,13 +35,15 @@ export default function DateRangeInput({type, unit, startDate, endDate, customNu
           </Select.Option>
           <Select.Option value="this">{t('common.filter.dateModal.unit.this')}</Select.Option>
           <Select.Option value="last">{t('common.filter.dateModal.unit.last')}</Select.Option>
-          <Select.Option value="fixed">{t('common.filter.dateModal.unit.fixed')}</Select.Option>
+          <Select.Option value="between">{t('common.filter.dateModal.unit.between')}</Select.Option>
+          <Select.Option value="before">{t('common.filter.dateModal.unit.before')}</Select.Option>
+          <Select.Option value="after">{t('common.filter.dateModal.unit.after')}</Select.Option>
           <Select.Option className="customDate" value="custom">
             {t('common.filter.dateModal.unit.custom')}
           </Select.Option>
         </Select>
         <div className="unitSelection">
-          {type !== 'fixed' && type !== 'custom' && (
+          {!isFixed && type !== 'custom' && (
             <Select
               disabled={type !== 'this' && type !== 'last'}
               onChange={(unit) => onChange({unit})}
@@ -44,8 +55,10 @@ export default function DateRangeInput({type, unit, startDate, endDate, customNu
               <Select.Option value="quarters">{t('common.unit.quarter.label')}</Select.Option>
             </Select>
           )}
-          {type === 'fixed' && (
+          {isFixed && (
             <DatePicker
+              key={type}
+              type={type}
               onDateChange={onChange}
               initialDates={{
                 startDate,

@@ -14,14 +14,14 @@ export function convertFilterToState(filter) {
   let state = {};
 
   if (type === 'fixed') {
-    if (!start) {
+    if (!start && !end) {
       state = {type: ''};
     } else {
       state = {
-        type: 'fixed',
+        type: getFixedType(start, end),
         startDate: start ? parseISO(start) : null,
         endDate: end ? parseISO(end) : null,
-        valid: start && end,
+        valid: true,
       };
     }
   } else {
@@ -70,11 +70,13 @@ export function convertStateToFilter({
         unit: unit,
       };
       break;
-    case 'fixed':
+    case 'between':
+    case 'before':
+    case 'after':
       filter = {
         type: 'fixed',
-        start: startDate && format(startOfDay(startDate), BACKEND_DATE_FORMAT),
-        end: endDate && format(endOfDay(endDate), BACKEND_DATE_FORMAT),
+        start: startDate ? format(startOfDay(startDate), BACKEND_DATE_FORMAT) : null,
+        end: endDate ? format(endOfDay(endDate), BACKEND_DATE_FORMAT) : null,
       };
       break;
     case 'custom':
@@ -113,11 +115,23 @@ export function isValid({
     case 'this':
     case 'last':
       return unit;
-    case 'fixed':
+    case 'between':
+    case 'before':
+    case 'after':
       return valid;
     case 'custom':
       return numberParser.isPostiveInt(customNum);
     default:
       return includeUndefined || excludeUndefined;
+  }
+}
+
+function getFixedType(start, end) {
+  if (start && end) {
+    return 'between';
+  } else if (start) {
+    return 'after';
+  } else {
+    return 'before';
   }
 }

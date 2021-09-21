@@ -17,26 +17,16 @@ export default class DatePicker extends React.Component {
     super(props);
 
     const {startDate, endDate} = props.initialDates || {};
-    if (startDate && endDate) {
-      this.state = {
-        startDate: format(startDate, DATE_FORMAT),
-        endDate: format(endDate, DATE_FORMAT),
-        valid: true,
-      };
-    } else {
-      this.state = {
-        startDate: '',
-        endDate: '',
-        valid: false,
-      };
-    }
+    this.state = {
+      startDate: startDate ? format(startDate, DATE_FORMAT) : '',
+      endDate: endDate ? format(endDate, DATE_FORMAT) : '',
+    };
   }
-
-  setValidState = (valid) => this.setState({valid});
 
   setDates = (dates) => this.setState({...dates});
 
   onDateChange = (name, date) => {
+    const {type} = this.props;
     const dateObj = parseISO(date);
 
     this.setState(
@@ -44,11 +34,9 @@ export default class DatePicker extends React.Component {
         [name]: date,
       },
       () => {
-        const isAllValid = isDateValid(this.state.startDate) && isDateValid(this.state.endDate);
-        this.setState({valid: isAllValid});
-        const startDate = parseISO(this.state.startDate);
-        const endDate = parseISO(this.state.endDate);
-
+        const startDate = type !== 'before' ? parseISO(this.state.startDate) : null;
+        const endDate = type !== 'after' ? parseISO(this.state.endDate) : null;
+        const isAllValid = isValid(type, this.state.startDate, this.state.endDate);
         this.props.onDateChange({
           startDate,
           endDate,
@@ -76,9 +64,19 @@ export default class DatePicker extends React.Component {
         onDateChange={this.onDateChange}
         startDate={this.state.startDate}
         endDate={this.state.endDate}
-        setValidState={this.setValidState}
         forceOpen={this.props.forceOpen}
+        type={this.props.type}
       />
     );
+  }
+}
+
+function isValid(type, startDate, endDate) {
+  if (type === 'between') {
+    return isDateValid(startDate) && isDateValid(endDate);
+  } else if (type === 'after') {
+    return isDateValid(startDate);
+  } else if (type === 'before') {
+    return isDateValid(endDate);
   }
 }

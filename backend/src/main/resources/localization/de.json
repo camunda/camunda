@@ -983,6 +983,8 @@
         "operators": {
           "isBetween": "liegt zwischen",
           "between": "zwischen",
+          "after": "nach",
+          "before": "vor",
           "more": "ist mehr als",
           "less": "ist weniger als",
           "greater": "ist größer als",
@@ -1030,7 +1032,9 @@
         "unit": {
           "today": "Heute",
           "yesterday": "Gestern",
-          "fixed": "Festes Datum",
+          "between": "Zwischen",
+          "before": "Vor",
+          "after": "Nach",
           "this": "Diese(n/s)...",
           "last": "Letzte(n/s)...",
           "custom": "Gleitend"

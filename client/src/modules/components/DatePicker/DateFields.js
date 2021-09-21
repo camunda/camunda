@@ -57,7 +57,7 @@ export default class DateFields extends React.PureComponent {
   };
 
   render() {
-    const {startDate, endDate, forceOpen} = this.props;
+    const {startDate, endDate, forceOpen, type} = this.props;
 
     const startDateObj = parseISO(startDate);
     const endDateObj = parseISO(endDate);
@@ -65,33 +65,37 @@ export default class DateFields extends React.PureComponent {
     return (
       <div className="DateFields" ref={this.dateFields} onKeyDown={this.handleKeyPress}>
         <div className="inputContainer">
-          <PickerDateInput
-            className={classnames({
-              highlight: this.isFieldSelected('startDate'),
-            })}
-            onChange={this.setDate('startDate')}
-            onFocus={() => {
-              this.setState({currentlySelectedField: 'startDate'});
-            }}
-            onSubmit={this.submitStart}
-            onClick={() => this.toggleDateRangePopup('startDate')}
-            value={startDate}
-            isInvalid={!isDateValid(startDate)}
-          />
-          <PickerDateInput
-            className={classnames({
-              highlight: this.isFieldSelected('endDate'),
-            })}
-            ref={this.endDateField}
-            onChange={this.setDate('endDate')}
-            onFocus={() => {
-              this.setState({currentlySelectedField: 'endDate'});
-            }}
-            onSubmit={this.submitEnd}
-            onClick={() => this.toggleDateRangePopup('endDate')}
-            value={endDate}
-            isInvalid={!isDateValid(endDate)}
-          />
+          {type !== 'before' && (
+            <PickerDateInput
+              className={classnames({
+                highlight: this.isFieldSelected('startDate'),
+              })}
+              onChange={this.setDate('startDate')}
+              onFocus={() => {
+                this.setState({currentlySelectedField: 'startDate'});
+              }}
+              onSubmit={this.submitStart}
+              onClick={() => this.toggleDateRangePopup('startDate')}
+              value={startDate}
+              isInvalid={!isDateValid(startDate)}
+            />
+          )}
+          {type !== 'after' && (
+            <PickerDateInput
+              className={classnames({
+                highlight: this.isFieldSelected('endDate'),
+              })}
+              ref={this.endDateField}
+              onChange={this.setDate('endDate')}
+              onFocus={() => {
+                this.setState({currentlySelectedField: 'endDate'});
+              }}
+              onSubmit={this.submitEnd}
+              onClick={() => this.toggleDateRangePopup('endDate')}
+              value={endDate}
+              isInvalid={!isDateValid(endDate)}
+            />
+          )}
         </div>
         {(this.state.popupOpen || forceOpen) && (
           <div
@@ -103,6 +107,7 @@ export default class DateFields extends React.PureComponent {
             })}
           >
             <DateRange
+              type={type}
               endDateSelected={this.isFieldSelected('endDate')}
               onDateChange={this.onDateRangeChange}
               startDate={startDateObj}
@@ -115,8 +120,12 @@ export default class DateFields extends React.PureComponent {
   }
 
   submitStart = () => {
-    this.setState({currentlySelectedField: 'endDate'});
-    this.endDateField.current.focus();
+    if (this.props.type === 'between') {
+      this.setState({currentlySelectedField: 'endDate'});
+      this.endDateField.current.focus();
+    } else {
+      this.hidePopup();
+    }
   };
 
   submitEnd = () => {
@@ -130,13 +139,13 @@ export default class DateFields extends React.PureComponent {
     }
   };
 
-  formatDate = (date) => format(date, this.props.format);
+  formatDate = (date) => (date ? format(date, this.props.format) : '');
 
   onDateRangeChange = ({startDate, endDate}) => {
     this.props.onDateChange('startDate', this.formatDate(startDate));
     this.props.onDateChange('endDate', this.formatDate(endDate));
 
-    if (this.isFieldSelected('endDate')) {
+    if (this.isFieldSelected('endDate') || this.props.type !== 'between') {
       setTimeout(this.hidePopup, 350);
     } else {
       this.setState({currentlySelectedField: 'endDate'});
