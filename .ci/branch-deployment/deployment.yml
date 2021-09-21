@@ -141,7 +141,7 @@ spec:
         image: "docker.elastic.co/elasticsearch/elasticsearch:@ES_VERSION@"
         env:
         - name: ES_JAVA_OPTS
-          value: "-Xms4g -Xmx4g"
+          value: "-Xms5g -Xmx5g -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.rmi.port=9010 -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
         - name: cluster.name
           value: elasticsearch
         - name: discovery.type
@@ -153,6 +153,8 @@ spec:
             add:
             - IPC_LOCK
         ports:
+        - containerPort: 9010
+          name: jmx
         - containerPort: 9200
           name: es-http
         - containerPort: 9300
@@ -170,10 +172,10 @@ spec:
         resources:
           limits:
             cpu: 4
-            memory: 8Gi
+            memory: 10Gi
           requests:
             cpu: 4
-            memory: 8Gi
+            memory: 10Gi
         volumeMounts:
         - name: configuration
           mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
