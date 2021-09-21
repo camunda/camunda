@@ -68,7 +68,7 @@
     "@testing-library/testcafe": "4.4.0",
     "@testing-library/user-event": "13.2.1",
     "@types/history": "4.7.9",
-    "@types/jest": "27.0.1",
+    "@types/jest": "27.0.2",
     "@types/node": "16.7.10",
     "@types/react": "17.0.22",
     "@types/react-dom": "17.0.9",
