@@ -113,6 +113,8 @@ public final class Broker implements AutoCloseable {
       testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
       testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
       brokerAdminService = brokerContext.getBrokerAdminService();
+      clusterServices = brokerContext.getClusterServices();
+      testCompanionObject.atomix = clusterServices.getAtomixCluster();
 
       startFuture.complete(this);
       healthCheckService.setBrokerStarted();
@@ -128,8 +130,6 @@ public final class Broker implements AutoCloseable {
     }
   }
 
-    clusterServices = brokerContext.getClusterServices();
-    testCompanionObject.atomix = clusterServices.getAtomixCluster();
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
     final var clusterCfg = brokerCfg.getCluster();
 
