@@ -281,7 +281,6 @@ public final class FileBasedSnapshotStore extends Actor
                 new FileNotFoundException());
           } else {
             try {
-              LOGGER.info("Copying {} to {}", snapshot.getPath(), targetDirectory);
               FileUtil.copySnapshot(targetDirectory, snapshot.getPath());
               result.complete(null);
             } catch (final Exception e) {
