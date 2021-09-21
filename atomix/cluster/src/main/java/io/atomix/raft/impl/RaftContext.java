@@ -130,9 +130,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
+  private final int partitionId;
 
   public RaftContext(
       final String name,
+      final int partitionId,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
@@ -146,6 +148,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
+    this.partitionId = partitionId;
 
     raftRoleMetrics = new RaftRoleMetrics(name);
 
@@ -1088,6 +1091,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public Duration getMaxQuorumResponseTimeout() {
     return partitionConfig.getMaxQuorumResponseTimeout();
+  }
+
+  public int getPartitionId() {
+    return partitionId;
   }
 
   /** Raft server state. */

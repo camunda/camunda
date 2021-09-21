@@ -421,6 +421,7 @@ public interface RaftServer {
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected RaftElectionConfig electionConfig = RaftElectionConfig.ofDefaultElection();
     protected RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
+    protected int partitionId;
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -498,6 +499,11 @@ public interface RaftServer {
 
     public Builder withPartitionConfig(final RaftPartitionConfig partitionConfig) {
       this.partitionConfig = partitionConfig;
+      return this;
+    }
+
+    public Builder withPartitionId(final int partitionId) {
+      this.partitionId = partitionId;
       return this;
     }
   }
