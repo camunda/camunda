@@ -32,6 +32,7 @@ final class PartitionTransitionProcess {
   private final long term;
   private final Role role;
   private boolean cancelRequested = false;
+  private ActorFuture<Void> cleanupFuture;
 
   PartitionTransitionProcess(
       final List<PartitionTransitionStep> pendingSteps,
@@ -102,13 +103,16 @@ final class PartitionTransitionProcess {
         format(
             "Cleanup of transition to %s on term %d starting (in preparation for new transition to %s)",
             role, term, newRole));
-    final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
 
-    if (startedSteps.isEmpty()) {
-      LOG.info("No steps to clean up");
-      cleanupFuture.complete(null);
-    } else {
-      proceedWithCleanup(cleanupFuture, newTerm, newRole);
+    if (cleanupFuture == null) {
+      cleanupFuture = concurrencyControl.createFuture();
+
+      if (startedSteps.isEmpty()) {
+        LOG.info("No steps to clean up");
+        cleanupFuture.complete(null);
+      } else {
+        proceedWithCleanup(cleanupFuture, newTerm, newRole);
+      }
     }
     return cleanupFuture;
   }

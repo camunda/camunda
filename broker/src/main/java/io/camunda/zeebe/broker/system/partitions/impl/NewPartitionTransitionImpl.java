@@ -33,19 +33,12 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
   private PartitionTransitionProcess currentTransition;
   private ActorFuture<Void> currentTransitionFuture;
   // these two should be set in tandem
+  private long latestTerm = -1;
 
   public NewPartitionTransitionImpl(
       final List<PartitionTransitionStep> steps, final PartitionTransitionContext context) {
     this.steps = new ArrayList<>(requireNonNull(steps));
     this.context = requireNonNull(context);
-  }
-
-  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
-    this.concurrencyControl = requireNonNull(concurrencyControl);
-  }
-
-  public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
-    context = transitionContext;
   }
 
   @Override
@@ -63,6 +56,16 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
     return transitionTo(INACTIVE_TERM, Role.INACTIVE);
   }
 
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = requireNonNull(concurrencyControl);
+  }
+
+  @Override
+  public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
+    context = transitionContext;
+  }
+
   public ActorFuture<Void> transitionTo(final long term, final Role role) {
     LOG.info(format("Transition to %s on term %d requested.", role, term));
 
@@ -74,6 +77,16 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
 
     concurrencyControl.run(
         () -> {
+          if (isObsoleteTerm(term)) {
+            LOG.info(
+                format(
+                    "Skipping transition to %s on term %d because it is superseded by term %d.",
+                    role, term, latestTerm));
+            nextTransitionFuture.complete(null);
+            return;
+          }
+          latestTerm = term;
+
           if (currentTransition != null) {
             LOG.info(
                 format(
@@ -94,8 +107,21 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
     return nextTransitionFuture;
   }
 
+  private boolean isObsoleteTerm(final long term) {
+    return term < latestTerm;
+  }
+
   private void cleanupLastTransition(
       final ActorFuture<Void> nextTransitionFuture, final long term, final Role role) {
+    if (isObsoleteTerm(term)) {
+      LOG.info(
+          format(
+              "Skipping transition to %s on term %d because it is superseded by term %d.",
+              role, term, latestTerm));
+      nextTransitionFuture.complete(null);
+      return;
+    }
+
     if (lastTransition == null) {
       startNewTransition(nextTransitionFuture, term, role);
     } else {
@@ -118,6 +144,16 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
 
   private void startNewTransition(
       final ActorFuture<Void> nextTransitionFuture, final long term, final Role role) {
+
+    if (isObsoleteTerm(term)) {
+      LOG.info(
+          format(
+              "Cancelling transition to %s on term %d because it is superseded by term %d.",
+              role, term, latestTerm));
+      nextTransitionFuture.complete(null);
+      return;
+    }
+
     currentTransition =
         new PartitionTransitionProcess(steps, concurrencyControl, context, term, role);
     currentTransitionFuture = nextTransitionFuture;
