@@ -55,6 +55,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final AppenderMetrics appenderMetrics;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
+  private final int partitionId;
 
   public LogStorageAppender(
       final String name,
@@ -68,6 +69,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
     maxAppendBlockSize = maxBlockSize;
+    this.partitionId = partitionId;
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =
@@ -127,6 +129,10 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
           appendEntryLimiter.getLimit());
       // we will be called later again
     }
+  }
+
+  public int getPartitionId() {
+    return partitionId;
   }
 
   @Override

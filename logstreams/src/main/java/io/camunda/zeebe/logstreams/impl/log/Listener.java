@@ -33,14 +33,18 @@ public final class Listener implements AppendListener {
     if (error instanceof NoSuchElementException || error instanceof NoLeader) {
       // Not a failure. It is probably during transition to follower.
       LogStorageAppender.LOG.debug(
-          "Failed to append block with last event position {}. This can happen during a leader change.",
+          "Failed to append block with last event position {} to partition {}. This can happen during a leader change.",
           highestPosition,
+          appender.getPartitionId(),
           error);
       return;
     }
 
     LogStorageAppender.LOG.error(
-        "Failed to append block with last event position {}.", highestPosition, error);
+        "Failed to append block with last event position {} to partition {}.",
+        highestPosition,
+        appender.getPartitionId(),
+        error);
     appender.runOnFailure(error);
   }
 
@@ -53,7 +57,10 @@ public final class Listener implements AppendListener {
   @Override
   public void onCommitError(final long address, final Throwable error) {
     LogStorageAppender.LOG.error(
-        "Failed to commit block with last event position {}.", highestPosition, error);
+        "Failed to commit block with last event position {} on partition {}.",
+        highestPosition,
+        appender.getPartitionId(),
+        error);
     releaseBackPressure();
     appender.runOnFailure(error);
   }
