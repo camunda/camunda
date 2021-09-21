@@ -23,6 +23,7 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
+  private Map<String, String> context;
 
   public String getName() {
     return getClass().getName();
@@ -33,8 +34,11 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
    *     map with the actor name. Ideally sub classes add more context, like the partition id etc.
    */
   public Map<String, String> getContext() {
-    final var context = new HashMap<String, String>();
-    context.put(ACTOR_PROP_NAME, getName());
+    if (context == null) {
+      context = new HashMap<>();
+      context.put(ACTOR_PROP_NAME, getName());
+    }
+
     return context;
   }
 
