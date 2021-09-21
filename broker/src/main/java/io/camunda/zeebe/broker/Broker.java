@@ -147,8 +147,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-
-    startContext.addStep("cluster services", () -> clusterServices.start().join());
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
           "embedded gateway",
@@ -320,6 +318,7 @@ public final class Broker implements AutoCloseable {
                     b -> {
                       closeProcess.closeReverse();
                       isClosed = true;
+                      testCompanionObject.atomix = null;
                       LOG.info("Broker shut down.");
                     })
                 .join();
