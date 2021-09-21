@@ -18,8 +18,8 @@ import java.util.function.Consumer;
 
 public abstract class Actor implements CloseableSilently, AsyncClosable, ConcurrencyControl {
 
-  public static String ACTOR_PROP_NAME = "actor-name";
-  public static String ACTOR_PROP_PARTITION_ID = "partitionId";
+  public static final String ACTOR_PROP_NAME = "actor-name";
+  public static final String ACTOR_PROP_PARTITION_ID = "partitionId";
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
