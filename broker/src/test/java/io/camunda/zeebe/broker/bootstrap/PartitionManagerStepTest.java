@@ -17,8 +17,6 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -77,8 +75,6 @@ class PartitionManagerStepTest {
               mock(SpringBrokerBridge.class),
               actorScheduler,
               mock(BrokerHealthCheckService.class),
-              mock(SubscriptionApiCommandMessageHandlerService.class),
-              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(ExporterRepository.class),
               Collections.emptyList());
       testBrokerStartupContext.setLeaderManagementRequestHandler(
@@ -150,8 +146,6 @@ class PartitionManagerStepTest {
               mock(SpringBrokerBridge.class),
               mock(ActorScheduler.class),
               mock(BrokerHealthCheckService.class),
-              mock(SubscriptionApiCommandMessageHandlerService.class),
-              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(ExporterRepository.class),
               Collections.emptyList());
 
