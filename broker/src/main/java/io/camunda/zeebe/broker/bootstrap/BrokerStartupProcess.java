@@ -24,7 +24,8 @@ public final class BrokerStartupProcess {
       List.of(
           new MonitoringServerStep(),
           new ClusterServicesCreationStep(),
-          new CommandApiServiceStep());
+          new CommandApiServiceStep(),
+          new SubscriptionApiStep());
 
   private final StartupProcess<BrokerStartupContext> startupProcess;
 

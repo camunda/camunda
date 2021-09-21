@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -148,7 +147,6 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("Migrated Startup Steps", this::migratedStartupSteps);
-    startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     startContext.addStep("cluster services", () -> clusterServices.start().join());
     if (brokerCfg.getGateway().isEnable()) {
@@ -222,16 +220,6 @@ public final class Broker implements AutoCloseable {
     brokerAdminService = adminService;
     springBrokerBridge.registerBrokerAdminServiceSupplier(() -> brokerAdminService);
     return adminService;
-  }
-
-  private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {
-    final SubscriptionApiCommandMessageHandlerService messageHandlerService =
-        new SubscriptionApiCommandMessageHandlerService(
-            localBroker, clusterServices.getCommunicationService());
-    partitionListeners.add(messageHandlerService);
-    scheduleActor(messageHandlerService);
-    diskSpaceUsageListeners.add(messageHandlerService);
-    return messageHandlerService;
   }
 
   private void addDiskSpaceUsageListeners() {

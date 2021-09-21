@@ -14,6 +14,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -32,16 +33,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final BrokerCfg configuration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorSchedulingService;
+  private final BrokerHealthCheckService healthCheckService;
+
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
   private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
-  private CommandApiServiceImpl commandApiService;
 
   private ConcurrencyControl concurrencyControl;
-
-  private final BrokerHealthCheckService healthCheckService;
   private ClusterServicesImpl clusterServices;
   private AtomixServerTransport commandApiServerTransport;
   private ManagedMessagingService commandApiMessagingService;
+  private CommandApiServiceImpl commandApiService;
+  private SubscriptionApiCommandMessageHandlerService subscriptionApiService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -89,6 +91,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerHealthCheckService getHealthCheckService() {
     return healthCheckService;
+  }
+
+  @Override
+  public SubscriptionApiCommandMessageHandlerService getSubscriptionApiService() {
+    return subscriptionApiService;
+  }
+
+  @Override
+  public void setSubscriptionApiService(
+      final SubscriptionApiCommandMessageHandlerService subscriptionApiService) {
+    this.subscriptionApiService = subscriptionApiService;
   }
 
   @Override
