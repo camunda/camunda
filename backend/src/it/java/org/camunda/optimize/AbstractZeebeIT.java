@@ -67,9 +67,10 @@ public abstract class AbstractZeebeIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
+  protected void waitUntilMinimumDataExportedCount(final int minExportedEventCount, final String indexName,
+                                                   final BoolQueryBuilder boolQueryBuilder) {
     final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+      zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     Awaitility.given().ignoreExceptions()
@@ -82,7 +83,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
       ).isTrue());
     final CountRequest definitionCountRequest =
       new CountRequest(expectedIndex)
-        .query(getQueryForProcessableEvents());
+        .query(boolQueryBuilder);
     Awaitility.given().ignoreExceptions()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
@@ -104,5 +105,13 @@ public abstract class AbstractZeebeIT extends AbstractIT {
 
   protected String getConfiguredZeebeName() {
     return embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().getName();
+  }
+
+  protected void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
+    waitUntilMinimumDataExportedCount(
+      minExportedEventCount,
+      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      getQueryForProcessableEvents()
+    );
   }
 }

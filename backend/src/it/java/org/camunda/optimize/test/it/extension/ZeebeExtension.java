@@ -8,6 +8,7 @@ package org.camunda.optimize.test.it.extension;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -23,6 +24,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.importing.ZeebeConstants;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -90,6 +92,25 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
         .send()
         .join();
     return deploymentEvent.getProcesses().get(0);
+  }
+
+  public long startProcessInstanceWithVariables(String bpmnProcessId, Map<String, Object> variables) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 =
+      getZeebeClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .variables(variables);
+      return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+  }
+
+  public void addVariablesToScope(Long variableScopeKey, Map<String, Object> variables, boolean local) {
+    getZeebeClient()
+      .newSetVariablesCommand(variableScopeKey)
+      .variables(variables)
+      .local(local)
+      .send()
+      .join();
   }
 
   public ProcessInstanceEvent startProcessInstanceForProcess(String processId) {

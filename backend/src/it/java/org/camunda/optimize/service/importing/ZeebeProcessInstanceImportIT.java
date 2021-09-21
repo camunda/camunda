@@ -59,7 +59,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     final ProcessInstanceEvent deployedInstance = deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -100,7 +100,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -149,7 +149,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -369,7 +369,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     deployAndStartInstanceForProcess(createLoopingProcess(processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
@@ -389,7 +389,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     final ProcessInstanceEvent processInstance = deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -450,11 +450,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       embeddedOptimizeExtension.getObjectMapper()
     ).stream()
       .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
-  }
-
-  @SneakyThrows
-  private void waitUntilProcessInstanceEventsExported() {
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
   }
 
   private long getExpectedDurationForEvents(final List<ZeebeProcessInstanceRecordDto> eventsForElement) {
