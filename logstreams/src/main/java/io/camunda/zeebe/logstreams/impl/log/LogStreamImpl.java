@@ -78,59 +78,6 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
-  public String getLogName() {
-    return logName;
-  }
-
-  @Override
-  public ActorFuture<LogStreamReader> newLogStreamReader() {
-    return actor.call(this::createLogStreamReader);
-  }
-
-  @Override
-  public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
-    // this should be replaced after refactoring the actor control
-    if (actor.isClosed()) {
-      return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
-    }
-
-    final var writerFuture = new CompletableActorFuture<LogStreamRecordWriter>();
-    actor.run(() -> createWriter(writerFuture, LogStreamWriterImpl::new));
-    return writerFuture;
-  }
-
-  @Override
-  public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
-    // this should be replaced after refactoring the actor control
-    if (actor.isClosed()) {
-      return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
-    }
-
-    final var writerFuture = new CompletableActorFuture<LogStreamBatchWriter>();
-    actor.run(() -> createWriter(writerFuture, LogStreamBatchWriterImpl::new));
-    return writerFuture;
-  }
-
-  @Override
-  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    actor.call(() -> recordAwaiters.add(recordAwaiter));
-  }
-
-  @Override
-  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    actor.call(() -> recordAwaiters.remove(recordAwaiter));
-  }
-
-  private void notifyRecordAwaiters() {
-    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
-  }
-
-  @Override
   public String getName() {
     return actorName;
   }
@@ -185,6 +132,59 @@ public final class LogStreamImpl extends Actor
     }
 
     super.handleFailure(failure);
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  @Override
+  public String getLogName() {
+    return logName;
+  }
+
+  @Override
+  public ActorFuture<LogStreamReader> newLogStreamReader() {
+    return actor.call(this::createLogStreamReader);
+  }
+
+  @Override
+  public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
+    // this should be replaced after refactoring the actor control
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
+    }
+
+    final var writerFuture = new CompletableActorFuture<LogStreamRecordWriter>();
+    actor.run(() -> createWriter(writerFuture, LogStreamWriterImpl::new));
+    return writerFuture;
+  }
+
+  @Override
+  public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
+    // this should be replaced after refactoring the actor control
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
+    }
+
+    final var writerFuture = new CompletableActorFuture<LogStreamBatchWriter>();
+    actor.run(() -> createWriter(writerFuture, LogStreamBatchWriterImpl::new));
+    return writerFuture;
+  }
+
+  @Override
+  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.add(recordAwaiter));
+  }
+
+  @Override
+  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.remove(recordAwaiter));
+  }
+
+  private void notifyRecordAwaiters() {
+    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
   }
 
   @Override
