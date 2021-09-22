@@ -15,8 +15,10 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -164,21 +166,21 @@ public class FileBasedSnapshotStoreTest {
     final var result = snapshotStore.copySnapshot(persistedSnapshot, target);
 
     // then - should fail because targetDirectory already exists
-    assertThatThrownBy(result::join).isNotNull();
+    assertThatThrownBy(result::join).hasCauseInstanceOf(FileAlreadyExistsException.class);
   }
 
   @Test
-  public void shouldCompleteWithExceptionWhenCopyingIfSnapshotDoesNotExists() throws IOException {
+  public void shouldCompleteWithExceptionWhenCopyingIfSnapshotDoesNotExists() {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
     final var target = rootDirectory.resolve("runtime");
 
     // when
-    FileUtil.deleteFolderIfExists(persistedSnapshot.getDirectory());
+    persistedSnapshot.delete();
     final var result = snapshotStore.copySnapshot(persistedSnapshot, target);
 
     // then
-    assertThatThrownBy(result::join).isNotNull();
+    assertThatThrownBy(result::join).hasCauseInstanceOf(FileNotFoundException.class);
   }
 
   private boolean createSnapshotDir(final Path path) {
