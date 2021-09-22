@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -63,6 +64,7 @@ public final class FileBasedSnapshotStore extends Actor
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final String actorName;
+  private final int partitionId;
 
   public FileBasedSnapshotStore(
       final int nodeId,
@@ -77,6 +79,14 @@ public final class FileBasedSnapshotStore extends Actor
 
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName(nodeId, "SnapshotStore", partitionId);
+    this.partitionId = partitionId;
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
   }
 
   @Override
