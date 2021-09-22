@@ -16,6 +16,8 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.ToLongFunction;
@@ -90,30 +92,20 @@ public class StateControllerImpl implements StateController {
   }
 
   @Override
-  public void recover() throws Exception {
-    FileUtil.deleteFolderIfExists(runtimeDirectory);
+  public ActorFuture<Void> recover() {
+    try {
+      FileUtil.deleteFolderIfExists(runtimeDirectory);
+    } catch (final IOException e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
 
     final var optLatestSnapshot = constructableSnapshotStore.getLatestSnapshot();
     if (optLatestSnapshot.isPresent()) {
       final var snapshot = optLatestSnapshot.get();
-      LOG.debug("Available snapshot: {}", snapshot);
-
-      FileUtil.copySnapshot(runtimeDirectory, snapshot.getPath());
-
-      try {
-        // open database to verify that the snapshot is recoverable
-        openDb();
-        LOG.debug("Recovered state from snapshot '{}'", snapshot);
-      } catch (final Exception exception) {
-        LOG.error(
-            "Failed to open snapshot '{}'. No snapshots available to recover from. Manual action is required.",
-            snapshot,
-            exception);
-
-        FileUtil.deleteFolder(runtimeDirectory);
-        throw new IllegalStateException("Failed to recover from snapshots", exception);
-      }
+      LOG.debug("Recovering state from available snapshot: {}", snapshot);
+      return constructableSnapshotStore.copySnapshot(snapshot, runtimeDirectory);
     }
+    return CompletableActorFuture.completed(null);
   }
 
   @Override

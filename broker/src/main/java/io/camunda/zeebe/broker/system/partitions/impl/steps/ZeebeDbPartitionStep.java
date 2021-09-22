@@ -10,32 +10,20 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class ZeebeDbPartitionStep implements PartitionStep {
 
+  private static final String RECOVER_FAILED_ERROR_MSG =
+      "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d";
+
   @Override
   public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
-
-    final ZeebeDb zeebeDb;
-    try {
-      context.getStateController().recover();
-      zeebeDb = context.getStateController().openDb();
-    } catch (final Exception e) {
-      Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
-
-      return CompletableActorFuture.completedExceptionally(
-          new IllegalStateException(
-              String.format(
-                  "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-                  context.getPartitionId()),
-              e));
-    }
-
-    context.setZeebeDb(zeebeDb);
-    return CompletableActorFuture.completed(null);
+    final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    recoverDb(context, openFuture);
+    return openFuture;
   }
 
   @Override
@@ -53,5 +41,31 @@ public class ZeebeDbPartitionStep implements PartitionStep {
   @Override
   public String getName() {
     return "ZeebeDb";
+  }
+
+  private void recoverDb(
+      final PartitionTransitionContext context, final CompletableActorFuture<Void> openFuture) {
+    final ActorFuture<Void> recoverFuture;
+
+    recoverFuture = context.getStateController().recover();
+
+    recoverFuture.onComplete(
+        (ok, error) -> {
+          if (error != null) {
+            openFuture.completeExceptionally(error);
+          } else {
+            try {
+              final var zeebeDb = context.getStateController().openDb();
+              context.setZeebeDb(zeebeDb);
+              openFuture.complete(null);
+            } catch (final Exception e) {
+              Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
+
+              openFuture.completeExceptionally(
+                  new IllegalStateException(
+                      String.format(RECOVER_FAILED_ERROR_MSG, context.getPartitionId()), e));
+            }
+          }
+        });
   }
 }

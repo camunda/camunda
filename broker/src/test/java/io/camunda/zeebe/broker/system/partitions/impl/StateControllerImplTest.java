@@ -112,7 +112,7 @@ public final class StateControllerImplTest {
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
     tmpSnapshot.orElseThrow().persist().join();
     snapshotController.close();
-    snapshotController.recover();
+    snapshotController.recover().join();
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -147,7 +147,7 @@ public final class StateControllerImplTest {
     wrapper.putInt(key, value);
     takeSnapshot(snapshotPosition);
     snapshotController.close();
-    snapshotController.recover();
+    snapshotController.recover().join();
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -218,7 +218,7 @@ public final class StateControllerImplTest {
     // given
 
     // when
-    snapshotController.recover();
+    snapshotController.recover().join();
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
@@ -235,7 +235,7 @@ public final class StateControllerImplTest {
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     snapshotController.close();
-    snapshotController.recover();
+    snapshotController.recover().join();
     assertThat(snapshotController.isDbOpened()).isFalse();
     wrapper.wrap(snapshotController.openDb());
 
@@ -261,7 +261,7 @@ public final class StateControllerImplTest {
     snapshotController.close();
 
     // when
-    snapshotController.recover();
+    snapshotController.recover().join();
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -269,7 +269,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldFailToRecoverIfAllSnapshotsAreCorrupted() throws Exception {
+  public void shouldFailToOpenIfSnapshotIsCorrupted() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
@@ -279,11 +279,10 @@ public final class StateControllerImplTest {
     takeSnapshot(1);
     snapshotController.close();
     corruptLatestSnapshot();
+    snapshotController.recover().join();
 
     // when/then
-    assertThatThrownBy(() -> snapshotController.recover())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("Failed to recover from snapshots");
+    assertThatThrownBy(() -> snapshotController.openDb()).isInstanceOf(RuntimeException.class);
   }
 
   @Test

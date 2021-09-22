@@ -78,4 +78,14 @@ public interface PersistedSnapshotStore extends CloseableSilently {
   ActorFuture<Void> delete();
 
   Path getPath();
+
+  /**
+   * Copy snapshot to the given directory
+   *
+   * @param snapshot the snapshot to be copied
+   * @param targetDirectory the directory to which the snapshot files will be copied
+   * @return future which will be completed exceptionally if the snapshot was not copied
+   *     successfully
+   */
+  ActorFuture<Void> copySnapshot(PersistedSnapshot snapshot, Path targetDirectory);
 }
