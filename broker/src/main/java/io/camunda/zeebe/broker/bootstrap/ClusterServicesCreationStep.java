@@ -51,7 +51,7 @@ final class ClusterServicesCreationStep extends AbstractBrokerStartupStep {
             concurrencyControl.run(
                 () -> {
                   brokerShutdownContext.setClusterServices(null);
-                  shutdownFuture.complete(null);
+                  shutdownFuture.complete(brokerShutdownContext);
                 });
           }
         });
