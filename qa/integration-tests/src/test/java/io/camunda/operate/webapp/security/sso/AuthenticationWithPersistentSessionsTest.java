@@ -27,6 +27,7 @@ import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.management.ElsIndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
@@ -257,7 +258,8 @@ public class AuthenticationWithPersistentSessionsTest {
     // Step 1 try to access user info
     String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
     ResponseEntity<String> response = get(userInfoUrl);
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
 
     // Save cookie for further requests
     HttpEntity<?> httpEntity = httpEntityWithCookie(response);
@@ -278,7 +280,7 @@ public class AuthenticationWithPersistentSessionsTest {
 
 
     response = get(SSO_CALLBACK_URI, httpEntity);
-    assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
+    httpEntity = httpEntityWithCookie(response);
     response = get(userInfoUrl, httpEntity);
     assertThat(response.getBody()).contains("\"lastname\":\"operate-testuser\"");
   }

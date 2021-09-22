@@ -8,39 +8,24 @@ package io.camunda.operate.webapp.security.iam;
 import static io.camunda.operate.webapp.security.OperateURIs.API;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
-import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
-import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
 import io.camunda.iam.sdk.IamApi;
 import io.camunda.iam.sdk.IamApiConfiguration;
 import io.camunda.operate.property.IamProperties;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.CSRFProtectable;
-import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
 @Profile(IAM_AUTH_PROFILE)
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
-public class IAMWebSecurityConfig extends WebSecurityConfigurerAdapter implements CSRFProtectable {
-
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-  @Autowired
-  private OperateProperties operateProperties;
+public class IAMWebSecurityConfig extends BaseWebConfigurer {
 
   @Bean
   public IamApi iamApi() throws IllegalArgumentException {
@@ -62,18 +47,7 @@ public class IAMWebSecurityConfig extends WebSecurityConfigurerAdapter implement
         .antMatchers(AUTH_WHITELIST).permitAll()
         .antMatchers(API, ROOT).authenticated()
         .and().exceptionHandling()
-        .authenticationEntryPoint(this::authenticationEntry);
-  }
-
-  protected void authenticationEntry(HttpServletRequest req, HttpServletResponse res,
-      AuthenticationException ex) throws IOException {
-    String requestedUrl = req.getRequestURI();
-    if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
-      requestedUrl = requestedUrl + "?" + req.getQueryString();
-    }
-    logger.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
-    req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
-    res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
+        .authenticationEntryPoint(this::failureHandler);
   }
 
 }

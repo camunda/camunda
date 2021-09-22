@@ -249,11 +249,10 @@ public class AuthenticationTest {
     // Step 1 try to access user info
     String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
     ResponseEntity<String> response = get(userInfoUrl);
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
-    // Save cookie for further requests
-    HttpEntity<?> httpEntity = httpEntityWithCookie(response);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
+    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), response.getHeaders());
     // Step 2 Get Login provider url
     response = get(LOGIN_RESOURCE, httpEntity);
 
@@ -269,7 +268,7 @@ public class AuthenticationTest {
             operateProperties.getAuth0().getOrganization()));
 
     response = get(SSO_CALLBACK_URI, httpEntity);
-    assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
+    httpEntity = httpEntityWithCookie(response);
     response = get(userInfoUrl, httpEntity);
     assertThat(response.getBody()).contains("\"lastname\":\"operate-testuser\"");
   }

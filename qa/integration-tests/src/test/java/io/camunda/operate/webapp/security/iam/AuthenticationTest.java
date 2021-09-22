@@ -7,7 +7,6 @@ package io.camunda.operate.webapp.security.iam;
 
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
-import static io.camunda.operate.webapp.security.OperateURIs.IAM_LOGOUT_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
@@ -27,7 +26,6 @@ import io.camunda.operate.webapp.security.RolePermissionService;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,8 +141,8 @@ public class AuthenticationTest implements AuthenticationTestable {
     // Step 1 try to access user info
     String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
     ResponseEntity<String> response = get(userInfoUrl);
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     // Save cookie for further requests
     HttpEntity<?> httpEntity = httpEntityWithCookie(response);
 
@@ -163,7 +161,7 @@ public class AuthenticationTest implements AuthenticationTestable {
     when(iamAuthentication.getId()).thenReturn("username");
     response = get(IAM_CALLBACK_URI, httpEntity);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
+    httpEntity = httpEntityWithCookie(response);
     response = get(userInfoUrl, httpEntity);
     assertThat(response.getBody()).contains("\"lastname\":\"lastname\"");
     assertThat(response.getBody()).contains("\"username\":\"username\"");
