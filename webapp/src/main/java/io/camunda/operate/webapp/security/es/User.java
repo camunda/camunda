@@ -16,9 +16,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public class User extends org.springframework.security.core.userdetails.User {
 
-  private String firstname;
-  private String lastname;
+  private String userId;
 
+  private String displayName;
   private List<Role> roles;
   private boolean canLogout = true;
 
@@ -26,26 +26,28 @@ public class User extends org.springframework.security.core.userdetails.User {
     return map(roles, role -> new SimpleGrantedAuthority("ROLE_" + role));
   }
 
-  public User(String username,String password, List<Role> roles){
-    super(username, password, toAuthorities(roles));
+  public User(String userId,String displayName, String password, List<Role> roles) {
+    super(userId, password, toAuthorities(roles));
+    this.userId = userId;
+    this.displayName = displayName;
     this.roles = roles;
   }
 
-  public String getFirstname() {
-    return firstname;
+  public String getUserId() {
+    return userId;
   }
 
-  public User setFirstname(String firstname) {
-    this.firstname = firstname;
+  public User setUserId(final String userId) {
+    this.userId = userId;
     return this;
   }
 
-  public String getLastname() {
-    return lastname;
+  public String getDisplayName() {
+    return displayName;
   }
 
-  public User setLastname(String lastname) {
-    this.lastname = lastname;
+  public User setDisplayName(final String displayName) {
+    this.displayName = displayName;
     return this;
   }
 
@@ -78,14 +80,12 @@ public class User extends org.springframework.security.core.userdetails.User {
       return false;
     }
     final User user = (User) o;
-    return canLogout == user.canLogout && Objects.equals(firstname, user.firstname)
-        && Objects.equals(lastname, user.lastname) && Objects.equals(roles,
-        user.roles);
+    return canLogout == user.canLogout && userId.equals(user.userId) && displayName.equals(
+        user.displayName) && roles.equals(user.roles);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), firstname, lastname, roles, canLogout);
+    return Objects.hash(super.hashCode(), userId, displayName, roles, canLogout);
   }
-
 }

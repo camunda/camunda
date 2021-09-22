@@ -172,7 +172,7 @@ public class BasicProcessTest extends AbstractMigrationTest {
   public void testUsers() {
     final List<UserEntity> users = entityReader.getEntitiesFor(userIndex.getAlias(), UserEntity.class);
     assertThat(users.size()).isEqualTo(2);
-    assertThat(users).extracting(UserIndex.USERNAME).contains("demo", "act");
+    assertThat(users).extracting(UserIndex.USER_ID).contains("demo", "act");
   }
 
 }

@@ -9,12 +9,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class UserEntity extends OperateEntity<UserEntity> {
-
-  private String username;
+  private String userId;
+  private String displayName;
   private String password;
   private List<String> roles;
-  private String firstname;
-  private String lastname;
 
   public List<String> getRoles() {
     return roles;
@@ -22,16 +20,6 @@ public class UserEntity extends OperateEntity<UserEntity> {
 
   public UserEntity setRoles(List<String> roles) {
     this.roles = roles;
-    return this;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public UserEntity setUsername(String username) {
-    this.username = username;
-    setId(username);
     return this;
   }
 
@@ -44,65 +32,42 @@ public class UserEntity extends OperateEntity<UserEntity> {
     return this;
   }
 
-  public String getFirstname() {
-    return firstname;
+  public String getUserId() {
+    return userId;
   }
 
-  public UserEntity setFirstname(String firstname) {
-    this.firstname = firstname;
+  public UserEntity setUserId(final String userId) {
+    this.userId = userId;
     return this;
   }
 
-  public String getLastname() {
-    return lastname;
+  public String getDisplayName() {
+    return displayName;
   }
 
-  public UserEntity setLastname(String lastname) {
-    this.lastname = lastname;
+  public UserEntity setDisplayName(final String displayName) {
+    this.displayName = displayName;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (!super.equals(o))
+    }
+    if (!super.equals(o)) {
       return false;
-
-    UserEntity that = (UserEntity) o;
-
-    if (!Objects.equals(username, that.username))
-      return false;
-    if (!Objects.equals(password, that.password))
-      return false;
-    if (!Objects.equals(roles, that.roles))
-      return false;
-    if (!Objects.equals(firstname, that.firstname))
-      return false;
-    return Objects.equals(lastname, that.lastname);
-
+    }
+    final UserEntity that = (UserEntity) o;
+    return userId.equals(that.userId) && displayName.equals(that.displayName) && password.equals(
+        that.password) && roles.equals(that.roles);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (username != null ? username.hashCode() : 0);
-    result = 31 * result + (password != null ? password.hashCode() : 0);
-    result = 31 * result + (roles != null ? roles.hashCode() : 0);
-    result = 31 * result + (firstname != null ? firstname.hashCode() : 0);
-    result = 31 * result + (lastname != null ? lastname.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), userId, displayName, password, roles);
   }
-
-  public static UserEntity from(String username, String password, List<String> roles) {
-    UserEntity userEntity = new UserEntity();
-    userEntity.setId(username);
-    userEntity.setUsername(username);
-    userEntity.setPassword(password);
-    userEntity.setRoles(roles);
-    return userEntity;
-  }
-
 }

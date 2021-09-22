@@ -88,7 +88,11 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
   }
 
   public List<Role> getRoles() {
-    return map(userInfo.getRoles(), Role::fromString);
+    if( userInfo.getRoles().isEmpty()) {
+      return Role.DEFAULTS;
+    } else {
+      return map(userInfo.getRoles(), Role::fromString);
+    }
   }
 
   public void authenticate(final HttpServletRequest req, AuthCodeDto authCodeDto) throws Exception {

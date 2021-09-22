@@ -96,7 +96,7 @@ public class AuthorizationIT {
   private void userHasPermission(Permission permission) {
     when(userService.getCurrentUser()).thenReturn(
         new UserDto()
-            .setUsername(USER)
+            .setUserId(USER)
             .setPermissions(List.of(permission)));
   }
 }

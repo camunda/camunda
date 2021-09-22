@@ -109,9 +109,8 @@ public class AuthenticationTest implements AuthenticationTestable {
     // when
     UserDto userInfo = getCurrentUser(response);
     //then
-    assertThat(userInfo.getUsername()).isEqualTo("bender");
-    assertThat(userInfo.getFirstname()).isEqualTo("Bender");
-    assertThat(userInfo.getLastname()).isEqualTo("Rodríguez");
+    assertThat(userInfo.getUserId()).isEqualTo("bender");
+    assertThat(userInfo.getDisplayName()).isEqualTo("Bender");
     assertThat(userInfo.isCanLogout()).isTrue();
   }
 }

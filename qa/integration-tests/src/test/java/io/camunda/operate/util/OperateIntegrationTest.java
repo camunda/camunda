@@ -66,7 +66,7 @@ public abstract class OperateIntegrationTest {
     testStartTime = OffsetDateTime.now();
     mockMvc = mockMvcTestRule.getMockMvc();
     when(userService.getCurrentUser()).thenReturn(
-        new UserDto().setUsername(DEFAULT_USER)
+        new UserDto().setUserId(DEFAULT_USER)
             .setPermissions(List.of(Permission.WRITE)));
   }
 

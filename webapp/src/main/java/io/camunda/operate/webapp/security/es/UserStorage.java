@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 @Component
-@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE)
+@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE + " & !" + OperateURIs.IAM_AUTH_PROFILE)
 @DependsOn("schemaStartup")
 public class UserStorage extends AbstractReader {
 
@@ -42,18 +42,18 @@ public class UserStorage extends AbstractReader {
   @Autowired
   private UserIndex userIndex;
 
-  public UserEntity getByName(String username) {
+  public UserEntity getByUserId(String userId) {
     final SearchRequest searchRequest = new SearchRequest(userIndex.getAlias())
         .source(new SearchSourceBuilder()
-          .query(QueryBuilders.termQuery(UserIndex.USERNAME, username)));
+          .query(QueryBuilders.termQuery(UserIndex.USER_ID, userId)));
       try {
         final SearchResponse response = esClient.search(searchRequest,RequestOptions.DEFAULT);
         if (response.getHits().getTotalHits().value == 1) {
           return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, UserEntity.class);
         } else if (response.getHits().getTotalHits().value > 1) {
-          throw new NotFoundException(String.format("Could not find unique user with username '%s'.", username));
+          throw new NotFoundException(String.format("Could not find unique user with userId '%s'.", userId));
         } else {
-          throw new NotFoundException(String.format("Could not find user with username '%s'.", username));
+          throw new NotFoundException(String.format("Could not find user with userId '%s'.", userId));
         }
       } catch (IOException e) {
         final String message = String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
@@ -67,7 +67,7 @@ public class UserStorage extends AbstractReader {
           .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request,RequestOptions.DEFAULT);
     } catch (Exception t) {
-      logger.error("Could not create user with username {}", user.getUsername(), t);
+      logger.error("Could not create user with userId {}", user.getUserId(), t);
     }
   }
 

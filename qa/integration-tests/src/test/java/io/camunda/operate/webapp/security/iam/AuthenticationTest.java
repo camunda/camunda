@@ -157,15 +157,15 @@ public class AuthenticationTest implements AuthenticationTestable {
     // Step 3 assume authentication will be successful
     doNothing().when(iamAuthentication).authenticate(any(), any());
     when(iamAuthentication.isAuthenticated()).thenReturn(true);
-    when(iamAuthentication.getName()).thenReturn("lastname");
-    when(iamAuthentication.getId()).thenReturn("username");
+    when(iamAuthentication.getName()).thenReturn("displayName");
+    when(iamAuthentication.getId()).thenReturn("userId");
     response = get(IAM_CALLBACK_URI, httpEntity);
 
     httpEntity = httpEntityWithCookie(response);
     response = get(userInfoUrl, httpEntity);
-    assertThat(response.getBody()).contains("\"lastname\":\"lastname\"");
-    assertThat(response.getBody()).contains("\"username\":\"username\"");
-    assertThat(response.getBody()).contains("\"firstname\":\"\"");
+    assertThat(response.getBody()).contains("\"displayName\":\"displayName\"");
+    assertThat(response.getBody()).contains("\"userId\":\"userId\"");
+    assertThat(response.getBody()).contains("\"username\":\"displayName\"");
     assertThat(response.getBody()).contains("\"canLogout\":false");
     assertThat(response.getBody()).contains("\"permissions\":[");
   }

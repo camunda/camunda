@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
+import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import java.util.List;
 import javax.naming.NamingException;
@@ -22,7 +23,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.webapp.security.OperateURIs.LDAP_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.Permission.READ;
 import static io.camunda.operate.webapp.security.Permission.WRITE;
@@ -44,19 +44,13 @@ public class LDAPUserService implements UserService<Authentication> {
       final Authentication authentication) {
     LdapUserDetails userDetails = (LdapUserDetails) authentication.getPrincipal();
     final String dn = userDetails.getDn();
-    UserDto userDto = new UserDto();
     try {
-      userDto = ldapTemplate
+      return ldapTemplate
           .lookup(dn,
               new LdapUserAttributesMapper());
     } catch (Exception ex) {
-      logger.warn("Exception occurred when loading current user data: " + ex.getMessage(), ex);
+      throw new UserNotFoundException(String.format("Couldn't find user for %s", dn));
     }
-    return userDto
-        .setCanLogout(true)
-        .setUsername(userDetails.getUsername())
-        // for now can do all TODO: how to retrieve LDAP Roles/Permissions ?
-        .setPermissions(List.of(READ, WRITE));
   }
 
   private class LdapUserAttributesMapper implements AttributesMapper<UserDto> {
@@ -65,16 +59,17 @@ public class LDAPUserService implements UserService<Authentication> {
     }
 
     public UserDto mapFromAttributes(Attributes attrs) throws NamingException {
-      final UserDto userDto = new UserDto();
-      final Attribute firstNameAttr = attrs.get(operateProperties.getLdap().getFirstnameAttrName());
-      if (firstNameAttr != null) {
-        userDto
-            .setFirstname((String) firstNameAttr.get());
+      final UserDto userDto = new UserDto().setCanLogout(true);
+      final Attribute userIdAttr = attrs.get(operateProperties.getLdap().getUserIdAttrName());
+      if (userIdAttr != null) {
+        userDto.setUserId((String) userIdAttr.get());
       }
-      final Attribute lastNameAttr = attrs.get(operateProperties.getLdap().getLastnameAttrName());
-      if (lastNameAttr != null) {
-        userDto.setLastname((String) lastNameAttr.get());
+      final Attribute displayNameAttr = attrs.get(operateProperties.getLdap().getDisplayNameAttrName());
+      if (displayNameAttr != null) {
+        userDto.setDisplayName((String) displayNameAttr.get());
       }
+      // for now can do all TODO: how to retrieve LDAP Roles/Permissions ?
+      userDto.setPermissions(List.of(READ, WRITE));
       return userDto;
     }
   }

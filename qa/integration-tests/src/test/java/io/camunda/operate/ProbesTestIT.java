@@ -48,7 +48,7 @@ public class ProbesTestIT{
 
   @Before
   public void before() {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername("testuser"));
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId("testuser"));
     operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
   }
 

@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.security.es;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.util.ElasticsearchTestRule;
@@ -24,27 +23,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * This test tests that:
  * 1. If we configure custom username and password, this user is added to Elasticsearch
- * 2. If we adjust firstname and lastname in Elasticsearch, this values are returned by UserDetailsService
+ * 2. If we adjust firstname and lastname in Elasticsearch, these values are returned by UserDetailsService
  */
 @SpringBootTest(
     classes = { TestApplication.class},
-    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+    properties = {
+        OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        OperateProperties.PREFIX + ".username = user1",
-        OperateProperties.PREFIX + ".password = psw1"})
+        OperateProperties.PREFIX + ".userId = " + ElasticSearchUserDetailsServiceIT.TEST_USER_ID,
+        OperateProperties.PREFIX + ".displayName = User 1",
+        OperateProperties.PREFIX + ".password = " + ElasticSearchUserDetailsServiceIT.TEST_PASSWORD
+    })
 public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 
-  private static final String TEST_USERNAME = "user1";
-  private static final String TEST_PASSWORD = "psw1";
-  private static final String TEST_FIRSTNAME = "Quentin";
-  private static final String TEST_LASTNAME = "Tarantino ";
+  public static final String TEST_USER_ID = "user1";
+  public static final String TEST_USER_DISPLAYNAME = "Quentin Tarantino";
+  public static final String TEST_PASSWORD = "psw1";
 
   @Autowired
   private ElasticSearchUserDetailsService userDetailsService;
@@ -68,7 +68,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
 
   @After
   public void deleteUser() {
-    deleteById(TEST_USERNAME);
+    deleteById(TEST_USER_ID);
   }
 
   @Test
@@ -81,21 +81,18 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
     updateUserRealName();
 
     //then
-    UserDetails userDetails = userDetailsService.loadUserByUsername(TEST_USERNAME);
-    assertThat(userDetails).isInstanceOf(User.class);
-    User testUser = (User)userDetails;
-    assertThat(testUser.getUsername()).isEqualTo(TEST_USERNAME);
-    assertThat(passwordEncoder.matches(TEST_PASSWORD, testUser.getPassword())).isTrue();
-    assertThat(testUser.getFirstname()).isEqualTo(TEST_FIRSTNAME);
-    assertThat(testUser.getLastname()).isEqualTo(TEST_LASTNAME);
+    User user = userDetailsService.loadUserByUsername(TEST_USER_ID);
+    assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
+    assertThat(passwordEncoder.matches(TEST_PASSWORD, user.getPassword())).isTrue();
+    assertThat(user.getDisplayName()).isEqualTo(TEST_USER_DISPLAYNAME);
   }
 
   private void updateUserRealName() {
     try {
       Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(UserIndex.FIRSTNAME, TEST_FIRSTNAME);
-      jsonMap.put(UserIndex.LASTNAME, TEST_LASTNAME);
-      UpdateRequest request = new UpdateRequest().index(userIndex.getFullQualifiedName()).id(TEST_USERNAME)
+      jsonMap.put(UserIndex.DISPLAY_NAME, TEST_USER_DISPLAYNAME);
+      UpdateRequest request = new UpdateRequest().index(userIndex.getFullQualifiedName()).id(
+              TEST_USER_ID)
           .doc(jsonMap);
       esClient.update(request, RequestOptions.DEFAULT);
       elasticsearchTestRule.refreshOperateESIndices();

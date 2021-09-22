@@ -74,7 +74,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @ActiveProfiles({ AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsTest implements AuthenticationTestable {
 
-  private static final String USERNAME = "demo";
+  private static final String USER_ID = "demo";
   private static final String PASSWORD = "demo";
   private static final String FIRSTNAME = "Firstname";
   private static final String LASTNAME = "Lastname";
@@ -94,19 +94,19 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
   @Before
   public void setUp() {
     UserEntity user = new UserEntity()
-        .setUsername(USERNAME)
+        .setUserId(USER_ID)
         .setPassword(encoder.encode(PASSWORD))
         .setRoles(map(List.of(Role.OWNER), Role::name))
-        .setFirstname(FIRSTNAME)
-        .setLastname(LASTNAME);
-    given(userStorage.getByName(USERNAME)).willReturn(user);
+        .setDisplayName(FIRSTNAME + " " + LASTNAME)
+            .setRoles(List.of(Role.OWNER.name()));
+    given(userStorage.getByUserId(USER_ID)).willReturn(user);
   }
 
   @Test
   public void shouldSetCookieAndCSRFToken() {
     // given
     // when
-    ResponseEntity<Void> response = login(USERNAME, PASSWORD);
+    ResponseEntity<Void> response = login(USER_ID, PASSWORD);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -116,7 +116,7 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
   @Test
   public void shouldFailWhileLogin() {
     // when
-    ResponseEntity<Void> response = login(USERNAME, String.format("%s%d", PASSWORD, 123));
+    ResponseEntity<Void> response = login(USER_ID, String.format("%s%d", PASSWORD, 123));
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -126,7 +126,7 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
   @Test
   public void shouldResetCookie() {
     // given
-    ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
+    ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -142,12 +142,11 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
   @Test
   public void shouldReturnCurrentUser() {
     //given authenticated user
-    ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
+    ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
 
     UserDto userDto = getCurrentUser(loginResponse);
-    assertThat(userDto.getUsername()).isEqualTo(USERNAME);
-    assertThat(userDto.getFirstname()).isEqualTo(FIRSTNAME);
-    assertThat(userDto.getLastname()).isEqualTo(LASTNAME);
+    assertThat(userDto.getUserId()).isEqualTo(USER_ID);
+    assertThat(userDto.getDisplayName()).isEqualTo(FIRSTNAME + " " + LASTNAME);
     assertThat(userDto.isCanLogout()).isTrue();
     assertThat(userDto.getPermissions()).isEqualTo(List.of(READ, WRITE));
   }
@@ -155,7 +154,7 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
   @Test
   public void testEndpointsNotAccessibleAfterLogout() {
     //when user is logged in
-    ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
+    ResponseEntity<Void> loginResponse = login(USER_ID, PASSWORD);
 
     //then endpoint are accessible
     ResponseEntity<Object> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(loginResponse), Object.class);

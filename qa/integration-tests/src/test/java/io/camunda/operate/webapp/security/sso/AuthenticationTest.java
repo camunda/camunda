@@ -270,7 +270,8 @@ public class AuthenticationTest {
     response = get(SSO_CALLBACK_URI, httpEntity);
     httpEntity = httpEntityWithCookie(response);
     response = get(userInfoUrl, httpEntity);
-    assertThat(response.getBody()).contains("\"lastname\":\"operate-testuser\"");
+    assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
+    assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {

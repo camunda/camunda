@@ -11,13 +11,10 @@
 			"roles": {
 				"type": "keyword"
 			},
-			"username": {
+			"userId": {
 				"type": "keyword"
 			},
-			"firstname": {
-				"type": "keyword"
-			},
-			"lastname": {
+			"displayName": {
 				"type": "keyword"
 			}
 		}

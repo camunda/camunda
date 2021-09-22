@@ -26,10 +26,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE)
+@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE + " & !" + OperateURIs.IAM_AUTH_PROFILE)
 public class ElasticSearchUserDetailsService implements UserDetailsService {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
+  private static final Logger logger = LoggerFactory.getLogger(
+      ElasticSearchUserDetailsService.class);
 
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String READ_ONLY_USER = "view";
@@ -50,43 +51,53 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
 
   public void initializeUsers() {
     if (operateProperties.getElasticsearch().isCreateSchema()) {
-      String username = operateProperties.getUsername();
-      if (!userExists(username)) {
-        addUserWith(username, operateProperties.getPassword(), operateProperties.getRoles());
+      String userId = operateProperties.getUserId();
+      if (!userExists(userId)) {
+        addUserWith(userId, operateProperties.getDisplayName(), operateProperties.getPassword(),
+            operateProperties.getRoles());
       }
       if (!userExists(READ_ONLY_USER)) {
-        addUserWith(READ_ONLY_USER, READ_ONLY_USER, List.of(Role.USER.name()));
+        addUserWith(READ_ONLY_USER, READ_ONLY_USER, READ_ONLY_USER, List.of(Role.USER.name()));
       }
       if (!userExists(ACT_USERNAME)) {
-        addUserWith(ACT_USERNAME, ACT_PASSWORD, List.of(Role.OWNER.name()));
+        addUserWith(ACT_USERNAME, ACT_USERNAME, ACT_PASSWORD, List.of(Role.OWNER.name()));
       }
     }
   }
 
-  private ElasticSearchUserDetailsService addUserWith(String username, String password, List<String> roles) {
-    logger.info("Create user in ElasticSearch for username {}",username);
-    String passwordEncoded = passwordEncoder.encode(password);
-    userStorage.create(UserEntity.from(username, passwordEncoded, roles));
+  private ElasticSearchUserDetailsService addUserWith(final String userId, final String displayName,
+      final String password, final List<String> roles) {
+    logger.info("Create user in ElasticSearch for userId {}", userId);
+    final String passwordEncoded = passwordEncoder.encode(password);
+    final UserEntity userEntity = new UserEntity()
+        .setId(userId)
+        .setUserId(userId)
+        .setDisplayName(displayName)
+        .setPassword(passwordEncoded)
+        .setRoles(roles);
+    userStorage.create(userEntity);
     return this;
   }
 
   @Override
-  public User loadUserByUsername(String username) {
+  public User loadUserByUsername(final String userId) {
     try {
-      UserEntity userEntity = userStorage.getByName(username);
-      return new User(userEntity.getUsername(), userEntity.getPassword(),
-          map(userEntity.getRoles(), Role::fromString))
-          .setFirstname(userEntity.getFirstname())
-          .setLastname(userEntity.getLastname());
-    }catch(NotFoundException e) {
-      throw new UsernameNotFoundException(String.format("User with username '%s' not found.",username),e);
+      UserEntity userEntity = userStorage.getByUserId(userId);
+      return new User(
+          userEntity.getUserId(),
+          userEntity.getDisplayName(),
+          userEntity.getPassword(),
+          map(userEntity.getRoles(), Role::fromString));
+    } catch (NotFoundException e) {
+      throw new UsernameNotFoundException(String.format("User with userId '%s' not found.", userId),
+          e);
     }
   }
 
-  private boolean userExists(String username) {
+  private boolean userExists(final String userId) {
     try {
-      return userStorage.getByName(username)!=null;
-    }catch(Exception t) {
+      return userStorage.getByUserId(userId) != null;
+    } catch (Exception t) {
       return false;
     }
   }

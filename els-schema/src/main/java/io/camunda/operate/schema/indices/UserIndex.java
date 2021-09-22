@@ -12,11 +12,10 @@ public class UserIndex extends AbstractIndexDescriptor {
 
   public static final String INDEX_NAME = "user";
   public static final String ID = "id";
-  public static final String USERNAME = "username";
+  public static final String USER_ID = "userId";
   public static final String PASSWORD = "password";
-  public static final String FIRSTNAME = "firstname";
-  public static final String LASTNAME = "lastname";
   public static final String ROLES = "roles";
+  public static final String DISPLAY_NAME = "displayName";
 
   @Override
   public String getIndexName() {

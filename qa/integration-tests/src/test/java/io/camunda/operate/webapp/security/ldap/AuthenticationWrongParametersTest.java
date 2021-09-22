@@ -71,23 +71,7 @@ public class AuthenticationWrongParametersTest implements AuthenticationTestable
     // when
     UserDto userInfo = getCurrentUser(response);
     //then
-    assertThat(userInfo.getUsername()).isEqualTo("bob");
-    assertThat(userInfo.getFirstname()).isNull();
-    assertThat(userInfo.getLastname()).isNull();
-  }
-
-  @Test
-  @Ignore("User with encoded password")
-  public void shouldReturnCurrentUser2() {
-    //given authenticated user
-    ResponseEntity<?> response = loginAs("ben", "benspassword");
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-    // when
-    UserDto userInfo = getCurrentUser(response);
-    //then
-    assertThat(userInfo.getFirstname()).isNull();
-    assertThat(userInfo.getLastname()).isNull();
+    assertThat(userInfo.getUserId()).isEqualTo("bob");
   }
 
   protected ResponseEntity<?> loginAs(String user, String password) {

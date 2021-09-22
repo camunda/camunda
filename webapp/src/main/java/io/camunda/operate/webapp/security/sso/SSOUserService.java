@@ -20,8 +20,6 @@ import com.auth0.jwt.interfaces.Claim;
 @Profile(OperateURIs.SSO_AUTH_PROFILE)
 public class SSOUserService implements UserService<TokenAuthentication> {
 
-  private static final String EMPTY = "";
-
   @Autowired
   private OperateProperties operateProperties;
 
@@ -37,9 +35,8 @@ public class SSOUserService implements UserService<TokenAuthentication> {
       name = claims.get(operateProperties.getAuth0().getNameKey()).asString();
     }
     return new UserDto()
-        .setFirstname(EMPTY)
-        .setLastname(name)
-        .setUsername(authentication.getName())
+        .setUserId(authentication.getName())
+        .setDisplayName(name)
         .setCanLogout(false)
         .setPermissions(
             rolePermissionService.getPermissions(authentication.getRoles()));

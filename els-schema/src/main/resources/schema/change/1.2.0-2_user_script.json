@@ -2,7 +2,7 @@
   "description": "Add role 'OWNER' ",
   "@type": "processorStep",
   "indexName": "user",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "order": 2,
   "content": "{\"append\": {\"field\": \"roles\", \"value\": [\"OWNER\"]}}"
 }

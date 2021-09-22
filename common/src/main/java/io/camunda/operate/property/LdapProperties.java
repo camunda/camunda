@@ -24,6 +24,8 @@ public class LdapProperties {
 
   private String firstnameAttrName = "givenName";
   private String lastnameAttrName = "sn";
+  private String displayNameAttrName = "displayname";
+  private String userIdAttrName = "uid";
 
   public String getBaseDn() {
     return baseDn;
@@ -97,5 +99,21 @@ public class LdapProperties {
 
   public void setLastnameAttrName(final String lastnameAttrName) {
     this.lastnameAttrName = lastnameAttrName;
+  }
+
+  public String getDisplayNameAttrName() {
+    return displayNameAttrName;
+  }
+
+  public void setDisplayNameAttrName(final String displayNameAttrName) {
+    this.displayNameAttrName = displayNameAttrName;
+  }
+
+  public String getUserIdAttrName() {
+    return userIdAttrName;
+  }
+
+  public void setUserIdAttrName(final String userIdAttrName) {
+    this.userIdAttrName = userIdAttrName;
   }
 }
