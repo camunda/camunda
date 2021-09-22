@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -31,7 +32,10 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
    * @return the context of the actor
    */
   protected Map<String, String> createContext() {
-    return Map.of(ACTOR_PROP_NAME, getName());
+    // return an modifiable map in order to simplify sub class implementation
+    final var baseContext = new HashMap<String, String>();
+    baseContext.put(ACTOR_PROP_NAME, getName());
+    return baseContext;
   }
 
   public String getName() {
