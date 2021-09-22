@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEven
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
@@ -45,11 +46,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACT
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
+public abstract class AbstractCleanupIT extends AbstractIT {
   private static final RandomStringGenerator KEY_GENERATOR = new RandomStringGenerator.Builder()
     .withinRange('a', 'z').build();
 
-  public void cleanUpEventIndices() {
+  protected void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
     elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
@@ -102,7 +103,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
   }
 
   protected OffsetDateTime getEndTimeLessThanGlobalTtl() {
-    return OffsetDateTime.now().minus(getCleanupConfiguration().getTtl()).minusSeconds(1);
+    return LocalDateUtil.getCurrentDateTime().minus(getCleanupConfiguration().getTtl()).minusSeconds(1);
   }
 
   @SneakyThrows

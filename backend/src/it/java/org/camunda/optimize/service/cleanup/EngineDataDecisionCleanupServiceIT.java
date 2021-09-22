@@ -25,7 +25,7 @@ import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanupIT {
+public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
   @BeforeEach
   public void enableCamundaCleanup() {

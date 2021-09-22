@@ -34,7 +34,7 @@ import static org.camunda.optimize.rest.providers.BeanConstraintViolationExcepti
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 
-public class VariableIngestionRestIT extends AbstractIT {
+public class ExternalVariableIngestionRestIT extends AbstractIT {
 
   @BeforeEach
   public void before() {

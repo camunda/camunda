@@ -469,11 +469,15 @@ historyCleanup:
   ingestedEventCleanup:
     # switch for the ingested event data cleanup, defaults to false
     enabled: false
+  externalVariableCleanup:
+    # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
+    # not external variables already imported into process instances.
+    enabled: false
 
 locales:
   # all locales available
   # Note: for others than the default there must be a <localeCode>.json file available under ./config/localization.
-  availableLocales: ['en', 'de']
+  availableLocales: ['en','de']
   # the fallback locale is used if there is a locale requested that is not available in availableLocales
   fallbackLocale: 'en'
 
