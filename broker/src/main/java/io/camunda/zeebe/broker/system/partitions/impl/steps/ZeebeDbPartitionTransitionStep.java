@@ -81,12 +81,11 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
             transitionFuture.completeExceptionally(error);
           } else {
             try {
-              context.getStateController().verifyDb();
               final var zeebeDb = context.getStateController().openDb();
               context.setZeebeDb(zeebeDb);
               transitionFuture.complete(null);
             } catch (final Exception e) {
-              Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
+              Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot.", e);
 
               transitionFuture.completeExceptionally(
                   new IllegalStateException(

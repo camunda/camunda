@@ -31,13 +31,6 @@ public interface StateController extends AutoCloseable {
   ActorFuture<Void> recover() throws IOException;
 
   /**
-   * Verify if the database in runtime folder can be opened. This is useful to call after recover().
-   *
-   * @throws IOException
-   */
-  void verifyDb() throws IOException;
-
-  /**
    * Opens the database from the latest snapshot.
    *
    * @return an opened database

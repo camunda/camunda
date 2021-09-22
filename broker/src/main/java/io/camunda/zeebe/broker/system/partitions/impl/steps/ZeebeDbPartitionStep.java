@@ -61,7 +61,6 @@ public class ZeebeDbPartitionStep implements PartitionStep {
             openFuture.completeExceptionally(error);
           } else {
             try {
-              context.getStateController().verifyDb();
               final var zeebeDb = context.getStateController().openDb();
               context.setZeebeDb(zeebeDb);
               openFuture.complete(null);
