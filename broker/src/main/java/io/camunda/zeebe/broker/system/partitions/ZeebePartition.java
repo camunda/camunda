@@ -31,6 +31,7 @@ import io.camunda.zeebe.util.startup.StartupProcess;
 import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -92,6 +93,13 @@ public final class ZeebePartition extends Actor
 
   public PartitionAdminAccess createAdminAccess() {
     return new ZeebePartitionAdminAccess(actor, adminControl);
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var actorContext = super.createContext();
+    actorContext.put(ACTOR_PROP_PARTITION_ID, Integer.toString(context.getPartitionId()));
+    return actorContext;
   }
 
   @Override
