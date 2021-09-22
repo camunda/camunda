@@ -60,6 +60,7 @@ public class ClusterServicesCreationStepTest {
     // then
     assertThat(future.isDone()).isTrue();
     assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
@@ -81,6 +82,7 @@ public class ClusterServicesCreationStepTest {
     // then
     assertThat(future.isDone()).isTrue();
     assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
