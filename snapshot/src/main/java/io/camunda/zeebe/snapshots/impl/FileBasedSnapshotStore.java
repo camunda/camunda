@@ -276,7 +276,7 @@ public final class FileBasedSnapshotStore extends Actor
           if (!Files.exists(snapshot.getPath())) {
             result.completeExceptionally(
                 String.format(
-                    "Expected to copy snapshot %s to directory %s, but snapshot directory %s does not exits. Snapshot may have been deleted.",
+                    "Expected to copy snapshot %s to directory %s, but snapshot directory %s does not exists. Snapshot may have been deleted.",
                     snapshot.getId(), targetDirectory, snapshot.getPath()),
                 new FileNotFoundException());
           } else {
