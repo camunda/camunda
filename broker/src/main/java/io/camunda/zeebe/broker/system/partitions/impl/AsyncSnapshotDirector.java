@@ -77,6 +77,46 @@ public final class AsyncSnapshotDirector extends Actor
     }
   }
 
+  @Override
+  public String getName() {
+    return actorName;
+  }
+
+  @Override
+  protected void onActorStarting() {
+    actor.setSchedulingHints(SchedulingHints.ioBound());
+    final var firstSnapshotTime =
+        RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
+    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
+
+    lastWrittenEventPosition = null;
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return super.closeAsync();
+  }
+
+  @Override
+  protected void handleFailure(final Exception failure) {
+    LOG.error(
+        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
+        actorName,
+        snapshotRate,
+        failure);
+
+    resetStateOnFailure();
+    healthStatus = HealthStatus.UNHEALTHY;
+
+    for (final var listener : listeners) {
+      listener.onFailure();
+    }
+  }
+
   /**
    * Create an AsyncSnapshotDirector that can take snapshot when the Streamprocessor is in
    * continuous replay mode.
@@ -127,46 +167,6 @@ public final class AsyncSnapshotDirector extends Actor
         stateController,
         snapshotRate,
         StreamProcessorMode.PROCESSING);
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
-  }
-
-  @Override
-  protected void onActorStarting() {
-    actor.setSchedulingHints(SchedulingHints.ioBound());
-    final var firstSnapshotTime =
-        RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
-    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
-
-    lastWrittenEventPosition = null;
-  }
-
-  @Override
-  public ActorFuture<Void> closeAsync() {
-    if (actor.isClosed()) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    return super.closeAsync();
-  }
-
-  @Override
-  protected void handleFailure(final Exception failure) {
-    LOG.error(
-        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
-        actorName,
-        snapshotRate,
-        failure);
-
-    resetStateOnFailure();
-    healthStatus = HealthStatus.UNHEALTHY;
-
-    for (final var listener : listeners) {
-      listener.onFailure();
-    }
   }
 
   private void scheduleSnapshotOnRate() {

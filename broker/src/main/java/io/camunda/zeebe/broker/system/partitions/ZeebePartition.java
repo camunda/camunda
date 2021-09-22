@@ -94,103 +94,6 @@ public final class ZeebePartition extends Actor
     return new ZeebePartitionAdminAccess(actor, adminControl);
   }
 
-  /**
-   * Called by atomix on role change.
-   *
-   * @param newRole the new role of the raft partition
-   */
-  @Override
-  @Deprecated // will be removed from public API of ZeebePartition
-  public void onNewRole(final Role newRole, final long newTerm) {
-    actor.run(() -> onRoleChange(newRole, newTerm));
-  }
-
-  private void onRoleChange(final Role newRole, final long newTerm) {
-    ActorFuture<Void> nextTransitionFuture = null;
-    switch (newRole) {
-      case LEADER:
-        if (raftRole != Role.LEADER) {
-          nextTransitionFuture = leaderTransition(newTerm);
-        }
-        break;
-      case INACTIVE:
-        nextTransitionFuture = transitionToInactive();
-        break;
-      case PASSIVE:
-      case PROMOTABLE:
-      case CANDIDATE:
-      case FOLLOWER:
-      default:
-        if (raftRole == null || raftRole == Role.LEADER) {
-          nextTransitionFuture = followerTransition(newTerm);
-        }
-        break;
-    }
-
-    if (nextTransitionFuture != null) {
-      currentTransitionFuture = nextTransitionFuture;
-    }
-    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
-    raftRole = newRole;
-  }
-
-  private ActorFuture<Void> leaderTransition(final long newTerm) {
-    final var installStartTime = ActorClock.currentTimeMillis();
-    final var leaderTransitionFuture = transition.toLeader(newTerm);
-    leaderTransitionFuture.onComplete(
-        (success, error) -> {
-          if (error == null) {
-            final var leaderTransitionLatency = ActorClock.currentTimeMillis() - installStartTime;
-            roleMetrics.setLeaderTransitionLatency(leaderTransitionLatency);
-            final List<ActorFuture<Void>> listenerFutures =
-                context.notifyListenersOfBecomingLeader(newTerm);
-            actor.runOnCompletion(
-                listenerFutures,
-                t -> {
-                  if (t != null) {
-                    onInstallFailure(t);
-                  }
-                });
-            onRecoveredInternal();
-          } else {
-            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure(error);
-          }
-        });
-    return leaderTransitionFuture;
-  }
-
-  private ActorFuture<Void> followerTransition(final long newTerm) {
-    final var followerTransitionFuture = transition.toFollower(newTerm);
-    followerTransitionFuture.onComplete(
-        (success, error) -> {
-          if (error == null) {
-            final List<ActorFuture<Void>> listenerFutures =
-                context.notifyListenersOfBecomingFollower(newTerm);
-            actor.runOnCompletion(
-                listenerFutures,
-                t -> {
-                  // Compare with the current term in case a new role transition happened
-                  if (t != null) {
-                    onInstallFailure(t);
-                  }
-                });
-            onRecoveredInternal();
-          } else {
-            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure(error);
-          }
-        });
-    return followerTransitionFuture;
-  }
-
-  private ActorFuture<Void> transitionToInactive() {
-    zeebePartitionHealth.setServicesInstalled(false);
-    final var inactiveTransitionFuture = transition.toInactive();
-    currentTransitionFuture = inactiveTransitionFuture;
-    return inactiveTransitionFuture;
-  }
-
   @Override
   public String getName() {
     return actorName;
@@ -300,6 +203,103 @@ public final class ZeebePartition extends Actor
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);
+  }
+
+  /**
+   * Called by atomix on role change.
+   *
+   * @param newRole the new role of the raft partition
+   */
+  @Override
+  @Deprecated // will be removed from public API of ZeebePartition
+  public void onNewRole(final Role newRole, final long newTerm) {
+    actor.run(() -> onRoleChange(newRole, newTerm));
+  }
+
+  private void onRoleChange(final Role newRole, final long newTerm) {
+    ActorFuture<Void> nextTransitionFuture = null;
+    switch (newRole) {
+      case LEADER:
+        if (raftRole != Role.LEADER) {
+          nextTransitionFuture = leaderTransition(newTerm);
+        }
+        break;
+      case INACTIVE:
+        nextTransitionFuture = transitionToInactive();
+        break;
+      case PASSIVE:
+      case PROMOTABLE:
+      case CANDIDATE:
+      case FOLLOWER:
+      default:
+        if (raftRole == null || raftRole == Role.LEADER) {
+          nextTransitionFuture = followerTransition(newTerm);
+        }
+        break;
+    }
+
+    if (nextTransitionFuture != null) {
+      currentTransitionFuture = nextTransitionFuture;
+    }
+    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
+    raftRole = newRole;
+  }
+
+  private ActorFuture<Void> leaderTransition(final long newTerm) {
+    final var installStartTime = ActorClock.currentTimeMillis();
+    final var leaderTransitionFuture = transition.toLeader(newTerm);
+    leaderTransitionFuture.onComplete(
+        (success, error) -> {
+          if (error == null) {
+            final var leaderTransitionLatency = ActorClock.currentTimeMillis() - installStartTime;
+            roleMetrics.setLeaderTransitionLatency(leaderTransitionLatency);
+            final List<ActorFuture<Void>> listenerFutures =
+                context.notifyListenersOfBecomingLeader(newTerm);
+            actor.runOnCompletion(
+                listenerFutures,
+                t -> {
+                  if (t != null) {
+                    onInstallFailure(t);
+                  }
+                });
+            onRecoveredInternal();
+          } else {
+            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
+            onInstallFailure(error);
+          }
+        });
+    return leaderTransitionFuture;
+  }
+
+  private ActorFuture<Void> followerTransition(final long newTerm) {
+    final var followerTransitionFuture = transition.toFollower(newTerm);
+    followerTransitionFuture.onComplete(
+        (success, error) -> {
+          if (error == null) {
+            final List<ActorFuture<Void>> listenerFutures =
+                context.notifyListenersOfBecomingFollower(newTerm);
+            actor.runOnCompletion(
+                listenerFutures,
+                t -> {
+                  // Compare with the current term in case a new role transition happened
+                  if (t != null) {
+                    onInstallFailure(t);
+                  }
+                });
+            onRecoveredInternal();
+          } else {
+            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
+            onInstallFailure(error);
+          }
+        });
+    return followerTransitionFuture;
+  }
+
+  private ActorFuture<Void> transitionToInactive() {
+    zeebePartitionHealth.setServicesInstalled(false);
+    final var inactiveTransitionFuture = transition.toInactive();
+    currentTransitionFuture = inactiveTransitionFuture;
+    return inactiveTransitionFuture;
   }
 
   private void registerListenersAndTriggerRoleChange() {
