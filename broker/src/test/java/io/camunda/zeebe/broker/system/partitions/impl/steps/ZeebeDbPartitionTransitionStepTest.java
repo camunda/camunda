@@ -17,6 +17,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.util.sched.future.TestActorFuture;
+import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,8 +37,9 @@ class ZeebeDbPartitionTransitionStepTest {
   private ZeebeDbPartitionTransitionStep step;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
+    when(stateController.recover()).thenReturn(TestActorFuture.completedFuture(null));
     when(stateController.openDb()).thenReturn(zeebeDb);
     transitionContext.setStateController(stateController);
 
