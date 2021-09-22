@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.io.IOException;
 import java.util.Optional;
 
 public interface StateController extends AutoCloseable {
@@ -28,7 +27,7 @@ public interface StateController extends AutoCloseable {
    *
    * @return
    */
-  ActorFuture<Void> recover() throws IOException;
+  ActorFuture<Void> recover();
 
   /**
    * Opens the database from the latest snapshot.
