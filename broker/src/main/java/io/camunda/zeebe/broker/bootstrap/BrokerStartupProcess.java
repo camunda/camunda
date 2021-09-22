@@ -45,6 +45,12 @@ public final class BrokerStartupProcess {
 
   private List<StartupStep<BrokerStartupContext>> buildStartupSteps(final BrokerCfg config) {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
+
+    if (config.getData().isDiskUsageMonitoringEnabled()) {
+      // must be executed before any disk space usage listeners are registered
+      result.add(new DiskSpaceUsageMonitorStep());
+    }
+
     result.add(new MonitoringServerStep());
     result.add(new ClusterServicesCreationStep());
     result.add(new CommandApiServiceStep());
@@ -95,10 +101,10 @@ public final class BrokerStartupProcess {
 
   private BrokerContext createBrokerContext(final BrokerStartupContext bsc) {
     return new BrokerContextImpl(
+        bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
         bsc.getCommandApiService(),
         bsc.getEmbeddedGatewayService(),
-        bsc.getPartitionListeners(),
-        bsc.getDiskSpaceUsageListeners());
+        bsc.getPartitionListeners());
   }
 }
