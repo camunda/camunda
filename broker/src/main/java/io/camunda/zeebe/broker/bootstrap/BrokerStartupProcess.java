@@ -8,11 +8,13 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.startup.StartupProcess;
 import io.camunda.zeebe.util.startup.StartupStep;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -20,13 +22,6 @@ import org.slf4j.Logger;
 public final class BrokerStartupProcess {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final List<StartupStep<BrokerStartupContext>> STARTUP_STEPS =
-      List.of(
-          new MonitoringServerStep(),
-          new ClusterServicesCreationStep(),
-          new CommandApiServiceStep(),
-          new SubscriptionApiStep(),
-          new ClusterServicesStep());
 
   private final StartupProcess<BrokerStartupContext> startupProcess;
 
@@ -39,11 +34,28 @@ public final class BrokerStartupProcess {
 
     final var brokerStepMetrics = new BrokerStepMetrics();
 
+    final var undecoratedSteps = buildStartupSteps(brokerStartupContext.getBrokerConfiguration());
+
     final var decoratedSteps =
-        STARTUP_STEPS.stream()
+        undecoratedSteps.stream()
             .map(step -> new BrokerStepMetricDecorator(brokerStepMetrics, step))
             .collect(Collectors.toList());
     startupProcess = new StartupProcess<>(LOG, decoratedSteps);
+  }
+
+  private List<StartupStep<BrokerStartupContext>> buildStartupSteps(final BrokerCfg config) {
+    final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
+    result.add(new MonitoringServerStep());
+    result.add(new ClusterServicesCreationStep());
+    result.add(new CommandApiServiceStep());
+    result.add(new SubscriptionApiStep());
+    result.add(new ClusterServicesStep());
+
+    if (config.getGateway().isEnable()) {
+      result.add(new EmbeddedGatewayServiceStep());
+    }
+
+    return result;
   }
 
   public ActorFuture<BrokerContext> start() {
@@ -85,6 +97,7 @@ public final class BrokerStartupProcess {
     return new BrokerContextImpl(
         bsc.getClusterServices(),
         bsc.getCommandApiService(),
+        bsc.getEmbeddedGatewayService(),
         bsc.getPartitionListeners(),
         bsc.getDiskSpaceUsageListeners());
   }
