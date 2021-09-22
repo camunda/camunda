@@ -92,8 +92,12 @@ public class StateControllerImpl implements StateController {
   }
 
   @Override
-  public ActorFuture<Void> recover() throws IOException {
-    FileUtil.deleteFolderIfExists(runtimeDirectory);
+  public ActorFuture<Void> recover() {
+    try {
+      FileUtil.deleteFolderIfExists(runtimeDirectory);
+    } catch (final IOException e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
 
     final var optLatestSnapshot = constructableSnapshotStore.getLatestSnapshot();
     if (optLatestSnapshot.isPresent()) {

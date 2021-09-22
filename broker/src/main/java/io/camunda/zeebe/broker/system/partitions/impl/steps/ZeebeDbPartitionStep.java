@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.IOException;
 
 public class ZeebeDbPartitionStep implements PartitionStep {
 
@@ -47,13 +46,8 @@ public class ZeebeDbPartitionStep implements PartitionStep {
   private void recoverDb(
       final PartitionTransitionContext context, final CompletableActorFuture<Void> openFuture) {
     final ActorFuture<Void> recoverFuture;
-    try {
-      recoverFuture = context.getStateController().recover();
-    } catch (final IOException error) {
-      openFuture.completeExceptionally(
-          String.format(RECOVER_FAILED_ERROR_MSG, context.getPartitionId()), error);
-      return;
-    }
+
+    recoverFuture = context.getStateController().recover();
 
     recoverFuture.onComplete(
         (ok, error) -> {
