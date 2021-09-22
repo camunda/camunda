@@ -69,7 +69,7 @@ public final class FileUtilTest {
     final File target = tempFolder.getRoot().toPath().resolve("target").toFile();
 
     // when - then
-    assertThatThrownBy(() -> FileUtil.copySnapshot(target.toPath(), source.toPath()))
+    assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
         .isInstanceOf(NoSuchFileException.class);
   }
 
@@ -80,7 +80,7 @@ public final class FileUtilTest {
     final File target = tempFolder.newFolder("target");
 
     // when -then
-    assertThatThrownBy(() -> FileUtil.copySnapshot(target.toPath(), source.toPath()))
+    assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
         .isInstanceOf(FileAlreadyExistsException.class);
   }
 
@@ -93,7 +93,7 @@ public final class FileUtilTest {
     final File target = tempFolder.getRoot().toPath().resolve("target").toFile();
 
     // when
-    FileUtil.copySnapshot(target.toPath(), source.toPath());
+    FileUtil.copySnapshot(source.toPath(), target.toPath());
 
     // then
     assertThat(target.list()).containsExactly(snapshotFile);

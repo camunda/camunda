@@ -120,7 +120,7 @@ public final class FileUtil {
     Files.walkFileTree(folder, new FolderDeleter(Files::delete));
   }
 
-  public static void copySnapshot(final Path runtimeDirectory, final Path snapshotDirectory)
+  public static void copySnapshot(final Path snapshotDirectory, final Path runtimeDirectory)
       throws Exception {
     Files.walkFileTree(snapshotDirectory, new SnapshotCopier(snapshotDirectory, runtimeDirectory));
   }
