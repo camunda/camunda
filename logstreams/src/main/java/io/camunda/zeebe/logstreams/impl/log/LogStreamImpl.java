@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -75,6 +76,13 @@ public final class LogStreamImpl extends Actor
     closeFuture = new CompletableActorFuture<>();
 
     readers = new ArrayList<>();
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
   }
 
   @Override
