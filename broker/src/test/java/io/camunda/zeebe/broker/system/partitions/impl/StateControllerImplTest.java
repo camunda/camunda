@@ -269,7 +269,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldFailToRecoverIfAllSnapshotsAreCorrupted() throws Exception {
+  public void shouldFailToOpenIfSnapshotIsCorrupted() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
@@ -282,9 +282,7 @@ public final class StateControllerImplTest {
     snapshotController.recover().join();
 
     // when/then
-    assertThatThrownBy(() -> snapshotController.verifyDb())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessageContaining("Failed to open");
+    assertThatThrownBy(() -> snapshotController.openDb()).isInstanceOf(RuntimeException.class);
   }
 
   @Test

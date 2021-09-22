@@ -105,21 +105,6 @@ public class StateControllerImpl implements StateController {
   }
 
   @Override
-  public void verifyDb() throws IOException {
-    try {
-      // open database to verify that the snapshot is recoverable
-      openDb();
-    } catch (final Exception exception) {
-      LOG.error(
-          "Failed to open runtime data. No snapshots available to recover from. Manual action is required.",
-          exception);
-
-      FileUtil.deleteFolder(runtimeDirectory);
-      throw new IllegalStateException("Failed to open runtime", exception);
-    }
-  }
-
-  @Override
   @SuppressWarnings("rawtypes")
   public ZeebeDb openDb() {
     if (db == null) {
