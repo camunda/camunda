@@ -23,6 +23,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.RolePermissionService;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -50,6 +51,7 @@ import org.springframework.test.context.junit4.SpringRunner;
         IAMController.class,
         IAMAuthentication.class,
         IAMUserService.class,
+        RolePermissionService.class,
         AuthenticationRestService.class,
         OperateURIs.class,
         OperateProperties.class
@@ -167,6 +169,7 @@ public class AuthenticationTest implements AuthenticationTestable {
     assertThat(response.getBody()).contains("\"username\":\"username\"");
     assertThat(response.getBody()).contains("\"firstname\":\"\"");
     assertThat(response.getBody()).contains("\"canLogout\":false");
+    assertThat(response.getBody()).contains("\"permissions\":[");
   }
 
   //@Ignore("NOT IMPLEMENTED YET")

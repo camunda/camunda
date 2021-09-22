@@ -31,7 +31,7 @@ public class AuthenticationRestService {
       return userService.getCurrentUser();
     }
     catch (UsernameNotFoundException e) {
-      throw new UserNotFoundException(String.format("User '%s' not found.", userService.getCurrentUsername()));
+      throw new UserNotFoundException("Current user couldn't be found", e);
     }
   }
 

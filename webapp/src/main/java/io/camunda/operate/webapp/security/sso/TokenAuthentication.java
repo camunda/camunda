@@ -12,6 +12,8 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.Role;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Profile(OperateURIs.SSO_AUTH_PROFILE)
@@ -33,6 +36,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
+  private static final transient String SSO_ROLES = "roles";
   protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private DecodedJWT jwt;
@@ -60,6 +64,28 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   @Override
   public String getCredentials() {
     return jwt.getToken();
+  }
+
+  public List<Role> getRoles() {
+    return readRolesFromClaim();
+  }
+
+  private List<Role> readRolesFromClaim() {
+    try {
+      Claim claim = jwt.getClaim(operateProperties.getAuth0().getClaimName());
+      List<Map> userInfos = claim.asList(Map.class);
+      if (userInfos != null) {
+        Optional<Map> maybeUserInfo = userInfos.stream()
+            .filter(idEqualsOrganization)
+            .findFirst();
+        if (maybeUserInfo.isPresent()) {
+          return map((List<String>) maybeUserInfo.get().get(SSO_ROLES), Role::fromString);
+        }
+      }
+      return Role.DEFAULTS;
+    }catch (Exception e){
+      return Role.DEFAULTS;
+    }
   }
 
   @Override

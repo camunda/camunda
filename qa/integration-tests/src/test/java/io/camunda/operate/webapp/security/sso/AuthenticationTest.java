@@ -23,6 +23,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.webapp.security.RolePermissionService;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -67,6 +68,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         TokenAuthentication.class,
         SSOUserService.class,
         AuthenticationRestService.class,
+        RolePermissionService.class,
         OperateURIs.class,
         OperateProperties.class
     },
@@ -304,18 +306,6 @@ public class AuthenticationTest {
 
   private String urlFor(String path) {
     return String.format("http://localhost:%d%s%s",randomServerPort, CONTEXT_PATH, path);
-  }
-
-  private static Tokens tokensWithOrgAsListFrom(String claim, String organization) {
-    String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
-    long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    String accountData = toEncodedToken(asMap(
-        claim, Arrays.asList(organization),
-        "exp", expiresInSeconds,
-        "name", "operate-testuser"
-    ));
-    return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
-        "refreshToken", "type", 5L);
   }
 
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {

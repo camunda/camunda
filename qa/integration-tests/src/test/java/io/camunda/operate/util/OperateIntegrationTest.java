@@ -5,12 +5,15 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.Permission;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +30,7 @@ import org.junit.runner.RunWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -42,6 +46,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@WithMockUser(DEFAULT_USER)
 public abstract class OperateIntegrationTest {
 
   public static final String DEFAULT_USER = "testuser";
@@ -60,7 +65,9 @@ public abstract class OperateIntegrationTest {
   public void before() {
     testStartTime = OffsetDateTime.now();
     mockMvc = mockMvcTestRule.getMockMvc();
-    when(userService.getCurrentUsername()).thenReturn(DEFAULT_USER);
+    when(userService.getCurrentUser()).thenReturn(
+        new UserDto().setUsername(DEFAULT_USER)
+            .setPermissions(List.of(Permission.WRITE)));
   }
 
   protected MvcResult getRequest(String requestUrl) throws Exception {

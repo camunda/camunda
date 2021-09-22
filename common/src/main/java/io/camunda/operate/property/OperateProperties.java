@@ -5,11 +5,10 @@
  */
 package io.camunda.operate.property;
 
-import org.springframework.beans.factory.annotation.Value;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /**
@@ -38,6 +37,8 @@ public class OperateProperties {
    */
   private String username = "demo";
   private String password = "demo";
+
+  private List<String> roles = List.of("OWNER");
 
   /**
    * Maximum size of batch operation.
@@ -235,5 +236,13 @@ public class OperateProperties {
   public OperateProperties setPersistentSessionsEnabled(boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
+  }
+
+  public List<String> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(final List<String> roles) {
+    this.roles = roles;
   }
 }

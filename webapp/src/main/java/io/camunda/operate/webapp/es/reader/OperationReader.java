@@ -134,7 +134,7 @@ public class OperationReader extends AbstractReader {
   }
 
   private QueryBuilder createUsernameQuery() {
-    return termQuery(OperationTemplate.USERNAME, userService.getCurrentUsername());
+    return termQuery(OperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
   }
 
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
@@ -212,7 +212,7 @@ public class OperationReader extends AbstractReader {
 
   //this query will be extended
   public List<BatchOperationEntity> getBatchOperations(int pageSize){
-    String username = userService.getCurrentUsername();
+    String username = userService.getCurrentUser().getUsername();
     TermQueryBuilder isOfCurrentUser = termQuery(BatchOperationTemplate.USERNAME, username);
     SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(batchOperationTemplate, ALL)
         .source(new SearchSourceBuilder()

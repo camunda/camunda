@@ -5,32 +5,35 @@
  */
 package io.camunda.operate.webapp.security.iam;
 
+import static io.camunda.operate.util.CollectionUtil.map;
+
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.Role;
+import io.camunda.operate.webapp.security.UserService;
+import io.camunda.operate.webapp.security.RolePermissionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile(OperateURIs.IAM_AUTH_PROFILE)
-public class IAMUserService extends AbstractUserService {
+public class IAMUserService implements UserService<IAMAuthentication> {
 
   private static final String EMPTY = "";
 
+  @Autowired
+  RolePermissionService rolePermissionService;
   @Override
-  public UserDto getCurrentUser() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    IAMAuthentication tokenAuth = (IAMAuthentication) context.getAuthentication();
-    return buildUserDtoFrom(tokenAuth);
-  }
-
-  private UserDto buildUserDtoFrom(IAMAuthentication tokenAuth) {
+  public UserDto createUserDtoFrom(
+      final IAMAuthentication authentication) {
     return new UserDto()
         .setFirstname(EMPTY)
-        .setLastname(tokenAuth.getName())
-        .setUsername(tokenAuth.getId())
-        .setCanLogout(false);
+        .setLastname(authentication.getName())
+        .setUsername(authentication.getId())
+        .setCanLogout(false)
+        .setPermissions(rolePermissionService
+            .getPermissions(authentication.getRoles()));
   }
+
 }

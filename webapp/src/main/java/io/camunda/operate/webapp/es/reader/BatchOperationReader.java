@@ -75,7 +75,7 @@ public class BatchOperationReader {
   }
 
   private SearchRequest createSearchRequest(BatchOperationRequestDto batchOperationRequestDto) {
-    QueryBuilder queryBuilder = termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUsername());
+    QueryBuilder queryBuilder = termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
 
     SortBuilder sort1,
                 sort2;

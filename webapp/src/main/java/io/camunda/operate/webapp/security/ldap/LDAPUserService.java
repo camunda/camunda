@@ -5,28 +5,31 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
+import io.camunda.operate.webapp.security.UserService;
+import java.util.List;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.AbstractUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.stereotype.Component;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.webapp.security.OperateURIs.LDAP_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.Permission.READ;
+import static io.camunda.operate.webapp.security.Permission.WRITE;
 
 @Component
 @Profile(LDAP_AUTH_PROFILE)
-public class LDAPUserService extends AbstractUserService {
+public class LDAPUserService implements UserService<Authentication> {
 
   private static final Logger logger = LoggerFactory.getLogger(LDAPUserService.class);
 
@@ -37,9 +40,9 @@ public class LDAPUserService extends AbstractUserService {
   private OperateProperties operateProperties;
 
   @Override
-  public UserDto getCurrentUser() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    LdapUserDetails userDetails = (LdapUserDetails) context.getAuthentication().getPrincipal();
+  public UserDto createUserDtoFrom(
+      final Authentication authentication) {
+    LdapUserDetails userDetails = (LdapUserDetails) authentication.getPrincipal();
     final String dn = userDetails.getDn();
     UserDto userDto = new UserDto();
     try {
@@ -51,7 +54,9 @@ public class LDAPUserService extends AbstractUserService {
     }
     return userDto
         .setCanLogout(true)
-        .setUsername(userDetails.getUsername());
+        .setUsername(userDetails.getUsername())
+        // for now can do all TODO: how to retrieve LDAP Roles/Permissions ?
+        .setPermissions(List.of(READ, WRITE));
   }
 
   private class LdapUserAttributesMapper implements AttributesMapper<UserDto> {

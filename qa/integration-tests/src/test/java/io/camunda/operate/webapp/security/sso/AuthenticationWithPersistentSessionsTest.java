@@ -31,6 +31,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.RolePermissionService;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -70,6 +71,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         TokenAuthentication.class,
         SSOUserService.class,
         AuthenticationRestService.class,
+        RolePermissionService.class,
         OperateURIs.class,
         OperateProperties.class,
         ElasticsearchSessionRepository.class,
@@ -111,6 +113,7 @@ public class AuthenticationWithPersistentSessionsTest {
 
   @MockBean
   private ElsIndicesCheck probes;
+
   private final BiFunction<String, String, Tokens> orgExtractor;
 
   public AuthenticationWithPersistentSessionsTest(BiFunction<String, String, Tokens> orgExtractor) {
@@ -273,6 +276,7 @@ public class AuthenticationWithPersistentSessionsTest {
         .apply(operateProperties.getAuth0().getClaimName(),
             operateProperties.getAuth0().getOrganization()));
 
+
     response = get(SSO_CALLBACK_URI, httpEntity);
     assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
     response = get(userInfoUrl, httpEntity);
@@ -311,18 +315,6 @@ public class AuthenticationWithPersistentSessionsTest {
 
   private String urlFor(String path) {
     return String.format("http://localhost:%d%s%s",randomServerPort, CONTEXT_PATH, path);
-  }
-
-  private static Tokens tokensWithOrgAsListFrom(String claim, String organization) {
-    String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
-    long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
-    String accountData = toEncodedToken(asMap(
-        claim, Arrays.asList(organization),
-        "exp", expiresInSeconds,
-        "name", "operate-testuser"
-    ));
-    return new Tokens("accessToken", emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
-        "refreshToken", "type", 5L);
   }
 
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {

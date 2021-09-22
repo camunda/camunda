@@ -11,10 +11,12 @@ import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 
 import io.camunda.operate.Application;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.webapp.security.UserService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +39,9 @@ public class IndexControllerIT {
 
   @Autowired
   private TestRestTemplate webclient;
+
+  @MockBean
+  private UserService userService;
 
   @Test
   public void shouldReturnCurrentContextPath() {

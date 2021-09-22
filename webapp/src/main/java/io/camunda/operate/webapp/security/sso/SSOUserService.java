@@ -5,36 +5,33 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import io.camunda.operate.webapp.security.UserService;
+import io.camunda.operate.webapp.security.RolePermissionService;
 import java.util.Map;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import com.auth0.jwt.interfaces.Claim;
 
 @Component
 @Profile(OperateURIs.SSO_AUTH_PROFILE)
-public class SSOUserService extends AbstractUserService {
+public class SSOUserService implements UserService<TokenAuthentication> {
 
   private static final String EMPTY = "";
 
   @Autowired
   private OperateProperties operateProperties;
 
-  @Override
-  public UserDto getCurrentUser() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    TokenAuthentication tokenAuth = (TokenAuthentication) context.getAuthentication();
-    return buildUserDtoFrom(tokenAuth);
-  }
+  @Autowired
+  RolePermissionService rolePermissionService;
 
-  private UserDto buildUserDtoFrom(TokenAuthentication tokenAuth) {
-    Map<String, Claim> claims = tokenAuth.getClaims();
+  @Override
+  public UserDto createUserDtoFrom(
+      final TokenAuthentication authentication) {
+    Map<String, Claim> claims = authentication.getClaims();
     String name = "No name";
     if (claims.containsKey(operateProperties.getAuth0().getNameKey())) {
       name = claims.get(operateProperties.getAuth0().getNameKey()).asString();
@@ -42,7 +39,9 @@ public class SSOUserService extends AbstractUserService {
     return new UserDto()
         .setFirstname(EMPTY)
         .setLastname(name)
-        .setUsername(tokenAuth.getName())
-        .setCanLogout(false);
+        .setUsername(authentication.getName())
+        .setCanLogout(false)
+        .setPermissions(
+            rolePermissionService.getPermissions(authentication.getRoles()));
   }
 }

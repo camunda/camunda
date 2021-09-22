@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 package io.camunda.operate.webapp.rest.dto;
-
-import io.camunda.operate.webapp.security.es.User;
+import io.camunda.operate.webapp.security.Permission;
+import java.util.List;
 
 public class UserDto {
 
@@ -13,6 +13,8 @@ public class UserDto {
   private String firstname;
   private String lastname;
   private boolean canLogout;
+
+  private List<Permission> permissions;
 
   public String getUsername() {
     return username;
@@ -50,12 +52,13 @@ public class UserDto {
     return this;
   }
 
-  public static UserDto fromUser(User userDetails) {
-    return new UserDto()
-        .setUsername(userDetails.getUsername())
-        .setFirstname(userDetails.getFirstname())
-        .setLastname(userDetails.getLastname())
-        .setCanLogout(userDetails.isCanLogout());
+  public List<Permission> getPermissions() {
+    return permissions;
   }
-  
+
+  public UserDto setPermissions(final List<Permission> permissions) {
+    this.permissions = permissions;
+    return this;
+  }
+
 }

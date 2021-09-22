@@ -5,7 +5,10 @@
  */
 package io.camunda.operate.webapp.security.es;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.Permission.READ;
+import static io.camunda.operate.webapp.security.Permission.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -19,7 +22,11 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.Permission;
+import io.camunda.operate.webapp.security.Role;
+import io.camunda.operate.webapp.security.RolePermissionService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
+import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -51,7 +58,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       TestApplicationWithNoBeans.class,
       OperateProperties.class,
       WebSecurityConfig.class,
-      DefaultUserService.class,
+      ElasticsearchUserService.class,
+      RolePermissionService.class,
       AuthenticationRestService.class,
       ElasticSearchUserDetailsService.class,
       RetryElasticsearchClient.class,ElasticsearchSessionRepository.class, OperateWebSessionIndex.class
@@ -88,7 +96,7 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
     UserEntity user = new UserEntity()
         .setUsername(USERNAME)
         .setPassword(encoder.encode(PASSWORD))
-        .setRole("USER")
+        .setRoles(map(List.of(Role.OWNER), Role::name))
         .setFirstname(FIRSTNAME)
         .setLastname(LASTNAME);
     given(userStorage.getByName(USERNAME)).willReturn(user);
@@ -141,6 +149,7 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
     assertThat(userDto.getFirstname()).isEqualTo(FIRSTNAME);
     assertThat(userDto.getLastname()).isEqualTo(LASTNAME);
     assertThat(userDto.isCanLogout()).isTrue();
+    assertThat(userDto.getPermissions()).isEqualTo(List.of(READ, WRITE));
   }
 
   @Test

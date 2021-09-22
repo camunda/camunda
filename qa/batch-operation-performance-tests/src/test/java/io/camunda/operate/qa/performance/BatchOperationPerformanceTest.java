@@ -75,7 +75,7 @@ public class BatchOperationPerformanceTest {
 
     createOperations();
 
-    when(userService.getCurrentUsername()).thenReturn(USERNAME);
+    when(userService.getCurrentUser().getUsername()).thenReturn(USERNAME);
   }
 
   private void createOperations() {

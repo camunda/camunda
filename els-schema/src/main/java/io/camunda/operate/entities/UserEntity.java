@@ -5,20 +5,23 @@
  */
 package io.camunda.operate.entities;
 
+import java.util.List;
+import java.util.Objects;
+
 public class UserEntity extends OperateEntity<UserEntity> {
 
   private String username;
   private String password;
-  private String role;
+  private List<String> roles;
   private String firstname;
   private String lastname;
 
-  public String getRole() {
-    return role;
+  public List<String> getRoles() {
+    return roles;
   }
 
-  public UserEntity setRole(String role) {
-    this.role = role;
+  public UserEntity setRoles(List<String> roles) {
+    this.roles = roles;
     return this;
   }
 
@@ -70,15 +73,15 @@ public class UserEntity extends OperateEntity<UserEntity> {
 
     UserEntity that = (UserEntity) o;
 
-    if (username != null ? !username.equals(that.username) : that.username != null)
+    if (!Objects.equals(username, that.username))
       return false;
-    if (password != null ? !password.equals(that.password) : that.password != null)
+    if (!Objects.equals(password, that.password))
       return false;
-    if (role != null ? !role.equals(that.role) : that.role != null)
+    if (!Objects.equals(roles, that.roles))
       return false;
-    if (firstname != null ? !firstname.equals(that.firstname) : that.firstname != null)
+    if (!Objects.equals(firstname, that.firstname))
       return false;
-    return lastname != null ? lastname.equals(that.lastname) : that.lastname == null;
+    return Objects.equals(lastname, that.lastname);
 
   }
 
@@ -87,18 +90,18 @@ public class UserEntity extends OperateEntity<UserEntity> {
     int result = super.hashCode();
     result = 31 * result + (username != null ? username.hashCode() : 0);
     result = 31 * result + (password != null ? password.hashCode() : 0);
-    result = 31 * result + (role != null ? role.hashCode() : 0);
+    result = 31 * result + (roles != null ? roles.hashCode() : 0);
     result = 31 * result + (firstname != null ? firstname.hashCode() : 0);
     result = 31 * result + (lastname != null ? lastname.hashCode() : 0);
     return result;
   }
 
-  public static UserEntity from(String username, String password, String role) {
+  public static UserEntity from(String username, String password, List<String> roles) {
     UserEntity userEntity = new UserEntity();
     userEntity.setId(username);
     userEntity.setUsername(username);
     userEntity.setPassword(password);
-    userEntity.setRole(role);
+    userEntity.setRoles(roles);
     return userEntity;
   }
 

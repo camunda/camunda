@@ -282,7 +282,7 @@ public class BatchOperationWriter {
     batchOperationEntity.setType(operationType);
     batchOperationEntity.setName(name);
     batchOperationEntity.setStartDate(OffsetDateTime.now());
-    batchOperationEntity.setUsername(userService.getCurrentUsername());
+    batchOperationEntity.setUsername(userService.getCurrentUser().getUsername());
     return batchOperationEntity;
   }
 
@@ -404,7 +404,7 @@ public class BatchOperationWriter {
     operationEntity.setType(operationType);
     operationEntity.setState(OperationState.SCHEDULED);
     operationEntity.setBatchOperationId(batchOperationId);
-    operationEntity.setUsername(userService.getCurrentUsername());
+    operationEntity.setUsername(userService.getCurrentUser().getUsername());
     return operationEntity;
   }
 

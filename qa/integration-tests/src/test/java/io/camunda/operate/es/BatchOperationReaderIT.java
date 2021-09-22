@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.webapp.rest.dto.UserDto;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class BatchOperationReaderIT extends OperateIntegrationTest {
 
   @Test
   public void testUser1Operations() throws Exception {
-    when(userService.getCurrentUsername()).thenReturn(USER_1);
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername(USER_1));
 
     BatchOperationDto op1 = assert3Pages();
 
@@ -106,7 +107,7 @@ public class BatchOperationReaderIT extends OperateIntegrationTest {
 
   @Test
   public void testUser2Operations() throws Exception {
-    when(userService.getCurrentUsername()).thenReturn(USER_2);
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername(USER_2));
 
     List<BatchOperationDto> page1 = mockMvcTestRule
         .listFromResponse(postRequest(new BatchOperationRequestDto(2, null, null)), BatchOperationDto.class);

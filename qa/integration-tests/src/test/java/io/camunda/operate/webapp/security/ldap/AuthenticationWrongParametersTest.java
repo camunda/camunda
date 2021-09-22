@@ -15,6 +15,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.RolePermissionService;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,6 +36,7 @@ import org.springframework.util.MultiValueMap;
     classes = {
         OperateProperties.class,
         TestApplicationWithNoBeans.class, AuthenticationRestService.class,
+        RolePermissionService.class,
         LDAPWebSecurityConfig.class, LDAPUserService.class
     },
     properties = {

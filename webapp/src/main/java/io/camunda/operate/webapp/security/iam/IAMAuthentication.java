@@ -14,6 +14,8 @@ import io.camunda.iam.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.Role;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
@@ -25,8 +27,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-
+import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -84,6 +85,10 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
 
   public String getId() {
     return userInfo.getId();
+  }
+
+  public List<Role> getRoles() {
+    return map(userInfo.getRoles(), Role::fromString);
   }
 
   public void authenticate(final HttpServletRequest req, AuthCodeDto authCodeDto) throws Exception {

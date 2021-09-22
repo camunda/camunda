@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
 
   @Test
   public void testProcessInstanceQuery() throws Exception {
-    when(userService.getCurrentUsername()).thenReturn(USER_1);
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername(USER_1));
 
     ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllRunningRequest();
     MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
@@ -92,7 +93,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryIncidentsByProcessInstanceId() throws Exception {
-    when(userService.getCurrentUsername()).thenReturn(USER_1);
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername(USER_1));
 
     MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(PROCESS_INSTANCE_ID_1));
     IncidentResponseOldDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
@@ -112,7 +113,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
 
   @Test
   public void testGetVariables() throws Exception {
-    when(userService.getCurrentUsername()).thenReturn(USER_3);
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername(USER_3));
 
     MvcResult mvcResult = getVariables(PROCESS_INSTANCE_ID_2);
     List<VariableDto> variables = mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
@@ -129,7 +130,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryProcessInstanceById() throws Exception {
-    when(userService.getCurrentUsername()).thenReturn(USER_4);
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername(USER_4));
 
     MvcResult mvcResult = getRequest(queryProcessInstanceById(PROCESS_INSTANCE_ID_3));
     ListViewProcessInstanceDto processInstance = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});

@@ -6,23 +6,29 @@
 package io.camunda.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import io.camunda.operate.management.ElsIndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.RolePermissionService;
+import io.camunda.operate.webapp.security.UserService;
+import io.camunda.operate.webapp.security.es.ElasticsearchUserService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class},
+    classes = {TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"}
 )
@@ -37,9 +43,13 @@ public class ProbesTestIT{
   @Autowired
   private ElsIndicesCheck probes;
 
+  @MockBean
+  private UserService userService;
+
   @Before
   public void before() {
-     operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUsername("testuser"));
+    operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
   }
 
   @After

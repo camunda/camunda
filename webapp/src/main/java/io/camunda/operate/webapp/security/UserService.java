@@ -6,11 +6,16 @@
 package io.camunda.operate.webapp.security;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-public interface UserService {
+public interface UserService<T extends Authentication> {
 
-  String getCurrentUsername();
+  default UserDto getCurrentUser() {
+    SecurityContext context = SecurityContextHolder.getContext();
+    return createUserDtoFrom((T) context.getAuthentication());
+  }
 
-  UserDto getCurrentUser();
-
+  UserDto createUserDtoFrom(T authentication);
 }
