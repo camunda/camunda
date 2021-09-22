@@ -6,15 +6,21 @@
 package io.camunda.operate.webapp.es.reader;
 
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -25,9 +31,16 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
+import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -111,15 +124,46 @@ public class ProcessInstanceReader extends AbstractReader {
     try {
       final ProcessInstanceForListViewEntity processInstance = searchProcessInstanceByKey(processInstanceKey);
 
+      final List<ProcessInstanceReferenceDto> callHierarchy = createCallHierarchy(
+          processInstance.getTreePath());
+
       return ListViewProcessInstanceDto.createFrom(processInstance,
             incidentExists(processInstance.getTreePath()),
-            operationReader.getOperationsByProcessInstanceKey(processInstanceKey)
+            operationReader.getOperationsByProcessInstanceKey(processInstanceKey),
+            callHierarchy
       );
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining process instance with operations: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private List<ProcessInstanceReferenceDto> createCallHierarchy(final String treePath) {
+    final List<ProcessInstanceReferenceDto> callHierarchy = new ArrayList<>();
+    final List<String> processInstanceIds = new TreePath(treePath).extractProcessInstanceIds();
+    final QueryBuilder query = joinWithAnd(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+        termsQuery(ID, processInstanceIds));
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(listViewTemplate)
+        .source(new SearchSourceBuilder().query(query)
+            .fetchSource(new String[]{ID, PROCESS_KEY, PROCESS_NAME, BPMN_PROCESS_ID}, null));
+    try {
+      scrollWith(request, esClient, searchHits -> {
+        Arrays.stream(searchHits.getHits())
+            .forEach(sh -> {
+              final Map<String, Object> source = sh.getSourceAsMap();
+              callHierarchy.add(new ProcessInstanceReferenceDto()
+                  .setInstanceId(String.valueOf(source.get(ID)))
+                  .setProcessDefinitionId(String.valueOf(source.get(PROCESS_KEY)))
+                  .setProcessDefinitionName(String.valueOf(source.getOrDefault(PROCESS_NAME, source.get(BPMN_PROCESS_ID)))));
+            });
+      });
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining process instance call hierarchy: %s", e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+    callHierarchy.sort(Comparator.comparing(ref -> processInstanceIds.indexOf(ref.getInstanceId())));
+    return callHierarchy;
   }
 
   /**

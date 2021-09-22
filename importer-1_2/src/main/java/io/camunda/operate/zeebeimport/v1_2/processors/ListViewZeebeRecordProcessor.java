@@ -324,7 +324,7 @@ public class ListViewZeebeRecordProcessor {
 
     entity.setActivityType(FlowNodeType.fromZeebeBpmnElementType(recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
 
-    if (entity.getActivityType().equals(FlowNodeType.CALL_ACTIVITY)) {
+    if (FlowNodeType.CALL_ACTIVITY.equals(entity.getActivityType())) {
       getCallActivityIdCache().put(entity.getId(), entity.getActivityId());
     }
 

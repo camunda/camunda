@@ -104,11 +104,11 @@ public class ElasticsearchQueries {
     }
   }
 
-  public String findProcessInstanceTreePath(final long parentProcessInstanceKey) {
+  public String findProcessInstanceTreePath(final long processInstanceKey) {
     final SearchRequest searchRequest = ElasticsearchUtil
         .createSearchRequest(listViewTemplate, QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
-            .query(termQuery(ListViewTemplate.KEY, parentProcessInstanceKey))
+            .query(termQuery(ListViewTemplate.KEY, processInstanceKey))
             .fetchSource(ListViewTemplate.TREE_PATH, null));
     try {
       final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
@@ -118,7 +118,7 @@ public class ElasticsearchQueries {
       return null;
     } catch (IOException e) {
       final String message = String
-          .format("Exception occurred, while searching for parent process instance processes: %s",
+          .format("Exception occurred, while searching for process instance tree path: %s",
               e.getMessage());
       throw new OperateRuntimeException(message, e);
     }

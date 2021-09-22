@@ -5,16 +5,10 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
@@ -23,26 +17,31 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.es.reader.IncidentReader;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
-import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.es.reader.IncidentReader;
+import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
-
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
 public class ImportIT extends OperateZeebeIntegrationTest {
 
@@ -660,7 +659,9 @@ public class ImportIT extends OperateZeebeIntegrationTest {
         .deployProcess("single-task.bpmn")
         .getProcessDefinitionKey();
 
-    final long parentProcessInstanceKey = tester.deployProcess(testProcess, "testProcess.bpmn")
+    final Long parentProcessDefinitionKey = tester.deployProcess(testProcess, "testProcess.bpmn")
+        .getProcessDefinitionKey();
+    final long parentProcessInstanceKey = tester
         .startProcessInstance(parentProcessId, null)
         .and().waitUntil()
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
@@ -681,6 +682,21 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstance.getParentInstanceId())
         .isEqualTo(String.valueOf(parentProcessInstanceKey));
     assertThat(processInstance.getRootInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
+
+    assertThat(processInstance.getCallHierarchy()).isNotNull();
+    assertThat(processInstance.getCallHierarchy()).hasSize(2);
+    final ProcessInstanceReferenceDto callHier1 = processInstance
+        .getCallHierarchy().get(0);
+    assertThat(callHier1.getInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
+    assertThat(callHier1.getProcessDefinitionId()).isEqualTo(String.valueOf(parentProcessDefinitionKey));
+    assertThat(callHier1.getProcessDefinitionName()).isEqualTo(parentProcessId);
+
+    final ProcessInstanceReferenceDto callHier2 = processInstance
+        .getCallHierarchy().get(1);
+    assertThat(callHier2.getInstanceId()).isEqualTo(calledProcessInstanceId);
+    assertThat(callHier2.getProcessDefinitionId()).isEqualTo(String.valueOf(calledProcessDefinitionKey));
+    assertThat(callHier2.getProcessDefinitionName()).isEqualTo(calledProcessId);
+
   }
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)

@@ -11,6 +11,8 @@ import static io.camunda.operate.zeebeimport.util.TreePath.TreePathEntryType.PI;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -88,6 +90,19 @@ public class TreePath {
     } else {
       return null;
     }
+  }
+
+  public List<String> extractProcessInstanceIds() {
+    final List<String> processInstanceIds = new ArrayList<>();
+    final Pattern piPattern = Pattern.compile("PI_(\\d*)$");
+    Arrays.stream(treePath.toString().split("/"))
+        .map(piPattern::matcher)
+        .filter(Matcher::matches)
+        .forEach(matcher ->
+            processInstanceIds.add(matcher.group(1))
+
+        );
+    return processInstanceIds;
   }
 
   @Override

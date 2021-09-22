@@ -11,6 +11,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.zeebeimport.util.TreePath;
+import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +42,8 @@ public class ListViewProcessInstanceDto {
   private String parentInstanceId;
 
   private String rootInstanceId;
+
+  private List<ProcessInstanceReferenceDto> callHierarchy = new ArrayList<>();
 
   /**
    * Sort values, define the position of process instance in the list and may be used to search
@@ -147,6 +150,16 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
+  public List<ProcessInstanceReferenceDto> getCallHierarchy() {
+    return callHierarchy;
+  }
+
+  public ListViewProcessInstanceDto setCallHierarchy(
+      final List<ProcessInstanceReferenceDto> callHierarchy) {
+    this.callHierarchy = callHierarchy;
+    return this;
+  }
+
   public String getRootInstanceId() {
     return rootInstanceId;
   }
@@ -166,7 +179,12 @@ public class ListViewProcessInstanceDto {
   }
 
   public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity, boolean containsIncident,
-    List<OperationEntity> operations) {
+      List<OperationEntity> operations) {
+    return createFrom(processInstanceEntity, containsIncident, operations, null);
+  }
+
+  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity, boolean containsIncident,
+    List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy) {
     if (processInstanceEntity == null) {
       return null;
     }
@@ -210,6 +228,7 @@ public class ListViewProcessInstanceDto {
         processInstance.setRootInstanceId(rootInstanceId);
       }
     }
+    processInstance.setCallHierarchy(callHierarchy);
     return processInstance;
   }
 
@@ -249,6 +268,7 @@ public class ListViewProcessInstanceDto {
         Objects.equals(operations, that.operations) &&
         Objects.equals(parentInstanceId, that.parentInstanceId) &&
         Objects.equals(rootInstanceId, that.rootInstanceId) &&
+        Objects.equals(callHierarchy, that.callHierarchy) &&
         Arrays.equals(sortValues, that.sortValues);
   }
 
@@ -256,7 +276,7 @@ public class ListViewProcessInstanceDto {
   public int hashCode() {
     int result = Objects
         .hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
-            hasActiveOperation, operations, parentInstanceId, rootInstanceId);
+            hasActiveOperation, operations, parentInstanceId, rootInstanceId, callHierarchy);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
