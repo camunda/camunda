@@ -40,14 +40,6 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
     this.context = requireNonNull(context);
   }
 
-  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
-    this.concurrencyControl = requireNonNull(concurrencyControl);
-  }
-
-  public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
-    context = transitionContext;
-  }
-
   @Override
   public ActorFuture<Void> toFollower(final long term) {
     return transitionTo(term, Role.FOLLOWER);
@@ -61,6 +53,16 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
   @Override
   public ActorFuture<Void> toInactive() {
     return transitionTo(INACTIVE_TERM, Role.INACTIVE);
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = requireNonNull(concurrencyControl);
+  }
+
+  @Override
+  public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
+    context = transitionContext;
   }
 
   public ActorFuture<Void> transitionTo(final long term, final Role role) {
