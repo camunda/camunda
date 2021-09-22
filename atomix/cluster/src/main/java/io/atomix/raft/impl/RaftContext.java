@@ -80,6 +80,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 
 /**
  * Manages the volatile state and state transitions of a Raft server.
@@ -173,6 +174,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     threadContext =
         threadContextFactory.createContext(
             namedThreads(baseThreadName, log), this::onUncaughtException);
+    // in order to set the partition id once in the raft thread
+    threadContext.execute(() -> MDC.put("partitionId", Integer.toString(partitionId)));
 
     // Open the metadata store.
     meta = storage.openMetaStore();
