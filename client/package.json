@@ -77,7 +77,7 @@
     "@types/node-fetch": "2.5.12",
     "@types/react": "17.0.24",
     "@types/react-dom": "17.0.9",
-    "@types/react-router-dom": "5.1.9",
+    "@types/react-router-dom": "5.3.0",
     "@types/react-transition-group": "4.4.3",
     "@types/styled-components": "5.1.14",
     "babel-loader": "8.1.0",
