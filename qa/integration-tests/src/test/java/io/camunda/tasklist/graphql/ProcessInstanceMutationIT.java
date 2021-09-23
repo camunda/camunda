@@ -7,11 +7,14 @@ package io.camunda.tasklist.graphql;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import java.io.IOException;
@@ -21,7 +24,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +37,8 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
   @Autowired private TaskMutationResolver taskMutationResolver;
 
   @Autowired private List<ProcessInstanceDependant> processInstanceDependants;
+
+  @Autowired private TaskVariableTemplate taskVariableIndex;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -67,7 +71,8 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
             .startProcessInstance(bpmnProcessId)
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
-            .claimAndCompleteHumanTask(flowNodeBpmnId)
+            .claimAndCompleteHumanTask(
+                flowNodeBpmnId, "delete", "\"me\"", "when", "\"processInstance is completed\"")
             .then()
             .waitUntil()
             .processInstanceIsCompleted()
@@ -81,6 +86,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
 
     assertWhoIsAProcessInstanceDependant();
     assertThatProcessDependantsAreDeleted(processInstanceId);
+    assertThatVariablesForTasksOfProcessInstancesAreDeleted();
   }
 
   @Test
@@ -106,7 +112,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
 
   protected void assertThatProcessDependantsAreDeleted(String processInstanceId) {
     final QueryBuilder processInstanceIdQuery =
-        QueryBuilders.termQuery(ProcessInstanceDependant.PROCESS_INSTANCE_ID, processInstanceId);
+        termQuery(ProcessInstanceDependant.PROCESS_INSTANCE_ID, processInstanceId);
     assertThat(
             processInstanceDependants.stream()
                 .allMatch(
@@ -116,6 +122,12 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
                                 processInstanceIdQuery)
                             == 0))
         .isTrue();
+  }
+
+  protected void assertThatVariablesForTasksOfProcessInstancesAreDeleted() {
+    final QueryBuilder variablesOfTaskQuery = matchAllQuery();
+    assertThat(countByQuery(taskVariableIndex.getFullQualifiedName(), variablesOfTaskQuery))
+        .isZero();
   }
 
   protected void assertWhoIsAProcessInstanceDependant() {

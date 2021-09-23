@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.webapp.es;
 
+import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
@@ -115,6 +116,16 @@ public class TaskReaderWriter {
     } else {
       throw new NotFoundException(String.format("Task with id %s was not found", id));
     }
+  }
+
+  public List<String> getTaskIdsByProcessInstanceId(String processInstanceId) throws IOException {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
+                    .fetchField(TaskTemplate.ID));
+    return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
   }
 
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
