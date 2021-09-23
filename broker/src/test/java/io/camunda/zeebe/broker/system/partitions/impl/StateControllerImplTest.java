@@ -254,7 +254,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldFailToRecoverfSnapshotIsCorrupted() throws Exception {
+  public void shouldFailToRecoverIfSnapshotIsCorrupted() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
@@ -280,6 +280,34 @@ public final class StateControllerImplTest {
 
     // then
     assertThat(runtimeDirectory).doesNotExist();
+  }
+
+  @Test
+  public void shouldNotTakeSnapshotWhenDbIsClosed() {
+    // given
+    snapshotController.recover().join();
+
+    // when
+    final var closed = snapshotController.closeDb();
+    final var snapshotTaken = snapshotController.takeTransientSnapshot(1);
+    closed.join();
+
+    // then
+    assertThat(snapshotTaken.join()).isEmpty();
+  }
+
+  @Test
+  public void shouldCloseDbOnlyAfterTakingSnapshot() {
+    // given
+    snapshotController.recover().join();
+
+    // when
+    final var snapshotTaken = snapshotController.takeTransientSnapshot(1);
+    final var closed = snapshotController.closeDb();
+    closed.join();
+
+    // then
+    assertThat(snapshotTaken.join()).isNotEmpty();
   }
 
   private File takeSnapshot(final long position) {
