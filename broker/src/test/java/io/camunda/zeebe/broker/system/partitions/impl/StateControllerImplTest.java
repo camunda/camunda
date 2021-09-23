@@ -184,7 +184,7 @@ public final class StateControllerImplTest {
     final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
     final var firstSnapshotId =
         FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
-    assertThat(firstSnapshotId.compareTo(newSnapshotId)).isEqualTo(-1);
+    assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
   @Test
@@ -219,7 +219,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldOpenEmptyDatabaseWhenNoSnapshotsToRecoverFrom() throws Exception {
+  public void shouldOpenEmptyDatabaseWhenNoSnapshotsToRecoverFrom() {
     // given
 
     // when
@@ -271,7 +271,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldDeleteRuntimeFolderOnClose() throws Exception {
+  public void shouldDeleteRuntimeFolderOnClose() {
     // given
     snapshotController.recover().join();
 
