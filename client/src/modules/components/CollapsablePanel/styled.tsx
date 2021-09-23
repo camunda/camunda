@@ -47,8 +47,8 @@ const LeftIcon = styled(LeftBar)`
 
 const Container = styled.div`
   width: fit-content;
-  border: 1px solid ${({theme}) => theme.colors.ui05};
-  border-top-right-radius: 3px;
+  border: solid ${({theme}) => theme.colors.ui05};
+  border-width: 0 0 1px 1px;
 `;
 
 export {

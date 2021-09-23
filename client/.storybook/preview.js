@@ -5,6 +5,7 @@ import {MemoryRouter} from 'react-router-dom';
 
 import {theme} from 'modules/theme';
 import {GlobalStyle} from 'GlobalStyle';
+import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
 
 Object.defineProperty(window, 'clientConfig', {
   value: {

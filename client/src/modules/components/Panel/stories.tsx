@@ -41,14 +41,8 @@ const WithFooter: React.FC = () => {
 const RoundedCorners: React.FC = () => {
   return (
     <RoundedCornersContainer>
-      <StyledPanel title="Left panel title" hasRoundTopRightCorner>
-        Left panel content
-      </StyledPanel>
-      <StyledPanel
-        title="Right panel title"
-        footer="Right panel footer"
-        hasRoundTopLeftCorner
-      >
+      <StyledPanel title="Left panel title">Left panel content</StyledPanel>
+      <StyledPanel title="Right panel title" footer="Right panel footer">
         Right panel content
       </StyledPanel>
     </RoundedCornersContainer>

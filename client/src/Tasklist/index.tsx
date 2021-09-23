@@ -27,19 +27,11 @@ const Tasklist: React.FC = () => {
     <>
       <Header />
       <Container>
-        <TasksPanel
-          title="Tasks"
-          hasTransparentBackground
-          hasRoundTopRightCorner
-        >
+        <TasksPanel title="Tasks" hasTransparentBackground>
           <Filters />
           <Tasks />
         </TasksPanel>
-        <DetailsPanel
-          title="Details"
-          footer={getCurrentCopyrightNoticeText()}
-          hasRoundTopLeftCorner
-        >
+        <DetailsPanel title="Details" footer={getCurrentCopyrightNoticeText()}>
           <Route exact path={Pages.Initial()}>
             <NoTaskSelectedMessage>
               Select a Task to view the details

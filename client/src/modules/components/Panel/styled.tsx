@@ -9,8 +9,6 @@
 import styled, {css} from 'styled-components';
 
 interface BaseProps {
-  hasRoundTopLeftCorner?: boolean;
-  hasRoundTopRightCorner?: boolean;
   hasFooter?: boolean;
 }
 
@@ -32,25 +30,11 @@ const Header = styled.div`
 `;
 
 const Base = styled.div<BaseProps>`
-  ${({hasFooter, hasRoundTopLeftCorner, hasRoundTopRightCorner}) => {
+  ${({hasFooter}) => {
     return css`
       display: grid;
       grid-template-columns: 100%;
       grid-template-rows: ${hasFooter ? '38px auto 38px' : '38px auto'};
-
-      &,
-      & ${Header} {
-        ${hasRoundTopLeftCorner
-          ? css`
-              border-top-left-radius: 3px;
-            `
-          : ''}
-        ${hasRoundTopRightCorner
-          ? css`
-              border-top-right-radius: 3px;
-            `
-          : ''};
-      }
     `;
   }}
 `;

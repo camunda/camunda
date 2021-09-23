@@ -5,8 +5,8 @@
   "dependencies": {
     "@apollo/client": "3.4.13",
     "@bpmn-io/form-js": "0.4.4",
-    "@camunda-cloud/common-ui": "0.0.17-rc3",
-    "@camunda-cloud/common-ui-react": "0.0.17-rc3",
+    "@camunda-cloud/common-ui": "0.0.18-beta2",
+    "@camunda-cloud/common-ui-react": "0.0.18-beta2",
     "date-fns": "2.24.0",
     "final-form": "4.20.2",
     "final-form-arrays": "3.0.2",
@@ -109,7 +109,10 @@
         "statements": 80
       }
     },
-    "resetMocks": true
+    "resetMocks": true,
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@camunda-cloud/common-ui.*)"
+    ]
   },
   "scarfSettings": {
     "enabled": false

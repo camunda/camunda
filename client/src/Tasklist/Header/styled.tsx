@@ -5,15 +5,8 @@
  */
 
 import styled from 'styled-components';
-import {ReactComponent as Logo} from 'modules/icons/logo-2020-round.svg';
 import {Link} from 'react-router-dom';
 import {Dropdown} from './Dropdown';
-
-const LogoIcon = styled(Logo)`
-  width: 26px;
-  height: 26px;
-  margin-right: 19px;
-`;
 
 const BrandInfo = styled.div`
   display: flex;
@@ -24,6 +17,8 @@ const Brand = styled(Link)`
   display: flex;
   align-items: center;
   color: ${({theme}) => theme.colors.ui06};
+  font-size: 15px;
+  font-weight: 500;
 `;
 
 const UserControls = styled(Dropdown)`
@@ -31,13 +26,8 @@ const UserControls = styled(Dropdown)`
   margin-left: auto;
 `;
 
-const HeaderContent = styled.nav`
-  display: flex;
-  padding: 15px 20px 15px 20px;
-  font-size: 15px;
-  font-weight: 500;
-  background-color: ${({theme}) => theme.colors.ui01};
-  justify-content: space-between;
+const AppName = styled.div`
+  margin-left: 19px;
 `;
 
-export {LogoIcon, BrandInfo, Brand, UserControls, HeaderContent};
+export {BrandInfo, Brand, UserControls, AppName};

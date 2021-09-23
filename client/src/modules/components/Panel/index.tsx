@@ -12,8 +12,6 @@ interface Props {
   title: string;
   footer?: string;
   className?: string;
-  hasRoundTopLeftCorner?: boolean;
-  hasRoundTopRightCorner?: boolean;
   hasTransparentBackground?: boolean;
   Icon?: React.ReactElement;
 }
@@ -23,20 +21,13 @@ const Panel: React.FC<Props> = ({
   title,
   footer,
   className,
-  hasRoundTopLeftCorner,
-  hasRoundTopRightCorner,
   hasTransparentBackground,
   Icon,
 }) => {
   const hasFooter = footer !== undefined;
 
   return (
-    <Base
-      className={className}
-      hasRoundTopLeftCorner={hasRoundTopLeftCorner}
-      hasRoundTopRightCorner={hasRoundTopRightCorner}
-      hasFooter={hasFooter}
-    >
+    <Base className={className} hasFooter={hasFooter}>
       {title !== undefined && (
         <Header>
           {title}

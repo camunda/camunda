@@ -18,14 +18,12 @@ const TasksPanel = styled(CollapsablePanel)`
 const Container = styled.main`
   display: flex;
   height: calc(100% - 56px);
-
-  & > ${TasksPanel} {
-    margin-right: 1px;
-  }
 `;
 
 const DetailsPanel = styled(Panel)`
   border: 1px solid ${({theme}) => theme.colors.ui05};
+  border-top-width: 0;
+
   width: 100%;
   height: 100%;
 `;

@@ -9,10 +9,11 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import {BrandInfo, Brand, LogoIcon} from './styled';
+import {BrandInfo, Brand, AppName} from './styled';
 import {Dropdown} from './Dropdown';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {CmLogo} from '@camunda-cloud/common-ui-react';
 
 const Wrapper = styled.div`
   width: 100%;
@@ -28,8 +29,8 @@ const Logo: React.FC = () => {
   return (
     <BrandInfo>
       <Brand to="/">
-        <LogoIcon data-testid="logo" />
-        <div>Tasklist</div>
+        <CmLogo data-testid="logo" />
+        <AppName>Tasklist</AppName>
       </Brand>
     </BrandInfo>
   );

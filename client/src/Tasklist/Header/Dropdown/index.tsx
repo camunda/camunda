@@ -19,9 +19,10 @@ import {getUserDisplayName} from './getUserDisplayName';
 
 interface Props {
   isInitiallyOpen?: boolean;
+  slot?: string;
 }
 
-const Dropdown: React.FC<Props> = ({isInitiallyOpen}) => {
+const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
   const [isOpen, setIsOpen] = useState<boolean>(isInitiallyOpen ?? false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const {data, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
@@ -48,7 +49,7 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen}) => {
 
   if (window.clientConfig?.canLogout) {
     return (
-      <Container ref={dropdownRef}>
+      <Container ref={dropdownRef} slot={slot}>
         <Button
           onKeyDown={handleKeyPress}
           onClick={() => {

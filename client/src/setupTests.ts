@@ -39,7 +39,9 @@ afterAll(() => mockServer.close());
 // mock app version
 process.env.REACT_APP_VERSION = '1.2.3';
 
+jest.mock('@bpmn-io/form-js/dist/assets/form-js.css', () => undefined);
 jest.mock('@camunda-cloud/common-ui-react', () => ({
+  ...jest.requireActual('@camunda-cloud/common-ui-react'),
   CmNotificationContainer: () => {
     return null;
   },

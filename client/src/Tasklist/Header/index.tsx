@@ -5,20 +5,15 @@
  */
 
 import * as React from 'react';
-import {
-  HeaderContent,
-  BrandInfo,
-  Brand,
-  LogoIcon,
-  UserControls,
-} from './styled';
+import {BrandInfo, Brand, UserControls, AppName} from './styled';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 import {Location} from 'history';
+import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
 
 const Header: React.FC = () => {
   return (
-    <HeaderContent>
-      <BrandInfo>
+    <CmHeader>
+      <BrandInfo slot="left">
         <Brand
           to={(location: Location) => ({
             ...location,
@@ -26,12 +21,12 @@ const Header: React.FC = () => {
             search: getPersistentQueryParams(location.search ?? ''),
           })}
         >
-          <LogoIcon data-testid="logo" />
-          <div>Tasklist</div>
+          <CmLogo data-testid="logo" />
+          <AppName>Tasklist</AppName>
         </Brand>
       </BrandInfo>
-      <UserControls />
-    </HeaderContent>
+      <UserControls slot="right" />
+    </CmHeader>
   );
 };
 

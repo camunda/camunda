@@ -20,20 +20,12 @@ const StyledCollapsablePanel = styled(CollapsablePanel)`
 `;
 
 const Expanded: React.FC = () => {
-  return (
-    <StyledCollapsablePanel title="Title" hasRoundTopRightCorner>
-      Content
-    </StyledCollapsablePanel>
-  );
+  return <StyledCollapsablePanel title="Title">Content</StyledCollapsablePanel>;
 };
 
 const Collapsed: React.FC = () => {
   return (
-    <StyledCollapsablePanel
-      title="Title"
-      hasRoundTopRightCorner
-      isInitiallyCollapsed
-    >
+    <StyledCollapsablePanel title="Title" isInitiallyCollapsed>
       Content
     </StyledCollapsablePanel>
   );
