@@ -10,27 +10,27 @@ import {Locations} from 'modules/routes';
 
 type Props = {
   onModalClose: () => void;
-  parentInstanceId: string;
+  rootInstanceId: string;
   isVisible: boolean;
 };
 
 const CalledInstanceCancellationModal: React.FC<Props> = ({
   onModalClose,
   isVisible,
-  parentInstanceId,
+  rootInstanceId,
 }) => (
   <Modal onModalClose={onModalClose} isVisible={isVisible} size={SIZES.SMALL}>
     <Modal.Header>Cancel Instance</Modal.Header>
     <Modal.Body>
       <Modal.BodyText>
-        To cancel this instance, the parent instance{' '}
+        To cancel this instance, the root instance{' '}
         <Link
-          to={(location) => Locations.instance(parentInstanceId, location)}
-          title={`View parent instance ${parentInstanceId}`}
+          to={(location) => Locations.instance(rootInstanceId, location)}
+          title={`View root instance ${rootInstanceId}`}
         >
-          {parentInstanceId}
+          {rootInstanceId}
         </Link>{' '}
-        needs to be canceled. When the parent is canceled all the called
+        needs to be canceled. When the root instance is canceled all the called
         instances will be canceled automatically.
       </Modal.BodyText>
     </Modal.Body>

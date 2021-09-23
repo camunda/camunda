@@ -34,6 +34,7 @@ const instanceMock: ProcessInstanceEntity = {
   processVersion: 1,
   sortValues: ['', 'instance_1'],
   parentInstanceId: null,
+  rootInstanceId: null,
   callHierarchy: [],
 };
 
@@ -228,14 +229,14 @@ describe('Operations', () => {
       };
 
       const modalText =
-        /To cancel this instance, the parent instance.*needs to be canceled. When the parent is canceled all the called instances will be canceled automatically./;
+        /To cancel this instance, the root instance.*needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically./;
 
       render(
         <Operations
           instance={{
             ...instanceMock,
             state: 'INCIDENT',
-            parentInstanceId: '6755399441058622',
+            rootInstanceId: '6755399441058622',
           }}
           onOperation={onOperationMock}
         />,
@@ -261,7 +262,7 @@ describe('Operations', () => {
 
     it('should redirect to linked parent instance', () => {
       const mockHistory = createMemoryHistory();
-      const parentInstanceId = '6755399441058622';
+      const rootInstanceId = '6755399441058622';
 
       const Wrapper: React.FC = ({children}) => {
         return (
@@ -276,7 +277,7 @@ describe('Operations', () => {
           instance={{
             ...instanceMock,
             state: 'INCIDENT',
-            parentInstanceId,
+            rootInstanceId,
           }}
         />,
         {wrapper: Wrapper}
@@ -288,12 +289,12 @@ describe('Operations', () => {
 
       userEvent.click(
         screen.getByRole('link', {
-          name: `View parent instance ${parentInstanceId}`,
+          name: `View root instance ${rootInstanceId}`,
         })
       );
 
       expect(mockHistory.location.pathname).toBe(
-        `/instances/${parentInstanceId}`
+        `/instances/${rootInstanceId}`
       );
     });
   });

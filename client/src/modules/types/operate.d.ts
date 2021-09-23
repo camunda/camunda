@@ -59,6 +59,7 @@ interface ProcessInstanceEntity {
   operations: ReadonlyArray<InstanceOperationEntity>;
   sortValues: ReadonlyArray<string>;
   parentInstanceId: null | string;
+  rootInstanceId: null | string;
   callHierarchy: ReadonlyArray<{
     instanceId: string;
     processDefinitionName: string;

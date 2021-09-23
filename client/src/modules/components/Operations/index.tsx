@@ -72,7 +72,7 @@ const Operations: React.FC<Props> = observer(
             />
           )}
         </OperationItems>
-        {instance.parentInstanceId === null ? (
+        {instance.rootInstanceId === null ? (
           <ConfirmOperationModal
             bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}
             onApplyClick={() => {
@@ -87,7 +87,7 @@ const Operations: React.FC<Props> = observer(
           <CalledInstanceCancellationModal
             onModalClose={() => setIsCancellationModalVisible(false)}
             isVisible={isCancellationModalVisible}
-            parentInstanceId={instance.parentInstanceId}
+            rootInstanceId={instance.rootInstanceId}
           />
         )}
       </OperationsContainer>

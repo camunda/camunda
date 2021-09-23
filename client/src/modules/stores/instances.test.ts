@@ -24,6 +24,7 @@ const instance: ProcessInstanceEntity = {
   operations: [],
   sortValues: ['', ''],
   parentInstanceId: null,
+  rootInstanceId: null,
   callHierarchy: [],
 };
 
@@ -40,6 +41,7 @@ const instanceWithActiveOperation: ProcessInstanceEntity = {
   operations: [],
   sortValues: ['', ''],
   parentInstanceId: null,
+  rootInstanceId: null,
   callHierarchy: [],
 };
 
