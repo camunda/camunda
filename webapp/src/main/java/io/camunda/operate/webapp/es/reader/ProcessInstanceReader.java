@@ -125,7 +125,7 @@ public class ProcessInstanceReader extends AbstractReader {
       final ProcessInstanceForListViewEntity processInstance = searchProcessInstanceByKey(processInstanceKey);
 
       final List<ProcessInstanceReferenceDto> callHierarchy = createCallHierarchy(
-          processInstance.getTreePath());
+          processInstance.getTreePath(), String.valueOf(processInstanceKey));
 
       return ListViewProcessInstanceDto.createFrom(processInstance,
             incidentExists(processInstance.getTreePath()),
@@ -139,9 +139,12 @@ public class ProcessInstanceReader extends AbstractReader {
     }
   }
 
-  private List<ProcessInstanceReferenceDto> createCallHierarchy(final String treePath) {
+  private List<ProcessInstanceReferenceDto> createCallHierarchy(final String treePath,
+      final String currentProcessInstanceId) {
     final List<ProcessInstanceReferenceDto> callHierarchy = new ArrayList<>();
     final List<String> processInstanceIds = new TreePath(treePath).extractProcessInstanceIds();
+    //remove id of current process instance
+    processInstanceIds.remove(currentProcessInstanceId);
     final QueryBuilder query = joinWithAnd(termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
         termsQuery(ID, processInstanceIds));
     final SearchRequest request = ElasticsearchUtil.createSearchRequest(listViewTemplate)

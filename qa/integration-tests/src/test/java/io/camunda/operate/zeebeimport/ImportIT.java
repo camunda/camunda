@@ -684,18 +684,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstance.getRootInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
 
     assertThat(processInstance.getCallHierarchy()).isNotNull();
-    assertThat(processInstance.getCallHierarchy()).hasSize(2);
+    assertThat(processInstance.getCallHierarchy()).hasSize(1);
     final ProcessInstanceReferenceDto callHier1 = processInstance
         .getCallHierarchy().get(0);
     assertThat(callHier1.getInstanceId()).isEqualTo(String.valueOf(parentProcessInstanceKey));
     assertThat(callHier1.getProcessDefinitionId()).isEqualTo(String.valueOf(parentProcessDefinitionKey));
     assertThat(callHier1.getProcessDefinitionName()).isEqualTo(parentProcessId);
-
-    final ProcessInstanceReferenceDto callHier2 = processInstance
-        .getCallHierarchy().get(1);
-    assertThat(callHier2.getInstanceId()).isEqualTo(calledProcessInstanceId);
-    assertThat(callHier2.getProcessDefinitionId()).isEqualTo(String.valueOf(calledProcessDefinitionKey));
-    assertThat(callHier2.getProcessDefinitionName()).isEqualTo(calledProcessId);
 
   }
 
