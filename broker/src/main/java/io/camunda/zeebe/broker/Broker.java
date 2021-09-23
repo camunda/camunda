@@ -8,21 +8,33 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
+import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
+import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
@@ -31,9 +43,13 @@ import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.netty.util.NetUtil;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public final class Broker implements AutoCloseable {
@@ -54,6 +70,7 @@ public final class Broker implements AutoCloseable {
   private final BrokerStartupActor brokerStartupActor;
   private final BrokerInfo localBroker;
   private BrokerContext brokerContext;
+  private final SpringBrokerBridge springBrokerBridge;
   // TODO make Broker class itself the actor
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
@@ -67,6 +84,7 @@ public final class Broker implements AutoCloseable {
     this.systemContext = systemContext;
     scheduler = this.systemContext.getScheduler();
 
+    this.springBrokerBridge = springBrokerBridge;
     localBroker = createBrokerInfo(getConfig());
 
     healthCheckService = new BrokerHealthCheckService(localBroker);
@@ -107,13 +125,133 @@ public final class Broker implements AutoCloseable {
   }
 
   private void internalStart() {
-    try {
-      brokerContext = brokerStartupActor.start().join();
+    final List<PartitionListener> partitionListeners = new ArrayList<>();
 
-      testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
-      testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
-      brokerAdminService = brokerContext.getBrokerAdminService();
-      clusterServices = brokerContext.getClusterServices();
+    DiskSpaceUsageMonitor diskSpaceUsageMonitor = null;
+    try {
+
+      if (getConfig().getData().isDiskUsageMonitoringEnabled()) {
+        // must be executed before any disk space usage listeners are registered
+        final var data = getConfig().getData();
+        try {
+          FileUtil.ensureDirectoryExists(new File(data.getDirectory()).toPath());
+        } catch (final IOException e) {
+          LangUtil.rethrowUnchecked(e);
+          return;
+        }
+
+        diskSpaceUsageMonitor = new DiskSpaceUsageMonitor(data);
+        systemContext.getScheduler().submitActor(diskSpaceUsageMonitor).join();
+      }
+
+      systemContext.getScheduler().submitActor(healthCheckService).join();
+
+      springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
+      partitionListeners.add(healthCheckService);
+
+      final var adminService = new BrokerAdminServiceImpl();
+      systemContext.getScheduler().submitActor(adminService).join();
+      springBrokerBridge.registerBrokerAdminServiceSupplier(() -> adminService);
+
+      final var atomix = AtomixClusterFactory.fromConfiguration(getConfig());
+
+      final var clusterServices = new ClusterServicesImpl(atomix);
+
+      final var brokerCfg = getConfig();
+
+      final var socketCfg = brokerCfg.getNetwork().getCommandApi();
+      final var messagingConfig = new MessagingConfig();
+      messagingConfig.setInterfaces(List.of(socketCfg.getHost()));
+      messagingConfig.setPort(socketCfg.getPort());
+      final var messagingService =
+          new NettyMessagingService(
+              brokerCfg.getCluster().getClusterName(),
+              Address.from(socketCfg.getAdvertisedHost(), socketCfg.getAdvertisedPort()),
+              messagingConfig);
+
+      messagingService.start().join();
+
+      final var brokerInfo = localBroker;
+
+      final var atomixServerTransport =
+          new AtomixServerTransport(brokerInfo.getNodeId(), messagingService);
+
+      systemContext.getScheduler().submitActor(atomixServerTransport).join();
+
+      final var backpressureCfg = brokerCfg.getBackpressure();
+      var limiter = PartitionAwareRequestLimiter.newNoopLimiter();
+      if (backpressureCfg.isEnabled()) {
+        limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
+      }
+
+      final var commandApiService =
+          new CommandApiServiceImpl(
+              atomixServerTransport,
+              brokerInfo,
+              limiter,
+              systemContext.getScheduler(),
+              brokerCfg.getExperimental().getQueryApi());
+
+      partitionListeners.add(commandApiService);
+      if (diskSpaceUsageMonitor != null) {
+        diskSpaceUsageMonitor.addDiskUsageListener(commandApiService);
+      }
+
+      final SubscriptionApiCommandMessageHandlerService subscriptionApiService =
+          new SubscriptionApiCommandMessageHandlerService(
+              brokerInfo, clusterServices.getCommunicationService());
+
+      systemContext.getScheduler().submitActor(subscriptionApiService);
+      partitionListeners.add(subscriptionApiService);
+
+      if (diskSpaceUsageMonitor != null) {
+        diskSpaceUsageMonitor.addDiskUsageListener(subscriptionApiService);
+      }
+
+      clusterServices.start().join();
+
+      if (brokerCfg.getGateway().isEnable()) {
+        final var embeddedGatewayService =
+            new EmbeddedGatewayService(
+                brokerCfg,
+                systemContext.getScheduler(),
+                clusterServices.getMessagingService(),
+                clusterServices.getMembershipService(),
+                clusterServices.getEventService());
+        testCompanionObject.embeddedGatewayService = embeddedGatewayService;
+      }
+
+      final var managementRequestHandler =
+          new LeaderManagementRequestHandler(
+              brokerInfo,
+              clusterServices.getCommunicationService(),
+              clusterServices.getEventService());
+
+      systemContext.getScheduler().submitActor(managementRequestHandler).join();
+
+      partitionListeners.add(managementRequestHandler);
+      if (diskSpaceUsageMonitor != null) {
+        diskSpaceUsageMonitor.addDiskUsageListener(managementRequestHandler);
+      }
+
+      final var partitionManager =
+          new PartitionManagerImpl(
+              systemContext.getScheduler(),
+              brokerCfg,
+              localBroker,
+              clusterServices,
+              healthCheckService,
+              managementRequestHandler.getPushDeploymentRequestHandler(),
+              diskSpaceUsageMonitor::addDiskUsageListener,
+              partitionListeners,
+              commandApiService,
+              buildExporterRepository(brokerCfg));
+
+      partitionManager.start().join();
+      adminService.injectAdminAccess(partitionManager.createAdminAccess(adminService));
+      adminService.injectPartitionInfoSource(partitionManager.getPartitions());
+
+      testCompanionObject.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
       testCompanionObject.atomix = clusterServices.getAtomixCluster();
 
       startFuture.complete(this);
