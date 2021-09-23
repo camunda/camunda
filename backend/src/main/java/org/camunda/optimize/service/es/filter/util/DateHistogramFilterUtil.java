@@ -9,11 +9,11 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -197,7 +197,8 @@ public class DateHistogramFilterUtil {
     return Stream.of(
       dateFilters.stream()
         .filter(FixedDateFilterDataDto.class::isInstance)
-        .map(date -> (OffsetDateTime) date.getStart()),
+        .map(date -> (OffsetDateTime) date.getStart())
+        .filter(Objects::nonNull), // only consider fixed date filters with a set start
       dateFilters.stream()
         .filter(RollingDateFilterDataDto.class::isInstance)
         .map(filter -> {
