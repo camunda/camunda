@@ -16,7 +16,6 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,11 +51,6 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   public ActorFuture<Boolean> take(final Predicate<Path> takeSnapshot) {
     actor.run(() -> takeInternal(takeSnapshot));
     return takenFuture;
-  }
-
-  @Override
-  public void onSnapshotTaken(final BiConsumer<Boolean, Throwable> runnable) {
-    actor.call(() -> takenFuture.onComplete(runnable));
   }
 
   private void takeInternal(final Predicate<Path> takeSnapshot) {
