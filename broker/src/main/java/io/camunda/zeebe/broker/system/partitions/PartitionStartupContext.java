@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -70,9 +69,7 @@ public interface PartitionStartupContext {
 
   void setComponentHealthMonitor(final HealthMonitor healthMonitor);
 
-  StateControllerImpl getStateController();
-
-  void setStateController(final StateControllerImpl stateController);
+  StateController getStateController();
 
   LogDeletionService getLogDeletionService();
 
