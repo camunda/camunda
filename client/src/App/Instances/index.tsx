@@ -9,7 +9,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {DiagramPanel} from './DiagramPanel';
 import {ListPanel} from './ListPanel';
-import OperationsPanel from './OperationsPanel';
+import {OperationsPanel} from './OperationsPanel';
 import {instancesStore} from 'modules/stores/instances';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';

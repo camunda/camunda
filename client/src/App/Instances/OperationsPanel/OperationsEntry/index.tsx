@@ -14,6 +14,7 @@ import {isOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
 import {useHistory} from 'react-router-dom';
 import {Locations} from 'modules/routes';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const {
   ADD_VARIABLE,
@@ -45,6 +46,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const history = useHistory();
 
   function handleInstancesClick(operationId: OperationEntity['id']) {
+    panelStatesStore.expandFiltersPanel();
+
     history.push(
       Locations.filters(history.location, {
         active: true,

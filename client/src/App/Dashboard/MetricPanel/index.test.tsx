@@ -19,6 +19,7 @@ import {MetricPanel} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {statistics} from 'modules/mocks/statistics';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
@@ -34,11 +35,16 @@ function createWrapper(history = createMemoryHistory()) {
 
 describe('<MetricPanel />', () => {
   beforeEach(() => {
+    panelStatesStore.toggleFiltersPanel();
     mockServer.use(
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
         res.once(ctx.json(statistics))
       )
     );
+  });
+
+  afterEach(() => {
+    panelStatesStore.reset();
   });
 
   it('should first display skeleton, then the statistics', async () => {
@@ -80,10 +86,13 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
     userEvent.click(screen.getByText('Instances with Incident'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?incidents=true');
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should not erase pesistent params', async () => {
@@ -123,10 +132,14 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
     userEvent.click(screen.getByText('Active Instances'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?active=true');
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should go to the correct page when clicking on total instances', async () => {
@@ -135,10 +148,14 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
     userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?incidents=true&active=true');
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should handle server errors', async () => {

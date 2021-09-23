@@ -9,13 +9,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FiltersPanel} from '.';
 import {instancesStore} from 'modules/stores/instances';
 
-const props = {
-  isFiltersCollapsed: false,
-  toggleFilters: () => {},
-  toggle: () => {},
-  isCollapsed: true,
-};
-
 describe('<FiltersPanel />', () => {
   it('should show filteredInstancesCount', async () => {
     instancesStore.setInstances({
@@ -23,7 +16,7 @@ describe('<FiltersPanel />', () => {
       processInstances: [],
     });
 
-    render(<FiltersPanel {...props} />, {wrapper: ThemeProvider});
+    render(<FiltersPanel />, {wrapper: ThemeProvider});
 
     const filterBadges = screen.getAllByTestId('filter-panel-header-badge');
 

@@ -13,7 +13,6 @@ import {
 } from '@testing-library/react';
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Instances} from './index';
 import {
@@ -43,11 +42,9 @@ function getWrapper(
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <CollapsablePanelProvider>
-          <Router history={history}>
-            <Route path="/instances">{children} </Route>
-          </Router>
-        </CollapsablePanelProvider>
+        <Router history={history}>
+          <Route path="/instances">{children} </Route>
+        </Router>
       </ThemeProvider>
     );
   };

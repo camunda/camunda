@@ -21,6 +21,7 @@ import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 import {Locations} from 'modules/routes';
 import truncate from 'lodash/truncate';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 function truncateErrorMessage(errorMessage: string) {
   return truncate(errorMessage, {
@@ -61,6 +62,7 @@ const IncidentsByError = observer(() => {
                     incidents: true,
                   })
                 }
+                onClick={panelStatesStore.expandFiltersPanel}
                 title={title}
                 $boxSize="small"
               >
@@ -92,6 +94,7 @@ const IncidentsByError = observer(() => {
             incidents: true,
           })
         }
+        onClick={panelStatesStore.expandFiltersPanel}
         title={title}
       >
         <Styled.LiInstancesBar

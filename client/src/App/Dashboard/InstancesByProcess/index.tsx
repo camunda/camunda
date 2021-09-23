@@ -22,6 +22,7 @@ import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 
 import {Locations} from 'modules/routes';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const InstancesByProcess = observer(() => {
   useEffect(() => {
@@ -53,6 +54,7 @@ const InstancesByProcess = observer(() => {
                       : {}),
                   })
                 }
+                onClick={panelStatesStore.expandFiltersPanel}
                 title={concatTitle(
                   item.name || processName,
                   totalInstancesCount,
@@ -101,6 +103,7 @@ const InstancesByProcess = observer(() => {
               : {}),
           })
         }
+        onClick={panelStatesStore.expandFiltersPanel}
         title={concatGroupTitle(
           name,
           totalInstancesCount,

@@ -7,7 +7,6 @@
 import {BrowserRouter, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {NotificationProvider} from 'modules/notifications';
 
 import Authentication from './Authentication';
@@ -27,24 +26,22 @@ function App() {
   return (
     <ThemeProvider>
       <NotificationProvider>
-        <CollapsablePanelProvider>
-          <GlobalStyles />
-          <NetworkStatusWatcher />
-          <CommonUiContext />
-          <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
-            <GettingStartedExperience />
-            <HashRouterMigrator />
-            <Switch>
-              <Route path={Routes.login()} component={Login} />
-              <Authentication>
-                <Header />
-                <Route exact path={Routes.dashboard()} component={Dashboard} />
-                <Route exact path={Routes.instances()} component={Instances} />
-                <Route exact path={Routes.instance()} component={Instance} />
-              </Authentication>
-            </Switch>
-          </BrowserRouter>
-        </CollapsablePanelProvider>
+        <GlobalStyles />
+        <NetworkStatusWatcher />
+        <CommonUiContext />
+        <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
+          <GettingStartedExperience />
+          <HashRouterMigrator />
+          <Switch>
+            <Route path={Routes.login()} component={Login} />
+            <Authentication>
+              <Header />
+              <Route exact path={Routes.dashboard()} component={Dashboard} />
+              <Route exact path={Routes.instances()} component={Instances} />
+              <Route exact path={Routes.instance()} component={Instance} />
+            </Authentication>
+          </Switch>
+        </BrowserRouter>
       </NotificationProvider>
     </ThemeProvider>
   );

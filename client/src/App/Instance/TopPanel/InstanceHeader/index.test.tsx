@@ -28,19 +28,32 @@ import {
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import {MemoryRouter} from 'react-router';
+import {Router, Route} from 'react-router';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
+import {createMemoryHistory} from 'history';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
-const Wrapper: React.FC = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>
-        <NotificationProvider>{children}</NotificationProvider>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
+const createWrapper = (
+  history = createMemoryHistory({initialEntries: ['/instances/1']})
+) => {
+  const Wrapper: React.FC = ({children}) => {
+    return (
+      <ThemeProvider>
+        <NotificationProvider>
+          <Router history={history}>
+            <Route path="/instances/:processInstanceId">{children}</Route>
+            <Route exact path="/instances">
+              {children}
+            </Route>
+          </Router>
+        </NotificationProvider>
+      </ThemeProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('InstanceHeader', () => {
@@ -62,7 +75,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
@@ -83,7 +96,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.text(mockProcessXML))
       )
     );
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
@@ -128,7 +141,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
@@ -140,6 +153,39 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
   });
 
+  it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
+    panelStatesStore.toggleFiltersPanel();
+
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      )
+    );
+
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/instances/instance_1/'],
+    });
+
+    render(<InstanceHeader />, {wrapper: createWrapper(MOCK_HISTORY)});
+
+    singleInstanceDiagramStore.init();
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances/instance_1/');
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
+    userEvent.click(await screen.findByRole('link', {name: /view all/i}));
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+  });
+
   it('should render parent instance id', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
@@ -149,7 +195,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.text(mockProcessXML))
       )
     );
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithParentInstance.id);
@@ -165,7 +211,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner based on instance having active operations', async () => {
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
@@ -208,7 +254,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithoutOperations.id);
@@ -246,7 +292,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
     singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
@@ -286,7 +332,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.text(mockProcessXML))
       )
     );
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
     singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
@@ -314,7 +360,7 @@ describe('InstanceHeader', () => {
 
     authenticationStore.setPermissions(['read', 'write']);
 
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
@@ -342,7 +388,7 @@ describe('InstanceHeader', () => {
 
     authenticationStore.setPermissions(['read']);
 
-    render(<InstanceHeader />, {wrapper: Wrapper});
+    render(<InstanceHeader />, {wrapper: createWrapper()});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 

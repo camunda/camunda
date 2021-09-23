@@ -26,6 +26,7 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 function getParam(search: string, param: string) {
   return new URLSearchParams(search).get(param);
@@ -41,6 +42,14 @@ const createWrapper =
     );
 
 describe('IncidentsByError', () => {
+  beforeEach(() => {
+    panelStatesStore.toggleFiltersPanel();
+  });
+
+  afterEach(() => {
+    panelStatesStore.reset();
+  });
+
   it('should display skeleton when loading', async () => {
     mockServer.use(
       rest.get('/api/incidents/byError', (_, res, ctx) =>
@@ -121,6 +130,8 @@ describe('IncidentsByError', () => {
       await screen.findByTestId('incident-byError-0')
     );
 
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
     const expandButton = withinIncident.getByTitle(
       "Expand 36 Instances with error JSON path '$.paid' has no result."
     );
@@ -134,6 +145,10 @@ describe('IncidentsByError', () => {
     expect(historyMock.location.search).toBe(
       '?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+    panelStatesStore.toggleFiltersPanel();
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     userEvent.click(expandButton);
 
@@ -151,6 +166,7 @@ describe('IncidentsByError', () => {
     expect(historyMock.location.search).toBe(
       '?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 
   it('should not erase persistent params', async () => {

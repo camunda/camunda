@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
@@ -12,25 +11,12 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import OperationsPanel from './index';
+import {OperationsPanel} from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
-  return (
-    <ThemeProvider>
-      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-    </ThemeProvider>
-  );
-};
 
 describe('OperationsPanel', () => {
   it('should display empty panel on mount', async () => {
@@ -40,7 +26,7 @@ describe('OperationsPanel', () => {
       )
     );
 
-    render(<OperationsPanel />, {wrapper: Wrapper});
+    render(<OperationsPanel />, {wrapper: ThemeProvider});
 
     expect(
       await screen.findByText(CONSTANTS.EMPTY_MESSAGE)
@@ -53,7 +39,7 @@ describe('OperationsPanel', () => {
         res.once(ctx.json([]))
       )
     );
-    render(<OperationsPanel />, {wrapper: Wrapper});
+    render(<OperationsPanel />, {wrapper: ThemeProvider});
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
@@ -68,7 +54,7 @@ describe('OperationsPanel', () => {
         )
       )
     );
-    render(<OperationsPanel />, {wrapper: Wrapper});
+    render(<OperationsPanel />, {wrapper: ThemeProvider});
 
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
 
@@ -99,7 +85,7 @@ describe('OperationsPanel', () => {
       )
     );
 
-    const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
+    const {unmount} = render(<OperationsPanel />, {wrapper: ThemeProvider});
 
     expect(
       await screen.findByText('Operations could not be fetched')
@@ -113,7 +99,7 @@ describe('OperationsPanel', () => {
       )
     );
 
-    render(<OperationsPanel />, {wrapper: Wrapper});
+    render(<OperationsPanel />, {wrapper: ThemeProvider});
 
     expect(
       await screen.findByText('Operations could not be fetched')

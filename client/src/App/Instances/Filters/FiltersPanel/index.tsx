@@ -8,7 +8,6 @@ import React from 'react';
 import {observer} from 'mobx-react';
 
 import {PANEL_POSITION, BADGE_TYPE} from 'modules/constants';
-import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
 import {instancesStore} from 'modules/stores/instances';
 
@@ -16,6 +15,7 @@ import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Badge from 'modules/components/Badge';
 
 import * as Styled from './styled';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Header: React.FC = observer(() => {
   return (
@@ -27,26 +27,25 @@ const Header: React.FC = observer(() => {
   );
 });
 
-type RawFiltersPanelProps = {
-  isFiltersCollapsed: boolean;
-  toggleFilters: (...args: any[]) => any;
-  children?: React.ReactNode;
-};
+const FiltersPanel: React.FC = observer(({children}) => {
+  const {
+    state: {isFiltersCollapsed},
+    toggleFiltersPanel,
+  } = panelStatesStore;
 
-export const RawFiltersPanel = (props: RawFiltersPanelProps) => {
   return (
     <CollapsablePanel
       maxWidth={328}
       label="Filters"
       header={<Header />}
       panelPosition={PANEL_POSITION.LEFT}
-      isCollapsed={props.isFiltersCollapsed}
-      toggle={props.toggleFilters}
+      isCollapsed={isFiltersCollapsed}
+      toggle={toggleFiltersPanel}
       scrollable
     >
-      {props.children}
+      {children}
     </CollapsablePanel>
   );
-};
+});
 
-export const FiltersPanel = withCollapsablePanel(RawFiltersPanel);
+export {FiltersPanel};

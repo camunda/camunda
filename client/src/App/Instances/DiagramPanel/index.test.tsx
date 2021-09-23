@@ -12,7 +12,6 @@ import {
 } from '@testing-library/react';
 import {Router} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {createMemoryHistory} from 'history';
 import {mockProps} from './index.setup';
 import {
@@ -32,9 +31,7 @@ function getWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
     return (
       <Router history={history}>
-        <ThemeProvider>
-          <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </Router>
     );
   };

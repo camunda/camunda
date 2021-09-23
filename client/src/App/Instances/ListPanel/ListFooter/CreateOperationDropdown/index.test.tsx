@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
@@ -14,23 +13,10 @@ import {
 import userEvent from '@testing-library/user-event';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {mockUseOperationApply} from './index.setup';
 import CreateOperationDropdown from './index';
 
 jest.mock('./useOperationApply', () => () => mockUseOperationApply);
-
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
-  return (
-    <ThemeProvider>
-      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-    </ThemeProvider>
-  );
-};
 
 describe('CreateOperationDropdown', () => {
   beforeEach(() => {
@@ -39,7 +25,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should not initially display confirmation model', () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     expect(screen.queryByText('Apply Operation')).not.toBeInTheDocument();
@@ -53,7 +39,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should show dropdown menu on click', () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -64,7 +50,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should show modal on retry click', () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -93,7 +79,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should show modal on cancel click', () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -122,7 +108,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should close modal on apply batch operations', async () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -137,7 +123,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should close modal on cancel batch operations', async () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
@@ -152,7 +138,7 @@ describe('CreateOperationDropdown', () => {
 
   it('should close modal on close button click', async () => {
     render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
-      wrapper: Wrapper,
+      wrapper: ThemeProvider,
     });
 
     userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));

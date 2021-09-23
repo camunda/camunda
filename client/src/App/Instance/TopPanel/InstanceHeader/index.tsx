@@ -18,6 +18,7 @@ import {useNotifications} from 'modules/notifications';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 import {Restricted} from 'modules/components/Restricted';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const InstanceHeader = observer(() => {
   const {instance} = currentInstanceStore.state;
@@ -86,6 +87,7 @@ const InstanceHeader = observer(() => {
                       completed: true,
                     })
                   }
+                  onClick={panelStatesStore.expandFiltersPanel}
                   title={`View all called instances`}
                 >
                   View All

@@ -4,18 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useContext} from 'react';
+import {useState} from 'react';
 
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
 import Option from 'modules/components/Dropdown/Option';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
-import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
 import * as Styled from './styled';
 import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import useOperationApply from './useOperationApply';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const ACTION_NAMES = {
   [OPERATION_TYPE.RESOLVE_INCIDENT]: 'retry',
@@ -32,8 +32,6 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
 
   const [dropdownWidth, setDropdownWidth] = useState();
   const {applyBatchOperation} = useOperationApply();
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'expandOperations' does not exist on type... Remove this comment to see the full error message
-  const {expandOperations} = useContext(CollapsablePanelContext);
 
   const closeModal = () => {
     setModalMode(null);
@@ -42,7 +40,7 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
   const handleApplyClick = () => {
     closeModal();
     if (modalMode !== null) {
-      applyBatchOperation(modalMode, expandOperations);
+      applyBatchOperation(modalMode, panelStatesStore.expandOperationsPanel);
     }
   };
 

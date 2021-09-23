@@ -19,6 +19,7 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const createWrapper =
   (historyMock = createMemoryHistory()) =>
@@ -30,6 +31,14 @@ const createWrapper =
     );
 
 describe('InstancesByProcess', () => {
+  beforeEach(() => {
+    panelStatesStore.toggleFiltersPanel();
+  });
+
+  afterEach(() => {
+    panelStatesStore.reset();
+  });
+
   it('should display skeleton when loading', async () => {
     mockServer.use(
       rest.get('/api/incidents/byProcess', (_, res, ctx) =>
@@ -118,10 +127,17 @@ describe('InstancesByProcess', () => {
       'Order process – 201 Instances in 2 Versions'
     );
     expect(processLink).toBeInTheDocument();
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
     userEvent.click(processLink);
     expect(historyMock.location.search).toBe(
       '?process=orderProcess&version=all&active=true&incidents=true'
     );
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+    panelStatesStore.toggleFiltersPanel();
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
       '65'
@@ -157,6 +173,7 @@ describe('InstancesByProcess', () => {
     expect(historyMock.location.search).toBe(
       '?process=mockProcess&version=1&active=true&incidents=true'
     );
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
     const secondVersion = screen.getByTitle(
       'View 42 Instances in Version 2 of Process Second Version'

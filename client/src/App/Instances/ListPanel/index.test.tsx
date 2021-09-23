@@ -15,7 +15,6 @@ import userEvent from '@testing-library/user-event';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
-import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
 import {Router} from 'react-router-dom';
@@ -26,25 +25,18 @@ import {instancesStore} from 'modules/stores/instances';
 import {NotificationProvider} from 'modules/notifications';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {authenticationStore} from 'modules/stores/authentication';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 function createWrapper({
-  expandOperationsMock,
   history,
 }: {
-  expandOperationsMock?: jest.Mock;
   history?: MemoryHistory;
 } = {}) {
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
         <NotificationProvider>
-          <Router history={history ?? createMemoryHistory()}>
-            <CollapsablePanelContext.Provider
-              value={{expandOperations: expandOperationsMock ?? jest.fn()}}
-            >
-              {children}
-            </CollapsablePanelContext.Provider>
-          </Router>
+          <Router history={history ?? createMemoryHistory()}>{children}</Router>
         </NotificationProvider>
       </ThemeProvider>
     );
@@ -56,6 +48,7 @@ describe('ListPanel', () => {
   afterEach(() => {
     instancesStore.reset();
     instancesDiagramStore.reset();
+    panelStatesStore.reset();
   });
 
   describe('messages', () => {
@@ -291,12 +284,11 @@ describe('ListPanel', () => {
 
       instancesStore.fetchInstancesFromFilters();
 
-      const expandOperationsMock = jest.fn();
-
       render(<ListPanel />, {
-        wrapper: createWrapper({expandOperationsMock}),
+        wrapper: createWrapper(),
       });
 
+      expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
       userEvent.click(screen.getByLabelText(/select all instances/i));
@@ -315,7 +307,7 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
       expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0);
-      expect(expandOperationsMock).toHaveBeenCalledTimes(1);
+      expect(panelStatesStore.state.isOperationsCollapsed).toBe(false);
 
       jest.clearAllTimers();
       jest.useRealTimers();
@@ -336,9 +328,8 @@ describe('ListPanel', () => {
 
       instancesStore.fetchInstancesFromFilters();
 
-      const expandOperationsMock = jest.fn();
       render(<ListPanel />, {
-        wrapper: createWrapper({expandOperationsMock}),
+        wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
@@ -352,7 +343,7 @@ describe('ListPanel', () => {
         expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
       );
 
-      expect(expandOperationsMock).not.toHaveBeenCalled();
+      expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
     });
 
     it('should remove spinners after batch operation if a network error occurs', async () => {

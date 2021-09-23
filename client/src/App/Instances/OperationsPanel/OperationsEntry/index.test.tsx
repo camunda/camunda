@@ -12,6 +12,7 @@ import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import userEvent from '@testing-library/user-event';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
@@ -112,7 +113,8 @@ describe('OperationsEntry', () => {
     expect(screen.getByText('3 Instances')).toBeInTheDocument();
   });
 
-  it('should filter by Operation', () => {
+  it('should filter by Operation and expand Filters Panel', () => {
+    panelStatesStore.toggleFiltersPanel();
     const mockHistory = createMemoryHistory();
     render(
       <OperationsEntry
@@ -125,9 +127,13 @@ describe('OperationsEntry', () => {
       {wrapper: createWrapper(mockHistory)}
     );
 
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
+
     userEvent.click(screen.getByText('3 Instances'));
     expect(mockHistory.location.search).toBe(
       '?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052'
     );
+
+    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
 });
