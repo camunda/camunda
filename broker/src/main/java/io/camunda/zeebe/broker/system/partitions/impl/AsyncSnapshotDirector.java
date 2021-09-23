@@ -224,7 +224,6 @@ public final class AsyncSnapshotDirector extends Actor
   private void takeSnapshot() {
     final var transientSnapshotFuture =
         stateController.takeTransientSnapshot(lowerBoundSnapshotPosition);
-
     transientSnapshotFuture.onComplete(
         (optionalTransientSnapshot, snapshotTakenError) -> {
           if (snapshotTakenError != null) {
@@ -237,25 +236,29 @@ public final class AsyncSnapshotDirector extends Actor
             takingSnapshot = false;
             return;
           }
-          pendingSnapshot = optionalTransientSnapshot.get();
-          onRecovered();
-
-          final ActorFuture<Long> lastWrittenPosition =
-              streamProcessor.getLastWrittenPositionAsync();
-          actor.runOnCompletion(
-              lastWrittenPosition,
-              (endPosition, error) -> {
-                if (error == null) {
-                  LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
-                  lastWrittenEventPosition = endPosition;
-                  persistingSnapshot = false;
-                  persistSnapshotIfLastWrittenPositionCommitted();
-                } else {
-                  resetStateOnFailure();
-                  LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-                }
-              });
+          onTransientSnapshotTaken(optionalTransientSnapshot.get());
         });
+  }
+
+  private void onTransientSnapshotTaken(final TransientSnapshot transientSnapshot) {
+
+    pendingSnapshot = transientSnapshot;
+    onRecovered();
+
+    final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
+    actor.runOnCompletion(lastWrittenPosition, this::onLastWrittenPositionReceived);
+  }
+
+  private void onLastWrittenPositionReceived(final Long endPosition, final Throwable error) {
+    if (error == null) {
+      LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
+      lastWrittenEventPosition = endPosition;
+      persistingSnapshot = false;
+      persistSnapshotIfLastWrittenPositionCommitted();
+    } else {
+      resetStateOnFailure();
+      LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
+    }
   }
 
   private void onRecovered() {
