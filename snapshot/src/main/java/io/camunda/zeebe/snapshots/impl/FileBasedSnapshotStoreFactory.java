@@ -95,6 +95,8 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
    * @param partitionId
    * @return concurrency control
    */
+  @Deprecated // This is an intermediate solution to run StateController and SnapshotStore on same
+  // actor.
   public ConcurrencyControl getSnapshotStoreConcurrencyControl(final int partitionId) {
     return partitionSnapshotStores.get(partitionId);
   }
