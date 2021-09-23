@@ -222,45 +222,40 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void takeSnapshot() {
-    final var optionalPendingSnapshot =
+    final var transientSnapshotFuture =
         stateController.takeTransientSnapshot(lowerBoundSnapshotPosition);
-    if (optionalPendingSnapshot.isEmpty()) {
-      takingSnapshot = false;
-      return;
-    }
 
-    optionalPendingSnapshot
-        .get()
-        // Snapshot is taken asynchronously.
-        .onSnapshotTaken(
-            (isValid, snapshotTakenError) ->
-                actor.run(
-                    () -> {
-                      if (snapshotTakenError != null) {
-                        LOG.error(
-                            "Could not take a snapshot for {}", processorName, snapshotTakenError);
-                        return;
-                      }
-                      LOG.trace("Created temporary snapshot for {}", processorName);
-                      pendingSnapshot = optionalPendingSnapshot.get();
-                      onRecovered();
+    transientSnapshotFuture.onComplete(
+        (optionalTransientSnapshot, snapshotTakenError) -> {
+          if (snapshotTakenError != null) {
+            LOG.error("Could not take a snapshot for {}", processorName, snapshotTakenError);
+            resetStateOnFailure();
+            return;
+          }
 
-                      final ActorFuture<Long> lastWrittenPosition =
-                          streamProcessor.getLastWrittenPositionAsync();
-                      actor.runOnCompletion(
-                          lastWrittenPosition,
-                          (endPosition, error) -> {
-                            if (error == null) {
-                              LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
-                              lastWrittenEventPosition = endPosition;
-                              persistingSnapshot = false;
-                              persistSnapshotIfLastWrittenPositionCommitted();
-                            } else {
-                              resetStateOnFailure();
-                              LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-                            }
-                          });
-                    }));
+          if (optionalTransientSnapshot.isEmpty()) {
+            takingSnapshot = false;
+            return;
+          }
+          pendingSnapshot = optionalTransientSnapshot.get();
+          onRecovered();
+
+          final ActorFuture<Long> lastWrittenPosition =
+              streamProcessor.getLastWrittenPositionAsync();
+          actor.runOnCompletion(
+              lastWrittenPosition,
+              (endPosition, error) -> {
+                if (error == null) {
+                  LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
+                  lastWrittenEventPosition = endPosition;
+                  persistingSnapshot = false;
+                  persistSnapshotIfLastWrittenPositionCommitted();
+                } else {
+                  resetStateOnFailure();
+                  LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
+                }
+              });
+        });
   }
 
   private void onRecovered() {

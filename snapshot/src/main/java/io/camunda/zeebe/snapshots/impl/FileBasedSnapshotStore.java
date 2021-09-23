@@ -347,7 +347,7 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   private void addPendingSnapshot(final PersistableSnapshot pendingSnapshot) {
-    actor.call(() -> pendingSnapshots.add(pendingSnapshot));
+    actor.submit(() -> pendingSnapshots.add(pendingSnapshot));
   }
 
   void removePendingSnapshot(final PersistableSnapshot pendingSnapshot) {

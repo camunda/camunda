@@ -39,8 +39,7 @@ class ZeebeDbPartitionTransitionStepTest {
   @BeforeEach
   void setup() throws IOException {
 
-    when(stateController.recover()).thenReturn(TestActorFuture.completedFuture(null));
-    when(stateController.openDb()).thenReturn(zeebeDb);
+    when(stateController.recover()).thenReturn(TestActorFuture.completedFuture(zeebeDb));
     transitionContext.setStateController(stateController);
 
     step = new ZeebeDbPartitionTransitionStep();
@@ -114,7 +113,7 @@ class ZeebeDbPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getZeebeDb()).isNotEqualTo(existingZeebeDb);
-    verify(stateController).openDb();
+    verify(stateController).recover();
   }
 
   @ParameterizedTest
@@ -132,7 +131,7 @@ class ZeebeDbPartitionTransitionStepTest {
     // then
     assertThat(transitionContext.getZeebeDb()).isNull();
     verify(stateController).closeDb();
-    verify(stateController, never()).openDb();
+    verify(stateController, never()).recover();
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
