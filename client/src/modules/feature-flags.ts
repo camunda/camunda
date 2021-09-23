@@ -5,6 +5,5 @@
  */
 
 const IS_NEXT_INCIDENTS = false;
-const IS_BREADCRUMB_VISIBLE = false;
 
-export {IS_NEXT_INCIDENTS, IS_BREADCRUMB_VISIBLE};
+export {IS_NEXT_INCIDENTS};

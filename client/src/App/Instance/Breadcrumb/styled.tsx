@@ -17,7 +17,7 @@ const Container = styled.div`
       display: flex;
       font-size: 13px;
       align-items: center;
-      border-top: 1px solid ${colors.borderColor};
+      border-bottom: 1px solid ${colors.borderColor};
     `;
   }}
 `;

@@ -23,7 +23,6 @@ import {autorun} from 'mobx';
 import {useInstancePageParams} from './useInstancePageParams';
 import {useHistory} from 'react-router-dom';
 import {useNotifications} from 'modules/notifications';
-import {IS_BREADCRUMB_VISIBLE} from 'modules/feature-flags';
 import {Breadcrumb} from './Breadcrumb';
 
 import * as Styled from './styled';
@@ -62,7 +61,7 @@ const Instance = observer(() => {
 
   return (
     <Styled.Instance>
-      {IS_BREADCRUMB_VISIBLE && <Breadcrumb />}
+      <Breadcrumb />
       <VisuallyHiddenH1>
         {instance && `Operate Instance ${instance.id}`}
       </VisuallyHiddenH1>
