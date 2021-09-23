@@ -15,8 +15,8 @@ import java.util.Optional;
 public interface StateController extends AutoCloseable {
   /**
    * Takes a snapshot based on the given position. The position is a last processed lower bound
-   * event position. When the returned future completes successfully, the transient snapshot will be
-   * valid.
+   * event position. When the returned future completes successfully and the optional is not empty,
+   * the transient snapshot will be valid.
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    * @return a future
