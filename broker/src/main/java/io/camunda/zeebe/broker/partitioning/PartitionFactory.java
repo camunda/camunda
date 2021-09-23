@@ -192,7 +192,7 @@ public final class PartitionFactory {
                   communicationService, membershipService, owningPartition.members()),
               actorSchedulingService,
               brokerCfg,
-              () -> commandApiService.newCommandResponseWriter(),
+              commandApiService::newCommandResponseWriter,
               () -> commandApiService.getOnProcessedListener(partitionId),
               constructableSnapshotStore,
               snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
