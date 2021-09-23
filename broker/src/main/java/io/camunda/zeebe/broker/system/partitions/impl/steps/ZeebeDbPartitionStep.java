@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -45,26 +45,19 @@ public class ZeebeDbPartitionStep implements PartitionStep {
 
   private void recoverDb(
       final PartitionTransitionContext context, final CompletableActorFuture<Void> openFuture) {
-    final ActorFuture<Void> recoverFuture;
+    final ActorFuture<ZeebeDb> recoverFuture;
 
     recoverFuture = context.getStateController().recover();
 
     recoverFuture.onComplete(
-        (ok, error) -> {
+        (zeebeDb, error) -> {
           if (error != null) {
-            openFuture.completeExceptionally(error);
+            openFuture.completeExceptionally(
+                new IllegalStateException(
+                    String.format(RECOVER_FAILED_ERROR_MSG, context.getPartitionId()), error));
           } else {
-            try {
-              final var zeebeDb = context.getStateController().openDb();
-              context.setZeebeDb(zeebeDb);
-              openFuture.complete(null);
-            } catch (final Exception e) {
-              Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
-
-              openFuture.completeExceptionally(
-                  new IllegalStateException(
-                      String.format(RECOVER_FAILED_ERROR_MSG, context.getPartitionId()), e));
-            }
+            context.setZeebeDb(zeebeDb);
+            openFuture.complete(null);
           }
         });
   }

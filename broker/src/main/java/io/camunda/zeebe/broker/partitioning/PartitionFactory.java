@@ -66,6 +66,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
@@ -181,7 +182,10 @@ public final class PartitionFactory {
       final ConstructableSnapshotStore constructableSnapshotStore =
           snapshotStoreFactory.getConstructableSnapshotStore(partitionId);
       final StateController stateController =
-          createStateController(owningPartition, constructableSnapshotStore);
+          createStateController(
+              owningPartition,
+              constructableSnapshotStore,
+              snapshotStoreFactory.getSnapshotStoreConcurrencyControl(partitionId));
 
       final PartitionStartupAndTransitionContextImpl partitionStartupAndTransitionContext =
           new PartitionStartupAndTransitionContextImpl(
@@ -224,7 +228,9 @@ public final class PartitionFactory {
   }
 
   private StateController createStateController(
-      final RaftPartition raftPartition, final ConstructableSnapshotStore snapshotStore) {
+      final RaftPartition raftPartition,
+      final ConstructableSnapshotStore snapshotStore,
+      final ConcurrencyControl concurrencyControl) {
     final var runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
 
@@ -233,7 +239,8 @@ public final class PartitionFactory {
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
-        StatePositionSupplier::getHighestExportedPosition);
+        StatePositionSupplier::getHighestExportedPosition,
+        concurrencyControl);
   }
 
   private TypedRecordProcessorsFactory createFactory(
