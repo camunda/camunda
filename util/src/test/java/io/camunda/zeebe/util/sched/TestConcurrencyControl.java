@@ -49,6 +49,11 @@ public class TestConcurrencyControl implements ConcurrencyControl {
     return new TestActorFuture<>();
   }
 
+  @Override
+  public <V> ActorFuture<V> createCompletedFuture() {
+    return completedFuture(null);
+  }
+
   public <U> ActorFuture<U> completedFuture(final U value) {
     final ActorFuture<U> result = createFuture();
     result.complete(value);
