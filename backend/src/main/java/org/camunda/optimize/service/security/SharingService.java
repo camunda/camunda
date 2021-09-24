@@ -220,8 +220,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     } catch (ReportEvaluationException e) {
       throw e;
     } catch (Exception e) {
-      throw new OptimizeRuntimeException("Cannot evaluate shared report [" + evaluationInfo.getReportId() + "]. The " +
-                                           "report probably does not exist.");
+      throw new OptimizeRuntimeException("Cannot evaluate shared report [" + evaluationInfo.getReportId() + "].",e);
     }
   }
 

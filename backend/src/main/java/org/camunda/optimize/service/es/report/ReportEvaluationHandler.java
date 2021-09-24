@@ -115,15 +115,10 @@ public abstract class ReportEvaluationHandler {
     final String userId = evaluationInfo.getUserId();
     List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
     List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
-      reportReader.getAllSingleProcessReportsForIdsOmitXml(
-        singleReportIds)
+      reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
         .stream()
         .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-        .peek(reportDefinition -> addAdditionalFiltersForAuthorizedReport(
-          userId,
-          reportDefinition,
-          evaluationInfo.getAdditionalFilters()
-        ))
+        .peek(reportDefinition -> addAdditionalFiltersForReport(evaluationInfo, reportDefinition))
         .collect(Collectors.toList());
 
     if (foundSingleReports.size() != singleReportIds.size()) {
@@ -141,15 +136,7 @@ public abstract class ReportEvaluationHandler {
 
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportEvaluationInfo evaluationInfo,
                                                                     final RoleType currentUserRole) {
-    if (evaluationInfo.isSharedReport()) {
-      addAdditionalFiltersForReport(evaluationInfo.getReport(), evaluationInfo.getAdditionalFilters());
-    } else {
-      addAdditionalFiltersForAuthorizedReport(
-        evaluationInfo.getUserId(),
-        evaluationInfo.getReport(),
-        evaluationInfo.getAdditionalFilters()
-      );
-    }
+    addAdditionalFiltersForReport(evaluationInfo, evaluationInfo.getReport());
     try {
       ReportEvaluationContext<ReportDefinitionDto<?>> context = ReportEvaluationContext
         .fromReportEvaluation(evaluationInfo);
@@ -167,6 +154,17 @@ public abstract class ReportEvaluationHandler {
         throw new TooManyBucketsException(authorizedReportDefinitionDto, e);
       }
       throw e;
+    }
+  }
+
+  private void addAdditionalFiltersForReport(final ReportEvaluationInfo evaluationInfo,
+                                             final ReportDefinitionDto<?> reportDefinition) {
+    if (evaluationInfo.isSharedReport()) {
+      addAdditionalFiltersForReport(reportDefinition, evaluationInfo.getAdditionalFilters());
+    } else {
+      addAdditionalFiltersForAuthorizedReport(
+        evaluationInfo.getUserId(), reportDefinition, evaluationInfo.getAdditionalFilters()
+      );
     }
   }
 

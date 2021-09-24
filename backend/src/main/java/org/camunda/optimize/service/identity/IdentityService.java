@@ -92,7 +92,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
-    return userGroupsCache.get(userId);
+    return userId != null ? userGroupsCache.get(userId) : Collections.emptyList();
   }
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {

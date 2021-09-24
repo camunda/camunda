@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -160,6 +161,35 @@ public class SharingServiceIT extends AbstractSharingIT {
     // then instance is filtered from result
     assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
     assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+  }
+
+  @Test
+  public void dashboardCombinedReportShareCanBeEvaluatedWithAdditionalFilter() {
+    // given
+    deployAndStartSimpleProcess(DEFAULT_DEFINITION_KEY);
+    final String reportId = reportClient.createSingleReport(null, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String combinedReportId = reportClient.createNewCombinedReport(reportId);
+    String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, combinedReportId);
+    String dashboardShareId = addShareForDashboard(dashboardId);
+
+    Response response = sharingClient.getDashboardShareResponse(dashboardId);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when no filters are applied
+    AuthorizedCombinedReportEvaluationResponseDto<Double> evaluationResult =
+      evaluateDashboardCombinedReport(combinedReportId, dashboardShareId, null);
+
+    // then the instance is included in response
+    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
+
+    // when running instance filter is applied
+    evaluationResult = evaluateDashboardCombinedReport(combinedReportId, dashboardShareId, runningInstanceFilter());
+
+    // then the instance is filtered from result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isZero();
   }
 
   @Test
@@ -975,7 +1005,8 @@ public class SharingServiceIT extends AbstractSharingIT {
       .setReportDataType(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.setView(null);
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setData(reportData);
 
     String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
@@ -1045,6 +1076,17 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  private AuthorizedCombinedReportEvaluationResponseDto<Double> evaluateDashboardCombinedReport(
+    final String combinedReportId,
+    final String dashboardShareId,
+    final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSharedDashboardReportRequest(dashboardShareId, combinedReportId, null, filterDto)
+      .withoutAuthentication()
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResponseDto<Double>>() {
+      });
   }
 
   private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluateDashboardReport(final String rawDataReportId,
