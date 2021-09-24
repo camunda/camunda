@@ -258,6 +258,7 @@ public class DefaultRaftServer implements RaftServer {
       final RaftContext raft =
           new RaftContext(
               name,
+              partitionId,
               localMemberId,
               membershipService,
               protocol,

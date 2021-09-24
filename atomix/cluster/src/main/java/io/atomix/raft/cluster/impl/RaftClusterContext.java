@@ -138,6 +138,26 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return bootstrapFutureRef.get().whenComplete((result, error) -> bootstrapFutureRef.set(null));
   }
 
+  @Override
+  public RaftMember getLeader() {
+    return raft.getLeader();
+  }
+
+  @Override
+  public RaftMember getLocalMember() {
+    return localMember;
+  }
+
+  @Override
+  public Collection<RaftMember> getMembers() {
+    return new ArrayList<>(members);
+  }
+
+  @Override
+  public long getTerm() {
+    return raft.getTerm();
+  }
+
   private void ensureConfigurationIsConsistent(final Collection<MemberId> cluster) {
     final var configuration = configurationRef.get();
     final var hasPersistedConfiguration = configuration != null;
@@ -189,26 +209,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // Create a new configuration and store it on disk to ensure the cluster can fall back to the
     // configuration.
     configure(new Configuration(0, 0, localMember.getLastUpdated().toEpochMilli(), activeMembers));
-  }
-
-  @Override
-  public RaftMember getLeader() {
-    return raft.getLeader();
-  }
-
-  @Override
-  public RaftMember getLocalMember() {
-    return localMember;
-  }
-
-  @Override
-  public Collection<RaftMember> getMembers() {
-    return new ArrayList<>(members);
-  }
-
-  @Override
-  public long getTerm() {
-    return raft.getTerm();
   }
 
   /**
