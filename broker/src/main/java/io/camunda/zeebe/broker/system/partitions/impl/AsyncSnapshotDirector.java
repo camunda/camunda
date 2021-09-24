@@ -23,6 +23,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ public final class AsyncSnapshotDirector extends Actor
   private boolean persistingSnapshot;
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
   private long commitPosition;
+  private final int partitionId;
 
   private AsyncSnapshotDirector(
       final int nodeId,
@@ -69,11 +71,59 @@ public final class AsyncSnapshotDirector extends Actor
     this.stateController = stateController;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    actorName = buildActorName(nodeId, "SnapshotDirector", partitionId);
+    this.partitionId = partitionId;
+    actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       isLastWrittenPositionCommitted = () -> true;
     } else {
       isLastWrittenPositionCommitted = () -> lastWrittenEventPosition <= commitPosition;
+    }
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
+  }
+
+  @Override
+  public String getName() {
+    return actorName;
+  }
+
+  @Override
+  protected void onActorStarting() {
+    actor.setSchedulingHints(SchedulingHints.ioBound());
+    final var firstSnapshotTime =
+        RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
+    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
+
+    lastWrittenEventPosition = null;
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return super.closeAsync();
+  }
+
+  @Override
+  protected void handleFailure(final Exception failure) {
+    LOG.error(
+        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
+        actorName,
+        snapshotRate,
+        failure);
+
+    resetStateOnFailure();
+    healthStatus = HealthStatus.UNHEALTHY;
+
+    for (final var listener : listeners) {
+      listener.onFailure();
     }
   }
 
@@ -127,46 +177,6 @@ public final class AsyncSnapshotDirector extends Actor
         stateController,
         snapshotRate,
         StreamProcessorMode.PROCESSING);
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
-  }
-
-  @Override
-  protected void onActorStarting() {
-    actor.setSchedulingHints(SchedulingHints.ioBound());
-    final var firstSnapshotTime =
-        RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
-    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
-
-    lastWrittenEventPosition = null;
-  }
-
-  @Override
-  public ActorFuture<Void> closeAsync() {
-    if (actor.isClosed()) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    return super.closeAsync();
-  }
-
-  @Override
-  protected void handleFailure(final Exception failure) {
-    LOG.error(
-        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
-        actorName,
-        snapshotRate,
-        failure);
-
-    resetStateOnFailure();
-    healthStatus = HealthStatus.UNHEALTHY;
-
-    for (final var listener : listeners) {
-      listener.onFailure();
-    }
   }
 
   private void scheduleSnapshotOnRate() {

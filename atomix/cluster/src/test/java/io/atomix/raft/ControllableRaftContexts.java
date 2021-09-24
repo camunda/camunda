@@ -153,6 +153,7 @@ public final class ControllableRaftContexts {
     final var raft =
         new RaftContext(
             memberId.id() + "-partition-1",
+            1,
             memberId,
             mock(ClusterMembershipService.class),
             new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),

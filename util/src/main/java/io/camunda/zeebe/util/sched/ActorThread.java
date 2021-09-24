@@ -85,7 +85,8 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   private void executeCurrentTask() {
-    MDC.put("actor-name", currentTask.getName());
+    final var properties = currentTask.getActor().getContext();
+    MDC.setContextMap(properties);
     idleStrategy.onTaskExecuted();
 
     boolean resubmit = false;

@@ -181,6 +181,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())
+        .withPartitionId(partitionId)
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
         .withPartitionConfig(partitionConfig)
