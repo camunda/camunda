@@ -45,13 +45,15 @@ export function CreateNewButton({
         <Dropdown.Option onClick={createProcessReport}>
           {t('home.createBtn.report.process')}
         </Dropdown.Option>
-        <Dropdown.Option link="report/new-combined/edit">
-          {t('home.createBtn.report.combined')}
-        </Dropdown.Option>
         {!isOptimizeCloud && (
-          <Dropdown.Option link="report/new-decision/edit">
-            {t('home.createBtn.report.decision')}
-          </Dropdown.Option>
+          <>
+            <Dropdown.Option link="report/new-combined/edit">
+              {t('home.createBtn.report.combined')}
+            </Dropdown.Option>
+            <Dropdown.Option link="report/new-decision/edit">
+              {t('home.createBtn.report.decision')}
+            </Dropdown.Option>
+          </>
         )}
       </Dropdown.Submenu>
       {user?.authorizations.includes('import_export') && (

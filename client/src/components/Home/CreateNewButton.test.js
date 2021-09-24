@@ -32,7 +32,7 @@ it('should not show the collection option if it is in a collection', async () =>
   expect(node.find({onClick: 'test'})).not.toExist();
 });
 
-it('should not show decision option in cloud environment', async () => {
+it('should not show decision and combined report options in cloud environment', async () => {
   isOptimizeCloudEnvironment.mockReturnValueOnce(true);
 
   const node = shallow(<CreateNewButton />);
@@ -40,6 +40,7 @@ it('should not show decision option in cloud environment', async () => {
   await runLastEffect();
 
   expect(node.find({link: 'report/new-decision/edit'})).not.toExist();
+  expect(node.find({link: 'report/new-combined/edit'})).not.toExist();
 });
 
 it('should call the createCollection prop', () => {

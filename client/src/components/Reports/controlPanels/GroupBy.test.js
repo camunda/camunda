@@ -4,13 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Select, Button} from 'components';
 import {reportConfig, updateReport} from 'services';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import GroupBy from './GroupBy';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -68,6 +73,13 @@ beforeEach(() => {
       visible: jest.fn().mockReturnValue(true),
       enabled: jest.fn().mockReturnValue(true),
       label: jest.fn().mockReturnValue('Variable'),
+    },
+    {
+      key: 'assignee',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('assignee'),
     },
   ];
   reportConfig.process.distribution = [
@@ -134,4 +146,13 @@ it('should use the distributedBy value when removing the groupBy', () => {
   node.find(Button).simulate('click');
 
   expect(updateReport.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
+});
+
+it('should hide assignee option in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(<GroupBy {...config} />);
+
+  await runAllEffects();
+
+  expect(node.find({value: 'assignee'})).not.toExist();
 });

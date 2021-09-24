@@ -19,7 +19,7 @@ import {
   ReportDetails,
   DownloadButton,
 } from 'components';
-import {isSharingEnabled} from 'config';
+import {isSharingEnabled, isOptimizeCloudEnvironment} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
 
@@ -30,11 +30,15 @@ import './ReportView.scss';
 export default class ReportView extends React.Component {
   state = {
     deleting: null,
+    sharingEnabled: false,
+    isOptimizeCloud: true,
   };
 
   async componentDidMount() {
-    const sharingEnabled = await isSharingEnabled();
-    this.setState({sharingEnabled});
+    this.setState({
+      isOptimizeCloud: await isOptimizeCloudEnvironment(),
+      sharingEnabled: await isSharingEnabled(),
+    });
   }
 
   shouldShowCSVDownload = () => {
@@ -55,7 +59,7 @@ export default class ReportView extends React.Component {
 
   render() {
     const {report, error} = this.props;
-    const {redirect, sharingEnabled, deleting} = this.state;
+    const {redirect, sharingEnabled, isOptimizeCloud, deleting} = this.state;
 
     const {id, name, currentUserRole} = report;
 
@@ -87,22 +91,24 @@ export default class ReportView extends React.Component {
                   </Button>
                 </>
               )}
-              <Popover
-                main
-                className="tool-button share-button"
-                icon="share"
-                title={t('common.sharing.buttonTitle')}
-                tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
-                disabled={!sharingEnabled}
-              >
-                <ShareEntity
-                  type="report"
-                  resourceId={id}
-                  shareEntity={shareReport}
-                  revokeEntitySharing={revokeReportSharing}
-                  getSharedEntity={getSharedReport}
-                />
-              </Popover>
+              {!isOptimizeCloud && (
+                <Popover
+                  main
+                  className="tool-button share-button"
+                  icon="share"
+                  title={t('common.sharing.buttonTitle')}
+                  tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
+                  disabled={!sharingEnabled}
+                >
+                  <ShareEntity
+                    type="report"
+                    resourceId={id}
+                    shareEntity={shareReport}
+                    revokeEntitySharing={revokeReportSharing}
+                    getSharedEntity={getSharedReport}
+                  />
+                </Popover>
+              )}
               {this.shouldShowCSVDownload() && (
                 <DownloadButton main href={this.constructCSVDownloadLink()}>
                   <Icon type="save" />

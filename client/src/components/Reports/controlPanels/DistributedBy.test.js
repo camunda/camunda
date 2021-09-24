@@ -4,13 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Select, Button} from 'components';
+import {Select} from 'components';
 import {reportConfig, updateReport} from 'services';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import DistributedBy from './DistributedBy';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -67,6 +72,13 @@ beforeEach(() => {
       enabled: jest.fn().mockReturnValue(true),
       label: jest.fn().mockReturnValue('Variable'),
     },
+    {
+      key: 'assignee',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('assignee'),
+    },
   ];
 
   updateReport.mockClear();
@@ -119,4 +131,13 @@ it('should have a button to remove the distribution', () => {
 
   expect(updateReport.mock.calls[0][3]).toBe('none');
   expect(spy).toHaveBeenCalledWith({content: 'change'});
+});
+
+it('should hide assignee option in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(<DistributedBy {...config} />);
+
+  await runAllEffects();
+
+  expect(node.find({value: 'assignee'})).not.toExist();
 });

@@ -5,12 +5,22 @@
  */
 
 import classnames from 'classnames';
+import {useState, useEffect} from 'react';
 
 import {t} from 'translation';
 import {reportConfig, updateReport} from 'services';
 import {Select, Button, Icon} from 'components';
+import {isOptimizeCloudEnvironment} from 'config';
 
 export default function DistributedBy({report, onChange, variables}) {
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
+
   if (!report.groupBy) {
     return null;
   }
@@ -20,7 +30,12 @@ export default function DistributedBy({report, onChange, variables}) {
   const hasDistribution = selectedOption.key !== 'none';
 
   const options = distributions
-    .filter(({visible, key}) => visible(report) && key !== 'none')
+    .filter(
+      ({visible, key}) =>
+        visible(report) &&
+        key !== 'none' &&
+        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+    )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
         return (

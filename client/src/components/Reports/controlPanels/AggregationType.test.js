@@ -4,10 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
+import {isOptimizeCloudEnvironment} from 'config';
+
 import AggregationType from './AggregationType';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 it('should render nothing if the current result is no duration and the view is not variable', () => {
   const node = shallow(
@@ -37,7 +43,7 @@ it('should render an aggregation selection for duration reports', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should render an user task duration selection for user task duration reports', () => {
+it('should render an user task duration selection for user task duration reports', async () => {
   const node = shallow(
     <AggregationType
       report={{
@@ -47,6 +53,8 @@ it('should render an user task duration selection for user task duration reports
       }}
     />
   );
+
+  await runAllEffects();
 
   expect(node).toMatchSnapshot();
 });
@@ -142,4 +150,22 @@ it('should disable median aggregation for reports distributed by process', () =>
 
   expect(node.find({label: 'Median'})).toExist();
   expect(node.find({label: 'Median'}).prop('disabled')).toBe(true);
+});
+
+it('should not show user task duration selection for user task duration reports in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'userTask', properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+      }}
+    />
+  );
+
+  await runAllEffects();
+
+  expect(node.find({label: 'Work'})).not.toExist();
+  expect(node.find({label: 'Idle'})).not.toExist();
 });

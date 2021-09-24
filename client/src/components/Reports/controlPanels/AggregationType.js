@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 
 import {Popover, Icon, Form, Switch, Tooltip} from 'components';
 import {t} from 'translation';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import './AggregationType.scss';
 
@@ -24,6 +25,13 @@ export default function AggregationType({report, onChange}) {
   const isUserTaskReport = report?.view?.entity === 'userTask';
   const isVariableReport = report?.view?.entity === 'variable';
   const isIncidentReport = report?.view?.entity === 'incident';
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
 
   function isLastAggregation(field, type) {
     return configuration[field].length === 1 && configuration[field][0] === type;
@@ -99,7 +107,7 @@ export default function AggregationType({report, onChange}) {
         }
       >
         <Form compact>
-          {isUserTaskReport && (
+          {isUserTaskReport && !isOptimizeCloud && (
             <>
               <h4>{t('report.config.aggregation.userTaskLegend')}</h4>
               <fieldset>

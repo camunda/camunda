@@ -4,15 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
 import {reportConfig, updateReport} from 'services';
 import {Select, Button, Icon} from 'components';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
+
   const reportType = type;
 
   if (!report.groupBy) {
@@ -32,7 +42,12 @@ export default function GroupBy({type, report, onChange, variables}) {
   }
 
   const options = groups
-    .filter(({visible, key}) => visible(report) && key !== 'none')
+    .filter(
+      ({visible, key}) =>
+        visible(report) &&
+        key !== 'none' &&
+        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+    )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
         return (

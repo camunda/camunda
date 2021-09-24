@@ -9,8 +9,13 @@ import {shallow} from 'enzyme';
 import {useFullScreenHandle} from 'react-full-screen';
 
 import {Dropdown} from 'components';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import {DashboardView} from './DashboardView';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 jest.mock('react-full-screen', () => {
   const handle = {active: false, exit: jest.fn(), enter: jest.fn()};
@@ -47,10 +52,21 @@ it('should provide a link to edit mode in view mode', () => {
   expect(node.find('.edit-button')).toExist();
 });
 
-it('should render a sharing popover', () => {
+it('should render a sharing popover', async () => {
   const node = shallow(<DashboardView />);
 
+  await runAllEffects();
+
   expect(node.find('Popover.share-button')).toExist();
+});
+
+it('should hide sharing popover in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(<DashboardView />);
+
+  await runAllEffects();
+
+  expect(node.find('Popover.share-button')).not.toExist();
 });
 
 it('should enter fullscreen mode', () => {
@@ -136,8 +152,10 @@ it('should return to light mode when the component is unmounted', async () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should disable the share button if not authorized', () => {
+it('should disable the share button if not authorized', async () => {
   const node = shallow(<DashboardView isAuthorizedToShare={false} sharingEnabled />);
+
+  await runAllEffects();
 
   const shareButton = node.find('.share-button');
   expect(shareButton).toBeDisabled();
