@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
@@ -64,10 +63,10 @@ public class PartitionStartupAndTransitionContextImpl
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
   private final PartitionProcessingState partitionProcessingState;
+  private final StateController stateController;
 
   private StreamProcessor streamProcessor;
   private LogStream logStream;
-  private StateControllerImpl stateController;
   private LogDeletionService logDeletionService;
   private AsyncSnapshotDirector snapshotDirector;
   private HealthMonitor criticalComponentsHealthMonitor;
@@ -92,6 +91,7 @@ public class PartitionStartupAndTransitionContextImpl
       final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
       final ConstructableSnapshotStore constructableSnapshotStore,
       final ReceivableSnapshotStore receivableSnapshotStore,
+      final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
       final PartitionProcessingState partitionProcessingState) {
@@ -99,6 +99,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.raftPartition = raftPartition;
     this.messagingService = messagingService;
     this.brokerCfg = brokerCfg;
+    this.stateController = stateController;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.onProcessedListenerSupplier = onProcessedListenerSupplier;
     this.commandResponseWriterSupplier = commandResponseWriterSupplier;
@@ -175,13 +176,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public StateControllerImpl getStateController() {
+  public StateController getStateController() {
     return stateController;
-  }
-
-  @Override
-  public void setStateController(final StateControllerImpl stateController) {
-    this.stateController = stateController;
   }
 
   @Override
