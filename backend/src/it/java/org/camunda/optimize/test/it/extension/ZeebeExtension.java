@@ -156,9 +156,9 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return clientRule.getClient();
   }
 
-  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   private void setZeebeRecordPrefixForTest() {
     final ExporterCfg exporterConfig = embeddedBrokerRule.getBrokerCfg().getExporters().get(OPTIMIZE_EXPORTER_ID);
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
     final Map<String, String> indexArgs = (Map<String, String>) exporterConfig.getArgs().get(EXPORTER_INDEX_CONFIG);
     indexArgs.put(EXPORTER_RECORD_PREFIX, zeebeRecordPrefix);
   }

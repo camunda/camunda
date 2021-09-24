@@ -146,7 +146,7 @@ public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngi
     importAllEngineEntitiesFromScratch();
   }
 
-  private UserTaskIdentityCacheService getIdentityCacheService() {
+  private PlatformUserTaskIdentityCacheService getIdentityCacheService() {
     return embeddedOptimizeExtension.getUserTaskIdentityCacheService();
   }
 

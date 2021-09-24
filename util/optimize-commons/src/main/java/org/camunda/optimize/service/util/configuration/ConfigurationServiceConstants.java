@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationServiceConstants {
   public static final String SECURITY = "$.security";
+  public static final String USERS = "$.users";
   public static final String CONFIGURED_ENGINES = "$.engines";
   public static final String CONFIGURED_ZEEBE = "$.zeebe";
 

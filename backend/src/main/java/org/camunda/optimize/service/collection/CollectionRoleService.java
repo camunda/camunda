@@ -21,7 +21,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -42,7 +42,7 @@ public class CollectionRoleService {
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
 
   public void addRolesToCollection(final String userId,
                                    final String collectionId,
@@ -119,7 +119,7 @@ public class CollectionRoleService {
     }
   }
 
-  public void verifyCollectionExists(String collectionId){
+  public void verifyCollectionExists(String collectionId) {
     final Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
     if (!collectionDefinition.isPresent()) {
       log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);

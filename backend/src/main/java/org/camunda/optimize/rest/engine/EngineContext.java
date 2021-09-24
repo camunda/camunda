@@ -687,7 +687,7 @@ public class EngineContext {
         .get();
       if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         // @formatter:off
-        pageOfAuthorizations = response.readEntity(new GenericType<List<AuthorizationDto>>() {});
+        pageOfAuthorizations = response.readEntity(new GenericType<>() {});
         totalAuthorizations.addAll(pageOfAuthorizations);
       // @formatter:on
       } else {
@@ -722,7 +722,7 @@ public class EngineContext {
         .get();
       if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         // @formatter:off
-        pageOfAuthorizations = response.readEntity(new GenericType<List<AuthorizationDto>>() {});
+        pageOfAuthorizations = response.readEntity(new GenericType<>() {});
         totalAuthorizations.addAll(pageOfAuthorizations);
         // @formatter:on
       } else {

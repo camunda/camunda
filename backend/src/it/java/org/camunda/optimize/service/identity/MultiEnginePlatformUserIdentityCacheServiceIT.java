@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class MultiEngineUserIdentityCacheServiceIT extends AbstractMultiEngineIT {
+public class MultiEnginePlatformUserIdentityCacheServiceIT extends AbstractMultiEngineIT {
 
   @Test
   public void grantedUsersFromAllEnginesAreImported() {
@@ -110,7 +110,7 @@ public class MultiEngineUserIdentityCacheServiceIT extends AbstractMultiEngineIT
     return new EngineUserDto(duplicateProfile2, new UserCredentialsDto(KERMIT_USER));
   }
 
-  private UserIdentityCacheService getSyncedIdentityCacheService() {
+  private PlatformUserIdentityCacheService getSyncedIdentityCacheService() {
     return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 

@@ -36,7 +36,7 @@ import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.DashboardRelationService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
@@ -75,7 +75,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final ProcessVariableService processVariableService;
   private final ReportService reportService;
   private final AuthorizedCollectionService collectionService;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
   private final ReportReader reportReader;
   private final DashboardRelationService dashboardRelationService;
 

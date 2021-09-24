@@ -13,7 +13,9 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -25,20 +27,21 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class UserIdentityCacheService extends AbstractIdentityCacheService {
+@Conditional(CamundaPlatformCondition.class)
+public class PlatformUserIdentityCacheService extends AbstractPlatformIdentityCacheService implements UserIdentityCache {
   private final EngineContextFactory engineContextFactory;
 
-  public UserIdentityCacheService(final ConfigurationService configurationService,
-                                  final EngineContextFactory engineContextFactory,
-                                  final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                  final BackoffCalculator backoffCalculator) {
+  public PlatformUserIdentityCacheService(final ConfigurationService configurationService,
+                                          final EngineContextFactory engineContextFactory,
+                                          final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+                                          final BackoffCalculator backoffCalculator) {
     super(configurationService::getUserIdentityCacheConfiguration, identityCacheSyncListeners, backoffCalculator);
     this.engineContextFactory = engineContextFactory;
   }
 
   @Override
   protected String getCacheLabel() {
-    return "user";
+    return "platform user";
   }
 
   @Override
@@ -66,7 +69,7 @@ public class UserIdentityCacheService extends AbstractIdentityCacheService {
       identityCache::addIdentities,
       engineContext::fetchPageOfGroups,
       groupDto -> !authorizedIdentities.getRevokedGroupIds().contains(groupDto.getId())
-        && !identityCache.getGroupIdentityById(groupDto.getId()).isPresent()
+        && identityCache.getGroupIdentityById(groupDto.getId()).isEmpty()
     );
 
     // collect all members of revoked groups to exclude them when adding all other users
@@ -90,7 +93,7 @@ public class UserIdentityCacheService extends AbstractIdentityCacheService {
       userDto ->
         // @formatter:off
         // add them if not already present
-        !identityCache.getUserIdentityById(userDto.getId()).isPresent()
+        identityCache.getUserIdentityById(userDto.getId()).isEmpty()
         // and
         && (
           // if explicitly granted access

@@ -24,12 +24,12 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.atLeast;
 import static org.mockserver.verify.VerificationTimes.once;
 
-public class MultiEngineIdentityServiceIT extends AbstractMultiEngineIT {
+public class MultiEnginePlatformIdentityServiceIT extends AbstractMultiEngineIT {
 
   @RegisterExtension
   protected final LogCapturer logCapturer = LogCapturer.create()
     .forLevel(Level.WARN)
-    .captureForType(IdentityService.class);
+    .captureForType(PlatformIdentityService.class);
 
   @Test
   public void fetchUserFromConnectedEngineWhenOtherEnginesAreDown() {
@@ -75,7 +75,7 @@ public class MultiEngineIdentityServiceIT extends AbstractMultiEngineIT {
     return EngineConstants.USER_BY_ID_ENDPOINT_TEMPLATE.replace("{id}", userId);
   }
 
-  private IdentityService getIdentityService() {
+  private PlatformIdentityService getIdentityService() {
     return embeddedOptimizeExtension.getIdentityService();
   }
 

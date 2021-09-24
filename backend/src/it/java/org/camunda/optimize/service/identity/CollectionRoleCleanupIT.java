@@ -20,6 +20,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.CollectionRoleCleanupService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,7 +62,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
 
   @Test
   public void cleanupAfterIdentitySync() {
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    final PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
     try {
       // given a collection with permissions for users/groups
       userIdentityCacheService.stopScheduledSync();
@@ -131,7 +132,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
 
   @Test
   public void cleanupAfterIdentitySyncRemovesLastManager() {
-    final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    final PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
     try {
       // given
       userIdentityCacheService.startScheduledSync();
@@ -167,7 +168,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
   @Test
   public void noCleanupOnOnEmptyIdentityCache() {
     // given
-    UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
     final String userid = "testUser";
     authorizationClient.addUserAndGrantOptimizeAccess(userid);
 
@@ -206,9 +207,9 @@ public class CollectionRoleCleanupIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("identitiesAndAuthorizationResponse")
   public void noCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataResponseDto expectedIdentity,
-                                                        final ErrorResponseMock mockedResp) {
+                                                   final ErrorResponseMock mockedResp) {
     // given
-    UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+    PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
 
     switch (expectedIdentity.getType()) {
       case USER:
@@ -251,7 +252,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
-  private UserIdentityCacheService getUserIdentityCacheService() {
+  private PlatformUserIdentityCacheService getUserIdentityCacheService() {
     return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 
@@ -262,6 +263,7 @@ public class CollectionRoleCleanupIT extends AbstractIT {
     );
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<Arguments> identitiesAndAuthorizationResponse() {
     return identities().flatMap(identity -> MockServerUtil.engineMockedErrorResponses()
       .map(errorResponse -> Arguments.of(identity, errorResponse)));

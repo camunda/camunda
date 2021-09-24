@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvalu
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Component
 public class ReportRestMapper {
 
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public <T> AuthorizedReportEvaluationResponseDto<?> mapToEvaluationResultDto(final AuthorizedReportEvaluationResult reportEvaluationResult) {

@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
+import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCacheService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -58,7 +58,7 @@ public class AssigneeCandidateGroupService {
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
-  private final UserTaskIdentityCacheService identityCacheService;
+  private final PlatformUserTaskIdentityCacheService identityCacheService;
   private final ReportService reportService;
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(final String id, final IdentityType type) {

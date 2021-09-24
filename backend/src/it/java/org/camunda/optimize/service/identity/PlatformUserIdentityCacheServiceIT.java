@@ -14,6 +14,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,7 +42,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
-public class UserIdentityCacheServiceIT extends AbstractIT {
+public class PlatformUserIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   public void verifySyncEnabledByDefault() {
@@ -93,7 +94,7 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
       getIdentitySyncConfiguration().setMaxEntryLimit(1L);
 
       // then
-      final UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+      final PlatformUserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
       assertThatThrownBy(userIdentityCacheService::synchronizeIdentities)
         .isInstanceOf(MaxEntryLimitHitException.class);
       assertThat(getUserIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
@@ -358,7 +359,7 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
-  private UserIdentityCacheService getUserIdentityCacheService() {
+  private PlatformUserIdentityCacheService getUserIdentityCacheService() {
     return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 
@@ -366,7 +367,9 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration();
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   private static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
   }
+
 }

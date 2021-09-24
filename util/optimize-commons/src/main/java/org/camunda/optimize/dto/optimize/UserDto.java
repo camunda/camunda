@@ -40,6 +40,10 @@ public class UserDto extends IdentityWithMetadataResponseDto {
     this(id, firstName, null, null);
   }
 
+  public UserDto(final String id, final String fullName, final String email) {
+    this(id, fullName, null, email);
+  }
+
   @JsonCreator
   public UserDto(@JsonProperty(required = true, value = "id") @NonNull final String id,
                  @JsonProperty(required = false, value = "firstName") final String firstName,

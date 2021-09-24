@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +37,7 @@ public class IdentityRestService {
   public static final String IDENTITY_SEARCH_SUB_PATH = "/search";
   public static final String CURRENT_USER_IDENTITY_SUB_PATH = "/current/user";
 
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
   private final SessionService sessionService;
 
   @GET

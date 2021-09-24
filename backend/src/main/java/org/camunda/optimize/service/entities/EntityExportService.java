@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.dashboard.DashboardExportService;
 import org.camunda.optimize.service.entities.report.ReportExportService;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -23,7 +23,7 @@ import java.util.Set;
 @Slf4j
 public class EntityExportService {
 
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
   private final ReportExportService reportExportService;
   private final DashboardExportService dashboardExportService;
 

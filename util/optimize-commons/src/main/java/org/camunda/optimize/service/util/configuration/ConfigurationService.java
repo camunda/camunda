@@ -26,6 +26,7 @@ import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCa
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
+import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -67,6 +68,8 @@ public class ConfigurationService {
   private ReadContext configJsonContext;
 
   private SecurityConfiguration securityConfiguration;
+
+  private UsersConfiguration usersConfiguration;
 
   private Map<String, EngineConfiguration> configuredEngines;
   private ZeebeConfiguration configuredZeebe;
@@ -241,6 +244,16 @@ public class ConfigurationService {
       );
     }
     return securityConfiguration;
+  }
+
+  public UsersConfiguration getUsersConfiguration() {
+    if (usersConfiguration == null) {
+      usersConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.USERS,
+        UsersConfiguration.class
+      );
+    }
+    return usersConfiguration;
   }
 
   @JsonIgnore

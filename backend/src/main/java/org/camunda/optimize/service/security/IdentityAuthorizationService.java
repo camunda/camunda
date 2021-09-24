@@ -125,17 +125,17 @@ public class IdentityAuthorizationService
     );
   }
 
-  public List<AuthorizationDto> getAllIdentityAuthorizations(final EngineContext engineContext,
-                                                             final IdentityType identityType) {
+  private List<AuthorizationDto> getAllIdentityAuthorizations(final EngineContext engineContext,
+                                                              final IdentityType identityType) {
     if (IdentityType.USER.equals(identityType)) {
       return engineContext.getAllUserAuthorizations();
     }
     return engineContext.getAllGroupAuthorizations();
   }
 
-  public List<AuthorizationDto> getAllIdentityAuthorizationsForUser(final EngineContext engineContext,
-                                                                    final IdentityType identityType,
-                                                                    final String userId) {
+  private List<AuthorizationDto> getAllIdentityAuthorizationsForUser(final EngineContext engineContext,
+                                                                     final IdentityType identityType,
+                                                                     final String userId) {
     if (IdentityType.USER.equals(identityType)) {
       return engineContext.getAllUserAuthorizationsForUser(userId);
     }

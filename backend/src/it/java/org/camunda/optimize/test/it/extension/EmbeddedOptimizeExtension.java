@@ -30,9 +30,9 @@ import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWr
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
-import org.camunda.optimize.service.identity.IdentityService;
-import org.camunda.optimize.service.identity.UserIdentityCacheService;
-import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
+import org.camunda.optimize.service.identity.PlatformIdentityService;
+import org.camunda.optimize.service.identity.PlatformUserIdentityCacheService;
+import org.camunda.optimize.service.identity.PlatformUserTaskIdentityCacheService;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -545,12 +545,12 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getTelemetryService();
   }
 
-  public UserIdentityCacheService getUserIdentityCacheService() {
-    return getOptimize().getUserIdentityCacheService();
+  public PlatformUserIdentityCacheService getUserIdentityCacheService() {
+    return getOptimize().getPlatformUserIdentityCacheService();
   }
 
-  public UserTaskIdentityCacheService getUserTaskIdentityCacheService() {
-    return getOptimize().getUserTaskIdentityCacheService();
+  public PlatformUserTaskIdentityCacheService getUserTaskIdentityCacheService() {
+    return getOptimize().getPlatformUserTaskIdentityCacheService();
   }
 
   public EventIndexRolloverService getEventIndexRolloverService() {
@@ -581,8 +581,8 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(TenantService.class);
   }
 
-  public IdentityService getIdentityService() {
-    return getApplicationContext().getBean(IdentityService.class);
+  public PlatformIdentityService getIdentityService() {
+    return getApplicationContext().getBean(PlatformIdentityService.class);
   }
 
   @SneakyThrows

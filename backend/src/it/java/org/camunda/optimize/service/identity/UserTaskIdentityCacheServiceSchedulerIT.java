@@ -27,7 +27,7 @@ public class UserTaskIdentityCacheServiceSchedulerIT extends AbstractIT {
     }
   }
 
-  private UserTaskIdentityCacheService getIdentityCacheService() {
+  private PlatformUserTaskIdentityCacheService getIdentityCacheService() {
     return embeddedOptimizeExtension.getUserTaskIdentityCacheService();
   }
 }

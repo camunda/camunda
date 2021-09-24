@@ -15,9 +15,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IdentityServiceIT extends AbstractIT {
+public class PlatformIdentityServiceIT extends AbstractIT {
 
-  private IdentityService identityService;
+  private PlatformIdentityService identityService;
 
   @BeforeEach
   public void setup() {

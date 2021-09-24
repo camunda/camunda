@@ -86,6 +86,16 @@ container:
   # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
   accessUrl: null
 
+# Configuration for fetching user data
+users:
+  cloud:
+    # The URL at which access tokens can be retrieved
+    tokenUrl: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_URL:}
+    clientId: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_CLIENTID:}
+    clientSecret: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_CLIENTSECRET:}
+    audience: ${CAMUNDA_OPTIMIZE_M2M_AUTH0_AUDIENCE:}
+    usersUrl: ${CAMUNDA_OPTIMIZE_ACCOUNTS_URL:}
+
 # Configuration for engines used to import data. Please note that you have to have at
 # least one engine configured at all times.
 engines:

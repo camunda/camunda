@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 
 @Component
-public class UserTaskIdentityCacheService extends AbstractIdentityCacheService {
+public class PlatformUserTaskIdentityCacheService extends AbstractPlatformIdentityCacheService {
   private final EngineContextFactory engineContextFactory;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
 
-  public UserTaskIdentityCacheService(final ConfigurationService configurationService,
-                                      final EngineContextFactory engineContextFactory,
-                                      final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
-                                      final BackoffCalculator backoffCalculator) {
+  public PlatformUserTaskIdentityCacheService(final ConfigurationService configurationService,
+                                              final EngineContextFactory engineContextFactory,
+                                              final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
+                                              final BackoffCalculator backoffCalculator) {
     super(configurationService::getUserTaskIdentityCacheConfiguration, Collections.emptyList(), backoffCalculator);
     this.engineContextFactory = engineContextFactory;
     this.assigneeAndCandidateGroupsReader = assigneeAndCandidateGroupsReader;
@@ -42,7 +42,7 @@ public class UserTaskIdentityCacheService extends AbstractIdentityCacheService {
 
   @Override
   protected String getCacheLabel() {
-    return "assignee/candidateGroup";
+    return "platform assignee/candidateGroup";
   }
 
   @Override

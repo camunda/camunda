@@ -7,25 +7,21 @@ package org.camunda.optimize.service.identity;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.IdentityAuthorizationService;
 import org.camunda.optimize.service.security.SessionListener;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,87 +31,32 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.toList;
-
 @Component
 @Slf4j
-public class IdentityService implements ConfigurationReloadable, SessionListener {
+@Conditional(CamundaPlatformCondition.class)
+public class PlatformIdentityService extends AbstractIdentityService
+  implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
-  private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS =
-    ImmutableList.copyOf(AuthorizationType.values());
 
   private LoadingCache<String, List<GroupDto>> userGroupsCache;
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final IdentityAuthorizationService identityAuthorizationService;
-  private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
-  private final UserIdentityCacheService syncedIdentityCache;
 
-  public IdentityService(final ApplicationAuthorizationService applicationAuthorizationService,
-                         final IdentityAuthorizationService identityAuthorizationService,
-                         final ConfigurationService configurationService,
-                         final EngineContextFactory engineContextFactory,
-                         final UserIdentityCacheService syncedIdentityCache) {
+  public PlatformIdentityService(final ApplicationAuthorizationService applicationAuthorizationService,
+                                 final IdentityAuthorizationService identityAuthorizationService,
+                                 final ConfigurationService configurationService,
+                                 final EngineContextFactory engineContextFactory,
+                                 final UserIdentityCache syncedIdentityCache) {
+    super(configurationService, syncedIdentityCache);
     this.applicationAuthorizationService = applicationAuthorizationService;
     this.identityAuthorizationService = identityAuthorizationService;
-    this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
-    this.syncedIdentityCache = syncedIdentityCache;
-
     initUserGroupCache();
   }
 
-  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
-    syncedIdentityCache.addIdentity(identity);
-  }
-
-  public boolean isSuperUserIdentity(final String userId) {
-    return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId) ||
-      isInSuperUserGroup(userId);
-  }
-
-  private boolean isInSuperUserGroup(final String userId) {
-    final List<String> authorizedGroupIds =
-      configurationService.getAuthConfiguration().getSuperGroupIds();
-    return getAllGroupsOfUser(userId)
-      .stream()
-      .map(IdentityDto::getId)
-      .anyMatch(authorizedGroupIds::contains);
-  }
-
-  public List<AuthorizationType> getUserAuthorizations(final String userId) {
-    if (isSuperUserIdentity(userId)) {
-      return SUPERUSER_AUTHORIZATIONS;
-    }
-    return Collections.emptyList();
-  }
-
-  public List<GroupDto> getAllGroupsOfUser(final String userId) {
-    return userId != null ? userGroupsCache.get(userId) : Collections.emptyList();
-  }
-
-  public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
-    return getUserById(userOrGroupId)
-      .map(IdentityWithMetadataResponseDto.class::cast)
-      .or(() -> getGroupById(userOrGroupId));
-  }
-
-  public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForIdAsUser(final String userId,
-                                                                                      final String userOrGroupId) {
-    return getUserById(userOrGroupId)
-      .map(IdentityWithMetadataResponseDto.class::cast)
-      .or(() -> getGroupById(userOrGroupId))
-      .map(identityDto -> {
-        if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
-          throw new ForbiddenException(String.format(
-            "The user with ID %s is not authorized to access the identity with ID %s", userId, userOrGroupId
-          ));
-        }
-        return identityDto;
-      });
-  }
-
+  @Override
   public Optional<UserDto> getUserById(final String userId) {
     return syncedIdentityCache.getUserIdentityById(userId)
       .map(Optional::of)
@@ -138,6 +79,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       );
   }
 
+  @Override
   public Optional<GroupDto> getGroupById(final String groupId) {
     return syncedIdentityCache.getGroupIdentityById(groupId)
       .map(Optional::of)
@@ -160,50 +102,14 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       );
   }
 
-  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
-                                                                   final String searchString,
-                                                                   final int maxResults) {
-    final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
-    IdentitySearchResultResponseDto result = syncedIdentityCache.searchIdentities(
-      searchString, IdentityType.values(), maxResults
-    );
-    while (!result.getResult().isEmpty()
-      && filteredIdentities.size() < maxResults) {
-      // continue searching until either the maxResult number of hits has been found or
-      // the end of the cache has been reached
-      filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
-      result = syncedIdentityCache.searchIdentitiesAfter(searchString, IdentityType.values(), maxResults, result);
-    }
-    return new IdentitySearchResultResponseDto(result.getTotal(), filteredIdentities);
+  @Override
+  public List<GroupDto> getAllGroupsOfUser(final String userId) {
+    return userId != null ? userGroupsCache.get(userId) : Collections.emptyList();
   }
 
-  private List<IdentityWithMetadataResponseDto> filterIdentitySearchResultByUserAuthorizations(
-    final String userId,
-    final IdentitySearchResultResponseDto result) {
-    return result.getResult()
-      .stream()
-      .filter(identity -> isUserAuthorizedToAccessIdentity(userId, identity))
-      .collect(toList());
-  }
-
+  @Override
   public boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity) {
     return identityAuthorizationService.isUserAuthorizedToSeeIdentity(userId, identity.getType(), identity.getId());
-  }
-
-  public void validateUserAuthorizedToAccessRoleOrFail(final String userId, final IdentityDto identityDto) {
-    if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
-      throw new ForbiddenException(
-        String.format(
-          "User with ID %s is not authorized to access identity with ID %s",
-          userId,
-          identityDto.getId()
-        )
-      );
-    }
-  }
-
-  public boolean doesIdentityExist(final IdentityDto identity) {
-    return getIdentityWithMetadataForId(identity.getId()).isPresent();
   }
 
   @Override
@@ -224,11 +130,6 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   @Override
   public void onSessionDestroy(final String userId) {
     userGroupsCache.invalidate(userId);
-  }
-
-  public Optional<String> getIdentityNameById(final String identityId) {
-    Optional<? extends IdentityWithMetadataResponseDto> identityDto = getIdentityWithMetadataForId(identityId);
-    return identityDto.map(IdentityWithMetadataResponseDto::getName);
   }
 
   private void initUserGroupCache() {
