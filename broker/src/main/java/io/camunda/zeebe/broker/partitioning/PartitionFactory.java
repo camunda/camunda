@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -29,12 +30,15 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
+import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
@@ -47,7 +51,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
@@ -57,10 +60,13 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,9 +84,7 @@ public final class PartitionFactory {
 
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS =
       List.of(
-          new StateControllerPartitionStartupStep(),
-          new LogDeletionPartitionStartupStep(),
-          new RockDbMetricExporterPartitionStartupStep());
+          new LogDeletionPartitionStartupStep(), new RockDbMetricExporterPartitionStartupStep());
   // will probably be executed in parallel
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(
@@ -94,7 +98,6 @@ public final class PartitionFactory {
 
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStartupStep()),
           PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStartupStep()),
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
@@ -107,7 +110,6 @@ public final class PartitionFactory {
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          PartitionStepMigrationHelper.fromStartupStep(new StateControllerPartitionStartupStep()),
           PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStartupStep()),
           new LogStoragePartitionStep(),
           new LogStreamPartitionStep(),
@@ -177,6 +179,14 @@ public final class PartitionFactory {
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
 
+      final ConstructableSnapshotStore constructableSnapshotStore =
+          snapshotStoreFactory.getConstructableSnapshotStore(partitionId);
+      final StateController stateController =
+          createStateController(
+              owningPartition,
+              constructableSnapshotStore,
+              snapshotStoreFactory.getSnapshotStoreConcurrencyControl(partitionId));
+
       final PartitionStartupAndTransitionContextImpl partitionStartupAndTransitionContext =
           new PartitionStartupAndTransitionContextImpl(
               localBroker.getNodeId(),
@@ -186,10 +196,11 @@ public final class PartitionFactory {
                   communicationService, membershipService, owningPartition.members()),
               actorSchedulingService,
               brokerCfg,
-              () -> commandApiService.newCommandResponseWriter(),
+              commandApiService::newCommandResponseWriter,
               () -> commandApiService.getOnProcessedListener(partitionId),
-              snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
+              constructableSnapshotStore,
               snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
+              stateController,
               typedRecordProcessorsFactory,
               exporterRepository,
               new PartitionProcessingState(owningPartition));
@@ -214,6 +225,22 @@ public final class PartitionFactory {
     }
 
     return partitions;
+  }
+
+  private StateController createStateController(
+      final RaftPartition raftPartition,
+      final ConstructableSnapshotStore snapshotStore,
+      final ConcurrencyControl concurrencyControl) {
+    final var runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
+    final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
+
+    return new StateControllerImpl(
+        DefaultZeebeDbFactory.defaultFactory(databaseCfg.createRocksDbConfiguration()),
+        snapshotStore,
+        runtimeDirectory,
+        new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
+        StatePositionSupplier::getHighestExportedPosition,
+        concurrencyControl);
   }
 
   private TypedRecordProcessorsFactory createFactory(
