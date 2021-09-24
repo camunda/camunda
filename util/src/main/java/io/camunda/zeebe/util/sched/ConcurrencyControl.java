@@ -42,4 +42,14 @@ public interface ConcurrencyControl {
   default <V> ActorFuture<V> createFuture() {
     return new CompletableActorFuture<>();
   }
+
+  /**
+   * Create a new completed future object
+   *
+   * @param <V> value type of future
+   * @return new completed future object
+   */
+  default <V> ActorFuture<V> createCompletedFuture() {
+    return CompletableActorFuture.completed(null);
+  }
 }
