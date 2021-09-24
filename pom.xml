@@ -47,7 +47,7 @@
     <mockito.version>3.12.4</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <junit.jupiter.version>5.8.0</junit.jupiter.version>
-    <junit.platform.version>1.8.0</junit.platform.version>
+    <junit.platform.version>1.8.1</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.21.0</assertj.version>
