@@ -627,6 +627,14 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(client, "usertest/registerPassenger_v_1.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "usertest/multiInstance_v_1.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "usertest/manual-task.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "usertest/intermediate-message-throw-event.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "usertest/intermediate-none-event.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "usertest/message-end-event.bpmn");
   }
 
   protected void startProcessInstances(int version) {
@@ -634,6 +642,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     for (int i = 0; i < instancesCount; i++) {
       if (version < 2) {
         processInstanceKeys.add(startLoanProcess());
+        processInstanceKeys.add(startManualProcess());
+        processInstanceKeys.add(startIntermediateMessageThrowEventProcess());
+        processInstanceKeys.add(startIntermediateNoneEventProcess());
+        processInstanceKeys.add(startMessageEndEventProcess());
       }
       if (version < 3) {
         processInstanceKeys.add(startOrderProcess());
@@ -703,6 +715,22 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         + "  ],\n"
         + "  \"otherInfo\": null\n"
         + "}");
+  }
+
+  private long startManualProcess() {
+    return ZeebeTestUtil.startProcessInstance(client, "manual-task-process", null);
+  }
+
+  private Long startIntermediateNoneEventProcess() {
+    return ZeebeTestUtil.startProcessInstance(client, "intermediate-none-event-process", null);
+  }
+
+  private Long startIntermediateMessageThrowEventProcess() {
+    return ZeebeTestUtil.startProcessInstance(client, "intermediate-message-throw-event-process", null);
+  }
+
+  private Long startMessageEndEventProcess() {
+    return ZeebeTestUtil.startProcessInstance(client, "message-end-event-process", null);
   }
 
   private long startMultiInstanceProcess() {

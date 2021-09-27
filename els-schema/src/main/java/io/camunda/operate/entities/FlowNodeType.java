@@ -16,11 +16,13 @@ public enum FlowNodeType {
   EVENT_SUB_PROCESS,
   START_EVENT,
   INTERMEDIATE_CATCH_EVENT,
+  INTERMEDIATE_THROW_EVENT,
   BOUNDARY_EVENT,
   END_EVENT,
   SERVICE_TASK,
   RECEIVE_TASK,
   USER_TASK,
+  MANUAL_TASK,
   EXCLUSIVE_GATEWAY,
   PARALLEL_GATEWAY,
   EVENT_BASED_GATEWAY,
@@ -30,6 +32,7 @@ public enum FlowNodeType {
   BUSINESS_RULE_TASK,
   SCRIPT_TASK,
   SEND_TASK,
+
   UNKNOWN;
 
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeType.class);
