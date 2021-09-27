@@ -84,6 +84,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
     endDate,
     calledProcessInstanceId,
     calledProcessDefinitionName,
+    flowNodeType,
     // TODO: remove incidentErrorMessage and incidentErrorType
     // when IS_NEXT_INSTANCES is removed
     // @ts-expect-error
@@ -157,29 +158,29 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                 <SummaryDataValue>{startDate}</SummaryDataValue>
                 <SummaryDataKey>End Date</SummaryDataKey>
                 <SummaryDataValue>{endDate || '—'}</SummaryDataValue>
-                {flowNodeMetaData?.type.elementType ===
-                  'TASK_CALL_ACTIVITY' && (
-                  <>
-                    <SummaryDataKey>Called Instance</SummaryDataKey>
-                    <SummaryDataValue>
-                      {calledProcessInstanceId ? (
-                        <Link
-                          to={(location) =>
-                            Locations.instance(
-                              calledProcessInstanceId,
-                              location
-                            )
-                          }
-                          title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
-                        >
-                          {`${calledProcessDefinitionName} - ${calledProcessInstanceId}`}
-                        </Link>
-                      ) : (
-                        'None'
-                      )}
-                    </SummaryDataValue>
-                  </>
-                )}
+                {flowNodeMetaData?.type.elementType === 'TASK_CALL_ACTIVITY' &&
+                  flowNodeType !== 'MULTI_INSTANCE_BODY' && (
+                    <>
+                      <SummaryDataKey>Called Instance</SummaryDataKey>
+                      <SummaryDataValue>
+                        {calledProcessInstanceId ? (
+                          <Link
+                            to={(location) =>
+                              Locations.instance(
+                                calledProcessInstanceId,
+                                location
+                              )
+                            }
+                            title={`View ${calledProcessDefinitionName} instance ${calledProcessInstanceId}`}
+                          >
+                            {`${calledProcessDefinitionName} - ${calledProcessInstanceId}`}
+                          </Link>
+                        ) : (
+                          'None'
+                        )}
+                      </SummaryDataValue>
+                    </>
+                  )}
                 {IS_NEXT_INCIDENTS
                   ? incident !== null && (
                       <>

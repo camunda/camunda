@@ -64,6 +64,11 @@ const completedFlowNodeMetaData = {
   },
 };
 
+const multiInstanceCallActivityMetaData = {
+  ...completedFlowNodeMetaData,
+  flowNodeType: 'MULTI_INSTANCE_BODY',
+};
+
 const incidentFlowNodeMetaData = {
   flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
   flowNodeId: null,
@@ -163,7 +168,9 @@ describe('PopoverOverlay', () => {
 
     renderPopover();
 
-    await screen.findByText(/Flow Node Instance Id/);
+    expect(
+      await screen.findByText(/Flow Node Instance Id/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Start Date/)).toBeInTheDocument();
     expect(screen.getByText(/End Date/)).toBeInTheDocument();
     expect(screen.getByText(/Type/)).toBeInTheDocument();
@@ -222,7 +229,9 @@ describe('PopoverOverlay', () => {
 
     renderPopover();
 
-    await screen.findByText(/Flow Node Instance Id/);
+    expect(
+      await screen.findByText(/Flow Node Instance Id/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Start Date/)).toBeInTheDocument();
     expect(screen.getByText(/End Date/)).toBeInTheDocument();
     expect(screen.getByText(/Called Instance/)).toBeInTheDocument();
@@ -266,7 +275,9 @@ describe('PopoverOverlay', () => {
 
     renderPopover();
 
-    await screen.findByText(/Flow Node Instance Id/);
+    expect(
+      await screen.findByText(/Flow Node Instance Id/)
+    ).toBeInTheDocument();
 
     userEvent.click(screen.getAllByText(/View/)[0]);
 
@@ -342,5 +353,33 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/3 incidents occured/)).toBeInTheDocument();
     expect(screen.getByText(/View/)).toBeInTheDocument();
     expect(screen.queryByText(/Flow Node Instance Id/)).not.toBeInTheDocument();
+  });
+
+  it('should not render called instances for multi instance call activities', async () => {
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      ),
+      rest.post(
+        `/api/process-instances/:processInstanceId/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(multiInstanceCallActivityMetaData))
+      )
+    );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: CALL_ACTIVITY_FLOW_NODE_ID,
+        state: 'ACTIVE',
+      })
+    );
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+    });
+
+    renderPopover();
+
+    expect(
+      await screen.findByText(/Flow Node Instance Id/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
   });
 });
