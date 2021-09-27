@@ -8,19 +8,18 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
@@ -81,7 +80,8 @@ public final class StateControllerImplTest {
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
-    assertThat(snapshotController.takeTransientSnapshot(1).join()).isEmpty();
+    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1).join())
+        .hasCauseInstanceOf(StateClosedException.class);
   }
 
   @Test
@@ -93,8 +93,7 @@ public final class StateControllerImplTest {
 
     // when
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
-    final var snapshot =
-        tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
+    final var snapshot = tmpSnapshot.persist().join();
 
     // then
     assertThat(snapshot)
@@ -115,7 +114,7 @@ public final class StateControllerImplTest {
     wrapper.wrap(snapshotController.recover().join());
     wrapper.putInt(key, value);
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
-    tmpSnapshot.orElseThrow().persist().join();
+    tmpSnapshot.persist().join();
     snapshotController.close();
     wrapper.wrap(snapshotController.recover().join());
 
@@ -164,17 +163,11 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition - 1);
     snapshotController.recover().join();
     final var firstSnapshot =
-        snapshotController
-            .takeTransientSnapshot(snapshotPosition)
-            .join()
-            .map(PersistableSnapshot::persist)
-            .map(ActorFuture::join)
-            .orElseThrow();
+        snapshotController.takeTransientSnapshot(snapshotPosition).join().persist().join();
 
     // when
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition + 1).join();
-    final var snapshot =
-        tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
+    final var snapshot = tmpSnapshot.persist().join();
 
     // then
     assertThat(snapshot)
@@ -194,18 +187,12 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition);
     snapshotController.recover().join();
     final var firstSnapshot =
-        snapshotController
-            .takeTransientSnapshot(snapshotPosition)
-            .join()
-            .map(PersistableSnapshot::persist)
-            .map(ActorFuture::join)
-            .orElseThrow();
+        snapshotController.takeTransientSnapshot(snapshotPosition).join().persist().join();
 
     // when
     exporterPosition.set(snapshotPosition + 1);
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
-    final var snapshot =
-        tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
+    final var snapshot = tmpSnapshot.persist().join();
 
     // then
     assertThat(snapshot)
@@ -293,7 +280,7 @@ public final class StateControllerImplTest {
     closed.join();
 
     // then
-    assertThat(snapshotTaken.join()).isEmpty();
+    assertThatThrownBy(snapshotTaken::join).hasCauseInstanceOf(StateClosedException.class);
   }
 
   @Test
@@ -307,11 +294,11 @@ public final class StateControllerImplTest {
     closed.join();
 
     // then
-    assertThat(snapshotTaken.join()).isNotEmpty();
+    assertThatNoException().isThrownBy(snapshotTaken::join);
   }
 
   private File takeSnapshot(final long position) {
-    final var snapshot = snapshotController.takeTransientSnapshot(position).join().orElseThrow();
+    final var snapshot = snapshotController.takeTransientSnapshot(position).join();
     return snapshot.persist().join().getPath().toFile();
   }
 

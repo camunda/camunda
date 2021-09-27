@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
@@ -125,7 +126,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
     if (!isValid) {
       future.completeExceptionally(
-          new IllegalStateException("Snapshot is not valid. It may have been deleted."));
+          new SnapshotNotFoundException("Snapshot is not valid. It may have been deleted."));
       return;
     }
 
