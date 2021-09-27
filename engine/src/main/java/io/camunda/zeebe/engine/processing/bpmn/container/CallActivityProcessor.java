@@ -140,11 +140,18 @@ public final class CallActivityProcessor
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
-              eventSubscriptionBehavior.activateTriggeredEvent(
-                  context.getElementInstanceKey(),
-                  terminated.getFlowScopeKey(),
-                  eventTrigger,
-                  terminated);
+              // Event triggers could be used to store variables. If the event trigger belongs to
+              // the Call Activity itself, we should not activate it, Otherwise the Call Activity
+              // will be activated a second time.
+              if (!element.getId().equals(eventTrigger.getElementId())) {
+                eventSubscriptionBehavior.activateTriggeredEvent(
+                    context.getElementInstanceKey(),
+                    terminated.getFlowScopeKey(),
+                    eventTrigger,
+                    terminated);
+              } else {
+                stateTransitionBehavior.onElementTerminated(element, terminated);
+              }
             },
             () -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
