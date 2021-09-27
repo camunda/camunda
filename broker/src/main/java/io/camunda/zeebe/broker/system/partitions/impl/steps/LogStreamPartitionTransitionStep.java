@@ -17,7 +17,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Supplier;
 
-public class LogStreamPartitionTransitionStep implements PartitionTransitionStep {
+public final class LogStreamPartitionTransitionStep implements PartitionTransitionStep {
 
   private final Supplier<LogStreamBuilder> logStreamBuilderSupplier;
 
@@ -26,8 +26,7 @@ public class LogStreamPartitionTransitionStep implements PartitionTransitionStep
   }
 
   // Used for testing
-  public LogStreamPartitionTransitionStep(
-      final Supplier<LogStreamBuilder> logStreamBuilderSupplier) {
+  LogStreamPartitionTransitionStep(final Supplier<LogStreamBuilder> logStreamBuilderSupplier) {
     this.logStreamBuilderSupplier = logStreamBuilderSupplier;
   }
 
@@ -84,7 +83,7 @@ public class LogStreamPartitionTransitionStep implements PartitionTransitionStep
 
   @Override
   public String getName() {
-    return "logstream";
+    return "LogStream";
   }
 
   private ActorFuture<LogStream> buildLogstream(

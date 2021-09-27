@@ -80,6 +80,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
+import org.slf4j.MDC;
 
 /**
  * Manages the volatile state and state transitions of a Raft server.
@@ -130,9 +131,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
+  private final int partitionId;
 
   public RaftContext(
       final String name,
+      final int partitionId,
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
@@ -146,6 +149,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
+    this.partitionId = partitionId;
 
     raftRoleMetrics = new RaftRoleMetrics(name);
 
@@ -170,6 +174,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     threadContext =
         threadContextFactory.createContext(
             namedThreads(baseThreadName, log), this::onUncaughtException);
+    // in order to set the partition id once in the raft thread
+    threadContext.execute(() -> MDC.put("partitionId", Integer.toString(partitionId)));
 
     // Open the metadata store.
     meta = storage.openMetaStore();
@@ -1088,6 +1094,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public Duration getMaxQuorumResponseTimeout() {
     return partitionConfig.getMaxQuorumResponseTimeout();
+  }
+
+  public int getPartitionId() {
+    return partitionId;
   }
 
   /** Raft server state. */

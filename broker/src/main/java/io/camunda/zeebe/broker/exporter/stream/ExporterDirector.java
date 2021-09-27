@@ -80,6 +80,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterPositionsDistributionService exporterDistributionService;
+  private final int partitionId;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
     name = context.getName();
@@ -87,7 +88,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
     logStream = Objects.requireNonNull(context.getLogStream());
-    final var partitionId = logStream.getPartitionId();
+    partitionId = logStream.getPartitionId();
     metrics = new ExporterMetrics(partitionId);
     recordExporter = new RecordExporter(metrics, containers, partitionId);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
@@ -135,6 +136,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
+  }
+
+  @Override
   public String getName() {
     return name;
   }
@@ -169,7 +177,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       recoverFromSnapshot();
       exporterDistributionService =
           new ExporterPositionsDistributionService(
-              state::setPosition, partitionMessagingService, exporterPositionsTopic);
+              this::consumeExporterPositionFromLeader,
+              partitionMessagingService,
+              exporterPositionsTopic);
 
       // Initialize containers irrespective of if it is Active or Passive mode
       initContainers();
@@ -236,6 +246,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       for (final var listener : listeners) {
         listener.onFailure();
       }
+    }
+  }
+
+  private void consumeExporterPositionFromLeader(
+      final String exporterId, final long receivedPosition) {
+    if (state.getPosition(exporterId) < receivedPosition) {
+      state.setPosition(exporterId, receivedPosition);
     }
   }
 

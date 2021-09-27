@@ -23,6 +23,7 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -69,9 +70,10 @@ public final class AsyncSnapshotingTest {
                 Optional.of(
                     new TestIndexedRaftLogEntry(
                         l + 100, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
-            db -> Long.MAX_VALUE);
+            db -> Long.MAX_VALUE,
+            new TestConcurrencyControl());
 
-    snapshotController.openDb();
+    snapshotController.recover().join();
     autoCloseableRule.manage(snapshotController);
     snapshotController = spy(snapshotController);
 
@@ -119,7 +121,7 @@ public final class AsyncSnapshotingTest {
 
     // then
     Awaitility.await()
-        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
   }
 
   @Test
@@ -129,7 +131,7 @@ public final class AsyncSnapshotingTest {
     asyncSnapshotDirector.forceSnapshot();
     setCommitPosition(99L);
     Awaitility.await()
-        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
     final PersistedSnapshot oldSnapshot = persistedSnapshotStore.getLatestSnapshot().orElseThrow();
 
     // when
@@ -170,7 +172,7 @@ public final class AsyncSnapshotingTest {
 
     // then
     Awaitility.await()
-        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
   }
 
   @Test
@@ -198,7 +200,7 @@ public final class AsyncSnapshotingTest {
 
     // then
     Awaitility.await()
-        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
   }
 
   @Test
@@ -209,6 +211,6 @@ public final class AsyncSnapshotingTest {
 
     // then
     Awaitility.await()
-        .untilAsserted(() -> assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1));
+        .untilAsserted(() -> assertThat(persistedSnapshotStore.getLatestSnapshot()).isPresent());
   }
 }

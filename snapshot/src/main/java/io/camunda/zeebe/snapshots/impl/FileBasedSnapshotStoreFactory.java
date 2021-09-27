@@ -13,6 +13,7 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -84,6 +85,19 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
   }
 
   public PersistedSnapshotStore getPersistedSnapshotStore(final int partitionId) {
+    return partitionSnapshotStores.get(partitionId);
+  }
+
+  /**
+   * Return the same concurrent control (actor) that is used by the snapshot store of the given
+   * partition
+   *
+   * @param partitionId
+   * @return concurrency control
+   */
+  @Deprecated // This is an intermediate solution to run StateController and SnapshotStore on same
+  // actor.
+  public ConcurrencyControl getSnapshotStoreConcurrencyControl(final int partitionId) {
     return partitionSnapshotStores.get(partitionId);
   }
 }

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.externalapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -29,8 +29,8 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
-public final class ExternalApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, ExternalApiService {
+public final class CommandApiServiceImpl extends Actor
+    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
@@ -40,7 +40,7 @@ public final class ExternalApiServiceImpl extends Actor
   private final String actorName;
   private final ActorSchedulingService scheduler;
 
-  public ExternalApiServiceImpl(
+  public CommandApiServiceImpl(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
       final PartitionAwareRequestLimiter limiter,
@@ -51,7 +51,7 @@ public final class ExternalApiServiceImpl extends Actor
     this.scheduler = scheduler;
     commandHandler = new CommandApiRequestHandler();
     queryHandler = new QueryApiRequestHandler(queryApiCfg, localBroker.getNodeId());
-    actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
+    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
   }
 
   @Override

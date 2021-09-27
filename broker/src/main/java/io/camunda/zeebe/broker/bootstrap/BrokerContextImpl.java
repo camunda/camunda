@@ -12,17 +12,32 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import java.util.Collection;
 import java.util.List;
 
 public final class BrokerContextImpl implements BrokerContext {
 
   private final ClusterServicesImpl clusterServices;
+  private final CommandApiService commandApiService;
+  private final EmbeddedGatewayService embeddedGatewayService;
+  private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final List<PartitionListener> partitionListeners;
 
   public BrokerContextImpl(
-      final ClusterServicesImpl clusterServices, final List<PartitionListener> partitionListeners) {
+      final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
+      final ClusterServicesImpl clusterServices,
+      final CommandApiService commandApiService,
+      final EmbeddedGatewayService embeddedGatewayService,
+      final List<PartitionListener> partitionListeners) {
+    this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
+    this.commandApiService = requireNonNull(commandApiService);
+    this.embeddedGatewayService = embeddedGatewayService;
+
     this.partitionListeners = unmodifiableList(requireNonNull(partitionListeners));
   }
 
@@ -34,5 +49,27 @@ public final class BrokerContextImpl implements BrokerContext {
   @Override
   public ClusterServicesImpl getClusterServices() {
     return clusterServices;
+  }
+
+  @Override
+  public CommandApiService getCommandApiService() {
+    return commandApiService;
+  }
+
+  @Override
+  public EmbeddedGatewayService getEmbeddedGatewayService() {
+    return embeddedGatewayService;
+  }
+
+  @Override
+  public void addDiskSpaceUsageListener(final DiskSpaceUsageListener diskSpaceUsageListener) {
+    if (diskSpaceUsageMonitor != null) {
+      diskSpaceUsageMonitor.addDiskUsageListener(diskSpaceUsageListener);
+    }
+  }
+
+  @Override
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
   }
 }

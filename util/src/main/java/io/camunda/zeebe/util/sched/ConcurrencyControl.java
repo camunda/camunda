@@ -27,7 +27,7 @@ public interface ConcurrencyControl {
   <T> void runOnCompletion(final ActorFuture<T> future, final BiConsumer<T, Throwable> callback);
 
   /**
-   * Schedules an action to be invoked
+   * Schedules an action to be invoked (must be called from an actor thread)
    *
    * @param action action to be invoked
    */
@@ -41,5 +41,15 @@ public interface ConcurrencyControl {
    */
   default <V> ActorFuture<V> createFuture() {
     return new CompletableActorFuture<>();
+  }
+
+  /**
+   * Create a new completed future object
+   *
+   * @param <V> value type of future
+   * @return new completed future object
+   */
+  default <V> ActorFuture<V> createCompletedFuture() {
+    return CompletableActorFuture.completed(null);
   }
 }

@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -63,6 +65,7 @@ public final class FileBasedSnapshotStore extends Actor
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final String actorName;
+  private final int partitionId;
 
   public FileBasedSnapshotStore(
       final int nodeId,
@@ -77,6 +80,14 @@ public final class FileBasedSnapshotStore extends Actor
 
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName(nodeId, "SnapshotStore", partitionId);
+    this.partitionId = partitionId;
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
   }
 
   @Override
@@ -267,6 +278,35 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
+  public ActorFuture<Void> copySnapshot(
+      final PersistedSnapshot snapshot, final Path targetDirectory) {
+    final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          if (!Files.exists(snapshot.getPath())) {
+            result.completeExceptionally(
+                String.format(
+                    "Expected to copy snapshot %s to directory %s, but snapshot directory %s does not exists. Snapshot may have been deleted.",
+                    snapshot.getId(), targetDirectory, snapshot.getPath()),
+                new FileNotFoundException());
+          } else {
+            try {
+              FileUtil.copySnapshot(snapshot.getPath(), targetDirectory);
+              result.complete(null);
+            } catch (final Exception e) {
+              result.completeExceptionally(
+                  String.format(
+                      "Failed to copy snapshot %s to directory %s.",
+                      snapshot.getId(), targetDirectory),
+                  e);
+            }
+          }
+        });
+
+    return result;
+  }
+
+  @Override
   public FileBasedReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
     final var optMetadata = FileBasedSnapshotMetadata.ofFileName(snapshotId);
     final var metadata =
@@ -317,7 +357,7 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   private void addPendingSnapshot(final PersistableSnapshot pendingSnapshot) {
-    actor.call(() -> pendingSnapshots.add(pendingSnapshot));
+    actor.submit(() -> pendingSnapshots.add(pendingSnapshot));
   }
 
   void removePendingSnapshot(final PersistableSnapshot pendingSnapshot) {

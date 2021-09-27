@@ -185,7 +185,7 @@ final class ExporterRepositoryTest {
     public void export(final Record<?> record) {}
   }
 
-  static class InvalidExporter implements Exporter {
+  public static class InvalidExporter implements Exporter {
     @Override
     public void configure(final Context context) {
       throw new IllegalStateException("what");
@@ -195,7 +195,7 @@ final class ExporterRepositoryTest {
     public void export(final Record<?> record) {}
   }
 
-  static class MinimalExporter implements Exporter {
+  public static class MinimalExporter implements Exporter {
     @Override
     public void export(final Record<?> record) {}
   }

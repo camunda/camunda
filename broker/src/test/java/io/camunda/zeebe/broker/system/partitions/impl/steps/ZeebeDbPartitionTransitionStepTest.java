@@ -17,6 +17,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.util.sched.future.TestActorFuture;
+import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,9 +37,9 @@ class ZeebeDbPartitionTransitionStepTest {
   private ZeebeDbPartitionTransitionStep step;
 
   @BeforeEach
-  void setup() {
+  void setup() throws IOException {
 
-    when(stateController.openDb()).thenReturn(zeebeDb);
+    when(stateController.recover()).thenReturn(TestActorFuture.completedFuture(zeebeDb));
     transitionContext.setStateController(stateController);
 
     step = new ZeebeDbPartitionTransitionStep();
@@ -111,7 +113,7 @@ class ZeebeDbPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getZeebeDb()).isNotEqualTo(existingZeebeDb);
-    verify(stateController).openDb();
+    verify(stateController).recover();
   }
 
   @ParameterizedTest
@@ -129,7 +131,7 @@ class ZeebeDbPartitionTransitionStepTest {
     // then
     assertThat(transitionContext.getZeebeDb()).isNull();
     verify(stateController).closeDb();
-    verify(stateController, never()).openDb();
+    verify(stateController, never()).recover();
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {

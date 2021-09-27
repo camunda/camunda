@@ -52,12 +52,13 @@ public class ZeebePartitionTransitionIntegrationTest {
     when(ctx.getRaftPartition()).thenReturn(raftPartition);
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
+    when(ctx.createTransitionContext()).thenReturn(ctx);
   }
 
   @Test
   public void shouldTransitionToAndCloseInSequence() {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
+    final ZeebePartition partition = new ZeebePartition(ctx, transition, List.of());
     schedulerRule.submitActor(partition);
     partition.onNewRole(Role.LEADER, 1);
     partition.onNewRole(Role.FOLLOWER, 1);

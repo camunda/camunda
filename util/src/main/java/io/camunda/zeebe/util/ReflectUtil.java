@@ -7,13 +7,23 @@
  */
 package io.camunda.zeebe.util;
 
+import java.lang.reflect.InvocationTargetException;
+
 public final class ReflectUtil {
+
+  private ReflectUtil() {}
 
   public static <T> T newInstance(final Class<T> clazz) {
     try {
-      return clazz.newInstance();
-    } catch (final Exception e) {
-      throw new RuntimeException("Could not instantiate class " + clazz.getName(), e);
+      return clazz.getDeclaredConstructor().newInstance();
+    } catch (final InstantiationException
+        | IllegalAccessException
+        | NoSuchMethodException
+        | InvocationTargetException e) {
+      throw new IllegalStateException(
+          String.format(
+              "Failed to instantiate class %s with the default constructor", clazz.getName()),
+          e);
     }
   }
 }

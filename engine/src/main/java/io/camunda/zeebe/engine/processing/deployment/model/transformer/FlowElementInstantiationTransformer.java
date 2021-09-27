@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEve
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
@@ -65,6 +66,8 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(EventBasedGateway.class, ExecutableEventBasedGateway::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);
+    ELEMENT_FACTORIES.put(IntermediateThrowEvent.class, ExecutableIntermediateThrowEvent::new);
+    ELEMENT_FACTORIES.put(ManualTask.class, ExecutableActivity::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
     ELEMENT_FACTORIES.put(ScriptTask.class, ExecutableJobWorkerTask::new);
@@ -74,8 +77,6 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
     ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
-    ELEMENT_FACTORIES.put(IntermediateThrowEvent.class, ExecutableFlowNode::new);
-    ELEMENT_FACTORIES.put(ManualTask.class, ExecutableActivity::new);
   }
 
   @Override

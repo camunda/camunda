@@ -31,6 +31,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -95,6 +96,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public static StreamProcessorBuilder builder() {
     return new StreamProcessorBuilder();
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
   }
 
   @Override

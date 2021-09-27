@@ -9,34 +9,31 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Optional;
 
 public interface StateController extends AutoCloseable {
   /**
    * Takes a snapshot based on the given position. The position is a last processed lower bound
-   * event position.
+   * event position. When the returned future completes successfully and the optional is not empty,
+   * the transient snapshot will be valid.
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
-   * @return a pending snapshot, or nothing if the operation fails
+   * @return a future
    */
-  Optional<TransientSnapshot> takeTransientSnapshot(long lowerBoundSnapshotPosition);
-
-  /** Recovers the state from the latest snapshot. */
-  void recover() throws Exception;
+  ActorFuture<Optional<TransientSnapshot>> takeTransientSnapshot(long lowerBoundSnapshotPosition);
 
   /**
-   * Opens the database from the latest snapshot.
+   * Recovers the state from the snapshot and opens the database
    *
-   * @return an opened database
+   * @return ZeebeDb the database which is recovered from the snapshot.
    */
-  ZeebeDb openDb();
-
-  void closeDb() throws Exception;
+  ActorFuture<ZeebeDb> recover();
 
   /**
-   * Returns the current number of valid snapshots.
+   * Close db if it was opened by {@link StateController#recover()}
    *
-   * @return valid snapshots count
+   * @return future
    */
-  int getValidSnapshotsCount();
+  ActorFuture<Void> closeDb();
 }

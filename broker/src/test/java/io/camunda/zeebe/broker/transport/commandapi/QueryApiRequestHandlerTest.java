@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.externalapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

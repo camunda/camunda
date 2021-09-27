@@ -424,7 +424,7 @@ public final class ClusteringRule extends ExternalResource {
     final Set<InetSocketAddress> addresses =
         brokers.values().stream()
             .map(Broker::getConfig)
-            .map(b -> b.getNetwork().getExternalApi().getAddress())
+            .map(b -> b.getNetwork().getCommandApi().getAddress())
             .collect(Collectors.toSet());
 
     waitForTopology(
@@ -507,7 +507,7 @@ public final class ClusteringRule extends ExternalResource {
   public void startBroker(final int nodeId) {
     final Broker broker = getBroker(nodeId).start().join();
     final InetSocketAddress commandApi =
-        broker.getConfig().getNetwork().getExternalApi().getAddress();
+        broker.getConfig().getNetwork().getCommandApi().getAddress();
     waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();
   }
@@ -565,14 +565,13 @@ public final class ClusteringRule extends ExternalResource {
 
   public InetSocketAddress[] getOtherBrokers(final InetSocketAddress address) {
     return getBrokers().stream()
-        .map(b -> b.getConfig().getNetwork().getExternalApi().getAddress())
+        .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
         .filter(a -> !address.equals(a))
         .toArray(InetSocketAddress[]::new);
   }
 
   public InetSocketAddress[] getOtherBrokers(final int nodeId) {
-    final InetSocketAddress filter =
-        getBrokerCfg(nodeId).getNetwork().getExternalApi().getAddress();
+    final InetSocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
     return getOtherBrokers(filter);
   }
 
@@ -631,7 +630,7 @@ public final class ClusteringRule extends ExternalResource {
     final Broker broker = brokers.get(nodeId);
     if (broker != null) {
       final InetSocketAddress socketAddress =
-          broker.getConfig().getNetwork().getExternalApi().getAddress();
+          broker.getConfig().getNetwork().getCommandApi().getAddress();
       final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       stopBroker(nodeId);
       waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
@@ -642,7 +641,7 @@ public final class ClusteringRule extends ExternalResource {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
       final InetSocketAddress socketAddress =
-          broker.getConfig().getNetwork().getExternalApi().getAddress();
+          broker.getConfig().getNetwork().getCommandApi().getAddress();
       broker.close();
       waitUntilBrokerIsRemovedFromTopology(socketAddress);
       try {
