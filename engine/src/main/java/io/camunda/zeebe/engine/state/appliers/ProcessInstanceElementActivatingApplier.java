@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -29,18 +28,15 @@ final class ProcessInstanceElementActivatingApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
-  private final MutableVariableState variableState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final MutableVariableState variableState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
-    this.variableState = variableState;
     this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
@@ -53,7 +49,11 @@ final class ProcessInstanceElementActivatingApplier
     final var processDefinitionKey = value.getProcessDefinitionKey();
     final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
     if (eventTrigger != null && value.getElementIdBuffer().equals(eventTrigger.getElementId())) {
-      variableState.setTemporaryVariables(elementInstanceKey, eventTrigger.getVariables());
+      eventScopeInstanceState.triggerEvent(
+          elementInstanceKey,
+          eventTrigger.getEventKey(),
+          eventTrigger.getElementId(),
+          eventTrigger.getVariables());
       eventScopeInstanceState.deleteTrigger(processDefinitionKey, eventTrigger.getEventKey());
     }
 

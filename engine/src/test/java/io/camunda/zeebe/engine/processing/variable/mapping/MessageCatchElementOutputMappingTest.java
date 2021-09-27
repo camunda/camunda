@@ -20,14 +20,16 @@ import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -160,6 +162,13 @@ public final class MessageCatchElementOutputMappingTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance MESSAGE_START_EVENT_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent(MAPPING_ELEMENT_ID)
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
+          .endEvent()
+          .done();
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -170,53 +179,63 @@ public final class MessageCatchElementOutputMappingTest {
   @Parameter(1)
   public BpmnModelInstance process;
 
+  @Parameter(2)
+  public boolean createInstance;
+
   private String correlationKey;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
-    return new Object[][] {
-      {"intermediate catch event", CATCH_EVENT_PROCESS},
-      {"receive task", RECEIVE_TASK_PROCESS},
-      {"event-based gateway", EVENT_BASED_GATEWAY_PROCESS},
-      {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_PROCESS},
-      {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS},
-      {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_PROCESS},
-      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS},
-      {
-        "interrupting boundary event on receive task",
-        INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS
-      },
-      {
-        "non-interrupting boundary event on receive task",
-        NON_INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS
-      }
+    return new Object[][]{
+        {"intermediate catch event", CATCH_EVENT_PROCESS, true},
+        {"receive task", RECEIVE_TASK_PROCESS, true},
+        {"event-based gateway", EVENT_BASED_GATEWAY_PROCESS, true},
+        {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_PROCESS, true},
+        {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS, true},
+        {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_PROCESS, true},
+        {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS, true},
+        {
+            "interrupting boundary event on receive task",
+            INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS,
+            true
+        },
+        {
+            "non-interrupting boundary event on receive task",
+            NON_INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS,
+            true
+        },
+        {"message start event", MESSAGE_START_EVENT_PROCESS, false}
     };
-  }
-
-  @Before
-  public void setUp() {
-    correlationKey = UUID.randomUUID().toString();
-
-    ENGINE_RULE
-        .message()
-        .withCorrelationKey(correlationKey)
-        .withName(MESSAGE_NAME)
-        .withVariables(asMsgPack("foo", "bar"))
-        .publish();
   }
 
   @Test
   public void shouldMergeMessageVariablesByDefault() {
     // given
-    deployProcessWithMapping(e -> {});
+    final var deploymentRecord = deployProcessWithMapping(e -> {});
+    publishMessage();
 
     // when
-    final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(CORRELATION_VARIABLE, correlationKey)
-            .create();
+    final long processInstanceKey;
+    if (createInstance) {
+      processInstanceKey =
+          ENGINE_RULE
+              .processInstance()
+              .ofBpmnProcessId(PROCESS_ID)
+              .withVariable(CORRELATION_VARIABLE, correlationKey)
+              .create();
+    } else {
+      processInstanceKey =
+          RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+              .withProcessDefinitionKey(
+                  deploymentRecord
+                      .getValue()
+                      .getProcessesMetadata()
+                      .get(0)
+                      .getProcessDefinitionKey())
+              .withElementType(BpmnElementType.PROCESS)
+              .getFirst()
+              .getKey();
+    }
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -233,15 +252,31 @@ public final class MessageCatchElementOutputMappingTest {
   @Test
   public void shouldMergeMessageVariables() {
     // given
-    deployProcessWithMapping(e -> {});
+    final var deploymentRecord = deployProcessWithMapping(e -> {});
+    publishMessage();
 
     // when
-    final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(CORRELATION_VARIABLE, correlationKey)
-            .create();
+    final long processInstanceKey;
+    if (createInstance) {
+      processInstanceKey =
+          ENGINE_RULE
+              .processInstance()
+              .ofBpmnProcessId(PROCESS_ID)
+              .withVariable(CORRELATION_VARIABLE, correlationKey)
+              .create();
+    } else {
+      processInstanceKey =
+          RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+              .withProcessDefinitionKey(
+                  deploymentRecord
+                      .getValue()
+                      .getProcessesMetadata()
+                      .get(0)
+                      .getProcessDefinitionKey())
+              .withElementType(BpmnElementType.PROCESS)
+              .getFirst()
+              .getKey();
+    }
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -258,15 +293,32 @@ public final class MessageCatchElementOutputMappingTest {
   @Test
   public void shouldMapMessageVariablesIntoInstanceVariables() {
     // given
-    deployProcessWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
+    final var deploymentRecord =
+        deployProcessWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
+    publishMessage();
 
     // when
-    final long processInstanceKey =
-        ENGINE_RULE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(CORRELATION_VARIABLE, correlationKey)
-            .create();
+    final long processInstanceKey;
+    if (createInstance) {
+      processInstanceKey =
+          ENGINE_RULE
+              .processInstance()
+              .ofBpmnProcessId(PROCESS_ID)
+              .withVariable(CORRELATION_VARIABLE, correlationKey)
+              .create();
+    } else {
+      processInstanceKey =
+          RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+              .withProcessDefinitionKey(
+                  deploymentRecord
+                      .getValue()
+                      .getProcessesMetadata()
+                      .get(0)
+                      .getProcessDefinitionKey())
+              .withElementType(BpmnElementType.PROCESS)
+              .getFirst()
+              .getKey();
+    }
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -280,7 +332,8 @@ public final class MessageCatchElementOutputMappingTest {
         .hasScopeKey(processInstanceKey);
   }
 
-  private void deployProcessWithMapping(final Consumer<ZeebeVariablesMappingBuilder<?>> c) {
+  private Record<DeploymentRecordValue> deployProcessWithMapping(
+      final Consumer<ZeebeVariablesMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedProcess = process.clone();
     final ModelElementInstance element = modifiedProcess.getModelElementById(MAPPING_ELEMENT_ID);
     if (element instanceof IntermediateCatchEvent) {
@@ -295,6 +348,17 @@ public final class MessageCatchElementOutputMappingTest {
       c.accept(((ReceiveTask) element).builder());
     }
 
-    ENGINE_RULE.deployment().withXmlResource(modifiedProcess).deploy();
+    return ENGINE_RULE.deployment().withXmlResource(modifiedProcess).deploy();
+  }
+
+  private void publishMessage() {
+    correlationKey = UUID.randomUUID().toString();
+
+    ENGINE_RULE
+        .message()
+        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withVariables(asMsgPack("foo", "bar"))
+        .publish();
   }
 }
