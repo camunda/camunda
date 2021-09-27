@@ -33,7 +33,7 @@ import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
-import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
@@ -163,7 +163,7 @@ final class PartitionFactory {
               new PartitionProcessingState(owningPartition));
 
       final PartitionTransition newTransitionBehavior =
-          new NewPartitionTransitionImpl(
+          new PartitionTransitionImpl(
               TRANSITION_STEPS, partitionStartupAndTransitionContext.createTransitionContext());
 
       final ZeebePartition zeebePartition =

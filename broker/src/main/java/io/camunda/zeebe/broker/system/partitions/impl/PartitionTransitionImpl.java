@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 
-public final class NewPartitionTransitionImpl implements PartitionTransition {
+public final class PartitionTransitionImpl implements PartitionTransition {
   private static final int INACTIVE_TERM = -1;
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
@@ -33,7 +33,7 @@ public final class NewPartitionTransitionImpl implements PartitionTransition {
   private PartitionTransitionProcess currentTransition;
   private ActorFuture<Void> currentTransitionFuture;
 
-  public NewPartitionTransitionImpl(
+  public PartitionTransitionImpl(
       final List<PartitionTransitionStep> steps, final PartitionTransitionContext context) {
     this.steps = new ArrayList<>(requireNonNull(steps));
     this.context = requireNonNull(context);
