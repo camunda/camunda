@@ -70,6 +70,5 @@ final class ProcessInstanceElementCompletedApplier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
-    variableState.removeTemporaryVariables(key);
   }
 }

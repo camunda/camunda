@@ -186,25 +186,25 @@ public final class MessageCatchElementOutputMappingTest {
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
-    return new Object[][]{
-        {"intermediate catch event", CATCH_EVENT_PROCESS, true},
-        {"receive task", RECEIVE_TASK_PROCESS, true},
-        {"event-based gateway", EVENT_BASED_GATEWAY_PROCESS, true},
-        {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_PROCESS, true},
-        {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS, true},
-        {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_PROCESS, true},
-        {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS, true},
-        {
-            "interrupting boundary event on receive task",
-            INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS,
-            true
-        },
-        {
-            "non-interrupting boundary event on receive task",
-            NON_INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS,
-            true
-        },
-        {"message start event", MESSAGE_START_EVENT_PROCESS, false}
+    return new Object[][] {
+      {"intermediate catch event", CATCH_EVENT_PROCESS, true},
+      {"receive task", RECEIVE_TASK_PROCESS, true},
+      {"event-based gateway", EVENT_BASED_GATEWAY_PROCESS, true},
+      {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_PROCESS, true},
+      {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_PROCESS, true},
+      {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_PROCESS, true},
+      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_PROCESS, true},
+      {
+        "interrupting boundary event on receive task",
+        INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS,
+        true
+      },
+      {
+        "non-interrupting boundary event on receive task",
+        NON_INTERRUPTING_BOUNDARY_EVENT_ON_RECEIVE_TASK_PROCESS,
+        true
+      },
+      {"message start event", MESSAGE_START_EVENT_PROCESS, false}
     };
   }
 

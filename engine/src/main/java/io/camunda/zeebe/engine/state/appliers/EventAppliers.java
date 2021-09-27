@@ -52,7 +52,6 @@ public final class EventAppliers implements EventApplier {
                   intent.getClass().getSimpleName(),
                   intent);
 
-  @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
   public EventAppliers(final MutableZeebeState state) {
@@ -133,10 +132,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATED,
         new ProcessInstanceElementTerminatedApplier(
-            elementInstanceState,
-            eventScopeInstanceState,
-            variableState,
-            bufferedStartMessageEventStateApplier));
+            elementInstanceState, eventScopeInstanceState, bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
@@ -213,11 +209,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessMessageSubscriptionCreatedApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
-        new ProcessMessageSubscriptionCorrelatedApplier(
-            subscriptionState,
-            state.getVariableState(),
-            state.getElementInstanceState(),
-            state.getProcessState()));
+        new ProcessMessageSubscriptionCorrelatedApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.DELETING,
         new ProcessMessageSubscriptionDeletingApplier(subscriptionState));
@@ -243,7 +235,6 @@ public final class EventAppliers implements EventApplier {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void applyState(final long key, final Intent intent, final RecordValue value) {
     final var eventApplier =
         mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));

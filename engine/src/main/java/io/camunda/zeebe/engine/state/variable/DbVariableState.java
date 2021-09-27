@@ -148,19 +148,6 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void setTemporaryVariables(final long scopeKey, final DirectBuffer variables) {
-    this.scopeKey.wrapLong(scopeKey);
-    temporaryVariables.set(variables);
-    temporaryVariableStoreColumnFamily.put(this.scopeKey, temporaryVariables);
-  }
-
-  @Override
-  public void removeTemporaryVariables(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    temporaryVariableStoreColumnFamily.delete(this.scopeKey);
-  }
-
-  @Override
   public DirectBuffer getVariableLocal(final long scopeKey, final DirectBuffer name) {
     final VariableInstance variable = getVariableLocal(scopeKey, name, 0, name.capacity());
 
