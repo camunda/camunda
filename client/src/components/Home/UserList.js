@@ -10,11 +10,12 @@ import {t} from 'translation';
 import {Button, EntityList, Deleter, BulkDeleter} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
-
 import {addUser, editUser, removeUser, getUsers, removeUsers} from './service';
+
 import './UserList.scss';
 
 export default withErrorHandling(
@@ -24,10 +25,12 @@ export default withErrorHandling(
       deleting: null,
       editing: null,
       addingUser: false,
+      isOptimizeCloud: true,
     };
 
-    componentDidMount() {
+    async componentDidMount() {
       this.getUsers();
+      this.setState({isOptimizeCloud: await isOptimizeCloudEnvironment()});
     }
 
     getUsers = () => {
@@ -62,13 +65,14 @@ export default withErrorHandling(
     closeEditUserModal = () => this.setState({editing: null});
 
     render() {
-      const {users, deleting, editing, addingUser} = this.state;
+      const {users, deleting, editing, addingUser, isOptimizeCloud} = this.state;
       const {readOnly, collection} = this.props;
+      const title = isOptimizeCloud ? t('home.userTitle') : t('home.userGroupsTitle');
 
       return (
         <div className="UserList">
           <EntityList
-            name={t('home.userTitle')}
+            name={title}
             action={(bulkActive) =>
               !readOnly && (
                 <Button main primary={!bulkActive} onClick={this.openAddUserModal}>
@@ -152,6 +156,7 @@ export default withErrorHandling(
             })}
           />
           <AddUserModal
+            isOptimizeCloud={isOptimizeCloud}
             open={addingUser}
             existingUsers={users}
             onClose={this.closeAddUserModal}

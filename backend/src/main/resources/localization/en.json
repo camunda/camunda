@@ -81,7 +81,8 @@
     },
     "collectionTitle": "Dashboards and Reports",
     "collectionTitleWithAmpersand": "Dashboards & Reports",
-    "userTitle": "Users and User Groups",
+    "userTitle": "Users",
+    "userGroupsTitle": "Users and User Groups",
     "copy": {
       "subEntity": "This {entityType} contains 1 Report. It will be copied, too.",
       "subEntities": "This {entityType} contains {number} Reports. They will be copied, too.",
@@ -99,7 +100,8 @@
       "unknown": "Unknown Entity"
     },
     "roles": {
-      "addUserTitle": "Add User or User Group",
+      "addUserTitle": "Add User",
+      "addUserGroupTitle": "Add User or User Group",
       "userRole": "User role",
       "role": "Role",
       "viewer": "Viewer",

@@ -81,7 +81,8 @@
     },
     "collectionTitle": "Dashboards und Berichte",
     "collectionTitleWithAmpersand": "Dashboards & Berichte",
-    "userTitle": "Benutzer und Benutzergruppen",
+    "userTitle": "Benutzer",
+    "userGroupsTitle": "Benutzer und Benutzergruppen",
     "copy": {
       "subEntity": "{entityType} enthält 1 Bericht. Dieser wird ebenfalls kopiert.",
       "subEntities": "{entityType} enthält {number} Berichte. Diese werden ebenfalls kopiert.",
@@ -99,7 +100,8 @@
       "unknown": "Unbekannte Entität"
     },
     "roles": {
-      "addUserTitle": "Benutzer oder Benutzergruppe hinzufügen",
+      "addUserTitle": "Benutzer hinzufügen",
+      "addUserGroupTitle": "Benutzer oder Benutzergruppe hinzufügen",
       "userRole": "Benutzer-Rolle",
       "role": "Rolle",
       "viewer": "Betrachter",

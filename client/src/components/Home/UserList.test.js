@@ -14,6 +14,10 @@ import EditUserModal from './modals/EditUserModal';
 
 import UserListWithErrorHandling from './UserList';
 
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
+
 jest.mock('./service', () => ({
   getUsers: jest.fn().mockReturnValue([
     {
@@ -48,8 +52,8 @@ const props = {
   onChange: jest.fn(),
 };
 
-it('should match snapshot', () => {
-  const node = shallow(<UserList {...props} />);
+it('should match snapshot', async () => {
+  const node = await shallow(<UserList {...props} />);
 
   expect(node).toMatchSnapshot();
 });
