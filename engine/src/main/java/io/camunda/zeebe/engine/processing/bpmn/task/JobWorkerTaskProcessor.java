@@ -79,11 +79,18 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
-              eventSubscriptionBehavior.activateTriggeredEvent(
-                  context.getElementInstanceKey(),
-                  terminated.getFlowScopeKey(),
-                  eventTrigger,
-                  terminated);
+              // Event triggers could be used to store variables. If the event trigger belongs to
+              // the job worker task itself, we should not activate it, Otherwise the job worker
+              // task will be activated a second time.
+              if (!element.getId().equals(eventTrigger.getElementId())) {
+                eventSubscriptionBehavior.activateTriggeredEvent(
+                    context.getElementInstanceKey(),
+                    terminated.getFlowScopeKey(),
+                    eventTrigger,
+                    terminated);
+              } else {
+                stateTransitionBehavior.onElementTerminated(element, terminated);
+              }
             },
             () -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);

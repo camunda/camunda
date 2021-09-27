@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,7 +30,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final JobMetrics jobMetrics;
   private final EventHandle eventHandle;
 
-  public JobCompleteProcessor(final ZeebeState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
+  public JobCompleteProcessor(
+      final ZeebeState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
