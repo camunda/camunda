@@ -155,7 +155,7 @@ public class StateControllerImpl implements StateController {
     }
 
     final var snapshotIndexedEntry = optionalIndexed.get();
-    final Optional<TransientSnapshot> transientSnapshot =
+    final var transientSnapshot =
         constructableSnapshotStore.newTransientSnapshot(
             snapshotIndexedEntry.index(),
             snapshotIndexedEntry.term(),
@@ -163,8 +163,11 @@ public class StateControllerImpl implements StateController {
             exportedPosition);
 
     // Now takeSnapshot result can be either true, false or error.
-    transientSnapshot.ifPresentOrElse(
-        snapshot -> takeSnapshot(snapshot, future), () -> future.complete(Optional.empty()));
+    if (transientSnapshot.isLeft()) {
+      future.complete(Optional.empty());
+    } else {
+      takeSnapshot(transientSnapshot.get(), future);
+    }
   }
 
   @SuppressWarnings("rawtypes")

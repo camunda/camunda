@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -54,7 +55,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldHaveCorrectSnapshotId() {
     // when
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
     final var snapshotId = transientSnapshot.snapshotId();
 
     // then
@@ -71,7 +72,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldAbortSuccessfullyEvenIfNothingWasWritten() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
 
     // when
     final ActorFuture<Void> didAbort = transientSnapshot.abort();
@@ -85,7 +86,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldNotCommitUntilPersisted() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
     transientSnapshot.take(this::writeSnapshot).join();
@@ -99,7 +100,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldTakeTransientSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
     final var didWriteSnapshot = transientSnapshot.take(this::writeSnapshot).join();
@@ -111,7 +112,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldReturnFalseOnFailureTake() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
     final var didTakeSnapshot = transientSnapshot.take(p -> false).join();
@@ -125,7 +126,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldCompleteExceptionallyOnExceptionInTake() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
     final var didTakeSnapshot =
@@ -144,7 +145,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldBeAbleToAbortNotStartedSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
     final ActorFuture<Void> didAbort = transientSnapshot.abort();
@@ -158,7 +159,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldPersistSnapshotWithCorrectId() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     transientSnapshot.take(this::writeSnapshot).join();
 
     // when
@@ -173,7 +174,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldPersistSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     transientSnapshot.take(this::writeSnapshot);
 
     // when
@@ -190,12 +191,12 @@ public class TransientSnapshotTest {
   @Test
   public void shouldReplacePreviousSnapshotOnPersist() {
     // given
-    final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     oldSnapshot.take(this::writeSnapshot);
     oldSnapshot.persist().join();
 
     // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).orElseThrow();
+    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
     newSnapshot.take(this::writeSnapshot);
     final var persistedSnapshot = newSnapshot.persist().join();
 
@@ -208,13 +209,12 @@ public class TransientSnapshotTest {
   @Test
   public void shouldNotPersistSnapshotIfIdIsLessThanTheLatestSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(2L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(2L, 2L, 3L, 4L).get();
     transientSnapshot.take(this::writeSnapshot);
     final var previousSnapshot = transientSnapshot.persist().join();
 
     // when
-    final var newTransientSnapshot =
-        snapshotStore.newTransientSnapshot(1L, 2L, 4L, 5L).orElseThrow();
+    final var newTransientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 4L, 5L).get();
     newTransientSnapshot.take(this::writeSnapshot);
     final var didPersist = newTransientSnapshot.persist();
 
@@ -230,11 +230,11 @@ public class TransientSnapshotTest {
   @Test
   public void shouldRemoveTransientSnapshotOnPersist() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     transientSnapshot.take(this::writeSnapshot);
 
     // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).orElseThrow();
+    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
     newSnapshot.take(this::writeSnapshot);
     newSnapshot.persist().join();
 
@@ -244,12 +244,11 @@ public class TransientSnapshotTest {
 
   @Test
   public void shouldNotRemoveTransientSnapshotWithGreaterIdOnPersist() {
-    final var newerTransientSnapshot =
-        snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).orElseThrow();
+    final var newerTransientSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
     newerTransientSnapshot.take(this::writeSnapshot);
 
     // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var newSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     newSnapshot.take(this::writeSnapshot);
     newSnapshot.persist().join();
     final var persistedSnapshot = newerTransientSnapshot.persist().join();
@@ -263,7 +262,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldNotPersistOnTakeFailure() {
     // given
-    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
 
     // when
     snapshot.take(path -> false).join();
@@ -277,7 +276,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldNotPersistOnTakeException() {
     // given
-    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
 
     // when
     final var didTakeSnapshot =
@@ -298,7 +297,7 @@ public class TransientSnapshotTest {
     // given
     final AtomicReference<PersistedSnapshot> snapshotRef = new AtomicReference<>();
     final PersistedSnapshotListener listener = snapshotRef::set;
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     snapshotStore.addSnapshotListener(listener);
     transientSnapshot.take(this::writeSnapshot).join();
 
@@ -314,7 +313,7 @@ public class TransientSnapshotTest {
     // given
     final AtomicReference<PersistedSnapshot> snapshotRef = new AtomicReference<>();
     final PersistedSnapshotListener listener = snapshotRef::set;
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
     snapshotStore.addSnapshotListener(listener);
     snapshotStore.removeSnapshotListener(listener);
     transientSnapshot.take(this::writeSnapshot).join();
@@ -331,7 +330,7 @@ public class TransientSnapshotTest {
   @Test
   public void shouldNotTakeSnapshotIfIdAlreadyExists() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
     transientSnapshot.take(this::writeSnapshot).join();
 
     // when
@@ -339,14 +338,14 @@ public class TransientSnapshotTest {
     final var secondTransientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L);
 
     // then
-    assertThat(secondTransientSnapshot)
+    assertThat(secondTransientSnapshot.getLeft())
         .as("should have no value since there already exists a transient snapshot with the same ID")
-        .isEmpty();
+        .isInstanceOf(SnapshotAlreadyExistsException.class);
   }
 
   @Test
   public void shouldNotPersistDeletedTransientSnapshot() {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
     transientSnapshot.take(this::writeSnapshot).join();
 
     // when
