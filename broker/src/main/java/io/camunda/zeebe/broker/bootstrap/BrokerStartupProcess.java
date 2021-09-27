@@ -50,21 +50,20 @@ public final class BrokerStartupProcess {
       // must be executed before any disk space usage listeners are registered
       result.add(new DiskSpaceUsageMonitorStep());
     }
-
     result.add(new MonitoringServerStep());
     result.add(new BrokerAdminServiceStep());
+
     result.add(new ClusterServicesCreationStep());
+    result.add(new ClusterServicesStep());
 
     result.add(new CommandApiServiceStep());
     result.add(new SubscriptionApiStep());
-
-    result.add(new ClusterServicesStep());
+    result.add(new LeaderManagementRequestHandlerStep());
 
     if (config.getGateway().isEnable()) {
       result.add(new EmbeddedGatewayServiceStep());
     }
 
-    result.add(new LeaderManagementRequestHandlerStep());
     result.add(new PartitionManagerStep());
 
     return result;
