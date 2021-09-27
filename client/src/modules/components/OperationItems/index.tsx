@@ -31,6 +31,7 @@ const Item: React.FC<ItemProps> = function ({title, onClick, type, ...rest}) {
       <Styled.Button {...rest} type={type} title={title}>
         {type === 'RESOLVE_INCIDENT' && <Styled.RetryIcon />}
         {type === 'CANCEL_PROCESS_INSTANCE' && <Styled.CancelIcon />}
+        {type === 'DELETE_PROCESS_INSTANCE' && <Styled.DeleteIcon />}
       </Styled.Button>
     </Styled.Li>
   );

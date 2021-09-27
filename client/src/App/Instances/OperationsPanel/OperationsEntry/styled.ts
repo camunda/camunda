@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 import {ReactComponent as RetryOperation} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as CancelOperation} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as EditOperation} from 'modules/components/Icon/edit.svg';
+import {ReactComponent as DeleteOperation} from 'modules/components/Icon/delete.svg';
 
 type EntryProps = {
   isRunning?: boolean;
@@ -58,6 +59,7 @@ const EntryDetails = styled.div`
 
 const EndDate = styled.div`
   font-size: 14px;
+  margin-left: auto;
 `;
 
 const InstancesCount = styled.div`
@@ -103,6 +105,10 @@ const Edit = styled(EditOperation)`
   ${iconStyle};
 `;
 
+const Delete = styled(DeleteOperation)`
+  ${iconStyle};
+`;
+
 export {
   Entry,
   EntryStatus,
@@ -115,4 +121,5 @@ export {
   Retry,
   Cancel,
   Edit,
+  Delete,
 };

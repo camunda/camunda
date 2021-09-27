@@ -131,21 +131,24 @@ class Operations extends NetworkReconnectionHandler {
     instanceId,
     payload,
     onError,
+    onSuccess,
   }: {
     instanceId: string;
     payload: OperationPayload;
-    onError: () => void;
+    onError?: () => void;
+    onSuccess?: () => void;
   }) => {
     try {
       const response = await applyOperation(instanceId, payload);
 
       if (response.ok) {
         this.prependOperations(await response.json());
+        onSuccess?.();
       } else {
-        onError();
+        onError?.();
       }
     } catch {
-      return onError();
+      return onError?.();
     }
   };
 

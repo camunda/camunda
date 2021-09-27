@@ -8,7 +8,7 @@ import {createInstance} from 'modules/testUtils';
 import {STATE} from 'modules/constants';
 
 import * as instanceUtils from './index';
-import {isWithIncident, isRunning} from 'modules/utils/instance';
+import {hasIncident, isRunning} from 'modules/utils/instance';
 
 const mockIncidentInstance = {
   id: '8590375632-2',
@@ -21,13 +21,13 @@ const mockActiveInstance = {
 };
 
 describe('instance utils', () => {
-  describe('isWithIncident', () => {
+  describe('hasIncident', () => {
     it('should return true if an instance has an incident', () => {
-      expect(isWithIncident(mockIncidentInstance)).toBe(true);
+      expect(hasIncident(mockIncidentInstance)).toBe(true);
     });
 
     it('should return false if an instance is active', () => {
-      expect(isWithIncident(mockActiveInstance)).toBe(false);
+      expect(hasIncident(mockActiveInstance)).toBe(false);
     });
   });
 

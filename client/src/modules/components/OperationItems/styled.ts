@@ -8,6 +8,7 @@ import styled, {css} from 'styled-components';
 
 import {ReactComponent as Retry} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
+import {ReactComponent as Delete} from 'modules/components/Icon/delete.svg';
 
 const iconStyle = ({theme}: any) => {
   const colors = theme.colors.modules.operationItems.iconStyle;
@@ -24,6 +25,10 @@ const RetryIcon = styled(Retry)`
 `;
 
 const CancelIcon = styled(Stop)`
+  ${iconStyle};
+`;
+
+const DeleteIcon = styled(Delete)`
   ${iconStyle};
 `;
 
@@ -212,4 +217,4 @@ const Button = styled.button`
   border-radius: 12px;
 `;
 
-export {iconStyle, RetryIcon, CancelIcon, Ul, Li, Button};
+export {iconStyle, RetryIcon, CancelIcon, DeleteIcon, Ul, Li, Button};

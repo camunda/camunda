@@ -71,7 +71,10 @@ class CurrentInstance extends NetworkReconnectionHandler {
     this.fetchCurrentInstance(id);
 
     this.disposer = autorun(() => {
-      if (isInstanceRunning(this.state.instance)) {
+      if (
+        isInstanceRunning(this.state.instance) ||
+        this.state.instance?.hasActiveOperation
+      ) {
         if (this.intervalId === null) {
           this.startPolling(id);
         }
@@ -189,6 +192,16 @@ class CurrentInstance extends NetworkReconnectionHandler {
         if (response.ok) {
           this.setCurrentInstance(await response.json());
         } else {
+          if (
+            !isInstanceRunning(this.state.instance) &&
+            response.status === 404 &&
+            this.history !== undefined
+          ) {
+            this.history.push(Locations.filters(this.history.location));
+            this.notifications?.displayNotification('success', {
+              headline: 'Instance deleted',
+            });
+          }
           logger.error('Failed to poll process instance');
         }
       }

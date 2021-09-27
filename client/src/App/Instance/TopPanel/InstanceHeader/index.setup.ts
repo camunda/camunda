@@ -22,6 +22,10 @@ const mockInstanceWithActiveOperation = createInstance({
   hasActiveOperation: true,
 });
 
+const mockCanceledInstance = createInstance({
+  state: 'CANCELED',
+});
+
 const mockInstanceWithParentInstance = createInstance({
   parentInstanceId: '8724390842390124',
 });
@@ -35,6 +39,7 @@ const mockInstanceWithoutOperations = {
 export {
   mockOperationCreated,
   mockInstanceWithActiveOperation,
+  mockCanceledInstance,
   mockInstanceWithParentInstance,
   mockInstanceWithoutOperations,
 };

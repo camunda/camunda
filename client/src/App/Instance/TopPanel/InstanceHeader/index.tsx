@@ -103,7 +103,7 @@ const InstanceHeader = observer(() => {
         <Operations
           instance={instance}
           onOperation={() => currentInstanceStore.activateOperation()}
-          onFailure={() => {
+          onError={() => {
             currentInstanceStore.deactivateOperation();
             notifications.displayNotification('error', {
               headline: 'Operation could not be created',

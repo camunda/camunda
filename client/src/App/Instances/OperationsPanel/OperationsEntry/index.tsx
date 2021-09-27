@@ -21,6 +21,7 @@ const {
   UPDATE_VARIABLE,
   RESOLVE_INCIDENT,
   CANCEL_PROCESS_INSTANCE,
+  DELETE_PROCESS_INSTANCE,
 } = OPERATION_TYPE;
 
 const TYPE_LABELS = {
@@ -28,6 +29,7 @@ const TYPE_LABELS = {
   [UPDATE_VARIABLE]: 'Edit',
   [RESOLVE_INCIDENT]: 'Retry',
   [CANCEL_PROCESS_INSTANCE]: 'Cancel',
+  [DELETE_PROCESS_INSTANCE]: 'Delete',
 } as const;
 
 type Props = {
@@ -79,6 +81,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           {CANCEL_PROCESS_INSTANCE === type && (
             <Styled.Cancel data-testid="operation-cancel-icon" />
           )}
+          {DELETE_PROCESS_INSTANCE === type && (
+            <Styled.Delete data-testid="operation-delete-icon" />
+          )}
         </Styled.OperationIcon>
       </Styled.EntryStatus>
       {!endDate && (
@@ -88,9 +93,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         />
       )}
       <Styled.EntryDetails>
-        <LinkButton onClick={() => handleInstancesClick(id)}>
-          {`${pluralSuffix(instancesCount, 'Instance')}`}
-        </LinkButton>
+        {DELETE_PROCESS_INSTANCE !== type && (
+          <LinkButton onClick={() => handleInstancesClick(id)}>
+            {`${pluralSuffix(instancesCount, 'Instance')}`}
+          </LinkButton>
+        )}
         {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
       </Styled.EntryDetails>
     </Styled.Entry>

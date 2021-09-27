@@ -92,7 +92,7 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
                 ids: [instance.id],
               })
             }
-            onFailure={() => {
+            onError={() => {
               instancesStore.unmarkInstancesWithActiveOperations({
                 instanceIds: [instance.id],
               });

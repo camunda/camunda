@@ -9,6 +9,7 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
+  waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -24,9 +25,9 @@ import {
   mockInstanceWithoutOperations,
   mockInstanceWithParentInstance,
   mockOperationCreated,
+  mockCanceledInstance,
 } from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {NotificationProvider} from 'modules/notifications';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {Router, Route} from 'react-router';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
@@ -34,6 +35,19 @@ import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {createMemoryHistory} from 'history';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {useNotifications} from 'modules/notifications';
+
+jest.mock('modules/notifications', () => {
+  const mockUseNotifications = {
+    displayNotification: jest.fn(),
+  };
+
+  return {
+    useNotifications: () => {
+      return mockUseNotifications;
+    },
+  };
+});
 
 const createWrapper = (
   history = createMemoryHistory({initialEntries: ['/instances/1']})
@@ -41,14 +55,12 @@ const createWrapper = (
   const Wrapper: React.FC = ({children}) => {
     return (
       <ThemeProvider>
-        <NotificationProvider>
-          <Router history={history}>
-            <Route path="/instances/:processInstanceId">{children}</Route>
-            <Route exact path="/instances">
-              {children}
-            </Route>
-          </Router>
-        </NotificationProvider>
+        <Router history={history}>
+          <Route path="/instances/:processInstanceId">{children}</Route>
+          <Route exact path="/instances">
+            {children}
+          </Route>
+        </Router>
       </ThemeProvider>
     );
   };
@@ -402,5 +414,76 @@ describe('InstanceHeader', () => {
     expect(
       screen.queryByRole('button', {name: /Cancel Instance/})
     ).not.toBeInTheDocument();
+  });
+
+  it('should display notification and redirect if delete operation is performed', async () => {
+    jest.useFakeTimers();
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockCanceledInstance))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      )
+    );
+
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/instances/instance_1/'],
+    });
+
+    const InstanceHeaderComponent = () => {
+      return <InstanceHeader />;
+    };
+
+    render(<InstanceHeaderComponent />, {wrapper: createWrapper(MOCK_HISTORY)});
+
+    singleInstanceDiagramStore.init();
+
+    const notifications = useNotifications();
+    currentInstanceStore.init(
+      mockInstanceWithoutOperations.id,
+      MOCK_HISTORY,
+      notifications
+    );
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances/instance_1/');
+    userEvent.click(screen.getByRole('button', {name: /Delete Instance/}));
+    expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json({}))
+      )
+    );
+
+    userEvent.click(screen.getByTestId('delete-button'));
+    await waitForElementToBeRemoved(
+      screen.getByText(/About to delete Instance/)
+    );
+
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.status(404), ctx.json({}))
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(notifications.displayNotification).toHaveBeenCalledWith(
+        'success',
+        {
+          headline: 'Instance deleted',
+        }
+      )
+    );
+
+    expect(MOCK_HISTORY.location.pathname).toBe('/instances');
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

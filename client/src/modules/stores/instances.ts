@@ -428,6 +428,8 @@ class Instances extends NetworkReconnectionHandler {
           } = await response.json();
 
           if (
+            this.instanceIdsWithActiveOperations.length >
+              processInstances.length ||
             processInstances.some(({hasActiveOperation}) => !hasActiveOperation)
           ) {
             this.completedOperationsHandlers.forEach((handler: () => void) => {

@@ -9,9 +9,12 @@ import {OPERATION_TYPE} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
-import {isWithIncident, isRunning} from 'modules/utils/instance';
+
+import {hasIncident, isRunning} from 'modules/utils/instance';
+
 import OperationItems from 'modules/components/OperationItems';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
+import {DeleteOperationModal} from './DeleteOperationModal';
 import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import {OperationsContainer} from './styled';
 import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal';
@@ -20,13 +23,17 @@ type Props = {
   instance: ProcessInstanceEntity;
   isSelected?: boolean;
   onOperation?: () => void;
-  onFailure?: () => void;
+  onError?: () => void;
   forceSpinner?: boolean;
 };
 
 const Operations: React.FC<Props> = observer(
-  ({instance, onOperation, onFailure, forceSpinner, isSelected = false}) => {
-    const handleClick = async (
+  ({instance, isSelected, onOperation, onError, forceSpinner}) => {
+    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+    const [isCancellationModalVisible, setIsCancellationModalVisible] =
+      useState(false);
+
+    const applyOperation = async (
       operationType: InstanceOperationEntity['type']
     ) => {
       operationsStore.applyOperation({
@@ -34,15 +41,11 @@ const Operations: React.FC<Props> = observer(
         payload: {
           operationType,
         },
-        onError: () => {
-          onFailure?.();
-        },
+        onError,
       });
+
       onOperation?.();
     };
-
-    const [isCancellationModalVisible, setIsCancellationModalVisible] =
-      useState(false);
 
     return (
       <OperationsContainer>
@@ -57,10 +60,10 @@ const Operations: React.FC<Props> = observer(
           />
         )}
         <OperationItems>
-          {isWithIncident(instance) && (
+          {hasIncident(instance) && (
             <OperationItems.Item
               type={OPERATION_TYPE.RESOLVE_INCIDENT}
-              onClick={() => handleClick(OPERATION_TYPE.RESOLVE_INCIDENT)}
+              onClick={() => applyOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
               title={`Retry Instance ${instance.id}`}
             />
           )}
@@ -71,13 +74,20 @@ const Operations: React.FC<Props> = observer(
               title={`Cancel Instance ${instance.id}`}
             />
           )}
+          {!isRunning(instance) && (
+            <OperationItems.Item
+              type={OPERATION_TYPE.DELETE_PROCESS_INSTANCE}
+              onClick={() => setIsDeleteModalVisible(true)}
+              title={`Delete Instance ${instance.id}`}
+            />
+          )}
         </OperationItems>
         {instance.rootInstanceId === null ? (
           <ConfirmOperationModal
             bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}
             onApplyClick={() => {
               setIsCancellationModalVisible(false);
-              handleClick(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE);
+              applyOperation(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE);
             }}
             isVisible={isCancellationModalVisible}
             onModalClose={() => setIsCancellationModalVisible(false)}
@@ -90,6 +100,15 @@ const Operations: React.FC<Props> = observer(
             rootInstanceId={instance.rootInstanceId}
           />
         )}
+        <DeleteOperationModal
+          isVisible={isDeleteModalVisible}
+          onModalClose={() => setIsDeleteModalVisible(false)}
+          instanceId={instance.id}
+          onDeleteClick={() => {
+            applyOperation(OPERATION_TYPE.DELETE_PROCESS_INSTANCE);
+            setIsDeleteModalVisible(false);
+          }}
+        />
       </OperationsContainer>
     );
   }

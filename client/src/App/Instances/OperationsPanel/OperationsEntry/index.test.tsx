@@ -28,16 +28,9 @@ function createWrapper(history = createMemoryHistory()) {
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.RETRY,
-          instancesCount: 1,
-        }}
-      />,
-      {wrapper: createWrapper()}
-    );
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.RETRY} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
     expect(screen.getByText(OPERATIONS.RETRY.id)).toBeInTheDocument();
@@ -46,16 +39,9 @@ describe('OperationsEntry', () => {
   });
 
   it('should render cancel operation', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.CANCEL,
-          instancesCount: 1,
-        }}
-      />,
-      {wrapper: createWrapper()}
-    );
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.CANCEL} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
@@ -65,16 +51,9 @@ describe('OperationsEntry', () => {
   });
 
   it('should render edit operation', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 1,
-        }}
-      />,
-      {wrapper: createWrapper()}
-    );
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.EDIT} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
@@ -83,17 +62,22 @@ describe('OperationsEntry', () => {
     expect(screen.getByTestId('operation-edit-icon')).toBeInTheDocument();
   });
 
+  it('should render delete operation', () => {
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.DELETE} />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS.DELETE.id)).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
+  });
+
   it('should render instances count when there is one instance', () => {
-    render(
-      <OperationsEntry
-        {...mockProps}
-        operation={{
-          ...OPERATIONS.EDIT,
-          instancesCount: 1,
-        }}
-      />,
-      {wrapper: createWrapper()}
-    );
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.EDIT} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText('1 Instance')).toBeInTheDocument();
   });
@@ -113,8 +97,24 @@ describe('OperationsEntry', () => {
     expect(screen.getByText('3 Instances')).toBeInTheDocument();
   });
 
+  it('should not render instances count for delete operation', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={{
+          ...OPERATIONS.DELETE,
+          instancesCount: 3,
+        }}
+      />,
+      {wrapper: createWrapper()}
+    );
+
+    expect(screen.queryByText('3 Instances')).not.toBeInTheDocument();
+  });
+
   it('should filter by Operation and expand Filters Panel', () => {
     panelStatesStore.toggleFiltersPanel();
+
     const mockHistory = createMemoryHistory();
     render(
       <OperationsEntry

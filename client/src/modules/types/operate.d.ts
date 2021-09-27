@@ -17,6 +17,7 @@ interface VariableEntity {
 type OperationEntityType =
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_PROCESS_INSTANCE'
+  | 'DELETE_PROCESS_INSTANCE'
   | 'UPDATE_VARIABLE'
   | 'ADD_VARIABLE';
 

@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {Router} from 'react-router';
 import {createMemoryHistory} from 'history';
 import {render, screen, within} from '@testing-library/react';

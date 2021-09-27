@@ -10,7 +10,7 @@ import {STATE} from 'modules/constants';
  * @returns a boolean showing if the current instance has an incident
  * @param {*} instance object with full instance data
  */
-export const isWithIncident = (instance: any) => {
+export const hasIncident = (instance: any) => {
   return instance.state === STATE.INCIDENT;
 };
 
