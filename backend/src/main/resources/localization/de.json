@@ -557,6 +557,7 @@
       "humanBottleneckAnalysis_subTitle": "Beheben Sie Engpässe, um die Gesamtprozesszeit zu reduzieren",
       "portfolioPerformance": "Portfolio-Performance-Übersicht",
       "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen (Beta)",
+      "completedInstances": "Gesamte abgeschlossene Prozesse",
       "runningInstances": "Laufende Instanzen",
       "aggregateDuration": "Aggregierte Prozessdauer (Zu tun: Aggregationen alternativer Dauer anzeigen)",
       "activeProcessIncidents": "Aktive Vorfälle", 
