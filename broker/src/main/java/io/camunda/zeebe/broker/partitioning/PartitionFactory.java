@@ -163,8 +163,7 @@ final class PartitionFactory {
               new PartitionProcessingState(owningPartition));
 
       final PartitionTransition newTransitionBehavior =
-          new PartitionTransitionImpl(
-              TRANSITION_STEPS, partitionStartupAndTransitionContext.createTransitionContext());
+          new PartitionTransitionImpl(TRANSITION_STEPS);
 
       final ZeebePartition zeebePartition =
           new ZeebePartition(

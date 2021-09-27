@@ -33,10 +33,8 @@ public final class PartitionTransitionImpl implements PartitionTransition {
   private PartitionTransitionProcess currentTransition;
   private ActorFuture<Void> currentTransitionFuture;
 
-  public PartitionTransitionImpl(
-      final List<PartitionTransitionStep> steps, final PartitionTransitionContext context) {
+  public PartitionTransitionImpl(final List<PartitionTransitionStep> steps) {
     this.steps = new ArrayList<>(requireNonNull(steps));
-    this.context = requireNonNull(context);
   }
 
   @Override
