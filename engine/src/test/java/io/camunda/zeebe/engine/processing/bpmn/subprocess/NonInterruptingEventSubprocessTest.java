@@ -123,7 +123,7 @@ public class NonInterruptingEventSubprocessTest {
 
     // then
     final Record<ProcessInstanceRecordValue> startEventActivate =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
             .withElementId("event_sub_start")
             .withElementType(BpmnElementType.START_EVENT)
             .withProcessInstanceKey(processInstanceKey)

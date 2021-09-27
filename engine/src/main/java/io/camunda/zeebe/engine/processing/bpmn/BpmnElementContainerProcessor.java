@@ -40,6 +40,22 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
   }
 
   /**
+   * A child element is completing (but not yet completed). Perform additional logic for the new
+   * child element, like setting variables.
+   *
+   * @param element the instance of the BPMN element container
+   * @param flowScopeContext process instance-related data of the element container
+   * @param childContext process instance-related data of the child element that is completing
+   * @return either a failure (Left) or any success value (Right)
+   */
+  default Either<Failure, ?> onChildCompleting(
+      final T element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext) {
+    return Either.right(null);
+  }
+
+  /**
    * The execution path of a child element is about to be completed.
    *
    * @param element the instance of the BPMN element container

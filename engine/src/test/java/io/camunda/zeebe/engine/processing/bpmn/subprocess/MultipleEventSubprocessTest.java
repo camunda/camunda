@@ -228,7 +228,7 @@ public final class MultipleEventSubprocessTest {
             .create();
 
     triggerTimerStart(processInstanceKey);
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
         .withProcessInstanceKey(processInstanceKey)
         .withElementId("event_sub_start_timer")
         .await();

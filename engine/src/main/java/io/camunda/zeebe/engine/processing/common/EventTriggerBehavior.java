@@ -224,7 +224,7 @@ public class EventTriggerBehavior {
 
     if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS
         && triggeredEvent.getElementType() == BpmnElementType.START_EVENT) {
-      activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope);
+      activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope, variables);
       return;
     }
 
@@ -254,7 +254,9 @@ public class EventTriggerBehavior {
   }
 
   private void activateEventSubProcess(
-      final ExecutableStartEvent triggeredStartEvent, final ExecutableFlowElement flowScope) {
+      final ExecutableStartEvent triggeredStartEvent,
+      final ExecutableFlowElement flowScope,
+      final DirectBuffer variables) {
     // First we move the event sub process immediately to ACTIVATED,
     // to make sure that we can copy the temp variables from the flow scope directly to the
     // event sub process scope. This is done in the ACTIVATING applier of the event sub process.
@@ -275,6 +277,24 @@ public class EventTriggerBehavior {
         .setBpmnElementType(triggeredStartEvent.getElementType())
         .setElementId(triggeredStartEvent.getId());
 
-    commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, eventRecord);
+    final var startEventKey = keyGenerator.nextKey();
+    // transition to activating and activated directly to pass the variables to this instance
+    stateWriter.appendFollowUpEvent(
+        startEventKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+    stateWriter.appendFollowUpEvent(
+        startEventKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
+
+    if (variables.capacity() > 0) {
+      // set as local variables of the element instance to use them for the variable output
+      // mapping
+      variableBehavior.mergeLocalDocument(
+          startEventKey,
+          eventRecord.getProcessDefinitionKey(),
+          eventRecord.getProcessInstanceKey(),
+          variables);
+    }
+
+    commandWriter.appendFollowUpCommand(
+        startEventKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
   }
 }

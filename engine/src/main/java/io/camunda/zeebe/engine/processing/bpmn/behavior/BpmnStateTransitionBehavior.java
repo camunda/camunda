@@ -406,6 +406,15 @@ public final class BpmnStateTransitionBehavior {
             containerProcessor.onChildActivating(containerScope, containerContext, childContext));
   }
 
+  public Either<Failure, ?> onElementCompleting(
+      final ExecutableFlowElement element, final BpmnElementContext childContext) {
+    return invokeElementContainerIfPresent(
+        element,
+        childContext,
+        (containerProcessor, containerScope, containerContext) ->
+            containerProcessor.onChildCompleting(containerScope, containerContext, childContext));
+  }
+
   private Either<Failure, ?> invokeElementContainerIfPresent(
       final ExecutableFlowElement childElement,
       final BpmnElementContext childContext,

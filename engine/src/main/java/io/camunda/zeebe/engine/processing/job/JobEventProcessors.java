@@ -36,17 +36,19 @@ public final class JobEventProcessors {
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
 
-    final EventHandle eventHandle = new EventHandle(
-        keyGenerator,
-        zeebeState.getEventScopeInstanceState(),
-        writers,
-        zeebeState.getProcessState(),
-        eventTriggerBehavior
-    );
+    final EventHandle eventHandle =
+        new EventHandle(
+            keyGenerator,
+            zeebeState.getEventScopeInstanceState(),
+            writers,
+            zeebeState.getProcessState(),
+            eventTriggerBehavior);
 
     typedRecordProcessors
         .onCommand(
-            ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, jobMetrics, eventHandle))
+            ValueType.JOB,
+            JobIntent.COMPLETE,
+            new JobCompleteProcessor(zeebeState, jobMetrics, eventHandle))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
