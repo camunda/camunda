@@ -18,4 +18,16 @@ public class SnapshotException extends RuntimeException {
       super(message);
     }
   }
+
+  public static class StateClosedException extends SnapshotException {
+    public StateClosedException(final String message) {
+      super(message);
+    }
+  }
+
+  public static class SnapshotNotFoundException extends SnapshotException {
+    public SnapshotNotFoundException(final String message) {
+      super(message);
+    }
+  }
 }

@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
@@ -207,30 +208,20 @@ public class StateControllerImpl implements StateController {
         snapshot.take(
             snapshotDir -> {
               if (db == null) {
-                LOG.error("Expected to take a snapshot, but no database was opened");
-                return false;
+                throw new StateClosedException(
+                    "Expected to take a snapshot, but no database was opened");
               }
 
               LOG.debug("Taking temporary snapshot into {}.", snapshotDir);
-              try {
-                db.createSnapshot(snapshotDir.toFile());
-              } catch (final Exception e) {
-                LOG.error("Failed to create snapshot of runtime database", e);
-                return false;
-              }
-
-              return true;
+              db.createSnapshot(snapshotDir.toFile());
             });
 
-    // TODO: Remove boolean response, and always throw error when snapshot was not taken.
     snapshotTaken.onComplete(
-        (taken, error) -> {
+        (ok, error) -> {
           if (error != null) {
             transientSnapshotFuture.completeExceptionally(error);
-          } else if (taken) {
-            transientSnapshotFuture.complete(Optional.of(snapshot));
           } else {
-            transientSnapshotFuture.complete(Optional.empty());
+            transientSnapshotFuture.complete(Optional.of(snapshot));
           }
         });
   }

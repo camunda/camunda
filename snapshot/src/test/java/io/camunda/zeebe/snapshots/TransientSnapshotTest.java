@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
@@ -103,24 +104,12 @@ public class TransientSnapshotTest {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
-    final var didWriteSnapshot = transientSnapshot.take(this::writeSnapshot).join();
+    final var didWriteSnapshot = transientSnapshot.take(this::writeSnapshot);
 
     // then
-    assertThat(didWriteSnapshot).as("the transient snapshot was successfully written").isTrue();
-  }
-
-  @Test
-  public void shouldReturnFalseOnFailureTake() {
-    // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
-
-    // when
-    final var didTakeSnapshot = transientSnapshot.take(p -> false).join();
-
-    // then
-    assertThat(didTakeSnapshot)
-        .as("failed to take snapshot since the callback returned false")
-        .isFalse();
+    assertThatNoException()
+        .as("the transient snapshot was successfully written")
+        .isThrownBy(didWriteSnapshot::join);
   }
 
   @Test
@@ -260,20 +249,6 @@ public class TransientSnapshotTest {
   }
 
   @Test
-  public void shouldNotPersistOnTakeFailure() {
-    // given
-    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
-
-    // when
-    snapshot.take(path -> false).join();
-
-    // then
-    assertThat(snapshot.persist())
-        .as("did not persist snapshot as it failed to be taken")
-        .failsWithin(Duration.ofSeconds(5));
-  }
-
-  @Test
   public void shouldNotPersistOnTakeException() {
     // given
     final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
@@ -359,7 +334,7 @@ public class TransientSnapshotTest {
         .hasMessageContaining("Snapshot is not valid");
   }
 
-  private boolean writeSnapshot(final Path path) {
+  private void writeSnapshot(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
 
@@ -370,6 +345,5 @@ public class TransientSnapshotTest {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-    return true;
   }
 }

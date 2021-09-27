@@ -485,7 +485,7 @@ public class ReceivedSnapshotTest {
     return transientSnapshot.persist().join();
   }
 
-  private boolean writeSnapshot(final Path path) {
+  private void writeSnapshot(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
 
@@ -497,6 +497,5 @@ public class ReceivedSnapshotTest {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-    return true;
   }
 }

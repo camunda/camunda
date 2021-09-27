@@ -234,29 +234,6 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldRemoveTransientDirectoryOnTakeFailure() {
-    // given
-    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
-
-    // when
-    snapshot
-        .take(
-            path -> {
-              try {
-                FileUtil.ensureDirectoryExists(path);
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-              return false;
-            })
-        .join();
-
-    // then
-    assertThat(pendingDir).as("there is no leftover transient directory").isEmptyDirectory();
-    assertThat(snapshotsDir).as("there is no committed snapshot").isEmptyDirectory();
-  }
-
-  @Test
   public void shouldRemoveTransientDirectoryOnTakeException() {
     // given
     final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
@@ -277,7 +254,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldNotPersistNonExistentTransientSnapshot() {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
-    transientSnapshot.take(p -> true).join();
+    transientSnapshot.take(p -> {});
 
     // when
     final var persisted = transientSnapshot.persist();
@@ -292,7 +269,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldNotPersistEmptyTransientSnapshot() {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
-    transientSnapshot.take(p -> p.toFile().mkdir()).join();
+    transientSnapshot.take(p -> p.toFile().mkdir());
 
     // when
     final var persisted = transientSnapshot.persist();
