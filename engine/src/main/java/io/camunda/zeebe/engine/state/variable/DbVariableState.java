@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.instance.ParentScopeKey;
-import io.camunda.zeebe.engine.state.instance.TemporaryVariables;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Collection;
@@ -47,10 +46,6 @@ public class DbVariableState implements MutableVariableState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
-  // (scope key) => (temporaryVariables)
-  private final ColumnFamily<DbLong, TemporaryVariables> temporaryVariableStoreColumnFamily;
-  private final TemporaryVariables temporaryVariables = new TemporaryVariables();
-
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
@@ -77,13 +72,6 @@ public class DbVariableState implements MutableVariableState {
             transactionContext,
             scopeKeyVariableNameKey,
             new VariableInstance());
-
-    temporaryVariableStoreColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TEMPORARY_VARIABLE_STORE,
-            transactionContext,
-            scopeKey,
-            temporaryVariables);
   }
 
   @Override
@@ -281,18 +269,8 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public DirectBuffer getTemporaryVariables(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    final TemporaryVariables variables = temporaryVariableStoreColumnFamily.get(this.scopeKey);
-
-    return variables == null || variables.get().byteArray() == null ? null : variables.get();
-  }
-
-  @Override
   public boolean isEmpty() {
-    return variablesColumnFamily.isEmpty()
-        && childParentColumnFamily.isEmpty()
-        && temporaryVariableStoreColumnFamily.isEmpty();
+    return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
   }
 
   @Override

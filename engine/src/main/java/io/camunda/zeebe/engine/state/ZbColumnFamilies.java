@@ -30,6 +30,7 @@ public enum ZbColumnFamilies {
   // variable state
   ELEMENT_INSTANCE_CHILD_PARENT,
   VARIABLES,
+  @Deprecated
   TEMPORARY_VARIABLE_STORE,
 
   // timer state

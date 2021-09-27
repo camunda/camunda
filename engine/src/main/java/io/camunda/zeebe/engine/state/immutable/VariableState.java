@@ -28,8 +28,6 @@ public interface VariableState {
 
   DirectBuffer getVariablesLocalAsDocument(long scopeKey);
 
-  DirectBuffer getTemporaryVariables(long scopeKey);
-
   boolean isEmpty();
 
   VariableInstance getVariableInstanceLocal(long scopeKey, DirectBuffer name);
