@@ -15,7 +15,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -24,37 +26,44 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
-class MonitoringServerStepTest {
+final class BrokerAdminServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
-  private SpringBrokerBridge mockSpringBrokerBridge;
   private BrokerStartupContext mockBrokerStartupContext;
-  private BrokerHealthCheckService mockHealthCheckService;
   private ActorSchedulingService mockActorSchedulingService;
+  private SpringBrokerBridge mockSpringBrokerBridge;
+  private BrokerAdminServiceImpl mockBrokerAdminService;
 
   private ActorFuture<BrokerStartupContext> future;
 
-  private final MonitoringServerStep sut = new MonitoringServerStep();
+  private final BrokerAdminServiceStep sut = new BrokerAdminServiceStep();
 
   @BeforeEach
   void setUp() {
-    mockSpringBrokerBridge = mock(SpringBrokerBridge.class);
-    mockBrokerStartupContext = mock(BrokerStartupContext.class);
     mockActorSchedulingService = mock(ActorSchedulingService.class);
-
-    mockHealthCheckService = mock(BrokerHealthCheckService.class);
-    when(mockHealthCheckService.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-    when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
-    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockSpringBrokerBridge);
-    when(mockBrokerStartupContext.getHealthCheckService()).thenReturn(mockHealthCheckService);
-    when(mockBrokerStartupContext.getActorSchedulingService())
-        .thenReturn(mockActorSchedulingService);
 
     when(mockActorSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
+
+    mockSpringBrokerBridge = mock(SpringBrokerBridge.class);
+
+    mockBrokerAdminService = mock(BrokerAdminServiceImpl.class);
+    when(mockBrokerAdminService.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
+
+    mockBrokerStartupContext = mock(BrokerStartupContext.class);
+
+    when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
+    when(mockBrokerStartupContext.getBrokerInfo()).thenReturn(mock(BrokerInfo.class));
+    when(mockBrokerStartupContext.getActorSchedulingService())
+        .thenReturn(mockActorSchedulingService);
+    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockSpringBrokerBridge);
+    when(mockBrokerStartupContext.getBrokerAdminService()).thenReturn(mockBrokerAdminService);
+
+    when(mockBrokerStartupContext.getClusterServices())
+        .thenReturn(mock(ClusterServicesImpl.class, Mockito.RETURNS_DEEP_STUBS));
 
     future = CONCURRENCY_CONTROL.createFuture();
   }
@@ -70,37 +79,33 @@ class MonitoringServerStepTest {
   }
 
   @Test
-  void shouldScheduleHealthMonitorActorOnStartup() {
+  void shouldScheduleBrokerAdminServiceOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockActorSchedulingService).submitActor(mockHealthCheckService);
+    final var argumentCaptor = ArgumentCaptor.forClass(BrokerAdminServiceImpl.class);
+    verify(mockActorSchedulingService).submitActor(argumentCaptor.capture());
+
+    verify(mockBrokerStartupContext).setBrokerAdminService(argumentCaptor.getValue());
   }
 
   @Test
-  void shouldRegisterHealthMonitorAsPartitionListenerOnStartup() {
+  void shouldRegisterBrokerAdminServiceInSpringBrokerBridgeOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext).addPartitionListener(mockHealthCheckService);
-  }
+    final var adminServiceCaptor = ArgumentCaptor.forClass(BrokerAdminServiceImpl.class);
+    verify(mockBrokerStartupContext).setBrokerAdminService(adminServiceCaptor.capture());
 
-  @Test
-  void shouldRegisterHealthMonitorInSpringBrokerBridgeOnStartup() {
-    // when
-    sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
-
-    // then
-    final var argumentCaptor = ArgumentCaptor.forClass(Supplier.class);
+    final var adminServiceSupplierCaptor = ArgumentCaptor.forClass(Supplier.class);
     verify(mockSpringBrokerBridge)
-        .registerBrokerHealthCheckServiceSupplier(argumentCaptor.capture());
+        .registerBrokerAdminServiceSupplier(adminServiceSupplierCaptor.capture());
 
-    assertThat(argumentCaptor.getValue().get()).isSameAs(mockHealthCheckService);
+    assertThat(adminServiceSupplierCaptor.getValue().get()).isSameAs(adminServiceCaptor.getValue());
   }
 
   @Test
@@ -114,36 +119,13 @@ class MonitoringServerStepTest {
   }
 
   @Test
-  void shouldStopHealthCheckServiceOnShutdown() {
+  void shouldStopBrokerAdminServiceOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockHealthCheckService).closeAsync();
-  }
-
-  @Test
-  void shouldUnregisterHealthCheckServiceAsPartitionListenerOnShutdown() {
-    // when
-    sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
-
-    // then
-    verify(mockBrokerStartupContext).removePartitionListener(mockHealthCheckService);
-  }
-
-  @Test
-  void shouldUnregisterHealthMonitorInSpringBrokerBridgeOnStartup() {
-    // when
-    sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
-
-    // then
-    final var argumentCaptor = ArgumentCaptor.forClass(Supplier.class);
-    verify(mockSpringBrokerBridge)
-        .registerBrokerHealthCheckServiceSupplier(argumentCaptor.capture());
-
-    assertThat(argumentCaptor.getValue().get()).isNull();
+    verify(mockBrokerAdminService).closeAsync();
+    verify(mockBrokerStartupContext).setBrokerAdminService(null);
   }
 }

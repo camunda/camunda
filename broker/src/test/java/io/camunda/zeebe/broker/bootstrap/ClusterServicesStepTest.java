@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,13 +16,15 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ClusterServicesStepTest {
+class ClusterServicesStepTest {
 
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
   private ClusterServicesImpl mockClusterServices;
@@ -50,14 +53,15 @@ public class ClusterServicesStepTest {
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
   void shouldStartClusterServicesOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockClusterServices).start();
@@ -69,14 +73,15 @@ public class ClusterServicesStepTest {
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
   void shouldStopClusterServicesOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockClusterServices).stop();

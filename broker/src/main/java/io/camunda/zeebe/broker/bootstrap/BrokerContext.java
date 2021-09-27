@@ -7,27 +7,19 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
-import java.util.Collection;
 
 /** Context for components/actors managed directly by the Broker */
 public interface BrokerContext {
 
-  Collection<? extends PartitionListener> getPartitionListeners();
-
   // TODO change this to ClusterServices after migration
   ClusterServicesImpl getClusterServices();
 
-  CommandApiService getCommandApiService();
-
   EmbeddedGatewayService getEmbeddedGatewayService();
-
-  void addDiskSpaceUsageListener(DiskSpaceUsageListener diskSpaceUsageListener);
 
   /**
    * Returns disk space usage monitor. May be {@code null} if disabled in configuration
@@ -35,4 +27,8 @@ public interface BrokerContext {
    * @return disk space usage monitor. May be {@code null} if disabled in configuration
    */
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
+
+  PartitionManager getPartitionManager();
+
+  BrokerAdminService getBrokerAdminService();
 }

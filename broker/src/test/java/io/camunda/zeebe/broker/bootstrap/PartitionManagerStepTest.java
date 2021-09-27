@@ -12,12 +12,17 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.Member;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -26,12 +31,13 @@ import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class EmbeddedGatewayServiceStepTest {
+class PartitionManagerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
@@ -41,7 +47,7 @@ class EmbeddedGatewayServiceStepTest {
     networkCfg.setHost("localhost");
   }
 
-  private final EmbeddedGatewayServiceStep sut = new EmbeddedGatewayServiceStep();
+  private final PartitionManagerStep sut = new PartitionManagerStep();
   private BrokerStartupContextImpl testBrokerStartupContext;
 
   @Test
@@ -50,7 +56,7 @@ class EmbeddedGatewayServiceStepTest {
     final var actual = sut.getName();
 
     // then
-    assertThat(actual).isSameAs("Embedded Gateway");
+    assertThat(actual).isSameAs("Partition Manager");
   }
 
   @Nested
@@ -74,9 +80,19 @@ class EmbeddedGatewayServiceStepTest {
               mock(BrokerHealthCheckService.class),
               mock(ExporterRepository.class),
               Collections.emptyList());
-
+      testBrokerStartupContext.setLeaderManagementRequestHandler(
+          mock(LeaderManagementRequestHandler.class, RETURNS_DEEP_STUBS));
+      testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setClusterServices(
           mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS));
+
+      final var mockMemberId = mock(MemberId.class);
+
+      final var mockMember = mock(Member.class);
+      when(mockMember.id()).thenReturn(mockMemberId);
+
+      when(testBrokerStartupContext.getClusterServices().getMembershipService().getLocalMember())
+          .thenReturn(mockMember);
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -85,9 +101,9 @@ class EmbeddedGatewayServiceStepTest {
 
     @AfterEach
     void tearDown() {
-      final var embeddedGatewayService = testBrokerStartupContext.getEmbeddedGatewayService();
-      if (embeddedGatewayService != null) {
-        embeddedGatewayService.close();
+      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      if (partitionManager != null) {
+        partitionManager.stop().join();
       }
       actorScheduler.stop();
     }
@@ -109,21 +125,22 @@ class EmbeddedGatewayServiceStepTest {
       await().until(startupFuture::isDone);
 
       // then
-      final var embeddedGatewayService = testBrokerStartupContext.getEmbeddedGatewayService();
-      assertThat(embeddedGatewayService).isNotNull();
+      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      assertThat(partitionManager).isNotNull();
     }
   }
 
   @Nested
   class ShutdownBehavior {
 
-    private EmbeddedGatewayService mockEmbeddedGatewayService;
+    private PartitionManagerImpl mockPartitionManager;
 
     private ActorFuture<BrokerStartupContext> shutdownFuture;
 
     @BeforeEach
     void setUp() {
-      mockEmbeddedGatewayService = mock(EmbeddedGatewayService.class);
+      mockPartitionManager = mock(PartitionManagerImpl.class);
+      when(mockPartitionManager.stop()).thenReturn(CompletableFuture.completedFuture(null));
 
       testBrokerStartupContext =
           new BrokerStartupContextImpl(
@@ -135,7 +152,7 @@ class EmbeddedGatewayServiceStepTest {
               mock(ExporterRepository.class),
               Collections.emptyList());
 
-      testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
+      testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }
 
@@ -146,9 +163,9 @@ class EmbeddedGatewayServiceStepTest {
       await().until(shutdownFuture::isDone);
 
       // then
-      verify(mockEmbeddedGatewayService).close();
-      final var embeddedGatewayService = testBrokerStartupContext.getEmbeddedGatewayService();
-      assertThat(embeddedGatewayService).isNull();
+      verify(mockPartitionManager).stop();
+      final var partitionManager = testBrokerStartupContext.getPartitionManager();
+      assertThat(partitionManager).isNull();
     }
 
     @Test

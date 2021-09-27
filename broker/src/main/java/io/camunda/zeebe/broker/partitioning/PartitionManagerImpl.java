@@ -96,10 +96,9 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     partitionService =
         new DefaultPartitionService(membershipService, communicationService, partitionGroup);
 
+    this.partitionListeners = new ArrayList<>(partitionListeners);
     topologyManager = new TopologyManagerImpl(membershipService, localBroker);
-    partitionListeners.add(topologyManager);
-
-    this.partitionListeners = partitionListeners;
+    this.partitionListeners.add(topologyManager);
   }
 
   @Override

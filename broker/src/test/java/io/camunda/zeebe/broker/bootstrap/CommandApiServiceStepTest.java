@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -26,16 +27,19 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-public class CommandApiServiceStepTest {
+class CommandApiServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final BrokerInfo TEST_BROKER_INFO = new BrokerInfo(0, "localhost");
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   static {
     final var commandApiCfg = TEST_BROKER_CONFIG.getNetwork().getCommandApi();
@@ -60,7 +64,9 @@ public class CommandApiServiceStepTest {
             TEST_BROKER_CONFIG,
             mock(SpringBrokerBridge.class),
             mockActorSchedulingService,
-            mock(BrokerHealthCheckService.class));
+            mock(BrokerHealthCheckService.class),
+            mock(ExporterRepository.class),
+            Collections.emptyList());
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 
@@ -104,12 +110,10 @@ public class CommandApiServiceStepTest {
     void shouldCompleteFuture() {
       // when
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
 
       // then
-      assertThat(startupFuture.isCompletedExceptionally()).isFalse();
-
-      assertThat(startupFuture.join()).isEqualTo(testBrokerStartupContext);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+      assertThat(startupFuture.join()).isNotNull();
     }
 
     @Test
@@ -277,11 +281,10 @@ public class CommandApiServiceStepTest {
     void shouldCompleteFuture() {
       // when
       sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
 
       // then
-      assertThat(shutdownFuture.isCompletedExceptionally()).isFalse();
-      assertThat(shutdownFuture.join()).isEqualTo(testBrokerStartupContext);
+      assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
+      assertThat(shutdownFuture.join()).isNotNull();
     }
   }
 }

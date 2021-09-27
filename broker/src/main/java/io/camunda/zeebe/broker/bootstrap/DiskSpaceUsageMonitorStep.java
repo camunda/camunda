@@ -14,7 +14,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-public class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
+class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
 
   @Override
   void startupInternal(

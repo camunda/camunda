@@ -137,7 +137,7 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   @Override
   public V get(final long timeout, final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
-    countDownLatch.wait(unit.toMillis(timeout));
+    countDownLatch.await(timeout, unit);
     return get();
   }
 

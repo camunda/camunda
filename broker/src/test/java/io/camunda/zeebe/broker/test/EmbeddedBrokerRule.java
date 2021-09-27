@@ -43,6 +43,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -227,13 +229,12 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     systemContext =
         new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
     systemContext.getScheduler().start();
-    broker = new Broker(systemContext, springBrokerBridge);
 
+    final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
-    broker.addPartitionListener(new LeaderPartitionListener(latch));
-    for (final PartitionListener listener : listeners) {
-      broker.addPartitionListener(listener);
-    }
+    additionalListeners.add(new LeaderPartitionListener(latch));
+
+    broker = new Broker(systemContext, springBrokerBridge, additionalListeners);
 
     broker.start().join();
 

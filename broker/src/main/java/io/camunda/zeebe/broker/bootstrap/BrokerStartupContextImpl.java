@@ -15,8 +15,12 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
+import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -37,6 +41,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
+  private final ExporterRepository exporterRepository;
 
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
 
@@ -48,19 +53,26 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private CommandApiServiceImpl commandApiService;
   private SubscriptionApiCommandMessageHandlerService subscriptionApiService;
   private EmbeddedGatewayService embeddedGatewayService;
+  private LeaderManagementRequestHandler leaderManagementRequestHandler;
+  private PartitionManagerImpl partitionManager;
+  private BrokerAdminServiceImpl brokerAdminService;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
-      final BrokerHealthCheckService healthCheckService) {
+      final BrokerHealthCheckService healthCheckService,
+      final ExporterRepository exporterRepository,
+      final List<PartitionListener> additionalPartitionListeners) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
+    this.exporterRepository = requireNonNull(exporterRepository);
+    partitionListeners.addAll(additionalPartitionListeners);
   }
 
   @Override
@@ -201,5 +213,41 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+  }
+
+  @Override
+  public LeaderManagementRequestHandler getLeaderManagementRequestHandler() {
+    return leaderManagementRequestHandler;
+  }
+
+  @Override
+  public void setLeaderManagementRequestHandler(
+      final LeaderManagementRequestHandler leaderManagementRequestHandler) {
+    this.leaderManagementRequestHandler = leaderManagementRequestHandler;
+  }
+
+  @Override
+  public ExporterRepository getExporterRepository() {
+    return exporterRepository;
+  }
+
+  @Override
+  public PartitionManagerImpl getPartitionManager() {
+    return partitionManager;
+  }
+
+  @Override
+  public void setPartitionManager(final PartitionManagerImpl partitionManager) {
+    this.partitionManager = partitionManager;
+  }
+
+  @Override
+  public BrokerAdminServiceImpl getBrokerAdminService() {
+    return brokerAdminService;
+  }
+
+  @Override
+  public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
+    this.brokerAdminService = brokerAdminService;
   }
 }
