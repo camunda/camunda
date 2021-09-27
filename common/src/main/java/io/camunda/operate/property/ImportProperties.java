@@ -9,7 +9,7 @@ public class ImportProperties {
 
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
 
-  private static final int DEFAULT_IMPORT_QUEUE_SIZE = 5;
+  private static final int DEFAULT_IMPORT_QUEUE_SIZE = 3;
 
   private static final int DEFAULT_READER_BACKOFF = 5000;
 
