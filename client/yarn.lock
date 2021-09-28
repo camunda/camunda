@@ -1707,10 +1707,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@ibm/plex@^5.2.1":
-  version "5.2.1"
-  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-5.2.1.tgz#c454506b38f69bd97bcb71f1810e5c007593a3d2"
-  integrity sha512-ASrHZCl+ts1ysXN8kknv7iuTO1s6Dz0FCPDo0tFzFkvP3XSgKbZ4ml7zgGdlXKR6uEbMr/nt4dQVLrOQn6j2Ug==
+"@ibm/plex@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.0.0.tgz#c87eeb97a6dbbb3fe1705cd7a7cffa0df52831ca"
+  integrity sha512-KJv808kiPfyolO1fd2xHwhltHy2MlvpwRcGca+tOul+hbLf8r/Xx+8Xz5/KyKl/vvDJR8YXQCq09vGBAmrNDZw==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
