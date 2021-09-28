@@ -76,7 +76,7 @@
     <version.micrometer>1.7.4</version.micrometer>
     <version.rocksdbjni>6.22.1.1</version.rocksdbjni>
     <version.sbe>1.24.0</version.sbe>
-    <version.scala-parser>2.0.0</version.scala-parser>
+    <version.scala-parser>2.1.0</version.scala-parser>
     <version.scala>2.13.6</version.scala>
     <version.slf4j>1.7.32</version.slf4j>
     <version.snakeyaml>1.29</version.snakeyaml>
