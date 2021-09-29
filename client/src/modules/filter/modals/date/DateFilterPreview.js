@@ -73,20 +73,22 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     return (
       <div className="DateFilterPreview">
         <span className="parameterName">{variableName}</span>
-        {createOperator(
-          excludeUndefined
-            ? t('common.filter.list.operators.not')
-            : t('common.filter.list.operators.is')
-        )}
-        {previewText}
-        {(excludeUndefined || includeUndefined) && (
-          <>
-            {previewText && operator}
-            {bolden(t('common.null'))}
-            {operator}
-            {bolden(t('common.undefined'))}
-          </>
-        )}
+        <span className="filterText">
+          {createOperator(
+            excludeUndefined
+              ? t('common.filter.list.operators.not')
+              : t('common.filter.list.operators.is')
+          )}
+          {previewText}
+          {(excludeUndefined || includeUndefined) && (
+            <>
+              {previewText && operator}
+              {bolden(t('common.null'))}
+              {operator}
+              {bolden(t('common.undefined'))}
+            </>
+          )}
+        </span>
       </div>
     );
   } else {

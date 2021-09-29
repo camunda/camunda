@@ -82,32 +82,36 @@ exports[`should create variable preview 1`] = `
   <span
     className="parameterName"
   />
-  <span>
+  <span
+    className="filterText"
+  >
+    <span>
+       
+      is
+       
+    </span>
+    in the last
      
-    is
-     
+    <b>
+      2 days
+    </b>
+    <span>
+       
+      or
+       
+    </span>
+    <b>
+      null
+    </b>
+    <span>
+       
+      or
+       
+    </span>
+    <b>
+      undefined
+    </b>
   </span>
-  in the last
-   
-  <b>
-    2 days
-  </b>
-  <span>
-     
-    or
-     
-  </span>
-  <b>
-    null
-  </b>
-  <span>
-     
-    or
-     
-  </span>
-  <b>
-    undefined
-  </b>
 </div>
 `;
 
