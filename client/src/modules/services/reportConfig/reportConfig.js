@@ -44,7 +44,9 @@ export function updateReport(reportType, report, type, newValue, payloadAdjustme
       !oldDistribution.enabled(newReport) ||
       (type === 'view' && oldDistribution.key === 'none') || // try to find distribution when switching view
       (type === 'group' &&
-        ['flowNodes', 'userTasks'].includes(options.group.find(({matcher}) => matcher(report)).key)) // try to find distribution when switching away from flowNodes
+        ['flowNodes', 'userTasks'].includes(
+          options.group.find(({matcher}) => matcher(report))?.key
+        )) // try to find distribution when switching away from flowNodes
     ) {
       const possibleDistributions = options.distribution
         .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))

@@ -38,6 +38,7 @@ const config = {
   variables: {variable: []},
   onChange: jest.fn(),
   report: {
+    view: {},
     groupBy: {type: 'group'},
     distributedBy: {type: 'distribution'},
     definitions: [{id: 'definitionId'}],
@@ -155,4 +156,10 @@ it('should hide assignee option in cloud environment', async () => {
   await runAllEffects();
 
   expect(node.find({value: 'assignee'})).not.toExist();
+});
+
+it('should pass null as a value to Select if groupBy is null', () => {
+  const node = shallow(<GroupBy {...config} report={{...config.report, groupBy: null}} />);
+
+  expect(node.find(Select).prop('value')).toBe(null);
 });

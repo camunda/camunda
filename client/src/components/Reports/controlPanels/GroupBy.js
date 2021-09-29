@@ -25,12 +25,12 @@ export default function GroupBy({type, report, onChange, variables}) {
 
   const reportType = type;
 
-  if (!report.groupBy) {
+  if (!report.view) {
     return null;
   }
 
   const groups = reportConfig[type].group;
-  const selectedOption = groups.find(({matcher}) => matcher(report));
+  const selectedOption = report.groupBy ? groups.find(({matcher}) => matcher(report)) : {key: null};
   const hasGroup = selectedOption.key !== 'none';
   let hasDistribution;
 
