@@ -13,7 +13,6 @@ import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
-import io.camunda.zeebe.broker.partitioning.PartitionFactory;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -74,11 +73,7 @@ public final class ZeebePartition extends Actor
     transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
 
-    // todo remove after migration
-    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-      transition.setConcurrencyControl(actor);
-    }
-    // todo remove after migration
+    transition.setConcurrencyControl(actor);
 
     actorName =
         buildActorName(
@@ -109,29 +104,25 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-      startupProcess
-          .startup(actor, startupContext)
-          .onComplete(
-              (newStartupContext, error) -> {
-                if (error != null) {
-                  LOG.error(error.getMessage(), error);
-                  handleUnrecoverableFailure();
-                  close();
-                  return;
-                }
-                startupContext = newStartupContext;
-                final var transitionContext = startupContext.createTransitionContext();
+    startupProcess
+        .startup(actor, startupContext)
+        .onComplete(
+            (newStartupContext, error) -> {
+              if (error != null) {
+                LOG.error(error.getMessage(), error);
+                handleUnrecoverableFailure();
+                close();
+                return;
+              }
+              startupContext = newStartupContext;
+              final var transitionContext = startupContext.createTransitionContext();
 
-                transition.updateTransitionContext(transitionContext);
+              transition.updateTransitionContext(transitionContext);
 
-                context = transitionContext.getPartitionContext();
+              context = transitionContext.getPartitionContext();
 
-                registerListenersAndTriggerRoleChange();
-              });
-    } else {
-      registerListenersAndTriggerRoleChange();
-    }
+              registerListenersAndTriggerRoleChange();
+            });
   }
 
   @Override
@@ -160,25 +151,21 @@ public final class ZeebePartition extends Actor
                   .getComponentHealthMonitor()
                   .removeComponent(context.getRaftPartition().name());
 
-              if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
-                startupProcess
-                    .shutdown(actor, startupContext)
-                    .onComplete(
-                        (newStartupContext, error) -> {
-                          if (error != null) {
-                            LOG.error(error.getMessage(), error);
-                          }
+              startupProcess
+                  .shutdown(actor, startupContext)
+                  .onComplete(
+                      (newStartupContext, error) -> {
+                        if (error != null) {
+                          LOG.error(error.getMessage(), error);
+                        }
 
-                          // reset contexts to null to not have lingering references that could
-                          // cause OOM problems in tests which start/stop partitions
-                          startupContext = null;
-                          context = null;
+                        // reset contexts to null to not have lingering references that could
+                        // cause OOM problems in tests which start/stop partitions
+                        startupContext = null;
+                        context = null;
 
-                          closeFuture.complete(null);
-                        });
-              } else {
-                closeFuture.complete(null);
-              }
+                        closeFuture.complete(null);
+                      });
             });
   }
 

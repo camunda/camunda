@@ -26,8 +26,6 @@ import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentReques
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -35,25 +33,17 @@ import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
-import io.camunda.zeebe.broker.system.partitions.impl.NewPartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStartupStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServicePartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
@@ -72,20 +62,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// TODO make package private again
-public final class PartitionFactory {
-
-  /**
-   * Feature flag to switch between old and new partition bootstrap and transition code. The old
-   * code is based on LEADER_STEPS and FOLLOWER steps. The new code is based on TRANSITION_STEPS and
-   * ZeebePartition.STARTUP_PROCESS
-   */
-  public static final boolean FEATURE_TOGGLE_USE_NEW_CODE = true;
+final class PartitionFactory {
 
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS =
       List.of(
           new LogDeletionPartitionStartupStep(), new RockDbMetricExporterPartitionStartupStep());
-  // will probably be executed in parallel
+
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(
           new LogStoragePartitionTransitionStep(),
@@ -95,31 +77,6 @@ public final class PartitionFactory {
           new StreamProcessorTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep());
-
-  private static final List<PartitionStep> LEADER_STEPS =
-      List.of(
-          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStartupStep()),
-          new LogStoragePartitionStep(),
-          new LogStreamPartitionStep(),
-          new ZeebeDbPartitionStep(),
-          new QueryServiceStep(),
-          new StreamProcessorPartitionStep(),
-          new SnapshotDirectorPartitionStep(),
-          PartitionStepMigrationHelper.fromStartupStep(
-              new RockDbMetricExporterPartitionStartupStep()),
-          new ExporterDirectorPartitionStep());
-  private static final List<PartitionStep> FOLLOWER_STEPS =
-      List.of(
-          PartitionStepMigrationHelper.fromStartupStep(new LogDeletionPartitionStartupStep()),
-          new LogStoragePartitionStep(),
-          new LogStreamPartitionStep(),
-          new ZeebeDbPartitionStep(),
-          new QueryServiceStep(),
-          new StreamProcessorPartitionStep(),
-          new SnapshotDirectorPartitionStep(),
-          PartitionStepMigrationHelper.fromStartupStep(
-              new RockDbMetricExporterPartitionStartupStep()),
-          new ExporterDirectorPartitionStep());
 
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
@@ -205,19 +162,12 @@ public final class PartitionFactory {
               exporterRepository,
               new PartitionProcessingState(owningPartition));
 
-      final PartitionTransitionImpl transitionBehavior =
-          new PartitionTransitionImpl(
-              partitionStartupAndTransitionContext, LEADER_STEPS, FOLLOWER_STEPS);
-
       final PartitionTransition newTransitionBehavior =
-          new NewPartitionTransitionImpl(
-              TRANSITION_STEPS, partitionStartupAndTransitionContext.createTransitionContext());
+          new PartitionTransitionImpl(TRANSITION_STEPS);
 
       final ZeebePartition zeebePartition =
           new ZeebePartition(
-              partitionStartupAndTransitionContext,
-              FEATURE_TOGGLE_USE_NEW_CODE ? newTransitionBehavior : transitionBehavior,
-              STARTUP_STEPS);
+              partitionStartupAndTransitionContext, newTransitionBehavior, STARTUP_STEPS);
 
       healthCheckService.registerMonitoredPartition(
           zeebePartition.getPartitionId(), zeebePartition);
