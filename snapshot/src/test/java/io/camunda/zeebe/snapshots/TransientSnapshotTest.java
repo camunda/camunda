@@ -331,8 +331,7 @@ public class TransientSnapshotTest {
     // then
     assertThatThrownBy(persisted::join)
         .as("did not persist a deleted transient snapshot")
-        .hasCauseInstanceOf(SnapshotNotFoundException.class)
-        .hasMessageContaining("Snapshot is not valid");
+        .hasCauseInstanceOf(SnapshotNotFoundException.class);
   }
 
   private void writeSnapshot(final Path path) {

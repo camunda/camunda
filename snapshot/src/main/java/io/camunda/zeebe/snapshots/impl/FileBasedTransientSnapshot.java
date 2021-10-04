@@ -119,14 +119,14 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       return;
     }
 
-    if (!takenFuture.isDone()) {
+    if (!takenFuture.isDone() || takenFuture.isCompletedExceptionally()) {
       future.completeExceptionally(new IllegalStateException("Snapshot is not taken"));
       return;
     }
 
     if (!isValid) {
       future.completeExceptionally(
-          new SnapshotNotFoundException("Snapshot is not valid. It may have been deleted."));
+          new SnapshotNotFoundException("Snapshot may have been already deleted."));
       return;
     }
 

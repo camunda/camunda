@@ -19,8 +19,7 @@ public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
    * @param term the term to which the snapshots corresponds to
    * @param processedPosition the processed position in the snapshot
    * @param exportedPosition the exported position in the snapshot
-   * @return an Either that contains and exception or transientSnapshot if it was taken
-   *     successfully.
+   * @return either an exception or transientSnapshot, if it was taken successfully.
    */
   Either<SnapshotException, TransientSnapshot> newTransientSnapshot(
       long index, long term, long processedPosition, long exportedPosition);
