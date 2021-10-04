@@ -41,7 +41,7 @@ public class BrokerAdminServiceTest {
   @Before
   public void before() {
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerAdminService();
+    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
   }
 
   @Test
@@ -144,7 +144,7 @@ public class BrokerAdminServiceTest {
 
     // then
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerAdminService();
+    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
     assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
   }
 
@@ -161,7 +161,7 @@ public class BrokerAdminServiceTest {
 
     // then
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerAdminService();
+    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
     assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
   }
 
@@ -176,7 +176,7 @@ public class BrokerAdminServiceTest {
 
     // then
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerAdminService();
+    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
     assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
   }
 
@@ -193,7 +193,7 @@ public class BrokerAdminServiceTest {
 
     // then
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerAdminService();
+    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
     assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
   }
 

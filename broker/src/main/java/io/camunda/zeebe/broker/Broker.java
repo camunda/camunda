@@ -7,20 +7,14 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
-import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -184,34 +178,14 @@ public final class Broker implements AutoCloseable {
   }
 
   // only used for tests
-  public EmbeddedGatewayService getEmbeddedGatewayService() {
-    return brokerContext.getEmbeddedGatewayService();
+  public BrokerContext getBrokerContext() {
+    return brokerContext;
   }
 
-  public AtomixCluster getAtomixCluster() {
-    return brokerContext.getAtomixCluster();
-  }
-
-  public ClusterServices getClusterServices() {
-    return brokerContext.getClusterServices();
-  }
-
-  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
-    return brokerContext.getDiskSpaceUsageMonitor();
-  }
-
-  public BrokerAdminService getBrokerAdminService() {
-    return brokerContext.getBrokerAdminService();
-  }
-
+  // only used for tests
   public SystemContext getSystemContext() {
     return systemContext;
   }
-
-  public PartitionManager getPartitionManager() {
-    return brokerContext.getPartitionManager();
-  }
-  // only used for tests
 
   /**
    * Temporary helper object. This object is needed during the transition of broker startup/shutdown
