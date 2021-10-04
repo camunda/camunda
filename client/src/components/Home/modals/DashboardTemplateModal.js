@@ -571,6 +571,9 @@ export default function DashboardTemplateModal({onClose}) {
               view: {entity: 'processInstance', properties: ['frequency']},
               groupBy: {type: 'startDate', value: {unit: 'automatic'}},
               visualization: 'bar',
+              configuration: {
+                stackedBar: true,
+              },
             },
           },
         },
@@ -594,6 +597,7 @@ export default function DashboardTemplateModal({onClose}) {
               configuration: {
                 aggregationTypes: ['sum'],
                 userTaskDurationTimes: ['work'],
+                stackedBar: true,
               },
             },
           },
@@ -622,6 +626,7 @@ export default function DashboardTemplateModal({onClose}) {
               configuration: {
                 aggregationTypes: ['sum'],
                 userTaskDurationTimes: ['work'],
+                stackedBar: true,
               },
             },
           },
