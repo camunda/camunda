@@ -126,6 +126,7 @@
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
     <plugin.version.spotbugs>4.4.1</plugin.version.spotbugs>
     <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
+    <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
     <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
@@ -164,6 +165,7 @@
     <enforcer.skip>${skipChecks}</enforcer.skip>
     <mdep.analyze.skip>${skipChecks}</mdep.analyze.skip>
     <fmt.skip>${skipChecks}</fmt.skip>
+    <sort.skip>${skipChecks}</sort.skip>
   </properties>
 
   <dependencyManagement>
@@ -943,6 +945,24 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>com.github.ekryd.sortpom</groupId>
+          <artifactId>sortpom-maven-plugin</artifactId>
+          <version>${plugin.version.sortpom}</version>
+          <executions>
+            <execution>
+              <id>sortpom</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>sort</goal>
+              </goals>
+              <configuration>
+                <createBackupFile>false</createBackupFile>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
         <!-- Unit tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1347,6 +1367,11 @@
       </plugin>
 
       <plugin>
+        <groupId>com.github.ekryd.sortpom</groupId>
+        <artifactId>sortpom-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
@@ -1676,6 +1701,22 @@
                 <goals>
                   <goal>check</goal>
                 </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>com.github.ekryd.sortpom</groupId>
+            <artifactId>sortpom-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sortpom</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>verify</goal>
+                </goals>
+                <configuration>
+                  <verifyFail>stop</verifyFail>
+                </configuration>
               </execution>
             </executions>
           </plugin>
