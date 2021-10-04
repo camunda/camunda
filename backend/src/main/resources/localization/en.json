@@ -589,7 +589,7 @@
       "laborSavings": "Are we saving total labor costs? (To Do: Add other processes and group by start date AND process)",
       "processAcceleration": "Are my processes getting faster? (To Do: Add other processes and group by start date AND process)",
       "taskAutomation": "How quickly are we automating user tasks? (To Do: Add other processes and group by start date AND process)",
-      "incidentHandling": "Are we improving incident handling? (To Do: Add other processes)",
+      "incidentHandling": "Are we resolving incidents fast enough? (To Do: Add other processes)",
       "taskLifecycle": "How long do tasks wait before assignment? (To Do: Add other processes)"
     },
     "addButton": {

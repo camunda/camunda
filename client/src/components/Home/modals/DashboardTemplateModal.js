@@ -650,6 +650,10 @@ export default function DashboardTemplateModal({onClose}) {
               ],
               configuration: {
                 aggregationTypes: ['avg'],
+                targetValue: {
+                  active: true,
+                  durationChart: {unit: 'hours', isBelow: true, value: '1'},
+                },
               },
             },
           },
