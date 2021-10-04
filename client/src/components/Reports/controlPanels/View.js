@@ -6,7 +6,7 @@
 
 import {useState, useEffect} from 'react';
 
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 import {Select} from 'components';
 import {isOptimizeCloudEnvironment} from 'config';
 
@@ -42,7 +42,7 @@ export default function View({type, report, onChange, variables}) {
           };
         }
 
-        onChange(updateReport(reportType, report, 'view', type, adjustment));
+        onChange(createReportUpdate(reportType, report, 'view', type, adjustment));
       }}
       value={getValue(selectedOption?.key, report.view)}
       disabled={report.definitions.length === 0 || !report.definitions[0].key}

@@ -8,7 +8,7 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Select} from 'components';
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 import {isOptimizeCloudEnvironment} from 'config';
 
 import DistributedBy from './DistributedBy';
@@ -28,7 +28,7 @@ jest.mock('services', () => {
         distribution: [],
       },
     },
-    updateReport: jest.fn(),
+    createReportUpdate: jest.fn(),
   };
 });
 
@@ -81,7 +81,7 @@ beforeEach(() => {
     },
   ];
 
-  updateReport.mockClear();
+  createReportUpdate.mockClear();
 });
 
 it('should disable options which would create a wrong combination', () => {
@@ -113,11 +113,13 @@ it('invoke configUpdate with the correct variable data', async () => {
     value: {id: 'test', name: 'testName', type: 'date'},
   };
 
-  updateReport.mockReturnValue({content: 'change'});
+  createReportUpdate.mockReturnValue({content: 'change'});
 
   node.find(Select).simulate('change', 'variable_testName');
 
-  expect(updateReport.mock.calls[0][4].distributedBy.value.$set).toEqual(selectedOption.value);
+  expect(createReportUpdate.mock.calls[0][4].distributedBy.value.$set).toEqual(
+    selectedOption.value
+  );
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 
@@ -125,11 +127,11 @@ it('should have a button to remove the distribution', () => {
   const spy = jest.fn();
   const node = shallow(<DistributedBy {...config} onChange={spy} />);
 
-  updateReport.mockReturnValue({content: 'change'});
+  createReportUpdate.mockReturnValue({content: 'change'});
 
   node.find('.removeGrouping').simulate('click');
 
-  expect(updateReport.mock.calls[0][3]).toBe('none');
+  expect(createReportUpdate.mock.calls[0][3]).toBe('none');
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 

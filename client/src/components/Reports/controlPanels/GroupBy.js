@@ -8,7 +8,7 @@ import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 import {Select, Button, Icon} from 'components';
 import {isOptimizeCloudEnvironment} from 'config';
 
@@ -117,7 +117,7 @@ export default function GroupBy({type, report, onChange, variables}) {
           }
 
           onChange(
-            updateReport(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
+            createReportUpdate(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
           );
         }}
         value={getValue(selectedOption.key, report.groupBy)}
@@ -130,7 +130,7 @@ export default function GroupBy({type, report, onChange, variables}) {
           className="removeGrouping"
           onClick={() =>
             onChange(
-              updateReport(reportType, report, 'group', 'none', {
+              createReportUpdate(reportType, report, 'group', 'none', {
                 groupBy: {
                   $set:
                     selectedOption.key === 'process'

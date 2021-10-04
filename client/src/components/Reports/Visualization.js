@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 import {Select} from 'components';
 
 import './Visualization.scss';
@@ -17,7 +17,7 @@ export default function Visualization({type, report, onChange}) {
     <Select
       className="Visualization"
       onChange={(value) => {
-        onChange(updateReport(type, report, 'visualization', value));
+        onChange(createReportUpdate(type, report, 'visualization', value));
       }}
       value={selectedOption?.key}
       disabled={!selectedOption}

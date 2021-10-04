@@ -17,7 +17,7 @@ export {
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
 export {incompatibleFilters} from './incompatibleFilters';
-export {default as reportConfig, updateReport} from './reportConfig';
+export {default as reportConfig, createReportUpdate} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
 export {

@@ -8,7 +8,7 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Select, Button} from 'components';
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 import {isOptimizeCloudEnvironment} from 'config';
 
 import GroupBy from './GroupBy';
@@ -29,7 +29,7 @@ jest.mock('services', () => {
         distribution: [],
       },
     },
-    updateReport: jest.fn(),
+    createReportUpdate: jest.fn(),
   };
 });
 
@@ -100,7 +100,7 @@ beforeEach(() => {
     },
   ];
 
-  updateReport.mockClear();
+  createReportUpdate.mockClear();
 });
 
 it('should disable options which would create a wrong combination', () => {
@@ -132,11 +132,11 @@ it('invoke configUpdate with the correct variable data', async () => {
     value: {id: 'test', name: 'testName', type: 'date'},
   };
 
-  updateReport.mockReturnValue({content: 'change'});
+  createReportUpdate.mockReturnValue({content: 'change'});
 
   node.find(Select).simulate('change', 'variable_testName');
 
-  expect(updateReport.mock.calls[0][4].groupBy.value.$set).toEqual(selectedOption.value);
+  expect(createReportUpdate.mock.calls[0][4].groupBy.value.$set).toEqual(selectedOption.value);
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 
@@ -146,7 +146,7 @@ it('should use the distributedBy value when removing the groupBy', () => {
 
   node.find(Button).simulate('click');
 
-  expect(updateReport.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
+  expect(createReportUpdate.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
 });
 
 it('should hide assignee option in cloud environment', async () => {

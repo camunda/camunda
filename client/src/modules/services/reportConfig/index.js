@@ -6,7 +6,7 @@
 
 import * as processOptions from './process';
 import * as decisionOptions from './decision';
-export {updateReport} from './reportConfig';
+export {createReportUpdate} from './reportConfig';
 
 const config = {
   process: processOptions,

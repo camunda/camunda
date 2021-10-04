@@ -12,7 +12,7 @@ export const view = [
     label: () => t('report.view.rawData'),
     visible: () => true,
     enabled: () => true,
-    matcher: ({view}) => view.properties[0] === 'rawData',
+    matcher: ({view}) => view?.properties[0] === 'rawData',
     payload: () => ({view: {entity: null, properties: ['rawData']}}),
   },
   {
@@ -20,7 +20,7 @@ export const view = [
     label: () => t('report.view.pi'),
     visible: () => true,
     enabled: () => true,
-    matcher: ({view}) => view.entity === 'processInstance',
+    matcher: ({view}) => view?.entity === 'processInstance',
     payload: ({view}) => {
       if (!view || view.properties[0] === 'rawData' || typeof view.properties[0] === 'object') {
         return {view: {entity: 'processInstance', properties: ['frequency']}};
@@ -33,7 +33,7 @@ export const view = [
     label: () => t('report.view.in'),
     visible: () => true,
     enabled: () => true,
-    matcher: ({view}) => view.entity === 'incident',
+    matcher: ({view}) => view?.entity === 'incident',
     payload: ({view}) => {
       if (!view || view.properties[0] === 'rawData' || typeof view.properties[0] === 'object') {
         return {view: {entity: 'incident', properties: ['frequency']}};
@@ -46,7 +46,7 @@ export const view = [
     label: () => t('report.view.fn'),
     visible: () => true,
     enabled: () => true,
-    matcher: ({view}) => view.entity === 'flowNode',
+    matcher: ({view}) => view?.entity === 'flowNode',
     payload: ({view}) => {
       if (!view || view.properties[0] === 'rawData' || typeof view.properties[0] === 'object') {
         return {view: {entity: 'flowNode', properties: ['frequency']}};
@@ -59,7 +59,7 @@ export const view = [
     label: () => t('report.view.userTask'),
     visible: () => true,
     enabled: () => true,
-    matcher: ({view}) => view.entity === 'userTask',
+    matcher: ({view}) => view?.entity === 'userTask',
     payload: ({view}) => {
       if (!view || view.properties[0] === 'rawData' || typeof view.properties[0] === 'object') {
         return {view: {entity: 'userTask', properties: ['frequency']}};
@@ -72,7 +72,7 @@ export const view = [
     label: () => t('report.view.variable'),
     visible: () => true,
     enabled: () => true,
-    matcher: ({view}) => view.entity === 'variable',
+    matcher: ({view}) => view?.entity === 'variable',
     payload: () => {
       return {view: {entity: 'variable'}};
     },

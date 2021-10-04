@@ -15,7 +15,7 @@ const config = {
   decision: decisionOptions,
 };
 
-export function updateReport(reportType, report, type, newValue, payloadAdjustment) {
+export function createReportUpdate(reportType, report, type, newValue, payloadAdjustment) {
   const options = config[reportType];
   let newPayload = options[type].find(({key}) => key === newValue).payload(report);
 
@@ -42,7 +42,10 @@ export function updateReport(reportType, report, type, newValue, payloadAdjustme
       !oldDistribution ||
       !oldDistribution.visible(newReport) ||
       !oldDistribution.enabled(newReport) ||
-      (type === 'view' && oldDistribution.key === 'none') || // try to find distribution when switching view
+      (type === 'view' &&
+        options.view.find(({matcher}) => matcher(report)) !==
+          options.view.find(({matcher}) => matcher(newReport)) &&
+        oldDistribution.key === 'none') || // try to find distribution when switching view
       (type === 'group' &&
         ['flowNodes', 'userTasks'].includes(
           options.group.find(({matcher}) => matcher(report))?.key

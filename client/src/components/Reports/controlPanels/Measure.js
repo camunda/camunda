@@ -8,7 +8,7 @@ import React from 'react';
 
 import {Select, SelectionPreview, Button} from 'components';
 import {t} from 'translation';
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 
 import AggregationType from './AggregationType';
 
@@ -25,7 +25,7 @@ export default function Measure({report, onChange}) {
           <SelectionPreview
             onClick={() =>
               onChange(
-                updateReport('process', report, 'view', selectedView.key, {
+                createReportUpdate('process', report, 'view', selectedView.key, {
                   view: {properties: {$set: ['duration']}},
                 })
               )
@@ -39,7 +39,7 @@ export default function Measure({report, onChange}) {
           <SelectionPreview
             onClick={() =>
               onChange(
-                updateReport('process', report, 'view', selectedView.key, {
+                createReportUpdate('process', report, 'view', selectedView.key, {
                   view: {properties: {$set: ['frequency']}},
                 })
               )
@@ -64,7 +64,7 @@ export default function Measure({report, onChange}) {
             value={report.view.properties[0]}
             onChange={(property) =>
               onChange(
-                updateReport('process', report, 'view', selectedView.key, {
+                createReportUpdate('process', report, 'view', selectedView.key, {
                   view: {properties: {$set: [property]}},
                 })
               )
@@ -83,7 +83,7 @@ export default function Measure({report, onChange}) {
           <Button
             onClick={() =>
               onChange(
-                updateReport('process', report, 'view', selectedView.key, {
+                createReportUpdate('process', report, 'view', selectedView.key, {
                   view: {properties: {$set: ['frequency', 'duration']}},
                 })
               )

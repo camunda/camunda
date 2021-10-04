@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {updateReport} from './reportConfig';
+import {createReportUpdate} from './reportConfig';
 
 const report = {
   configuration: {
@@ -27,25 +27,27 @@ const report = {
 };
 
 it('should update the payload when selecting a new report setting', () => {
-  expect(updateReport('process', report, 'visualization', 'table').visualization.$set).toBe(
+  expect(createReportUpdate('process', report, 'visualization', 'table').visualization.$set).toBe(
     'table'
   );
 });
 
 it('should augment change with custom payload adjustment', () => {
   expect(
-    updateReport('process', report, 'group', 'variable', {
+    createReportUpdate('process', report, 'group', 'variable', {
       groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
     }).groupBy.$set
   ).toEqual({type: 'variable', value: {name: 'boolVar', type: 'Boolean'}});
 });
 
 it('should ensure that groups stay valid', () => {
-  expect(updateReport('process', report, 'view', 'rawData').groupBy.$set).toEqual({
+  expect(createReportUpdate('process', report, 'view', 'rawData').groupBy.$set).toEqual({
     type: 'none',
     value: null,
   });
-  expect(updateReport('process', report, 'view', 'flowNode').groupBy.$set).toEqual(report.groupBy);
+  expect(createReportUpdate('process', report, 'view', 'flowNode').groupBy.$set).toEqual(
+    report.groupBy
+  );
 });
 
 it('should ensure that distributions stay valid', () => {
@@ -54,24 +56,24 @@ it('should ensure that distributions stay valid', () => {
     distributedBy: {type: 'variable', value: {name: 'integerVar', type: 'Integer'}},
   };
   expect(
-    updateReport('process', reportWithDistribution, 'group', 'duration').distributedBy.$set
+    createReportUpdate('process', reportWithDistribution, 'group', 'duration').distributedBy.$set
   ).toEqual({
     type: 'none',
     value: null,
   });
 
   expect(
-    updateReport('process', reportWithDistribution, 'group', 'endDate').distributedBy.$set
+    createReportUpdate('process', reportWithDistribution, 'group', 'endDate').distributedBy.$set
   ).toEqual(reportWithDistribution.distributedBy);
 });
 
 it('should ensure that visualizations stay valid', () => {
-  expect(updateReport('process', report, 'group', 'none').visualization.$set).toBe('number');
-  expect(updateReport('process', report, 'group', 'endDate').visualization.$set).toBe('bar');
+  expect(createReportUpdate('process', report, 'group', 'none').visualization.$set).toBe('number');
+  expect(createReportUpdate('process', report, 'group', 'endDate').visualization.$set).toBe('bar');
 });
 
 it('should reset distribution when switching view and distribution is none', () => {
-  expect(updateReport('process', report, 'view', 'flowNode').distributedBy.$set).toEqual({
+  expect(createReportUpdate('process', report, 'view', 'flowNode').distributedBy.$set).toEqual({
     type: 'flowNode',
     value: null,
   });
@@ -83,7 +85,9 @@ it('should reset distribution when switching group away from flowNodes', () => {
     view: {entity: 'flowNode', properties: ['frequency']},
     groupBy: {type: 'flowNodes', value: null},
   };
-  expect(updateReport('process', flowNodeReport, 'group', 'startDate').distributedBy.$set).toEqual({
+  expect(
+    createReportUpdate('process', flowNodeReport, 'group', 'startDate').distributedBy.$set
+  ).toEqual({
     type: 'flowNode',
     value: null,
   });
@@ -91,24 +95,27 @@ it('should reset distribution when switching group away from flowNodes', () => {
 
 it('should update y axis labels', () => {
   expect(
-    updateReport('process', report, 'view', 'userTask', {view: {properties: {$set: ['duration']}}})
-      .configuration.$set.yLabel
+    createReportUpdate('process', report, 'view', 'userTask', {
+      view: {properties: {$set: ['duration']}},
+    }).configuration.$set.yLabel
   ).toBe('User Task Duration');
 });
 
 it('should update x axis labels', () => {
-  expect(updateReport('process', report, 'group', 'endDate').configuration.$set.xLabel).toBe(
+  expect(createReportUpdate('process', report, 'group', 'endDate').configuration.$set.xLabel).toBe(
     'End Date'
   );
   expect(
-    updateReport('process', report, 'group', 'variable', {
+    createReportUpdate('process', report, 'group', 'variable', {
       groupBy: {value: {$set: {name: 'boolVar', type: 'Boolean'}}},
     }).configuration.$set.xLabel
   ).toBe('boolVar');
 });
 
 it('should update sorting', () => {
-  expect(updateReport('process', report, 'view', 'rawData').configuration.$set.sorting).toEqual({
+  expect(
+    createReportUpdate('process', report, 'view', 'rawData').configuration.$set.sorting
+  ).toEqual({
     by: 'startDate',
     order: 'desc',
   });
@@ -128,7 +135,7 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', heatmapReport, 'visualization', 'barChart').configuration.$set
+      createReportUpdate('process', heatmapReport, 'visualization', 'barChart').configuration.$set
         .heatmapTargetValue
     ).toEqual({active: false, values: {}});
   });
@@ -144,7 +151,7 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', durationReport, 'view', 'incident').configuration.$set
+      createReportUpdate('process', durationReport, 'view', 'incident').configuration.$set
         .aggregationTypes
     ).toEqual(['avg', 'min']);
   });
@@ -160,7 +167,7 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', durationReport, 'view', 'incident').configuration.$set
+      createReportUpdate('process', durationReport, 'view', 'incident').configuration.$set
         .aggregationTypes
     ).toEqual(['avg']);
   });
@@ -177,7 +184,8 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', processReport, 'group', 'process').configuration.$set.aggregationTypes
+      createReportUpdate('process', processReport, 'group', 'process').configuration.$set
+        .aggregationTypes
     ).toEqual(['avg', 'sum', 'min']);
   });
 
@@ -193,7 +201,8 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', processReport, 'group', 'process').configuration.$set.aggregationTypes
+      createReportUpdate('process', processReport, 'group', 'process').configuration.$set
+        .aggregationTypes
     ).toEqual(['avg']);
   });
 
@@ -210,12 +219,12 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', processPartReport, 'group', 'startDate').configuration.$set
+      createReportUpdate('process', processPartReport, 'group', 'startDate').configuration.$set
         .processPart
     ).toEqual(processPartReport.configuration.processPart);
 
     expect(
-      updateReport('process', processPartReport, 'view', 'processInstance', {
+      createReportUpdate('process', processPartReport, 'view', 'processInstance', {
         view: {properties: {$set: ['frequency']}},
       }).configuration.$set.processPart
     ).toBe(null);
@@ -234,13 +243,13 @@ describe('process exclusive updates', () => {
     };
 
     expect(
-      updateReport('process', targetValueReport, 'view', 'processInstance', {
+      createReportUpdate('process', targetValueReport, 'view', 'processInstance', {
         view: {properties: {$set: ['duration']}},
       }).configuration.$set.targetValue
     ).toEqual(targetValueReport.configuration.targetValue);
 
     expect(
-      updateReport('process', targetValueReport, 'view', 'processInstance', {
+      createReportUpdate('process', targetValueReport, 'view', 'processInstance', {
         view: {properties: {$set: ['frequency', 'duration']}},
       }).configuration.$set.targetValue.active
     ).toBe(false);

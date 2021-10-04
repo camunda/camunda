@@ -8,7 +8,7 @@ import classnames from 'classnames';
 import {useState, useEffect} from 'react';
 
 import {t} from 'translation';
-import {reportConfig, updateReport} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
 import {Select, Button, Icon} from 'components';
 import {isOptimizeCloudEnvironment} from 'config';
 
@@ -96,7 +96,7 @@ export default function DistributedBy({report, onChange, variables}) {
           }
 
           onChange(
-            updateReport('process', report, 'distribution', type, {
+            createReportUpdate('process', report, 'distribution', type, {
               distributedBy: {value: {$set: value}},
             })
           );
@@ -108,7 +108,7 @@ export default function DistributedBy({report, onChange, variables}) {
       {hasDistribution && (
         <Button
           className="removeGrouping"
-          onClick={() => onChange(updateReport('process', report, 'distribution', 'none'))}
+          onClick={() => onChange(createReportUpdate('process', report, 'distribution', 'none'))}
         >
           <Icon type="close-small" />
         </Button>
