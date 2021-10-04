@@ -183,8 +183,7 @@ export const group = [
   {
     key: 'process',
     label: () => t('common.process.label'),
-    visible: ({definitions, view}) =>
-      definitions.length > 1 && !['incident', 'variable', null].includes(view.entity),
+    visible: ({definitions, view}) => definitions.length > 1 && view.entity === 'processInstance',
     enabled: () => true,
     matcher: ({groupBy, distributedBy}) =>
       groupBy?.type === 'none' && distributedBy?.type === 'process',
