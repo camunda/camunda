@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
@@ -16,8 +17,9 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 /** Context for components/actors managed directly by the Broker */
 public interface BrokerContext {
 
-  // TODO change this to ClusterServices after migration
-  ClusterServicesImpl getClusterServices();
+  ClusterServices getClusterServices();
+
+  AtomixCluster getAtomixCluster();
 
   EmbeddedGatewayService getEmbeddedGatewayService();
 
