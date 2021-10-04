@@ -33,7 +33,6 @@ public class BrokerRestartTest {
   public void shouldSortRecordsByPosition() {
     // given
     final var listener = new Listener();
-    brokerRule.getBroker().addPartitionListener(listener);
 
     // when
     generateLoad();

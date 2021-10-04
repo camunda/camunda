@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -18,13 +19,15 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class DiskSpaceUsageMonitorStepTest {
+class DiskSpaceUsageMonitorStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
+  private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
   private ActorSchedulingService mockActorSchedulingService;
@@ -60,8 +63,8 @@ public class DiskSpaceUsageMonitorStepTest {
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
@@ -81,14 +84,15 @@ public class DiskSpaceUsageMonitorStepTest {
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
 
     // then
-    assertThat(future.isDone()).isTrue();
-    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(future.join()).isNotNull();
   }
 
   @Test
   void shouldStopHealthCheckServiceOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
 
     // then
     verify(mockDiskSpaceUsageMonitor).closeAsync();

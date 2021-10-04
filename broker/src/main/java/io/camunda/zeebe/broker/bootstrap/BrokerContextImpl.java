@@ -7,43 +7,33 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
-import java.util.Collection;
-import java.util.List;
 
-public final class BrokerContextImpl implements BrokerContext {
+final class BrokerContextImpl implements BrokerContext {
 
   private final ClusterServicesImpl clusterServices;
-  private final CommandApiService commandApiService;
   private final EmbeddedGatewayService embeddedGatewayService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private final List<PartitionListener> partitionListeners;
+  private final PartitionManager partitionManager;
+  private final BrokerAdminService brokerAdminService;
 
-  public BrokerContextImpl(
+  BrokerContextImpl(
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final ClusterServicesImpl clusterServices,
-      final CommandApiService commandApiService,
       final EmbeddedGatewayService embeddedGatewayService,
-      final List<PartitionListener> partitionListeners) {
+      final PartitionManager partitionManager,
+      final BrokerAdminService brokerAdminService) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
-    this.commandApiService = requireNonNull(commandApiService);
     this.embeddedGatewayService = embeddedGatewayService;
-
-    this.partitionListeners = unmodifiableList(requireNonNull(partitionListeners));
-  }
-
-  @Override
-  public Collection<? extends PartitionListener> getPartitionListeners() {
-    return partitionListeners;
+    this.partitionManager = requireNonNull(partitionManager);
+    this.brokerAdminService = requireNonNull(brokerAdminService);
   }
 
   @Override
@@ -52,24 +42,22 @@ public final class BrokerContextImpl implements BrokerContext {
   }
 
   @Override
-  public CommandApiService getCommandApiService() {
-    return commandApiService;
-  }
-
-  @Override
   public EmbeddedGatewayService getEmbeddedGatewayService() {
     return embeddedGatewayService;
   }
 
   @Override
-  public void addDiskSpaceUsageListener(final DiskSpaceUsageListener diskSpaceUsageListener) {
-    if (diskSpaceUsageMonitor != null) {
-      diskSpaceUsageMonitor.addDiskUsageListener(diskSpaceUsageListener);
-    }
+  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
+    return diskSpaceUsageMonitor;
   }
 
   @Override
-  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
-    return diskSpaceUsageMonitor;
+  public PartitionManager getPartitionManager() {
+    return partitionManager;
+  }
+
+  @Override
+  public BrokerAdminService getBrokerAdminService() {
+    return brokerAdminService;
   }
 }

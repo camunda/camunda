@@ -11,7 +11,7 @@ import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerS
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
-public class SubscriptionApiStep extends AbstractBrokerStartupStep {
+class SubscriptionApiStep extends AbstractBrokerStartupStep {
 
   @Override
   public String getName() {

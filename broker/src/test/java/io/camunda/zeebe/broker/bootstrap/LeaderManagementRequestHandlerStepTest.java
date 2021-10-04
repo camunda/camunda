@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
@@ -24,38 +24,42 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
-class SubscriptionApiStepTest {
+class LeaderManagementRequestHandlerStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
-  private SubscriptionApiCommandMessageHandlerService mockSubscriptionApiService;
   private ActorSchedulingService mockActorSchedulingService;
+  private LeaderManagementRequestHandler mockLeaderManagementRequestHandler;
 
   private ActorFuture<BrokerStartupContext> future;
 
-  private final SubscriptionApiStep sut = new SubscriptionApiStep();
+  private final LeaderManagementRequestHandlerStep sut = new LeaderManagementRequestHandlerStep();
 
   @BeforeEach
   void setUp() {
-    mockBrokerStartupContext = mock(BrokerStartupContext.class);
     mockActorSchedulingService = mock(ActorSchedulingService.class);
-
-    mockSubscriptionApiService = mock(SubscriptionApiCommandMessageHandlerService.class);
-    when(mockSubscriptionApiService.closeAsync())
-        .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-    when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
-    when(mockBrokerStartupContext.getSubscriptionApiService())
-        .thenReturn(mockSubscriptionApiService);
-    when(mockBrokerStartupContext.getActorSchedulingService())
-        .thenReturn(mockActorSchedulingService);
-    when(mockBrokerStartupContext.getClusterServices()).thenReturn(mock(ClusterServicesImpl.class));
-    when(mockBrokerStartupContext.getBrokerInfo()).thenReturn(mock(BrokerInfo.class));
 
     when(mockActorSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
+
+    mockLeaderManagementRequestHandler = mock(LeaderManagementRequestHandler.class);
+    when(mockLeaderManagementRequestHandler.closeAsync())
+        .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
+
+    mockBrokerStartupContext = mock(BrokerStartupContext.class);
+
+    when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
+    when(mockBrokerStartupContext.getBrokerInfo()).thenReturn(mock(BrokerInfo.class));
+    when(mockBrokerStartupContext.getActorSchedulingService())
+        .thenReturn(mockActorSchedulingService);
+    when(mockBrokerStartupContext.getLeaderManagementRequestHandler())
+        .thenReturn(mockLeaderManagementRequestHandler);
+
+    when(mockBrokerStartupContext.getClusterServices())
+        .thenReturn(mock(ClusterServicesImpl.class, Mockito.RETURNS_DEEP_STUBS));
 
     future = CONCURRENCY_CONTROL.createFuture();
   }
@@ -71,41 +75,38 @@ class SubscriptionApiStepTest {
   }
 
   @Test
-  void shouldScheduleSubscriptionApiOnStartup() {
+  void shouldScheduleLeaderManagementRequestHandlerActorOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    final var argumentCaptor =
-        ArgumentCaptor.forClass(SubscriptionApiCommandMessageHandlerService.class);
-    verify(mockBrokerStartupContext).setSubscriptionApiService(argumentCaptor.capture());
-    verify(mockActorSchedulingService).submitActor(argumentCaptor.getValue());
+    final var argumentCaptor = ArgumentCaptor.forClass(LeaderManagementRequestHandler.class);
+    verify(mockActorSchedulingService).submitActor(argumentCaptor.capture());
+    verify(mockBrokerStartupContext).setLeaderManagementRequestHandler(argumentCaptor.getValue());
   }
 
   @Test
-  void shouldRegisterSubscriptionApiAsPartitionListenerOnStartup() {
+  void shouldRegisterLeaderRequestManagementHandlerAsPartitionListenerOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    final var argumentCaptor =
-        ArgumentCaptor.forClass(SubscriptionApiCommandMessageHandlerService.class);
-    verify(mockBrokerStartupContext).setSubscriptionApiService(argumentCaptor.capture());
+    final var argumentCaptor = ArgumentCaptor.forClass(LeaderManagementRequestHandler.class);
+    verify(mockBrokerStartupContext).setLeaderManagementRequestHandler(argumentCaptor.capture());
     verify(mockBrokerStartupContext).addPartitionListener(argumentCaptor.getValue());
   }
 
   @Test
-  void shouldRegisterSubscriptionApiAsDiskSpaceUsageListenerOnStartup() {
+  void shouldRegisterLeaderRequestManagementHandlerAsDiskSpaceListenerOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    final var argumentCaptor =
-        ArgumentCaptor.forClass(SubscriptionApiCommandMessageHandlerService.class);
-    verify(mockBrokerStartupContext).setSubscriptionApiService(argumentCaptor.capture());
+    final var argumentCaptor = ArgumentCaptor.forClass(LeaderManagementRequestHandler.class);
+    verify(mockBrokerStartupContext).setLeaderManagementRequestHandler(argumentCaptor.capture());
     verify(mockBrokerStartupContext).addDiskSpaceUsageListener(argumentCaptor.getValue());
   }
 
@@ -120,33 +121,34 @@ class SubscriptionApiStepTest {
   }
 
   @Test
-  void shouldStopSubscriptionApiOnShutdown() {
+  void shouldStopHealthCheckServiceOnShutdown() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockSubscriptionApiService).closeAsync();
-    verify(mockBrokerStartupContext).setSubscriptionApiService(null);
+    verify(mockLeaderManagementRequestHandler).closeAsync();
+    verify(mockBrokerStartupContext).setLeaderManagementRequestHandler(null);
   }
 
   @Test
-  void shouldUnregisterSubscriptionApiAsPartitionListenerOnShutdown() {
+  void shouldRemoveLeaderRequestManagementHandlerAsPartitionListenerOnStartup() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext).removePartitionListener(mockSubscriptionApiService);
+    verify(mockBrokerStartupContext).removePartitionListener(mockLeaderManagementRequestHandler);
   }
 
   @Test
-  void shouldUnregisterSubscriptionApiAsDiskSpaceUsageListenerOnShutdown() {
+  void shouldRemoveLeaderRequestManagementHandlerAsDiskSpaceListenerOnStartup() {
     // when
     sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockBrokerStartupContext).removeDiskSpaceUsageListener(mockSubscriptionApiService);
+    verify(mockBrokerStartupContext)
+        .removeDiskSpaceUsageListener(mockLeaderManagementRequestHandler);
   }
 }

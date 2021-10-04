@@ -52,14 +52,20 @@ public final class BrokerStartupProcess {
     }
 
     result.add(new MonitoringServerStep());
+    result.add(new BrokerAdminServiceStep());
     result.add(new ClusterServicesCreationStep());
+
     result.add(new CommandApiServiceStep());
     result.add(new SubscriptionApiStep());
+
     result.add(new ClusterServicesStep());
 
     if (config.getGateway().isEnable()) {
       result.add(new EmbeddedGatewayServiceStep());
     }
+
+    result.add(new LeaderManagementRequestHandlerStep());
+    result.add(new PartitionManagerStep());
 
     return result;
   }
@@ -103,8 +109,8 @@ public final class BrokerStartupProcess {
     return new BrokerContextImpl(
         bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
-        bsc.getCommandApiService(),
         bsc.getEmbeddedGatewayService(),
-        bsc.getPartitionListeners());
+        bsc.getPartitionManager(),
+        bsc.getBrokerAdminService());
   }
 }
