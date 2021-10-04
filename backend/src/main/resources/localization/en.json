@@ -584,7 +584,7 @@
       "completedProcesses": "Processes Completed (To Do: Add other processes)",
       "activeIncidents": "Active Incidents(To Do: Add other processes)",
       "runningProcesses": "Which processes are running? (To Do: Add other processes and group by process)",
-      "runningTasks": "Which user tasks are in progress? (To Do: Add other processes, group by process, and visualize as pie chart)",
+      "runningTasks": "Which user tasks are in progress? (To Do: Add other processes)",
       "processTotal": "How much are we using Camunda? (To Do: Add other processes and group by start date AND process)",
       "laborSavings": "Are we saving total labor costs? (To Do: Add other processes and group by start date AND process)",
       "processAcceleration": "Are my processes getting faster? (To Do: Add other processes and group by start date AND process)",

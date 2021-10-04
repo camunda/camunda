@@ -584,7 +584,7 @@
       "completedProcesses": "Abgeschlossene Prozesse (Zu tun: Weitere Prozesse hinzufügen)",
       "activeIncidents": "Aktive Incidents (Zu tun: Weitere Prozesse hinzufügen)",
       "runningProcesses": "Welche Prozesse laufen? (Zu tun: Weitere Prozesse hinzufügen und nach Prozess gruppieren)",
-      "runningTasks": "Welche Benutzeraufgaben sind in Bearbeitung? (Zu tun: Weitere Prozesse hinzufügen, nach Prozess gruppieren und als Tortendiagramm visualisieren)",
+      "runningTasks": "Welche Benutzeraufgaben sind in Bearbeitung? (Zu tun: Weitere Prozesse hinzufügen)",
       "processTotal": "Wie viel nutzen wir Camunda? (Aufgabe: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
       "laborSavings": "Sparen wir die Gesamtarbeitskosten? (Zu tun: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
       "processAcceleration": "Werden meine Prozesse schneller? (Zu tun: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
