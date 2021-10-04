@@ -25,8 +25,10 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
@@ -103,10 +105,10 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
 
     ProcessDefinitionOptimizeDto processDefinitionOptimizeDto =
       processDefinitionReader.getProcessDefinition(String.valueOf(
-      firstRecordValue.getProcessDefinitionKey())).orElseThrow(() -> new OptimizeRuntimeException(
+        firstRecordValue.getProcessDefinitionKey())).orElseThrow(() -> new OptimizeRuntimeException(
         "The process definition with id"
-        + firstRecordValue.getProcessDefinitionKey()
-        + "has not yet been imported to Optimize"));
+          + firstRecordValue.getProcessDefinitionKey()
+          + "has not yet been imported to Optimize"));
     processInstanceDto.setProcessDefinitionKey(processDefinitionOptimizeDto.getKey());
     processInstanceDto.setProcessInstanceId(String.valueOf(firstRecordValue.getProcessInstanceKey()));
     processInstanceDto.setProcessDefinitionId(String.valueOf(firstRecordValue.getProcessDefinitionKey()));
@@ -118,7 +120,16 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
   }
 
   private ProcessInstanceDto updateProcessVariables(final ProcessInstanceDto instanceToAdd,
-                                                    final List<ZeebeVariableRecordDto> recordsForInstance) {
+
+                                                    List<ZeebeVariableRecordDto> recordsForInstance) {
+    recordsForInstance = new ArrayList<>(
+      recordsForInstance.stream()
+        .collect(Collectors.toMap(
+          ZeebeVariableRecordDto::getKey,
+          Function.identity(),
+          (oldVar, newVar) -> (newVar.getPosition() > oldVar.getPosition()) ? newVar : oldVar
+        )).values());
+
     recordsForInstance
       .forEach(variableRecordDto -> {
         ZeebeVariableDataDto variableValue = variableRecordDto.getValue();

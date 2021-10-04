@@ -11,7 +11,10 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -113,5 +117,15 @@ public abstract class AbstractZeebeIT extends AbstractIT {
       ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getQueryForProcessableEvents()
     );
+  }
+
+  protected String getServiceTaskFlowNodeIdFromProcessInstance(final ProcessInstanceDto processInstanceDto) {
+    return processInstanceDto.getFlowNodeInstances()
+      .stream()
+      .filter(flowNodeInstanceDto -> flowNodeInstanceDto.getFlowNodeId().equals(SERVICE_TASK))
+      .map(FlowNodeInstanceDto::getFlowNodeInstanceId)
+      .findFirst()
+      .orElseThrow(() -> new OptimizeIntegrationTestException(
+        "Could not find service task for process instance with key: " + processInstanceDto.getProcessDefinitionKey()));
   }
 }

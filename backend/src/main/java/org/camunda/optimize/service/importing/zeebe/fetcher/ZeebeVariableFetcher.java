@@ -26,7 +26,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_VARIA
 public class ZeebeVariableFetcher extends AbstractZeebeRecordFetcher<ZeebeVariableRecordDto> {
 
   private static final Set<Intent> INTENTS = Set.of(
-    VariableIntent.CREATED
+    VariableIntent.CREATED,
+    VariableIntent.UPDATED
   );
 
   public ZeebeVariableFetcher(final int partitionId,

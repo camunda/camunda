@@ -11,7 +11,6 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -37,7 +36,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -95,7 +93,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(startedInstanceKey));
 
-    String flowNodeId = getFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", false), true);
     waitUntilMinimumVariableDocumentsExportedCount(2);
 
@@ -126,7 +124,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(startedInstance.getProcessInstanceKey()));
 
-    String flowNodeId = getFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), processVariable, false);
     waitUntilMinimumVariableDocumentsExportedCount(1);
 
@@ -369,15 +367,5 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       deployedProcess.getBpmnProcessId(),
       generateVariables()
     );
-  }
-
-  private String getFlowNodeIdFromProcessInstance(final ProcessInstanceDto processInstanceDto) {
-    return processInstanceDto.getFlowNodeInstances()
-      .stream()
-      .filter(flowNodeInstanceDto -> flowNodeInstanceDto.getFlowNodeId().equals(SERVICE_TASK))
-      .map(FlowNodeInstanceDto::getFlowNodeInstanceId)
-      .findFirst()
-      .orElseThrow(() -> new OptimizeIntegrationTestException(
-        "Could not find service task for process instance with key: " + processInstanceDto.getProcessDefinitionKey()));
   }
 }

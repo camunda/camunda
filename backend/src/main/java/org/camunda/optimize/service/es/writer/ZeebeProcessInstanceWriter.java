@@ -119,15 +119,17 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
       "if (newInstance.dataSource != null) {\n" +
       "  existingInstance.dataSource = newInstance.dataSource;\n" +
       "}\n" +
-
       "if (existingInstance.variables == null) {\n" +
       "  existingInstance.variables = new ArrayList() \n" +
       "}\n" +
+      "if (existingInstance.variables == null) {\n" +
+      " existingInstance.variables = new ArrayList() \n" +
+      "}\n" +
       "if (newInstance.variables != null) {\n" +
-      "  for (def variableEntry : newInstance.variables) {\n" +
-      "    existingInstance.variables.removeIf(item -> item.id.equals(variableEntry.id));\n" +
-      "  }\n" +
-      "  existingInstance.variables.addAll(newInstance.variables);\n" +
+      "   existingInstance.variables = Stream.concat(existingInstance.variables.stream(), newInstance.variables.stream())\n" +
+      "   .collect(Collectors.toMap(variable -> variable.id, Function.identity(), (oldVar, newVar) -> \n" +
+      "      (newVar.version > oldVar.version) ? newVar : oldVar \n" +
+      "   )).values();\n" +
       "}\n" +
 
       // Update the flow node instances
