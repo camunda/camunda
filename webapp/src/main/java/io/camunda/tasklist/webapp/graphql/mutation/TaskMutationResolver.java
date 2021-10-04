@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,6 +52,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @Autowired private Metrics metrics;
 
+  @PreAuthorize("hasPermission('write')")
   public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
     final Map<String, Object> variablesMap =
         variables.stream()
@@ -92,6 +94,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     }
   }
 
+  @PreAuthorize("hasPermission('write')")
   public TaskDTO claimTask(String taskId, String assignee) {
     final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
     taskReaderWriter.persistTaskClaim(task, getCurrentUser(), assignee);
@@ -103,6 +106,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     this.zeebeClient = zeebeClient;
   }
 
+  @PreAuthorize("hasPermission('write')")
   public TaskDTO unclaimTask(String taskId) {
     final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
     task.setAssignee(null);
@@ -111,11 +115,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
   }
 
   private UserDTO getCurrentUser() {
-    final UserDTO currentUser = userReader.getCurrentUser();
-    if (currentUser == null) {
-      throw new TasklistRuntimeException("Current user is not found.");
-    }
-    return currentUser;
+    return userReader.getCurrentUser();
   }
 
   private void updateClaimedMetric(final TaskDTO task) {

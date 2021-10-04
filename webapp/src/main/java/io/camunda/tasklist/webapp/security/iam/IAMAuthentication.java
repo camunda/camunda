@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.webapp.security.iam;
 
+import static io.camunda.tasklist.util.CollectionUtil.map;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_CALLBACK_URI;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -13,10 +14,12 @@ import io.camunda.iam.sdk.IamApi;
 import io.camunda.iam.sdk.authentication.Tokens;
 import io.camunda.iam.sdk.authentication.UserInfo;
 import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.iam.sdk.rest.exception.RestException;
+import io.camunda.tasklist.webapp.security.Role;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.time.Duration;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import net.jodah.failsafe.Failsafe;
@@ -37,14 +40,14 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
 
   public static final int DELAY_IN_MILLISECONDS = 500;
   public static final int MAX_ATTEMPTS = 10;
+
   protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  @Autowired private IamApi iamApi;
+  @Autowired private transient IamApi iamApi;
 
   private DecodedJWT jwt;
   private Tokens tokens;
   private UserInfo userInfo;
-  private boolean authenticated = false;
 
   public IAMAuthentication() {
     super(null);
@@ -58,24 +61,6 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
   @Override
   public Object getPrincipal() {
     return jwt.getSubject();
-  }
-
-  @Override
-  public void setAuthenticated(boolean authenticated) {
-    if (authenticated) {
-      throw new IllegalArgumentException("Create a new TokenAuthentication object to authenticate");
-    }
-    this.authenticated = false;
-  }
-
-  @Override
-  public boolean isAuthenticated() {
-    try {
-      iamApi.authentication().verifyToken(tokens.getAccessToken());
-    } catch (TokenVerificationException e) {
-      authenticated = false;
-    }
-    return authenticated;
   }
 
   public UserInfo getUserInfo() {
@@ -95,7 +80,7 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     tokens = retrieveTokens(req, authCodeDto);
     userInfo = retrieveUserInfo(tokens);
     jwt = iamApi.authentication().verifyToken(tokens.getAccessToken());
-    authenticated = true;
+    setAuthenticated(true);
   }
 
   private Tokens retrieveTokens(final HttpServletRequest req, final AuthCodeDto authCodeDto)
@@ -111,6 +96,16 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     return requestWithRetry(() -> iamApi.authentication().userInfo(tokens));
   }
 
+  private boolean hasExpired() {
+    final Date expires = jwt.getExpiresAt();
+    return expires == null || expires.before(new Date());
+  }
+
+  @Override
+  public boolean isAuthenticated() {
+    return super.isAuthenticated() && !hasExpired();
+  }
+
   private <T> T requestWithRetry(final CheckedSupplier<T> operation) {
     final RetryPolicy<T> retryPolicy =
         new RetryPolicy<T>()
@@ -118,6 +113,14 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
             .withDelay(Duration.ofMillis(DELAY_IN_MILLISECONDS))
             .withMaxAttempts(MAX_ATTEMPTS);
     return Failsafe.with(retryPolicy).get(operation);
+  }
+
+  public List<Role> getRoles() {
+    if (userInfo.getRoles().isEmpty()) {
+      return Role.DEFAULTS;
+    } else {
+      return map(userInfo.getRoles(), Role::fromString);
+    }
   }
 
   public static String getRedirectURI(final HttpServletRequest req, final String redirectTo) {

@@ -7,16 +7,16 @@ package io.camunda.tasklist.webapp.security.es;
 
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
+import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.security.RolePermissionService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,15 +25,22 @@ public class ElasticsearchUserReader implements UserReader {
 
   @Autowired private UserStorage userStorage;
 
+  @Autowired private RolePermissionService rolePermissionService;
+
   @Override
-  public UserDTO getCurrentUser() {
-    final SecurityContext context = SecurityContextHolder.getContext();
-    final Authentication authentication = context.getAuthentication();
-    if (authentication instanceof JwtAuthenticationToken) {
-      return UserDTO.buildFromJWTAuthenticationToken((JwtAuthenticationToken) authentication);
-    } else {
-      return UserDTO.buildFromAuthentication(authentication);
+  public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
+    final Object principal = authentication.getPrincipal();
+    if (principal instanceof User) {
+      final User user = (User) principal;
+      return Optional.of(
+          new UserDTO()
+              .setUsername(user.getUsername())
+              .setFirstname(user.getFirstname())
+              .setLastname(user.getLastname())
+              .setPermissions(rolePermissionService.getPermissions(user.getRoles()))
+              .setApiUser(false));
     }
+    return Optional.empty();
   }
 
   @Override
@@ -43,6 +50,13 @@ public class ElasticsearchUserReader implements UserReader {
 
   @Override
   public List<UserDTO> getUsersByUsernames(List<String> usernames) {
-    return UserDTO.createFrom(userStorage.getUsersByUsernames(usernames));
+    return CollectionUtil.map(
+        userStorage.getUsersByUsernames(usernames),
+        userEntity ->
+            new UserDTO()
+                .setUsername(userEntity.getUsername())
+                .setFirstname(userEntity.getFirstname())
+                .setLastname(userEntity.getLastname())
+                .setApiUser(false));
   }
 }

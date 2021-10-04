@@ -18,9 +18,11 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.junit.Before;
@@ -106,7 +108,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
       // when
-      setCurrentUser(new UserDTO().setUsername("joe"));
+      setCurrentUser(new UserDTO().setUsername("joe").setPermissions(List.of(Permission.WRITE)));
       final String completeTaskRequest =
           String.format(
               COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
@@ -293,7 +295,11 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
     final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
 
-    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(false));
+    setCurrentUser(
+        new UserDTO()
+            .setUsername("joe")
+            .setApiUser(false)
+            .setPermissions(List.of(Permission.WRITE)));
     final Map<String, Object> errors =
         tester
             .when()
@@ -320,7 +326,11 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
     final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
 
-    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(true));
+    setCurrentUser(
+        new UserDTO()
+            .setUsername("joe")
+            .setApiUser(true)
+            .setPermissions(List.of(Permission.WRITE)));
     final Map<String, Object> errors =
         tester
             .when()
@@ -345,7 +355,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, unclaimedTask.getId()));
 
       // when
-      setCurrentUser(new UserDTO().setUsername("joe"));
+      setCurrentUser(new UserDTO().setUsername("joe").setPermissions(List.of(Permission.WRITE)));
       final Map<String, Object> errors =
           tester
               .when()
@@ -396,7 +406,11 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
         .getAllTasks();
 
     final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
-    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(true));
+    setCurrentUser(
+        new UserDTO()
+            .setUsername("joe")
+            .setApiUser(true)
+            .setPermissions(List.of(Permission.WRITE)));
     final String assigneeID = "otherAssigneeID";
 
     final Map<String, Object> claimedTask =
@@ -428,7 +442,11 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
         .getAllTasks();
 
     final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
-    setCurrentUser(new UserDTO().setUsername("joe").setApiUser(false));
+    setCurrentUser(
+        new UserDTO()
+            .setUsername("joe")
+            .setApiUser(false)
+            .setPermissions(List.of(Permission.WRITE)));
     final String assigneeID = "joe"; // verify whether same assignee as logged user works
 
     final Map<String, Object> claimedTask =

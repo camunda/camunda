@@ -5,32 +5,42 @@
  */
 package io.camunda.tasklist.webapp.security.iam;
 
+import static io.camunda.tasklist.util.CollectionUtil.map;
+
 import io.camunda.iam.sdk.authentication.UserInfo;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.security.Role;
+import io.camunda.tasklist.webapp.security.RolePermissionService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile(TasklistURIs.IAM_AUTH_PROFILE)
 public class IAMUserReader implements UserReader {
 
+  @Autowired private RolePermissionService rolePermissionService;
+
   @Override
-  public UserDTO getCurrentUser() {
-    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication instanceof AnonymousAuthenticationToken) {
-      throw new TasklistRuntimeException("User is not authenticated");
+  public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
+    if (authentication instanceof IAMAuthentication) {
+      final IAMAuthentication tokenAuth = (IAMAuthentication) authentication;
+      final UserInfo userInfo = tokenAuth.getUserInfo();
+      return Optional.of(
+          new UserDTO()
+              .setFirstname(userInfo.getFirstName())
+              .setLastname(userInfo.getLastName())
+              .setUsername(userInfo.getUsername())
+              .setPermissions(
+                  rolePermissionService.getPermissions(
+                      map(userInfo.getRoles(), Role::fromString))));
     }
-    final IAMAuthentication tokenAuth =
-        (IAMAuthentication) SecurityContextHolder.getContext().getAuthentication();
-    return buildUserDtoFrom(tokenAuth.getUserInfo());
+    return Optional.empty();
   }
 
   @Override
@@ -40,14 +50,7 @@ public class IAMUserReader implements UserReader {
 
   @Override
   public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
-    return CollectionUtil.map(
+    return map(
         usernames, name -> new UserDTO().setUsername(name).setFirstname(EMPTY).setLastname(name));
-  }
-
-  private UserDTO buildUserDtoFrom(UserInfo userInfo) {
-    return new UserDTO()
-        .setFirstname(userInfo.getFirstName())
-        .setLastname(userInfo.getLastName())
-        .setUsername(userInfo.getUsername());
   }
 }

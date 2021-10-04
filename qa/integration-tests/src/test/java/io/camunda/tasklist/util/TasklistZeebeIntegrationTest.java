@@ -5,12 +5,14 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.USERNAME_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
@@ -28,7 +30,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 
+@WithMockUser(USERNAME_DEFAULT)
 public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTest {
 
   public static final String USERNAME_DEFAULT = "demo";
@@ -81,7 +85,11 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   }
 
   protected UserDTO getDefaultCurrentUser() {
-    return new UserDTO().setUsername(USERNAME_DEFAULT).setFirstname("Demo").setLastname("User");
+    return new UserDTO()
+        .setUsername(USERNAME_DEFAULT)
+        .setFirstname("Demo")
+        .setLastname("User")
+        .setPermissions(List.of(Permission.WRITE));
   }
 
   protected void setCurrentUser(UserDTO user) {

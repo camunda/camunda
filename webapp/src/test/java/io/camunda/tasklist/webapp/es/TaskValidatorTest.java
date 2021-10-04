@@ -5,6 +5,8 @@
  */
 package io.camunda.tasklist.webapp.es;
 
+import static io.camunda.tasklist.webapp.security.UserReader.EMPTY;
+
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.TaskValidationException;
@@ -23,7 +25,12 @@ public class TaskValidatorTest {
             TaskValidationException.class,
             () -> {
               final String username = "TestUser";
-              final UserDTO user = UserDTO.createUserDTO(username);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername(username)
+                      .setFirstname(EMPTY)
+                      .setLastname(username)
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee(username).setState(TaskState.COMPLETED);
               TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -38,7 +45,12 @@ public class TaskValidatorTest {
             TaskValidationException.class,
             () -> {
               final String username = "TestUser";
-              final UserDTO user = UserDTO.createUserDTO(username);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername(username)
+                      .setFirstname(EMPTY)
+                      .setLastname(username)
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee(username).setState(TaskState.CANCELED);
               TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -52,7 +64,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser");
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
               TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -66,7 +83,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser");
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
               TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -76,14 +98,24 @@ public class TaskValidatorTest {
 
   @Test
   public void userCanCompleteTheirOwnTask() throws TaskValidationException {
-    final UserDTO user = UserDTO.createUserDTO("TestUser");
+    final UserDTO user =
+        new UserDTO()
+            .setUsername("TestUser")
+            .setFirstname(EMPTY)
+            .setLastname("TestUser")
+            .setApiUser(false);
     final TaskEntity task = new TaskEntity().setAssignee("TestUser").setState(TaskState.CREATED);
     TaskValidator.CAN_COMPLETE.validate(task, user);
   }
 
   @Test
   public void apiUserShouldBeAbleToCompleteOtherPersonTask() throws TaskValidationException {
-    final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+    final UserDTO user =
+        new UserDTO()
+            .setUsername("TestUser")
+            .setFirstname(EMPTY)
+            .setLastname("TestUser")
+            .setApiUser(true);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
     TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -95,7 +127,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(true);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
               TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -109,7 +146,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(true);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
               TaskValidator.CAN_COMPLETE.validate(task, user);
@@ -119,14 +161,24 @@ public class TaskValidatorTest {
 
   @Test
   public void apiUserShouldBeAbleToAssignToDifferentUsers() throws TaskValidationException {
-    final UserDTO user = UserDTO.createUserDTO("APIUser", true);
+    final UserDTO user =
+        new UserDTO()
+            .setUsername("APIUser")
+            .setFirstname(EMPTY)
+            .setLastname("APIUser")
+            .setApiUser(true);
     final TaskEntity taskBefore = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
     TaskValidator.CAN_CLAIM.validate(taskBefore, user);
   }
 
   @Test
   public void apiUserShouldBeAbleToReassignToAnotherUser() throws TaskValidationException {
-    final UserDTO user = UserDTO.createUserDTO("APIUser", true);
+    final UserDTO user =
+        new UserDTO()
+            .setUsername("APIUser")
+            .setFirstname(EMPTY)
+            .setLastname("APIUser")
+            .setApiUser(true);
     final TaskEntity taskBefore =
         new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
     TaskValidator.CAN_CLAIM.validate(taskBefore, user);
@@ -138,7 +190,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(true);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
               TaskValidator.CAN_CLAIM.validate(task, user);
@@ -152,7 +209,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", true);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(true);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
               TaskValidator.CAN_CLAIM.validate(task, user);
@@ -166,7 +228,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
               TaskValidator.CAN_CLAIM.validate(task, user);
@@ -180,7 +247,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
               TaskValidator.CAN_UNCLAIM.validate(task, user);
@@ -194,7 +266,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CANCELED);
               TaskValidator.CAN_UNCLAIM.validate(task, user);
@@ -208,7 +285,12 @@ public class TaskValidatorTest {
         Assertions.assertThrows(
             TaskValidationException.class,
             () -> {
-              final UserDTO user = UserDTO.createUserDTO("TestUser", false);
+              final UserDTO user =
+                  new UserDTO()
+                      .setUsername("TestUser")
+                      .setFirstname(EMPTY)
+                      .setLastname("TestUser")
+                      .setApiUser(false);
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.COMPLETED);
               TaskValidator.CAN_UNCLAIM.validate(task, user);

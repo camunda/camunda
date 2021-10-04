@@ -16,6 +16,7 @@ import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -104,7 +105,7 @@ public class DevDataGenerator implements DataGenerator {
     final String password = username;
     final String passwordEncoded = passwordEncoder.encode(password);
     final UserEntity user =
-        UserEntity.from(username, passwordEncoded, "USER")
+        UserEntity.from(username, passwordEncoded, List.of("USER"))
             .setFirstname(firstname)
             .setLastname(lastname);
     try {

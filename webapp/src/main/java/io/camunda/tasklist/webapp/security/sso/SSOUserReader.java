@@ -8,15 +8,17 @@ package io.camunda.tasklist.webapp.security.sso;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
+import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.security.RolePermissionService;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,17 +27,27 @@ public class SSOUserReader implements UserReader {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private RolePermissionService rolePermissionService;
+
   @Override
-  public UserDTO getCurrentUser() {
-    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+  public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
     if (authentication instanceof TokenAuthentication) {
-      return UserDTO.buildFromTokenAuthentication(
-          (TokenAuthentication) authentication, tasklistProperties);
-    } else if (authentication instanceof JwtAuthenticationToken) {
-      return UserDTO.buildFromJWTAuthenticationToken((JwtAuthenticationToken) authentication);
-    } else {
-      return UserDTO.buildFromAuthentication(authentication);
+      final TokenAuthentication tokenAuthentication = (TokenAuthentication) authentication;
+      final Map<String, Claim> claims = tokenAuthentication.getClaims();
+      String name = DEFAULT_USER;
+      if (claims.containsKey(tasklistProperties.getAuth0().getNameKey())) {
+        name = claims.get(tasklistProperties.getAuth0().getNameKey()).asString();
+      }
+      return Optional.of(
+          new UserDTO()
+              .setUsername(name)
+              .setFirstname(EMPTY)
+              .setLastname(name)
+              .setApiUser(false)
+              .setPermissions(
+                  rolePermissionService.getPermissions(tokenAuthentication.getRoles())));
     }
+    return Optional.empty();
   }
 
   @Override
@@ -45,7 +57,13 @@ public class SSOUserReader implements UserReader {
 
   @Override
   public List<UserDTO> getUsersByUsernames(List<String> usernames) {
-    // TODO #47
-    return map(usernames, UserDTO::createUserDTO);
+    return map(
+        usernames,
+        name ->
+            new UserDTO()
+                .setUsername(name)
+                .setFirstname(EMPTY)
+                .setLastname(name)
+                .setApiUser(false));
   }
 }

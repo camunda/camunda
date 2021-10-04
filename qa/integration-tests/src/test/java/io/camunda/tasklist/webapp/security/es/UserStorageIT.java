@@ -13,6 +13,7 @@ import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.webapp.security.Role;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.util.ArrayList;
@@ -46,9 +47,7 @@ public class UserStorageIT extends TasklistIntegrationTest {
     // given
     final var usernames = new ArrayList<>(List.of("demo", "jane", "joe"));
     usernames.forEach(
-        username ->
-            userDetailsService.addUserWith(
-                username, username, ElasticsearchUserDetailsService.USER_ROLE));
+        username -> userDetailsService.addUserWith(username, username, List.of(Role.OWNER.name())));
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     // when ( getting request of random ordered usernames )
     Collections.shuffle(usernames);

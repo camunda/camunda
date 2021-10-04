@@ -8,7 +8,7 @@
       "password": {
         "type": "keyword"
       },
-      "role": {
+      "roles": {
         "type": "keyword"
       },
       "username": {

@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.property;
 
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +32,8 @@ public class TasklistProperties {
   private String username = "demo";
 
   private String password = "demo";
+
+  private List<String> roles = List.of("OWNER");
 
   /** Maximum size of batch operation. */
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
@@ -202,5 +205,13 @@ public class TasklistProperties {
 
   public void setIam(final IamProperties iam) {
     this.iam = iam;
+  }
+
+  public List<String> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(final List<String> roles) {
+    this.roles = roles;
   }
 }

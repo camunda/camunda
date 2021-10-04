@@ -16,6 +16,7 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Before;
@@ -32,6 +33,19 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TestRestTemplate testRestTemplate;
 
+  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
+  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
+  private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
+
+  private static UserDTO buildAllAccessUserWith(
+      String username, String firstname, String lastname) {
+    return new UserDTO()
+        .setUsername(username)
+        .setFirstname(firstname)
+        .setLastname(lastname)
+        .setPermissions(List.of(Permission.WRITE));
+  }
+
   @Before
   public void before() {
     super.before();
@@ -40,10 +54,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void providesClaimedTasks() throws IOException {
-    // create users
-    final UserDTO joe = new UserDTO().setUsername("joe").setFirstname("Joe").setLastname("Doe");
-    final UserDTO jane = new UserDTO().setUsername("jane").setFirstname("Jane").setLastname("Doe");
-    final UserDTO demo = new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User");
+    // given users: joe, jane and demo
     // create tasks
     final List<TaskDTO> createdTasks =
         tester
@@ -88,11 +99,8 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void providesCompletedTasks() {
-    // create users
-    final UserDTO joe = new UserDTO().setUsername("joe").setFirstname("Joe").setLastname("Doe");
-    final UserDTO jane = new UserDTO().setUsername("jane").setFirstname("Jane").setLastname("Doe");
-    final UserDTO demo = new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User");
-    // given
+    // given users: joe, jane and demo
+    // and
     tester
         .createAndDeploySimpleProcess(TaskIT.BPMN_PROCESS_ID, TaskIT.ELEMENT_ID)
         .waitUntil()

@@ -24,6 +24,7 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -54,6 +55,19 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @Autowired private TaskMutationResolver taskMutationResolver;
 
   @Autowired private ObjectMapper objectMapper;
+
+  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
+  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
+  private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
+
+  private static UserDTO buildAllAccessUserWith(
+      final String username, final String firstname, final String lastname) {
+    return new UserDTO()
+        .setUsername(username)
+        .setFirstname(firstname)
+        .setLastname(lastname)
+        .setPermissions(List.of(Permission.WRITE));
+  }
 
   @Before
   public void before() {
@@ -546,10 +560,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnTasksClaimedByDifferentUsers() throws IOException {
-    // create users
-    final UserDTO joe = new UserDTO().setUsername("joe").setFirstname("Joe").setLastname("Doe");
-    final UserDTO jane = new UserDTO().setUsername("jane").setFirstname("Jane").setLastname("Doe");
-    final UserDTO demo = new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User");
+    // given users joe, jane and demo
     // create tasks
     final List<TaskDTO> createdTasks =
         tester

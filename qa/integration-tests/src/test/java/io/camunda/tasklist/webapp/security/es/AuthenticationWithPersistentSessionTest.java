@@ -18,7 +18,9 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
+import io.camunda.tasklist.webapp.security.Role;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -80,7 +82,7 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
         new UserEntity()
             .setUsername(USERNAME)
             .setPassword(encoder.encode(PASSWORD))
-            .setRole("USER")
+            .setRoles(List.of(Role.OWNER.name()))
             .setFirstname(FIRSTNAME)
             .setLastname(LASTNAME);
     given(userStorage.getByName(USERNAME)).willReturn(user);
