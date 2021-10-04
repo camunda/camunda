@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -262,7 +263,7 @@ public class FileBasedTransientSnapshotTest {
     // then
     assertThatThrownBy(persisted::join)
         .as("did not persist a non existent transient snapshot")
-        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasCauseInstanceOf(SnapshotNotFoundException.class)
         .hasMessageContaining("Snapshot is not valid");
   }
 
@@ -277,7 +278,7 @@ public class FileBasedTransientSnapshotTest {
     // then
     assertThatThrownBy(persisted::join)
         .as("did not persist an empty transient snapshot directory")
-        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasCauseInstanceOf(SnapshotNotFoundException.class)
         .hasMessageContaining("Snapshot is not valid");
   }
 

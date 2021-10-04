@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -330,7 +331,7 @@ public class TransientSnapshotTest {
     // then
     assertThatThrownBy(persisted::join)
         .as("did not persist a deleted transient snapshot")
-        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasCauseInstanceOf(SnapshotNotFoundException.class)
         .hasMessageContaining("Snapshot is not valid");
   }
 
