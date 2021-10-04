@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
@@ -23,7 +25,11 @@ class ClusterServicesStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
-    final var clusterServices = brokerStartupContext.getClusterServices();
+    final var atomix =
+        AtomixClusterFactory.fromConfiguration(brokerStartupContext.getBrokerConfiguration());
+    final var clusterServices = new ClusterServicesImpl(atomix);
+
+    brokerStartupContext.setClusterServices(clusterServices);
 
     clusterServices
         .start()
@@ -45,6 +51,11 @@ class ClusterServicesStep extends AbstractBrokerStartupStep {
 
     final var clusterServices = brokerShutdownContext.getClusterServices();
 
+    if (clusterServices == null) {
+      shutdownFuture.complete(brokerShutdownContext);
+      return;
+    }
+
     clusterServices
         .stop()
         .whenComplete(
@@ -52,6 +63,7 @@ class ClusterServicesStep extends AbstractBrokerStartupStep {
               if (error != null) {
                 shutdownFuture.completeExceptionally(error);
               } else {
+                brokerShutdownContext.setClusterServices(null);
                 shutdownFuture.complete(brokerShutdownContext);
               }
             });
