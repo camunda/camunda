@@ -243,8 +243,8 @@ public final class AsyncSnapshotDirector extends Actor
               LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
             } else {
               LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
-              resetStateOnFailure();
             }
+            resetStateOnFailure();
             return;
           }
 
