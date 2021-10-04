@@ -240,7 +240,7 @@ public final class AsyncSnapshotDirector extends Actor
         (transientSnapshot, snapshotTakenError) -> {
           if (snapshotTakenError != null) {
             if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
-              LOG.debug("Did not take a snapshot. Snapshot already exists.", snapshotTakenError);
+              LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
             } else {
               LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
               resetStateOnFailure();
