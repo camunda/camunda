@@ -1,17 +1,11 @@
-## Multi-Prozess Berichte
+## Neue Dashboard-Vorlagen
 
-Bis zu 10 Prozess-Definitionen können ab sofort in einem einzelnen Prozess-Bericht analysiert werden.
+Dashboards für Engpassanalysen, Prozessleistungen, und Portfolio-Performance können mit wenigen Klicks erstellt werden.
 
-## Standardwerte für Dashboard-Filter
+## Detaillierte Filter
 
-Standardwerte für Dashboard-Filter werden unmittelbar beim Öffnen von Dashboards angewandt.
+Filter basierend auf Prozessknotendaten und erweiterten Datums-Bereichen.
 
-## Summen-Aggregation in Dauer-Berichten
+## Verbesserte Multi-Prozess Berichte
 
-Anzeigen der Gesamtdauer von allen Prozess- oder Prozessknoten-Instanzen mittels der Summen-Aggregation in
-Prozess-Instanz, Prozessknoten oder Benutzeraufgaben-Berichten.
-
-## Neuer Filter: Prozessknotenauswahl
-
-Der Prozessknotenauswahl-Filter erlaubt das Ein-/Ausblenden von Prozessknoten in
-Prozesskonten-/Benutzeraufgaben-Berichten.
+Verschiedene Prozesse können verglichen und aggregiert werden, mit Prozessknoten-Filter um genau die richtigen Daten zu extrahieren.
