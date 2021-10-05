@@ -71,7 +71,9 @@ final class PartitionTransitionProcess {
           startedSteps.push(nextStep);
 
           LOG.info(
-              format("Transition to %s on term %d - executing %s", role, term, nextStep.getName()));
+              format(
+                  "Transition to %s on term %d - transitioning %s",
+                  role, term, nextStep.getName()));
 
           nextStep
               .transitionTo(context, term, role)
@@ -98,14 +100,11 @@ final class PartitionTransitionProcess {
   }
 
   ActorFuture<Void> cleanup(final long newTerm, final Role newRole) {
-    LOG.info(
-        format(
-            "Cleanup of transition to %s on term %d starting (in preparation for new transition to %s)",
-            role, term, newRole));
+    LOG.info(format("Prepare transition from %s on term %d to %s", role, term, newRole));
     final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
 
     if (startedSteps.isEmpty()) {
-      LOG.info("No steps to clean up");
+      LOG.info("No steps to prepare transition");
       cleanupFuture.complete(null);
     } else {
       proceedWithCleanup(cleanupFuture, newTerm, newRole);
@@ -121,8 +120,8 @@ final class PartitionTransitionProcess {
 
           LOG.info(
               format(
-                  "Cleanup of transition to %s on term %d - executing %s",
-                  role, term, nextCleanupStep.getName()));
+                  "Prepare transition from %s on term %d to %s - preparing %s",
+                  role, term, newRole, nextCleanupStep.getName()));
 
           nextCleanupStep
               .prepareTransition(context, newTerm, newRole)
@@ -143,7 +142,7 @@ final class PartitionTransitionProcess {
     }
 
     if (startedSteps.isEmpty()) {
-      LOG.info(format("Cleanup of transition to %s on term %d completed", role, term));
+      LOG.info(format("Preparing transition from %s on term %d completed", role, term));
       future.complete(null);
 
       return;
