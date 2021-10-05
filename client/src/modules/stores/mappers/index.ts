@@ -70,14 +70,15 @@ const getElementType = (bpmnElement: any) => {
   if (type === 'bpmn:SubProcess' && triggeredByEvent) {
     return TYPE.EVENT_SUBPROCESS;
   }
+
   if (type === 'bpmn:BoundaryEvent') {
     return cancelActivity === false
       ? TYPE.EVENT_BOUNDARY_NON_INTERRUPTING
       : TYPE.EVENT_BOUNDARY_INTERRUPTING;
-  } else {
-    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    return FLOWNODE_TYPE_HANDLE[type];
   }
+
+  // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
+  return FLOWNODE_TYPE_HANDLE[type];
 };
 
 const getMultiInstanceType = (bpmnElement: any) => {

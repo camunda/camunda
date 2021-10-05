@@ -30,6 +30,7 @@ import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/fl
 import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
 import {ReactComponent as FlowNodeTaskBusinessRule} from 'modules/components/Icon/flow-node-task-business-rule.svg';
 import {ReactComponent as FlowNodeTaskScript} from 'modules/components/Icon/flow-node-task-script.svg';
+import {ReactComponent as FlowNodeTaskManual} from 'modules/components/Icon/flow-node-task-manual.svg';
 
 /**
  * Event Imports
@@ -37,6 +38,7 @@ import {ReactComponent as FlowNodeTaskScript} from 'modules/components/Icon/flow
 
 import {ReactComponent as FlowNodeEventStart} from 'modules/components/Icon/flow-node-event-start.svg';
 import {ReactComponent as FlowNodeEventEnd} from 'modules/components/Icon/flow-node-event-end.svg';
+import {ReactComponent as FlowNodeEventIntermediateThrow} from 'modules/components/Icon/flow-node-event-intermediate-none.svg';
 
 import {ReactComponent as FlowNodeEventMessageStart} from 'modules/components/Icon/flow-node-event-message-start.svg';
 
@@ -123,6 +125,10 @@ const TASK_USER = styled(FlowNodeTaskUser)`
   ${newIconStyle};
 `;
 
+const TASK_MANUAL = styled(FlowNodeTaskManual)`
+  ${newIconStyle};
+`;
+
 const TASK_BUSINESS_RULE = styled(FlowNodeTaskBusinessRule)`
   ${newIconStyle};
 `;
@@ -154,6 +160,10 @@ const START = styled(FlowNodeEventStart)`
 const END = styled(FlowNodeEventEnd)`
   ${newIconStyle}
   padding: 1px;
+`;
+
+const INTERMEDIATE_THROW = styled(FlowNodeEventIntermediateThrow)`
+  ${newIconStyle}
 `;
 
 /**
@@ -256,10 +266,12 @@ export {
   TASK_USER,
   TASK_BUSINESS_RULE,
   TASK_SCRIPT,
+  TASK_MANUAL,
   MULTI_SEQUENTIAL,
   MULTI_PARALLEL,
   START,
   END,
+  INTERMEDIATE_THROW,
   EVENT_MESSAGE_START,
   EVENT_MESSAGE_END,
   EVENT_ERROR_START,

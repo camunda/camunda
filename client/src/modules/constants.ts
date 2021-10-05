@@ -39,6 +39,7 @@ export const TYPE = {
   TASK_USER: 'TASK_USER',
   TASK_BUSINESS_RULE: 'TASK_BUSINESS_RULE',
   TASK_SCRIPT: 'TASK_SCRIPT',
+  TASK_MANUAL: 'TASK_MANUAL',
 
   EVENT_SUBPROCESS: 'EVENT_SUBPROCESS',
 
@@ -69,8 +70,9 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:ScriptTask': TYPE.TASK_SCRIPT,
   'bpmn:ReceiveTask': TYPE.TASK_RECEIVE,
   'bpmn:SendTask': TYPE.TASK_SEND,
+  'bpmn:ManualTask': TYPE.TASK_MANUAL,
   'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,
-};
+} as const;
 
 export const FILTER_TYPES = {
   RUNNING: 'running',
