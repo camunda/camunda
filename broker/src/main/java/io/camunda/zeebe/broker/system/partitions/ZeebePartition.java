@@ -215,9 +215,7 @@ public final class ZeebePartition extends Actor
     ActorFuture<Void> nextTransitionFuture = null;
     switch (newRole) {
       case LEADER:
-        if (raftRole != Role.LEADER) {
-          nextTransitionFuture = leaderTransition(newTerm);
-        }
+        nextTransitionFuture = leaderTransition(newTerm);
         break;
       case INACTIVE:
         nextTransitionFuture = transitionToInactive();
@@ -227,9 +225,7 @@ public final class ZeebePartition extends Actor
       case CANDIDATE:
       case FOLLOWER:
       default:
-        if (raftRole == null || raftRole == Role.LEADER) {
-          nextTransitionFuture = followerTransition(newTerm);
-        }
+        nextTransitionFuture = followerTransition(newTerm);
         break;
     }
 
