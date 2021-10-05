@@ -65,7 +65,6 @@ describe('<Tasklist />', () => {
 
     await waitForElementToBeRemoved(
       screen.getByTestId('tasks-loading-overlay'),
-      {timeout: 2000},
     );
 
     expect(
@@ -131,7 +130,6 @@ describe('<Tasklist />', () => {
 
     await waitForElementToBeRemoved(
       screen.getByTestId('tasks-loading-overlay'),
-      {timeout: 2000},
     );
 
     mockServer.use(

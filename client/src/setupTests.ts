@@ -11,6 +11,7 @@
 import '@testing-library/jest-dom/extend-expect';
 import {clearClientCache} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
+import {configure} from '@testing-library/react';
 
 beforeAll(() => {
   mockServer.listen({
@@ -46,3 +47,7 @@ jest.mock('@camunda-cloud/common-ui-react', () => ({
     return null;
   },
 }));
+
+configure({
+  asyncUtilTimeout: 7000,
+});
