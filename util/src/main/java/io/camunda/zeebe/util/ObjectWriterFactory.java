@@ -40,7 +40,7 @@ public class ObjectWriterFactory {
   private static final class CustomModule extends SimpleModule {
 
     private CustomModule() {
-      super(PackageVersion.VERSION);
+      super(CustomModule.class.getName(), PackageVersion.VERSION);
       addSerializer(DataSize.class, new DataSizeSerializer());
       addSerializer(Map.class, new MapSerializer());
     }
