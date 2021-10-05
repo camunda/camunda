@@ -374,7 +374,7 @@
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>--illegal-access=permit -Xms256m -Xmx512m</argLine>
+            <argLine>--illegal-access=permit -Xms256m -Xmx1024m</argLine>
           </configuration>
         </plugin>
         <plugin>
