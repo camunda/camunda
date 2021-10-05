@@ -10,10 +10,10 @@ import {t} from 'translation';
 
 import TemplateModal from './TemplateModal';
 
-import heatmapImg from './images/heatmap.jpg';
-import durationImg from './images/duration.svg';
-import tableImg from './images/table.svg';
-import chartImg from './images/chart.svg';
+import heatmapImg from './images/heatmap.png';
+import durationImg from './images/duration.png';
+import tableImg from './images/table.png';
+import chartImg from './images/chart.png';
 
 import './ReportTemplateModal.scss';
 

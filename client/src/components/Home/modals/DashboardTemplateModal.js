@@ -11,8 +11,10 @@ import {isOptimizeCloudEnvironment} from 'config';
 
 import TemplateModal from './TemplateModal';
 
-import processPerformance from './images/processPerformance.svg';
-import humanPerformance from './images/humanPerformance.svg';
+import processPerformance from './images/processPerformance.png';
+import humanPerformance from './images/humanPerformance.png';
+import humanBottleneckAnalysis from './images/humanBottleneckAnalysis.png';
+import portfolioPerformance from './images/portfolioPerformance.png';
 
 export default function DashboardTemplateModal({onClose}) {
   const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
@@ -279,7 +281,7 @@ export default function DashboardTemplateModal({onClose}) {
       {
         name: 'humanBottleneckAnalysis',
         hasSubtitle: true,
-        img: processPerformance,
+        img: humanBottleneckAnalysis,
         config: [
           {
             position: {x: 0, y: 0},
@@ -493,7 +495,7 @@ export default function DashboardTemplateModal({onClose}) {
       {
         name: 'portfolioPerformance',
         hasSubtitle: true,
-        img: humanPerformance,
+        img: portfolioPerformance,
         config: [
           {
             position: {x: 0, y: 0},
