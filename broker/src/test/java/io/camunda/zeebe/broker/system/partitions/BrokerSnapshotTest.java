@@ -45,11 +45,12 @@ public class BrokerSnapshotTest {
         (RaftPartition)
             brokerRule
                 .getBroker()
+                .getBrokerContext()
                 .getPartitionManager()
                 .getPartitionGroup()
                 .getPartition(PartitionId.from(PartitionManagerImpl.GROUP_NAME, PARTITION_ID));
     journalReader = raftPartition.getServer().openReader();
-    brokerAdminService = brokerRule.getBroker().getBrokerAdminService();
+    brokerAdminService = brokerRule.getBroker().getBrokerContext().getBrokerAdminService();
 
     final String contactPoint = NetUtil.toSocketAddressString(brokerRule.getGatewayAddress());
     final ZeebeClientBuilder zeebeClientBuilder =

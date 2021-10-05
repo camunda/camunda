@@ -29,6 +29,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -602,11 +603,11 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void stepDown(final Broker broker, final int partitionId) {
-    final var atomix = broker.getClusterServices();
+    final var atomix = broker.getBrokerContext().getClusterServices();
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        broker.getPartitionManager().getPartitionGroup().getPartitions().stream()
+        broker.getBrokerContext().getPartitionManager().getPartitionGroup().getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == partitionId)
             .map(RaftPartition.class::cast)
@@ -617,14 +618,14 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void disconnect(final Broker broker) {
-    final var atomix = broker.getAtomixCluster();
+    final var atomix = broker.getBrokerContext().getAtomixCluster();
 
     ((NettyUnicastService) atomix.getUnicastService()).stop().join();
     ((NettyMessagingService) atomix.getMessagingService()).stop().join();
   }
 
   public void connect(final Broker broker) {
-    final var atomix = broker.getAtomixCluster();
+    final var atomix = broker.getBrokerContext().getAtomixCluster();
 
     ((NettyUnicastService) atomix.getUnicastService()).start().join();
     ((NettyMessagingService) atomix.getMessagingService()).start().join();
@@ -666,11 +667,11 @@ public final class ClusteringRule extends ExternalResource {
     }
 
     final var broker = brokers.get(expectedLeader);
-    final var atomix = broker.getClusterServices();
+    final var atomix = broker.getBrokerContext().getClusterServices();
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        broker.getPartitionManager().getPartitionGroup().getPartitions().stream()
+        broker.getBrokerContext().getPartitionManager().getPartitionGroup().getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == START_PARTITION_ID)
             .map(RaftPartition.class::cast)
@@ -775,14 +776,15 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void takeSnapshot(final Broker broker) {
-    broker.getBrokerAdminService().takeSnapshot();
+    broker.getBrokerContext().getBrokerAdminService().takeSnapshot();
   }
 
   public void triggerAndWaitForSnapshots() {
     // Ensure that the exporter positions are distributed to the followers
     getClock().addTime(ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL);
     getBrokers().stream()
-        .map(Broker::getBrokerAdminService)
+        .map(Broker::getBrokerContext)
+        .map(BrokerContext::getBrokerAdminService)
         .forEach(BrokerAdminService::takeSnapshot);
 
     getBrokers()
@@ -794,7 +796,7 @@ public final class ClusteringRule extends ExternalResource {
                     .until(
                         () -> {
                           // Trigger snapshot again in case snapshot is not already taken
-                          broker.getBrokerAdminService().takeSnapshot();
+                          broker.getBrokerContext().getBrokerAdminService().takeSnapshot();
                           return getSnapshot(broker);
                         },
                         Optional::isPresent));
@@ -831,7 +833,7 @@ public final class ClusteringRule extends ExternalResource {
 
   private Optional<SnapshotId> getSnapshot(final Broker broker, final int partitionId) {
 
-    final var partitions = broker.getBrokerAdminService().getPartitionStatus();
+    final var partitions = broker.getBrokerContext().getBrokerAdminService().getPartitionStatus();
     final var partitionStatus = partitions.get(partitionId);
 
     return Optional.ofNullable(partitionStatus)

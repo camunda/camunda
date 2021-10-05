@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
@@ -48,7 +49,7 @@ public class BrokerAdminServiceClusterTest {
   @Before
   public void before() {
     leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerAdminService();
+    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
   }
 
   @Test
@@ -61,7 +62,8 @@ public class BrokerAdminServiceClusterTest {
     // when
     final var followerStatus =
         followers.stream()
-            .map(Broker::getBrokerAdminService)
+            .map(Broker::getBrokerContext)
+            .map(BrokerContext::getBrokerAdminService)
             .map(BrokerAdminService::getPartitionStatus)
             .map(status -> status.get(1));
 
@@ -94,7 +96,8 @@ public class BrokerAdminServiceClusterTest {
 
     // then
     clusteringRule.getBrokers().stream()
-        .map(Broker::getBrokerAdminService)
+        .map(Broker::getBrokerContext)
+        .map(BrokerContext::getBrokerAdminService)
         .forEach(this::assertThatStatusContainsProcessedPositionInSnapshot);
   }
 
@@ -102,7 +105,8 @@ public class BrokerAdminServiceClusterTest {
   public void shouldPauseAfterLeaderChange() {
     // given
     clusteringRule.getBrokers().stream()
-        .map(Broker::getBrokerAdminService)
+        .map(Broker::getBrokerContext)
+        .map(BrokerContext::getBrokerAdminService)
         .forEach(BrokerAdminService::pauseStreamProcessing);
 
     // when
@@ -113,6 +117,7 @@ public class BrokerAdminServiceClusterTest {
     final var newLeaderAdminService =
         clusteringRule
             .getBroker(clusteringRule.getLeaderForPartition(1).getNodeId())
+            .getBrokerContext()
             .getBrokerAdminService();
     assertStreamProcessorPhase(newLeaderAdminService, Phase.PAUSED);
   }

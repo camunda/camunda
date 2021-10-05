@@ -240,7 +240,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
       Thread.currentThread().interrupt();
     }
 
-    final EmbeddedGatewayService embeddedGatewayService = broker.getEmbeddedGatewayService();
+    final EmbeddedGatewayService embeddedGatewayService =
+        broker.getBrokerContext().getEmbeddedGatewayService();
     if (embeddedGatewayService != null) {
       final BrokerClient brokerClient = embeddedGatewayService.get().getBrokerClient();
 

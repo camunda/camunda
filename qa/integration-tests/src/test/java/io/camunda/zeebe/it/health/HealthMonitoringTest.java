@@ -48,6 +48,7 @@ public class HealthMonitoringTest {
     final var raftPartition =
         (RaftPartition)
             leader
+                .getBrokerContext()
                 .getPartitionManager()
                 .getPartitionGroup()
                 .getPartition(

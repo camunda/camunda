@@ -30,7 +30,7 @@ public class BrokerAdminServiceWithOutExporterTest {
     // given
     final var leader =
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    final var leaderAdminService = leader.getBrokerAdminService();
+    final var leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
     // when there are no exporters configured
     // then
     final var partitionStatus = leaderAdminService.getPartitionStatus().get(1);

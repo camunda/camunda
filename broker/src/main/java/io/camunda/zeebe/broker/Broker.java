@@ -7,21 +7,14 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
-import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.partitioning.PartitionManager;
-import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -43,13 +36,10 @@ public final class Broker implements AutoCloseable {
   private final SystemContext systemContext;
   private boolean isClosed = false;
 
-  private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private final ActorScheduler scheduler;
   private BrokerHealthCheckService healthCheckService;
-  private BrokerAdminService brokerAdminService;
 
-  private final TestCompanionClass testCompanionObject = new TestCompanionClass();
   // TODO make Broker class itself the actor
   private final BrokerStartupActor brokerStartupActor;
   private final BrokerInfo localBroker;
@@ -109,12 +99,6 @@ public final class Broker implements AutoCloseable {
   private void internalStart() {
     try {
       brokerContext = brokerStartupActor.start().join();
-
-      testCompanionObject.embeddedGatewayService = brokerContext.getEmbeddedGatewayService();
-      testCompanionObject.diskSpaceUsageMonitor = brokerContext.getDiskSpaceUsageMonitor();
-      brokerAdminService = brokerContext.getBrokerAdminService();
-      clusterServices = brokerContext.getClusterServices();
-      testCompanionObject.atomix = clusterServices.getAtomixCluster();
 
       startFuture.complete(this);
       healthCheckService.setBrokerStarted();
@@ -186,7 +170,6 @@ public final class Broker implements AutoCloseable {
                       brokerStartupActor.stop().join();
                       healthCheckService = null;
                       isClosed = true;
-                      testCompanionObject.atomix = null;
                       LOG.info("Broker shut down.");
                     })
                 .join();
@@ -194,42 +177,14 @@ public final class Broker implements AutoCloseable {
         });
   }
 
-  @Deprecated
-  public EmbeddedGatewayService getEmbeddedGatewayService() {
-    return testCompanionObject.embeddedGatewayService;
+  // only used for tests
+  public BrokerContext getBrokerContext() {
+    return brokerContext;
   }
 
   // only used for tests
-  @Deprecated
-  public AtomixCluster getAtomixCluster() {
-    return testCompanionObject.atomix;
-  }
-
-  public ClusterServices getClusterServices() {
-    return clusterServices;
-  }
-
-  public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
-    return testCompanionObject.diskSpaceUsageMonitor;
-  }
-
-  public BrokerAdminService getBrokerAdminService() {
-    return brokerAdminService;
-  }
-
   public SystemContext getSystemContext() {
     return systemContext;
-  }
-
-  public PartitionManager getPartitionManager() {
-    return brokerContext.getPartitionManager();
-  }
-
-  @Deprecated // only used for test; temporary work around
-  private static final class TestCompanionClass {
-    private AtomixCluster atomix;
-    private EmbeddedGatewayService embeddedGatewayService;
-    private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   }
 
   /**

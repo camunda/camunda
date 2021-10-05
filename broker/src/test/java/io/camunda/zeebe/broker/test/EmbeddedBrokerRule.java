@@ -173,11 +173,11 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public ClusterServices getClusterServices() {
-    return broker.getClusterServices();
+    return broker.getBrokerContext().getClusterServices();
   }
 
   public AtomixCluster getAtomixCluster() {
-    return broker.getAtomixCluster();
+    return broker.getBrokerContext().getAtomixCluster();
   }
 
   public InetSocketAddress getGatewayAddress() {
@@ -245,7 +245,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       Thread.currentThread().interrupt();
     }
 
-    final EmbeddedGatewayService embeddedGatewayService = broker.getEmbeddedGatewayService();
+    final EmbeddedGatewayService embeddedGatewayService =
+        broker.getBrokerContext().getEmbeddedGatewayService();
     if (embeddedGatewayService != null) {
       final BrokerClient brokerClient = embeddedGatewayService.get().getBrokerClient();
 
