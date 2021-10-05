@@ -95,7 +95,7 @@ export default function GroupBy({type, report, onChange, variables}) {
       <span className="label">{t('report.groupBy.label')}</span>
       <Select
         className={classnames({hasNoGrouping: !hasGroup})}
-        label={!hasGroup && '+ Add grouping'}
+        label={!hasGroup && '+ ' + t('report.addGrouping')}
         onChange={(selection) => {
           let type = selection,
             value = null;

@@ -83,7 +83,7 @@ export default function DistributedBy({report, onChange, variables}) {
       <span className="label">{t('common.and')}</span>
       <Select
         className={classnames({hasNoGrouping: !hasDistribution})}
-        label={!hasDistribution && '+ Add grouping'}
+        label={!hasDistribution && '+ ' + t('report.addGrouping')}
         onChange={(selection) => {
           let type = selection,
             value = null;
