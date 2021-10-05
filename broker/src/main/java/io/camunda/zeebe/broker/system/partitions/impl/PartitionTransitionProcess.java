@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.raft.RaftServer.Role;
@@ -47,7 +46,7 @@ final class PartitionTransitionProcess {
   }
 
   void start(final ActorFuture<Void> future) {
-    LOG.info(format("Transition to %s on term %d starting", role, term));
+    LOG.info("Transition to {} on term {} starting", role, term);
 
     if (pendingSteps.isEmpty()) {
       LOG.info("No steps defined for transition");
@@ -60,7 +59,7 @@ final class PartitionTransitionProcess {
 
   private void proceedWithTransition(final ActorFuture<Void> future) {
     if (cancelRequested) {
-      LOG.info(format("Cancelling transition to %s on term %d", role, term));
+      LOG.info("Cancelling transition to {} on term {}", role, term);
       future.complete(null);
       return;
     }
@@ -71,9 +70,7 @@ final class PartitionTransitionProcess {
           startedSteps.push(nextStep);
 
           LOG.info(
-              format(
-                  "Transition to %s on term %d - transitioning %s",
-                  role, term, nextStep.getName()));
+              "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
 
           nextStep
               .transitionTo(context, term, role)
@@ -90,7 +87,7 @@ final class PartitionTransitionProcess {
     }
 
     if (pendingSteps.isEmpty()) {
-      LOG.info(format("Transition to %s on term %d completed", role, term));
+      LOG.info("Transition to {} on term {} completed", role, term);
       future.complete(null);
 
       return;
@@ -100,7 +97,7 @@ final class PartitionTransitionProcess {
   }
 
   ActorFuture<Void> cleanup(final long newTerm, final Role newRole) {
-    LOG.info(format("Prepare transition from %s on term %d to %s", role, term, newRole));
+    LOG.info("Prepare transition from {} on term {} to {}", role, term, newRole);
     final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
 
     if (startedSteps.isEmpty()) {
@@ -119,9 +116,11 @@ final class PartitionTransitionProcess {
           final var nextCleanupStep = startedSteps.pop();
 
           LOG.info(
-              format(
-                  "Prepare transition from %s on term %d to %s - preparing %s",
-                  role, term, newRole, nextCleanupStep.getName()));
+              "Prepare transition from {} on term {} to {} - preparing {}",
+              role,
+              term,
+              newRole,
+              nextCleanupStep.getName());
 
           nextCleanupStep
               .prepareTransition(context, newTerm, newRole)
@@ -142,7 +141,7 @@ final class PartitionTransitionProcess {
     }
 
     if (startedSteps.isEmpty()) {
-      LOG.info(format("Preparing transition from %s on term %d completed", role, term));
+      LOG.info("Preparing transition from {} on term {} completed", role, term);
       future.complete(null);
 
       return;
@@ -152,7 +151,7 @@ final class PartitionTransitionProcess {
   }
 
   void cancel() {
-    LOG.info(format("Received cancel signal for transition to %s on term %d", role, term));
+    LOG.info("Received cancel signal for transition to {} on term {}", role, term);
     cancelRequested = true;
   }
 }
