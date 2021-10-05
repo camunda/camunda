@@ -13,6 +13,8 @@ import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -235,18 +237,18 @@ public final class AsyncSnapshotDirector extends Actor
     final var transientSnapshotFuture =
         stateController.takeTransientSnapshot(lowerBoundSnapshotPosition);
     transientSnapshotFuture.onComplete(
-        (optionalTransientSnapshot, snapshotTakenError) -> {
+        (transientSnapshot, snapshotTakenError) -> {
           if (snapshotTakenError != null) {
-            LOG.error("Could not take a snapshot for {}", processorName, snapshotTakenError);
+            if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
+              LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
+            } else {
+              LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
+            }
             resetStateOnFailure();
             return;
           }
 
-          if (optionalTransientSnapshot.isEmpty()) {
-            takingSnapshot = false;
-            return;
-          }
-          onTransientSnapshotTaken(optionalTransientSnapshot.get());
+          onTransientSnapshotTaken(transientSnapshot);
         });
   }
 
@@ -313,7 +315,14 @@ public final class AsyncSnapshotDirector extends Actor
       snapshotPersistFuture.onComplete(
           (snapshot, persistError) -> {
             if (persistError != null) {
-              LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
+              if (persistError instanceof SnapshotNotFoundException) {
+                LOG.warn(
+                    "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
+                    pendingSnapshot,
+                    persistError);
+              } else {
+                LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
+              }
             }
             lastWrittenEventPosition = null;
             takingSnapshot = false;

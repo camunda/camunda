@@ -12,8 +12,11 @@ import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -328,11 +331,8 @@ public final class FileBasedSnapshotStore extends Actor
     return newPendingSnapshot;
   }
 
-  // TODO(npepinpe): using Either here would improve readability and observability, as validation
-  //  can have better error messages, and the return type better expresses what we attempt to do,
-  //  i.e. either it failed (with an error) or it succeeded
   @Override
-  public Optional<TransientSnapshot> newTransientSnapshot(
+  public Either<SnapshotException, TransientSnapshot> newTransientSnapshot(
       final long index,
       final long term,
       final long processedPosition,
@@ -342,18 +342,18 @@ public final class FileBasedSnapshotStore extends Actor
         new FileBasedSnapshotMetadata(index, term, processedPosition, exportedPosition);
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
     if (currentSnapshot != null && currentSnapshot.getMetadata().compareTo(newSnapshotId) == 0) {
-      LOGGER.debug(
-          "Previous snapshot was taken for the same processed position {} and exported position {}, will not take snapshot.",
-          processedPosition,
-          exportedPosition);
-      return Optional.empty();
+      final String error =
+          String.format(
+              "Previous snapshot was taken for the same processed position %d and exported position %d.",
+              processedPosition, exportedPosition);
+      return Either.left(new SnapshotAlreadyExistsException(error));
     }
     final var directory = buildPendingSnapshotDirectory(newSnapshotId);
 
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor);
     addPendingSnapshot(newPendingSnapshot);
-    return Optional.of(newPendingSnapshot);
+    return Either.right(newPendingSnapshot);
   }
 
   private void addPendingSnapshot(final PersistableSnapshot pendingSnapshot) {

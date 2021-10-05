@@ -203,7 +203,7 @@ public class FileBasedSnapshotStoreTest {
 
   private TransientSnapshot takeTransientSnapshot(
       final long index, final FileBasedSnapshotStore store) {
-    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0).orElseThrow();
+    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0).get();
     transientSnapshot.take(this::createSnapshotDir);
     return transientSnapshot;
   }
