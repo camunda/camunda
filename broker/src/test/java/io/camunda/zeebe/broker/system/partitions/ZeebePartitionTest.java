@@ -160,7 +160,7 @@ public class ZeebePartitionTest {
 
     when(transition.toFollower(anyLong()))
         .thenReturn(CompletableActorFuture.completedExceptionally(new Exception("expected")));
-    when(transition.toInactive())
+    when(transition.toInactive(anyLong()))
         .then(
             invocation -> {
               latch.countDown();
@@ -184,7 +184,7 @@ public class ZeebePartitionTest {
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toFollower(0L);
     order.verify(raft).goInactive();
-    order.verify(transition).toInactive();
+    order.verify(transition).toInactive(anyLong());
   }
 
   @Test
@@ -194,7 +194,7 @@ public class ZeebePartitionTest {
     when(transition.toLeader(anyLong()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new UnrecoverableException("expected")));
-    when(transition.toInactive())
+    when(transition.toInactive(anyLong()))
         .then(
             invocation -> {
               latch.countDown();
@@ -210,7 +210,7 @@ public class ZeebePartitionTest {
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toLeader(0L);
-    order.verify(transition).toInactive();
+    order.verify(transition).toInactive(anyLong());
     order.verify(raft).goInactive();
   }
 
@@ -227,7 +227,7 @@ public class ZeebePartitionTest {
     }
 
     @Override
-    public ActorFuture<Void> toInactive() {
+    public ActorFuture<Void> toInactive(final long currentTerm) {
       return CompletableActorFuture.completed(null);
     }
 
