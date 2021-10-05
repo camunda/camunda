@@ -6,10 +6,13 @@
 package org.camunda.optimize.test.performance;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -38,6 +41,7 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+@Slf4j
 @Tag("engine-cleanup")
 @Tag("event-cleanup")
 public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanupTest {
@@ -68,6 +72,10 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // temporary logs for debugging
+    logEndDateRangeForInstancesWithVariables();
+    logProcessKeysOfCompletedInstancesWithVariables();
 
     // then no variables are left on finished process instances
     assertThat(getFinishedProcessInstanceVariableCount()).isZero();
@@ -176,6 +184,23 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
     return elasticSearchIntegrationTestExtension.getVariableInstanceCount(
       boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
     );
+  }
+
+  // temporary debug logs
+  private void logEndDateRangeForInstancesWithVariables() {
+    final MinMaxStatDto endDateStats =
+      elasticSearchIntegrationTestExtension.getEndDateRangeForInstancesWithVariables();
+    log.info(
+      "End date range of completed instances with variables: min endDate is {} and max endDate is: {}. Now is {}.",
+      endDateStats.getMinAsString(),
+      endDateStats.getMaxAsString(),
+      LocalDateUtil.getCurrentDateTime()
+    );
+  }
+
+  private void logProcessKeysOfCompletedInstancesWithVariables() {
+    log.info("Definition Keys of completed instances with variables: " +
+               elasticSearchIntegrationTestExtension.getInstanceDefinitionKeysForFinishedInstancesWithVariables());
   }
 
 }

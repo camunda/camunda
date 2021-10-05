@@ -13,6 +13,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.Iterables;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -29,6 +30,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMa
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
@@ -63,7 +65,10 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -83,6 +88,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -108,7 +114,10 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_B
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -366,6 +375,52 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     long totalVariableCount = countAggregator.getValue();
 
     return Long.valueOf(totalVariableCount).intValue();
+  }
+
+  // TODO remove debugging helper
+  public MinMaxStatDto getEndDateRangeForInstancesWithVariables() {
+    final AggregationBuilder endDateStatsAgg = AggregationBuilders
+      .stats("endDateStats")
+      .field(ProcessInstanceIndex.END_DATE)
+      .format(OPTIMIZE_DATE_FORMAT);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
+               .must(nestedQuery(VARIABLES, existsQuery(VARIABLES), ScoreMode.None)))
+      .fetchSource(false)
+      .aggregation(endDateStatsAgg)
+      .size(0);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = getOptimizeElasticClient().search(searchRequest);
+    } catch (IOException e) {
+      log.error("Could not retrieve endDate stats", e);
+      throw new OptimizeRuntimeException("Could not retrieve endDate stats", e);
+    }
+    final Stats minMaxStats = response.getAggregations().get("endDateStats");
+    return new MinMaxStatDto(
+      minMaxStats.getMin(), minMaxStats.getMax(), minMaxStats.getMinAsString(), minMaxStats.getMaxAsString()
+    );
+  }
+
+  // TODO remove debugging helper
+  @SneakyThrows
+  public Set<String> getInstanceDefinitionKeysForFinishedInstancesWithVariables() {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
+               .must(nestedQuery(VARIABLES, existsQuery(VARIABLES), ScoreMode.None)))
+      .trackTotalHits(true)
+      .size(100);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
+      .source(searchSourceBuilder);
+    SearchResponse response = prefixAwareRestHighLevelClient.search(searchRequest);
+    return mapHits(response.getHits(), ProcessInstanceDto.class, getObjectMapper()).stream()
+      .map(ProcessInstanceDto::getProcessDefinitionKey)
+      .collect(Collectors.toSet());
   }
 
   public void deleteAllOptimizeData() {
