@@ -29,10 +29,8 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -111,36 +109,46 @@ public final class FileBasedSnapshotStore extends Actor
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
-    final List<FileBasedSnapshot> snapshots = new ArrayList<>();
     try (final var stream =
         Files.newDirectoryStream(
             snapshotDirectory, p -> !p.getFileName().toString().endsWith(CHECKSUM_SUFFIX))) {
       for (final var path : stream) {
         final var snapshot = collectSnapshot(path);
         if (snapshot != null) {
-          snapshots.add(snapshot);
           if ((latestPersistedSnapshot == null)
               || snapshot.getMetadata().compareTo(latestPersistedSnapshot.getMetadata()) >= 0) {
             latestPersistedSnapshot = snapshot;
           }
         }
       }
-      // Delete older snapshots
+      // Cleanup of the snapshot directory. Older or corrupted snapshots are deleted
       if (latestPersistedSnapshot != null) {
-        snapshots.remove(latestPersistedSnapshot);
-        if (!snapshots.isEmpty()) {
-          LOGGER.debug("Purging snapshots older than {}", latestPersistedSnapshot);
-          snapshots.forEach(
-              oldSnapshot -> {
-                LOGGER.debug("Deleting snapshot {}", oldSnapshot);
-                oldSnapshot.delete();
-              });
-        }
+        cleanupSnapshotDirectory(snapshotDirectory, latestPersistedSnapshot);
       }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
     return latestPersistedSnapshot;
+  }
+
+  private void cleanupSnapshotDirectory(
+      final Path snapshotDirectory, final FileBasedSnapshot latestPersistedSnapshot)
+      throws IOException {
+    final var latestChecksumFile = latestPersistedSnapshot.getChecksumFile();
+    final var latestDirectory = latestPersistedSnapshot.getDirectory();
+    try (final var paths =
+        Files.newDirectoryStream(
+            snapshotDirectory, p -> !p.equals(latestDirectory) && !p.equals(latestChecksumFile))) {
+      LOGGER.debug("Deleting snapshots other than {}", latestPersistedSnapshot);
+      paths.forEach(
+          p -> {
+            try {
+              FileUtil.deleteFolderIfExists(p);
+            } catch (final IOException e) {
+              LOGGER.warn("Unable to delete {}", p, e);
+            }
+          });
+    }
   }
 
   // TODO(npepinpe): using Either here would improve readability and observability, as validation
