@@ -147,7 +147,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: zeebe
-      image: camunda/zeebe:SNAPSHOT
+      image: camunda/zeebe:1.2.0
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
