@@ -131,6 +131,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
     final var waitStrategy =
         new HttpWaitStrategy()
             .forPort(DEFAULT_HTTP_PORT)
+            .forPath("/_cluster/health?wait_for_status=green&timeout=1s")
             .forStatusCodeMatching(status -> status == HTTP_OK || status == HTTP_UNAUTHORIZED);
     waitStrategy.withStartupTimeout(Duration.ofMinutes(2));
     if (isSslEnabled) {

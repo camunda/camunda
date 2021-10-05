@@ -91,32 +91,6 @@ public final class ActivityTest {
   }
 
   @Test
-  public void shouldApplyOutputMappingOnCompleting() {
-    // given
-    ENGINE.deployment().withXmlResource(WITHOUT_BOUNDARY_EVENTS).deploy();
-    final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables("{ \"foo\": 1, \"boo\": 2 }")
-            .create();
-
-    // when
-    ENGINE.job().withType("type").ofInstance(processInstanceKey).complete();
-
-    // then
-    final Record<ProcessInstanceRecordValue> record =
-        RecordingExporter.processInstanceRecords()
-            .withElementId("task")
-            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    final Map<String, String> variables =
-        ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
-    assertThat(variables).contains(entry("bar", "1"));
-  }
-
-  @Test
   public void shouldSubscribeToBoundaryEventTriggersOnReady() {
     // given
     ENGINE.deployment().withXmlResource(WITH_BOUNDARY_EVENTS).deploy();

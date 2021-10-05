@@ -9,8 +9,11 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionFactory;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -21,144 +24,82 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.IOException;
+import io.camunda.zeebe.util.startup.StartupProcess;
+import io.camunda.zeebe.util.startup.StartupStep;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
-    implements RaftRoleChangeListener, HealthMonitorable, FailureListener, DiskSpaceUsageListener {
+    implements RaftRoleChangeListener,
+        HealthMonitorable,
+        FailureListener,
+        DiskSpaceUsageListener,
+        SnapshotReplicationListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private Role raftRole;
 
+  private final StartupProcess<PartitionStartupContext> startupProcess;
+
+  private Role raftRole;
   private final String actorName;
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
+  private final RoleMetrics roleMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
-
-  private final PartitionContext context;
+  private PartitionContext context;
+  private PartitionStartupContext startupContext;
+  private final PartitionAdminControl adminControl;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
   private ActorFuture<Void> currentTransitionFuture;
 
-  public ZeebePartition(final PartitionContext context, final PartitionTransition transition) {
-    this.context = context;
+  public ZeebePartition(
+      final PartitionStartupAndTransitionContextImpl transitionContext,
+      final PartitionTransition transition,
+      final List<StartupStep<PartitionStartupContext>> startupSteps) {
+    context = transitionContext.getPartitionContext();
+    adminControl = transitionContext.getPartitionAdminControl();
+
     this.transition = transition;
+    startupContext = transitionContext;
 
-    context.setActor(actor);
-    context.setDiskSpaceAvailable(true);
+    startupProcess = new StartupProcess<>(LOG, startupSteps);
 
-    actorName = buildActorName(context.getNodeId(), "ZeebePartition", context.getPartitionId());
-    context.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
-    zeebePartitionHealth = new ZeebePartitionHealth(context.getPartitionId());
-    healthMetrics = new HealthMetrics(context.getPartitionId());
+    transitionContext.setActorControl(actor);
+    transitionContext.setDiskSpaceAvailable(true);
+
+    // todo remove after migration
+    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+      transition.setConcurrencyControl(actor);
+    }
+    // todo remove after migration
+
+    actorName =
+        buildActorName(
+            transitionContext.getNodeId(), "ZeebePartition", transitionContext.getPartitionId());
+    transitionContext.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
+    zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId());
+    healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
+    roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
   }
 
-  /**
-   * Called by atomix on role change.
-   *
-   * @param newRole the new role of the raft partition
-   */
+  public PartitionAdminAccess createAdminAccess() {
+    return new ZeebePartitionAdminAccess(actor, adminControl);
+  }
+
   @Override
-  public void onNewRole(final Role newRole, final long newTerm) {
-    actor.run(() -> onRoleChange(newRole, newTerm));
-  }
-
-  private void onRoleChange(final Role newRole, final long newTerm) {
-    ActorFuture<Void> nextTransitionFuture = null;
-    switch (newRole) {
-      case LEADER:
-        if (raftRole != Role.LEADER) {
-          nextTransitionFuture = leaderTransition(newTerm);
-        }
-        break;
-      case INACTIVE:
-        nextTransitionFuture = transitionToInactive();
-        break;
-      case PASSIVE:
-      case PROMOTABLE:
-      case CANDIDATE:
-      case FOLLOWER:
-      default:
-        if (raftRole == null || raftRole == Role.LEADER) {
-          nextTransitionFuture = followerTransition(newTerm);
-        }
-        break;
-    }
-
-    if (nextTransitionFuture != null) {
-      currentTransitionFuture = nextTransitionFuture;
-    }
-    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
-    raftRole = newRole;
-  }
-
-  private ActorFuture<Void> leaderTransition(final long newTerm) {
-    final var leaderTransitionFuture = transition.toLeader(newTerm);
-    leaderTransitionFuture.onComplete(
-        (success, error) -> {
-          if (error == null) {
-            final List<ActorFuture<Void>> listenerFutures =
-                context.getPartitionListeners().stream()
-                    .map(
-                        l ->
-                            l.onBecomingLeader(
-                                context.getPartitionId(), newTerm, context.getLogStream()))
-                    .collect(Collectors.toList());
-            actor.runOnCompletion(
-                listenerFutures,
-                t -> {
-                  if (t != null) {
-                    onInstallFailure(t);
-                  }
-                });
-            onRecoveredInternal();
-          } else {
-            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure(error);
-          }
-        });
-    return leaderTransitionFuture;
-  }
-
-  private ActorFuture<Void> followerTransition(final long newTerm) {
-    final var followerTransitionFuture = transition.toFollower(newTerm);
-    followerTransitionFuture.onComplete(
-        (success, error) -> {
-          if (error == null) {
-            final List<ActorFuture<Void>> listenerFutures =
-                context.getPartitionListeners().stream()
-                    .map(l -> l.onBecomingFollower(context.getPartitionId(), newTerm))
-                    .collect(Collectors.toList());
-            actor.runOnCompletion(
-                listenerFutures,
-                t -> {
-                  // Compare with the current term in case a new role transition happened
-                  if (t != null) {
-                    onInstallFailure(t);
-                  }
-                });
-            onRecoveredInternal();
-          } else {
-            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure(error);
-          }
-        });
-    return followerTransitionFuture;
-  }
-
-  private ActorFuture<Void> transitionToInactive() {
-    zeebePartitionHealth.setServicesInstalled(false);
-    final var inactiveTransitionFuture = transition.toInactive();
-    currentTransitionFuture = inactiveTransitionFuture;
-    return inactiveTransitionFuture;
+  protected Map<String, String> createContext() {
+    final var actorContext = super.createContext();
+    actorContext.put(ACTOR_PROP_PARTITION_ID, Integer.toString(context.getPartitionId()));
+    return actorContext;
   }
 
   @Override
@@ -168,9 +109,29 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    context.getRaftPartition().addRoleChangeListener(this);
-    context.getComponentHealthMonitor().addFailureListener(this);
-    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
+    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+      startupProcess
+          .startup(actor, startupContext)
+          .onComplete(
+              (newStartupContext, error) -> {
+                if (error != null) {
+                  LOG.error(error.getMessage(), error);
+                  handleUnrecoverableFailure();
+                  close();
+                  return;
+                }
+                startupContext = newStartupContext;
+                final var transitionContext = startupContext.createTransitionContext();
+
+                transition.updateTransitionContext(transitionContext);
+
+                context = transitionContext.getPartitionContext();
+
+                registerListenersAndTriggerRoleChange();
+              });
+    } else {
+      registerListenersAndTriggerRoleChange();
+    }
   }
 
   @Override
@@ -189,15 +150,35 @@ public final class ZeebePartition extends Actor
 
   @Override
   protected void onActorClosing() {
+    context.getRaftPartition().getServer().removeSnapshotReplicationListener(this);
+    context.getRaftPartition().removeRoleChangeListener(this);
+
     transitionToInactive()
         .onComplete(
             (nothing, err) -> {
-              context.getRaftPartition().removeRoleChangeListener(this);
-
               context
                   .getComponentHealthMonitor()
                   .removeComponent(context.getRaftPartition().name());
-              closeFuture.complete(null);
+
+              if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+                startupProcess
+                    .shutdown(actor, startupContext)
+                    .onComplete(
+                        (newStartupContext, error) -> {
+                          if (error != null) {
+                            LOG.error(error.getMessage(), error);
+                          }
+
+                          // reset contexts to null to not have lingering references that could
+                          // cause OOM problems in tests which start/stop partitions
+                          startupContext = null;
+                          context = null;
+
+                          closeFuture.complete(null);
+                        });
+              } else {
+                closeFuture.complete(null);
+              }
             });
   }
 
@@ -232,7 +213,112 @@ public final class ZeebePartition extends Actor
     onInstallFailure(failure);
   }
 
+  /**
+   * Called by atomix on role change.
+   *
+   * @param newRole the new role of the raft partition
+   */
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
+  public void onNewRole(final Role newRole, final long newTerm) {
+    actor.run(() -> onRoleChange(newRole, newTerm));
+  }
+
+  private void onRoleChange(final Role newRole, final long newTerm) {
+    ActorFuture<Void> nextTransitionFuture = null;
+    switch (newRole) {
+      case LEADER:
+        if (raftRole != Role.LEADER) {
+          nextTransitionFuture = leaderTransition(newTerm);
+        }
+        break;
+      case INACTIVE:
+        nextTransitionFuture = transitionToInactive();
+        break;
+      case PASSIVE:
+      case PROMOTABLE:
+      case CANDIDATE:
+      case FOLLOWER:
+      default:
+        if (raftRole == null || raftRole == Role.LEADER) {
+          nextTransitionFuture = followerTransition(newTerm);
+        }
+        break;
+    }
+
+    if (nextTransitionFuture != null) {
+      currentTransitionFuture = nextTransitionFuture;
+    }
+    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
+    raftRole = newRole;
+  }
+
+  private ActorFuture<Void> leaderTransition(final long newTerm) {
+    final var installStartTime = ActorClock.currentTimeMillis();
+    final var leaderTransitionFuture = transition.toLeader(newTerm);
+    leaderTransitionFuture.onComplete(
+        (success, error) -> {
+          if (error == null) {
+            final var leaderTransitionLatency = ActorClock.currentTimeMillis() - installStartTime;
+            roleMetrics.setLeaderTransitionLatency(leaderTransitionLatency);
+            final List<ActorFuture<Void>> listenerFutures =
+                context.notifyListenersOfBecomingLeader(newTerm);
+            actor.runOnCompletion(
+                listenerFutures,
+                t -> {
+                  if (t != null) {
+                    onInstallFailure(t);
+                  }
+                });
+            onRecoveredInternal();
+          } else {
+            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
+            onInstallFailure(error);
+          }
+        });
+    return leaderTransitionFuture;
+  }
+
+  private ActorFuture<Void> followerTransition(final long newTerm) {
+    final var followerTransitionFuture = transition.toFollower(newTerm);
+    followerTransitionFuture.onComplete(
+        (success, error) -> {
+          if (error == null) {
+            final List<ActorFuture<Void>> listenerFutures =
+                context.notifyListenersOfBecomingFollower(newTerm);
+            actor.runOnCompletion(
+                listenerFutures,
+                t -> {
+                  // Compare with the current term in case a new role transition happened
+                  if (t != null) {
+                    onInstallFailure(t);
+                  }
+                });
+            onRecoveredInternal();
+          } else {
+            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
+            onInstallFailure(error);
+          }
+        });
+    return followerTransitionFuture;
+  }
+
+  private ActorFuture<Void> transitionToInactive() {
+    zeebePartitionHealth.setServicesInstalled(false);
+    final var inactiveTransitionFuture = transition.toInactive();
+    currentTransitionFuture = inactiveTransitionFuture;
+    return inactiveTransitionFuture;
+  }
+
+  private void registerListenersAndTriggerRoleChange() {
+    context.getRaftPartition().addRoleChangeListener(this);
+    context.getComponentHealthMonitor().addFailureListener(this);
+    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
+    context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
+  }
+
+  @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onFailure() {
     actor.run(
         () -> {
@@ -242,6 +328,7 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onRecovered() {
     actor.run(
         () -> {
@@ -251,6 +338,7 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onUnrecoverableFailure() {
     actor.run(this::handleUnrecoverableFailure);
   }
@@ -271,9 +359,7 @@ public final class ZeebePartition extends Actor
 
   private void handleRecoverableFailure() {
     zeebePartitionHealth.setServicesInstalled(false);
-    context
-        .getPartitionListeners()
-        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
+    context.notifyListenersOfBecomingInactive();
 
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
     // failure. The transition for the higher term will be already enqueued and services will be
@@ -302,9 +388,7 @@ public final class ZeebePartition extends Actor
     transitionToInactive();
     context.getRaftPartition().goInactive();
     failureListeners.forEach(FailureListener::onUnrecoverableFailure);
-    context
-        .getPartitionListeners()
-        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
+    context.notifyListenersOfBecomingInactive();
   }
 
   private void onRecoveredInternal() {
@@ -335,6 +419,8 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // currently the implementation forwards this to other components inside the
+  // partition; these components will be directly registered as listeners in the future
   public void onDiskSpaceNotAvailable() {
     actor.call(
         () -> {
@@ -348,6 +434,8 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // currently the implementation forwards this to other components inside the
+  // partition; these components will be directly registered as listeners in the future
   public void onDiskSpaceAvailable() {
     actor.call(
         () -> {
@@ -360,55 +448,12 @@ public final class ZeebePartition extends Actor
         });
   }
 
-  public ActorFuture<Void> pauseProcessing() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            context.pauseProcessing();
-
-            if (context.getStreamProcessor() != null && !context.shouldProcess()) {
-              context.getStreamProcessor().pauseProcessing().onComplete(completed);
-            } else {
-              completed.complete(null);
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not pause processing state", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
-  }
-
-  public void resumeProcessing() {
-    actor.call(
-        () -> {
-          try {
-            context.resumeProcessing();
-            if (context.getStreamProcessor() != null && context.shouldProcess()) {
-              context.getStreamProcessor().resumeProcessing();
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not resume processing", e);
-          }
-        });
-  }
-
   public int getPartitionId() {
     return context.getPartitionId();
   }
 
   public PersistedSnapshotStore getSnapshotStore() {
     return context.getRaftPartition().getServer().getPersistedSnapshotStore();
-  }
-
-  public void triggerSnapshot() {
-    actor.call(
-        () -> {
-          if (context.getSnapshotDirector() != null) {
-            context.getSnapshotDirector().forceSnapshot();
-          }
-        });
   }
 
   public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
@@ -419,37 +464,23 @@ public final class ZeebePartition extends Actor
     return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
   }
 
-  public ActorFuture<Void> pauseExporting() {
-    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          try {
-            final var pauseStatePersisted = context.pauseExporting();
-
-            if (context.getExporterDirector() != null && pauseStatePersisted) {
-              context.getExporterDirector().pauseExporting().onComplete(completed);
-            } else {
-              completed.complete(null);
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not pause exporting", e);
-            completed.completeExceptionally(e);
-          }
-        });
-    return completed;
+  @Override
+  public void onSnapshotReplicationStarted() {
+    // When a snapshot is received, the follower stream processor and exporter should
+    // restart from a new state. So we transition to Inactive to close existing services. The
+    // services will be reinstalled when snapshot replication is completed.
+    // We do not want to mark it as unhealthy, hence we don't reuse transitionToInactive()
+    actor.run(() -> currentTransitionFuture = transition.toInactive());
   }
 
-  public void resumeExporting() {
-    actor.call(
-        () -> {
-          try {
-            context.resumeExporting();
-            if (context.getExporterDirector() != null && context.shouldExport()) {
-              context.getExporterDirector().resumeExporting();
-            }
-          } catch (final IOException e) {
-            LOG.error("Could not resume exporting", e);
-          }
-        });
+  @Override
+  public void onSnapshotReplicationCompleted(final long term) {
+    // Snapshot is received only by the followers. Hence we can safely assume that we have to
+    // re-install follower services.
+    actor.run(() -> currentTransitionFuture = followerTransition(term));
+  }
+
+  public ActorFuture<Role> getCurrentRole() {
+    return actor.call(() -> context.getCurrentRole());
   }
 }

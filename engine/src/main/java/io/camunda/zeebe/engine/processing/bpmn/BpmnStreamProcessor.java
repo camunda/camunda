@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -63,7 +63,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final MutableZeebeState zeebeState,
-      final Writers writers) {
+      final Writers writers,
+      final JobMetrics jobMetrics) {
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
 
@@ -78,7 +79,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             variableBehavior,
             eventTriggerBehavior,
             this::getContainerProcessor,
-            writers);
+            writers,
+            jobMetrics);
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processors = new BpmnElementProcessors(bpmnBehaviors);
@@ -121,10 +123,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var processor = processors.getProcessor(bpmnElementType);
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      relieveReprocessingStateProblems();
-    }
-
     stateTransitionGuard
         .isValidStateTransition(context)
         .ifRightOrLeft(
@@ -135,57 +133,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             violation ->
                 rejectionWriter.appendRejection(
                     record, RejectionType.INVALID_STATE, violation.getMessage()));
-  }
-
-  /**
-   * On migrating processors we saw issues on replay, where element instances are not existing on
-   * replay/reprocessing. You need to know that migrated processors are only replayed, which means
-   * the events are applied to the state and non migrated are reprocessed, so the processor is
-   * called.
-   *
-   * <p>If we have a non migrated type and reprocess that, we expect an existing element instance.
-   * On normal processing this element instance was created by using the state writer of the
-   * previous command/event most likely by an already migrated type. On replay this state writer is
-   * not called which causes issues, like non existing element instance.
-   *
-   * <p>To cover the gap between migrated and non migrated processors we need to re-create an
-   * element instance here, such that we can continue in migrate the processors individually and
-   * still are able to run the replay tests.
-   */
-  private void relieveReprocessingStateProblems() {
-    final var instance = elementInstanceState.getInstance(context.getElementInstanceKey());
-    if (instance == null) {
-      if (context.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
-        // only create new instance for elements that are activating
-        return;
-      }
-
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      final var elementInstance =
-          elementInstanceState.newInstance(
-              flowScopeInstance,
-              context.getElementInstanceKey(),
-              context.getRecordValue(),
-              ProcessInstanceIntent.ELEMENT_ACTIVATING);
-
-      final var parentElementInstance =
-          elementInstanceState.getInstance(context.getRecordValue().getParentElementInstanceKey());
-      if (parentElementInstance == null
-          || context.getBpmnElementType() != BpmnElementType.PROCESS) {
-        // only connect to call activity for child processes
-        return;
-      }
-
-      parentElementInstance.setCalledChildInstanceKey(elementInstance.getKey());
-      elementInstanceState.updateInstance(parentElementInstance);
-      return;
-    }
-
-    if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && context.getBpmnElementType() == BpmnElementType.PROCESS) {
-      instance.setState(ProcessInstanceIntent.ELEMENT_TERMINATING);
-      elementInstanceState.updateInstance(instance);
-    }
   }
 
   private void processEvent(

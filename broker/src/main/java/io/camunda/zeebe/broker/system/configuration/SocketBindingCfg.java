@@ -90,8 +90,24 @@ public class SocketBindingCfg {
   }
 
   public static class CommandApiCfg extends SocketBindingCfg {
+
     public CommandApiCfg() {
       super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
+    }
+
+    @Override
+    public String toString() {
+      return "CommandApiCfg{"
+          + "host='"
+          + getHost()
+          + '\''
+          + ", port="
+          + getPort()
+          + ", advertisedHost="
+          + getAdvertisedHost()
+          + ", advertisedPort="
+          + getAdvertisedPort()
+          + '}';
     }
   }
 

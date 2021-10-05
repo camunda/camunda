@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.AsyncClosable;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
@@ -37,15 +36,6 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    */
   String getLogName();
 
-  /**
-   * @return a future, when successfully completed it returns the current commit position, or a
-   *     negative value if no entry is committed
-   */
-  ActorFuture<Long> getCommitPositionAsync();
-
-  /** sets the new commit position * */
-  void setCommitPosition(long position);
-
   /** @return a future, when successfully completed it returns a newly created log stream reader */
   ActorFuture<LogStreamReader> newLogStreamReader();
 
@@ -62,16 +52,17 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
   ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
 
   /**
-   * Registers for on commit updates.
+   * Registers a listener that will be notified when new records are available to read from the
+   * logstream.
    *
-   * @param condition the condition which should be signalled.
+   * @param recordAwaiter the listener to be notified
    */
-  void registerOnCommitPositionUpdatedCondition(ActorCondition condition);
+  void registerRecordAvailableListener(LogRecordAwaiter recordAwaiter);
 
   /**
-   * Removes the registered condition.
+   * Removes the listener.
    *
-   * @param condition the condition which should be removed
+   * @param recordAwaiter the listener to remove
    */
-  void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
+  void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
 }

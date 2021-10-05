@@ -7,27 +7,25 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class LogStreamPartitionStep implements PartitionStep {
-
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-    buildLogstream(context)
+
+    final var logStorage = context.getLogStorage();
+    buildLogstream(context, logStorage)
         .onComplete(
             ((logStream, err) -> {
               if (err == null) {
                 context.setLogStream(logStream);
 
-                if (context.getDeferredCommitPosition() > 0) {
-                  context.getLogStream().setCommitPosition(context.getDeferredCommitPosition());
-                  context.setDeferredCommitPosition(-1);
-                }
                 context
                     .getComponentHealthMonitor()
                     .registerComponent(logStream.getLogName(), logStream);
@@ -41,7 +39,7 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
     context.getComponentHealthMonitor().removeComponent(context.getLogStream().getLogName());
     final ActorFuture<Void> future = context.getLogStream().closeAsync();
     context.setLogStream(null);
@@ -53,14 +51,16 @@ public class LogStreamPartitionStep implements PartitionStep {
     return "logstream";
   }
 
-  private ActorFuture<LogStream> buildLogstream(final PartitionContext context) {
+  private ActorFuture<LogStream> buildLogstream(
+      final PartitionStartupAndTransitionContextImpl context,
+      final AtomixLogStorage atomixLogStorage) {
     return LogStream.builder()
-        .withLogStorage(context.getAtomixLogStorage())
+        .withLogStorage(atomixLogStorage)
         .withLogName("logstream-" + context.getRaftPartition().name())
         .withNodeId(context.getNodeId())
         .withPartitionId(context.getRaftPartition().id().id())
         .withMaxFragmentSize(context.getMaxFragmentSize())
-        .withActorScheduler(context.getScheduler())
+        .withActorSchedulingService(context.getActorSchedulingService())
         .buildAsync();
   }
 }

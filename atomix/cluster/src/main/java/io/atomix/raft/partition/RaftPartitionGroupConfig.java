@@ -21,7 +21,6 @@ import io.atomix.primitive.partition.PartitionGroup.Type;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,20 +28,11 @@ import java.util.Set;
 public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartitionGroupConfig> {
 
   private static final int DEFAULT_PARTITIONS = 7;
-  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
-  private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
-  private static final boolean DEFAULT_PRIORITY_ELECTION = false;
-  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
   private Set<String> members = new HashSet<>();
-  private int partitionSize;
-  private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
-  private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
+  private int replicationFactor;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
-  private int maxAppendsPerFollower = 2;
-  private int maxAppendBatchSize = 32 * 1024;
-  private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
-  private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
@@ -50,46 +40,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   @Override
   protected int getDefaultPartitions() {
     return DEFAULT_PARTITIONS;
-  }
-
-  /**
-   * Returns the Raft leader election timeout.
-   *
-   * @return the Raft leader election timeout
-   */
-  public Duration getElectionTimeout() {
-    return electionTimeout;
-  }
-
-  /**
-   * Sets the leader election timeout.
-   *
-   * @param electionTimeout the leader election timeout
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setElectionTimeout(final Duration electionTimeout) {
-    this.electionTimeout = electionTimeout;
-    return this;
-  }
-
-  /**
-   * Returns the heartbeat interval.
-   *
-   * @return the heartbeat interval
-   */
-  public Duration getHeartbeatInterval() {
-    return heartbeatInterval;
-  }
-
-  /**
-   * Sets the heartbeat interval.
-   *
-   * @param heartbeatInterval the heartbeat interval
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setHeartbeatInterval(final Duration heartbeatInterval) {
-    this.heartbeatInterval = heartbeatInterval;
-    return this;
   }
 
   /**
@@ -117,18 +67,18 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
    *
    * @return the partition size
    */
-  public int getPartitionSize() {
-    return partitionSize;
+  public int getReplicationFactor() {
+    return replicationFactor;
   }
 
   /**
    * Sets the partition size.
    *
-   * @param partitionSize the partition size
+   * @param replicationFactor the partition size
    * @return the Raft partition group configuration
    */
-  public RaftPartitionGroupConfig setPartitionSize(final int partitionSize) {
-    this.partitionSize = partitionSize;
+  public RaftPartitionGroupConfig setReplicationFactor(final int replicationFactor) {
+    this.replicationFactor = replicationFactor;
     return this;
   }
 
@@ -172,40 +122,17 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
     return this;
   }
 
-  public int getMaxAppendsPerFollower() {
-    return maxAppendsPerFollower;
-  }
-
-  public void setMaxAppendsPerFollower(final int maxAppendsPerFollower) {
-    this.maxAppendsPerFollower = maxAppendsPerFollower;
-  }
-
-  public int getMaxAppendBatchSize() {
-    return maxAppendBatchSize;
-  }
-
-  public void setMaxAppendBatchSize(final int maxAppendBatchSize) {
-    this.maxAppendBatchSize = maxAppendBatchSize;
-  }
-
   @Override
   public Type getType() {
     return RaftPartitionGroup.TYPE;
   }
 
-  public boolean isPriorityElectionEnabled() {
-    return priorityElectionEnabled;
+  public RaftPartitionConfig getPartitionConfig() {
+    return partitionConfig;
   }
 
-  public void setPriorityElectionEnabled(final boolean enable) {
-    priorityElectionEnabled = enable;
-  }
-
-  public Duration getRequestTimeout() {
-    return requestTimeout;
-  }
-
-  public void setRequestTimeout(final Duration requestTimeout) {
-    this.requestTimeout = requestTimeout;
+  public RaftPartitionGroupConfig setPartitionConfig(final RaftPartitionConfig partitionConfig) {
+    this.partitionConfig = partitionConfig;
+    return this;
   }
 }

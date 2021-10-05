@@ -90,7 +90,6 @@ import org.slf4j.LoggerFactory;
  */
 public class AtomixCluster implements BootstrapService, Managed<Void> {
 
-  private static final String[] DEFAULT_RESOURCES = new String[] {"cluster"};
   private static final Logger LOGGER = LoggerFactory.getLogger(AtomixCluster.class);
   protected final ManagedMessagingService messagingService;
   protected final ManagedUnicastService unicastService;
@@ -101,7 +100,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   protected final ManagedClusterEventService eventService;
   protected volatile CompletableFuture<Void> openFuture;
   protected volatile CompletableFuture<Void> closeFuture;
-  private final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
+  protected final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
 
   public AtomixCluster(final ClusterConfig config, final Version version) {
@@ -116,6 +115,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     this.messagingService =
         messagingService != null ? messagingService : buildMessagingService(config);
     this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
+
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);
     membershipService =

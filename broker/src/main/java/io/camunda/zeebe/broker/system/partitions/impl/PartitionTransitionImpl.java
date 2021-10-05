@@ -9,10 +9,12 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
@@ -26,14 +28,14 @@ public class PartitionTransitionImpl implements PartitionTransition {
   private static final List<PartitionStep> EMPTY_LIST = Collections.emptyList();
   private static final int INACTIVE_TERM = -1;
 
-  private final PartitionContext context;
+  private final PartitionStartupAndTransitionContextImpl context;
   private final List<PartitionStep> leaderSteps;
   private final List<PartitionStep> followerSteps;
   private final List<PartitionStep> openedSteps = new ArrayList<>();
   private CompletableActorFuture<Void> currentTransition = CompletableActorFuture.completed(null);
 
   public PartitionTransitionImpl(
-      final PartitionContext context,
+      final PartitionStartupAndTransitionContextImpl context,
       final List<PartitionStep> leaderSteps,
       final List<PartitionStep> followerSteps) {
     this.context = context;
@@ -54,6 +56,16 @@ public class PartitionTransitionImpl implements PartitionTransition {
   @Override
   public ActorFuture<Void> toInactive() {
     return enqueueTransition(INACTIVE_TERM, Role.INACTIVE, EMPTY_LIST);
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    // Do nothing. Added for completion. This class will be deleted eventually.
+  }
+
+  @Override
+  public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
+    // Do nothing. Added for completion. This class will be deleted eventually.
   }
 
   /**

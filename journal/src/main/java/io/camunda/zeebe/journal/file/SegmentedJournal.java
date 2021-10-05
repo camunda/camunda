@@ -25,20 +25,30 @@ import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.StampedLock;
@@ -47,9 +57,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** A file based journal. The journal is split into multiple segments files. */
-public class SegmentedJournal implements Journal {
-
+public final class SegmentedJournal implements Journal {
   public static final long ASQN_IGNORE = -1;
+  private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private static final int SEGMENT_BUFFER_FACTOR = 3;
   private static final int FIRST_SEGMENT_ID = 1;
   private static final int INITIAL_INDEX = 1;
@@ -147,7 +157,6 @@ public class SegmentedJournal implements Journal {
           compactSegments.size());
       for (final JournalSegment segment : compactSegments.values()) {
         log.trace("{} - Deleting segment: {}", name, segment);
-        segment.close();
         segment.delete();
         journalMetrics.decSegmentCount();
       }
@@ -156,7 +165,6 @@ public class SegmentedJournal implements Journal {
       compactSegments.clear();
 
       journalIndex.deleteUntil(index);
-      resetHead(getFirstSegment().index());
     }
   }
 
@@ -166,7 +174,6 @@ public class SegmentedJournal implements Journal {
     try {
       journalIndex.clear();
       writer.reset(nextIndex);
-      resetHead(nextIndex);
     } finally {
       rwlock.unlockWrite(stamp);
     }
@@ -198,8 +205,10 @@ public class SegmentedJournal implements Journal {
 
   @Override
   public JournalReader openReader() {
-    final SegmentedJournalReader reader = new SegmentedJournalReader(this);
+    final var stamped = acquireReadlock();
+    final var reader = new SegmentedJournalReader(this);
     readers.add(reader);
+    releaseReadlock(stamped);
     return reader;
   }
 
@@ -247,6 +256,11 @@ public class SegmentedJournal implements Journal {
       journalMetrics.incSegmentCount();
     }
     journalMetrics.observeJournalOpenDuration(System.currentTimeMillis() - startTime);
+
+    // Delete files that were previously marked for deletion but did not get deleted because the
+    // node was stopped. It is safe to delete it now since there are no readers opened for these
+    // segments.
+    deleteDeferredFiles();
   }
 
   /**
@@ -305,7 +319,6 @@ public class SegmentedJournal implements Journal {
     assertOpen();
 
     for (final JournalSegment segment : segments.values()) {
-      segment.close();
       segment.delete();
       journalMetrics.decSegmentCount();
     }
@@ -411,66 +424,8 @@ public class SegmentedJournal implements Journal {
   synchronized void removeSegment(final JournalSegment segment) {
     segments.remove(segment.index());
     journalMetrics.decSegmentCount();
-    segment.close();
     segment.delete();
     resetCurrentSegment();
-  }
-
-  /** Creates a new segment. */
-  JournalSegment createSegment(final JournalSegmentDescriptor descriptor) {
-    final File segmentFile = JournalSegmentFile.createSegmentFile(name, directory, descriptor.id());
-
-    final RandomAccessFile raf;
-    final FileChannel channel;
-    try {
-      raf = new RandomAccessFile(segmentFile, "rw");
-      raf.setLength(descriptor.maxSegmentSize());
-      channel = raf.getChannel();
-    } catch (final IOException e) {
-      throw new JournalException(e);
-    }
-
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
-    descriptor.copyTo(buffer);
-    try {
-      channel.write(buffer);
-    } catch (final IOException e) {
-      throw new JournalException(e);
-    } finally {
-      try {
-        channel.close();
-        raf.close();
-      } catch (final IOException e) {
-        log.warn("Unexpected IOException on closing", e);
-      }
-    }
-    final JournalSegment segment = loadSegment(segmentFile, descriptor);
-    log.debug("Created segment: {}", segment);
-    return segment;
-  }
-
-  /**
-   * Creates a new segment instance.
-   *
-   * @param file The segment file.
-   * @param descriptor The segment descriptor.
-   * @return The segment instance.
-   */
-  protected JournalSegment loadSegment(final File file, final JournalSegmentDescriptor descriptor) {
-    final JournalSegmentFile segmentFile = new JournalSegmentFile(file);
-    return new JournalSegment(segmentFile, descriptor, lastWrittenIndex, journalIndex);
-  }
-
-  private FileChannel openChannel(final File file) {
-    try {
-      return FileChannel.open(
-          file.toPath(),
-          StandardOpenOption.CREATE,
-          StandardOpenOption.READ,
-          StandardOpenOption.WRITE);
-    } catch (final IOException e) {
-      throw new JournalException(e);
-    }
   }
 
   /**
@@ -489,8 +444,7 @@ public class SegmentedJournal implements Journal {
 
       try {
         log.debug("Found segment file: {}", file.getName());
-        final JournalSegmentDescriptor descriptor = readDescriptor(file);
-        final JournalSegment segment = loadSegment(file, descriptor);
+        final JournalSegment segment = loadExistingSegment(file);
 
         if (i > 0) {
           checkForIndexGaps(segments.get(i - 1), segment);
@@ -542,7 +496,7 @@ public class SegmentedJournal implements Journal {
       final File file = files.get(i);
       try {
         Files.delete(file.toPath());
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new JournalException(
             String.format(
                 "Failed to delete log segment '%s' when handling corruption.", file.getName()),
@@ -571,8 +525,33 @@ public class SegmentedJournal implements Journal {
     return Arrays.asList(files);
   }
 
+  private void deleteDeferredFiles() {
+    try (final DirectoryStream<Path> segmentsToDelete =
+        Files.newDirectoryStream(
+            directory.toPath(),
+            path -> JournalSegmentFile.isDeletedSegmentFile(name, path.getFileName().toString()))) {
+      segmentsToDelete.forEach(this::deleteDeferredFile);
+    } catch (final IOException e) {
+      log.warn(
+          "Could not delete segment files marked for deletion in {}. This can result in unnecessary disk usage.",
+          directory.toPath(),
+          e);
+    }
+  }
+
+  private void deleteDeferredFile(final Path segmentFileToDelete) {
+    try {
+      Files.deleteIfExists(segmentFileToDelete);
+    } catch (final IOException e) {
+      log.warn(
+          "Could not delete file {} which is marked for deletion. This can result in unnecessary disk usage.",
+          segmentFileToDelete,
+          e);
+    }
+  }
+
   private JournalSegmentDescriptor readDescriptor(final File file) {
-    try (final FileChannel channel = openChannel(file)) {
+    try (final FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
       final byte version = readVersion(channel, file.getName());
       final int length = JournalSegmentDescriptor.getEncodingLengthForVersion(version);
       if (file.length() < length) {
@@ -631,19 +610,6 @@ public class SegmentedJournal implements Journal {
   }
 
   /**
-   * Resets journal readers to the given head.
-   *
-   * @param index The index at which to reset readers.
-   */
-  void resetHead(final long index) {
-    for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() <= index) {
-        reader.unsafeSeek(index);
-      }
-    }
-  }
-
-  /**
    * Resets journal readers to the given index, if they are at a larger index.
    *
    * @param index The index at which to reset readers.
@@ -670,5 +636,97 @@ public class SegmentedJournal implements Journal {
 
   void releaseReadlock(final long stamp) {
     rwlock.unlockRead(stamp);
+  }
+
+  private JournalSegment createSegment(final JournalSegmentDescriptor descriptor) {
+    final var segmentFile = JournalSegmentFile.createSegmentFile(name, directory, descriptor.id());
+    final MappedByteBuffer mappedSegment;
+
+    try {
+      mappedSegment = mapNewSegment(segmentFile, descriptor);
+    } catch (final IOException e) {
+      throw new JournalException(String.format("Failed to map new segment %s", segmentFile), e);
+    }
+
+    try {
+      descriptor.copyTo(mappedSegment);
+      mappedSegment.force();
+    } catch (final InternalError e) {
+      throw new JournalException(
+          String.format(
+              "Failed to ensure durability of segment %s with descriptor %s, rolling back",
+              segmentFile, descriptor),
+          e);
+    }
+
+    // while flushing the file's contents ensures its data is present on disk on recovery, it's also
+    // necessary to flush the directory to ensure that the file itself is visible as an entry of
+    // that directory after recovery
+    try {
+      FileUtil.flushDirectory(directory.toPath());
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to flush journal directory after creating segment %s", segmentFile),
+          e);
+    }
+
+    return loadSegment(segmentFile, mappedSegment, descriptor);
+  }
+
+  private JournalSegment loadExistingSegment(final File segmentFile) {
+    final var descriptor = readDescriptor(segmentFile);
+    final MappedByteBuffer mappedSegment;
+
+    try {
+      mappedSegment = mapSegment(segmentFile, descriptor, Collections.emptySet());
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to load existing segment %s", segmentFile), e);
+    }
+
+    return loadSegment(segmentFile, mappedSegment, descriptor);
+  }
+
+  private JournalSegment loadSegment(
+      final File file, final MappedByteBuffer buffer, final JournalSegmentDescriptor descriptor) {
+    final JournalSegmentFile segmentFile = new JournalSegmentFile(file);
+    return new JournalSegment(segmentFile, descriptor, buffer, lastWrittenIndex, journalIndex);
+  }
+
+  private MappedByteBuffer mapNewSegment(
+      final File segmentFile, final JournalSegmentDescriptor descriptor) throws IOException {
+    try {
+      return mapSegment(segmentFile, descriptor, Set.of(StandardOpenOption.CREATE_NEW));
+    } catch (final FileAlreadyExistsException e) {
+      // assuming we haven't written in that segment, just overwrite it; if we have, we may be able
+      // reuse, but that's up to the caller
+      if (lastWrittenIndex >= descriptor.index()) {
+        throw new JournalException(
+            String.format(
+                "Failed to create journal segment %s, as it already exists, and the last written "
+                    + "index %d indicates we've already written to it",
+                segmentFile, lastWrittenIndex),
+            e);
+      }
+
+      return mapSegment(segmentFile, descriptor, Set.of(StandardOpenOption.TRUNCATE_EXISTING));
+    }
+  }
+
+  private MappedByteBuffer mapSegment(
+      final File segmentFile,
+      final JournalSegmentDescriptor descriptor,
+      final Set<OpenOption> extraOptions)
+      throws IOException {
+    final var options = new HashSet<>(extraOptions);
+    options.add(StandardOpenOption.READ);
+    options.add(StandardOpenOption.WRITE);
+
+    try (final var channel = FileChannel.open(segmentFile.toPath(), options)) {
+      final var mappedSegment = channel.map(MapMode.READ_WRITE, 0, descriptor.maxSegmentSize());
+      mappedSegment.order(ENDIANNESS);
+
+      return mappedSegment;
+    }
   }
 }

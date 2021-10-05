@@ -8,147 +8,137 @@
 package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 
-public final class SystemContextTest {
-
-  @Rule public final ExpectedException expectedException = ExpectedException.none();
+final class SystemContextTest {
 
   @Test
-  public void shouldThrowExceptionIfNodeIdIsNegative() {
+  void shouldThrowExceptionIfNodeIdIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setNodeId(-1);
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Node id -1 needs to be non negative and smaller then cluster size 1.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Node id -1 needs to be non negative and smaller then cluster size 1.");
   }
 
   @Test
-  public void shouldThrowExceptionIfNodeIdIsLargerThenClusterSize() {
+  void shouldThrowExceptionIfNodeIdIsLargerThenClusterSize() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setNodeId(2);
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Node id 2 needs to be non negative and smaller then cluster size 1.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Node id 2 needs to be non negative and smaller then cluster size 1.");
   }
 
   @Test
-  public void shouldThrowExceptionIfReplicationFactorIsNegative() {
+  void shouldThrowExceptionIfReplicationFactorIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setReplicationFactor(-1);
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Replication factor -1 needs to be larger then zero and not larger then cluster size 1.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Replication factor -1 needs to be larger then zero and not larger then cluster size 1.");
   }
 
   @Test
-  public void shouldThrowExceptionIfReplicationFactorIsLargerThenClusterSize() {
+  void shouldThrowExceptionIfReplicationFactorIsLargerThenClusterSize() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setReplicationFactor(2);
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Replication factor 2 needs to be larger then zero and not larger then cluster size 1.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Replication factor 2 needs to be larger then zero and not larger then cluster size 1.");
   }
 
   @Test
-  public void shouldThrowExceptionIfPartitionsCountIsNegative() {
+  void shouldThrowExceptionIfPartitionsCountIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setPartitionsCount(-1);
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Partition count must not be smaller then 1.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Partition count must not be smaller then 1.");
   }
 
   @Test
-  public void shouldThrowExceptionIfSnapshotPeriodIsNegative() {
+  void shouldThrowExceptionIfSnapshotPeriodIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(-1));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Snapshot period PT-1M needs to be larger then or equals to one minute.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Snapshot period PT-1M needs to be larger then or equals to one minute.");
   }
 
   @Test
-  public void shouldThrowExceptionIfSnapshotPeriodIsTooSmall() {
+  void shouldThrowExceptionIfSnapshotPeriodIsTooSmall() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofSeconds(1));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Snapshot period PT1S needs to be larger then or equals to one minute.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Snapshot period PT1S needs to be larger then or equals to one minute.");
   }
 
   @Test
-  public void shouldThrowExceptionIfBatchSizeIsNegative() {
+  void shouldThrowExceptionIfBatchSizeIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '-1B'.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '-1B'.");
   }
 
   @Test
-  public void shouldThrowExceptionIfBatchSizeIsTooLarge() {
+  void shouldThrowExceptionIfBatchSizeIsTooLarge() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '3221225472B'.");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '3221225472B'.");
   }
 
   @Test
-  public void shouldNotThrowExceptionIfSnapshotPeriodIsEqualToOneMinute() {
+  void shouldNotThrowExceptionIfSnapshotPeriodIsEqualToOneMinute() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
@@ -162,44 +152,164 @@ public final class SystemContextTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfHeartbeatIntervalIsSmallerThanOneMs() {
+  void shouldThrowExceptionIfHeartbeatIntervalIsSmallerThanOneMs() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setHeartbeatInterval(Duration.ofMillis(0));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("heartbeatInterval PT0S must be at least 1ms");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("heartbeatInterval PT0S must be at least 1ms");
   }
 
   @Test
-  public void shouldThrowExceptionIfElectionTimeoutIsSmallerThanOneMs() {
+  void shouldThrowExceptionIfElectionTimeoutIsSmallerThanOneMs() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setElectionTimeout(Duration.ofMillis(0));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("electionTimeout PT0S must be at least 1ms");
-
-    initSystemContext(brokerCfg);
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("electionTimeout PT0S must be at least 1ms");
   }
 
   @Test
-  public void shouldThrowExceptionIfElectionTimeoutIsSmallerThanHeartbeatInterval() {
+  void shouldThrowExceptionIfElectionTimeoutIsSmallerThanHeartbeatInterval() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getCluster().setElectionTimeout(Duration.ofSeconds(1));
     brokerCfg.getCluster().setHeartbeatInterval(Duration.ofSeconds(2));
 
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(
-        "electionTimeout PT1S must be greater than heartbeatInterval PT2S");
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("electionTimeout PT1S must be greater than heartbeatInterval PT2S");
+  }
 
-    initSystemContext(brokerCfg);
+  @Test
+  void shouldThrowExceptionIfFixedPartitioningSchemeDoesNotSpecifyAnyPartitions() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var config = brokerCfg.getExperimental().getPartitioning();
+    config.setScheme(Scheme.FIXED);
+    config.setFixed(List.of());
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected fixed partition scheme to define configurations for all partitions such that "
+                + "they have 1 replicas, but partition 1 has 0 configured replicas: []");
+  }
+
+  @Test
+  void shouldThrowExceptionIfFixedPartitioningSchemeIsNotExhaustive() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var config = brokerCfg.getExperimental().getPartitioning();
+    final var fixedPartition = new FixedPartitionCfg();
+    config.setScheme(Scheme.FIXED);
+    config.setFixed(List.of(fixedPartition));
+    fixedPartition.getNodes().add(new NodeCfg());
+    brokerCfg.getCluster().setPartitionsCount(2);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected fixed partition scheme to define configurations for all partitions such that "
+                + "they have 1 replicas, but partition 2 has 0 configured replicas: []");
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, 2})
+  void shouldThrowExceptionIfFixedPartitioningSchemeUsesInvalidPartitionId(final int invalidId) {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var config = brokerCfg.getExperimental().getPartitioning();
+    final var fixedPartition = new FixedPartitionCfg();
+    config.setScheme(Scheme.FIXED);
+    config.setFixed(List.of(fixedPartition));
+    fixedPartition.setPartitionId(invalidId);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected fixed partition scheme to define entries with a valid partitionId "
+                + "between 1 and 1, but %d was given",
+            invalidId);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, 2})
+  void shouldThrowExceptionIfFixedPartitioningSchemeUsesInvalidNodeId(final int invalidId) {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var config = brokerCfg.getExperimental().getPartitioning();
+    final var fixedPartition = new FixedPartitionCfg();
+    final var node = new NodeCfg();
+    config.setScheme(Scheme.FIXED);
+    config.setFixed(List.of(fixedPartition));
+    fixedPartition.getNodes().add(node);
+    node.setNodeId(invalidId);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected fixed partition scheme for partition 1 to define nodes with a "
+                + "nodeId between 0 and 0, but it was %d",
+            invalidId);
+  }
+
+  @Test
+  void shouldThrowExceptionIfFixedPartitioningSchemeHasSamePriorities() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var config = brokerCfg.getExperimental().getPartitioning();
+    final var fixedPartition = new FixedPartitionCfg();
+    final var nodes = List.of(new NodeCfg(), new NodeCfg());
+    brokerCfg.getExperimental().setEnablePriorityElection(true);
+    brokerCfg.getCluster().setClusterSize(2);
+    config.setScheme(Scheme.FIXED);
+    config.setFixed(List.of(fixedPartition));
+    fixedPartition.setNodes(nodes);
+    nodes.get(0).setNodeId(0);
+    nodes.get(0).setPriority(1);
+    nodes.get(1).setNodeId(1);
+    nodes.get(1).setPriority(1);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Expected each node for a partition 1 to have a different priority, but at least two of"
+                + " them have the same priorities: [NodeCfg{nodeId=0, priority=1},"
+                + " NodeCfg{nodeId=1, priority=1}]");
+  }
+
+  @Test
+  void shouldNotThrowExceptionIfFixedPartitioningSchemeHasWrongPrioritiesWhenPriorityDisabled() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    final var config = brokerCfg.getExperimental().getPartitioning();
+    final var fixedPartition = new FixedPartitionCfg();
+    final var nodes = List.of(new NodeCfg(), new NodeCfg());
+    brokerCfg.getExperimental().setEnablePriorityElection(false);
+    brokerCfg.getCluster().setClusterSize(2);
+    config.setScheme(Scheme.FIXED);
+    config.setFixed(List.of(fixedPartition));
+    fixedPartition.setNodes(nodes);
+    nodes.get(0).setNodeId(0);
+    nodes.get(0).setPriority(1);
+    nodes.get(1).setNodeId(1);
+    nodes.get(1).setPriority(1);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg)).doesNotThrowAnyException();
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {

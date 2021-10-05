@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
 import io.camunda.zeebe.transport.RequestHandler;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
@@ -161,7 +163,9 @@ public class AtomixTransportTest {
   public void shouldSubscribeToPartition() {
     // given
     final var incomingRequestFuture = new CompletableFuture<byte[]>();
-    serverTransport.subscribe(0, new DirectlyResponder(incomingRequestFuture::complete)).join();
+    serverTransport
+        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(incomingRequestFuture::complete))
+        .join();
 
     // when
     final var requestFuture =
@@ -178,7 +182,9 @@ public class AtomixTransportTest {
   public void shouldRetryOnInvalidResponse() throws Exception {
     // given
     final var retryLatch = new CountDownLatch(2);
-    serverTransport.subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown())).join();
+    serverTransport
+        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(bytes -> retryLatch.countDown()))
+        .join();
 
     // when
     clientTransport.sendRequestWithRetry(
@@ -196,6 +202,7 @@ public class AtomixTransportTest {
     serverTransport
         .subscribe(
             0,
+            RequestType.COMMAND,
             new DirectlyResponder(
                 bytes -> {
                   throw new IllegalStateException("expected");
@@ -217,7 +224,9 @@ public class AtomixTransportTest {
   public void shouldUnsubscribeFromPartition() {
     // given
     final var incomingRequestFuture = new CompletableFuture<byte[]>();
-    serverTransport.subscribe(0, new DirectlyResponder(incomingRequestFuture::complete)).join();
+    serverTransport
+        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(incomingRequestFuture::complete))
+        .join();
 
     // when
     serverTransport.unsubscribe(0).join();
@@ -263,7 +272,7 @@ public class AtomixTransportTest {
     // given
     final var nodeAddressRef = new AtomicReference<String>();
     final var retryLatch = new CountDownLatch(3);
-    serverTransport.subscribe(0, new DirectlyResponder()).join();
+    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
 
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
@@ -287,7 +296,9 @@ public class AtomixTransportTest {
   public void shouldRetryAndSucceedAfterResponseIsValid() throws InterruptedException {
     // given
     final var retryLatch = new CountDownLatch(2);
-    serverTransport.subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown())).join();
+    serverTransport
+        .subscribe(0, RequestType.COMMAND, new DirectlyResponder(bytes -> retryLatch.countDown()))
+        .join();
 
     final var responseValidation = new AtomicBoolean(false);
     final var requestFuture =
@@ -334,7 +345,23 @@ public class AtomixTransportTest {
 
     // when
     retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
-    serverTransport.subscribe(0, new DirectlyResponder());
+    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
+
+    // then
+    final var response = requestFuture.join();
+    assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
+  }
+
+  @Test
+  public void shouldOnlyHandleRequestsOfSubscribedTypes() {
+    // given
+    serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
+    serverTransport.subscribe(0, RequestType.UNKNOWN, new FailingResponder()).join();
+
+    // when
+    final var requestFuture =
+        clientTransport.sendRequest(
+            () -> serverAddress, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
     final var response = requestFuture.join();
@@ -352,6 +379,11 @@ public class AtomixTransportTest {
     @Override
     public int getPartitionId() {
       return 0;
+    }
+
+    @Override
+    public RequestType getRequestType() {
+      return RequestType.COMMAND;
     }
 
     @Override
@@ -392,6 +424,20 @@ public class AtomixTransportTest {
               .setPartitionId(partitionId);
       requestConsumer.accept(buffer.byteArray());
       serverOutput.sendResponse(serverResponse);
+    }
+  }
+
+  private static final class FailingResponder implements RequestHandler {
+
+    @Override
+    public void onRequest(
+        final ServerOutput serverOutput,
+        final int partitionId,
+        final long requestId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length) {
+      fail("Expected request to not be handled by this handler, but it was");
     }
   }
 }

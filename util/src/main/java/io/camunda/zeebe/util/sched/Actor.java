@@ -10,16 +10,47 @@ package io.camunda.zeebe.util.sched;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public abstract class Actor implements CloseableSilently, AsyncClosable {
+public abstract class Actor implements CloseableSilently, AsyncClosable, ConcurrencyControl {
+
+  public static final String ACTOR_PROP_NAME = "actor-name";
+  public static final String ACTOR_PROP_PARTITION_ID = "partitionId";
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
+  private Map<String, String> context;
+
+  /**
+   * Should be overwritten by sub classes to add more context where the actor is run.
+   *
+   * @return the context of the actor
+   */
+  protected Map<String, String> createContext() {
+    // return an modifiable map in order to simplify sub class implementation
+    final var baseContext = new HashMap<String, String>();
+    baseContext.put(ACTOR_PROP_NAME, getName());
+    return baseContext;
+  }
 
   public String getName() {
     return getClass().getName();
+  }
+
+  /**
+   * @return a map which defines the context where the actor is run. Per default it just returns a
+   *     map with the actor name. Ideally sub classes add more context, like the partition id etc.
+   */
+  public Map<String, String> getContext() {
+    if (context == null) {
+      context = Collections.unmodifiableMap(createContext());
+    }
+    return context;
   }
 
   public boolean isActorClosed() {
@@ -91,5 +122,16 @@ public abstract class Actor implements CloseableSilently, AsyncClosable {
 
   public void onActorFailed() {
     // clean ups
+  }
+
+  @Override
+  public <T> void runOnCompletion(
+      final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
+    actor.runOnCompletion(future, callback);
+  }
+
+  @Override
+  public void run(final Runnable action) {
+    actor.run(action);
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -20,9 +21,11 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
   private final JobState jobState;
+  private final JobMetrics jobMetrics;
 
-  public JobTimeOutProcessor(final ZeebeState state) {
+  public JobTimeOutProcessor(final ZeebeState state, final JobMetrics jobMetrics) {
     jobState = state.getJobState();
+    this.jobMetrics = jobMetrics;
   }
 
   @Override
@@ -33,6 +36,7 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
 
     if (state == State.ACTIVATED) {
       commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
+      jobMetrics.jobTimedOut(command.getValue().getType());
     } else {
       final String textState;
 

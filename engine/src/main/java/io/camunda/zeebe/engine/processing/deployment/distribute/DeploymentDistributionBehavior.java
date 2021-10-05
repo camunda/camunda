@@ -89,7 +89,7 @@ public final class DeploymentDistributionBehavior {
 
                   final long pos = commandWriter.flush();
                   if (pos < 0) {
-                    processingActor.yield();
+                    processingActor.yieldThread();
                   } else {
                     processingActor.done();
                   }

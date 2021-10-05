@@ -57,6 +57,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new FlowNodeValidator());
     validators.add(new IntermediateCatchEventValidator());
     validators.add(new MessageEventDefinitionValidator());
+    validators.add(new MessageThrowEventValidator());
     validators.add(new MessageValidator());
     validators.add(
         ExtensionElementsValidator.verifyThat(MultiInstanceLoopCharacteristics.class)

@@ -55,8 +55,10 @@ public final class PartitionStatus {
         exportedPosition);
   }
 
-  public static PartitionStatus ofFollower(final String snapshotId) {
-    return new PartitionStatus(Role.FOLLOWER, null, snapshotId, null, null, null, null);
+  public static PartitionStatus ofFollower(
+      final String snapshotId, final Long processedPositionInSnapshot) {
+    return new PartitionStatus(
+        Role.FOLLOWER, null, snapshotId, processedPositionInSnapshot, null, null, null);
   }
 
   public Role getRole() {
@@ -85,5 +87,26 @@ public final class PartitionStatus {
 
   public Long getExportedPosition() {
     return exportedPosition;
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionStatus{"
+        + "role="
+        + role
+        + ", snapshotId='"
+        + snapshotId
+        + '\''
+        + ", processedPosition="
+        + processedPosition
+        + ", processedPositionInSnapshot="
+        + processedPositionInSnapshot
+        + ", streamProcessorPhase="
+        + streamProcessorPhase
+        + ", exporterPhase="
+        + exporterPhase
+        + ", exportedPosition="
+        + exportedPosition
+        + '}';
   }
 }

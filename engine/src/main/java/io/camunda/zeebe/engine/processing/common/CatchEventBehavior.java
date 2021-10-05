@@ -8,18 +8,13 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
-import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
-import io.camunda.zeebe.engine.processing.message.MessageNameException;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -29,7 +24,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
@@ -41,9 +35,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
@@ -53,15 +45,12 @@ public final class CatchEventBehavior {
   private final int partitionsCount;
   private final StateWriter stateWriter;
 
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
 
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
-  private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
-  private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
 
@@ -77,7 +66,6 @@ public final class CatchEventBehavior {
     this.stateWriter = stateWriter;
     this.partitionsCount = partitionsCount;
 
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
     processMessageSubscriptionState = zeebeState.getProcessMessageSubscriptionState();
 
@@ -93,59 +81,142 @@ public final class CatchEventBehavior {
 
     unsubscribeFromTimerEvents(context, commandWriter);
     unsubscribeFromMessageEvents(context, sideEffects);
-
-    // todo: remove after all are migrated
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
-    }
   }
 
-  public void subscribeToEvents(
+  /** @return either a failure or nothing */
+  public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
       final SideEffects sideEffects,
-      final TypedCommandWriter commandWriter)
-      throws MessageCorrelationKeyException {
+      final TypedCommandWriter commandWriter) {
+    final var evaluationResults =
+        supplier.getEvents().stream()
+            .filter(event -> event.isTimer() || event.isMessage())
+            .map(event -> evalExpressions(event, context))
+            .collect(Either.collectorFoldingLeft());
 
-    final List<ExecutableCatchEvent> events = supplier.getEvents();
+    evaluationResults.ifRight(
+        results -> {
+          subscribeToMessageEvents(context, sideEffects, results);
+          subscribeToTimerEvents(context, sideEffects, commandWriter, results);
+        });
 
-    // collect all message names from their respective variables, as this might fail and
-    // we might need to raise an incident
-    final Map<DirectBuffer, DirectBuffer> extractedMessageNames =
-        extractMessageNames(events, context);
-    // collect all message correlation keys from their respective variables, as this might fail and
-    // we might need to raise an incident. This works the same for timers
-    final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
-        extractMessageCorrelationKeys(events, context);
-    final Map<DirectBuffer, Timer> evaluatedTimers =
-        evaluateTimers(events, context.getElementInstanceKey());
+    return evaluationResults.map(r -> null);
+  }
 
-    // if all subscriptions are valid then open the subscriptions
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isTimer()) {
-        subscribeToTimerEvent(
-            context.getElementInstanceKey(),
-            context.getProcessInstanceKey(),
-            context.getProcessDefinitionKey(),
-            event.getId(),
-            evaluatedTimers.get(event.getId()),
-            commandWriter,
-            sideEffects);
-      } else if (event.isMessage()) {
-        subscribeToMessageEvent(
-            context,
-            event,
-            extractedCorrelationKeys.get(event.getId()),
-            extractedMessageNames.get((event.getId())),
-            sideEffects);
-      }
+  private Either<Failure, EvalResult> evalExpressions(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    return Either.<Failure, EvalResult>right(new EvalResult(event))
+        .flatMap(result -> evaluateMessageName(event, context).map(result::messageName))
+        .flatMap(result -> evaluateCorrelationKey(event, context).map(result::correlationKey))
+        .flatMap(result -> evaluateTimer(event, context).map(result::timer));
+  }
+
+  private Either<Failure, DirectBuffer> evaluateMessageName(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    if (!event.isMessage()) {
+      return Either.right(null);
     }
+    final var scopeKey = context.getElementInstanceKey();
+    final ExecutableMessage message = event.getMessage();
+    final Expression messageNameExpression = message.getMessageNameExpression();
+    return expressionProcessor
+        .evaluateStringExpression(messageNameExpression, scopeKey)
+        .map(BufferUtil::wrapString);
+  }
 
-    // todo: remove after all are migrated
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType()) && !events.isEmpty()) {
-      eventScopeInstanceState.createIfNotExists(
-          context.getElementInstanceKey(), supplier.getInterruptingElementIds());
+  private Either<Failure, DirectBuffer> evaluateCorrelationKey(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    if (!event.isMessage()) {
+      return Either.right(null);
     }
+    final var expression = event.getMessage().getCorrelationKeyExpression();
+    final long scopeKey =
+        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+            ? context.getFlowScopeKey()
+            : context.getElementInstanceKey();
+    return expressionProcessor
+        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
+        .map(BufferUtil::wrapString)
+        .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
+  }
+
+  private Either<Failure, Timer> evaluateTimer(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    if (!event.isTimer()) {
+      return Either.right(null);
+    }
+    final var scopeKey = context.getElementInstanceKey();
+    return event.getTimerFactory().apply(expressionProcessor, scopeKey);
+  }
+
+  private void subscribeToMessageEvents(
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final List<EvalResult> results) {
+    results.stream()
+        .filter(EvalResult::isMessage)
+        .forEach(result -> subscribeToMessageEvent(context, sideEffects, result));
+  }
+
+  private void subscribeToMessageEvent(
+      final BpmnElementContext context, final SideEffects sideEffects, final EvalResult result) {
+    final var event = result.event;
+    final var correlationKey = result.correlationKey;
+    final var messageName = result.messageName;
+
+    final long processInstanceKey = context.getProcessInstanceKey();
+    final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
+    final long elementInstanceKey = context.getElementInstanceKey();
+
+    final int subscriptionPartitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
+
+    subscription.setSubscriptionPartitionId(subscriptionPartitionId);
+    subscription.setMessageName(messageName);
+    subscription.setElementInstanceKey(elementInstanceKey);
+    subscription.setProcessInstanceKey(processInstanceKey);
+    subscription.setBpmnProcessId(bpmnProcessId);
+    subscription.setCorrelationKey(correlationKey);
+    subscription.setElementId(event.getId());
+    subscription.setInterrupting(event.isInterrupting());
+
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
+
+    sideEffects.add(
+        () ->
+            sendOpenMessageSubscription(
+                subscriptionPartitionId,
+                processInstanceKey,
+                elementInstanceKey,
+                bpmnProcessId,
+                messageName,
+                correlationKey,
+                event.isInterrupting()));
+  }
+
+  private void subscribeToTimerEvents(
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final TypedCommandWriter commandWriter,
+      final List<EvalResult> results) {
+    results.stream()
+        .filter(EvalResult::isTimer)
+        .forEach(
+            result -> {
+              final var event = result.event;
+              final var timer = result.timer;
+              subscribeToTimerEvent(
+                  context.getElementInstanceKey(),
+                  context.getProcessInstanceKey(),
+                  context.getProcessDefinitionKey(),
+                  event.getId(),
+                  timer,
+                  commandWriter,
+                  sideEffects);
+            });
   }
 
   public void subscribeToTimerEvent(
@@ -197,45 +268,6 @@ public final class CatchEventBehavior {
     commandWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
 
-  private void subscribeToMessageEvent(
-      final BpmnElementContext context,
-      final ExecutableCatchEvent catchEvent,
-      final DirectBuffer correlationKey,
-      final DirectBuffer messageName,
-      final SideEffects sideEffects) {
-
-    final long processInstanceKey = context.getProcessInstanceKey();
-    final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
-    final long elementInstanceKey = context.getElementInstanceKey();
-
-    final int subscriptionPartitionId =
-        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
-
-    subscription.setSubscriptionPartitionId(subscriptionPartitionId);
-    subscription.setMessageName(messageName);
-    subscription.setElementInstanceKey(elementInstanceKey);
-    subscription.setProcessInstanceKey(processInstanceKey);
-    subscription.setBpmnProcessId(bpmnProcessId);
-    subscription.setCorrelationKey(correlationKey);
-    subscription.setElementId(catchEvent.getId());
-    subscription.setInterrupting(catchEvent.isInterrupting());
-
-    final var subscriptionKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
-        subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
-
-    sideEffects.add(
-        () ->
-            sendOpenMessageSubscription(
-                subscriptionPartitionId,
-                processInstanceKey,
-                elementInstanceKey,
-                bpmnProcessId,
-                messageName,
-                correlationKey,
-                catchEvent.isInterrupting()));
-  }
-
   private void unsubscribeFromMessageEvents(
       final BpmnElementContext context, final SideEffects sideEffects) {
     processMessageSubscriptionState.visitElementSubscriptions(
@@ -259,22 +291,6 @@ public final class CatchEventBehavior {
                 subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName));
 
     return true;
-  }
-
-  private String extractCorrelationKey(
-      final ExecutableMessage message, final long variableScopeKey) {
-
-    final Expression correlationKeyExpression = message.getCorrelationKeyExpression();
-
-    return expressionProcessor.evaluateMessageCorrelationKeyExpression(
-        correlationKeyExpression, variableScopeKey);
-  }
-
-  private Either<Failure, String> extractMessageName(
-      final ExecutableMessage message, final long scopeKey) {
-
-    final Expression messageNameExpression = message.getMessageNameExpression();
-    return expressionProcessor.evaluateStringExpression(messageNameExpression, scopeKey);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
@@ -304,63 +320,41 @@ public final class CatchEventBehavior {
         closeOnCorrelate);
   }
 
-  private Map<DirectBuffer, DirectBuffer> extractMessageCorrelationKeys(
-      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
-    extractedCorrelationKeys.clear();
+  private static class EvalResult {
+    private final ExecutableCatchEvent event;
+    private DirectBuffer messageName;
+    private DirectBuffer correlationKey;
+    private Timer timer;
 
-    // TODO (4799): extract general variable scope behavior of boundary events
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isMessage()) {
-        final long variableScopeKey =
-            event.getElementType() == BpmnElementType.BOUNDARY_EVENT
-                ? context.getFlowScopeKey()
-                : context.getElementInstanceKey();
-        final String correlationKey = extractCorrelationKey(event.getMessage(), variableScopeKey);
-
-        extractedCorrelationKeys.put(event.getId(), BufferUtil.wrapString(correlationKey));
-      }
+    public EvalResult(final ExecutableCatchEvent event) {
+      this.event = event;
     }
 
-    return extractedCorrelationKeys;
-  }
-
-  private Map<DirectBuffer, Timer> evaluateTimers(
-      final List<ExecutableCatchEvent> events, final long key) {
-    evaluatedTimers.clear();
-
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isTimer()) {
-        final Either<Failure, Timer> timerOrError =
-            event.getTimerFactory().apply(expressionProcessor, key);
-        if (timerOrError.isLeft()) {
-          // todo(#4323): deal with this exceptional case without throwing an exception
-          throw new EvaluationException(timerOrError.getLeft().getMessage());
-        }
-        evaluatedTimers.put(event.getId(), timerOrError.get());
-      }
+    public EvalResult messageName(final DirectBuffer messageName) {
+      this.messageName = messageName;
+      return this;
     }
 
-    return evaluatedTimers;
-  }
-
-  private Map<DirectBuffer, DirectBuffer> extractMessageNames(
-      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
-    final Map<DirectBuffer, DirectBuffer> extractedMessageNames = new HashMap<>();
-
-    final var scopeKey = context.getElementInstanceKey();
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isMessage()) {
-        final Either<Failure, String> messageNameOrFailure =
-            extractMessageName(event.getMessage(), scopeKey);
-        messageNameOrFailure.ifRightOrLeft(
-            messageName -> extractedMessageNames.put(event.getId(), wrapString(messageName)),
-            failure -> {
-              // todo(#4323): deal with this exceptional case without throwing an exception
-              throw new MessageNameException(failure, event.getId());
-            });
-      }
+    public EvalResult correlationKey(final DirectBuffer correlationKey) {
+      this.correlationKey = correlationKey;
+      return this;
     }
 
-    return extractedMessageNames;
+    public EvalResult timer(final Timer timer) {
+      this.timer = timer;
+      return this;
+    }
+
+    public ExecutableCatchEvent event() {
+      return event;
+    }
+
+    public boolean isMessage() {
+      return event.isMessage();
+    }
+
+    public boolean isTimer() {
+      return event.isTimer();
+    }
   }
 }

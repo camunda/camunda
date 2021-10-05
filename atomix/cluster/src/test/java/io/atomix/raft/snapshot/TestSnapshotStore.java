@@ -87,6 +87,12 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
+  public ActorFuture<Void> copySnapshot(
+      final PersistedSnapshot snapshot, final Path targetDirectory) {
+    return null;
+  }
+
+  @Override
   public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
     final var newSnapshot = new InMemorySnapshot(this, snapshotId);
     receivedSnapshots.add(newSnapshot);

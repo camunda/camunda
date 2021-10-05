@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.junit.Rule;
@@ -59,5 +60,42 @@ public final class FileUtilTest {
     assertThatCode(() -> FileUtil.deleteFolderIfExists(nonExistent))
         .as("no error if folder does not exist")
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenCopySnapshotForNonExistingFolder() {
+    // given
+    final File source = tempFolder.getRoot().toPath().resolve("src").toFile();
+    final File target = tempFolder.getRoot().toPath().resolve("target").toFile();
+
+    // when - then
+    assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
+        .isInstanceOf(NoSuchFileException.class);
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenyCopySnapshotIfTargetAlreadyExists() throws IOException {
+    // given
+    final File source = tempFolder.newFolder("src");
+    final File target = tempFolder.newFolder("target");
+
+    // when -then
+    assertThatThrownBy(() -> FileUtil.copySnapshot(source.toPath(), target.toPath()))
+        .isInstanceOf(FileAlreadyExistsException.class);
+  }
+
+  @Test
+  public void shouldCopySnapshot() throws Exception {
+    // given
+    final File source = tempFolder.newFolder("src");
+    final String snapshotFile = "file1";
+    source.toPath().resolve(snapshotFile).toFile().createNewFile();
+    final File target = tempFolder.getRoot().toPath().resolve("target").toFile();
+
+    // when
+    FileUtil.copySnapshot(source.toPath(), target.toPath());
+
+    // then
+    assertThat(target.list()).containsExactly(snapshotFile);
   }
 }

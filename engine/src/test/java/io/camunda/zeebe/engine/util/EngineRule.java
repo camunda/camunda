@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingCont
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -53,7 +55,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -88,7 +89,7 @@ public final class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
-  private final boolean explicitStart;
+
   private Consumer<String> jobsAvailableCallback = type -> {};
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -103,15 +104,14 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
 
   private EngineRule(final int partitionCount) {
-    this(partitionCount, false);
+    this(partitionCount, null);
   }
 
-  private EngineRule(final int partitionCount, final boolean explicitStart) {
+  private EngineRule(final int partitionCount, final ListLogStorage sharedStorage) {
     this.partitionCount = partitionCount;
-    this.explicitStart = explicitStart;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory());
+            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
   }
 
   public static EngineRule singlePartition() {
@@ -122,8 +122,8 @@ public final class EngineRule extends ExternalResource {
     return new EngineRule(partitionCount);
   }
 
-  public static EngineRule explicitStart() {
-    return new EngineRule(1, true);
+  public static EngineRule withSharedStorage(final ListLogStorage listLogStorage) {
+    return new EngineRule(1, listLogStorage);
   }
 
   @Override
@@ -137,9 +137,7 @@ public final class EngineRule extends ExternalResource {
   protected void before() {
     subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
 
-    if (!explicitStart) {
-      startProcessors();
-    }
+    startProcessors();
   }
 
   @Override
@@ -177,6 +175,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withStreamProcessorMode(final StreamProcessorMode streamProcessorMode) {
+    environmentRule.withStreamProcessorMode(streamProcessorMode);
+    return this;
+  }
+
   private void startProcessors() {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
@@ -190,17 +193,20 @@ public final class EngineRule extends ExternalResource {
               partitionId,
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
-                          processingContext
-                              .onProcessedListener(
-                                  record -> {
-                                    lastProcessedPosition = record.getPosition();
-                                    onProcessedCallback.accept(record);
-                                  })
-                              .onSkippedListener(
-                                  record -> {
-                                    lastProcessedPosition = record.getPosition();
-                                    onSkippedCallback.accept(record);
-                                  }),
+                          processingContext.listener(
+                              new StreamProcessorListener() {
+                                @Override
+                                public void onProcessed(final TypedRecord<?> processedCommand) {
+                                  lastProcessedPosition = processedCommand.getPosition();
+                                  onProcessedCallback.accept(processedCommand);
+                                }
+
+                                @Override
+                                public void onSkipped(final LoggedEvent skippedRecord) {
+                                  lastProcessedPosition = skippedRecord.getPosition();
+                                  onSkippedCallback.accept(skippedRecord);
+                                }
+                              }),
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),
@@ -429,10 +435,8 @@ public final class EngineRule extends ExternalResource {
       typedEvent = new TypedEventImpl(partitionId);
       final ActorControl actor = context.getActor();
 
-      final ActorCondition onCommitCondition =
-          actor.onCondition("on-commit", this::onNewEventCommitted);
       final LogStream logStream = context.getLogStream();
-      logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
+      logStream.registerRecordAvailableListener(() -> actor.run(this::onNewEventCommitted));
       logStream
           .newLogStreamReader()
           .onComplete(

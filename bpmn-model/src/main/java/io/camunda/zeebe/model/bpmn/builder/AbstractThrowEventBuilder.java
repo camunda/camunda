@@ -26,11 +26,16 @@ import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
 /** @author Sebastian Menski */
 public abstract class AbstractThrowEventBuilder<
         B extends AbstractThrowEventBuilder<B, E>, E extends ThrowEvent>
-    extends AbstractEventBuilder<B, E> {
+    extends AbstractEventBuilder<B, E> implements ZeebeJobWorkerElementBuilder<B> {
+
+  private final ZeebeJobWorkerPropertiesBuilder<B> jobWorkerPropertiesBuilder;
+  private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
 
   protected AbstractThrowEventBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    jobWorkerPropertiesBuilder = new ZeebeJobWorkerPropertiesBuilderImpl<>(myself);
+    variablesMappingBuilder = new ZeebeVariableMappingBuilderImpl<>(myself);
   }
 
   /**
@@ -131,5 +136,50 @@ public abstract class AbstractThrowEventBuilder<
 
     element.getEventDefinitions().add(eventDefinition);
     return new CompensateEventDefinitionBuilder(modelInstance, eventDefinition);
+  }
+
+  @Override
+  public B zeebeJobType(final String type) {
+    return jobWorkerPropertiesBuilder.zeebeJobType(type);
+  }
+
+  @Override
+  public B zeebeJobTypeExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobTypeExpression(expression);
+  }
+
+  @Override
+  public B zeebeJobRetries(final String retries) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetries(retries);
+  }
+
+  @Override
+  public B zeebeJobRetriesExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetriesExpression(expression);
+  }
+
+  @Override
+  public B zeebeTaskHeader(final String key, final String value) {
+    return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
+  }
+
+  @Override
+  public B zeebeInputExpression(final String sourceExpression, final String target) {
+    return variablesMappingBuilder.zeebeInputExpression(sourceExpression, target);
+  }
+
+  @Override
+  public B zeebeOutputExpression(final String sourceExpression, final String target) {
+    return variablesMappingBuilder.zeebeOutputExpression(sourceExpression, target);
+  }
+
+  @Override
+  public B zeebeInput(final String source, final String target) {
+    return variablesMappingBuilder.zeebeInput(source, target);
+  }
+
+  @Override
+  public B zeebeOutput(final String source, final String target) {
+    return variablesMappingBuilder.zeebeOutput(source, target);
   }
 }

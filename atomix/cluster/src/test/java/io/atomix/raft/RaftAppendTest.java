@@ -16,6 +16,10 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import java.util.Collection;
@@ -59,6 +63,33 @@ public class RaftAppendTest {
     assertThat(logLength).withFailMessage(memberLog.toString()).isEqualTo(2);
 
     assertMemberLogs(memberLog);
+  }
+
+  @Test
+  public void shouldNotifyCommitListenerOnAllNodes() throws Throwable {
+    // given
+    final var raftCommitListener = mock(RaftCommitListener.class);
+    raftRule.addCommitListener(raftCommitListener);
+
+    // when
+    final long commitIndex = raftRule.appendEntry();
+
+    // then
+    verify(raftCommitListener, timeout(1000L).times(raftRule.getNodes().size()))
+        .onCommit(commitIndex);
+  }
+
+  @Test
+  public void shouldNotifyCommittedEntryListenerOnLeaderOnly() throws Throwable {
+    // given
+    final var committedEntryListener = mock(RaftCommittedEntryListener.class);
+    raftRule.addCommittedEntryListener(committedEntryListener);
+
+    // when
+    raftRule.appendEntry(); // awaits commit
+
+    // then
+    verify(committedEntryListener, timeout(1000L).times(1)).onCommit(any());
   }
 
   @Test

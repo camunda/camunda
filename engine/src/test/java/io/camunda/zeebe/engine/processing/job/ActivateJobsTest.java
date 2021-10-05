@@ -14,6 +14,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.processInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -34,9 +35,11 @@ import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -380,10 +383,8 @@ public final class ActivateJobsTest {
     final long maxMessageSize = ByteValue.ofMegabytes(4);
     final long headerSize = ByteValue.ofKilobytes(2);
     final long maxRecordSize = maxMessageSize - headerSize;
-    // the variable size only the half of the record size because two events are written on creation
-    final long maxVariableSize = maxRecordSize / 2;
 
-    final int variablesSize = (int) maxVariableSize / expectedJobsInBatch;
+    final int variablesSize = (int) maxRecordSize / expectedJobsInBatch;
     final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
 
     // when
@@ -395,6 +396,52 @@ public final class ActivateJobsTest {
 
     final List<Long> remainingJobKeys = activateJobs(jobCount);
     assertThat(remainingJobKeys).hasSize(jobCount - expectedJobsInBatch);
+  }
+
+  // regression test for https://github.com/camunda-cloud/zeebe/issues/6207
+  @Test
+  public void shouldActivateJobUpToMaxMessageSize() {
+    // given
+    final var maxMessageSize = ByteValue.ofMegabytes(4);
+    final var headerSize = ByteValue.ofKilobytes(2);
+    final var maxRecordSize = maxMessageSize - headerSize;
+
+    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // since the variable update will write the variable twice, we need to split this off
+    final var variablesSize = (int) maxRecordSize / 2;
+    await("until the job is created")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        jobRecords(JobIntent.CREATED)
+                            .withType(taskType)
+                            .filter(r -> processInstanceKey == r.getValue().getProcessInstanceKey())
+                            .limit(1))
+                    .hasSize(1));
+    ENGINE
+        .variables()
+        .withDocument(Map.of("foo", "x".repeat(variablesSize)))
+        .ofScope(processInstanceKey)
+        .update();
+    ENGINE
+        .variables()
+        .withDocument(Map.of("bar", "x".repeat(variablesSize)))
+        .ofScope(processInstanceKey)
+        .update();
+
+    // when
+    final var jobs =
+        ENGINE.jobs().withType(taskType).withMaxJobsToActivate(1).activate().getValue();
+
+    // then
+    assertThat(jobs.getJobs())
+        .hasSize(1)
+        .first()
+        .extracting(JobRecordValue::getVariables)
+        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+        .isEqualTo(Map.of("foo", "x".repeat(variablesSize), "bar", "x".repeat(variablesSize)));
   }
 
   private Record<JobRecordValue> completeJob(final long jobKey) {

@@ -35,8 +35,6 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
@@ -70,16 +68,10 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private ClusterCommunicationService communicationService;
 
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
-    final Logger log =
-        ContextualLoggerFactory.getLogger(
-            RaftPartitionGroup.class,
-            LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
-    name = config.getName();
     this.config = config;
-    replicationFactor = config.getPartitionSize();
 
-    final int threadPoolSize =
-        Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
+    name = config.getName();
+    replicationFactor = config.getReplicationFactor();
     snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
     buildPartitions(config)
@@ -94,8 +86,8 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
-    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitions());
-    for (int i = 0; i < config.getPartitions(); i++) {
+    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitionCount());
+    for (int i = 0; i < config.getPartitionCount(); i++) {
       partitions.add(
           new RaftPartition(
               PartitionId.from(config.getName(), i + 1),
@@ -181,18 +173,10 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     final var members =
         config.getMembers().stream().map(MemberId::from).collect(Collectors.toSet());
     metadata =
-        new PartitionDistributor()
-            .generatePartitionDistribution(members, sortedPartitionIds, replicationFactor);
-    // Example distribution with priority, clusterSize=4, partitionCount=5, replicationFactor=3
-    // +------------------+----+----+----+---+
-    // | Partition \ Node | 0  | 1  | 2  | 3 |
-    // +------------------+----+----+----+---+
-    // |                1 | 3  | 2  | 1  |   |
-    // |                2 |    | 3  | 2  | 1 |
-    // |                3 | 1  |    | 3  | 2 |
-    // |                4 | 2  | 1  |    | 3 |
-    // |                5 | 3  | 1  | 2  |   |
-    // +------------------+----+----+----+---+
+        config
+            .getPartitionConfig()
+            .getPartitionDistributor()
+            .distributePartitions(members, sortedPartitionIds, replicationFactor);
 
     communicationService = managementService.getMessagingService();
     communicationService.<Void, Void>subscribe(snapshotSubject, m -> handleSnapshot());
@@ -297,7 +281,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @throws IllegalArgumentException if the number of partitions is not positive
      */
     public Builder withNumPartitions(final int numPartitions) {
-      config.setPartitions(numPartitions);
+      config.setPartitionCount(numPartitions);
       return this;
     }
 
@@ -309,7 +293,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @throws IllegalArgumentException if the partition size is not positive
      */
     public Builder withPartitionSize(final int partitionSize) {
-      config.setPartitionSize(partitionSize);
+      config.setReplicationFactor(partitionSize);
       return this;
     }
 
@@ -321,7 +305,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
       checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
-      config.setMaxAppendsPerFollower(maxAppendsPerFollower);
+      config.getPartitionConfig().setMaxAppendsPerFollower(maxAppendsPerFollower);
       return this;
     }
 
@@ -333,7 +317,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
       checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
-      config.setMaxAppendBatchSize(maxAppendBatchSize);
+      config.getPartitionConfig().setMaxAppendBatchSize(maxAppendBatchSize);
       return this;
     }
 
@@ -345,7 +329,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
       checkArgument(heartbeatInterval.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
-      config.setHeartbeatInterval(heartbeatInterval);
+      config.getPartitionConfig().setHeartbeatInterval(heartbeatInterval);
       return this;
     }
 
@@ -358,7 +342,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withElectionTimeout(final Duration electionTimeout) {
       checkArgument(electionTimeout.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
-      config.setElectionTimeout(electionTimeout);
+      config.getPartitionConfig().setElectionTimeout(electionTimeout);
       return this;
     }
 
@@ -447,7 +431,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     public Builder withPriorityElection(final boolean enable) {
-      config.setPriorityElectionEnabled(enable);
+      config.getPartitionConfig().setPriorityElectionEnabled(enable);
       return this;
     }
 
@@ -458,7 +442,48 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @return the Raft Partition group builder
      */
     public Builder withRequestTimeout(final Duration requestTimeout) {
-      config.setRequestTimeout(requestTimeout);
+      config.getPartitionConfig().setRequestTimeout(requestTimeout);
+      return this;
+    }
+
+    /**
+     * If the leader is not able to reach the quorum, the leader may step down. This is triggered
+     * after minStepDownFailureCount number of requests fails to get a response from the quorum of
+     * followers as well as if the last response was received before maxQuorumResponseTime.
+     *
+     * @param minStepDownFailureCount The number of failures after which a leader considers stepping
+     *     down.
+     * @return the Raft Partition group builder
+     */
+    public Builder withMinStepDownFailureCount(final int minStepDownFailureCount) {
+      config.getPartitionConfig().setMinStepDownFailureCount(minStepDownFailureCount);
+      return this;
+    }
+
+    /**
+     * If the leader is not able to reach the quorum, the leader may step down. This is triggered *
+     * after minStepDownFailureCount number of requests fails to get a response from the quorum of *
+     * followers as well as if the last response was received before maxQuorumResponseTime.
+     *
+     * <p>When this value is 0, it will use a default value of electionTimeout * 2.
+     *
+     * @param maxQuorumResponseTimeout the quorum response timeout
+     * @return the Raft Partition group builder
+     */
+    public Builder withMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
+      config.getPartitionConfig().setMaxQuorumResponseTimeout(maxQuorumResponseTimeout);
+      return this;
+    }
+
+    /**
+     * Sets the partition distributor to use. The partition distributor determines which members
+     * will own which partitions, and ensures they are correctly replicated.
+     *
+     * @param partitionDistributor the partition distributor to use
+     * @return this builder for chaining
+     */
+    public Builder withPartitionDistributor(final PartitionDistributor partitionDistributor) {
+      config.getPartitionConfig().setPartitionDistributor(partitionDistributor);
       return this;
     }
 

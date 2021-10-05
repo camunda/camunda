@@ -116,7 +116,7 @@ public final class PushDeploymentRequestHandler
       LOG.trace("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
       handlePushDeploymentRequest(responseFuture, deployment, deploymentKey, partitionId);
     } else {
-      LOG.error(
+      LOG.debug(
           "Rejecting deployment {} for partition {} as not leader", deploymentKey, partitionId);
       sendNotLeaderRejection(responseFuture, partitionId);
     }
@@ -151,7 +151,7 @@ public final class PushDeploymentRequestHandler
 
             sendResponse(responseFuture, deploymentKey, partitionId);
           } else {
-            actor.yield();
+            actor.yieldThread();
           }
         });
   }

@@ -13,14 +13,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
-import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -28,9 +23,7 @@ import io.camunda.zeebe.util.collection.Tuple;
  */
 public final class JobWorkerTaskProcessor implements BpmnElementProcessor<ExecutableJobWorkerTask> {
 
-  private final ExpressionProcessor expressionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -38,11 +31,9 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
   public JobWorkerTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
-    expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
-    stateBehavior = behaviors.stateBehavior();
     jobBehavior = behaviors.jobBehavior();
   }
 
@@ -56,16 +47,9 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
-        .flatMap(ok -> evaluateJobExpressions(element, context))
+        .flatMap(ok -> jobBehavior.createNewJob(context, element))
         .ifRightOrLeft(
-            jobTypeAndRetries -> {
-              jobBehavior.createNewJob(
-                  context,
-                  element,
-                  jobTypeAndRetries.getLeft(),
-                  jobTypeAndRetries.getRight().intValue());
-              stateTransitionBehavior.transitionToActivated(context);
-            },
+            ok -> stateTransitionBehavior.transitionToActivated(context),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -86,13 +70,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   @Override
   public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
 
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    final long jobKey = elementInstance.getJobKey();
-    if (jobKey > 0) {
-      jobBehavior.cancelJob(jobKey);
-      incidentBehavior.resolveJobIncident(jobKey);
-    }
-
+    jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
@@ -111,18 +89,5 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
-  }
-
-  private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    final var scopeKey = context.getElementInstanceKey();
-
-    return expressionBehavior
-        .evaluateStringExpression(element.getType(), scopeKey)
-        .flatMap(
-            jobType ->
-                expressionBehavior
-                    .evaluateLongExpression(element.getRetries(), scopeKey)
-                    .map(retries -> new Tuple<>(jobType, retries)));
   }
 }

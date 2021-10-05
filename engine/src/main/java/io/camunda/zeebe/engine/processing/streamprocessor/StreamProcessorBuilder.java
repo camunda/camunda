@@ -12,11 +12,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandRespons
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class StreamProcessorBuilder {
@@ -24,7 +23,7 @@ public final class StreamProcessorBuilder {
   private final ProcessingContext processingContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
-  private ActorScheduler actorScheduler;
+  private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDb;
   private Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private int nodeId;
@@ -39,8 +38,9 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder actorScheduler(final ActorScheduler actorScheduler) {
-    this.actorScheduler = actorScheduler;
+  public StreamProcessorBuilder actorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
     return this;
   }
 
@@ -60,8 +60,8 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder onProcessedListener(final Consumer<TypedRecord> onProcessed) {
-    processingContext.onProcessedListener(onProcessed);
+  public StreamProcessorBuilder listener(final StreamProcessorListener listener) {
+    processingContext.listener(listener);
     return this;
   }
 
@@ -76,6 +76,11 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder streamProcessorMode(final StreamProcessorMode streamProcessorMode) {
+    processingContext.processorMode(streamProcessorMode);
+    return this;
+  }
+
   public TypedRecordProcessorFactory getTypedRecordProcessorFactory() {
     return typedRecordProcessorFactory;
   }
@@ -84,8 +89,8 @@ public final class StreamProcessorBuilder {
     return processingContext;
   }
 
-  public ActorScheduler getActorScheduler() {
-    return actorScheduler;
+  public ActorSchedulingService getActorSchedulingService() {
+    return actorSchedulingService;
   }
 
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
@@ -112,7 +117,7 @@ public final class StreamProcessorBuilder {
 
   private void validate() {
     Objects.requireNonNull(typedRecordProcessorFactory, "No stream processor factory provided.");
-    Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
+    Objects.requireNonNull(actorSchedulingService, "No task scheduler provided.");
     Objects.requireNonNull(processingContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(
         processingContext.getWriters().response(), "No command response writer provided.");

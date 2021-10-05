@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -82,7 +83,7 @@ public final class StubBrokerRule extends ExternalResource {
     serverTransport = transportFactory.createServerTransport(0, cluster.getMessagingService());
 
     channelHandler = new StubRequestHandler(msgPackHelper);
-    serverTransport.subscribe(1, channelHandler);
+    serverTransport.subscribe(1, RequestType.COMMAND, channelHandler);
 
     currentTopology.set(topology);
   }

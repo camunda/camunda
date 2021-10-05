@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
+import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -19,22 +21,26 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionStartupAndTransitionContextImpl context) {
     final var exporterDescriptors = context.getExporterRepository().getExporters().values();
 
+    final ExporterMode exporterMode =
+        context.getCurrentRole() == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(Actor.buildActorName(context.getNodeId(), "Exporter", context.getPartitionId()))
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
-            .descriptors(exporterDescriptors);
+            .partitionMessagingService(context.getMessagingService())
+            .descriptors(exporterDescriptors)
+            .exporterMode(exporterMode);
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
     context.setExporterDirector(director);
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
 
-    final var startFuture = director.startAsync(context.getScheduler());
+    final var startFuture = director.startAsync(context.getActorSchedulingService());
     startFuture.onComplete(
         (nothing, error) -> {
           if (error == null) {
@@ -50,7 +56,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionStartupAndTransitionContextImpl context) {
     final var director = context.getExporterDirector();
     context.getComponentHealthMonitor().removeComponent(director.getName());
     final ActorFuture<Void> future = director.closeAsync();

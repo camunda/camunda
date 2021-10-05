@@ -16,7 +16,6 @@
  */
 package io.atomix.raft;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.atomix.raft.RaftException.ConfigurationException;
 
@@ -27,6 +26,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
@@ -417,13 +417,11 @@ public interface RaftServer {
     protected RaftServerProtocol protocol;
     protected RaftStorage storage;
     protected RaftThreadContextFactory threadContextFactory;
-    protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
-    protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
     protected Supplier<Random> randomFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
-    protected int maxAppendsPerFollower = 2;
-    protected int maxAppendBatchSize = 32 * 1024;
     protected RaftElectionConfig electionConfig = RaftElectionConfig.ofDefaultElection();
+    protected RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
+    protected int partitionId;
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -489,70 +487,6 @@ public interface RaftServer {
       return this;
     }
 
-    /**
-     * Sets the Raft election timeout, returning the Raft configuration for method chaining.
-     *
-     * @param electionTimeout The Raft election timeout duration.
-     * @return The Raft configuration.
-     * @throws IllegalArgumentException If the election timeout is not positive
-     * @throws NullPointerException if {@code electionTimeout} is null
-     */
-    public Builder withElectionTimeout(final Duration electionTimeout) {
-      checkNotNull(electionTimeout, "electionTimeout cannot be null");
-      checkArgument(
-          !electionTimeout.isNegative() && !electionTimeout.isZero(),
-          "electionTimeout must be positive");
-      checkArgument(
-          electionTimeout.toMillis() > heartbeatInterval.toMillis(),
-          "electionTimeout must be greater than heartbeatInterval");
-      this.electionTimeout = electionTimeout;
-      return this;
-    }
-
-    /**
-     * Sets the Raft heartbeat interval, returning the Raft configuration for method chaining.
-     *
-     * @param heartbeatInterval The Raft heartbeat interval duration.
-     * @return The Raft configuration.
-     * @throws IllegalArgumentException If the heartbeat interval is not positive
-     * @throws NullPointerException if {@code heartbeatInterval} is null
-     */
-    public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
-      checkNotNull(heartbeatInterval, "heartbeatInterval cannot be null");
-      checkArgument(
-          !heartbeatInterval.isNegative() && !heartbeatInterval.isZero(),
-          "sessionTimeout must be positive");
-      checkArgument(
-          heartbeatInterval.toMillis() < electionTimeout.toMillis(),
-          "heartbeatInterval must be less than electionTimeout");
-      this.heartbeatInterval = heartbeatInterval;
-      return this;
-    }
-
-    /**
-     * Sets the maximum append requests which are sent per follower at once. Default is 2.
-     *
-     * @param maxAppendsPerFollower the maximum appends send per follower
-     * @return The server builder.
-     */
-    public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
-      checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
-      this.maxAppendsPerFollower = maxAppendsPerFollower;
-      return this;
-    }
-
-    /**
-     * Sets the maximum batch size, which is sent per append request. Default size is 32 KB.
-     *
-     * @param maxAppendBatchSize the maximum batch size per append
-     * @return The server builder.
-     */
-    public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
-      checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
-      this.maxAppendBatchSize = maxAppendBatchSize;
-      return this;
-    }
-
     public Builder withEntryValidator(final EntryValidator entryValidator) {
       this.entryValidator = entryValidator;
       return this;
@@ -560,6 +494,16 @@ public interface RaftServer {
 
     public Builder withElectionConfig(final RaftElectionConfig electionConfig) {
       this.electionConfig = electionConfig;
+      return this;
+    }
+
+    public Builder withPartitionConfig(final RaftPartitionConfig partitionConfig) {
+      this.partitionConfig = partitionConfig;
+      return this;
+    }
+
+    public Builder withPartitionId(final int partitionId) {
+      this.partitionId = partitionId;
       return this;
     }
   }

@@ -46,8 +46,10 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     actor.run(
         () -> {
           final var monitoredComponent = monitoredComponents.remove(componentName);
-          componentHealth.remove(componentName);
-          monitoredComponent.component.removeFailureListener(monitoredComponent);
+          if (monitoredComponent != null) {
+            componentHealth.remove(componentName);
+            monitoredComponent.component.removeFailureListener(monitoredComponent);
+          }
         });
   }
 

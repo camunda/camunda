@@ -12,20 +12,31 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.sched.Actor;
+import java.util.Collection;
+import java.util.Map;
 
 public final class LogDeletionService extends Actor implements PersistedSnapshotListener {
   private final LogCompactor logCompactor;
   private final String actorName;
-  private final PersistedSnapshotStore persistedSnapshotStore;
+  private final Collection<PersistedSnapshotStore> persistedSnapshotStores;
+  private final int partitionId;
 
   public LogDeletionService(
       final int nodeId,
       final int partitionId,
       final LogCompactor logCompactor,
-      final PersistedSnapshotStore persistedSnapshotStore) {
-    this.persistedSnapshotStore = persistedSnapshotStore;
+      final Collection<PersistedSnapshotStore> persistedSnapshotStores) {
+    this.persistedSnapshotStores = persistedSnapshotStores;
     this.logCompactor = logCompactor;
     actorName = buildActorName(nodeId, "DeletionService", partitionId);
+    this.partitionId = partitionId;
+  }
+
+  @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
   }
 
   @Override
@@ -35,14 +46,12 @@ public final class LogDeletionService extends Actor implements PersistedSnapshot
 
   @Override
   protected void onActorStarting() {
-    persistedSnapshotStore.addSnapshotListener(this);
+    persistedSnapshotStores.forEach(store -> store.addSnapshotListener(this));
   }
 
   @Override
   protected void onActorClosing() {
-    if (persistedSnapshotStore != null) {
-      persistedSnapshotStore.removeSnapshotListener(this);
-    }
+    persistedSnapshotStores.forEach(store -> store.removeSnapshotListener(this));
   }
 
   @Override

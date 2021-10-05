@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -32,12 +33,15 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
   private final KeyGenerator keyGenerator;
+  private final JobMetrics jobMetrics;
 
-  public JobFailProcessor(final ZeebeState state, final KeyGenerator keyGenerator) {
+  public JobFailProcessor(
+      final ZeebeState state, final KeyGenerator keyGenerator, final JobMetrics jobMetrics) {
     jobState = state.getJobState();
     this.keyGenerator = keyGenerator;
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard<>("fail", jobState, this::acceptCommand);
+    this.jobMetrics = jobMetrics;
   }
 
   @Override
@@ -84,5 +88,6 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     failedJob.setRetries(command.getValue().getRetries());
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
     commandControl.accept(JobIntent.FAILED, failedJob);
+    jobMetrics.jobFailed(failedJob.getType());
   }
 }

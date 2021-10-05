@@ -7,39 +7,37 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BpmnEventPublicationBehavior {
-  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
   private final CatchEventAnalyzer catchEventAnalyzer;
 
   public BpmnEventPublicationBehavior(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
     elementInstanceState = zeebeState.getElementInstanceState();
     eventHandle =
         new EventHandle(
-            zeebeState.getKeyGenerator(),
+            keyGenerator,
             zeebeState.getEventScopeInstanceState(),
             writers,
             zeebeState.getProcessState(),
@@ -79,18 +77,6 @@ public final class BpmnEventPublicationBehavior {
   public Either<Failure, CatchEventTuple> findErrorCatchEvent(
       final DirectBuffer errorCode, final BpmnElementContext context) {
     final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-    final CatchEventTuple catchEvent =
-        catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance);
-
-    if (catchEvent != null) {
-      return Either.right(catchEvent);
-    }
-
-    final var errorMessage =
-        String.format(
-            "Expected to throw an error event with the code '%s', but it was not caught.",
-            bufferAsString(errorCode));
-    final var failure = new Failure(errorMessage, ErrorType.UNHANDLED_ERROR_EVENT);
-    return Either.left(failure);
+    return catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance, Optional.empty());
   }
 }

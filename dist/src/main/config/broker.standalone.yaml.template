@@ -32,14 +32,6 @@
 
 # zeebe:
   # broker:
-    # Sets the timeout for each start and closing step.
-    #
-    # Broker bootstrap and closing is divided in several individual steps.
-    # Each step should take at max the defined stepTimeout, otherwise the bootstrap is aborted.
-    #
-    # This setting can also be overridden using the environment variable ZEEBE_BROKER_STEPTIMEOUT.
-    # stepTimeout: 5m
-
     # gateway:
       # Enable the embedded gateway to start on broker startup.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_ENABLE.
@@ -468,6 +460,7 @@
         #
         # args:
         #   url: http://localhost:9200
+        #   requestTimeoutMs: 1000
         #
         #   bulk:
         #     delay: 5
@@ -518,11 +511,85 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
       # enablePriorityElection = false;
 
+      # This setting allows you to configure how partitions are distributed amongst the node of the
+      # clusters. It currently supports to partitioning schemes: ROUND_ROBIN, and FIXED.
+      #
+      # ROUND_ROBIN is the default partitioning scheme. To enable it, set `scheme` to `ROUND_ROBIN`;
+      # not extra configuration is required. To understand how it will distribute the partitions,
+      # refer to the documentation:
+      #   https://docs.camunda.io/docs/product-manuals/zeebe/technical-concepts/partitions#partition-distribution
+      #
+      # The FIXED partitioning scheme allows users with non-traditional deployments to manual
+      # distribute the partitions across their set of brokers. This can be useful, for example, if
+      # you want to deploy a cluster across multiple data centers with some replication guarantees.
+      # See below for details on how to configure it.
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_PARTITIONING
+      # partitioning:
+        # The partitioning scheme to use. Can be one of: ROUND_ROBIN, FIXED. Defaults to
+        # ROUND_ROBIN.
+        # scheme: ROUND_ROBIN
+        #
+        # The FIXED partitioning scheme configuration. This must be an exhaustive mapping of all
+        # partitions to a set of brokers. If any partitions are not configured, the broker will not
+        # start.
+        #
+        # For each partition, you must specify its partition ID (ranging from 1 to
+        # partitionCount), and the set of nodes which will manage it. This must be a subset
+        # of nodes whose IDs are valid within your cluster. This means with node IDs ranging from 0
+        # to the (clusterSize - 1), without any repeated IDs. This subset must have the same amount
+        # of nodes as the replication factor, otherwise the broker will not start.
+        #
+        # If you are using priority election, then you can also specify the priorities for each
+        # nodes. Note that for a given partition, the priorities of each member must be different,
+        # otherwise the broker will fail to start.
+        #
+        # fixed:
+        #   - partitionId: 1
+        #     nodes:
+        #       - nodeId: 0
+        #         priority: 1
+        #       - nodeId: 1
+        #         priority: 2
+        #       - nodeId: 2
+        #         priority: 3
+        #   - partitionId: 2
+        #     nodes:
+        #       - nodeId: 0
+        #         priority: 3
+        #       - nodeId: 1
+        #         priority: 2
+        #       - nodeId: 2
+        #         priority: 1
+        #   - partitionId: 3
+        #     nodes:
+        #       - nodeId: 0
+        #         priority: 2
+        #       - nodeId: 1
+        #         priority: 3
+        #       - nodeId: 2
+        #         priority: 2
+
       # Allows to configure specific raft properties
       # raft:
         # Sets the timeout for all requests send by raft leaders and followers.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
         # requestTimeout = 5s
+
+        # If the leader is not able to reach the quorum, the leader may step down.
+        # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
+        # reached minStepDownFailureCount. The maxQuorumResponseTime also influences when the leader step down.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MINSTEPDOWNFAILURECOUNT
+        # minStepDownFailureCount = 3
+
+        # If the leader is not able to reach the quorum, the leader may step down.
+        # This is triggered if the leader is not able to reach the quorum of the followers for maxQuorumResponseTimeout.
+        # The minStepDownFailureCount also influences when the leader step down.
+        # Higher the timeout, slower the leader reacts to a partial network partition.
+        # When the timeout is lower, there might be false positives, and the leader might step down too quickly.
+        # When this value is 0, it will use a default value of electionTimeout * 2.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MAXQUORUMRESPONSETIMEOUT
+        # maxQuorumResponseTimeout = 0ms
 
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:

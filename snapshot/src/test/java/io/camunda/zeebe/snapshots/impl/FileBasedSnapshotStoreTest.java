@@ -9,17 +9,19 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,12 +39,13 @@ public class FileBasedSnapshotStoreTest {
   private Path snapshotsDir;
   private Path pendingSnapshotsDir;
   private FileBasedSnapshotStore snapshotStore;
+  private Path rootDirectory;
 
   @Before
   public void before() throws IOException {
-    final var root = temporaryFolder.newFolder("snapshots").toPath();
-    snapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
-    pendingSnapshotsDir = root.resolve(PENDING_DIRECTORY);
+    rootDirectory = temporaryFolder.newFolder("snapshots").toPath();
+    snapshotsDir = rootDirectory.resolve(SNAPSHOT_DIRECTORY);
+    pendingSnapshotsDir = rootDirectory.resolve(PENDING_DIRECTORY);
     snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
   }
 
@@ -59,7 +62,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadExistingSnapshot() {
+  public void shouldLoadExistingSnapshot() throws IOException {
     // given
     final var persistedSnapshot = takeTransientSnapshot().persist().join();
 
@@ -73,7 +76,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() {
+  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
     final FileBasedSnapshotStore otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var olderSnapshot = takeTransientSnapshot(1L, otherStore).persist().join();
@@ -137,6 +140,49 @@ public class FileBasedSnapshotStoreTest {
     assertThat(pendingSnapshotsDir).isEmptyDirectory();
   }
 
+  @Test
+  public void shouldCopySnapshot() {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+    final var target = rootDirectory.resolve("runtime");
+
+    // when
+    snapshotStore.copySnapshot(persistedSnapshot, target).join();
+
+    // then
+    assertThat(target).isNotEmptyDirectory();
+    assertThat(target.toFile().list())
+        .containsExactlyInAnyOrder(persistedSnapshot.getDirectory().toFile().list());
+  }
+
+  @Test
+  public void shouldCompleteWithExceptionWhenCannotCopySnapshot() throws IOException {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+    final var target = rootDirectory.resolve("runtime");
+    target.toFile().createNewFile();
+
+    // when
+    final var result = snapshotStore.copySnapshot(persistedSnapshot, target);
+
+    // then - should fail because targetDirectory already exists
+    assertThatThrownBy(result::join).hasCauseInstanceOf(FileAlreadyExistsException.class);
+  }
+
+  @Test
+  public void shouldCompleteWithExceptionWhenCopyingIfSnapshotDoesNotExists() {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+    final var target = rootDirectory.resolve("runtime");
+
+    // when
+    persistedSnapshot.delete();
+    final var result = snapshotStore.copySnapshot(persistedSnapshot, target);
+
+    // then
+    assertThatThrownBy(result::join).hasCauseInstanceOf(FileNotFoundException.class);
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
@@ -162,11 +208,12 @@ public class FileBasedSnapshotStoreTest {
     return transientSnapshot;
   }
 
-  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir) {
+  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir)
+      throws IOException {
     final var store =
         new FileBasedSnapshotStore(1, 1, new SnapshotMetrics(1 + "-" + 1), snapshotDir, pendingDir);
-    IoUtil.ensureDirectoryExists(snapshotDir.toFile(), "Snapshot directory");
-    IoUtil.ensureDirectoryExists(pendingSnapshotsDir.toFile(), "Pending snapshot directory");
+    FileUtil.ensureDirectoryExists(snapshotDir);
+    FileUtil.ensureDirectoryExists(pendingSnapshotsDir);
     scheduler.submitActor(store).join();
 
     return store;

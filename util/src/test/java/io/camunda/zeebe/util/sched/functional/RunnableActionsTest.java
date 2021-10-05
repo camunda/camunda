@@ -66,6 +66,21 @@ public final class RunnableActionsTest {
   }
 
   @Test
+  public void shouldInvokeSubmitFromNonActorThread() {
+    // given
+    final AtomicBoolean toggle = new AtomicBoolean(false);
+    final Submitter submitter = new Submitter();
+    scheduler.submitActor(submitter);
+
+    // when
+    submitter.submit(() -> toggle.set(true));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(toggle).isTrue();
+  }
+
+  @Test
   public void shouldInvokeRunFromAnotherActor() {
     // given
     final Runner runner = new Runner();
@@ -121,7 +136,7 @@ public final class RunnableActionsTest {
           if (actor.runs == 5) {
             ctr.done();
           } else {
-            ctr.yield();
+            ctr.yieldThread();
           }
         };
 
@@ -149,7 +164,7 @@ public final class RunnableActionsTest {
                 if (actor.runs == 5) {
                   ctr.done();
                 } else {
-                  ctr.yield();
+                  ctr.yieldThread();
                 }
               }
             });

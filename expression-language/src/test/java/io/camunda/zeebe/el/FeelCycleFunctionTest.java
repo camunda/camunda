@@ -24,7 +24,7 @@ public class FeelCycleFunctionTest {
   public void emptyDuration() {
     final var evaluationResult = evaluateExpression("cycle(interval)", EMPTY_CONTEXT);
 
-    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.NULL);
   }
 
   @Test

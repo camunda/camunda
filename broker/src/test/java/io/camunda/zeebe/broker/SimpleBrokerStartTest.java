@@ -10,14 +10,15 @@ package io.camunda.zeebe.broker;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeoutException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,38 +37,20 @@ public final class SimpleBrokerStartTest {
   }
 
   @Test
-  public void shouldFailToStartBrokerWithSmallTimeout() {
-    // given
-    final var brokerCfg = new BrokerCfg();
-    assignSocketAddresses(brokerCfg);
-    brokerCfg.setStepTimeout(Duration.ofMillis(1));
-
-    final var broker =
-        new Broker(
-            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
-
-    // when
-    final var catchedThrownBy = assertThatThrownBy(() -> broker.start().join());
-
-    // then
-    catchedThrownBy.hasRootCauseInstanceOf(TimeoutException.class);
-  }
-
-  @Test
   public void shouldFailToCreateBrokerWithSmallSnapshotPeriod() {
     // given
     final var brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
 
     // when
+
     final var catchedThrownBy =
         assertThatThrownBy(
-            () ->
-                new Broker(
-                    brokerCfg,
-                    newTemporaryFolder.getAbsolutePath(),
-                    null,
-                    TEST_SPRING_BROKER_BRIDGE));
+            () -> {
+              final var systemContext =
+                  new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+              new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
+            });
 
     // then
     catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
@@ -78,10 +61,11 @@ public final class SimpleBrokerStartTest {
     // given
     final var brokerCfg = new BrokerCfg();
     assignSocketAddresses(brokerCfg);
+    final var systemContext =
+        new SystemContext(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    systemContext.getScheduler().start();
 
-    final var broker =
-        new Broker(
-            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
+    final var broker = new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
     broker.addPartitionListener(
         new PartitionListener() {
@@ -92,7 +76,10 @@ public final class SimpleBrokerStartTest {
 
           @Override
           public ActorFuture<Void> onBecomingLeader(
-              final int partitionId, final long term, final LogStream logStream) {
+              final int partitionId,
+              final long term,
+              final LogStream logStream,
+              final QueryService queryService) {
             leaderLatch.countDown();
             return CompletableActorFuture.completed(null);
           }
@@ -109,5 +96,6 @@ public final class SimpleBrokerStartTest {
     // then
     leaderLatch.await();
     broker.close();
+    systemContext.getScheduler().stop().get();
   }
 }

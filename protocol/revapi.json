@@ -1,36 +1,25 @@
 [
   {
-    "extension": "revapi.differences",
+    "extension": "revapi.filter",
+    "justification": "Ignore everything not included in the module itself",
     "configuration": {
-      "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
-      "ignore": true,
-      "differences": [
-        {
-          "code": "java.method.addedToInterface",
-          "new": {
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.protocol\\.record(\\..*)?/"
-          }
-        }
-      ]
+      "archives": {
+        "include": ["io\\.camunda:zeebe-protocol:.*"]
+      }
     }
   },
   {
-    "extension": "revapi.filter",
+    "extension": "revapi.differences",
+    "id": "ignore-bpmnelementtype",
     "configuration": {
-      "justification": "The generated encoders/decoders are not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
-      "elements": {
-        "exclude": [
-          {
-            "matcher": "java",
-            "match": "type ^* implements org.agrona.sbe.CompositeEncoderFlyweight {}"
-          },
-          {
-            "matcher": "java",
-            "match": "type ^* implements org.agrona.sbe.CompositeDecoderFlyweight {}"
-          }
-        ]
-      }
+      "ignore": true,
+      "justification": "Ignore Enum order for BpmnElementType as ordinal() is not used and the elements are grouped in the enum.",
+      "differences": [
+        {
+          "code": "java.field.enumConstantOrderChanged",
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.value.BpmnElementType"
+        }
+      ]
     }
   }
 ]

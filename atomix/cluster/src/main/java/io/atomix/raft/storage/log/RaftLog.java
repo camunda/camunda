@@ -16,7 +16,6 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
@@ -57,23 +56,21 @@ public final class RaftLog implements Closeable {
   }
 
   /**
-   * Opens the reader with {@link Mode} ALL.
+   * Opens the reader that can read both committed and uncommitted entries.
    *
    * @return the reader
    */
-  public RaftLogReader openReader() {
-    return openReader(Mode.ALL);
+  public RaftLogReader openUncommittedReader() {
+    return new RaftLogUncommittedReader(journal.openReader());
   }
 
   /**
-   * Opens the reader with given {@link Mode}.
+   * Opens the reader that can only read committed entries.
    *
-   * @param mode the mode of the reader
    * @return the reader
    */
-  public RaftLogReader openReader(final Mode mode) {
-    final RaftLogReader reader = new RaftLogReader(this, journal.openReader(), mode);
-    return reader;
+  public RaftLogReader openCommittedReader() {
+    return new RaftLogCommittedReader(this, new RaftLogUncommittedReader(journal.openReader()));
   }
 
   public boolean isOpen() {
@@ -130,7 +127,7 @@ public final class RaftLog implements Closeable {
   }
 
   private void readLastEntry() {
-    try (final var reader = openReader()) {
+    try (final var reader = openUncommittedReader()) {
       reader.seekToLast();
       if (reader.hasNext()) {
         lastAppendedEntry = reader.next();

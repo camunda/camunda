@@ -7,20 +7,26 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import static java.util.Objects.requireNonNull;
+
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.partitioning.NoOpPartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -31,12 +37,20 @@ import org.slf4j.Logger;
  *
  * <p>This is intended to be used only by advanced users
  */
-public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
+public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminService {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private final List<ZeebePartition> partitions;
+  private PartitionAdminAccess adminAccess = new NoOpPartitionAdminAccess();
+  private List<ZeebePartition> partitions = Collections.emptyList();
 
-  public BrokerAdminServiceImpl(final List<ZeebePartition> partitions) {
+  public BrokerAdminServiceImpl() {}
+
+  public void injectAdminAccess(final PartitionAdminAccess adminAccess) {
+    this.adminAccess = requireNonNull(adminAccess);
+  }
+
+  public void injectPartitionInfoSource(
+      @Deprecated /* TODO find smaller interface */ final List<ZeebePartition> partitions) {
     this.partitions = partitions;
   }
 
@@ -47,7 +61,8 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
 
   @Override
   public void resumeStreamProcessing() {
-    actor.call(this::resumeStreamProcessingOnAllPartitions);
+    LOG.info("Resuming paused StreamProcessor on all partitions.");
+    actor.call(() -> adminAccess.resumeProcessing());
   }
 
   @Override
@@ -57,12 +72,13 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
 
   @Override
   public void resumeExporting() {
-    actor.call(this::resumeExportingOnAllPartitions);
+    LOG.info("Resuming exporting on all partitions.");
+    actor.call(() -> adminAccess.resumeExporting());
   }
 
   @Override
   public void takeSnapshot() {
-    actor.call(() -> takeSnapshotOnAllPartitions(partitions));
+    actor.call(this::takeSnapshotOnAllPartitions);
   }
 
   @Override
@@ -74,28 +90,41 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
   public Map<Integer, PartitionStatus> getPartitionStatus() {
     final CompletableFuture<Map<Integer, PartitionStatus>> future = new CompletableFuture<>();
     final Map<Integer, PartitionStatus> partitionStatuses = new ConcurrentHashMap<>();
+
     actor.call(
         () -> {
-          final var statusFutures =
-              partitions.stream()
-                  .map(
-                      partition ->
-                          getPartitionStatus(partition)
-                              .whenComplete(
-                                  (ps, error) -> {
-                                    if (error == null) {
-                                      partitionStatuses.put(partition.getPartitionId(), ps);
-                                    }
-                                  }))
-                  .collect(Collectors.toList());
-          CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
-              .thenAccept(r -> future.complete(partitionStatuses));
+          if (partitions.isEmpty()) {
+            // can happen before partitions are injected
+            future.complete(partitionStatuses);
+          } else {
+            final var statusFutures =
+                partitions.stream()
+                    .map(
+                        partition ->
+                            getPartitionStatus(partition)
+                                .whenComplete(
+                                    (ps, error) -> {
+                                      if (error == null) {
+                                        partitionStatuses.put(partition.getPartitionId(), ps);
+                                      }
+                                    }))
+                    .collect(Collectors.toList());
+            CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
+                .thenAccept(r -> future.complete(partitionStatuses));
+          }
         });
-    return future.join();
+
+    try {
+      return future.get(5, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LOG.warn("Error when querying partition status", e);
+      return Map.of();
+    }
   }
 
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
     final CompletableFuture<PartitionStatus> partitionStatus = new CompletableFuture<>();
+    final var currentRoleFuture = partition.getCurrentRole();
     final var streamProcessorFuture = partition.getStreamProcessor();
     final var exporterDirectorFuture = partition.getExporterDirector();
     actor.runOnCompletion(
@@ -105,11 +134,18 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
             partitionStatus.completeExceptionally(error);
             return;
           }
-          final var streamProcessor = streamProcessorFuture.join();
-          final var exporterDirector = exporterDirectorFuture.join();
-          if (streamProcessor.isPresent() && exporterDirector.isPresent()) {
-            getLeaderPartitionStatus(
-                partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
+          if (currentRoleFuture.join() == Role.LEADER) {
+            final var streamProcessor = streamProcessorFuture.join();
+            final var exporterDirector = exporterDirectorFuture.join();
+            if (streamProcessor.isEmpty() || exporterDirector.isEmpty()) {
+              partitionStatus.completeExceptionally(
+                  new IllegalStateException(
+                      "No streamprocessor or exporter found for leader partition."));
+            } else {
+              getLeaderPartitionStatus(
+                  partition, streamProcessor.get(), exporterDirector.get(), partitionStatus);
+            }
+
           } else {
             getFollowerPartitionStatus(partition, partitionStatus);
           }
@@ -120,7 +156,13 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
   private void getFollowerPartitionStatus(
       final ZeebePartition partition, final CompletableFuture<PartitionStatus> partitionStatus) {
     final var snapshotId = getSnapshotId(partition);
-    final var status = PartitionStatus.ofFollower(snapshotId.orElse(null));
+    final var processedPositionInSnapshot =
+        snapshotId
+            .flatMap(FileBasedSnapshotMetadata::ofFileName)
+            .map(FileBasedSnapshotMetadata::getProcessedPosition)
+            .orElse(null);
+    final var status =
+        PartitionStatus.ofFollower(snapshotId.orElse(null), processedPositionInSnapshot);
     partitionStatus.complete(status);
   }
 
@@ -133,7 +175,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
     final var positionFuture = streamProcessor.getLastProcessedPositionAsync();
     final var currentPhaseFuture = streamProcessor.getCurrentPhase();
     final var exporterPhaseFuture = exporterDirector.getPhase();
-    final var exporterPosition = exporterDirector.getState().getLowestPosition();
+    final var exporterPositionFuture = exporterDirector.getLowestPosition();
     final var snapshotId = getSnapshotId(partition);
     final var processedPositionInSnapshot =
         snapshotId
@@ -145,7 +187,8 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
         List.of(
             (ActorFuture) positionFuture,
             (ActorFuture) currentPhaseFuture,
-            (ActorFuture) exporterPhaseFuture),
+            (ActorFuture) exporterPhaseFuture,
+            (ActorFuture) exporterPositionFuture),
         error -> {
           if (error != null) {
             partitionStatus.completeExceptionally(error);
@@ -154,6 +197,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
           final var processedPosition = positionFuture.join();
           final var processorPhase = currentPhaseFuture.join();
           final var exporterPhase = exporterPhaseFuture.join();
+          final var exporterPosition = exporterPositionFuture.join();
           final var status =
               PartitionStatus.ofLeader(
                   processedPosition,
@@ -176,35 +220,23 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
     final var pauseProcessingCompleted = pauseStreamProcessingOnAllPartitions();
     final var pauseExportingCompleted = pauseExportingOnAllPartitions();
     final var pauseAll =
-        Stream.of(pauseProcessingCompleted, pauseExportingCompleted)
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+        Stream.of(pauseProcessingCompleted, pauseExportingCompleted).collect(Collectors.toList());
 
-    actor.runOnCompletion(pauseAll, t -> takeSnapshotOnAllPartitions(partitions));
+    actor.runOnCompletion(pauseAll, t -> takeSnapshotOnAllPartitions());
   }
 
-  private List<ActorFuture<Void>> pauseStreamProcessingOnAllPartitions() {
+  private ActorFuture<Void> pauseStreamProcessingOnAllPartitions() {
     LOG.info("Pausing StreamProcessor on all partitions.");
-    return partitions.stream().map(ZeebePartition::pauseProcessing).collect(Collectors.toList());
+    return adminAccess.pauseProcessing();
   }
 
-  private void resumeStreamProcessingOnAllPartitions() {
-    LOG.info("Resuming paused StreamProcessor on all partitions.");
-    partitions.forEach(ZeebePartition::resumeProcessing);
-  }
-
-  private void takeSnapshotOnAllPartitions(final List<ZeebePartition> partitions) {
+  private ActorFuture<Void> takeSnapshotOnAllPartitions() {
     LOG.info("Triggering Snapshots on all partitions.");
-    partitions.forEach(ZeebePartition::triggerSnapshot);
+    return adminAccess.takeSnapshot();
   }
 
-  private List<ActorFuture<Void>> pauseExportingOnAllPartitions() {
+  private ActorFuture<Void> pauseExportingOnAllPartitions() {
     LOG.info("Pausing exporting on all partitions.");
-    return partitions.stream().map(ZeebePartition::pauseExporting).collect(Collectors.toList());
-  }
-
-  private void resumeExportingOnAllPartitions() {
-    LOG.info("Resuming exporting on all partitions.");
-    partitions.forEach(ZeebePartition::resumeExporting);
+    return adminAccess.pauseExporting();
   }
 }

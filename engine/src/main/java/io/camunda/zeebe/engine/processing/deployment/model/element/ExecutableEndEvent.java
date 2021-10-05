@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-public class ExecutableEndEvent extends ExecutableFlowNode {
+public class ExecutableEndEvent extends ExecutableFlowNode implements ExecutableJobWorkerElement {
 
+  private JobWorkerProperties jobWorkerProperties;
   private ExecutableError error;
 
   public ExecutableEndEvent(final String id) {
@@ -25,5 +26,15 @@ public class ExecutableEndEvent extends ExecutableFlowNode {
 
   public boolean hasError() {
     return error != null;
+  }
+
+  @Override
+  public JobWorkerProperties getJobWorkerProperties() {
+    return jobWorkerProperties;
+  }
+
+  @Override
+  public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
+    this.jobWorkerProperties = jobWorkerProperties;
   }
 }

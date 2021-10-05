@@ -13,13 +13,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.logstreams.util.RocksDBWrapper;
-import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -37,7 +36,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-@SuppressWarnings("unchecked")
 public final class StateControllerImplTest {
 
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
@@ -46,31 +44,33 @@ public final class StateControllerImplTest {
 
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
   private StateControllerImpl snapshotController;
-  private ConstructableSnapshotStore store;
+  private FileBasedSnapshotStore store;
   private Path runtimeDirectory;
 
   @Before
   public void setup() throws IOException {
-    final var rootDirectory = tempFolderRule.newFolder("state").toPath();
 
-    final var factory = new FileBasedSnapshotStoreFactory(actorSchedulerRule.get(), 1);
-    factory.createReceivableSnapshotStore(rootDirectory, 1);
-    store = factory.getConstructableSnapshotStore(1);
+    store =
+        new FileBasedSnapshotStore(
+            1,
+            1,
+            new SnapshotMetrics("partition-1"),
+            tempFolderRule.newFolder("snapshots").toPath(),
+            tempFolderRule.newFolder("pending").toPath());
+    actorSchedulerRule.submitActor(store).join();
 
-    runtimeDirectory = rootDirectory.resolve("runtime");
+    runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
     snapshotController =
         new StateControllerImpl(
-            1,
             ZeebeRocksDbFactory.newFactory(),
             store,
-            factory.getReceivableSnapshotStore(1),
             runtimeDirectory,
-            new NoneSnapshotReplication(),
             l ->
                 Optional.of(
                     new TestIndexedRaftLogEntry(
                         l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
-            db -> exporterPosition.get());
+            db -> exporterPosition.get(),
+            store);
 
     autoCloseableRule.manage(snapshotController);
   }
@@ -81,7 +81,7 @@ public final class StateControllerImplTest {
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
-    assertThat(snapshotController.takeTransientSnapshot(1)).isEmpty();
+    assertThat(snapshotController.takeTransientSnapshot(1).join()).isEmpty();
   }
 
   @Test
@@ -89,10 +89,10 @@ public final class StateControllerImplTest {
     // given
     final var snapshotPosition = 1;
     exporterPosition.set(snapshotPosition - 1);
-    snapshotController.openDb();
+    snapshotController.recover().join();
 
     // when
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
+    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
     final var snapshot =
         tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
 
@@ -112,13 +112,12 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition + 1);
 
     // when
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
     wrapper.putInt(key, value);
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
+    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
     tmpSnapshot.orElseThrow().persist().join();
     snapshotController.close();
-    snapshotController.recover();
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
 
     // then
     assertThat(wrapper.getInt(key)).isEqualTo(value);
@@ -129,7 +128,7 @@ public final class StateControllerImplTest {
     // given
     final var snapshotPosition = 1;
     exporterPosition.set(snapshotPosition - 1);
-    snapshotController.openDb();
+    snapshotController.recover();
 
     // when
     final var snapshot = takeSnapshot(snapshotPosition);
@@ -148,12 +147,11 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition + 1);
 
     // when
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
     wrapper.putInt(key, value);
     takeSnapshot(snapshotPosition);
     snapshotController.close();
-    snapshotController.recover();
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
 
     // then
     assertThat(wrapper.getInt(key)).isEqualTo(value);
@@ -164,16 +162,17 @@ public final class StateControllerImplTest {
     // given
     final var snapshotPosition = 2;
     exporterPosition.set(snapshotPosition - 1);
-    snapshotController.openDb();
+    snapshotController.recover().join();
     final var firstSnapshot =
         snapshotController
             .takeTransientSnapshot(snapshotPosition)
+            .join()
             .map(PersistableSnapshot::persist)
             .map(ActorFuture::join)
             .orElseThrow();
 
     // when
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition + 1);
+    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition + 1).join();
     final var snapshot =
         tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
 
@@ -185,7 +184,7 @@ public final class StateControllerImplTest {
     final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
     final var firstSnapshotId =
         FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
-    assertThat(firstSnapshotId.compareTo(newSnapshotId)).isEqualTo(-1);
+    assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
   @Test
@@ -193,17 +192,18 @@ public final class StateControllerImplTest {
     // given
     final var snapshotPosition = 2;
     exporterPosition.set(snapshotPosition);
-    snapshotController.openDb();
+    snapshotController.recover().join();
     final var firstSnapshot =
         snapshotController
             .takeTransientSnapshot(snapshotPosition)
+            .join()
             .map(PersistableSnapshot::persist)
             .map(ActorFuture::join)
             .orElseThrow();
 
     // when
     exporterPosition.set(snapshotPosition + 1);
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
+    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
     final var snapshot =
         tmpSnapshot.map(TransientSnapshot::persist).map(ActorFuture::join).orElseThrow();
 
@@ -215,44 +215,25 @@ public final class StateControllerImplTest {
     final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
     final var firstSnapshotId =
         FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
-    assertThat(firstSnapshotId.compareTo(newSnapshotId)).isEqualTo(-1);
+    assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
   @Test
-  public void shouldDoNothingIfNoSnapshotsToRecoverFrom() throws Exception {
+  public void shouldOpenEmptyDatabaseWhenNoSnapshotsToRecoverFrom() {
     // given
 
     // when
-    snapshotController.recover();
+    snapshotController.recover().join();
 
     // then
-    assertThat(snapshotController.isDbOpened()).isFalse();
-  }
-
-  @Test
-  public void shouldRemovePreExistingDatabaseOnRecover() throws Exception {
-    // given
-    final String key = "test";
-    final int value = 1;
-    final RocksDBWrapper wrapper = new RocksDBWrapper();
-
-    // when
-    wrapper.wrap(snapshotController.openDb());
-    wrapper.putInt(key, value);
-    snapshotController.close();
-    snapshotController.recover();
-    assertThat(snapshotController.isDbOpened()).isFalse();
-    wrapper.wrap(snapshotController.openDb());
-
-    // then
-    assertThat(wrapper.mayExist(key)).isFalse();
+    assertThat(snapshotController.isDbOpened()).isTrue();
   }
 
   @Test
   public void shouldRecoverFromLatestSnapshot() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
 
     wrapper.putInt("x", 1);
     takeSnapshot(1);
@@ -266,19 +247,18 @@ public final class StateControllerImplTest {
     snapshotController.close();
 
     // when
-    snapshotController.recover();
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
 
     // then
     assertThat(wrapper.getInt("x")).isEqualTo(3);
   }
 
   @Test
-  public void shouldFailToRecoverIfAllSnapshotsAreCorrupted() throws Exception {
+  public void shouldFailToRecoverIfSnapshotIsCorrupted() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
-    wrapper.wrap(snapshotController.openDb());
+    wrapper.wrap(snapshotController.recover().join());
     wrapper.putInt("x", 1);
 
     takeSnapshot(1);
@@ -286,41 +266,52 @@ public final class StateControllerImplTest {
     corruptLatestSnapshot();
 
     // when/then
-    assertThatThrownBy(() -> snapshotController.recover())
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("Failed to recover from snapshots");
+    assertThatThrownBy(() -> snapshotController.recover().join())
+        .hasCauseInstanceOf(RuntimeException.class);
   }
 
   @Test
-  public void shouldGetValidSnapshotCount() {
+  public void shouldDeleteRuntimeFolderOnClose() {
     // given
-    snapshotController.openDb();
-
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(0);
-
-    takeSnapshot(1L);
-    takeSnapshot(3L);
-    takeSnapshot(5L);
-    snapshotController.takeTransientSnapshot(6L);
-
-    // when/then
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldDeleteRuntimeFolderOnClose() throws Exception {
-    // given
-    snapshotController.openDb();
+    snapshotController.recover().join();
 
     // when
-    snapshotController.close();
+    snapshotController.closeDb().join();
 
     // then
     assertThat(runtimeDirectory).doesNotExist();
   }
 
+  @Test
+  public void shouldNotTakeSnapshotWhenDbIsClosed() {
+    // given
+    snapshotController.recover().join();
+
+    // when
+    final var closed = snapshotController.closeDb();
+    final var snapshotTaken = snapshotController.takeTransientSnapshot(1);
+    closed.join();
+
+    // then
+    assertThat(snapshotTaken.join()).isEmpty();
+  }
+
+  @Test
+  public void shouldCloseDbOnlyAfterTakingSnapshot() {
+    // given
+    snapshotController.recover().join();
+
+    // when
+    final var snapshotTaken = snapshotController.takeTransientSnapshot(1);
+    final var closed = snapshotController.closeDb();
+    closed.join();
+
+    // then
+    assertThat(snapshotTaken.join()).isNotEmpty();
+  }
+
   private File takeSnapshot(final long position) {
-    final var snapshot = snapshotController.takeTransientSnapshot(position).orElseThrow();
+    final var snapshot = snapshotController.takeTransientSnapshot(position).join().orElseThrow();
     return snapshot.persist().join().getPath().toFile();
   }
 

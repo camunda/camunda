@@ -13,12 +13,17 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
-import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 
 public final class SystemContext {
@@ -37,10 +42,9 @@ public final class SystemContext {
       "Disabling explicit flushing is an experimental feature and can lead to inconsistencies "
           + "and/or data loss! Please refer to the documentation whether or not you should use this!";
 
-  protected final BrokerCfg brokerCfg;
+  private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
-  private Duration stepTimeout;
 
   public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
     this.brokerCfg = brokerCfg;
@@ -54,14 +58,11 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    stepTimeout = brokerCfg.getStepTimeout();
-
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
     scheduler = initScheduler(clock, brokerId);
-    setStepTimeout(stepTimeout);
   }
 
   private void validateConfiguration() {
@@ -143,6 +144,80 @@ public final class SystemContext {
               "electionTimeout %s must be greater than heartbeatInterval %s",
               electionTimeout, heartbeatInterval));
     }
+
+    final var partitioningConfig = experimental.getPartitioning();
+    if (partitioningConfig.getScheme() == Scheme.FIXED) {
+      validateFixedPartitioningScheme(cluster, experimental);
+    }
+  }
+
+  private void validateFixedPartitioningScheme(
+      final ClusterCfg cluster, final ExperimentalCfg experimental) {
+    final var partitioning = experimental.getPartitioning();
+    final var partitions = partitioning.getFixed();
+    final var replicationFactor = cluster.getReplicationFactor();
+    final var partitionsCount = cluster.getPartitionsCount();
+
+    final var partitionMembers = new HashMap<Integer, Set<Integer>>();
+    for (final var partition : partitions) {
+      final var members =
+          validateFixedPartitionMembers(
+              cluster, partition, experimental.isEnablePriorityElection());
+      partitionMembers.put(partition.getPartitionId(), members);
+    }
+
+    for (int partitionId = 1; partitionId <= partitionsCount; partitionId++) {
+      final var members = partitionMembers.getOrDefault(partitionId, Collections.emptySet());
+      if (members.size() < replicationFactor) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected fixed partition scheme to define configurations for all partitions such "
+                    + "that they have %d replicas, but partition %d has %d configured replicas: %s",
+                replicationFactor, partitionId, members.size(), members));
+      }
+    }
+  }
+
+  private Set<Integer> validateFixedPartitionMembers(
+      final ClusterCfg cluster,
+      final FixedPartitionCfg partitionConfig,
+      final boolean isPriorityElectionEnabled) {
+    final var members = new HashSet<Integer>();
+    final var clusterSize = cluster.getClusterSize();
+    final var partitionsCount = cluster.getPartitionsCount();
+    final var partitionId = partitionConfig.getPartitionId();
+
+    if (partitionId < 1 || partitionId > partitionsCount) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected fixed partition scheme to define entries with a valid partitionId between 1"
+                  + " and %d, but %d was given",
+              partitionsCount, partitionId));
+    }
+
+    final var observedPriorities = new HashSet<Integer>();
+    for (final var node : partitionConfig.getNodes()) {
+      final var nodeId = node.getNodeId();
+      if (nodeId < 0 || nodeId >= clusterSize) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected fixed partition scheme for partition %d to define nodes with a nodeId "
+                    + "between 0 and %d, but it was %d",
+                partitionId, clusterSize - 1, nodeId));
+      }
+
+      if (isPriorityElectionEnabled && !observedPriorities.add(node.getPriority())) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected each node for a partition %d to have a different priority, but at least "
+                    + "two of them have the same priorities: %s",
+                partitionId, partitionConfig.getNodes()));
+      }
+
+      members.add(nodeId);
+    }
+
+    return members;
   }
 
   private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
@@ -169,13 +244,5 @@ public final class SystemContext {
 
   public Map<String, String> getDiagnosticContext() {
     return diagnosticContext;
-  }
-
-  public Duration getStepTimeout() {
-    return stepTimeout;
-  }
-
-  private void setStepTimeout(final Duration stepTimeout) {
-    this.stepTimeout = stepTimeout;
   }
 }

@@ -28,12 +28,15 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SegmentedJournalTest {
+  private static final String JOURNAL_NAME = "journal";
 
   @TempDir Path directory;
   private final int journalIndexDensity = 1;
@@ -259,6 +262,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
+    reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
   }
 
@@ -278,6 +282,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
+    reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
   }
 
@@ -457,6 +462,139 @@ class SegmentedJournalTest {
         .isInstanceOf(CorruptedLogException.class);
   }
 
+  @Test
+  void shouldNotDeleteSegmentFileImmediately() {
+    // given
+    final var journal = openJournal(2);
+    journal.append(data);
+    journal.append(data);
+    final var reader = journal.openReader();
+    reader.next();
+
+    // when
+    journal.reset(100);
+
+    // then
+    final File logDirectory = directory.resolve("data").toFile();
+    assertThat(logDirectory)
+        .isDirectoryContaining(
+            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(
+            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+  }
+
+  @Test
+  void shouldNotFailOnResetAndOpeningReaderConcurrently() throws InterruptedException {
+    // given
+    final var latch = new CountDownLatch(2);
+    final var journal = openJournal(2);
+    journal.append(data);
+    journal.append(data);
+
+    // when
+    new Thread(
+            () -> {
+              journal.reset(100);
+              latch.countDown();
+            })
+        .start();
+    new Thread(
+            () -> {
+              journal.openReader();
+              latch.countDown();
+            })
+        .start();
+
+    // then
+    assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
+  void shouldDeleteSegmentFileWhenReaderIsClosed() {
+    // given
+    final var journal = openJournal(2);
+    journal.append(data);
+    final var reader = journal.openReader();
+    journal.reset(100);
+
+    // when
+    reader.close();
+
+    // then
+    final File logDirectory = directory.resolve("data").toFile();
+    assertThat(logDirectory)
+        .isDirectoryNotContaining(
+            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(
+            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+  }
+
+  @Test
+  void shouldDeleteSegmentFileImmediatelyWhenThereAreNoReaders() {
+    // given
+    final var journal = openJournal(2);
+    journal.append(data);
+
+    // when
+    journal.reset(100);
+
+    // then
+    final File logDirectory = directory.resolve("data").toFile();
+    assertThat(logDirectory)
+        .isDirectoryNotContaining(
+            file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+        .isDirectoryContaining(
+            file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+  }
+
+  @Test
+  void shouldDeleteFilesMarkedForDeletionsOnLoad() {
+    // given
+    final var journal = openJournal(2);
+    journal.append(data);
+    journal.openReader();
+    journal.reset(100);
+
+    // when
+    // if we close the current journal, it will delete the files on closing. So we cannot test this
+    // scenario.
+    try (final var ignored = openJournal(2)) {
+      // then
+      final File logDirectory = directory.resolve("data").toFile();
+      assertThat(logDirectory)
+          .isDirectoryNotContaining(
+              file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+          .isDirectoryContaining(
+              file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+    }
+  }
+
+  @Test
+  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() {
+    // given
+    final var journal = openJournal(2);
+    journal.append(data);
+    journal.openReader(); // Keep the reader opened so that the file is not deleted.
+    journal.reset(100);
+    journal.openReader(); // Keep the reader opened so that the file is not deleted.
+
+    // when
+    journal.reset(200);
+
+    // then
+    final File logDirectory = directory.resolve("data").toFile();
+
+    // there are two files deferred for deletion
+    assertThat(
+            logDirectory.listFiles(
+                file -> JournalSegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName())))
+        .hasSize(2);
+    assertThat(
+            logDirectory.listFiles(
+                file -> JournalSegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
+        .hasSize(1);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
@@ -467,6 +605,7 @@ class SegmentedJournalTest {
         .withMaxSegmentSize(
             (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
+        .withName(JOURNAL_NAME)
         .build();
   }
 

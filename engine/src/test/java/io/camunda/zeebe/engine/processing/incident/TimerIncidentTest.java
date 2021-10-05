@@ -93,11 +93,9 @@ public final class TimerIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '"
+            "Expected result of the expression '"
                 + DURATION_EXPRESSION
-                + "': no variable found for name '"
-                + DURATION_VARIABLE
-                + "'");
+                + "' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'");
   }
 
   @Test
@@ -159,9 +157,9 @@ public final class TimerIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "failed to evaluate expression '"
+            "Expected result of the expression '"
                 + CYCLE_EXPRESSION
-                + "': cycle function expected an interval (duration) parameter, but found 'ValNull'");
+                + "' to be 'STRING', but was 'NULL'.");
   }
 
   @Test

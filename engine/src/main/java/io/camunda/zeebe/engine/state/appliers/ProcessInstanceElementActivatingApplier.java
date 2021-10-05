@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -108,8 +107,7 @@ final class ProcessInstanceElementActivatingApplier
     }
 
     // manage the multi-instance loop counter
-    if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY
-        && MigratedStreamProcessors.isMigrated(currentElementType)) {
+    if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       // update the loop counter of the multi-instance body (starting by 1)
       flowScopeInstance.incrementMultiInstanceLoopCounter();
       elementInstanceState.updateInstance(flowScopeInstance);

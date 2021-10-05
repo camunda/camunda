@@ -15,82 +15,67 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 public enum BpmnElementType {
 
   // Default
-  UNSPECIFIED,
+  UNSPECIFIED(null),
 
   // Containers
-  PROCESS,
-  SUB_PROCESS,
-  EVENT_SUB_PROCESS,
+  PROCESS("process"),
+  SUB_PROCESS("subProcess"),
+  EVENT_SUB_PROCESS(null),
 
   // Events
-  START_EVENT,
-  INTERMEDIATE_CATCH_EVENT,
-  BOUNDARY_EVENT,
-  END_EVENT,
+  START_EVENT("startEvent"),
+  INTERMEDIATE_CATCH_EVENT("intermediateCatchEvent"),
+  INTERMEDIATE_THROW_EVENT("intermediateThrowEvent"),
+  BOUNDARY_EVENT("boundaryEvent"),
+  END_EVENT("endEvent"),
 
   // Tasks
-  SERVICE_TASK,
-  RECEIVE_TASK,
-  USER_TASK,
+  SERVICE_TASK("serviceTask"),
+  RECEIVE_TASK("receiveTask"),
+  USER_TASK("userTask"),
+  MANUAL_TASK("manualTask"),
 
   // Gateways
-  EXCLUSIVE_GATEWAY,
-  PARALLEL_GATEWAY,
-  EVENT_BASED_GATEWAY,
+  EXCLUSIVE_GATEWAY("exclusiveGateway"),
+  PARALLEL_GATEWAY("parallelGateway"),
+  EVENT_BASED_GATEWAY("eventBasedGateway"),
 
   // Other
-  SEQUENCE_FLOW,
-  MULTI_INSTANCE_BODY,
-  CALL_ACTIVITY,
+  SEQUENCE_FLOW("sequenceFlow"),
+  MULTI_INSTANCE_BODY(null),
+  CALL_ACTIVITY("callActivity"),
 
   // TODO (saig0): remove element type for testing - #6202
-  TESTING_ONLY,
+  TESTING_ONLY(null),
 
-  BUSINESS_RULE_TASK,
-  SCRIPT_TASK,
-  SEND_TASK;
+  BUSINESS_RULE_TASK("businessRuleTask"),
+  SCRIPT_TASK("scriptTask"),
+  SEND_TASK("sendTask");
+
+  private final String elementTypeName;
+
+  BpmnElementType(final String elementTypeName) {
+    this.elementTypeName = elementTypeName;
+  }
+
+  public Optional<String> getElementTypeName() {
+    return Optional.of(elementTypeName);
+  }
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
-    switch (elementTypeName) {
-      case "process":
-        return BpmnElementType.PROCESS;
-      case "subProcess":
-        return BpmnElementType.SUB_PROCESS;
-      case "startEvent":
-        return BpmnElementType.START_EVENT;
-      case "intermediateCatchEvent":
-        return BpmnElementType.INTERMEDIATE_CATCH_EVENT;
-      case "boundaryEvent":
-        return BpmnElementType.BOUNDARY_EVENT;
-      case "endEvent":
-        return BpmnElementType.END_EVENT;
-      case "serviceTask":
-        return BpmnElementType.SERVICE_TASK;
-      case "receiveTask":
-        return BpmnElementType.RECEIVE_TASK;
-      case "exclusiveGateway":
-        return BpmnElementType.EXCLUSIVE_GATEWAY;
-      case "eventBasedGateway":
-        return BpmnElementType.EVENT_BASED_GATEWAY;
-      case "parallelGateway":
-        return BpmnElementType.PARALLEL_GATEWAY;
-      case "sequenceFlow":
-        return BpmnElementType.SEQUENCE_FLOW;
-      case "callActivity":
-        return BpmnElementType.CALL_ACTIVITY;
-      case "userTask":
-        return BpmnElementType.USER_TASK;
-      case "businessRuleTask":
-        return BpmnElementType.BUSINESS_RULE_TASK;
-      case "scriptTask":
-        return BpmnElementType.SCRIPT_TASK;
-      case "sendTask":
-        return BpmnElementType.SEND_TASK;
-      default:
-        throw new RuntimeException("Unsupported BPMN element of type " + elementTypeName);
-    }
+    return Arrays.stream(values())
+        .filter(
+            bpmnElementType ->
+                bpmnElementType.elementTypeName != null
+                    && bpmnElementType.elementTypeName.equals(elementTypeName))
+        .findFirst()
+        .orElseThrow(
+            () -> new RuntimeException("Unsupported BPMN element of type " + elementTypeName));
   }
 }

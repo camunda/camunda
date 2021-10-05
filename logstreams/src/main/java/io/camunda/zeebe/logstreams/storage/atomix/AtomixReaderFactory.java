@@ -8,13 +8,8 @@
 package io.camunda.zeebe.logstreams.storage.atomix;
 
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 
 @FunctionalInterface
 public interface AtomixReaderFactory {
-  RaftLogReader create(Mode mode);
-
-  default RaftLogReader create() {
-    return create(Mode.COMMITS);
-  }
+  RaftLogReader create();
 }

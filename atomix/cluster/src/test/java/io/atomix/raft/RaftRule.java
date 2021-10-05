@@ -32,8 +32,6 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -298,25 +296,28 @@ public final class RaftRule extends ExternalResource {
     // in the end all call the method #newSnapshot and the snapshot listener is triggered to compact
 
     for (final RaftServer raftServer : servers.values()) {
-      if (raftServer.isRunning()) {
-        final var raftContext = raftServer.getContext();
-        final var snapshotStore =
-            getSnapshotStore(raftServer.cluster().getLocalMember().memberId().id());
+      doSnapshotOnMember(raftServer, index, size);
+    }
+  }
 
-        compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
-        InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
-      }
+  public void doSnapshotOnMember(final RaftServer raftServer, final long index, final int size)
+      throws Exception {
+    if (raftServer.isRunning()) {
+      final var raftContext = raftServer.getContext();
+      final var snapshotStore =
+          getSnapshotStore(raftServer.cluster().getLocalMember().memberId().id());
+
+      compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
+      InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
     }
 
     // await the compaction to avoid race condition with reading the logs
-    for (final RaftServer server : servers.values()) {
-      final var latchAtomicReference = compactAwaiters.get(server.name());
-      final var latch = latchAtomicReference.get();
-      if (!latch.await(30, TimeUnit.SECONDS)) {
-        throw new TimeoutException("Expected to compact the log after 30 seconds!");
-      }
-      latchAtomicReference.set(null);
+    final var latchAtomicReference = compactAwaiters.get(raftServer.name());
+    final var latch = latchAtomicReference.get();
+    if (!latch.await(30, TimeUnit.SECONDS)) {
+      throw new TimeoutException("Expected to compact the log after 30 seconds!");
     }
+    latchAtomicReference.set(null);
   }
 
   private TestSnapshotStore getSnapshotStore(final String memberId) {
@@ -361,7 +362,7 @@ public final class RaftRule extends ExternalResource {
         .addCommitListener(
             new RaftCommitListener() {
               @Override
-              public <T extends RaftLogEntry> void onCommit(final long index) {
+              public void onCommit(final long index) {
                 final var currentIndex = index;
 
                 memberLog.put(raftServer.name(), currentIndex);
@@ -386,7 +387,7 @@ public final class RaftRule extends ExternalResource {
 
         final var log = server.getContext().getLog();
         final List<IndexedRaftLogEntry> entryList = new ArrayList<>();
-        try (final var raftLogReader = log.openReader(Mode.ALL)) {
+        try (final var raftLogReader = log.openUncommittedReader()) {
           while (raftLogReader.hasNext()) {
             final var indexedEntry = raftLogReader.next();
             entryList.add(indexedEntry);
@@ -489,11 +490,11 @@ public final class RaftRule extends ExternalResource {
     return new File(directory.toFile(), s);
   }
 
-  private Optional<RaftServer> getLeader() {
+  public Optional<RaftServer> getLeader() {
     return servers.values().stream().filter(s -> s.getRole() == Role.LEADER).findFirst();
   }
 
-  private Optional<RaftServer> getFollower() {
+  public Optional<RaftServer> getFollower() {
     return servers.values().stream().filter(s -> s.getRole() == Role.FOLLOWER).findFirst();
   }
 
@@ -573,6 +574,24 @@ public final class RaftRule extends ExternalResource {
 
   public PersistedSnapshotStore getPersistedSnapshotStore(final String followerB) {
     return servers.get(followerB).getContext().getPersistedSnapshotStore();
+  }
+
+  public void addCommitListener(final RaftCommitListener raftCommitListener) {
+    servers.forEach((id, raft) -> raft.getContext().addCommitListener(raftCommitListener));
+  }
+
+  public void addCommittedEntryListener(
+      final RaftCommittedEntryListener raftCommittedEntryListener) {
+    servers.forEach(
+        (id, raft) -> raft.getContext().addCommittedEntryListener(raftCommittedEntryListener));
+  }
+
+  public void partition(final RaftServer follower) {
+    protocolFactory.partition(follower.cluster().getLocalMember().memberId());
+  }
+
+  public void reconnect(final RaftServer follower) {
+    protocolFactory.heal(follower.cluster().getLocalMember().memberId());
   }
 
   private static final class CommitAwaiter {

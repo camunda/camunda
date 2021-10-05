@@ -35,8 +35,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ReplayStateRandomizedPropertyTest {
 
-  private static final int PROCESS_COUNT = 10;
-  private static final int EXECUTION_PATH_COUNT = 5;
+  private static final String PROCESS_COUNT = System.getProperty("processCount", "3");
+  private static final String EXECUTION_PATH_COUNT =
+      System.getProperty("replayExecutionCount", "1");
   @Parameter public TestDataRecord record;
 
   @Rule
@@ -157,6 +158,9 @@ public class ReplayStateRandomizedPropertyTest {
         .untilAsserted(
             () ->
                 assertThat(engineRule.getLastProcessedPosition())
+                    .describedAs(
+                        "Last written %d has to be processed %d",
+                        engineRule.getLastWrittenPosition(1), engineRule.getLastProcessedPosition())
                     .isEqualTo(engineRule.getLastWrittenPosition(1)));
   }
 
@@ -166,6 +170,7 @@ public class ReplayStateRandomizedPropertyTest {
     //    final var processSeed = 3499044774323385558L;
     //    final var executionPathSeed = 3627169465144620203L;
     //    return List.of(TestDataGenerator.regenerateTestRecord(processSeed, executionPathSeed));
-    return TestDataGenerator.generateTestRecords(PROCESS_COUNT, EXECUTION_PATH_COUNT);
+    return TestDataGenerator.generateTestRecords(
+        Integer.parseInt(PROCESS_COUNT), Integer.parseInt(EXECUTION_PATH_COUNT));
   }
 }

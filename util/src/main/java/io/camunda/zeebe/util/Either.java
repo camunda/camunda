@@ -7,10 +7,15 @@
  */
 package io.camunda.zeebe.util;
 
+import io.camunda.zeebe.util.collection.Tuple;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collector;
 
 /**
  * Represents either a {@link Left} or a {@link Right}. By convention, right is used for success and
@@ -78,6 +83,106 @@ public interface Either<L, R> {
    */
   static <L, R> Either<L, R> left(final L left) {
     return new Left<>(left);
+  }
+
+  /**
+   * Returns a collector for {@code Either<L,R>} that collects them into {@code
+   * Either<List<L>,List<R>} and favors {@link Left} over {@link Right}.
+   *
+   * <p>This is commonly used to collect a stream of either objects where a right is considered a
+   * success and a left is considered an error. If any error has occurred, we're often only
+   * interested in the errors and not in the successes. Otherwise, we'd like to collect all success
+   * values.
+   *
+   * <p>This collector groups all the lefts into one {@link List} and all the rights into another.
+   * When all elements of the stream have been collected and any lefts were encountered, it outputs
+   * a left of the list of encountered left values. Otherwise, it outputs a right of all right
+   * values it encountered.
+   *
+   * <p>Examples:
+   *
+   * <pre>{@code
+   * Stream.of(Either.right(1), Either.right(2), Either.right(3))
+   *   .collect(Either.collector()) // => a Right
+   *   .get(); // => List.of(1,2,3)
+   *
+   * Stream.of(Either.right(1), Either.left("oops"), Either.right(3))
+   *   .collect(Either.collector()) // => a Left
+   *   .getLeft(); // => List.of("oops")
+   * }</pre>
+   *
+   * @param <L> the type of the left values
+   * @param <R> the type of the right values
+   * @return a collector that favors left over right
+   */
+  static <L, R>
+      Collector<Either<L, R>, Tuple<List<L>, List<R>>, Either<List<L>, List<R>>> collector() {
+    return Collector.of(
+        () -> new Tuple<>(new ArrayList<>(), new ArrayList<>()),
+        (acc, next) ->
+            next.ifRightOrLeft(right -> acc.getRight().add(right), left -> acc.getLeft().add(left)),
+        (a, b) -> {
+          a.getLeft().addAll(b.getLeft());
+          a.getRight().addAll(b.getRight());
+          return a;
+        },
+        acc -> {
+          if (!acc.getLeft().isEmpty()) {
+            return left(acc.getLeft());
+          } else {
+            return right(acc.getRight());
+          }
+        });
+  }
+
+  /**
+   * Returns a collector for {@code Either<L,R>} that collects them into {@code Either<L,List<R>}
+   * and favors {@link Left} over {@link Right}. While collecting the rights, it folds the left into
+   * the first encountered.
+   *
+   * <p>This is commonly used to collect a stream of either objects where a right is considered a
+   * success and a left is considered an error. If any error has occurred, we're often only
+   * interested in the first error and not in the successes. Otherwise, we'd like to collect all
+   * success values.
+   *
+   * <p>This collector looks for a left while it groups all the rights into one {@link List}. When
+   * all elements of the stream have been collected and a left was encountered, it outputs the
+   * encountered left. Otherwise, it outputs a right of all right values it encountered.
+   *
+   * <p>Examples:
+   *
+   * <pre>{@code
+   * * Stream.of(Either.right(1), Either.right(2), Either.right(3))
+   * *   .collect(Either.collector()) // => a Right
+   * *   .get(); // => List.of(1,2,3)
+   * *
+   * * Stream.of(Either.right(1), Either.left("oops"), Either.left("another oops"))
+   * *   .collect(Either.collector()) // => a Left
+   * *   .getLeft(); // => "oops"
+   * *
+   * }</pre>
+   *
+   * @param <L> the type of the left values
+   * @param <R> the type of the right values
+   * @return a collector that favors left over right
+   */
+  static <L, R>
+      Collector<Either<L, R>, Tuple<Optional<L>, List<R>>, Either<L, List<R>>>
+          collectorFoldingLeft() {
+    return Collector.of(
+        () -> new Tuple<>(Optional.empty(), new ArrayList<>()),
+        (acc, next) ->
+            next.ifRightOrLeft(
+                right -> acc.getRight().add(right),
+                left -> acc.setLeft(acc.getLeft().or(() -> Optional.of(left)))),
+        (a, b) -> {
+          if (a.getLeft().isEmpty() && b.getLeft().isPresent()) {
+            a.setLeft(b.getLeft());
+          }
+          a.getRight().addAll(b.getRight());
+          return a;
+        },
+        acc -> acc.getLeft().map(Either::<L, List<R>>left).orElse(Either.right(acc.getRight())));
   }
 
   /**
@@ -219,6 +324,7 @@ public interface Either<L, R> {
       return (Either<T, R>) this;
     }
 
+    @Override
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return right.apply(value);
     }
@@ -307,6 +413,7 @@ public interface Either<L, R> {
       return Either.left(left.apply(value));
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return (Either<L, T>) this;

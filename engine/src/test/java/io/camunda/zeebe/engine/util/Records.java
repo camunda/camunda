@@ -8,9 +8,11 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -147,10 +149,31 @@ public final class Records {
     return metadata.getValueType() == type;
   }
 
-  public static ProcessInstanceRecord processInstance(final int instanceKey) {
-    final ProcessInstanceRecord event = new ProcessInstanceRecord();
-    event.setProcessInstanceKey(instanceKey);
-    return event;
+  public static ProcessRecord process(final long processKey, final String processId) {
+    final var record = new ProcessRecord();
+    record
+        .setKey(processKey)
+        .setBpmnProcessId(processId)
+        .setResourceName("process.bpmn")
+        .setResource(
+            BufferUtil.wrapString(
+                Bpmn.convertToString(
+                    Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())))
+        .setVersion(1)
+        .setChecksum(BufferUtil.wrapString("checksum"));
+    return record;
+  }
+
+  public static ProcessInstanceRecord processInstance(final long instanceKey) {
+    return processInstance(instanceKey, "processId");
+  }
+
+  public static ProcessInstanceRecord processInstance(
+      final long instanceKey, final String processId) {
+    final var record = new ProcessInstanceRecord();
+    record.setProcessInstanceKey(instanceKey);
+    record.setBpmnProcessId(processId);
+    return record;
   }
 
   public static ErrorRecord error(final int instanceKey, final long pos) {
@@ -160,10 +183,16 @@ public final class Records {
     return event;
   }
 
-  public static JobRecord job(final int instanceKey) {
-    final JobRecord event = new JobRecord();
-    event.setProcessInstanceKey(instanceKey);
-    return event;
+  public static JobRecord job(final long instanceKey) {
+    return job(instanceKey, "processId");
+  }
+
+  public static JobRecord job(final long instanceKey, final String processId) {
+    final JobRecord record = new JobRecord();
+    record.setProcessInstanceKey(instanceKey);
+    record.setType("test");
+    record.setBpmnProcessId(processId);
+    return record;
   }
 
   public static TimerRecord timer(final long instanceKey) {

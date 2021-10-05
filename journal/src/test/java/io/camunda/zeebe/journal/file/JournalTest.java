@@ -191,7 +191,7 @@ class JournalTest {
   }
 
   @Test
-  void shouldResetWhileReading() {
+  void shouldNotReadAfterJournalResetWithoutReaderReset() {
     // given
     final var reader = journal.openReader();
     long asqn = 1;
@@ -203,17 +203,10 @@ class JournalTest {
 
     // when
     journal.reset(2);
+    journal.append(asqn++, data);
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(1);
-    final var record = journal.append(asqn, data);
-    assertThat(record.index()).isEqualTo(2);
-
-    // then
-    assertThat(reader.hasNext()).isTrue();
-    final var record2 = reader.next();
-    assertThat(record2.index()).isEqualTo(2);
-    assertThat(record2.asqn()).isEqualTo(record.asqn());
+    assertThat(reader.hasNext()).isFalse();
   }
 
   @Test

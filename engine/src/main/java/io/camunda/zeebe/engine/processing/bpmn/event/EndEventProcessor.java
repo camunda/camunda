@@ -12,29 +12,32 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
-  private static final String TRANSITION_TO_COMPLETED_PRECONDITION_ERROR =
-      "Expected to transition element to completed, but state is not ELEMENT_ACTIVATING";
+
+  private final NoneEndEventBehavior noneEndEventBehavior = new NoneEndEventBehavior();
+  private final ErrorEndEventBehavior errorEndEventBehavior = new ErrorEndEventBehavior();
+  private final MessageEndEventBehavior messageEndEventBehavior = new MessageEndEventBehavior();
 
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
+  private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public EndEventProcessor(final BpmnBehaviors bpmnBehaviors) {
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
+    variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -44,50 +47,115 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
   @Override
   public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-    if (!element.hasError()) {
-      transitionUntilCompleted(element, activating).ifLeft(incidentBehavior::createIncident);
-      return;
-    }
+    eventBehaviorOf(element).onActivate(element, activating);
+  }
 
-    final var error = element.getError();
-    ensureNotNull("error", error);
-
-    final var errorCode = error.getErrorCode();
-    ensureNotNullOrEmpty("errorCode", errorCode);
-
-    // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event or
-    // event sub process). This is also why we don't have to transition to the completing state here
-    eventPublicationBehavior
-        .findErrorCatchEvent(errorCode, activating)
-        .ifRightOrLeft(
-            catchEvent -> {
-              stateTransitionBehavior.transitionToActivated(activating);
-              eventPublicationBehavior.throwErrorEvent(catchEvent);
-            },
-            failure -> incidentBehavior.createIncident(failure, activating));
+  @Override
+  public void onComplete(final ExecutableEndEvent element, final BpmnElementContext context) {
+    eventBehaviorOf(element).onComplete(element, context);
   }
 
   @Override
   public void onTerminate(final ExecutableEndEvent element, final BpmnElementContext terminating) {
+    eventBehaviorOf(element).onTerminate(element, terminating);
+
+    // common behavior for all end events
     incidentBehavior.resolveIncidents(terminating);
 
     final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
-  // there's some duplication here with ExclusiveGatewayProcessor where we want to short circuit and
-  // go directly from activated -> completed, which could be dry'd up
-  // TODO(npepinpe): candidate for clean up for https://github.com/camunda-cloud/zeebe/issues/6202
-  private Either<Tuple<Failure, BpmnElementContext>, BpmnElementContext> transitionUntilCompleted(
-      final ExecutableEndEvent element, final BpmnElementContext activating) {
-    if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
-      throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
+  private EndEventBehavior eventBehaviorOf(final ExecutableEndEvent element) {
+    if (element.hasError()) {
+      return errorEndEventBehavior;
+    } else if (element.getJobWorkerProperties() != null) {
+      return messageEndEventBehavior;
+    } else {
+      return noneEndEventBehavior;
+    }
+  }
+
+  /** Extract different behaviors depending on the type of event. */
+  private interface EndEventBehavior {
+    void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating);
+
+    default void onComplete(
+        final ExecutableEndEvent element, final BpmnElementContext completing) {}
+
+    default void onTerminate(
+        final ExecutableEndEvent element, final BpmnElementContext terminating) {}
+  }
+
+  private class NoneEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      // there's some duplication here with ExclusiveGatewayProcessor where we want to short circuit
+      // and go directly from activated -> completed, which could be dry'd up
+      // TODO(npepinpe): candidate for clean up for
+      // https://github.com/camunda-cloud/zeebe/issues/6202
+
+      final var activated = stateTransitionBehavior.transitionToActivated(activating);
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      stateTransitionBehavior
+          .transitionToCompleted(element, completing)
+          .ifLeft(failure -> incidentBehavior.createIncident(failure, completing));
+    }
+  }
+
+  private class ErrorEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      final var error = element.getError();
+      ensureNotNull("error", error);
+
+      final var errorCode = error.getErrorCode();
+      ensureNotNullOrEmpty("errorCode", errorCode);
+
+      // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event
+      // or
+      // event sub process). This is also why we don't have to transition to the completing state
+      // here
+      eventPublicationBehavior
+          .findErrorCatchEvent(errorCode, activating)
+          .ifRightOrLeft(
+              catchEvent -> {
+                stateTransitionBehavior.transitionToActivated(activating);
+                eventPublicationBehavior.throwErrorEvent(catchEvent);
+              },
+              failure -> incidentBehavior.createIncident(failure, activating));
+    }
+  }
+
+  private class MessageEndEventBehavior implements EndEventBehavior {
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      variableMappingBehavior
+          .applyInputMappings(activating, element)
+          .flatMap(ok -> jobBehavior.createNewJob(activating, element))
+          .ifRightOrLeft(
+              ok -> stateTransitionBehavior.transitionToActivated(activating),
+              failure -> incidentBehavior.createIncident(failure, activating));
     }
 
-    final var activated = stateTransitionBehavior.transitionToActivated(activating);
-    final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    return stateTransitionBehavior
-        .transitionToCompleted(element, completing)
-        .mapLeft(failure -> new Tuple<>(failure, completing));
+    @Override
+    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
+      variableMappingBehavior
+          .applyOutputMappings(completing, element)
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+              failure -> incidentBehavior.createIncident(failure, completing));
+    }
+
+    @Override
+    public void onTerminate(
+        final ExecutableEndEvent element, final BpmnElementContext terminating) {
+
+      jobBehavior.cancelJob(terminating);
+    }
   }
 }

@@ -22,7 +22,9 @@ import com.google.common.collect.Lists;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.utils.Builder;
+import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collection;
 import java.util.Properties;
 
@@ -55,7 +57,7 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   protected final ClusterConfig config;
 
-  protected AtomixClusterBuilder(final ClusterConfig config) {
+  public AtomixClusterBuilder(final ClusterConfig config) {
     this.config = checkNotNull(config);
   }
 
@@ -219,6 +221,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   @Override
   public AtomixCluster build() {
-    return new AtomixCluster(config, null);
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 }

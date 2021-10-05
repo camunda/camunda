@@ -46,7 +46,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
             .id("eventDefinition")
             .done(),
         Arrays.asList(
-            expect("end", "End events must be one of: none or error"),
+            expect("end", "End events must be one of: none, error or message"),
             expect("eventDefinition", "Event definition of this type is not supported"))
       },
       {

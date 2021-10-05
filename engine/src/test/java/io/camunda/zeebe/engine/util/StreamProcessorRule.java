@@ -11,7 +11,8 @@ import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorListener;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -32,7 +33,6 @@ import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -63,6 +63,8 @@ public final class StreamProcessorRule implements TestRule {
   private final RuleChain chain;
   private TestStreams streams;
   private StreamProcessingComposite streamProcessingComposite;
+  private ListLogStorage sharedStorage = null;
+  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -73,7 +75,7 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule(final int partitionId) {
-    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory());
+    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), new TemporaryFolder());
   }
 
   public StreamProcessorRule(final int partitionId, final TemporaryFolder temporaryFolder) {
@@ -81,8 +83,12 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule(
-      final int startPartitionId, final int partitionCount, final ZeebeDbFactory dbFactory) {
+      final int startPartitionId,
+      final int partitionCount,
+      final ZeebeDbFactory dbFactory,
+      final ListLogStorage sharedStorage) {
     this(startPartitionId, partitionCount, dbFactory, new TemporaryFolder());
+    this.sharedStorage = sharedStorage;
   }
 
   public StreamProcessorRule(
@@ -120,21 +126,29 @@ public final class StreamProcessorRule implements TestRule {
     return this;
   }
 
+  public StreamProcessorRule withStreamProcessorMode(
+      final StreamProcessorMode streamProcessorMode) {
+    this.streamProcessorMode = streamProcessorMode;
+    return this;
+  }
+
   public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
     return streamProcessingComposite.getLogStreamRecordWriter(partitionId);
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory, r -> {});
+    return streamProcessingComposite.startTypedStreamProcessor(factory);
   }
 
-  public StreamProcessor startTypedStreamProcessor(
-      final StreamProcessorTestFactory factory, final Consumer<TypedRecord> onProcessedListener) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory, onProcessedListener);
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final StreamProcessorTestFactory factory) {
+    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(factory);
   }
 
-  public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
-    return startTypedStreamProcessor(startPartitionId, factory);
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final TypedRecordProcessorFactory factory) {
+    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
+        startPartitionId, factory);
   }
 
   public StreamProcessor startTypedStreamProcessor(
@@ -166,8 +180,8 @@ public final class StreamProcessorRule implements TestRule {
     return streams.getMockedResponseWriter();
   }
 
-  public Consumer<TypedRecord> getProcessedListener() {
-    return streams.getMockedOnProcessedListener();
+  public StreamProcessorListener getMockStreamProcessorListener() {
+    return streams.getMockStreamProcessorListener();
   }
 
   public ControlledActorClock getClock() {
@@ -300,10 +314,15 @@ public final class StreamProcessorRule implements TestRule {
     @Override
     protected void before() {
       streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
+      streams.withStreamProcessorMode(streamProcessorMode);
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {
-        streams.createLogStream(getLogName(partitionId), partitionId++);
+        if (sharedStorage != null) {
+          streams.createLogStream(getLogName(partitionId), partitionId++, sharedStorage);
+        } else {
+          streams.createLogStream(getLogName(partitionId), partitionId++);
+        }
       }
 
       streamProcessingComposite =

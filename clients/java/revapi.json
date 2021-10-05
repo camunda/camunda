@@ -1,11 +1,17 @@
 [
   {
     "extension": "revapi.filter",
+    "justification": "Ignore everything not included in the module itself",
     "configuration": {
-      "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
+      "archives": {
+        "include": [
+          "io\\.camunda:zeebe-client-java:.*"
+        ]
+      },
       "elements": {
         "exclude": [
           {
+            "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
             "matcher": "java-package",
             "match": "/io\\.camunda\\.zeebe\\.client\\.impl(\\..*)?/"
           }
@@ -14,26 +20,12 @@
     }
   },
   {
-    "extension": "revapi.filter",
-    "configuration": {
-      "justification": "The model API is already checked in the module itself.",
-      "elements": {
-        "exclude": [
-          {
-            "matcher": "java-package",
-            "match": "io.camunda.zeebe.model.bpmn"
-          }
-        ]
-      }
-    }
-  },
-  {
     "extension": "revapi.differences",
     "configuration": {
-      "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
       "ignore": true,
       "differences": [
         {
+          "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
           "code": "java.method.addedToInterface"
         }
       ]

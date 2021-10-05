@@ -40,9 +40,7 @@ import java.util.concurrent.CompletableFuture;
  */
 final class LeaderAppender extends AbstractAppender {
 
-  private static final long MAX_HEARTBEAT_WAIT = 60000;
   private static final int MIN_BACKOFF_FAILURE_COUNT = 5;
-  private static final int MIN_STEP_DOWN_FAILURE_COUNT = 3;
 
   private final long leaderTime;
   private final long leaderIndex;
@@ -51,6 +49,8 @@ final class LeaderAppender extends AbstractAppender {
   private final Map<Long, CompletableFuture<Long>> appendFutures = new HashMap<>();
   private final List<TimestampedFuture<Long>> heartbeatFutures = new ArrayList<>();
   private final long heartbeatTime;
+  private final int minStepDownFailureCount;
+  private final long maxQuorumResponseTimeout;
 
   LeaderAppender(final LeaderRole leader) {
     super(leader.raft);
@@ -60,6 +60,11 @@ final class LeaderAppender extends AbstractAppender {
     heartbeatTime = leaderTime;
     electionTimeout = raft.getElectionTimeout().toMillis();
     heartbeatInterval = raft.getHeartbeatInterval().toMillis();
+    minStepDownFailureCount = raft.getMinStepDownFailureCount();
+    maxQuorumResponseTimeout =
+        raft.getMaxQuorumResponseTimeout().isZero()
+            ? electionTimeout * 2
+            : raft.getMaxQuorumResponseTimeout().toMillis();
   }
 
   /**
@@ -165,8 +170,7 @@ final class LeaderAppender extends AbstractAppender {
     // that a partition occurred and transition back to the FOLLOWER state.
     final long quorumResponseTime =
         System.currentTimeMillis() - Math.max(computeResponseTime(), leaderTime);
-    final long maxQuorumResponseTimeout = electionTimeout * 2;
-    if (member.getFailureCount() >= MIN_STEP_DOWN_FAILURE_COUNT
+    if (member.getFailureCount() >= minStepDownFailureCount
         && quorumResponseTime > maxQuorumResponseTimeout) {
       log.warn(
           "Suspected network partition after {} failures from {} over a period of time {} > {}, stepping down",
@@ -250,14 +254,9 @@ final class LeaderAppender extends AbstractAppender {
     // to prevent having to read from disk to configure, install, or append to an unavailable
     // member.
     if (member.getFailureCount() >= MIN_BACKOFF_FAILURE_COUNT) {
-      // To prevent the leader from unnecessarily attempting to connect to a down follower on every
-      // heartbeat,
-      // use exponential backoff to back off up to 60 second heartbeat intervals.
-      if (System.currentTimeMillis() - member.getFailureTime()
-          > Math.min(
-              heartbeatInterval * Math.pow(2, member.getFailureCount()), MAX_HEARTBEAT_WAIT)) {
-        sendAppendRequest(member, buildAppendEmptyRequest(member));
-      }
+      // If the member is not reachable for a long time, only send heartbeats to ping the follower.
+      // When the follower starts acknowledging, leader will start sending the actual events.
+      sendAppendRequest(member, buildAppendEmptyRequest(member));
     }
     // If the member term is less than the current term or the member's configuration index is less
     // than the local configuration index, send a configuration update to the member.

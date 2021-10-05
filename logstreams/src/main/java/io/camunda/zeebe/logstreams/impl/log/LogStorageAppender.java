@@ -34,7 +34,6 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.LongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -56,19 +55,18 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final AppenderMetrics appenderMetrics;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
-  private final LongConsumer commitPositionListener;
+  private final int partitionId;
 
   public LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
-      final int maxBlockSize,
-      final LongConsumer commitPositionListener) {
+      final int maxBlockSize) {
     appenderMetrics = new AppenderMetrics(Integer.toString(partitionId));
-    this.commitPositionListener = commitPositionListener;
     env = new Environment();
     this.name = name;
+    this.partitionId = partitionId;
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
     maxAppendBlockSize = maxBlockSize;
@@ -134,6 +132,13 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   }
 
   @Override
+  protected Map<String, String> createContext() {
+    final var context = super.createContext();
+    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+    return context;
+  }
+
+  @Override
   public String getName() {
     return name;
   }
@@ -172,7 +177,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0) {
       appendBlock(blockPeek);
     } else {
-      actor.yield();
+      actor.yieldThread();
     }
   }
 
@@ -232,7 +237,6 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   void notifyCommitPosition(final long highestPosition, final long startTime) {
     actor.run(
         () -> {
-          commitPositionListener.accept(highestPosition);
           appenderMetrics.setLastCommittedPosition(highestPosition);
           appenderMetrics.commitLatency(startTime, ActorClock.currentTimeMillis());
         });

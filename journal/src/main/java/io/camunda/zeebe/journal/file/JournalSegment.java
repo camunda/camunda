@@ -21,13 +21,15 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.util.Set;
 import org.agrona.IoUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Log segment.
@@ -37,6 +39,7 @@ import org.agrona.IoUtil;
 class JournalSegment implements AutoCloseable {
 
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
+  private static final Logger LOG = LoggerFactory.getLogger(JournalSegment.class);
 
   private final JournalSegmentFile file;
   private final JournalSegmentDescriptor descriptor;
@@ -45,19 +48,20 @@ class JournalSegment implements AutoCloseable {
   private final Set<MappedJournalSegmentReader> readers = Sets.newConcurrentHashSet();
   private boolean open = true;
   private final MappedByteBuffer buffer;
+  // This need to be volatile because both the writer and the readers access it concurrently
+  private volatile boolean markedForDeletion = false;
 
   public JournalSegment(
       final JournalSegmentFile file,
       final JournalSegmentDescriptor descriptor,
+      final MappedByteBuffer buffer,
       final long maxWrittenIndex,
-      final JournalIndex journalIndex) {
+      final JournalIndex index) {
     this.file = file;
     this.descriptor = descriptor;
-    index = journalIndex;
-    buffer =
-        IoUtil.mapExistingFile(
-            file.file(), MapMode.READ_WRITE, file.name(), 0, descriptor.maxSegmentSize());
-    buffer.order(ENDIANNESS);
+    this.buffer = buffer;
+    this.index = index;
+
     writer = createWriter(maxWrittenIndex);
   }
 
@@ -141,8 +145,11 @@ class JournalSegment implements AutoCloseable {
    */
   MappedJournalSegmentReader createReader() {
     checkOpen();
-    return new MappedJournalSegmentReader(
-        buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
+    final MappedJournalSegmentReader reader =
+        new MappedJournalSegmentReader(
+            buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
+    readers.add(reader);
+    return reader;
   }
 
   private MappedJournalSegmentWriter createWriter(final long lastWrittenIndex) {
@@ -156,6 +163,12 @@ class JournalSegment implements AutoCloseable {
    */
   void onReaderClosed(final MappedJournalSegmentReader reader) {
     readers.remove(reader);
+    // When multiple readers are closed simultaneously, both readers might try to delete the file.
+    // This is ok, as safeDelete is idempotent. Hence we keep it simple, and doesn't add more
+    // concurrency control.
+    if (markedForDeletion && readers.isEmpty()) {
+      safeDelete();
+    }
   }
 
   /** Checks whether the segment is open. */
@@ -175,23 +188,56 @@ class JournalSegment implements AutoCloseable {
   /** Closes the segment. */
   @Override
   public void close() {
-    writer.close();
+    open = false;
     readers.forEach(MappedJournalSegmentReader::close);
     IoUtil.unmap(buffer);
-    open = false;
   }
 
   /** Deletes the segment. */
   public void delete() {
+    open = false;
+    markForDeletion();
+    if (readers.isEmpty()) {
+      safeDelete();
+    }
+  }
+
+  private void safeDelete() {
+    if (!readers.isEmpty()) {
+      throw new JournalException(
+          String.format(
+              "Cannot delete segment file. There are %d readers referring to this segment.",
+              readers.size()));
+    }
     try {
-      Files.deleteIfExists(file.file().toPath());
+      IoUtil.unmap(buffer);
+      Files.deleteIfExists(file.getFileMarkedForDeletion());
     } catch (final IOException e) {
-      throw new JournalException(e);
+      LOG.warn(
+          "Could not delete segment {}. File to delete {}. This can lead to increased disk usage.",
+          this,
+          file.getFileMarkedForDeletion(),
+          e);
     }
   }
 
   @Override
   public String toString() {
     return toStringHelper(this).add("id", id()).add("index", index()).toString();
+  }
+
+  private void markForDeletion() {
+    if (markedForDeletion) {
+      return;
+    }
+
+    writer.close();
+    final var target = file.getFileMarkedForDeletion();
+    try {
+      FileUtil.moveDurably(file.file().toPath(), target);
+    } catch (final IOException e) {
+      throw new JournalException(e);
+    }
+    markedForDeletion = true;
   }
 }

@@ -24,7 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ActorControl {
+public class ActorControl implements ConcurrencyControl {
   final ActorTask task;
   private final Actor actor;
 
@@ -141,19 +141,6 @@ public class ActorControl {
   }
 
   /**
-   * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle
-   * phases.
-   *
-   * <p>Runnables submitted externally are executed while the actor is in the following actor
-   * lifecycle phases: {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param action
-   */
-  public void run(final Runnable action) {
-    scheduleRunnable(action, true);
-  }
-
-  /**
    * Run the provided runnable repeatedly until it calls {@link #done()}. To be used for jobs which
    * may experience backpressure.
    */
@@ -173,37 +160,6 @@ public class ActorControl {
   public ScheduledTimer runDelayed(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
     return scheduleTimer(delay, false, runnable);
-  }
-
-  /**
-   * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such
-   * that other other actions may be executed before this. This method is useful in case an actor is
-   * in a (potentially endless) loop and it should be able to interrupt it.
-   *
-   * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param action the action to run.
-   */
-  public void submit(final Runnable action) {
-    final ActorThread currentActorRunner = ensureCalledFromActorThread("run(...)");
-    final ActorTask currentTask = currentActorRunner.getCurrentTask();
-
-    final ActorJob job;
-    if (currentTask == task) {
-      job = currentActorRunner.newJob();
-    } else {
-      job = new ActorJob();
-    }
-
-    job.setRunnable(action);
-    job.setAutoCompleting(true);
-    job.onJobAddedToTask(task);
-    task.submit(job);
-
-    if (currentTask == task) {
-      yield();
-    }
   }
 
   /**
@@ -248,6 +204,7 @@ public class ActorControl {
    * @param callback the callback that handle the future's result. The throwable is <code>null
    *     </code> when the future is completed successfully.
    */
+  @Override
   public <T> void runOnCompletion(
       final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
     ensureCalledFromWithinActor("runOnCompletion(...)");
@@ -259,6 +216,51 @@ public class ActorControl {
           future,
           callback,
           (job) -> new ActorFutureSubscription(future, job, lifecyclePhase.getValue()));
+    }
+  }
+
+  /**
+   * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle
+   * phases.
+   *
+   * <p>Runnables submitted externally are executed while the actor is in the following actor
+   * lifecycle phases: {@link ActorLifecyclePhase#STARTED}
+   *
+   * @param action
+   */
+  @Override
+  public void run(final Runnable action) {
+    scheduleRunnable(action, true);
+  }
+
+  /**
+   * Like {@link #run(Runnable)} but submits the runnable to the end end of the actor's queue such
+   * that other other actions may be executed before this. This method is useful in case an actor is
+   * in a (potentially endless) loop and it should be able to interrupt it.
+   *
+   * <p>The runnable is is executed while the actor is in the following actor lifecycle phases:
+   * {@link ActorLifecyclePhase#STARTED}
+   *
+   * @param action the action to run.
+   */
+  public void submit(final Runnable action) {
+    final ActorThread currentThread = ActorThread.current();
+    final ActorTask currentTask = currentThread == null ? null : currentThread.getCurrentTask();
+    final ActorJob job;
+
+    if (currentThread != null && currentTask == task) {
+      job = currentThread.newJob();
+    } else {
+      job = new ActorJob();
+    }
+
+    job.setRunnable(action);
+    job.setAutoCompleting(true);
+    job.onJobAddedToTask(task);
+    task.submit(job);
+
+    if (currentTask != null && currentTask == task) {
+      yieldThread();
     }
   }
 
@@ -333,9 +335,9 @@ public class ActorControl {
   }
 
   /** can be called by the actor to yield the thread */
-  public void yield() {
-    final ActorJob job = ensureCalledFromWithinActor("yield()");
-    job.getTask().yield();
+  public void yieldThread() {
+    final ActorJob job = ensureCalledFromWithinActor("yieldThread()");
+    job.getTask().yieldThread();
   }
 
   public ActorFuture<Void> close() {

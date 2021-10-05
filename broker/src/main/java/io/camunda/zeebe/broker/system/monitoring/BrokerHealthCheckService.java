@@ -11,6 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -100,19 +102,21 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
   private final MemberId nodeId;
-  private final PartitionGroup partitionGroup;
 
-  public BrokerHealthCheckService(
-      final BrokerInfo localBroker, final PartitionGroup partitionGroup) {
-    this.partitionGroup = partitionGroup;
+  public BrokerHealthCheckService(final BrokerInfo localBroker) {
     actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
     nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
     healthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
-    initializePartitionInstallStatus();
-    initializePartitionHealthStatus();
   }
 
-  private void initializePartitionHealthStatus() {
+  public void registerPartitionManager(final PartitionManager partitionManager) {
+    final var partitionGroup = partitionManager.getPartitionGroup();
+
+    initializePartitionInstallStatus(partitionGroup);
+    initializePartitionHealthStatus(partitionGroup);
+  }
+
+  private void initializePartitionHealthStatus(final PartitionGroup partitionGroup) {
     partitionGroup.getPartitionsWithMember(nodeId).stream()
         .map(partition -> partition.id().id())
         .forEach(
@@ -127,18 +131,30 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   @Override
   public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
+    checkState();
     return updateBrokerReadyStatus(partitionId);
   }
 
   @Override
   public ActorFuture<Void> onBecomingLeader(
-      final int partitionId, final long term, final LogStream logStream) {
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final QueryService queryService) {
+    checkState();
     return updateBrokerReadyStatus(partitionId);
   }
 
   @Override
   public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
+    checkState();
     return CompletableActorFuture.completed(null);
+  }
+
+  private void checkState() {
+    if (partitionInstallStatus == null) {
+      throw new IllegalStateException("PartitionInstallStatus must not be null.");
+    }
   }
 
   private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
@@ -149,13 +165,13 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
             allPartitionsInstalled = !partitionInstallStatus.containsValue(false);
 
             if (allPartitionsInstalled) {
-              LOG.debug("All partitions are installed. Broker is ready!");
+              LOG.info("All partitions are installed. Broker is ready!");
             }
           }
         });
   }
 
-  private void initializePartitionInstallStatus() {
+  private void initializePartitionInstallStatus(final PartitionGroup partitionGroup) {
     partitionInstallStatus =
         partitionGroup.getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))

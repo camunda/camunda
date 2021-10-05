@@ -65,6 +65,7 @@ class SegmentedJournalReaderTest {
     // when - compact up to the first index of segment 3
     final int indexToCompact = ENTRIES_PER_SEGMENT * 2 + 1;
     journal.deleteUntil(indexToCompact);
+    reader.seekToFirst();
 
     // then
     assertThat(reader.hasNext()).isTrue();
@@ -106,6 +107,35 @@ class SegmentedJournalReaderTest {
       assertThat(reader.hasNext()).isTrue();
       assertThat(reader.next().asqn()).isEqualTo(i);
     }
+  }
+
+  @Test
+  void shouldNotReadWhenAccessingDeletedSegment() {
+    // given
+    journal.append(data);
+    final var reader = journal.openReader();
+
+    // when
+    journal.reset(100);
+
+    // then
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldReadAfterReset() {
+    // given
+    journal.append(data);
+    final var reader = journal.openReader();
+    final int resetIndex = 100;
+    journal.reset(resetIndex);
+    journal.append(data);
+
+    // when
+    reader.seekToFirst();
+
+    // then
+    assertThat(reader.next().index()).isEqualTo(resetIndex);
   }
 
   private int getSerializedSize(final DirectBuffer data) {

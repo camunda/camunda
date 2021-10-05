@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,15 +22,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 public final class ProcessingContext implements ReadonlyProcessingContext {
 
+  private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
+
   private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
-  private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
   private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
 
   private ActorControl actor;
@@ -48,9 +46,10 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
-  private Consumer<TypedRecord> onProcessedListener = record -> {};
-  private Consumer<LoggedEvent> onSkippedListener = record -> {};
+  private StreamProcessorListener streamProcessorListener = NOOP_LISTENER;
+
   private int maxFragmentSize;
+  private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
 
   public ProcessingContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -113,13 +112,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return commandResponseWriter;
   }
 
-  public ProcessingContext onProcessedListener(final Consumer<TypedRecord> onProcessedListener) {
-    this.onProcessedListener = onProcessedListener;
-    return this;
-  }
-
-  public ProcessingContext onSkippedListener(final Consumer<LoggedEvent> onSkippedListener) {
-    this.onSkippedListener = onSkippedListener;
+  public ProcessingContext listener(final StreamProcessorListener streamProcessorListener) {
+    this.streamProcessorListener = streamProcessorListener;
     return this;
   }
 
@@ -130,6 +124,11 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public ProcessingContext eventApplier(final EventApplier eventApplier) {
     this.eventApplier = eventApplier;
+    return this;
+  }
+
+  public ProcessingContext processorMode(final StreamProcessorMode streamProcessorMode) {
+    this.streamProcessorMode = streamProcessorMode;
     return this;
   }
 
@@ -204,20 +203,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return eventApplier;
   }
 
-  public Consumer<TypedRecord> getOnProcessedListener() {
-    return onProcessedListener;
-  }
-
-  public Consumer<LoggedEvent> getOnSkippedListener() {
-    return onSkippedListener;
-  }
-
-  public ReprocessingStreamWriter getReprocessingStreamWriter() {
-    return reprocessingStreamWriter;
-  }
-
-  public void enableReprocessingStreamWriter() {
-    streamWriterProxy.wrap(reprocessingStreamWriter);
+  public StreamProcessorListener getStreamProcessorListener() {
+    return streamProcessorListener;
   }
 
   public void enableLogStreamWriter() {
@@ -226,5 +213,9 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public void disableLogStreamWriter() {
     streamWriterProxy.wrap(noopTypedStreamWriter);
+  }
+
+  public StreamProcessorMode getProcessorMode() {
+    return streamProcessorMode;
   }
 }

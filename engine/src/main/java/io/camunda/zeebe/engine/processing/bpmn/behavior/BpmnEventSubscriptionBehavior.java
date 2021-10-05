@@ -11,25 +11,19 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
-import io.camunda.zeebe.engine.processing.message.MessageNameException;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 
@@ -40,12 +34,9 @@ public final class BpmnEventSubscriptionBehavior {
 
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
 
-  private final BpmnStateBehavior stateBehavior;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableElementInstanceState elementInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
-  private final StateWriter stateWriter;
   private final SideEffects sideEffects;
 
   private final KeyGenerator keyGenerator;
@@ -54,44 +45,26 @@ public final class BpmnEventSubscriptionBehavior {
   private final EventTriggerBehavior eventTriggerBehavior;
 
   public BpmnEventSubscriptionBehavior(
-      final BpmnStateBehavior stateBehavior,
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
-      final MutableZeebeState zeebeState) {
-    this.stateBehavior = stateBehavior;
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
     this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
-    elementInstanceState = zeebeState.getElementInstanceState();
-    keyGenerator = zeebeState.getKeyGenerator();
+    this.keyGenerator = keyGenerator;
   }
 
+  /** @return either a failure or nothing */
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
       final T element, final BpmnElementContext context) {
-
-    try {
-      catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
-      return Either.right(null);
-
-    } catch (final MessageCorrelationKeyException e) {
-      return Either.left(
-          new Failure(e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, e.getVariableScopeKey()));
-
-    } catch (final EvaluationException e) {
-      return Either.left(
-          new Failure(
-              e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, context.getElementInstanceKey()));
-    } catch (final MessageNameException e) {
-      return Either.left(e.getFailure());
-    }
+    return catchEventBehavior.subscribeToEvents(context, element, sideEffects, commandWriter);
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {

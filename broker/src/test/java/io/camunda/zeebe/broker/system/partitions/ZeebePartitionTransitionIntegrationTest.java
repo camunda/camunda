@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.TestPartitionStep;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -29,12 +30,12 @@ public class ZeebePartitionTransitionIntegrationTest {
 
   @Rule public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
 
-  private PartitionContext ctx;
+  private PartitionStartupAndTransitionContextImpl ctx;
   private PartitionTransition transition;
 
   @Before
   public void setup() {
-    ctx = mock(PartitionContext.class);
+    ctx = mock(PartitionStartupAndTransitionContextImpl.class);
     final TestPartitionStep firstComponent = spy(TestPartitionStep.builder().build());
     final TestPartitionStep secondComponent = spy(TestPartitionStep.builder().build());
     transition =
@@ -43,18 +44,21 @@ public class ZeebePartitionTransitionIntegrationTest {
     final RaftPartition raftPartition = mock(RaftPartition.class);
     when(raftPartition.id()).thenReturn(new PartitionId("", 0));
     when(raftPartition.getRole()).thenReturn(Role.INACTIVE);
+    when(raftPartition.getServer()).thenReturn(mock(RaftPartitionServer.class));
 
     final CriticalComponentsHealthMonitor healthMonitor =
         mock(CriticalComponentsHealthMonitor.class);
 
     when(ctx.getRaftPartition()).thenReturn(raftPartition);
+    when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
+    when(ctx.createTransitionContext()).thenReturn(ctx);
   }
 
   @Test
   public void shouldTransitionToAndCloseInSequence() {
     // given
-    final ZeebePartition partition = new ZeebePartition(ctx, transition);
+    final ZeebePartition partition = new ZeebePartition(ctx, transition, List.of());
     schedulerRule.submitActor(partition);
     partition.onNewRole(Role.LEADER, 1);
     partition.onNewRole(Role.FOLLOWER, 1);
