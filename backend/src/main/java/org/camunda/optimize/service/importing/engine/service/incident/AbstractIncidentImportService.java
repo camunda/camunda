@@ -20,6 +20,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -68,15 +69,9 @@ public abstract class AbstractIncidentImportService implements ImportService<His
     return engineIncidents
       .stream()
       .filter(this::containsProcessInstanceId)
-      .map(incident -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
-        engineContext,
-        incident,
-        HistoricIncidentEngineDto::getProcessDefinitionKey,
-        HistoricIncidentEngineDto::getProcessDefinitionId,
-        HistoricIncidentEngineDto::setProcessDefinitionKey
-      ))
-      .filter(incident -> incident.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 
@@ -103,21 +98,24 @@ public abstract class AbstractIncidentImportService implements ImportService<His
     return incident.getProcessInstanceId() != null;
   }
 
-  private IncidentDto mapEngineEntityToOptimizeEntity(final HistoricIncidentEngineDto engineEntity) {
-    return new IncidentDto(
-      engineEntity.getProcessInstanceId(),
-      engineEntity.getProcessDefinitionKey(),
-      engineContext.getEngineAlias(),
-      engineEntity.getId(),
-      engineEntity.getCreateTime(),
-      engineEntity.getEndTime(),
-      getDuration(engineEntity),
-      IncidentType.valueOfId(engineEntity.getIncidentType()),
-      engineEntity.getActivityId(),
-      engineEntity.getFailedActivityId(),
-      engineEntity.getIncidentMessage(),
-      extractIncidentStatus(engineEntity)
-    );
+  private Optional<IncidentDto> mapEngineEntityToOptimizeEntity(final HistoricIncidentEngineDto engineEntity) {
+    return processDefinitionResolverService.getDefinition(engineEntity.getProcessDefinitionId(), engineContext)
+      .map(definition -> new IncidentDto(
+        engineEntity.getProcessInstanceId(),
+        definition.getKey(),
+        definition.getVersion(),
+        engineEntity.getTenantId(),
+        engineContext.getEngineAlias(),
+        engineEntity.getId(),
+        engineEntity.getCreateTime(),
+        engineEntity.getEndTime(),
+        getDuration(engineEntity),
+        IncidentType.valueOfId(engineEntity.getIncidentType()),
+        engineEntity.getActivityId(),
+        engineEntity.getFailedActivityId(),
+        engineEntity.getIncidentMessage(),
+        extractIncidentStatus(engineEntity)
+      ));
   }
 
   private Long getDuration(final HistoricIncidentEngineDto engineEntity) {

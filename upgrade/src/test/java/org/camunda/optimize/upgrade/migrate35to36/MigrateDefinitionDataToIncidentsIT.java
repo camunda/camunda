@@ -15,13 +15,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
-public class MigrateDefinitionDataToFlowNodesIT extends AbstractUpgrade35IT {
+public class MigrateDefinitionDataToIncidentsIT extends AbstractUpgrade35IT {
 
   @Test
   public void definitionDataMigrationForInstanceIndices() {
     // given
     executeBulk("steps/3.5/35-process-instances.json");
-    executeBulk("steps/3.5/35-event-process-instances.json");
     final UpgradePlan upgradePlan = new Upgrade35To36PlanFactory().createUpgradePlan(upgradeDependencies);
 
     // when
@@ -31,30 +30,17 @@ public class MigrateDefinitionDataToFlowNodesIT extends AbstractUpgrade35IT {
     final List<ProcessInstanceDto> instancesAfterUpgrade = getAllDocumentsOfIndexAs(
       PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class
     );
-
-    // and data source has been upgraded
+    // definition data has been set on the instance with incidents
     assertThat(instancesAfterUpgrade)
-      .hasSize(9)
-      .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances())
-        .isNotEmpty()
-        .allSatisfy(flowNodeInstanceDto -> {
-          assertThat(flowNodeInstanceDto.getDefinitionKey())
-            .isNotNull()
-            .isEqualTo(instance.getProcessDefinitionKey());
-          assertThat(flowNodeInstanceDto.getDefinitionVersion())
-            .isNotNull()
-            .isEqualTo(instance.getProcessDefinitionVersion());
-          assertThat(flowNodeInstanceDto.getTenantId()).isEqualTo(instance.getTenantId());
-        }));
-
-    assertThat(instancesAfterUpgrade)
-      .filteredOn(processInstanceDto -> processInstanceDto.getProcessDefinitionKey().equals("ReviewInvoice"))
-      .hasSize(3)
-      .allSatisfy(instance -> {
-        assertThat(instance.getFlowNodeInstances())
-          .isNotEmpty()
-          .allSatisfy(flowNodeInstanceDto -> {
-            assertThat(flowNodeInstanceDto.getTenantId()).isEqualTo("tenant1");
+      .filteredOn(processInstanceDto -> processInstanceDto.getProcessInstanceId().equals("abf539c7-f034-11eb-bc34-0242ac130004"))
+      .singleElement()
+      .satisfies(instance -> {
+        assertThat(instance.getIncidents())
+          .hasSize(2)
+          .allSatisfy(incidentInstance -> {
+            assertThat(incidentInstance.getDefinitionKey()).isEqualTo("ReviewInvoice");
+            assertThat(incidentInstance.getDefinitionVersion()).isEqualTo("1");
+            assertThat(incidentInstance.getTenantId()).isEqualTo("tenant1");
           });
       });
   }
