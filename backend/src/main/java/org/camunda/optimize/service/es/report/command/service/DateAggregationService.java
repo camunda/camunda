@@ -20,7 +20,7 @@ import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregationBui
 import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.range.DateRangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.springframework.stereotype.Component;
 
@@ -272,8 +272,9 @@ public class DateAggregationService {
     final ZonedDateTime max = context.getLatestDate();
 
     final Duration intervalDuration = getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
-    RangeAggregationBuilder rangeAgg = AggregationBuilders
-      .range(context.getDateAggregationName().orElse(DATE_AGGREGATION))
+    DateRangeAggregationBuilder rangeAgg = AggregationBuilders
+      .dateRange(context.getDateAggregationName().orElse(DATE_AGGREGATION))
+      .timeZone(min.getZone())
       .field(context.getDateField());
     ZonedDateTime start = min;
 
