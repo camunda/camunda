@@ -30,7 +30,7 @@ CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 String basePodSpec(Integer mavenForkCount = 1, Integer mavenCpuLimit = 3, String mavenDockerImage = MAVEN_DOCKER_IMAGE) {
   // assuming 1Gig for each fork + management overhead
-  String mavenMemoryLimit = mavenCpuLimit + 2;
+  String mavenMemoryLimit = mavenCpuLimit + 4;
   return """
 apiVersion: v1
 kind: Pod
