@@ -10,6 +10,7 @@ import 'jest-enzyme';
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
+import {configure} from '@testing-library/react';
 
 // configure enzyme
 Enzyme.configure({adapter: new Adapter()});
@@ -73,3 +74,7 @@ window.MutationObserver = MutationObserver;
 beforeAll(() => mockServer.listen());
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
+
+configure({
+  asyncUtilTimeout: 7000,
+});

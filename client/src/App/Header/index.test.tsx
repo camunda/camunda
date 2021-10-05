@@ -66,7 +66,7 @@ describe('Header', () => {
     expect(screen.getByText('Instances')).toBeInTheDocument();
 
     expect(
-      await screen.findByText('firstname lastname', undefined, {timeout: 2000})
+      await screen.findByText('firstname lastname', undefined)
     ).toBeInTheDocument();
   });
 
@@ -84,7 +84,7 @@ describe('Header', () => {
     });
 
     expect(
-      await screen.findByText('firstname lastname', undefined, {timeout: 2000})
+      await screen.findByText('firstname lastname', undefined)
     ).toBeInTheDocument();
 
     userEvent.click(await screen.findByText('Operate'));
@@ -117,7 +117,7 @@ describe('Header', () => {
     });
 
     expect(
-      await screen.findByText('firstname lastname', undefined, {timeout: 2000})
+      await screen.findByText('firstname lastname', undefined)
     ).toBeInTheDocument();
 
     userEvent.click(await screen.findByText('Operate'));
