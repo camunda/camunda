@@ -3,19 +3,26 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+
 package io.camunda.operate.webapp.security.iam;
+
+import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
+import static io.camunda.operate.util.CollectionUtil.map;
+import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.iam.sdk.IamApi;
 import io.camunda.iam.sdk.authentication.Tokens;
 import io.camunda.iam.sdk.authentication.UserInfo;
 import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.iam.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Role;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
@@ -27,24 +34,22 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.stereotype.Component;
 
-import static io.camunda.operate.util.CollectionUtil.map;
-import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-
 @Profile(OperateURIs.IAM_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class IAMAuthentication extends AbstractAuthenticationToken {
 
+  private static final String FULL_ACCESS = "FULL ACCESS";
   protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
-  private IamApi iamApi;
+  private transient IamApi iamApi;
 
   private DecodedJWT jwt;
   private Tokens tokens;
   private UserInfo userInfo;
-  private boolean authenticated = false;
+
+  private Map<String,Role> iam2operateRoles = Map.of(FULL_ACCESS, Role.OWNER);
 
   public IAMAuthentication() {
     super(null);
@@ -60,22 +65,9 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     return jwt.getSubject();
   }
 
-  @Override
-  public void setAuthenticated(boolean authenticated) {
-    if (authenticated) {
-      throw new IllegalArgumentException("Create a new TokenAuthentication object to authenticate");
-    }
-    this.authenticated = false;
-  }
-
-  @Override
-  public boolean isAuthenticated() {
-    try {
-      iamApi.authentication().verifyToken(tokens.getAccessToken());
-    } catch (TokenVerificationException e) {
-      return false;
-    }
-    return authenticated;
+  private boolean hasExpired() {
+    Date expires = jwt.getExpiresAt();
+    return expires == null || expires.before(new Date());
   }
 
   @Override
@@ -83,15 +75,22 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     return userInfo.getFullName();
   }
 
+  @Override
+  public boolean isAuthenticated() {
+    return super.isAuthenticated() && !hasExpired();
+  }
+
   public String getId() {
     return userInfo.getId();
   }
 
   public List<Role> getRoles() {
-    if( userInfo.getRoles().isEmpty()) {
+    if (userInfo.getRoles().isEmpty()) {
       return Role.DEFAULTS;
     } else {
-      return map(userInfo.getRoles(), Role::fromString);
+      return map(userInfo.getRoles(), iamRole ->
+            getOrDefaultForNullValue(iam2operateRoles, iamRole, Role.USER)
+      );
     }
   }
 
@@ -99,10 +98,11 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     tokens = retrieveTokens(req, authCodeDto);
     userInfo = retrieveUserInfo(tokens);
     jwt = iamApi.authentication().verifyToken(tokens.getAccessToken());
-    authenticated = true;
+    setAuthenticated(true);
   }
 
-  private Tokens retrieveTokens(final HttpServletRequest req, final AuthCodeDto authCodeDto) throws Exception {
+  private Tokens retrieveTokens(final HttpServletRequest req, final AuthCodeDto authCodeDto)
+      throws Exception {
     return requestWithRetry(() -> iamApi.authentication()
         .exchangeAuthCode(authCodeDto, getRedirectURI(req, IAM_CALLBACK_URI)));
   }
@@ -112,7 +112,8 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
         .userInfo(tokens));
   }
 
-  private <T> T requestWithRetry(final RetryOperation.RetryConsumer<T> retryConsumer) throws Exception {
+  private <T> T requestWithRetry(final RetryOperation.RetryConsumer<T> retryConsumer)
+      throws Exception {
     return RetryOperation.<T>newBuilder()
         .noOfRetry(10)
         .delayInterval(500, TimeUnit.MILLISECONDS)
@@ -124,15 +125,16 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
 
   public static String getRedirectURI(final HttpServletRequest req, final String redirectTo) {
     String redirectUri = req.getScheme() + "://" + req.getServerName();
-    if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
+    if ((req.getScheme().equals("http") && req.getServerPort() != 80) || (
+        req.getScheme().equals("https") && req.getServerPort() != 443)) {
       redirectUri += ":" + req.getServerPort();
     }
     String result;
     if (contextPathIsUUID(req.getContextPath())) {
       final String clusterId = req.getContextPath().replace("/", "");
       result = redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
-    } else{
-      result = redirectUri + req.getContextPath()+  redirectTo;
+    } else {
+      result = redirectUri + req.getContextPath() + redirectTo;
     }
     return result;
   }
@@ -141,7 +143,7 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     try {
       UUID.fromString(contextPath.replace("/", ""));
       return true;
-    }catch (Exception e){
+    } catch (Exception e) {
       // Assume it isn't a UUID
       return false;
     }

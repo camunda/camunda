@@ -21,13 +21,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class RolePermissionService {
 
-
-
   private final Map<Role, List<Permission>> roles2permissions = new EnumMap<>(Role.class);
 
   @PostConstruct
   public void init(){
-
     roles2permissions.put(USER, List.of(READ));
     roles2permissions.put(OWNER, List.of(READ, WRITE));
   }

@@ -14,9 +14,10 @@ public enum Role {
 
   public static final List<Role> DEFAULTS = List.of(USER);
 
-  public static Role fromString(String roleAsString) {
+  public static Role fromString(final String roleAsString) {
+    final String roleName = roleAsString.replaceAll("\\s+", "_");
     for(Role role : values()) {
-      if(role.name().equalsIgnoreCase(roleAsString))
+      if(role.name().equalsIgnoreCase(roleName))
         return role;
     }
     throw new IllegalArgumentException(

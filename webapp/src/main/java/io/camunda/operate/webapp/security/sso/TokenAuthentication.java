@@ -3,7 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
+
 package io.camunda.operate.webapp.security.sso;
+
+import static io.camunda.operate.util.CollectionUtil.map;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.auth0.Tokens;
 import com.auth0.jwt.JWT;
@@ -13,23 +17,18 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Role;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
-
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import static io.camunda.operate.util.CollectionUtil.map;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Profile(OperateURIs.SSO_AUTH_PROFILE)
 @Component
@@ -37,23 +36,21 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
   private static final transient String SSO_ROLES = "roles";
-  protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
-
+  private final transient Logger logger = LoggerFactory.getLogger(this.getClass());
   private DecodedJWT jwt;
-  private boolean authenticated = false;
 
-  @Autowired
-  private transient OperateProperties operateProperties;
+  @Value("${" + OperateProperties.PREFIX + ".auth0.claimName}")
+  private String claimName;
 
-  private transient final Predicate<Map> idEqualsOrganization = new Predicate<>() {
-    @Override public boolean test(Map orgs) {
-      return orgs.containsKey("id") && orgs.get("id").equals(operateProperties.getAuth0()
-          .getOrganization());
-    }
-  };
+  @Value("${" + OperateProperties.PREFIX + ".auth0.organization}")
+  private String organization;
 
   public TokenAuthentication() {
     super(null);
+  }
+
+  private boolean isIdEqualsOrganization(Map orgs) {
+    return orgs.containsKey("id") && orgs.get("id").equals(organization);
   }
 
   private boolean hasExpired() {
@@ -66,52 +63,45 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return jwt.getToken();
   }
 
+  @Override
+  public Object getPrincipal() {
+    return jwt.getSubject();
+  }
+
   public List<Role> getRoles() {
     return readRolesFromClaim();
   }
 
   private List<Role> readRolesFromClaim() {
     try {
-      Claim claim = jwt.getClaim(operateProperties.getAuth0().getClaimName());
+      Claim claim = jwt.getClaim(claimName);
       List<Map> userInfos = claim.asList(Map.class);
       if (userInfos != null) {
         Optional<Map> maybeUserInfo = userInfos.stream()
-            .filter(idEqualsOrganization)
+            .filter(this::isIdEqualsOrganization)
             .findFirst();
         if (maybeUserInfo.isPresent()) {
           return map((List<String>) maybeUserInfo.get().get(SSO_ROLES), Role::fromString);
         }
       }
       return Role.DEFAULTS;
-    }catch (Exception e){
+    } catch (Exception e) {
       return Role.DEFAULTS;
     }
   }
 
   @Override
-  public Object getPrincipal() {
-    return jwt.getSubject();
-  }
-
-  @Override
-  public void setAuthenticated(boolean authenticated) {
-    if (authenticated) {
-      throw new IllegalArgumentException("Create a new Authentication object to authenticate");
-    }
-    this.authenticated = false;
-  }
-
-  @Override
   public boolean isAuthenticated() {
-    return authenticated && !hasExpired();
+    return super.isAuthenticated() && !hasExpired();
   }
 
   public void authenticate(Tokens tokens) {
     jwt = JWT.decode(tokens.getIdToken());
-    Claim claim = jwt.getClaim(operateProperties.getAuth0().getClaimName());
+    Claim claim = jwt.getClaim(claimName);
     tryAuthenticateAsListOfMaps(claim);
-    if (!authenticated) {
-      throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
+    if (!isAuthenticated()) {
+      throw new InsufficientAuthenticationException(
+          "No permission for operate - check your organization id");
     }
   }
 
@@ -119,7 +109,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     try {
       List<Map> claims = claim.asList(Map.class);
       if (claims != null) {
-        authenticated = claims.stream().anyMatch(idEqualsOrganization);
+        setAuthenticated(claims.stream().anyMatch(this::isIdEqualsOrganization));
       }
     } catch (JWTDecodeException e) {
       logger.debug("Read organization claim as list of maps failed.", e);
@@ -127,13 +117,12 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   }
 
   /**
-   * Gets the claims for this JWT token. <br>
-   * For an ID token, claims represent user profile information such as the
-   * user's name, profile, picture, etc. <br>
+   * Gets the claims for this JWT token. <br> For an ID token, claims represent user profile
+   * information such as the user's name, profile, picture, etc. <br>
    *
-   * @see <a href="https://auth0.com/docs/tokens/id-token">ID Token
-   *      Documentation</a>
    * @return a Map containing the claims of the token.
+   * @see <a href="https://auth0.com/docs/tokens/id-token">ID Token
+   * Documentation</a>
    */
   public Map<String, Claim> getClaims() {
     return jwt.getClaims();
