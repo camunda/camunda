@@ -59,10 +59,10 @@ spec:
     resources:
       limits:
         cpu: 6
-        memory: 12Gi
+        memory: 16Gi
       requests:
         cpu: 6
-        memory: 12Gi
+        memory: 16Gi
 """
 }
 
