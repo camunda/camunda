@@ -7,7 +7,7 @@
     "@bpmn-io/form-js": "0.4.4",
     "@camunda-cloud/common-ui": "0.0.18-beta7",
     "@camunda-cloud/common-ui-react": "0.0.18-beta7",
-    "date-fns": "2.24.0",
+    "date-fns": "2.25.0",
     "final-form": "4.20.2",
     "final-form-arrays": "3.0.2",
     "graphql": "15.6.0",
