@@ -8,10 +8,14 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.uti
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
 
+import java.util.List;
+import java.util.Optional;
+
 public class OpenIncidentFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
+  private List<String> appliedTo;
 
   private OpenIncidentFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -26,9 +30,19 @@ public class OpenIncidentFilterBuilder {
     return this;
   }
 
+  public OpenIncidentFilterBuilder appliedTo(final String appliedTo) {
+    return appliedTo(List.of(appliedTo));
+  }
+
+  public OpenIncidentFilterBuilder appliedTo(final List<String> appliedTo) {
+    this.appliedTo = appliedTo;
+    return this;
+  }
+
   public ProcessFilterBuilder add() {
     final OpenIncidentFilterDto filter = new OpenIncidentFilterDto();
     filter.setFilterLevel(filterLevel);
+    Optional.ofNullable(appliedTo).ifPresent(value -> filter.setAppliedTo(appliedTo));
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

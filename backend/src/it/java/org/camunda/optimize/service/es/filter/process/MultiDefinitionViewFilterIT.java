@@ -11,12 +11,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -32,7 +32,14 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_NAME_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_NAME_2;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
@@ -79,13 +86,13 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // only catch the second user task flow node instances (thus also only catching 2 of 4 process instances)
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_1)
         .add()
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, OTHER_USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_2)
@@ -141,7 +148,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // exclude user task two from version 2
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(USER_TASK_2)
         .appliedTo(DEFINITION_IDENTIFIER_2)
@@ -189,7 +196,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(USER_TASK_1)
         .appliedTo(appliedTo)
@@ -240,13 +247,13 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // exclude the start events of all process (catches 4/4 instances as all have other flow node instances)
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT)
         .appliedTo(APPLIED_TO_ALL_DEFINITIONS)
         .add()
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(OTHER_USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_2)
@@ -303,13 +310,13 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // only catch the second user task flow node instances (thus also only catching 2 of 4 process instances)
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_1)
         .add()
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, OTHER_USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_2)
@@ -371,13 +378,13 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // only catch the second user task flow node instances (thus also only catching 2 of 4 process instances)
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_1)
         .add()
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, OTHER_USER_TASK_1)
         .appliedTo(DEFINITION_IDENTIFIER_2)
@@ -433,7 +440,7 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // only catch the second user task flow node instances (thus also only catching 2 of 4 process instances)
         .executedFlowNodes()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .operator(MembershipFilterOperator.NOT_IN)
         .ids(START_EVENT, USER_TASK_1)
         .appliedTo(appliedTo)
@@ -509,12 +516,12 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // only catch the instances with specific assignee from each process (thus only 2 of 4 process instances)
         .assignee()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .ids(FIRST_CLAIM_USER)
         .appliedTo(DEFINITION_IDENTIFIER_1)
         .add()
         .assignee()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .ids(SECOND_CLAIM_USER)
         .appliedTo(DEFINITION_IDENTIFIER_2)
         .add()
@@ -577,12 +584,12 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter()
         // only catch the instances with specific assignee from each process (thus only 2 of 4 process instances)
         .assignee()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .ids(FIRST_CLAIM_USER)
         .appliedTo(DEFINITION_IDENTIFIER_1)
         .add()
         .assignee()
-        .filterLevel(FilterApplicationLevel.VIEW)
+        .filterLevel(VIEW)
         .ids(SECOND_CLAIM_USER)
         .appliedTo(DEFINITION_IDENTIFIER_2)
         .add()
@@ -605,6 +612,223 @@ public class MultiDefinitionViewFilterIT extends AbstractFilterIT {
         .groupByContains(USER_TASK_1)
           .distributedByContains(FIRST_CLAIM_USER, 1.0)
           .distributedByContains(SECOND_CLAIM_USER, null)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void incidentViewFilterAppliesToGroupByFlowNodeDataOfDefinitionSetInAppliedTo() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_1)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .startProcessInstance()
+        .withResolvedIncident()
+      .executeDeployment();
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_2)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .startProcessInstance()
+        .withOpenIncident()
+      .executeDeployment();
+    // @formatter:on
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
+      ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        // only catch the open incidents from the first definition
+        .withOpenIncident()
+        .filterLevel(VIEW)
+        .appliedTo(DEFINITION_IDENTIFIER_1)
+        .add()
+        // and the resolved ones from the second
+        .withResolvedIncident()
+        .filterLevel(VIEW)
+        .appliedTo(DEFINITION_IDENTIFIER_2)
+        .add()
+        .buildList()
+
+    );
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient
+      .evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(4L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupedByContains(SERVICE_TASK_ID_1, 1.0, SERVICE_TASK_NAME_1)
+      .groupedByContains(SERVICE_TASK_ID_2, 1.0, SERVICE_TASK_NAME_2)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void incidentViewFilterAppliesToGroupByFlowNodeDataOfSpecificDefinitionVersion() {
+    // given
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_1)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withOpenIncident()
+      .executeDeployment();
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_1)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withOpenIncident()
+      .startProcessInstance()
+        .withOpenIncident()
+      .startProcessInstance()
+        .withResolvedIncident()
+      .executeDeployment();
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
+      ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE
+    );
+    reportData.setDefinitions(List.of(
+      new ReportDataDefinitionDto(DEFINITION_IDENTIFIER_1, DEFINITION_KEY_1, List.of("1")),
+      new ReportDataDefinitionDto(DEFINITION_IDENTIFIER_2, DEFINITION_KEY_1, List.of("2"))
+    ));
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .withResolvedIncident()
+        .filterLevel(VIEW)
+        .appliedTo(DEFINITION_IDENTIFIER_2)
+        .add()
+        .buildList()
+
+    );
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient
+      .evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(4L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupedByContains(SERVICE_TASK_ID_1, 2.0, SERVICE_TASK_NAME_1)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @ParameterizedTest
+  @MethodSource("allDefinitionsAppliedToValues")
+  public void incidentViewFilterAppliesToGroupByFlowNodeDataOfAllDefinitionsPresent(final List<String> appliedTo) {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_1)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .executeDeployment();
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_2)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .executeDeployment();
+    // @formatter:on
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
+      ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .withResolvedIncident()
+        .filterLevel(VIEW)
+        .appliedTo(appliedTo)
+        .add()
+        .buildList()
+    );
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient
+      .evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupedByContains(SERVICE_TASK_ID_1, 2.0, SERVICE_TASK_NAME_1)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void incidentViewFilterAppliesToGroupByFlowNodeDataOfDefinitionSetInAppliedToMixOfAppliedToAllAndSpecific() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_1)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .executeDeployment();
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(DEFINITION_KEY_2)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .executeDeployment();
+    // @formatter:on
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportDataWithTwoDefinitions(
+      ProcessReportDataType.INCIDENT_FREQ_GROUP_BY_FLOW_NODE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .withResolvedIncident()
+        .filterLevel(VIEW)
+        .appliedTo(APPLIED_TO_ALL_DEFINITIONS)
+        .add()
+        // this will lead to no results from definition 2 as the all and the specific filter are mutually exclusive:
+        // neither flownode in definition 2 matches both filters simultaneously
+        .withOpenIncident()
+        .filterLevel(VIEW)
+        .appliedTo(DEFINITION_IDENTIFIER_2)
+        .add()
+        .buildList()
+
+    );
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient
+      .evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    MapResultAsserter.asserter()
+      // it catches both instances as on instance level both filters can be satisfied
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+      // still only one flow node from the first definition is present
+      .groupedByContains(SERVICE_TASK_ID_1, 1.0, SERVICE_TASK_NAME_1)
       .doAssert(result);
     // @formatter:on
   }
