@@ -35,15 +35,7 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-cd benchmarks/project
-
-sed_inplace "s/:SNAPSHOT/:$benchmark/" docker-compose.yml
-# Use --no-cache to force rebuild the image for the benchmark application. Without this changes to zeebe-client were not picked up. This can take longer to build.
-docker-compose build
-docker-compose push
-git restore -- docker-compose.yml
-
-cd ../setup/
+cd benchmarks/setup/
 
 ./newBenchmark.sh "$benchmark"
 
@@ -51,9 +43,9 @@ cd "$benchmark"
 
 # calls OS specific sed inplace function
 sed_inplace "s/SNAPSHOT/$version/" zeebe-values.yaml
-sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" starter.yaml
-sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" simpleStarter.yaml
-sed_inplace "s/starter:SNAPSHOT/starter:$benchmark/" timer.yaml
-sed_inplace "s/worker:SNAPSHOT/worker:$benchmark/" worker.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$version/" starter.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$version/" simpleStarter.yaml
+sed_inplace "s/starter:SNAPSHOT/starter:$version/" timer.yaml
+sed_inplace "s/worker:SNAPSHOT/worker:$version/" worker.yaml
 
-make zeebe starter worker
+#make zeebe starter worker
