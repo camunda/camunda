@@ -332,9 +332,11 @@ export function createDatasetOptions({
 
   switch (type) {
     case 'pie':
+      const pieColors = ColorPicker.getGeneratedColors(data.length);
       return {
         borderColor: getColorFor('border', isDark),
-        backgroundColor: ColorPicker.getGeneratedColors(data.length),
+        backgroundColor: pieColors,
+        hoverBackgroundColor: pieColors,
         borderWidth: undefined,
       };
     case 'line':

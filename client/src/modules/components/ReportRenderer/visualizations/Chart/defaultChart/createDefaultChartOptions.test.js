@@ -92,6 +92,7 @@ it('should create dataset option for pie reports', () => {
     backgroundColor: ['#aec7e9', '#6391d2'],
     borderColor: '#fff',
     borderWidth: undefined,
+    hoverBackgroundColor: ['#aec7e9', '#6391d2'],
   });
 });
 
