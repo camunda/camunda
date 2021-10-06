@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 
+@Ignore
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
 public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
