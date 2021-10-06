@@ -139,10 +139,11 @@ public final class FileBasedSnapshotStore extends Actor
     try (final var paths =
         Files.newDirectoryStream(
             snapshotDirectory, p -> !p.equals(latestDirectory) && !p.equals(latestChecksumFile))) {
-      LOGGER.debug("Deleting snapshots other than {}", latestPersistedSnapshot);
+      LOGGER.debug("Deleting snapshots other than {}", latestPersistedSnapshot.getId());
       paths.forEach(
           p -> {
             try {
+              LOGGER.debug("Deleting {}", p);
               FileUtil.deleteFolderIfExists(p);
             } catch (final IOException e) {
               LOGGER.warn("Unable to delete {}", p, e);
