@@ -624,8 +624,8 @@
       },
       "types": {
         "state": "Instance State",
-        "startDate": "Start Date",
-        "endDate": "End Date",
+        "instanceStartDate": "Start Date",
+        "instanceEndDate": "End Date",
         "variable": "Variable",
         "runningInstancesOnly": "Running",
         "completedInstancesOnly": "Completed",
@@ -955,8 +955,8 @@
         "date": "Instance Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
-        "startDate": "Start Date",
-        "endDate": "End Date",
+        "instanceStartDate": "Start Date",
+        "instanceEndDate": "End Date",
         "duration": "Duration",
         "instance": "Process instance",
         "instanceDuration": "Process Instance Duration",
@@ -1007,8 +1007,8 @@
       "dateModal": {
         "endDateWarning": "Reports with an active End Date Filter will only show completed instances.",
         "info": {
-          "startDate": "Process Instances <b>started</b>",
-          "endDate": "Process Instances <b>ended</b>",
+          "instanceStartDate": "Process Instances <b>started</b>",
+          "instanceEndDate": "Process Instances <b>ended</b>",
           "evaluationDateTime": "Decision Instances <b>evaluated</b>"
         },
         "invalidInput": "Please enter a positive integer value",

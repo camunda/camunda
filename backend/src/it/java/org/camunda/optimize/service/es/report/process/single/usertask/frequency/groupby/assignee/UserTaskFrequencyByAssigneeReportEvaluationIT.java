@@ -914,7 +914,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
   }
 
   private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate).add().buildList();
   }
 
   private void finishOneUserTaskWithDefaultUserLeaveOneUnassigned(final ProcessInstanceEngineDto processInstanceEngineDto) {

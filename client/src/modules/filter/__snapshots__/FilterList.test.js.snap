@@ -162,7 +162,7 @@ exports[`should display date preview if the filter is a date filter 1`] = `
             "type": "fixed",
           }
         }
-        filterType="startDate"
+        filterType="instanceStartDate"
       />
     </ActionItem>
   </li>

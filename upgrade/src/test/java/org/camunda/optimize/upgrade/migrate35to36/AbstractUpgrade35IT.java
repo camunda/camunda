@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.upgrade.migrate35to36;
 
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+import org.camunda.optimize.upgrade.migrate35to36.indices.DashboardIndexV4Old;
 import org.camunda.optimize.upgrade.migrate35to36.indices.EventProcessInstanceIndexV7Old;
 import org.camunda.optimize.upgrade.migrate35to36.indices.ProcessInstanceIndexV7Old;
 import org.camunda.optimize.upgrade.migrate35to36.indices.SingleDecisionReportIndexV7Old;
@@ -37,13 +39,15 @@ public class AbstractUpgrade35IT extends AbstractUpgradeIT {
     new SingleProcessReportIndexV7Old();
   protected static final SingleDecisionReportIndexV7Old SINGLE_DECISION_REPORT_INDEX =
     new SingleDecisionReportIndexV7Old();
+  protected static final DashboardIndexV4Old DASHBOARD_INDEX = new DashboardIndexV4Old();
 
   @BeforeEach
   protected void setUp() throws Exception {
     super.setUp();
     initSchema(List.of(
       SINGLE_PROCESS_REPORT_INDEX,
-      SINGLE_DECISION_REPORT_INDEX
+      SINGLE_DECISION_REPORT_INDEX,
+      DASHBOARD_INDEX
     ));
     createIndicesWithAdditionalReadOnlyAliases(Map.of(
       PROCESS_INSTANCE_INDEX_1, Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS),

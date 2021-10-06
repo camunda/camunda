@@ -15,7 +15,7 @@ isValid.mockReturnValue(true);
 jest.mock('./service');
 
 const props = {
-  filterType: 'startDate',
+  filterType: 'instanceStartDate',
   filterData: null,
   definitions: [{identifier: 'definition'}],
 };
@@ -29,7 +29,7 @@ it('should contain a modal', () => {
 it('should render preview if the filter is valid', async () => {
   convertFilterToState.mockReturnValue({dateType: 'yesterday'});
   const filter = {
-    type: 'startDate',
+    type: 'instanceStartDate',
     data: {type: 'relative', start: {value: '1', unit: 'days'}},
     appliedTo: ['definition'],
   };
@@ -43,7 +43,7 @@ it('should render preview if the filter is valid', async () => {
 it('should have a create filter button', () => {
   const spy = jest.fn();
   const filter = {
-    type: 'startDate',
+    type: 'instanceStartDate',
     data: {type: 'rolling', start: {value: '5', unit: 'days'}},
     appliedTo: ['definition'],
   };

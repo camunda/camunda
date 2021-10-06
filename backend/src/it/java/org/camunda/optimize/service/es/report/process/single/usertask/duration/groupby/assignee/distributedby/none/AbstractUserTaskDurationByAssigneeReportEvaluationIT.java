@@ -193,7 +193,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   }
 
   protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(final double setDuration,
-                                                            final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+                                                                    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
@@ -1254,21 +1254,21 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       .containsExactly(getSupportedAggregationTypes());
     result.getMeasures().forEach(measureResult -> {
       final List<MapResultEntryDto> measureData = measureResult.getData();
-        expectedUserTaskValues.keySet().forEach(userTaskKey -> {
-          assertThat(MapResultUtil.getEntryForKey(measureData, userTaskKey))
-            .isPresent().get()
-            .extracting(MapResultEntryDto::getValue)
-            .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
-            .isEqualTo(
-              calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
-                .get(measureResult.getAggregationType())
-            );
-        });
+      expectedUserTaskValues.keySet().forEach(userTaskKey -> {
+        assertThat(MapResultUtil.getEntryForKey(measureData, userTaskKey))
+          .isPresent().get()
+          .extracting(MapResultEntryDto::getValue)
+          .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
+          .isEqualTo(
+            calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
+              .get(measureResult.getAggregationType())
+          );
+      });
     });
   }
 
   private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate).add().buildList();
   }
 
   protected String getIncorrectValueForKeyAssertionMsg(final String key) {

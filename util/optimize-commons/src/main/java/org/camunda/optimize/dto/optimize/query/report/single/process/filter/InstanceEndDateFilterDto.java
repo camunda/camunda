@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 @NoArgsConstructor
-public class EndDateFilterDto extends ProcessFilterDto<DateFilterDataDto<?>> {
+public class InstanceEndDateFilterDto extends ProcessFilterDto<DateFilterDataDto<?>> {
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);

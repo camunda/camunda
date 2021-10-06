@@ -37,7 +37,7 @@ beforeEach(() => {
   plugin = zoomIn({
     updateReport,
     filters: [],
-    type: 'startDate',
+    type: 'instanceStartDate',
     valueRange: {
       min: parseISO('2019-01-01T00:00:00.000'),
       max: parseISO('2019-01-31T00:00:00.000'),
@@ -69,7 +69,7 @@ it('should create a startDate filter on zoom interaction', () => {
               start: format(parseISO('2019-01-07T00:00:00'), BACKEND_DATE_FORMAT),
               type: 'fixed',
             },
-            type: 'startDate',
+            type: 'instanceStartDate',
             filterLevel: 'instance',
           },
         ],

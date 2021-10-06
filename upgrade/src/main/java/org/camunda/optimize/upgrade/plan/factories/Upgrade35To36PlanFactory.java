@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.plan.factories;
 
 import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -30,6 +31,7 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
       .addUpgradeSteps(migrateProcessInstances(dependencies, false))
       .addUpgradeSteps(migrateProcessInstances(dependencies, true))
       .addUpgradeSteps(migrateReports())
+      .addUpgradeStep(migrateDashboardDateFilters())
       .build();
   }
 
@@ -70,6 +72,24 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
     // @formatter:on
   }
 
+  private static UpgradeStep migrateDashboardDateFilters() {
+    // @formatter:off
+    final String dashboardFilterMigrationScript =
+    "def filters = ctx._source.availableFilters;" +
+    "if (filters != null) {" +
+      "for (def filter : filters) {" +
+        "if (\"startDate\".equals(filter.type)) {" +
+          "filter.type = \"instanceStartDate\";" +
+        "}" +
+        "if (\"endDate\".equals(filter.type)) {" +
+          "filter.type = \"instanceEndDate\";" +
+        "}" +
+      "}" +
+    "}";
+    // @formatter:on
+    return new UpdateIndexStep(new DashboardIndex(), dashboardFilterMigrationScript);
+  }
+
   private static List<UpgradeStep> migrateReports() {
     return Stream.of(new SingleProcessReportIndex(), new SingleDecisionReportIndex())
       .map(index -> new UpdateIndexStep(index, getReportMigrationScript()))
@@ -84,6 +104,18 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
         "if (configuration != null) {" +
           "configuration.measureVisualizations = [\"frequency\": \"bar\", \"duration\": \"line\"];" +
           "configuration.stackedBar = false;" +
+        "}" +
+        // Rename instance start- and endDate filter types
+        "def filters = ctx._source.data.filter;" +
+        "if (filters != null) {" +
+          "for (def filter : filters) {" +
+            "if (\"startDate\".equals(filter.type)) {" +
+              "filter.type = \"instanceStartDate\";" +
+            "}" +
+            "if (\"endDate\".equals(filter.type)) {" +
+              "filter.type = \"instanceEndDate\";" +
+            "}" +
+          "}" +
         "}" +
       "}"
       ;

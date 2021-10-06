@@ -75,7 +75,7 @@ export default class DateFilter extends React.Component {
             applyTo={applyTo}
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
-          {filterType === 'endDate' && (
+          {filterType === 'instanceEndDate' && (
             <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
           )}
           <Form>

@@ -22,7 +22,7 @@ it('should return true if filters contains endDate and runningInstancesOnly toge
   expect(
     incompatibleFilters(
       [
-        {type: 'endDate', data: null},
+        {type: 'instanceEndDate', data: null},
         {type: 'runningInstancesOnly', data: null},
       ],
       {}

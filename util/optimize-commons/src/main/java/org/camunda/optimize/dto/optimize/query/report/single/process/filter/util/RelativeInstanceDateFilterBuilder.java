@@ -7,49 +7,49 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.uti
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 
-public class RelativeDateFilterBuilder {
+public class RelativeInstanceDateFilterBuilder {
 
   private ProcessFilterBuilder filterBuilder;
   private RelativeDateFilterStartDto start;
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private RelativeDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private RelativeInstanceDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static RelativeDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    RelativeDateFilterBuilder builder = new RelativeDateFilterBuilder(filterBuilder);
+  static RelativeInstanceDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
+    RelativeInstanceDateFilterBuilder builder = new RelativeInstanceDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }
 
-  static RelativeDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    RelativeDateFilterBuilder builder = new RelativeDateFilterBuilder(filterBuilder);
+  static RelativeInstanceDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
+    RelativeInstanceDateFilterBuilder builder = new RelativeInstanceDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
 
-  public RelativeDateFilterBuilder start(Long value, DateFilterUnit unit) {
+  public RelativeInstanceDateFilterBuilder start(Long value, DateFilterUnit unit) {
     this.start = new RelativeDateFilterStartDto(value, unit);
     return this;
   }
 
-  public RelativeDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public RelativeInstanceDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<DateFilterDataDto<?>> filterDto =
-      type.equals("endDate") ? new EndDateFilterDto() : new StartDateFilterDto();
+      type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
     filterDto.setData(new RelativeDateFilterDataDto(start));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);
