@@ -115,11 +115,11 @@ public class MixedFilterIT extends AbstractFilterIT {
       .name("var")
       .operator(IN)
       .add()
-      .fixedInstanceStartDate()
+      .fixedStartDate()
       .start(null)
       .end(start.plusDays(1))
       .add()
-      .fixedInstanceEndDate()
+      .fixedEndDate()
       .start(null)
       .end(end.plusDays(1))
       .add()
@@ -177,7 +177,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .name("var")
       .operator(IN)
       .add()
-      .fixedInstanceStartDate()
+      .fixedStartDate()
       .start(null)
       .end(start.plusDays(1L))
       .add()
@@ -768,15 +768,15 @@ public class MixedFilterIT extends AbstractFilterIT {
       ProcessFilterBuilder.filter().withOpenIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter().withResolvedIncident().filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
-        .rollingInstanceStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
+        .rollingStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
-        .relativeInstanceStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
+        .relativeStartDate().start(10L, DateFilterUnit.HOURS).filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
-        .fixedInstanceStartDate()
+        .fixedStartDate()
         .start(LocalDateUtil.getCurrentDateTime().minusMinutes(60)).end(LocalDateUtil.getCurrentDateTime())
         .filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()
-        .fixedInstanceEndDate()
+        .fixedEndDate()
         .start(LocalDateUtil.getCurrentDateTime().minusMinutes(60)).end(LocalDateUtil.getCurrentDateTime())
         .filterLevel(levelToApply).add().buildList(),
       ProcessFilterBuilder.filter()

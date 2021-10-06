@@ -8,7 +8,7 @@ import {convertFilterToDefaultValues, getDefaultFilter} from './service';
 
 const filters = [
   {
-    type: 'instanceStartDate',
+    type: 'startDate',
     data: {type: 'relative', start: {value: 0, unit: 'days'}, end: null},
     filterLevel: 'instance',
   },
@@ -50,7 +50,7 @@ const filters = [
 
 describe('convertFilterToDefaultValues', () => {
   it('should extract date filters', () => {
-    expect(convertFilterToDefaultValues({type: 'instanceStartDate'}, filters)).toEqual({
+    expect(convertFilterToDefaultValues({type: 'startDate'}, filters)).toEqual({
       type: 'relative',
       start: {value: 0, unit: 'days'},
       end: null,
@@ -107,7 +107,7 @@ describe('getDefaultFilter', () => {
     expect(
       getDefaultFilter([
         {
-          type: 'instanceStartDate',
+          type: 'startDate',
           data: {
             defaultValues: {
               type: 'relative',

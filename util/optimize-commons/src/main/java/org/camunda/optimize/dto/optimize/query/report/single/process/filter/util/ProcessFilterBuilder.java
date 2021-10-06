@@ -68,24 +68,24 @@ public class ProcessFilterBuilder {
     return NoIncidentFilterBuilder.construct(this);
   }
 
-  public RollingInstanceDateFilterBuilder rollingInstanceEndDate() {
-    return RollingInstanceDateFilterBuilder.endDate(this);
+  public RollingDateFilterBuilder rollingEndDate() {
+    return RollingDateFilterBuilder.endDate(this);
   }
 
-  public RollingInstanceDateFilterBuilder rollingInstanceStartDate() {
-    return RollingInstanceDateFilterBuilder.startDate(this);
+  public RollingDateFilterBuilder rollingStartDate() {
+    return RollingDateFilterBuilder.startDate(this);
   }
 
-  public RelativeInstanceDateFilterBuilder relativeInstanceStartDate() {
-    return RelativeInstanceDateFilterBuilder.startDate(this);
+  public RelativeDateFilterBuilder relativeStartDate() {
+    return RelativeDateFilterBuilder.startDate(this);
   }
 
-  public FixedInstanceDateFilterBuilder fixedInstanceEndDate() {
-    return FixedInstanceDateFilterBuilder.endDate(this);
+  public FixedDateFilterBuilder fixedEndDate() {
+    return FixedDateFilterBuilder.endDate(this);
   }
 
-  public FixedInstanceDateFilterBuilder fixedInstanceStartDate() {
-    return FixedInstanceDateFilterBuilder.startDate(this);
+  public FixedDateFilterBuilder fixedStartDate() {
+    return FixedDateFilterBuilder.startDate(this);
   }
 
   public FixedFlowNodeDateFilterBuilder fixedFlowNodeStartDate() {

@@ -587,7 +587,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(past.minusSeconds(1L))
                            .add()
@@ -607,7 +607,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     reportData = createReport(processInstance);
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(past).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult2 =
       reportClient.evaluateRawReport(reportData);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result2 = evaluationResult2.getResult();

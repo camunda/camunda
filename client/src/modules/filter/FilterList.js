@@ -83,8 +83,8 @@ export default class FilterList extends React.Component {
     for (let i = 0; i < this.props.data.length; i++) {
       const filter = this.props.data[i];
       if (
-        filter.type === 'instanceStartDate' ||
-        filter.type === 'instanceEndDate' ||
+        filter.type === 'startDate' ||
+        filter.type === 'endDate' ||
         filter.type === 'evaluationDateTime'
       ) {
         list.push(

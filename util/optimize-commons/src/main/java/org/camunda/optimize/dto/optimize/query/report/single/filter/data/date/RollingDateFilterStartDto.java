@@ -6,7 +6,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +16,6 @@ import lombok.experimental.FieldNameConstants;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldNameConstants
-@EqualsAndHashCode
 public class RollingDateFilterStartDto {
 
   protected Long value;

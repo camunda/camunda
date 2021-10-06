@@ -41,13 +41,13 @@ it('should not contain any filter modal when no newFilter is selected', () => {
 it('should contain a filter modal when a newFilter should be created', () => {
   const node = shallow(<Filter {...props} />);
 
-  node.instance().openNewFilterModal('instance')('instanceStartDate')();
+  node.instance().openNewFilterModal('instance')('startDate')();
 
   expect(node).toIncludeText('DateFilter');
 });
 
 it('should contain an edit filter modal when a filter should be edited', () => {
-  const node = shallow(<Filter {...props} data={[{type: 'instanceStartDate'}]} />);
+  const node = shallow(<Filter {...props} data={[{type: 'startDate'}]} />);
 
   node.instance().openEditFilterModal({
     data: {
@@ -55,7 +55,7 @@ it('should contain an edit filter modal when a filter should be edited', () => {
       type: 'baz',
       value: 'foo',
     },
-    type: 'instanceStartDate',
+    type: 'startDate',
   })();
 
   expect(node).toIncludeText('DateFilter');
@@ -150,8 +150,8 @@ it('should pass the information about a missing process definition to the compon
 
 it('should invoke filterSameTypeExistingFilters to remove any previous filters of the same type', () => {
   filterSameTypeExistingFilters.mockReturnValueOnce([]);
-  const previousFilters = [{type: 'instanceStartDate', filterLevel: 'instance'}];
-  const newFilter = {type: 'instanceStartDate', filterLevel: 'instance', value: 'new date'};
+  const previousFilters = [{type: 'startDate', filterLevel: 'instance'}];
+  const newFilter = {type: 'startDate', filterLevel: 'instance', value: 'new date'};
   const spy = jest.fn();
 
   const node = shallow(<Filter {...props} data={previousFilters} onChange={spy} />);

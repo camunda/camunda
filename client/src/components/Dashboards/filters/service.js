@@ -46,8 +46,8 @@ export function isOfType(filter, availableFilter) {
     case 'suspendedInstancesOnly':
     case 'nonSuspendedInstancesOnly':
       return availableFilter.type === 'state';
-    case 'instanceStartDate':
-    case 'instanceEndDate':
+    case 'startDate':
+    case 'endDate':
     case 'assignee':
     case 'candidateGroup':
       return availableFilter.type === filter.type;

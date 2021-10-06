@@ -1122,7 +1122,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisRequestDto dto) {
     List<ProcessFilterDto<?>> dateFilter = ProcessFilterBuilder
       .filter()
-      .fixedInstanceStartDate()
+      .fixedStartDate()
       .start(startDate)
       .end(endDate)
       .add()

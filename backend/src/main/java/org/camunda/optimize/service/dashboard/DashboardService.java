@@ -17,9 +17,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpda
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIdentityFilterDataDto;
@@ -436,8 +436,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private void validateDateAndStateFilters(final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
     filtersByClass.entrySet().stream()
-      .filter(byClass -> DashboardInstanceStartDateFilterDto.class.getSimpleName().equals(byClass.getKey())
-        || DashboardInstanceEndDateFilterDto.class.getSimpleName().equals(byClass.getKey())
+      .filter(byClass -> DashboardStartDateFilterDto.class.getSimpleName().equals(byClass.getKey())
+        || DashboardEndDateFilterDto.class.getSimpleName().equals(byClass.getKey())
         || DashboardStateFilterDto.class.getSimpleName().equals(byClass.getKey()))
       .forEach(byClass -> {
         if (byClass.getValue().size() > 1) {

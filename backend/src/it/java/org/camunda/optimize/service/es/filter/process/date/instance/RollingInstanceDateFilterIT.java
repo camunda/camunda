@@ -122,10 +122,10 @@ public class RollingInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
       engineDto.getVersionAsString()
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .rollingInstanceStartDate()
+                           .rollingStartDate()
                            .start(1L, DateFilterUnit.DAYS)
                            .add()
-                           .rollingInstanceEndDate()
+                           .rollingEndDate()
                            .start(1L, DateFilterUnit.DAYS)
                            .add()
                            .buildList());

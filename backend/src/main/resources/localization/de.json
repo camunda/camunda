@@ -624,8 +624,8 @@
       },
       "types": {
         "state": "Instanzstatus",
-        "instanceStartDate": "Startdatum",
-        "instanceEndDate": "Enddatum",
+        "startDate": "Startdatum",
+        "endDate": "Enddatum",
         "variable": "Variable",
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
@@ -955,8 +955,8 @@
         "date": "Instanzdatum",
         "assignee": "Bearbeiter",
         "candidateGroup": "Potenzielle Gruppe",
-        "instanceStartDate": "Startdatum",
-        "instanceEndDate": "Enddatum",
+        "startDate": "Startdatum",
+        "endDate": "Enddatum",
         "duration": "Dauer",
         "instance": "Prozessinstanz",
         "instanceDuration": "Dauer der Prozessinstanz",
@@ -1007,8 +1007,8 @@
       "dateModal": {
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "info": {
-          "instanceStartDate": "Prozessinstanzen <b>gestartet</b>",
-          "instanceEndDate": "Prozessinstanzen <b>beendet</b>",
+          "startDate": "Prozessinstanzen <b>gestartet</b>",
+          "endDate": "Prozessinstanzen <b>beendet</b>",
           "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
         },
         "invalidInput": "Bitte geben Sie einen positiven ganzzahligen Wert ein",

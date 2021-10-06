@@ -1351,7 +1351,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .build();
 
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(startDate.minusSeconds(1L))
                            .add()
@@ -1364,7 +1364,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isEmpty();
 
     // when
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(null).add().buildList());
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

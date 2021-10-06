@@ -54,8 +54,8 @@ export default class Filter extends React.Component {
       case 'incidentInstances':
       case 'flowNodeStatus':
         return StateFilter;
-      case 'instanceStartDate':
-      case 'instanceEndDate':
+      case 'startDate':
+      case 'endDate':
         return DateFilter;
       case 'flowNodeStartDate':
       case 'flowNodeEndDate':

@@ -42,7 +42,7 @@ it('should display date preview if the filter is a date filter', () => {
   const endDate = '2017-11-26T23:59:59';
   const data = [
     {
-      type: 'instanceStartDate',
+      type: 'startDate',
       data: {
         type: 'fixed',
         start: startDate,

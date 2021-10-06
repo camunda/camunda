@@ -17,7 +17,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 
 @RequiredArgsConstructor
 @Component
-public class InstanceEndDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
+public class EndDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
 
   @Override
   public void addFilters(final BoolQueryBuilder query,

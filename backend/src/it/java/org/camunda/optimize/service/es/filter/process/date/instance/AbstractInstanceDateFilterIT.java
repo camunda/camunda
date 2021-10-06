@@ -93,7 +93,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
   protected List<ProcessFilterDto<?>> createRollingStartDateFilter(final DateFilterUnit unit, final Long value) {
     return ProcessFilterBuilder
       .filter()
-      .rollingInstanceStartDate()
+      .rollingStartDate()
       .start(value, unit)
       .add()
       .buildList();
@@ -102,7 +102,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
   protected List<ProcessFilterDto<?>> createRelativeStartDateFilter(final DateFilterUnit unit, final Long value) {
     return ProcessFilterBuilder
       .filter()
-      .relativeInstanceStartDate()
+      .relativeStartDate()
       .start(value, unit)
       .add()
       .buildList();
@@ -122,7 +122,7 @@ public abstract class AbstractInstanceDateFilterIT extends AbstractFilterIT {
       .build();
     List<ProcessFilterDto<?>> rollingDateFilter = ProcessFilterBuilder
       .filter()
-      .rollingInstanceEndDate()
+      .rollingEndDate()
       .start(1L, unit)
       .add()
       .buildList();

@@ -24,10 +24,10 @@ import java.util.List;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = InstanceStartDateFilterDto.class, name = "instanceStartDate"),
+  @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "startDate"),
   @JsonSubTypes.Type(value = FlowNodeStartDateFilterDto.class, name = "flowNodeStartDate"),
   @JsonSubTypes.Type(value = FlowNodeEndDateFilterDto.class, name = "flowNodeEndDate"),
-  @JsonSubTypes.Type(value = InstanceEndDateFilterDto.class, name = "instanceEndDate"),
+  @JsonSubTypes.Type(value = EndDateFilterDto.class, name = "endDate"),
   @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
   @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
   @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),

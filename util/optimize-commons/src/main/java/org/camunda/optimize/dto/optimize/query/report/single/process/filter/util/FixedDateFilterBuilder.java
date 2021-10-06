@@ -7,14 +7,14 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.uti
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 
 import java.time.OffsetDateTime;
 
-public class FixedInstanceDateFilterBuilder {
+public class FixedDateFilterBuilder {
 
   private ProcessFilterBuilder filterBuilder;
   private OffsetDateTime start;
@@ -22,44 +22,44 @@ public class FixedInstanceDateFilterBuilder {
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private FixedInstanceDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private FixedDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  public FixedInstanceDateFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
-    return new FixedInstanceDateFilterBuilder(filterBuilder);
+  public FixedDateFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+    return new FixedDateFilterBuilder(filterBuilder);
   }
 
-  static FixedInstanceDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    FixedInstanceDateFilterBuilder builder = new FixedInstanceDateFilterBuilder(filterBuilder);
+  static FixedDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
+    FixedDateFilterBuilder builder = new FixedDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
 
-  static FixedInstanceDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    FixedInstanceDateFilterBuilder builder = new FixedInstanceDateFilterBuilder(filterBuilder);
+  static FixedDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
+    FixedDateFilterBuilder builder = new FixedDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }
 
-  public FixedInstanceDateFilterBuilder start(OffsetDateTime start) {
+  public FixedDateFilterBuilder start(OffsetDateTime start) {
     this.start = start;
     return this;
   }
 
-  public FixedInstanceDateFilterBuilder end(OffsetDateTime end) {
+  public FixedDateFilterBuilder end(OffsetDateTime end) {
     this.end = end;
     return this;
   }
 
-  public FixedInstanceDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public FixedDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<DateFilterDataDto<?>> filterDto;
-    filterDto = type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
+    filterDto = type.equals("endDate") ? new EndDateFilterDto() : new StartDateFilterDto();
     filterDto.setData(new FixedDateFilterDataDto(start, end));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);

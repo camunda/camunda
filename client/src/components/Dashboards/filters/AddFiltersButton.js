@@ -108,7 +108,7 @@ export function AddFiltersButton({
           </>
         }
       >
-        {['instanceStartDate', 'instanceEndDate', 'state'].map((type) => (
+        {['startDate', 'endDate', 'state'].map((type) => (
           <Dropdown.Option key={type} disabled={hasFilter(type)} onClick={() => addFilter(type)}>
             {t('dashboard.filter.types.' + type)}
           </Dropdown.Option>

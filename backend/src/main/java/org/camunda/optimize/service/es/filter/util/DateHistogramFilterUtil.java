@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Ro
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
@@ -103,17 +103,17 @@ public class DateHistogramFilterUtil {
     final ProcessQueryFilterEnhancer queryFilterEnhancer = context.getProcessQueryFilterEnhancer();
 
     final List<DateFilterDataDto<?>> startDateFilters = queryFilterEnhancer.extractInstanceFilters(
-      context.getProcessFilters(), InstanceStartDateFilterDto.class
+      context.getProcessFilters(), StartDateFilterDto.class
     );
     final List<DateFilterDataDto<?>> endDateFilters = queryFilterEnhancer.extractInstanceFilters(
-      context.getProcessFilters(), InstanceEndDateFilterDto.class
+      context.getProcessFilters(), EndDateFilterDto.class
     );
 
     // if custom end filters and no startDateFilters are present, limit based on them
     final BoolQueryBuilder limitFilterQuery;
     if (!endDateFilters.isEmpty() && startDateFilters.isEmpty()) {
       limitFilterQuery = createFilterBoolQueryBuilder(
-        endDateFilters, queryFilterEnhancer.getInstanceEndDateQueryFilter(), context.getFilterContext()
+        endDateFilters, queryFilterEnhancer.getEndDateQueryFilter(), context.getFilterContext()
       );
     } else {
       if (!startDateFilters.isEmpty()) {
@@ -121,7 +121,7 @@ public class DateHistogramFilterUtil {
           .ifPresent(dateHistogramAggregation::extendedBounds);
       }
       limitFilterQuery = createFilterBoolQueryBuilder(
-        startDateFilters, queryFilterEnhancer.getInstanceStartDateQueryFilter(), context.getFilterContext()
+        startDateFilters, queryFilterEnhancer.getStartDateQueryFilter(), context.getFilterContext()
       );
     }
     return limitFilterQuery;
@@ -135,17 +135,17 @@ public class DateHistogramFilterUtil {
     final ProcessQueryFilterEnhancer queryFilterEnhancer = context.getProcessQueryFilterEnhancer();
 
     final List<DateFilterDataDto<?>> startDateFilters = queryFilterEnhancer.extractInstanceFilters(
-      context.getProcessFilters(), InstanceStartDateFilterDto.class
+      context.getProcessFilters(), StartDateFilterDto.class
     );
     final List<DateFilterDataDto<?>> endDateFilters = queryFilterEnhancer.extractInstanceFilters(
-      context.getProcessFilters(), InstanceEndDateFilterDto.class
+      context.getProcessFilters(), EndDateFilterDto.class
     );
 
     // if custom start filters and no endDateFilters are present, limit based on them
     final BoolQueryBuilder limitFilterQuery;
     if (endDateFilters.isEmpty() && !startDateFilters.isEmpty()) {
       limitFilterQuery = createFilterBoolQueryBuilder(
-        startDateFilters, queryFilterEnhancer.getInstanceStartDateQueryFilter(), context.getFilterContext()
+        startDateFilters, queryFilterEnhancer.getStartDateQueryFilter(), context.getFilterContext()
       );
     } else {
       if (!endDateFilters.isEmpty()) {
@@ -155,7 +155,7 @@ public class DateHistogramFilterUtil {
       }
 
       limitFilterQuery = createFilterBoolQueryBuilder(
-        endDateFilters, queryFilterEnhancer.getInstanceEndDateQueryFilter(), context.getFilterContext()
+        endDateFilters, queryFilterEnhancer.getEndDateQueryFilter(), context.getFilterContext()
       );
     }
 

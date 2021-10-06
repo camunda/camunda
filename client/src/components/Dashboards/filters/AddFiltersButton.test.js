@@ -42,9 +42,7 @@ beforeEach(() => {
 });
 
 it('should not allow adding the same filter twice', () => {
-  const node = shallow(
-    <AddFiltersButton {...props} availableFilters={[{type: 'instanceStartDate'}]} />
-  );
+  const node = shallow(<AddFiltersButton {...props} availableFilters={[{type: 'startDate'}]} />);
 
   expect(node.find(Dropdown.Option).at(0)).toBeDisabled();
 });

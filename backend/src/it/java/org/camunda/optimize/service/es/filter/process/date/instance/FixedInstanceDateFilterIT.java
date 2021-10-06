@@ -46,7 +46,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     List<ProcessFilterDto<?>> fixedStartDateFilter =
       ProcessFilterBuilder.filter()
-        .fixedInstanceStartDate()
+        .fixedStartDate()
         .start(start.plus(1, ChronoUnit.DAYS))
         .end(OffsetDateTime.now())
         .add()
@@ -60,19 +60,14 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     assertThat(resultData).isEmpty();
 
     // when
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
-                           .start(start)
-                           .end(null)
-                           .add()
-                           .buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(start).end(null).add().buildList());
     resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
     // then
     assertThat(resultData).hasSize(1);
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(start.minus(1, ChronoUnit.DAYS))
                            .end(null)
                            .add()
@@ -93,7 +88,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(start.plus(1, ChronoUnit.DAYS))
                            .add()
@@ -107,7 +102,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(start.plusDays(1))
                            .add()
@@ -118,7 +113,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(start.minus(1, ChronoUnit.DAYS))
                            .add()
@@ -140,7 +135,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
 
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(null)
                            .end(end.plus(1, ChronoUnit.DAYS))
                            .add()
@@ -154,7 +149,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(end)
                            .end(null)
                            .add()
@@ -165,7 +160,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(end.plus(1, ChronoUnit.DAYS))
                            .end(null)
                            .add()
@@ -186,7 +181,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(end.minus(1, ChronoUnit.DAYS))
                            .end(null)
                            .add()
@@ -200,7 +195,7 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // when
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(end.plus(1, ChronoUnit.DAYS))
                            .end(null)
                            .add()
@@ -227,11 +222,11 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     // works with lte filter
     final ProcessReportDataDto reportData = createReportData(instance1.getProcessDefinitionKey(), reportType);
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(now.minusDays(1))
                            .add()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(null)
                            .end(now.minusDays(1))
                            .add()
@@ -247,11 +242,11 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
 
     // works with gte filter
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(now)
                            .end(null)
                            .add()
-                           .fixedInstanceEndDate()
+                           .fixedEndDate()
                            .start(now)
                            .end(null)
                            .add()

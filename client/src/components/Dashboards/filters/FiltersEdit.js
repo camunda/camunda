@@ -53,8 +53,8 @@ export default function FiltersEdit({
                 {deleter}
               </InstanceStateFilter>
             );
-          case 'instanceStartDate':
-          case 'instanceEndDate':
+          case 'startDate':
+          case 'endDate':
             const dateFilter = filter.find((filter) => filter.type === type);
             return (
               <DateFilter

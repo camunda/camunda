@@ -5,13 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class FlowNodeStartDateFilterDto extends ProcessFilterDto<FlowNodeDateFilterDataDto<?>> {
   @Override

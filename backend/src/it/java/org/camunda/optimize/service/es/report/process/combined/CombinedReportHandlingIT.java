@@ -77,16 +77,16 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_END_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_DURATION;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQ_GROUP_BY_USER_TASK_START_DATE;
@@ -717,12 +717,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // when assignee filter applied
     AdditionalProcessReportEvaluationFilterDto filterDto =
       new AdditionalProcessReportEvaluationFilterDto(
-        ProcessFilterBuilder.filter()
-          .assignee()
-          .operator(MembershipFilterOperator.IN)
-          .id(DEFAULT_USERNAME)
-          .add()
-          .buildList());
+        ProcessFilterBuilder.filter().assignee().operator(MembershipFilterOperator.IN).id(DEFAULT_USERNAME).add().buildList());
     AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> filteredResult =
       reportClient.evaluateCombinedReportByIdWithAdditionalFilters(combinedReportId, filterDto);
 
@@ -753,12 +748,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when candidate group filter applied
     filterDto = new AdditionalProcessReportEvaluationFilterDto(
-      ProcessFilterBuilder.filter()
-        .candidateGroups()
-        .operator(MembershipFilterOperator.IN)
-        .id(candidateGroupId)
-        .add()
-        .buildList());
+      ProcessFilterBuilder.filter().candidateGroups().operator(MembershipFilterOperator.IN).id(candidateGroupId).add().buildList());
     filteredResult = reportClient.evaluateCombinedReportByIdWithAdditionalFilters(combinedReportId, filterDto);
 
     // then
@@ -789,7 +779,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     AdditionalProcessReportEvaluationFilterDto singleReportFilterDto = new AdditionalProcessReportEvaluationFilterDto();
     singleReportFilterDto.setFilter(ProcessFilterBuilder.filter()
-                                      .fixedInstanceEndDate()
+                                      .fixedEndDate()
                                       .end(OffsetDateTime.now().plusDays(1))
                                       .add()
                                       .buildList());
@@ -815,7 +805,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // when future start date filter applied
     AdditionalProcessReportEvaluationFilterDto filterDto = new AdditionalProcessReportEvaluationFilterDto();
     filterDto.setFilter(ProcessFilterBuilder.filter()
-                          .fixedInstanceStartDate().start(OffsetDateTime.now().plusDays(1)).add()
+                          .fixedStartDate().start(OffsetDateTime.now().plusDays(1)).add()
                           .buildList());
     AuthorizedCombinedReportEvaluationResponseDto<List<MapResultEntryDto>> filteredResult =
       reportClient.evaluateCombinedReportByIdWithAdditionalFilters(combinedReportId, filterDto);

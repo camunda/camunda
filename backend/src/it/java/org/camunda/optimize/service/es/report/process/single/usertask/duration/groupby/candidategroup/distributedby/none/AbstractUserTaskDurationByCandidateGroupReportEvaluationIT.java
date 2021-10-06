@@ -1282,13 +1282,13 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
     Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
       List<MapResultEntryDto> measureResult = resultByAggregationType.get(aggType);
-      expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
-        MapResultUtil.getEntryForKey(measureResult, userTaskKey))
-        .isPresent().get()
-        .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
-      );
-    });
+        expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
+          MapResultUtil.getEntryForKey(measureResult, userTaskKey))
+          .isPresent().get()
+          .extracting(MapResultEntryDto::getValue)
+          .isEqualTo(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
+        );
+      });
   }
 
   protected String getIncorrectValueForKeyAssertionMsg(final String key) {
@@ -1296,7 +1296,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   private List<ProcessFilterDto<?>> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate).add().buildList();
+    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
   }
 
 }

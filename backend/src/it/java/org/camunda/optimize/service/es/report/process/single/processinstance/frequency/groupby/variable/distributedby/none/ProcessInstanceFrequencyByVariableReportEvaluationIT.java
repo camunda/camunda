@@ -1118,7 +1118,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
       VariableType.STRING
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedInstanceStartDate()
+                           .fixedStartDate()
                            .start(null)
                            .end(past.minusSeconds(1L))
                            .add()
@@ -1130,7 +1130,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
     assertThat(result.getFirstMeasureData()).isEmpty();
 
     // when
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(past).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

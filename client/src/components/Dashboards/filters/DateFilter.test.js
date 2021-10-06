@@ -14,7 +14,7 @@ import DateFilter from './DateFilter';
 const props = {
   filter: null,
   setFilter: jest.fn(),
-  type: 'instanceStartDate',
+  type: 'startDate',
 };
 
 const todayFilter = {
