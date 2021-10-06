@@ -145,6 +145,8 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(snapshotStore.getLatestSnapshot()).hasValue(newerSnapshot);
+    assertThat(newerSnapshot.getDirectory()).exists();
+    assertThat(newerSnapshot.getChecksumFile()).exists();
     assertThat(corruptOlderSnapshot.getDirectory()).doesNotExist();
     assertThat(corruptOlderSnapshot.getChecksumFile()).doesNotExist();
   }
@@ -166,6 +168,8 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(snapshotStore.getLatestSnapshot()).get().isEqualTo(newerSnapshot);
+    assertThat(newerSnapshot.getDirectory()).exists();
+    assertThat(newerSnapshot.getChecksumFile()).exists();
     assertThat(corruptOlderSnapshot.getDirectory()).doesNotExist();
     assertThat(corruptOlderSnapshot.getChecksumFile()).doesNotExist();
   }
@@ -184,6 +188,8 @@ public class FileBasedSnapshotStoreTest {
 
     // then -- valid snapshot is unaffected and corrupt snapshot is deleted
     assertThat(otherStore.getLatestSnapshot()).get().isEqualTo(newerSnapshot);
+    assertThat(newerSnapshot.getDirectory()).exists();
+    assertThat(newerSnapshot.getChecksumFile()).exists();
     assertThat(olderSnapshot.getDirectory()).doesNotExist();
     assertThat(olderSnapshot.getChecksumFile()).doesNotExist();
   }
