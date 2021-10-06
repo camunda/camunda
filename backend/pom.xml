@@ -73,6 +73,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <version>${zeebe.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -91,6 +92,12 @@
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
       <version>${zeebe.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.elasticsearch</groupId>
+          <artifactId>elasticsearch-x-content</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Javax XML -->
