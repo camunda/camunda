@@ -28,7 +28,7 @@ public class ElasticsearchProperties {
 
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
-  private int batchSize = 2000;
+  private int batchSize = 200;
 
   private Integer socketTimeout;
   private Integer connectTimeout;
