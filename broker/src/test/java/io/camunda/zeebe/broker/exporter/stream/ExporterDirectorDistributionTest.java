@@ -57,6 +57,12 @@ public final class ExporterDirectorDistributionTest {
     createExporter(EXPORTER_ID_2, Collections.singletonMap("y", 2));
   }
 
+  @After
+  public void tearDown() throws Exception {
+    activeExporters.closeExporterDirector();
+    passiveExporters.closeExporterDirector();
+  }
+
   private void createExporter(final String exporterId, final Map<String, Object> arguments) {
     final ControlledTestExporter exporter = spy(new ControlledTestExporter());
 
