@@ -22,7 +22,7 @@ import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
 import {useNotifications} from 'modules/notifications';
-import {useRoles} from 'modules/hooks/useRoles';
+import {usePermissions} from 'modules/hooks/usePermissions';
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -70,7 +70,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
       processDefinitionId,
     },
   });
-  const {hasPermission} = useRoles(['edit']);
+  const {hasPermission} = usePermissions(['write']);
 
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const containerRef = useRef<HTMLDivElement | null>(null);

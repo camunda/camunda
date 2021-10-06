@@ -9,17 +9,18 @@ import {
   GET_CURRENT_USER,
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
-import {Roles} from 'modules/types';
+import {Permissions} from 'modules/types';
 
-const useRoles = (scopes: Roles) => {
+const usePermissions = (scopes: Permissions) => {
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 
-  const roles = userData?.currentUser?.roles;
+  const permissions = userData?.currentUser?.permissions;
 
   const hasPermission =
-    roles !== undefined && roles.some((role) => scopes?.includes(role));
+    permissions !== undefined &&
+    permissions.some((permission) => scopes?.includes(permission));
 
   return {hasPermission};
 };
 
-export {useRoles};
+export {usePermissions};

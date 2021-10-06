@@ -10,7 +10,7 @@ const currentUser: User = {
   username: 'demo',
   firstname: 'Demo',
   lastname: 'User',
-  roles: ['view', 'edit'],
+  permissions: ['read', 'write'],
   __typename: 'User',
 };
 
@@ -18,7 +18,7 @@ const currentRestrictedUser: User = {
   username: 'demo',
   firstname: 'Demo',
   lastname: 'User',
-  roles: ['view'],
+  permissions: ['read'],
   __typename: 'User',
 };
 
@@ -27,7 +27,7 @@ const currentUserWithUnknownRole: User = {
   firstname: 'Demo',
   lastname: 'User',
   // @ts-ignore
-  roles: ['unknown'],
+  permissions: ['unknown'],
   __typename: 'User',
 };
 
@@ -36,7 +36,7 @@ const currentUserWithOutRole: User = {
   firstname: 'Demo',
   lastname: 'User',
   // @ts-ignore
-  roles: [],
+  permissions: [],
   __typename: 'User',
 };
 

@@ -51,7 +51,7 @@ describe('Restricted', () => {
     );
 
     render(
-      <Restricted scopes={['edit']}>
+      <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
       {wrapper: Wrapper},
@@ -69,7 +69,7 @@ describe('Restricted', () => {
     );
 
     render(
-      <Restricted scopes={['view', 'edit']}>
+      <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
       {wrapper: Wrapper},
@@ -87,7 +87,7 @@ describe('Restricted', () => {
     );
 
     render(
-      <Restricted scopes={['edit']}>
+      <Restricted scopes={['write']}>
         <div>test content</div>
       </Restricted>,
       {wrapper: Wrapper},
@@ -97,7 +97,7 @@ describe('Restricted', () => {
     expect(screen.getByText('test content')).toBeInTheDocument();
   });
 
-  it('should not render content when API returns an unknown role', async () => {
+  it('should not render content when API returns an unknown permission', async () => {
     mockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(
@@ -107,7 +107,7 @@ describe('Restricted', () => {
     );
 
     render(
-      <Restricted scopes={['view', 'edit']}>
+      <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
       {wrapper: Wrapper},
@@ -117,7 +117,7 @@ describe('Restricted', () => {
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
   });
 
-  it('should not render content when API returns no roles', async () => {
+  it('should not render content when API returns no permissions', async () => {
     mockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUserWithoutRole.result.data));
@@ -125,7 +125,7 @@ describe('Restricted', () => {
     );
 
     render(
-      <Restricted scopes={['view', 'edit']}>
+      <Restricted scopes={['read', 'write']}>
         <div>test content</div>
       </Restricted>,
       {wrapper: Wrapper},

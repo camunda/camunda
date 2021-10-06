@@ -86,6 +86,7 @@ type User {
     username: ID!
     firstname: String
     lastname: String
+    permissions: [String!]
 }
 # What can be searched for.
 type Query {

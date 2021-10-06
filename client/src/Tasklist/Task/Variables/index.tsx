@@ -55,7 +55,7 @@ import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useTaskVariables} from 'modules/queries/get-task-variables';
 import {LoadingTextarea} from './LoadingTextarea';
-import {useRoles} from 'modules/hooks/useRoles';
+import {usePermissions} from 'modules/hooks/usePermissions';
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
@@ -64,7 +64,7 @@ type Props = {
 
 const Variables: React.FC<Props> = ({onSubmit, task}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
-  const {hasPermission} = useRoles(['edit']);
+  const {hasPermission} = usePermissions(['write']);
   const {data: userData, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const {
     variables,

@@ -178,7 +178,7 @@ const Details: React.FC = () => {
               <Assignee data-testid="assignee-task-details">
                 {getAssigneeName(assignee)}
                 {taskState === TaskStates.Created && (
-                  <Restricted scopes={['edit']}>
+                  <Restricted scopes={['write']}>
                     <ClaimButton
                       variant="small"
                       type="button"
@@ -190,7 +190,7 @@ const Details: React.FC = () => {
                 )}
               </Assignee>
               {!assignee && (
-                <Restricted scopes={['edit']}>
+                <Restricted scopes={['write']}>
                   <Hint>
                     <Info />
                     Claim the Task to start working on it

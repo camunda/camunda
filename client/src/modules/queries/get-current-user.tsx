@@ -20,7 +20,7 @@ const GET_CURRENT_USER = gql`
       firstname
       lastname
       username
-      roles @client
+      permissions
     }
   }
 `;

@@ -4,17 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useRoles} from 'modules/hooks/useRoles';
+import {usePermissions} from 'modules/hooks/usePermissions';
 
-import {Roles} from 'modules/types';
+import {Permissions} from 'modules/types';
 
 type Props = {
   children: React.ReactElement;
-  scopes: Roles;
+  scopes: Permissions;
 };
 
 const Restricted: React.FC<Props> = ({children, scopes}) => {
-  const {hasPermission} = useRoles(scopes);
+  const {hasPermission} = usePermissions(scopes);
 
   if (!hasPermission) {
     return null;

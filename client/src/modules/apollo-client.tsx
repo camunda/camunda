@@ -27,7 +27,16 @@ function createApolloClient({
           fields: {
             currentUser: {
               read(user) {
-                return {...user, roles: user?.roles ?? ['view', 'edit']};
+                if (user === undefined || user.permissions === undefined) {
+                  return user;
+                }
+
+                return {
+                  ...user,
+                  permissions: user?.permissions.map((permission: string) =>
+                    permission.toLowerCase(),
+                  ),
+                };
               },
             },
             tasks: {

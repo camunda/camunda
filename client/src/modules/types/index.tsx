@@ -6,13 +6,13 @@
 
 type NonEmptyArray<T> = [T, ...T[]];
 
-type Roles = NonEmptyArray<'view' | 'edit'>;
+type Permissions = NonEmptyArray<'read' | 'write'>;
 
 type User = Readonly<{
   username: string;
   firstname: string | null;
   lastname: string | null;
-  roles: Roles;
+  permissions: Permissions;
   __typename: string;
 }>;
 
@@ -49,4 +49,4 @@ type Form = Readonly<{
   schema: string;
 }>;
 
-export type {User, Variable, Task, TaskState, Form, Roles};
+export type {User, Variable, Task, TaskState, Form, Permissions};
