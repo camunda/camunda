@@ -34,8 +34,9 @@ public interface PartitionTransition {
    * Closes the current partition's components asynchronously.
    *
    * @return an ActorFuture completed when the transition is complete
+   * @param term
    */
-  ActorFuture<Void> toInactive();
+  ActorFuture<Void> toInactive(final long term);
 
   /**
    * Sets the ConcurrencyControl through which tasks are executed.

@@ -21,7 +21,6 @@ import java.util.List;
 import org.slf4j.Logger;
 
 public final class PartitionTransitionImpl implements PartitionTransition {
-  private static final int INACTIVE_TERM = -1;
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<PartitionTransitionStep> steps;
@@ -48,8 +47,8 @@ public final class PartitionTransitionImpl implements PartitionTransition {
   }
 
   @Override
-  public ActorFuture<Void> toInactive() {
-    return transitionTo(INACTIVE_TERM, Role.INACTIVE);
+  public ActorFuture<Void> toInactive(final long term) {
+    return transitionTo(term, Role.INACTIVE);
   }
 
   @Override

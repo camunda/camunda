@@ -215,9 +215,7 @@ public final class ZeebePartition extends Actor
     ActorFuture<Void> nextTransitionFuture = null;
     switch (newRole) {
       case LEADER:
-        if (raftRole != Role.LEADER) {
-          nextTransitionFuture = leaderTransition(newTerm);
-        }
+        nextTransitionFuture = leaderTransition(newTerm);
         break;
       case INACTIVE:
         nextTransitionFuture = transitionToInactive();
@@ -227,9 +225,7 @@ public final class ZeebePartition extends Actor
       case CANDIDATE:
       case FOLLOWER:
       default:
-        if (raftRole == null || raftRole == Role.LEADER) {
-          nextTransitionFuture = followerTransition(newTerm);
-        }
+        nextTransitionFuture = followerTransition(newTerm);
         break;
     }
 
@@ -292,7 +288,7 @@ public final class ZeebePartition extends Actor
 
   private ActorFuture<Void> transitionToInactive() {
     zeebePartitionHealth.setServicesInstalled(false);
-    final var inactiveTransitionFuture = transition.toInactive();
+    final var inactiveTransitionFuture = transition.toInactive(context.getCurrentTerm());
     currentTransitionFuture = inactiveTransitionFuture;
     return inactiveTransitionFuture;
   }
@@ -457,7 +453,7 @@ public final class ZeebePartition extends Actor
     // restart from a new state. So we transition to Inactive to close existing services. The
     // services will be reinstalled when snapshot replication is completed.
     // We do not want to mark it as unhealthy, hence we don't reuse transitionToInactive()
-    actor.run(() -> currentTransitionFuture = transition.toInactive());
+    actor.run(() -> currentTransitionFuture = transition.toInactive(context.getCurrentTerm()));
   }
 
   @Override
