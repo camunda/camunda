@@ -195,6 +195,24 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldNotDeleteCorruptSnapshotWithoutValidSnapshot() throws IOException {
+    // given
+    final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
+    final var corruptSnapshot =
+        (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
+    SnapshotChecksum.persist(corruptSnapshot.getChecksumFile(), 0xCAFEL);
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+    assertThat(corruptSnapshot.getDirectory()).exists();
+    assertThat(corruptSnapshot.getChecksumFile()).exists();
+  }
+
+  @Test
   public void shouldPurgePendingSnapshots() {
     // given
     takeTransientSnapshot();
