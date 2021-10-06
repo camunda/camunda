@@ -91,7 +91,7 @@
     "jest-enzyme": "7.1.2",
     "jest-junit": "13.0.0",
     "jest-styled-components": "7.0.5",
-    "lint-staged": "11.1.2",
+    "lint-staged": "11.2.0",
     "msw": "0.35.0",
     "node-fetch": "2.6.5",
     "prettier": "2.4.1",
