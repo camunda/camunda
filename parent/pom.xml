@@ -74,7 +74,7 @@
     <version.netty-tcnative>2.0.44.Final</version.netty-tcnative>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.12.0</version.prometheus>
-    <version.protobuf>3.18.0</version.protobuf>
+    <version.protobuf>3.18.1</version.protobuf>
     <version.protobuf-common>2.5.1</version.protobuf-common>
     <version.micrometer>1.7.4</version.micrometer>
     <version.rocksdbjni>6.22.1.1</version.rocksdbjni>
@@ -102,7 +102,7 @@
     <version.jqwik>1.5.6</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.11.18</version.byte-buddy>
+    <version.byte-buddy>1.11.19</version.byte-buddy>
     <version.revapi>0.24.4</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.8.9-ea-1</version.immutables>
@@ -133,7 +133,7 @@
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
     <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
-    <plugin.version.revapi>0.14.3</plugin.version.revapi>
+    <plugin.version.revapi>0.14.4</plugin.version.revapi>
     <plugin.version.flaky-tests>2.0.3</plugin.version.flaky-tests>
 
     <!-- maven extensions -->
