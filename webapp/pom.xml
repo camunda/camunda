@@ -226,6 +226,9 @@
             <image>docker.io/camunda/tasklist</image>
           </to>
           <container>
+            <jvmFlags>
+              <jvmFlag>-XX:+ExitOnOutOfMemoryError</jvmFlag>
+            </jvmFlags>
             <ports>
               <port>8080</port>
             </ports>

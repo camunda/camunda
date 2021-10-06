@@ -39,6 +39,7 @@
           <generateRepository>false</generateRepository>
           <useWildcardClassPath>true</useWildcardClassPath>
           <assembleDirectory>${project.build.directory}/camunda-cloud-tasklist</assembleDirectory>
+          <extraJvmArguments>-XX:+ExitOnOutOfMemoryError</extraJvmArguments>
 
           <platforms>
             <platform>windows</platform>
