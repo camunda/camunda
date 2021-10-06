@@ -1008,3 +1008,25 @@ test('multi-definition report', async (t) => {
 
   await t.maximizeWindow();
 });
+
+test('group by process', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants', 'All');
+
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Process');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.click(e.addMeasureButton);
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectView(t, 'Flow Node');
+  await t.expect(e.distributedBySelect.textContent).contains('Process');
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectView(t, 'User Task');
+  await t.expect(e.distributedBySelect.textContent).contains('Process');
+  await t.expect(e.reportChart.visible).ok();
+});
