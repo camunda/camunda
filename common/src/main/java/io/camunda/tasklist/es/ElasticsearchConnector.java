@@ -5,8 +5,6 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -29,11 +27,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import javax.net.ssl.SSLContext;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -45,6 +46,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -104,7 +106,7 @@ public class ElasticsearchConnector {
           configCallback -> setTimeouts(configCallback, elsConfig));
     }
     final RestHighLevelClient esClient = new RestHighLevelClient(restClientBuilder);
-    if (!checkHealth(esClient, true)) {
+    if (!checkHealth(esClient)) {
       LOGGER.warn("Elasticsearch cluster is not accessible");
     } else {
       LOGGER.debug("Elasticsearch connection was successfully created.");
@@ -192,33 +194,34 @@ public class ElasticsearchConnector {
     return cert;
   }
 
-  public boolean checkHealth(RestHighLevelClient esClient, boolean reconnect) {
-    // TODO temporary solution
+  public boolean checkHealth(RestHighLevelClient esClient) {
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    int attempts = 0;
-    final int maxAttempts = 50;
-    boolean successfullyConnected = false;
-    while (attempts == 0 || (reconnect && attempts < maxAttempts && !successfullyConnected)) {
-      try {
-        final ClusterHealthResponse clusterHealthResponse =
-            esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-        // TODO do we need this?
-        successfullyConnected =
-            clusterHealthResponse.getClusterName().equals(elsConfig.getClusterName());
-      } catch (IOException ex) {
-        LOGGER.error(
-            "Error occurred while connecting to Elasticsearch: clustername [{}], {}:{}. Will be retried ({}/{}) ...",
-            elsConfig.getClusterName(),
-            elsConfig.getHost(),
-            elsConfig.getPort(),
-            attempts,
-            maxAttempts,
-            ex);
-        sleepFor(3000);
-      }
-      attempts++;
-    }
-    return successfullyConnected;
+    final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(elsConfig);
+    return Failsafe.with(retryPolicy)
+        .get(
+            () -> {
+              final ClusterHealthResponse clusterHealthResponse =
+                  esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+              return clusterHealthResponse.getClusterName().equals(elsConfig.getClusterName());
+            });
+  }
+
+  private RetryPolicy<Boolean> getConnectionRetryPolicy(final ElasticsearchProperties elsConfig) {
+    final String logMessage = String.format("connect to Elasticsearch at %s", elsConfig.getUrl());
+    return new RetryPolicy<Boolean>()
+        .handle(IOException.class, ElasticsearchException.class)
+        .withDelay(Duration.ofSeconds(3))
+        .withMaxAttempts(50)
+        .onRetry(
+            e ->
+                LOGGER.info(
+                    "Retrying #{} {} due to {}",
+                    e.getAttemptCount(),
+                    logMessage,
+                    e.getLastFailure()))
+        .onAbort(e -> LOGGER.error("Abort {} by {}", logMessage, e.getFailure()))
+        .onRetriesExceeded(
+            e -> LOGGER.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
   }
 
   private Builder setTimeouts(final Builder builder, final ElasticsearchProperties elsConfig) {
