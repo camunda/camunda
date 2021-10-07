@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>io.camunda</groupId>
 		<artifactId>operate-parent</artifactId>
-		<version>1.2.0</version>
+		<version>1.3.0-SNAPSHOT</version>
 	</parent>
 
 	<name>Operate ELS schema</name>
