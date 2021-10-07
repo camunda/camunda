@@ -3,6 +3,6 @@
   "@type": "processorStep",
   "indexName": "user",
   "version": "1.2.0",
-  "order": 4,
+  "order": 5,
   "content": "{ \"remove\": { \"field\": [\"username\", \"firstname\", \"lastname\"] } }"
 }

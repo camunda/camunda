@@ -1,8 +1,8 @@
 {
-  "description": "Migrate fields username to userId, firstname+lastname to displayName ",
+  "description": "Add role 'OWNER' ",
   "@type": "processorStep",
   "indexName": "user",
   "version": "1.2.0",
   "order": 3,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.userId = ctx.username; ctx.displayName = (ctx.firstname == null?'':ctx.firstname) + (ctx.lastname == null?'': (' ' + ctx.lastname))\"}}"
+  "content": "{\"append\": {\"field\": \"roles\", \"value\": [\"OWNER\"]}}"
 }
