@@ -73,6 +73,15 @@
       <classifier>linux-x86_64</classifier>
     </dependency>
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-tcnative-boringssl-static</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
     </dependency>
@@ -259,6 +268,9 @@
             <dependency>uk.co.real-logic:sbe-tool</dependency>
             <dependency>net.jqwik:jqwik</dependency>
           </usedDependencies>
+          <ignoredDependencies>
+            <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
+          </ignoredDependencies>
         </configuration>
       </plugin>
 
