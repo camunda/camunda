@@ -350,6 +350,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
 
     // when
     importAllZeebeEntitiesFromLastIndex();
+    importAllZeebeEntitiesFromLastIndex();
 
     // then
     ProcessInstanceDto savedProcessInstance =
