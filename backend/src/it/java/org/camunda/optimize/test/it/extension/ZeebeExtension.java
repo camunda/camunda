@@ -50,7 +50,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
 
   private final EmbeddedBrokerRule embeddedBrokerRule;
-  private ClientRule clientRule;
+  private final ClientRule clientRule;
 
   @Getter
   private String zeebeRecordPrefix;
