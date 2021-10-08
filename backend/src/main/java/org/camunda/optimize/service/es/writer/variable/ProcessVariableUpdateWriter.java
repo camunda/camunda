@@ -140,7 +140,9 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     );
     processInstanceIds.forEach(
       id -> bulkRequest.add(
-        new UpdateRequest(getProcessInstanceIndexAliasName(processDefinitionKey), id).script(VARIABLE_CLEAR_SCRIPT)
+        new UpdateRequest(getProcessInstanceIndexAliasName(processDefinitionKey), id)
+          .script(VARIABLE_CLEAR_SCRIPT)
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
       )
     );
     ElasticsearchWriterUtil.doBulkRequest(
