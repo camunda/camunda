@@ -276,7 +276,7 @@ final class LeaderAppender extends AbstractAppender {
     else if (member.getMember().getType() == RaftMember.Type.ACTIVE
         || member.getMember().getType() == RaftMember.Type.PROMOTABLE
         || member.getMember().getType() == RaftMember.Type.PASSIVE) {
-      tryToReplicateSnapshot(member);
+      tryToReplicate(member);
     }
     // If no AppendRequest is already being sent, send an AppendRequest.
     else if (member.canAppend()) {
@@ -342,25 +342,44 @@ final class LeaderAppender extends AbstractAppender {
                 new RaftException.ProtocolException("Failed to reach consensus")));
   }
 
-  private void tryToReplicateSnapshot(final RaftMemberContext member) {
-    final var persistedSnapshot = raft.getCurrentSnapshot();
-
-    if (persistedSnapshot != null
-        && member.getSnapshotIndex() < persistedSnapshot.getIndex()
-        && persistedSnapshot.getIndex() >= member.getCurrentIndex()) {
+  private void tryToReplicate(final RaftMemberContext member) {
+    if (shouldReplicateSnapshot(member)) {
       if (!member.canInstall()) {
         return;
       }
-
-      log.debug(
-          "Replicating snapshot {} to {}",
-          persistedSnapshot.getIndex(),
-          member.getMember().memberId());
-      buildInstallRequest(member, persistedSnapshot)
-          .ifPresent(installRequest -> sendInstallRequest(member, installRequest));
+      replicateSnapshot(member);
     } else if (member.canAppend()) {
-      sendAppendRequest(member, buildAppendRequest(member, -1));
+      replicateEvents(member);
     }
+  }
+
+  private boolean shouldReplicateSnapshot(final RaftMemberContext member) {
+    final var persistedSnapshot = raft.getCurrentSnapshot();
+    if (persistedSnapshot == null) {
+      return false;
+    }
+    if (raft.getLog().getFirstIndex() > member.getCurrentIndex()) {
+      // Necessary events are not available anymore, we have to use the snapshot
+      return true;
+    }
+    // Only use the snapshot if the number of events that would have to be replicated
+    // is above the threshold
+    final var memberLag = persistedSnapshot.getIndex() - member.getCurrentIndex();
+    return memberLag > raft.getPreferSnapshotReplicationThreshold();
+  }
+
+  private void replicateSnapshot(final RaftMemberContext member) {
+    final var persistedSnapshot = raft.getCurrentSnapshot();
+    log.debug(
+        "Replicating snapshot {} to {}",
+        persistedSnapshot.getIndex(),
+        member.getMember().memberId());
+    buildInstallRequest(member, persistedSnapshot)
+        .ifPresent(installRequest -> sendInstallRequest(member, installRequest));
+  }
+
+  private void replicateEvents(final RaftMemberContext member) {
+    sendAppendRequest(member, buildAppendRequest(member, -1));
   }
 
   /** Records a failed heartbeat. */
