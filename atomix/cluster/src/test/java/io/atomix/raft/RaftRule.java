@@ -39,7 +39,6 @@ import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
@@ -56,7 +55,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -84,7 +82,6 @@ public final class RaftRule extends ExternalResource {
   private final int nodeCount;
   private volatile long highestCommit;
   private final AtomicReference<CommitAwaiter> commitAwaiterRef = new AtomicReference<>();
-  private final Map<String, AtomicReference<CountDownLatch>> compactAwaiters = new HashMap<>();
   private long position;
   private EntryValidator entryValidator = new NoopEntryValidator();
   // Keep a reference to the snapshots to ensure they are persisted across the restarts.
@@ -157,7 +154,6 @@ public final class RaftRule extends ExternalResource {
     context.close();
     context = null;
     members.clear();
-    compactAwaiters.clear();
     nextId = 0;
     protocolFactory = null;
     highestCommit = 0;
@@ -207,7 +203,6 @@ public final class RaftRule extends ExternalResource {
           .thenAccept(this::addCommitListener)
           .thenRun(latch::countDown);
       servers.add(server);
-      compactAwaiters.put(server.name(), new AtomicReference<>());
     }
 
     latch.await(30, TimeUnit.SECONDS);
@@ -272,7 +267,6 @@ public final class RaftRule extends ExternalResource {
 
   public void shutdownServer(final String nodeName) throws Exception {
     servers.remove(nodeName).shutdown().get(30, TimeUnit.SECONDS);
-    compactAwaiters.remove(nodeName);
     memberLog.remove(nodeName);
     snapshotStores.remove(nodeName);
   }
@@ -302,22 +296,40 @@ public final class RaftRule extends ExternalResource {
 
   public void doSnapshotOnMember(final RaftServer raftServer, final long index, final int size)
       throws Exception {
-    if (raftServer.isRunning()) {
+    doSnapshotOnMember(raftServer, index, size, true);
+  }
+
+  public void doSnapshotOnMemberWithoutCompaction(
+      final RaftServer raftServer, final long index, final int size) throws Exception {
+    doSnapshotOnMember(raftServer, index, size, false);
+  }
+
+  private void doSnapshotOnMember(
+      final RaftServer raftServer, final long index, final int size, final boolean shouldCompact)
+      throws Exception {
+    if (!raftServer.isRunning()) {
+      return;
+    }
+    final var raftContext = raftServer.getContext();
+    final var memberId = raftServer.cluster().getLocalMember().memberId();
+    final var snapshotStore = getSnapshotStore(memberId.id());
+    final var snapshot =
+        InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
+
+    if (shouldCompact) {
+      compact(memberId, snapshot);
+    }
+  }
+
+  private void compact(final MemberId memberId, final PersistedSnapshot persistedSnapshot)
+      throws Exception {
+    final var raftServer = servers.get(memberId.id());
+    if (raftServer != null) {
       final var raftContext = raftServer.getContext();
-      final var snapshotStore =
-          getSnapshotStore(raftServer.cluster().getLocalMember().memberId().id());
-
-      compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
-      InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
+      final var serviceManager = raftContext.getLogCompactor();
+      serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
+      raftServer.compact().get();
     }
-
-    // await the compaction to avoid race condition with reading the logs
-    final var latchAtomicReference = compactAwaiters.get(raftServer.name());
-    final var latch = latchAtomicReference.get();
-    if (!latch.await(30, TimeUnit.SECONDS)) {
-      throw new TimeoutException("Expected to compact the log after 30 seconds!");
-    }
-    latchAtomicReference.set(null);
   }
 
   private TestSnapshotStore getSnapshotStore(final String memberId) {
@@ -441,7 +453,6 @@ public final class RaftRule extends ExternalResource {
       final MemberId memberId, final BiFunction<MemberId, Builder, Builder> configurator) {
     final TestRaftServerProtocol protocol = protocolFactory.newServerProtocol(memberId);
     final var storage = createStorage(memberId);
-    storage.getPersistedSnapshotStore().addSnapshotListener(new RaftSnapshotListener(memberId));
 
     final RaftServer.Builder defaults =
         RaftServer.builder(memberId)
@@ -637,35 +648,6 @@ public final class RaftRule extends ExternalResource {
 
     public long awaitCommit() throws Exception {
       return commitFuture.get(30, TimeUnit.SECONDS);
-    }
-  }
-
-  private final class RaftSnapshotListener implements PersistedSnapshotListener {
-
-    private final MemberId memberId;
-
-    public RaftSnapshotListener(final MemberId memberId) {
-      this.memberId = memberId;
-    }
-
-    @Override
-    public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
-      final var raftServer = servers.get(memberId.id());
-      if (raftServer != null) {
-        final var raftContext = raftServer.getContext();
-        final var serviceManager = raftContext.getLogCompactor();
-        serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
-
-        raftServer
-            .compact()
-            .whenComplete(
-                (v, t) -> {
-                  final var latch = compactAwaiters.get(memberId.id()).get();
-                  if (latch != null) {
-                    latch.countDown();
-                  }
-                });
-      }
     }
   }
 }
