@@ -43,11 +43,8 @@ public class ExternalEventWriter {
 
   public void upsertEvents(final List<EventDto> eventDtos) {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
-
     final BulkRequest bulkRequest = new BulkRequest();
-    final Long ingestionTimestamp = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
     for (EventDto eventDto : eventDtos) {
-      eventDto.setIngestionTimestamp(ingestionTimestamp);
       bulkRequest.add(createEventUpsert(eventDto));
     }
 

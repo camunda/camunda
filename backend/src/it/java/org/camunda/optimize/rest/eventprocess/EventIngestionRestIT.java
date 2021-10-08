@@ -85,6 +85,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
+
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents()).isEmpty();
   }
@@ -252,7 +253,7 @@ public class EventIngestionRestIT extends AbstractIT {
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
     eventDto.setGroup(null);
     eventDto.setData(null);
-    // time will get dynamically assigned of not present
+    // time will get dynamically assigned if not present
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     eventDto.setTime(null);
 
@@ -407,20 +408,21 @@ public class EventIngestionRestIT extends AbstractIT {
 
   private void assertEventDtosArePersisted(final List<CloudEventRequestDto> cloudEventDtos) {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
     final List<EventDto> expectedEventDtos = cloudEventDtos.stream()
       .map(cloudEventDto -> EventDto.builder()
         .id(cloudEventDto.getId())
         .eventName(cloudEventDto.getType())
         .timestamp(
           cloudEventDto.getTime()
-            .orElse(LocalDateUtil.getCurrentDateTime().toInstant())
+            .orElse(rightNow)
             .toEpochMilli()
         )
         .traceId(cloudEventDto.getTraceid())
         .group(cloudEventDto.getGroup().orElse(null))
         .source(cloudEventDto.getSource())
         .data(cloudEventDto.getData().orElse(null))
-        .ingestionTimestamp(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli())
+        .ingestionTimestamp(rightNow.toEpochMilli())
         .build()
       )
       .collect(Collectors.toList());
