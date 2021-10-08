@@ -45,20 +45,18 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     startManagementServer();
 
     function buildAndStartOptimize() {
-      buildBackend()
-        .then(() => {
-          if (!dockerProcess) {
-            startDocker().then(restoreSqlDump);
-          }
-          startBackend()
-            .then(postStartupActions)
-            .catch(() => {
-              console.log('Optimize process killed, restarting...');
-            });
-        })
-        .catch(() => {
+      Promise.all([
+        dockerProcess ? Promise.resolve() : startDocker().then(restoreSqlDump),
+        buildBackend().catch(() => {
           console.log('Optimize build interrupted');
-        });
+        }),
+      ]).then(() => {
+        startBackend()
+          .then(postStartupActions)
+          .catch(() => {
+            console.log('Optimize process killed, restarting...');
+          });
+      });
     }
 
     if (ciMode) {
@@ -169,25 +167,28 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       }, 1000);
     }
 
-    async function restoreSqlDump() {
-      await downloadFile('gs://optimize-data/optimize_data-e2e.sqlc', 'databaseDumps/dump.sqlc');
+    function restoreSqlDump() {
+      return new Promise(async (resolve) => {
+        await downloadFile('gs://optimize-data/optimize_data-e2e.sqlc', 'databaseDumps/dump.sqlc');
 
-      dataGeneratorProcess = spawnWithArgs(
-        'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
-      );
+        dataGeneratorProcess = spawnWithArgs(
+          'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
+        );
 
-      dataGeneratorProcess.stdout.on('data', (data) => {
-        addLog(data.toString(), 'dataGenerator');
-      });
+        dataGeneratorProcess.stdout.on('data', (data) => {
+          addLog(data.toString(), 'dataGenerator');
+        });
 
-      dataGeneratorProcess.stderr.on('data', (data) => {
-        addLog(data.toString(), 'dataGenerator', true);
-      });
+        dataGeneratorProcess.stderr.on('data', (data) => {
+          addLog(data.toString(), 'dataGenerator', true);
+        });
 
-      dataGeneratorProcess.on('exit', () => {
-        engineDataGenerationComplete = true;
-        dataGeneratorProcess = null;
-        spawnWithArgs('rm -rf databaseDumps/');
+        dataGeneratorProcess.on('exit', () => {
+          engineDataGenerationComplete = true;
+          dataGeneratorProcess = null;
+          resolve();
+          spawnWithArgs('rm -rf databaseDumps/');
+        });
       });
     }
 
