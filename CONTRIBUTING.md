@@ -173,7 +173,7 @@ The commit header should match the following pattern:
 The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
 
 - `type` should be one of:
-   - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
+   - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
    - `ci`: Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
    - `deps`: A change to the external dependencies (was already used by Dependabot)
    - `docs`:  A change to the documentation
