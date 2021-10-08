@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1633608121101,
+  "iteration": 1633608121108,
   "links": [],
   "panels": [
     {
@@ -5388,9 +5388,11 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows counts of all gRPC messages, which have been sent to the Zeebe Cluster.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -5418,9 +5420,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -5442,10 +5445,10 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "gRPC requests",
+          "title": "Total gRPC requests",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -5487,7 +5490,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -5515,9 +5519,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -10170,5 +10175,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 19
+  "version": 20
 }
