@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,12 @@ public final class ExporterDirectorDistributionTest {
 
     createExporter(EXPORTER_ID_1, Collections.singletonMap("x", 1));
     createExporter(EXPORTER_ID_2, Collections.singletonMap("y", 2));
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    activeExporters.closeExporterDirector();
+    passiveExporters.closeExporterDirector();
   }
 
   private void createExporter(final String exporterId, final Map<String, Object> arguments) {
@@ -107,12 +114,18 @@ public final class ExporterDirectorDistributionTest {
   }
 
   @Test
-  public void shouldNotResetExporterPositionWhenOldPositionReceived() throws Exception {
+  public void shouldNotResetExporterPositionWhenOldPositionReceived() {
     // given
     exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
     startExporters(exporterDescriptors);
-    final long position = 10L;
 
+    Awaitility.await("Exporter has recovered and started exporting.")
+        .untilAsserted(
+            () ->
+                assertThat(activeExporters.getDirector().getPhase().join())
+                    .isEqualTo(ExporterPhase.EXPORTING));
+
+    final long position = 10L;
     activeExporters.getExportersState().setPosition(EXPORTER_ID_1, position);
     activeExporters.getExportersState().setPosition(EXPORTER_ID_2, position);
 
