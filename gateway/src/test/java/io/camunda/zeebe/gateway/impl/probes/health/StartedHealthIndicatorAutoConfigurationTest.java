@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.Gateway.Status;
+import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import java.util.function.Supplier;
 import org.junit.Before;

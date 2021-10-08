@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
+import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -217,12 +218,5 @@ public final class Gateway {
       brokerClient.close();
       brokerClient = null;
     }
-  }
-
-  public enum Status {
-    INITIAL,
-    STARTING,
-    RUNNING,
-    SHUTDOWN
   }
 }
