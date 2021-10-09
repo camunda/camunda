@@ -191,11 +191,6 @@
 
     <dependency>
       <groupId>io.grpc</groupId>
-      <artifactId>grpc-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
     </dependency>
 
@@ -356,8 +351,14 @@
         <configuration>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>
+            <!-- TODO: may not be necessary anymore? -->
             <dependency>io.netty:netty-tcnative-boringssl-static</dependency>
             <dependency>io.netty:netty-transport-native-epoll</dependency>
+            <!--
+              used by the gRPC generated code - not sure why it doesn't detect it, but I assume
+              it's because it's generated code?
+              -->
+            <dependency>javax.annotation:javax.annotation-api</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
