@@ -87,6 +87,8 @@ public class ZeebeTestNode {
         .withClusterId(CLUSTER_ID)
         .withMembershipProvider(buildDiscoveryProvider(nodes))
         .withMemberId(getMemberId())
+        .withMessagingPort(node.address().port())
+        .withMessagingInterface(node.address().host())
         .build();
   }
 

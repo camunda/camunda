@@ -77,6 +77,8 @@ public final class StubBrokerRule extends ExternalResource {
             .withPort(currentStubPort)
             .withMemberId("0")
             .withClusterId("cluster")
+            .withMessagingPort(currentStubPort)
+            .withMessagingInterface(currentStubHost)
             .build();
     cluster.start().join();
     final var transportFactory = new TransportFactory(scheduler);

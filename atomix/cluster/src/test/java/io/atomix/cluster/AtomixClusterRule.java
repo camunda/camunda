@@ -94,6 +94,8 @@ public final class AtomixClusterRule extends ExternalResource {
         .withHost("localhost")
         .withPort(getAddress(id).port())
         .withProperties(properties)
+        .withMessagingPort(getAddress(id).port())
+        .withMessagingInterface("localhost")
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes));
   }
 
