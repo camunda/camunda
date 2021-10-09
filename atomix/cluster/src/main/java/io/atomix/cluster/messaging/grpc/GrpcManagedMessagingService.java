@@ -16,31 +16,35 @@
 package io.atomix.cluster.messaging.grpc;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
-import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import org.agrona.CloseHelper;
 
-public final class GrpcManagedMessagingService
-    implements ManagedMessagingService, CloseableSilently {
+public final class GrpcManagedMessagingService implements ManagedMessagingService, AutoCloseable {
   private final AtomicBoolean isRunning = new AtomicBoolean();
 
   private final GrpcMessagingService messagingService;
-  private final GrpcServer server;
+  private final GrpcMessagingServer server;
+  private final MessagingConfig config;
 
   public GrpcManagedMessagingService(
-      final GrpcMessagingService messagingService, final GrpcServer server) {
+      final GrpcMessagingService messagingService,
+      final GrpcMessagingServer server,
+      final MessagingConfig config) {
     this.messagingService = messagingService;
     this.server = server;
+    this.config = config;
   }
 
   @Override
@@ -49,12 +53,7 @@ public final class GrpcManagedMessagingService
       return CompletableFuture.completedFuture(this);
     }
 
-    try {
-      server.start();
-      return CompletableFuture.completedFuture(this);
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
+    return server.start().thenApply(ok -> this);
   }
 
   @Override
@@ -75,8 +74,8 @@ public final class GrpcManagedMessagingService
   }
 
   @Override
-  public void close() {
-    stop().join();
+  public void close() throws Exception {
+    stop().get(config.getShutdownTimeout().toNanos(), TimeUnit.NANOSECONDS);
   }
 
   @Override
@@ -94,7 +93,9 @@ public final class GrpcManagedMessagingService
       final Address address, final String type, final byte[] payload, final boolean keepAlive) {
     if (!isRunning.get()) {
       return CompletableFuture.failedFuture(
-          new IllegalStateException("MessagingService is closed."));
+          new IllegalStateException(
+              String.format(
+                  "Failed to send async request to %s; messaging service is closed", address)));
     }
 
     return messagingService.sendAsync(address, type, payload, keepAlive);
@@ -105,7 +106,10 @@ public final class GrpcManagedMessagingService
       final Address address, final String type, final byte[] payload, final boolean keepAlive) {
     if (!isRunning.get()) {
       return CompletableFuture.failedFuture(
-          new IllegalStateException("MessagingService is closed."));
+          new IllegalStateException(
+              String.format(
+                  "Failed to send and receive request to %s; messaging service is closed",
+                  address)));
     }
 
     return messagingService.sendAndReceive(address, type, payload, keepAlive);
@@ -120,7 +124,10 @@ public final class GrpcManagedMessagingService
       final Executor executor) {
     if (!isRunning.get()) {
       return CompletableFuture.failedFuture(
-          new IllegalStateException("MessagingService is closed."));
+          new IllegalStateException(
+              String.format(
+                  "Failed to send and receive request to %s; messaging service is closed",
+                  address)));
     }
 
     return messagingService.sendAndReceive(address, type, payload, keepAlive, executor);
@@ -135,7 +142,10 @@ public final class GrpcManagedMessagingService
       final Duration timeout) {
     if (!isRunning.get()) {
       return CompletableFuture.failedFuture(
-          new IllegalStateException("MessagingService is closed."));
+          new IllegalStateException(
+              String.format(
+                  "Failed to send and receive request to %s; messaging service is closed",
+                  address)));
     }
 
     return messagingService.sendAndReceive(address, type, payload, keepAlive, timeout);
@@ -151,7 +161,10 @@ public final class GrpcManagedMessagingService
       final Executor executor) {
     if (!isRunning.get()) {
       return CompletableFuture.failedFuture(
-          new IllegalStateException("MessagingService is closed."));
+          new IllegalStateException(
+              String.format(
+                  "Failed to send and receive request to %s; messaging service is closed",
+                  address)));
     }
 
     return messagingService.sendAndReceive(address, type, payload, keepAlive, timeout, executor);

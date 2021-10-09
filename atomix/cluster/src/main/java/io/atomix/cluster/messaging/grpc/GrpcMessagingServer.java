@@ -17,22 +17,29 @@ package io.atomix.cluster.messaging.grpc;
 
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.grpc.service.Service;
+import io.atomix.utils.Managed;
 import io.atomix.utils.net.Address;
 import io.grpc.CompressorRegistry;
 import io.grpc.Server;
-import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-final class GrpcServer implements AutoCloseable {
+final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrpcMessagingServer.class);
+
   private final MessagingConfig config;
   private final List<Address> bindAddresses;
   private final Service messagingService;
   private final TransportFactory transportFactory;
+  private final AtomicBoolean isRunning = new AtomicBoolean();
 
   private Server server;
 
-  GrpcServer(
+  GrpcMessagingServer(
       final MessagingConfig config,
       final List<Address> bindAddresses,
       final Service messagingService,
@@ -43,36 +50,68 @@ final class GrpcServer implements AutoCloseable {
     this.transportFactory = transportFactory;
   }
 
-  void start() throws IOException {
-    if (server == null) {
+  @Override
+  public CompletableFuture<Server> start() {
+    if (!isRunning.compareAndSet(false, true)) {
+      return CompletableFuture.completedFuture(server);
+    }
+
+    try {
       server = buildServer();
+    } catch (final Exception e) {
+      isRunning.set(false);
+      server = null;
+      return CompletableFuture.failedFuture(e);
+    }
+
+    try {
       server.start();
+      LOGGER.debug("Started gRPC server at {}", server.getListenSockets());
+      return CompletableFuture.completedFuture(server);
+    } catch (final Exception e) {
+      return CompletableFuture.failedFuture(e);
     }
   }
 
-  void stop() throws InterruptedException {
-    if (server == null) {
-      return;
+  @Override
+  public boolean isRunning() {
+    return isRunning.getOpaque();
+  }
+
+  @Override
+  public CompletableFuture<Void> stop() {
+    if (!isRunning.compareAndSet(true, false)) {
+      return CompletableFuture.completedFuture(null);
     }
 
+    final var oldServer = server;
     server.shutdown();
-    server.awaitTermination(config.getShutdownTimeout().toNanos(), TimeUnit.NANOSECONDS);
-
     server = null;
+
+    try {
+      oldServer.awaitTermination();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return CompletableFuture.failedFuture(e);
+    }
+
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public void close() throws Exception {
-    stop();
+    stop().get(config.getShutdownTimeout().toNanos(), TimeUnit.NANOSECONDS);
   }
 
   private Server buildServer() {
     final var firstAddress = bindAddresses.get(0);
     final var builder =
         transportFactory
-            .createServerBuilder(firstAddress.resolve())
+            .createServerBuilder(firstAddress)
             .compressorRegistry(CompressorRegistry.getDefaultInstance())
             .addService(messagingService);
+
+    LOGGER.debug("Starting gRPC messaging server on {}", firstAddress);
     return builder.build();
   }
 }

@@ -31,10 +31,10 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
+import io.atomix.cluster.messaging.grpc.GrpcManagedServices;
+import io.atomix.cluster.messaging.grpc.GrpcMessagingFactory;
 import io.atomix.cluster.messaging.impl.DefaultClusterCommunicationService;
 import io.atomix.cluster.messaging.impl.DefaultClusterEventService;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
@@ -104,17 +104,14 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   private final AtomicBoolean started = new AtomicBoolean();
 
   public AtomixCluster(final ClusterConfig config, final Version version) {
-    this(config, version, buildMessagingService(config), buildUnicastService(config));
-  }
-
-  protected AtomixCluster(
-      final ClusterConfig config,
-      final Version version,
-      final ManagedMessagingService messagingService,
-      final ManagedUnicastService unicastService) {
-    this.messagingService =
-        messagingService != null ? messagingService : buildMessagingService(config);
-    this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
+    final GrpcManagedServices managedMessagingServices =
+        GrpcMessagingFactory.create(
+            config.getMessagingConfig(),
+            config.getNodeConfig().getAddress(),
+            config.getClusterId(),
+            "atomix");
+    this.messagingService = managedMessagingServices.getMessagingService();
+    this.unicastService = managedMessagingServices.getUnicastService();
 
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);
@@ -285,18 +282,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @Override
   public String toString() {
     return toStringHelper(this).toString();
-  }
-
-  /** Builds a default messaging service. */
-  protected static ManagedMessagingService buildMessagingService(final ClusterConfig config) {
-    return new NettyMessagingService(
-        config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
-  }
-
-  /** Builds a default unicast service. */
-  protected static ManagedUnicastService buildUnicastService(final ClusterConfig config) {
-    return new NettyUnicastService(
-        config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
   }
 
   /** Builds a member location provider. */

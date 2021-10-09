@@ -22,6 +22,7 @@ import io.atomix.cluster.messaging.grpc.TransportFactory;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.messaging.protocol.MessagingGrpc.MessagingStub;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 
 public final class ClientRegistry implements ClusterMembershipEventListener, CloseableSilently {
+  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
   private final ConcurrentMap<Address, Client> clients = new ConcurrentHashMap<>();
   private final TransportFactory transportFactory;
 
@@ -69,10 +72,10 @@ public final class ClientRegistry implements ClusterMembershipEventListener, Clo
   }
 
   private Client createClient(final Address address) {
-    final var channel = transportFactory.createClientBuilder(address.resolve()).build();
+    final var channel = transportFactory.createClientBuilder(address).build();
     final var stub =
         io.camunda.zeebe.messaging.protocol.MessagingGrpc.newStub(channel)
-            .withDeadlineAfter(10, TimeUnit.SECONDS)
+            .withDeadlineAfter(DEFAULT_REQUEST_TIMEOUT.toNanos(), TimeUnit.NANOSECONDS)
             .withCompression("gzip");
 
     return new Client(channel, stub);
