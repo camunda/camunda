@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.cluster.messaging.impl.NettyUnicastService;
+import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.Version;
 import io.camunda.zeebe.broker.ActorSchedulerConfiguration;
@@ -594,8 +594,8 @@ public class ClusteringRule extends ExternalResource {
     LOGGER.debug(
         "Disonnecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
-    ((NettyUnicastService) cluster.getUnicastService()).stop().join();
-    ((NettyMessagingService) cluster.getMessagingService()).stop().join();
+    ((ManagedUnicastService) cluster.getUnicastService()).stop().join();
+    ((ManagedMessagingService) cluster.getMessagingService()).stop().join();
   }
 
   public void connect(final Broker broker) {
@@ -604,8 +604,8 @@ public class ClusteringRule extends ExternalResource {
     LOGGER.debug(
         "Connecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
-    ((NettyUnicastService) cluster.getUnicastService()).start().join();
-    ((NettyMessagingService) cluster.getMessagingService()).start().join();
+    ((ManagedUnicastService) cluster.getUnicastService()).start().join();
+    ((ManagedMessagingService) cluster.getMessagingService()).start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
