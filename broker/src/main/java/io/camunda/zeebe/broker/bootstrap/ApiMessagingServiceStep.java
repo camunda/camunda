@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.MessagingConfig;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.cluster.messaging.grpc.GrpcMessagingFactory;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -42,10 +42,12 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
     messagingConfig.setCompressionAlgorithm(brokerCfg.getCluster().getMessageCompression());
 
     final var messagingService =
-        new NettyMessagingService(
-            brokerCfg.getCluster().getClusterName(),
-            Address.from(commandApiCfg.getAdvertisedHost(), commandApiCfg.getAdvertisedPort()),
-            messagingConfig);
+        GrpcMessagingFactory.create(
+                messagingConfig,
+                Address.from(commandApiCfg.getAdvertisedHost(), commandApiCfg.getAdvertisedPort()),
+                brokerCfg.getCluster().getClusterName(),
+                "commandApi")
+            .getMessagingService();
 
     messagingService
         .start()
