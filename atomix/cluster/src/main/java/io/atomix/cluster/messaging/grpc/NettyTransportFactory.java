@@ -107,6 +107,7 @@ final class NettyTransportFactory implements TransportFactory {
         NettyServerBuilder.forAddress(address.socketAddress())
             .bossEventLoopGroup(eventLoopGroup)
             .workerEventLoopGroup(eventLoopGroup)
+            .maxInboundMessageSize(config.getMaxMessageSize())
             .executor(grpcExecutor);
 
     if (!inetAddress.isAnyLocalAddress() && !inetAddress.isLoopbackAddress()) {
@@ -137,6 +138,7 @@ final class NettyTransportFactory implements TransportFactory {
         .eventLoopGroup(eventLoopGroup)
         .executor(grpcExecutor)
         .withOption(ChannelOption.TCP_NODELAY, true)
+        .maxInboundMessageSize(config.getMaxMessageSize())
         .withOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS);
     pickClientChannel(builder);
 

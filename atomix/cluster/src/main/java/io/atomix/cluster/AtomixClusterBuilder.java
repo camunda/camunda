@@ -194,6 +194,18 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
   }
 
   /**
+   * Sets the maximum size of a network message. Messages which exceed this size on either the
+   * client or the server will trigger a RESOURCE_EXHAUSTED error.
+   *
+   * @param maxMessageSizeBytes the new maximum size of a serialized network message
+   * @return this config for chaining
+   */
+  public AtomixClusterBuilder withMaxMessageSize(final long maxMessageSizeBytes) {
+    config.getMessagingConfig().setMaxMessageSize(maxMessageSizeBytes);
+    return this;
+  }
+
+  /**
    * Sets the cluster membership protocol.
    *
    * <p>The membership protocol is responsible for determining the active set of members in the

@@ -16,16 +16,23 @@
 package io.atomix.cluster.messaging.grpc;
 
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.utils.net.Address;
+import io.camunda.zeebe.messaging.protocol.MessagingOuterClass.Request;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.net.ConnectException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-final class CompletableStreamObserver<V> implements StreamObserver<V> {
+final class RequestObserver<V> implements StreamObserver<V> {
+  private final Address remoteAddress;
+  private final Request request;
   private final CompletableFuture<V> future;
 
-  CompletableStreamObserver(final CompletableFuture<V> future) {
+  RequestObserver(
+      final Address remoteAddress, final Request request, final CompletableFuture<V> future) {
+    this.remoteAddress = remoteAddress;
+    this.request = request;
     this.future = future;
   }
 
@@ -46,18 +53,31 @@ final class CompletableStreamObserver<V> implements StreamObserver<V> {
     final var statusError = (StatusRuntimeException) t;
     switch (statusError.getStatus().getCode()) {
       case DEADLINE_EXCEEDED:
-        future.completeExceptionally(new TimeoutException(statusError.getMessage()));
+        future.completeExceptionally(
+            new TimeoutException(
+                String.format(
+                    "Request %s to %s timed out: %s", request, remoteAddress, statusError)));
         break;
       case UNIMPLEMENTED:
         future.completeExceptionally(
-            new MessagingException.NoRemoteHandler(statusError.getMessage(), statusError));
+            new MessagingException.NoRemoteHandler(
+                String.format(
+                    "Request %s to %s failed due to no remote handler registered",
+                    request, remoteAddress),
+                statusError));
         break;
       case INTERNAL:
         future.completeExceptionally(
-            new MessagingException.RemoteHandlerFailure(statusError.getMessage(), statusError));
+            new MessagingException.RemoteHandlerFailure(
+                String.format("Request %s to %s failed unexpectedly", request, remoteAddress),
+                statusError));
         break;
       case UNAVAILABLE:
-        future.completeExceptionally(new ConnectException(statusError.getMessage()));
+        future.completeExceptionally(
+            new ConnectException(
+                String.format(
+                    "Failed to connect to %s for request %s: %s",
+                    request, remoteAddress, statusError.getMessage())));
         break;
       default:
         future.completeExceptionally(t);

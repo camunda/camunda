@@ -26,7 +26,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 
 public final class ClientRegistry implements ClusterMembershipEventListener, CloseableSilently {
@@ -74,9 +73,7 @@ public final class ClientRegistry implements ClusterMembershipEventListener, Clo
   private Client createClient(final Address address) {
     final var channel = transportFactory.createClientBuilder(address).build();
     final var stub =
-        io.camunda.zeebe.messaging.protocol.MessagingGrpc.newStub(channel)
-            .withDeadlineAfter(DEFAULT_REQUEST_TIMEOUT.toNanos(), TimeUnit.NANOSECONDS)
-            .withCompression("gzip");
+        io.camunda.zeebe.messaging.protocol.MessagingGrpc.newStub(channel).withCompression("gzip");
 
     return new Client(channel, stub);
   }

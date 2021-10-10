@@ -24,6 +24,8 @@ import java.util.List;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
+  private static final int DEFAULT_MAX_MESSAGE_SIZE_BYTES = 4 * 1024 * 1024;
+
   private final int connectionPoolSize = 8;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
@@ -33,6 +35,7 @@ public class MessagingConfig implements Config {
   private File certificateChain;
   private File privateKey;
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
+  private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE_BYTES;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -222,6 +225,37 @@ public class MessagingConfig implements Config {
     }
 
     this.privateKey = privateKey;
+    return this;
+  }
+
+  /**
+   * @return the maximum size of a network message
+   */
+  public int getMaxMessageSize() {
+    return maxMessageSize;
+  }
+
+  /**
+   * Convenience method accepting a long value instead of an int. If the given value is greater than
+   * {@link Integer#MAX_VALUE}, it will fallback to that instead.
+   *
+   * @param maxMessageSizeBytes the new maximum size of a serialized network message
+   * @see #setMaxMessageSize(int)
+   * @return this config for chaining
+   */
+  public MessagingConfig setMaxMessageSize(final long maxMessageSizeBytes) {
+    return setMaxMessageSize((int) Math.min(Integer.MAX_VALUE, maxMessageSizeBytes));
+  }
+
+  /**
+   * Sets the maximum size of a network message. Messages which exceed this size on either the
+   * client or the server will trigger a RESOURCE_EXHAUSTED error.
+   *
+   * @param maxMessageSizeBytes the new maximum size of a serialized network message
+   * @return this config for chaining
+   */
+  public MessagingConfig setMaxMessageSize(final int maxMessageSizeBytes) {
+    maxMessageSize = maxMessageSizeBytes;
     return this;
   }
 
