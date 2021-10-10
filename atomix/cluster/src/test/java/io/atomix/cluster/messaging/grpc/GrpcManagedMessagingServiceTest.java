@@ -24,7 +24,6 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.Managed;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.grpc.StatusRuntimeException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -267,7 +267,7 @@ final class GrpcManagedMessagingServiceTest {
         .failsWithin(Duration.ofSeconds(2))
         .withThrowableOfType(ExecutionException.class)
         .havingRootCause()
-        .isInstanceOf(StatusRuntimeException.class);
+        .isInstanceOf(TimeoutException.class);
   }
 
   @Test
