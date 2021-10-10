@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.transport.queryapi;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.cluster.messaging.grpc.GrpcMessagingFactory;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -32,6 +32,7 @@ import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.netty.util.NetUtil;
 import java.time.Duration;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
@@ -57,11 +58,16 @@ public final class QueryApiIT {
     serverAddress =
         NetUtil.toSocketAddressString(
             broker.getBrokerCfg().getNetwork().getCommandApi().getAddress());
+    final var clientAddress = Address.from(SocketUtil.getNextAddress().getPort());
     final var messagingService =
-        new NettyMessagingService(
-            broker.getBrokerCfg().getCluster().getClusterName(),
-            Address.from(SocketUtil.getNextAddress().getPort()),
-            new MessagingConfig());
+        GrpcMessagingFactory.create(
+                new MessagingConfig()
+                    .setInterfaces(List.of(clientAddress.host()))
+                    .setPort(clientAddress.port()),
+                clientAddress,
+                broker.getBrokerCfg().getCluster().getClusterName(),
+                "client")
+            .getMessagingService();
 
     clientTransport = new AtomixClientTransportAdapter(messagingService);
     actor.submitActor((AtomixClientTransportAdapter) clientTransport).join();
