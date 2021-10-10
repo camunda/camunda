@@ -56,20 +56,22 @@ final class RequestObserver<V> implements StreamObserver<V> {
         future.completeExceptionally(
             new TimeoutException(
                 String.format(
-                    "Request %s to %s timed out: %s", request, remoteAddress, statusError)));
+                    "Request %s to %s timed out: %s",
+                    formatRequest(), remoteAddress, statusError)));
         break;
       case UNIMPLEMENTED:
         future.completeExceptionally(
             new MessagingException.NoRemoteHandler(
                 String.format(
                     "Request %s to %s failed due to no remote handler registered",
-                    request, remoteAddress),
+                    formatRequest(), remoteAddress),
                 statusError));
         break;
       case INTERNAL:
         future.completeExceptionally(
             new MessagingException.RemoteHandlerFailure(
-                String.format("Request %s to %s failed unexpectedly", request, remoteAddress),
+                String.format(
+                    "Request %s to %s failed unexpectedly", formatRequest(), remoteAddress),
                 statusError));
         break;
       case UNAVAILABLE:
@@ -77,7 +79,7 @@ final class RequestObserver<V> implements StreamObserver<V> {
             new ConnectException(
                 String.format(
                     "Failed to connect to %s for request %s: %s",
-                    request, remoteAddress, statusError.getMessage())));
+                    remoteAddress, formatRequest(), statusError.getMessage())));
         break;
       default:
         future.completeExceptionally(t);
@@ -90,5 +92,11 @@ final class RequestObserver<V> implements StreamObserver<V> {
       future.completeExceptionally(
           new IllegalStateException("Call completed unexpectedly without receiving a response"));
     }
+  }
+
+  private String formatRequest() {
+    return String.format(
+        "{type='%s', cluster='%s', replyTo='%s', payload=bytes[%d]}",
+        request.getType(), request.getCluster(), request.getReplyTo(), request.getPayload().size());
   }
 }
