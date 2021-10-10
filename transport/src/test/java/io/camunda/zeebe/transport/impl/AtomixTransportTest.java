@@ -12,9 +12,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.cluster.messaging.grpc.GrpcMessagingFactory;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -29,7 +30,9 @@ import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +67,7 @@ public class AtomixTransportTest {
   private static AtomixCluster cluster;
   private static String serverAddress;
   private static TransportFactory transportFactory;
-  private static NettyMessagingService nettyMessagingService;
+  private static ManagedMessagingService messagingService;
 
   @Parameter(0)
   public String testName;
@@ -104,18 +107,24 @@ public class AtomixTransportTest {
                 },
             (Function<AtomixCluster, ServerTransport>)
                 (cluster) -> {
-                  if (nettyMessagingService == null) {
+                  if (messagingService == null) {
                     // do only once
                     final var socketAddress = SocketUtil.getNextAddress();
                     serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
                     nodeAddressSupplier = () -> serverAddress;
-                    nettyMessagingService =
-                        new NettyMessagingService(
-                            "cluster", Address.from(serverAddress), new MessagingConfig());
-                    nettyMessagingService.start().join();
+                    messagingService =
+                        GrpcMessagingFactory.create(
+                                new MessagingConfig()
+                                    .setPort(socketAddress.getPort())
+                                    .setInterfaces(List.of(socketAddress.getHostName())),
+                                Address.from(serverAddress),
+                                "cluster",
+                                "test")
+                            .getMessagingService();
+                    messagingService.start().join();
                   }
 
-                  return transportFactory.createServerTransport(0, nettyMessagingService);
+                  return transportFactory.createServerTransport(0, messagingService);
                 }
           }
         });
@@ -151,9 +160,9 @@ public class AtomixTransportTest {
 
   @AfterClass
   public static void tearDown() {
-    if (nettyMessagingService != null) {
-      nettyMessagingService.stop().join();
-      nettyMessagingService = null;
+    if (messagingService != null) {
+      messagingService.stop().join();
+      messagingService = null;
     }
     cluster.stop().join();
     cluster = null;
@@ -199,13 +208,14 @@ public class AtomixTransportTest {
   @Test
   public void shouldFailResponseWhenRequestHandlerThrowsException() {
     // given
+    final var failure = new IllegalStateException("expected");
     serverTransport
         .subscribe(
             0,
             RequestType.COMMAND,
             new DirectlyResponder(
                 bytes -> {
-                  throw new IllegalStateException("expected");
+                  throw failure;
                 }))
         .join();
 
@@ -215,9 +225,13 @@ public class AtomixTransportTest {
             nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
-    assertThatThrownBy(requestFuture::join)
-        .isInstanceOf(ExecutionException.class)
-        .hasCauseInstanceOf(MessagingException.RemoteHandlerFailure.class);
+    assertThat(requestFuture)
+        .failsWithin(REQUEST_TIMEOUT)
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(CompletionException.class)
+        .havingCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class);
   }
 
   @Test
@@ -346,6 +360,7 @@ public class AtomixTransportTest {
     // when
     retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
     serverTransport.subscribe(0, RequestType.COMMAND, new DirectlyResponder()).join();
+    Loggers.TRANSPORT_LOGGER.debug("Subscribed!");
 
     // then
     final var response = requestFuture.join();
