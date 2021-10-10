@@ -34,6 +34,7 @@ import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.Network;
@@ -46,6 +47,7 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
+@Disabled("Disabled as switching to gRPC breaks network-level compatibility between versions")
 final class RollingUpdateTest {
 
   private static final DockerImageName PREVIOUS_VERSION =
