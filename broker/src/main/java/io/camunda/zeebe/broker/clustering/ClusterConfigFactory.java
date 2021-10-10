@@ -79,7 +79,11 @@ public final class ClusterConfigFactory {
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(network.getInternalApi().getHost()))
-            .setPort(network.getInternalApi().getPort());
+            .setPort(network.getInternalApi().getPort())
+            // TODO: use configured size instead of hard coded 128MB; we currently set that because
+            //       snapshot files might be up to 64MB (or slightly more), but later we should be
+            //       streaming snapshot file chunks instead
+            .withMaxMessageSize(128 * 1024 * 1024L);
 
     if (network.getSecurity().isEnabled()) {
       messaging
