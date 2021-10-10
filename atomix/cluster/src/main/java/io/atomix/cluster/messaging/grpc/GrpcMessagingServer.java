@@ -110,7 +110,6 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
             .createServerBuilder(firstAddress)
             .compressorRegistry(CompressorRegistry.getDefaultInstance())
             .addService(messagingService);
-
     LOGGER.debug("Starting gRPC messaging server on {}", firstAddress);
     return builder.build();
   }

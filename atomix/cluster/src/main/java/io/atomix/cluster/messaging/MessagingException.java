@@ -31,17 +31,25 @@ public class MessagingException extends IOException {
 
   /** Exception indicating no remote registered remote handler. */
   public static class NoRemoteHandler extends MessagingException {
-    public NoRemoteHandler(String subject) {
+    public NoRemoteHandler(final String subject) {
       super(
           String.format(
               "No remote message handler registered for this message, subject %s", subject));
+    }
+
+    public NoRemoteHandler(final String message, final Throwable cause) {
+      super(message, cause);
     }
   }
 
   /** Exception indicating handler failure. */
   public static class RemoteHandlerFailure extends MessagingException {
-    public RemoteHandlerFailure(String message) {
+    public RemoteHandlerFailure(final String message) {
       super(String.format("Remote handler failed to handle message, cause: %s", message));
+    }
+
+    public RemoteHandlerFailure(final String message, final Throwable cause) {
+      super(message, cause);
     }
   }
 

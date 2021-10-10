@@ -15,7 +15,7 @@
  */
 package io.atomix.cluster.messaging.grpc;
 
-import io.grpc.Status.Code;
+import io.atomix.cluster.messaging.MessagingException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.net.ConnectException;
@@ -44,12 +44,23 @@ final class CompletableStreamObserver<V> implements StreamObserver<V> {
     // convert to switch/case as the number of cases grow; this should anyway go away as we migrate
     // things to use the gRPC services over time
     final var statusError = (StatusRuntimeException) t;
-    if (statusError.getStatus().getCode() == Code.DEADLINE_EXCEEDED) {
-      future.completeExceptionally(new TimeoutException(statusError.getMessage()));
-    } else if (statusError.getStatus().getCode() == Code.UNAVAILABLE) {
-      future.completeExceptionally(new ConnectException(statusError.getMessage()));
-    } else {
-      future.completeExceptionally(t);
+    switch (statusError.getStatus().getCode()) {
+      case DEADLINE_EXCEEDED:
+        future.completeExceptionally(new TimeoutException(statusError.getMessage()));
+        break;
+      case UNIMPLEMENTED:
+        future.completeExceptionally(
+            new MessagingException.NoRemoteHandler(statusError.getMessage(), statusError));
+        break;
+      case INTERNAL:
+        future.completeExceptionally(
+            new MessagingException.RemoteHandlerFailure(statusError.getMessage(), statusError));
+        break;
+      case UNAVAILABLE:
+        future.completeExceptionally(new ConnectException(statusError.getMessage()));
+        break;
+      default:
+        future.completeExceptionally(t);
     }
   }
 

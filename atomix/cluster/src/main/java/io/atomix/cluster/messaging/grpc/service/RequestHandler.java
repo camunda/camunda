@@ -57,7 +57,7 @@ abstract class RequestHandler<V> {
           try {
             handle(replyTo, payload, responseObserver);
           } catch (final Exception e) {
-            LOGGER.debug("Unexpected error handling unicast request {}", request, e);
+            LOGGER.debug("Unexpected error handling request {}", request, e);
           }
         });
   }
@@ -73,11 +73,20 @@ abstract class RequestHandler<V> {
     } else if (error instanceof CompletionException || error instanceof ExecutionException) {
       return mapErrorToStatus(error.getCause());
     } else if (error instanceof TimeoutException) {
-      return Status.DEADLINE_EXCEEDED.withCause(error).asRuntimeException();
+      return Status.DEADLINE_EXCEEDED
+          .augmentDescription(error.getMessage())
+          .withCause(error)
+          .asRuntimeException();
     } else if (error instanceof CancellationException) {
-      return Status.CANCELLED.withCause(error).asRuntimeException();
+      return Status.CANCELLED
+          .augmentDescription(error.getMessage())
+          .withCause(error)
+          .asRuntimeException();
     } else {
-      return Status.INTERNAL.withCause(error).asRuntimeException();
+      return Status.INTERNAL
+          .augmentDescription(error.getMessage())
+          .withCause(error)
+          .asRuntimeException();
     }
   }
 }

@@ -96,7 +96,11 @@ public final class Service extends MessagingImplBase {
     try {
       handler.handle(request, responseObserver);
     } catch (final Exception e) {
-      responseObserver.onError(e);
+      responseObserver.onError(
+          Status.INTERNAL
+              .augmentDescription(String.format("Failed to process request %s", request))
+              .withCause(e)
+              .asRuntimeException());
     }
   }
 
@@ -114,7 +118,7 @@ public final class Service extends MessagingImplBase {
   private <V> void failWithNoHandler(
       final Request request, final StreamObserver<V> responseObserver) {
     responseObserver.onError(
-        Status.UNAVAILABLE
+        Status.UNIMPLEMENTED
             .augmentDescription("No registered handler for request of type " + request.getType())
             .asRuntimeException());
   }

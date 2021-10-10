@@ -30,7 +30,6 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.NetUtil;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -62,7 +61,9 @@ final class NettyTransportFactory implements TransportFactory {
     this.advertisedAddress = Objects.requireNonNull(advertisedAddress);
     this.transportName = Objects.requireNonNull(transportName);
 
-    loopback = new Address("localhost", config.getPort(), NetUtil.LOCALHOST);
+    loopback = new Address("localhost", config.getPort());
+    loopback.resolve();
+
     grpcExecutor = createGrpcExecutor();
     eventLoopGroup = createEventLoopGroup();
   }
