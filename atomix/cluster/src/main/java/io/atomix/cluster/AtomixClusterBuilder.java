@@ -28,6 +28,7 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -250,6 +251,15 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   @Override
   public AtomixCluster build() {
+    final var messagingConfig = config.getMessagingConfig();
+    if (messagingConfig.getPort() == null) {
+      messagingConfig.setPort(config.getNodeConfig().getPort());
+    }
+
+    if (messagingConfig.getInterfaces().isEmpty()) {
+      messagingConfig.setInterfaces(List.of(config.getNodeConfig().getHost()));
+    }
+
     return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 }
