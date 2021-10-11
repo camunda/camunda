@@ -215,18 +215,18 @@ public class EventTriggerBehavior {
           "Expected to activate triggered event, but flow scope is null");
     }
 
+    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS
+        && triggeredEvent.getElementType() == BpmnElementType.START_EVENT) {
+      activateEventSubProcess(flowScope);
+      return;
+    }
+
     processEventTriggered(
         processEventKey,
         elementRecord.getProcessDefinitionKey(),
         elementRecord.getProcessInstanceKey(),
         eventScopeKey,
         triggeredEvent.getId());
-
-    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS
-        && triggeredEvent.getElementType() == BpmnElementType.START_EVENT) {
-      activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope, variables);
-      return;
-    }
 
     eventRecord
         .setBpmnElementType(triggeredEvent.getElementType())
@@ -253,48 +253,14 @@ public class EventTriggerBehavior {
         eventInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
   }
 
-  private void activateEventSubProcess(
-      final ExecutableStartEvent triggeredStartEvent,
-      final ExecutableFlowElement flowScope,
-      final DirectBuffer variables) {
-    // First we move the event sub process immediately to ACTIVATED,
-    // to make sure that we can copy the temp variables from the flow scope directly to the
-    // event sub process scope. This is done in the ACTIVATING applier of the event sub process.
+  private void activateEventSubProcess(final ExecutableFlowElement flowScope) {
+    // First we move the event sub process immediately to ACTIVATED
     eventRecord
         .setBpmnElementType(BpmnElementType.EVENT_SUB_PROCESS)
         .setElementId(flowScope.getId());
 
     final var eventSubProcessKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
-        eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-    stateWriter.appendFollowUpEvent(
-        eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
-
-    // Then we ACTIVATE the start event and copy the temporary variables further down, such that
-    // we can apply the output mappings.
-    eventRecord
-        .setFlowScopeKey(eventSubProcessKey)
-        .setBpmnElementType(triggeredStartEvent.getElementType())
-        .setElementId(triggeredStartEvent.getId());
-
-    final var startEventKey = keyGenerator.nextKey();
-    // transition to activating and activated directly to pass the variables to this instance
-    stateWriter.appendFollowUpEvent(
-        startEventKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-    stateWriter.appendFollowUpEvent(
-        startEventKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
-
-    if (variables.capacity() > 0) {
-      // set as local variables of the element instance to use them for the variable output
-      // mapping
-      variableBehavior.mergeLocalDocument(
-          startEventKey,
-          eventRecord.getProcessDefinitionKey(),
-          eventRecord.getProcessInstanceKey(),
-          variables);
-    }
-
     commandWriter.appendFollowUpCommand(
-        startEventKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
+        eventSubProcessKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, eventRecord);
   }
 }

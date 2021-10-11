@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -86,6 +87,19 @@ final class ProcessInstanceElementActivatingApplier
     final var currentElementType = value.getBpmnElementType();
 
     decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
+
+    if (currentElementType == BpmnElementType.START_EVENT
+        && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
+      final EventTrigger flowScopeEventTrigger =
+          eventScopeInstanceState.peekEventTrigger(flowScopeInstance.getParentKey());
+      eventScopeInstanceState.triggerEvent(
+          elementInstanceKey,
+          flowScopeEventTrigger.getEventKey(),
+          flowScopeEventTrigger.getElementId(),
+          flowScopeEventTrigger.getVariables());
+      eventScopeInstanceState.deleteTrigger(
+          flowScopeInstance.getKey(), flowScopeEventTrigger.getEventKey());
+    }
 
     // manage the multi-instance loop counter
     if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
