@@ -12,8 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.Base64;
@@ -53,53 +51,6 @@ public final class RestoreTest {
                   .usePlaintext());
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
-
-  @Test
-  public void shouldReplicateLogEvents() {
-    // given
-    clusteringRule.stopBrokerAndAwaitNewLeader(2);
-
-    final BpmnModelInstance firstProcess =
-        Bpmn.createExecutableProcess("process-test1").startEvent().endEvent().done();
-
-    final BpmnModelInstance secondProcess =
-        Bpmn.createExecutableProcess("process-test2").startEvent().endEvent().done();
-
-    final BpmnModelInstance thirdProcess =
-        Bpmn.createExecutableProcess("process-test3").startEvent().endEvent().done();
-
-    // when
-    final long firstProcessDefinitionKey = clientRule.deployProcess(firstProcess);
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForSnapshotAtBroker(getLeader());
-
-    final long secondProcessDefinitionKey = clientRule.deployProcess(secondProcess);
-
-    writeManyEventsUntilAtomixLogIsCompactable();
-    clusteringRule.waitForSnapshotAtBroker(
-        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
-
-    clusteringRule.restartBroker(2);
-    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(2));
-
-    clusteringRule.stopBrokerAndAwaitNewLeader(1);
-
-    final long thirdProcessDefinitionKey = clientRule.deployProcess(thirdProcess);
-
-    writeManyEventsUntilAtomixLogIsCompactable();
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForSnapshotAtBroker(
-        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
-
-    clusteringRule.restartBroker(1);
-    clusteringRule.stopBrokerAndAwaitNewLeader(0);
-
-    // then
-    // If restore did not happen, following processes won't be deployed
-    assertThat(clientRule.createProcessInstance(firstProcessDefinitionKey)).isPositive();
-    assertThat(clientRule.createProcessInstance(secondProcessDefinitionKey)).isPositive();
-    assertThat(clientRule.createProcessInstance(thirdProcessDefinitionKey)).isPositive();
-  }
 
   @Test
   public void shouldKeepPositionsConsistent() {
