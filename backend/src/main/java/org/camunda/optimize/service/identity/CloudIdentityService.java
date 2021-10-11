@@ -36,8 +36,15 @@ public class CloudIdentityService extends AbstractIdentityService {
   @Override
   public Optional<UserDto> getUserById(final String userId) {
     return syncedIdentityCache.getUserIdentityById(userId)
-      .or(() -> cloudUserClient.getCloudUserForId(userId)
-        .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail())));
+      .or(() -> {
+        try {
+          return cloudUserClient.getCloudUserForId(userId)
+            .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail()));
+        } catch (Exception exception) {
+          log.warn("Failed fetching Cloud user with id {}: ", userId, exception);
+          return Optional.empty();
+        }
+      });
   }
 
   @Override

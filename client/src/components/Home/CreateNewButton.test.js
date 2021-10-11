@@ -52,9 +52,11 @@ it('should call the createCollection prop', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should call the createProcessReport prop', () => {
+it('should call the createProcessReport prop', async () => {
   const spy = jest.fn();
   const node = shallow(<CreateNewButton createProcessReport={spy} />);
+
+  await runLastEffect();
 
   node.find(Dropdown.Submenu).find(Dropdown.Option).first().simulate('click');
 

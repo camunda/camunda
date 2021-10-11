@@ -88,7 +88,7 @@ it('should not show tenant section if there is only one tenant', () => {
   expect(node).not.toIncludeText('Tenant');
 });
 
-it('should not show tenant section on share pages', () => {
+it('should not show tenant section and process model/raw data buttons on share pages', () => {
   const node = shallow(
     <SingleReportDetails {...props} location={{pathname: '/share/report/abc'}} />
   );
@@ -97,6 +97,7 @@ it('should not show tenant section on share pages', () => {
   expect(loadTenants).not.toHaveBeenCalled();
   expect(node).not.toIncludeText('Sales');
   expect(node).not.toIncludeText('Tenant');
+  expect(node.find('.modalButton')).not.toExist();
 });
 
 it('should have special handling for variable views', () => {

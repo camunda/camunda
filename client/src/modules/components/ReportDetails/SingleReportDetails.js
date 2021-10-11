@@ -99,9 +99,11 @@ export function SingleReportDetails({report, showReportName, mightFail, location
                     {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
                   </div>
                 )}
-                <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
-                  {t('common.entity.viewModel.' + report.reportType)}
-                </Button>
+                {!isShared && (
+                  <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
+                    {t('common.entity.viewModel.' + report.reportType)}
+                  </Button>
+                )}
               </div>
             );
           })}
@@ -118,9 +120,11 @@ export function SingleReportDetails({report, showReportName, mightFail, location
           >
             {getSelectedView(report.data, type)}
           </h4>
-          <Button className="rawDataButton modalButton" link onClick={() => setShowRawData(true)}>
-            {t('common.entity.viewRawData')}
-          </Button>
+          {!isShared && (
+            <Button className="rawDataButton modalButton" link onClick={() => setShowRawData(true)}>
+              {t('common.entity.viewRawData')}
+            </Button>
+          )}
           <hr />
         </div>
       )}

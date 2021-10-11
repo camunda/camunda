@@ -41,21 +41,23 @@ export function CreateNewButton({
         </Dropdown.Option>
       )}
       <Dropdown.Option onClick={createDashboard}>{t('home.createBtn.dashboard')}</Dropdown.Option>
-      <Dropdown.Submenu label={t('home.createBtn.report.default')}>
+      {isOptimizeCloud ? (
         <Dropdown.Option onClick={createProcessReport}>
-          {t('home.createBtn.report.process')}
+          {t('home.createBtn.report.default')}
         </Dropdown.Option>
-        {!isOptimizeCloud && (
-          <>
-            <Dropdown.Option link="report/new-combined/edit">
-              {t('home.createBtn.report.combined')}
-            </Dropdown.Option>
-            <Dropdown.Option link="report/new-decision/edit">
-              {t('home.createBtn.report.decision')}
-            </Dropdown.Option>
-          </>
-        )}
-      </Dropdown.Submenu>
+      ) : (
+        <Dropdown.Submenu label={t('home.createBtn.report.default')}>
+          <Dropdown.Option onClick={createProcessReport}>
+            {t('home.createBtn.report.process')}
+          </Dropdown.Option>
+          <Dropdown.Option link="report/new-combined/edit">
+            {t('home.createBtn.report.combined')}
+          </Dropdown.Option>
+          <Dropdown.Option link="report/new-decision/edit">
+            {t('home.createBtn.report.decision')}
+          </Dropdown.Option>
+        </Dropdown.Submenu>
+      )}
       {user?.authorizations.includes('import_export') && (
         <Dropdown.Option onClick={importEntity}>{t('common.importJSON')}</Dropdown.Option>
       )}
