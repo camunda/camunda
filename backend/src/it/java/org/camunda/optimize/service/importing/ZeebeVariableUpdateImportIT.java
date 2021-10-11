@@ -41,6 +41,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
     // given
     final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(VARIABLES);
     zeebeExtension.addVariablesToScope(processInstanceKey, UPDATED_VARIABLES, true);
+    waitUntilNumberOfDefinitionsExported(1);
     waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(5);
 
     // when
@@ -407,7 +408,6 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
       ZeebeVariableRecordDto.Fields.intent,
       intent
     ));
-
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,
       ElasticsearchConstants.ZEEBE_VARIABLE_INDEX_NAME,

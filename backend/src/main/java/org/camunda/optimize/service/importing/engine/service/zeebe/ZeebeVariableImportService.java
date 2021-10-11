@@ -108,7 +108,7 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
         firstRecordValue.getProcessDefinitionKey())).orElseThrow(() -> new OptimizeRuntimeException(
         "The process definition with id"
           + firstRecordValue.getProcessDefinitionKey()
-          + "has not yet been imported to Optimize"));
+          + " has not yet been imported to Optimize"));
     processInstanceDto.setProcessDefinitionKey(processDefinitionOptimizeDto.getKey());
     processInstanceDto.setProcessInstanceId(String.valueOf(firstRecordValue.getProcessInstanceKey()));
     processInstanceDto.setProcessDefinitionId(String.valueOf(firstRecordValue.getProcessDefinitionKey()));

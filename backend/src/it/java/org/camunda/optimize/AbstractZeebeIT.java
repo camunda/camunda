@@ -9,10 +9,12 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -31,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public abstract class AbstractZeebeIT extends AbstractIT {
@@ -84,7 +87,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
           .indices()
           .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
       ).isTrue());
-    final CountRequest definitionCountRequest =
+    final CountRequest countRequest =
       new CountRequest(expectedIndex)
         .query(boolQueryBuilder);
     Awaitility.given().ignoreExceptions()
@@ -92,7 +95,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
       .untilAsserted(() -> assertThat(
         esClient
           .getHighLevelClient()
-          .count(definitionCountRequest, esClient.requestOptions())
+          .count(countRequest, esClient.requestOptions())
           .getCount())
         .isGreaterThanOrEqualTo(minExportedEventCount));
   }
@@ -115,6 +118,15 @@ public abstract class AbstractZeebeIT extends AbstractIT {
       minExportedEventCount,
       ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getQueryForProcessableEvents()
+    );
+  }
+
+  @SneakyThrows
+  protected void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
+    waitUntilMinimumDataExportedCount(
+      expectedDefinitionsCount,
+      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED))
     );
   }
 
