@@ -63,7 +63,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
       if (scopeInstance != null && scopeInstance.isActive()) {
-        eventHandle.triggerProcessEvent(serviceTask.getValue().getElementIdBuffer(), value);
+        eventHandle.triggeringProcessEvent(value);
         commandWriter.appendFollowUpCommand(
             serviceTaskKey, ProcessInstanceIntent.COMPLETE_ELEMENT, serviceTask.getValue());
       }

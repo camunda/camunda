@@ -134,12 +134,12 @@ public final class EventHandle {
     }
   }
 
-  public void triggerProcessEvent(final DirectBuffer elementId, final JobRecord jobRecord) {
+  public void triggeringProcessEvent(final JobRecord jobRecord) {
     triggeringProcessEvent(
         jobRecord.getProcessDefinitionKey(),
         jobRecord.getProcessInstanceKey(),
         jobRecord.getElementInstanceKey(),
-        elementId,
+        jobRecord.getElementIdBuffer(),
         jobRecord.getVariablesBuffer());
   }
 

@@ -87,19 +87,19 @@ public final class BpmnVariableMappingBehavior {
     final Optional<Expression> outputMappingExpression = element.getOutputMappings();
 
     final EventTrigger eventTrigger = eventScopeInstanceState.peekEventTrigger(elementInstanceKey);
-    boolean hasEventVariables = false;
-    DirectBuffer eventTriggerVariables = null;
+    boolean hasVariables = false;
+    DirectBuffer variables = null;
 
     if (eventTrigger != null) {
-      eventTriggerVariables = eventTrigger.getVariables();
-      hasEventVariables = eventTriggerVariables.capacity() > 0;
+      variables = eventTrigger.getVariables();
+      hasVariables = variables.capacity() > 0;
     }
 
     if (outputMappingExpression.isPresent()) {
       // set as local variables
-      if (hasEventVariables) {
+      if (hasVariables) {
         variableBehavior.mergeLocalDocument(
-            elementInstanceKey, processDefinitionKey, processInstanceKey, eventTriggerVariables);
+            elementInstanceKey, processDefinitionKey, processInstanceKey, variables);
       }
 
       // apply the output mappings
@@ -112,10 +112,10 @@ public final class BpmnVariableMappingBehavior {
                 return null;
               });
 
-    } else if (hasEventVariables) {
+    } else if (hasVariables) {
       // merge/propagate the event variables by default
       variableBehavior.mergeDocument(
-          elementInstanceKey, processDefinitionKey, processInstanceKey, eventTriggerVariables);
+          elementInstanceKey, processDefinitionKey, processInstanceKey, variables);
     } else if (isConnectedToEventBasedGateway(element)
         || element.getElementType() == BpmnElementType.BOUNDARY_EVENT
         || element.getElementType() == BpmnElementType.START_EVENT) {

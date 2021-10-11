@@ -212,30 +212,9 @@ public final class MessageCatchElementOutputMappingTest {
   public void shouldMergeMessageVariablesByDefault() {
     // given
     final var deploymentRecord = deployProcessWithMapping(e -> {});
-    publishMessage();
 
     // when
-    final long processInstanceKey;
-    if (createInstance) {
-      processInstanceKey =
-          ENGINE_RULE
-              .processInstance()
-              .ofBpmnProcessId(PROCESS_ID)
-              .withVariable(CORRELATION_VARIABLE, correlationKey)
-              .create();
-    } else {
-      processInstanceKey =
-          RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-              .withProcessDefinitionKey(
-                  deploymentRecord
-                      .getValue()
-                      .getProcessesMetadata()
-                      .get(0)
-                      .getProcessDefinitionKey())
-              .withElementType(BpmnElementType.PROCESS)
-              .getFirst()
-              .getKey();
-    }
+    final long processInstanceKey = triggerProcessInstance(deploymentRecord);
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -253,30 +232,9 @@ public final class MessageCatchElementOutputMappingTest {
   public void shouldMergeMessageVariables() {
     // given
     final var deploymentRecord = deployProcessWithMapping(e -> {});
-    publishMessage();
 
     // when
-    final long processInstanceKey;
-    if (createInstance) {
-      processInstanceKey =
-          ENGINE_RULE
-              .processInstance()
-              .ofBpmnProcessId(PROCESS_ID)
-              .withVariable(CORRELATION_VARIABLE, correlationKey)
-              .create();
-    } else {
-      processInstanceKey =
-          RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-              .withProcessDefinitionKey(
-                  deploymentRecord
-                      .getValue()
-                      .getProcessesMetadata()
-                      .get(0)
-                      .getProcessDefinitionKey())
-              .withElementType(BpmnElementType.PROCESS)
-              .getFirst()
-              .getKey();
-    }
+    final long processInstanceKey = triggerProcessInstance(deploymentRecord);
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -295,30 +253,9 @@ public final class MessageCatchElementOutputMappingTest {
     // given
     final var deploymentRecord =
         deployProcessWithMapping(e -> e.zeebeOutputExpression("foo", MESSAGE_NAME));
-    publishMessage();
 
     // when
-    final long processInstanceKey;
-    if (createInstance) {
-      processInstanceKey =
-          ENGINE_RULE
-              .processInstance()
-              .ofBpmnProcessId(PROCESS_ID)
-              .withVariable(CORRELATION_VARIABLE, correlationKey)
-              .create();
-    } else {
-      processInstanceKey =
-          RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-              .withProcessDefinitionKey(
-                  deploymentRecord
-                      .getValue()
-                      .getProcessesMetadata()
-                      .get(0)
-                      .getProcessDefinitionKey())
-              .withElementType(BpmnElementType.PROCESS)
-              .getFirst()
-              .getKey();
-    }
+    final long processInstanceKey = triggerProcessInstance(deploymentRecord);
 
     // then
     final Record<VariableRecordValue> variableEvent =
@@ -351,7 +288,7 @@ public final class MessageCatchElementOutputMappingTest {
     return ENGINE_RULE.deployment().withXmlResource(modifiedProcess).deploy();
   }
 
-  private void publishMessage() {
+  private long triggerProcessInstance(final Record<DeploymentRecordValue> deploymentRecord) {
     correlationKey = UUID.randomUUID().toString();
 
     ENGINE_RULE
@@ -360,5 +297,20 @@ public final class MessageCatchElementOutputMappingTest {
         .withName(MESSAGE_NAME)
         .withVariables(asMsgPack("foo", "bar"))
         .publish();
+
+    if (createInstance) {
+      return ENGINE_RULE
+          .processInstance()
+          .ofBpmnProcessId(PROCESS_ID)
+          .withVariable(CORRELATION_VARIABLE, correlationKey)
+          .create();
+    } else {
+      return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+          .withProcessDefinitionKey(
+              deploymentRecord.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+          .withElementType(BpmnElementType.PROCESS)
+          .getFirst()
+          .getKey();
+    }
   }
 }
