@@ -21,18 +21,18 @@ import org.agrona.MutableDirectBuffer;
 public interface JournalRecordSerializer {
 
   /**
-   * Writes a {@link RecordData} to the buffer). Throws {@link java.nio.BufferOverflowException} if
-   * there is not enough space to write the record.
+   * Writes a {@link RecordData} to the buffer.
    *
    * @param record to write
    * @param buffer to which the record will be written
    * @param offset the offset in the buffer at which the data will be written
    * @return the number of bytes that were written to the buffer
+   * @throws java.nio.BufferOverflowException if there is not enough space to write the record.
    */
   int writeData(RecordData record, MutableDirectBuffer buffer, int offset);
 
   /**
-   * Writes a {@link RecordMetadata} to the buffer)
+   * Writes a {@link RecordMetadata} to the buffer.
    *
    * @param metadata to write
    * @param buffer to which the metadata will be written
