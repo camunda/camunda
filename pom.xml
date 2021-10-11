@@ -52,7 +52,7 @@
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.21.0</assertj.version>
 
-    <lombok.version>1.18.20</lombok.version>
+    <lombok.version>1.18.22</lombok.version>
     <logback.version>1.2.6</logback.version>
     <slf4j.version>1.7.32</slf4j.version>
 
