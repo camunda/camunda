@@ -13,19 +13,16 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
-  public void nonCanceledInstancesFilter() throws SQLException {
+  public void nonCanceledInstancesFilter() {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
@@ -47,16 +44,17 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
     reportData.setFilter(ProcessFilterBuilder.filter().nonCanceledInstancesOnly().add().buildList());
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData).getResult();
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = reportClient.evaluateRawReport(reportData)
+      .getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData()).hasSize(1);
     List<String> resultProcDefIds = result.getData()
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
 
-    assertThat(resultProcDefIds, hasItem(secondProcInst.getId()));
+    assertThat(resultProcDefIds).contains(secondProcInst.getId());
   }
 
 }

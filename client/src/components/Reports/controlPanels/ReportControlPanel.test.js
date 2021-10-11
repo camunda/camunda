@@ -13,7 +13,6 @@ import {Button} from 'components';
 
 import {DefinitionList} from './DefinitionList';
 import GroupBy from './GroupBy';
-import ReportSelect from './ReportSelect';
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
@@ -85,15 +84,9 @@ it('should call the provided updateReport property function when a setting chang
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
-  node.find(ReportSelect).at(0).prop('onChange')('newSetting');
+  node.find('View').prop('onChange')('newSetting');
 
   expect(spy).toHaveBeenCalled();
-});
-
-it('should not disable the visualization Select if view is selected', () => {
-  const node = shallow(<ReportControlPanel {...props} />);
-
-  expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
 });
 
 it('should load the variables of the process', () => {
@@ -479,10 +472,10 @@ it('should allow collapsing sections', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
   node.find('.source .sectionTitle').simulate('click');
-  expect(node.find('.source')).toHaveClassName('hidden');
+  expect(node.find('.source')).toHaveClassName('collapsed');
 
   node.find('.source .sectionTitle').simulate('click');
-  expect(node.find('.source')).not.toHaveClassName('hidden');
+  expect(node.find('.source')).not.toHaveClassName('collapsed');
 });
 
 it('should reset columnOrder only when changing definition', async () => {
@@ -563,19 +556,9 @@ it('should call updateReport with correct payload when adding measures', () => {
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
-  const reportUpdateMock = {};
-  reportConfig.process.update.mockReturnValueOnce(reportUpdateMock);
-  node.find('.addMeasure').find(Button).simulate('click');
+  node.find('Measure').simulate('change', 'newMeasure');
 
-  expect(reportConfig.process.update).toHaveBeenCalledWith(
-    'view',
-    {
-      entity: 'processInstance',
-      properties: ['frequency', 'duration'],
-    },
-    {...props, updateReport: spy}
-  );
-  expect(spy).toHaveBeenCalledWith(reportUpdateMock, true);
+  expect(spy).toHaveBeenCalledWith('newMeasure', true);
 });
 
 it('should remove distribute by process if going back to single process report', async () => {

@@ -13,12 +13,15 @@ import {shallow} from 'enzyme';
 import DateRange from './DateRange';
 import PickerDateInput from './PickerDateInput';
 
+jest.useFakeTimers();
+
 const dateFormat = 'yyyy-MM-dd';
 
 const props = {
   startDate: format(parseISO('2017-08-29'), dateFormat),
   endDate: format(parseISO('2020-06-05'), dateFormat),
   format: dateFormat,
+  type: 'between',
 };
 
 it('should match snapshot', () => {
@@ -48,10 +51,8 @@ it('should set endDate on date change of end date input field', () => {
 it('should select date range popup on date input click', () => {
   const node = shallow(<DateFields {...props} enableAddButton={jest.fn()} />);
 
-  const evt = {nativeEvent: {stopImmediatePropagation: jest.fn()}};
-  node.instance().toggleDateRangeForStart(evt);
+  node.find(PickerDateInput).at(0).simulate('click');
 
-  expect(evt.nativeEvent.stopImmediatePropagation).toHaveBeenCalled();
   expect(node.state('popupOpen')).toBe(true);
   expect(node.state('currentlySelectedField')).toBe('startDate');
 });
@@ -83,4 +84,27 @@ it('should be possible to disable the date fields', () => {
   const dateInputs = node.find(PickerDateInput);
   expect(dateInputs.at(0).props('disabled')).toBeTruthy();
   expect(dateInputs.at(1).props('disabled')).toBeTruthy();
+});
+
+it('should not close popup when clicking inside it', () => {
+  const node = shallow(<DateFields {...props} />);
+
+  node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
+
+  node.find('.dateRangeContainer').simulate('mousedown');
+  node.instance().hidePopup();
+
+  expect(node.state('popupOpen')).toBe(true);
+});
+
+it('should close popover after selecting date if type is not "between"', () => {
+  const node = shallow(<DateFields {...props} onDateChange={jest.fn()} type="after" />);
+
+  node.setState({popupOpen: true});
+
+  node.find(DateRange).prop('onDateChange')({startDate: new Date(), endDate: new Date()});
+
+  jest.runAllTimers();
+
+  expect(node.state('popupOpen')).toBe(false);
 });

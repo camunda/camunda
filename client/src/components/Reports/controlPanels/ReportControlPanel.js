@@ -12,20 +12,14 @@ import deepEqual from 'fast-deep-equal';
 import {Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
-import {
-  getFlowNodeNames,
-  reportConfig,
-  loadProcessDefinitionXml,
-  loadVariables,
-  getRandomId,
-} from 'services';
+import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, getRandomId} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 
 import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
+import View from './View';
 import GroupBy from './GroupBy';
-import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 import {DefinitionList} from './DefinitionList';
@@ -34,8 +28,6 @@ import AddDefinition from './AddDefinition';
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
-
-const {process: processConfig} = reportConfig;
 
 export default withErrorHandling(
   class ReportControlPanel extends React.Component {
@@ -320,23 +312,17 @@ export default withErrorHandling(
       return change;
     };
 
-    updateReport = (type, newValue) => {
-      this.props.updateReport(processConfig.update(type, newValue, this.props), true);
-    };
-
     render() {
+      const {report, updateReport} = this.props;
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
 
-      const {key} = data.definitions?.[0] ?? {};
-
       const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
-      const shouldAllowAddingMeasure = data.view?.properties.length === 1 && shouldDisplayMeasure;
 
       return (
         <div className="ReportControlPanel">
           <div className="controlSections">
-            <section className={classnames('select', 'source', {hidden: !showSource})}>
+            <section className={classnames('select', 'source', {collapsed: !showSource})}>
               <div
                 tabIndex="0"
                 className="sectionTitle"
@@ -371,7 +357,7 @@ export default withErrorHandling(
                 onRemove={this.removeDefinition}
               />
             </section>
-            <section className={classnames('reportSetup', {hidden: !showSetup})}>
+            <section className={classnames('reportSetup', {collapsed: !showSetup})}>
               <Button
                 className="sectionTitle"
                 onClick={() => {
@@ -387,51 +373,30 @@ export default withErrorHandling(
               <ul>
                 <li className="select">
                   <span className="label">{t(`report.view.label`)}</span>
-                  <ReportSelect
+                  <View
                     type="process"
-                    field="view"
-                    value={data.view}
-                    report={this.props.report}
-                    variables={{variable: variables}}
-                    disabled={!key}
-                    onChange={(newValue) => this.updateReport('view', newValue)}
+                    report={report.data}
+                    onChange={(change) => updateReport(change, true)}
+                    variables={variables}
                   />
                   {data.view?.entity === 'variable' && (
                     <AggregationType report={data} onChange={this.props.updateReport} />
                   )}
                 </li>
                 {shouldDisplayMeasure && (
-                  <Measure
-                    report={data}
-                    updateMeasure={(newMeasures) =>
-                      this.updateReport('view', {...data.view, properties: newMeasures})
-                    }
-                    updateAggregation={this.props.updateReport}
-                  />
-                )}
-                {shouldAllowAddingMeasure && (
-                  <li className="addMeasure">
-                    <Button
-                      onClick={() =>
-                        this.updateReport('view', {
-                          ...data.view,
-                          properties: ['frequency', 'duration'],
-                        })
-                      }
-                    >
-                      + {t('report.addMeasure')}
-                    </Button>
-                  </li>
+                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
                 )}
                 <GroupBy
                   type="process"
-                  value={data.groupBy}
-                  report={this.props.report}
+                  report={report.data}
+                  onChange={(change) => updateReport(change, true)}
                   variables={{variable: variables}}
-                  onChange={this.props.updateReport}
-                  view={data.view}
                 />
-                <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
+                <DistributedBy
+                  report={report.data}
+                  onChange={(change) => updateReport(change, true)}
+                  variables={variables}
+                />
                 {isDurationHeatmap(data) && (
                   <li className="select">
                     <span className="label">{t('report.heatTarget.label')}</span>
@@ -466,7 +431,7 @@ export default withErrorHandling(
                 )}
               </ul>
             </section>
-            <section className={classnames('filter', {hidden: !showFilter})}>
+            <section className={classnames('filter', {collapsed: !showFilter})}>
               <Button
                 className="sectionTitle"
                 onClick={() => {

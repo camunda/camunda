@@ -11,7 +11,6 @@ import {DefinitionSelection, Button} from 'components';
 
 import {DecisionControlPanel} from './DecisionControlPanel';
 import GroupBy from './GroupBy';
-import ReportSelect from './ReportSelect';
 
 import {loadInputVariables, loadOutputVariables} from 'services';
 
@@ -78,15 +77,9 @@ it('should call the provided updateReport property function when a setting chang
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel {...props} updateReport={spy} />);
 
-  node.find(ReportSelect).at(0).prop('onChange')('newSetting');
+  node.find('View').at(0).prop('onChange')('newSetting');
 
   expect(spy).toHaveBeenCalled();
-});
-
-it('should not disable visualization Select if view is selected', () => {
-  const node = shallow(<DecisionControlPanel {...props} />);
-
-  expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
 });
 
 it('should include variables in the groupby options', () => {
@@ -221,10 +214,10 @@ it('should allow collapsing sections', () => {
   const node = shallow(<DecisionControlPanel {...props} />);
 
   node.find('.source').find(Button).simulate('click');
-  expect(node.find('.source')).toHaveClassName('hidden');
+  expect(node.find('.source')).toHaveClassName('collapsed');
 
   node.find('.source').find(Button).simulate('click');
-  expect(node.find('.source')).not.toHaveClassName('hidden');
+  expect(node.find('.source')).not.toHaveClassName('collapsed');
 });
 
 it('should add new variables to includedColumns when switching definition/version', async () => {

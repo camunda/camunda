@@ -21,7 +21,6 @@ export default function processDefaultData({report}) {
     },
     view,
     groupBy,
-    distributedBy,
   } = data;
 
   const groupedByDuration = groupBy.type === 'duration';
@@ -30,13 +29,8 @@ export default function processDefaultData({report}) {
 
   const isMultiMeasure = result.measures.length > 1;
 
-  const selectedView = config.findSelectedOption(config.options.view, 'data', view);
-  const viewString = t('report.view.' + selectedView.key.split('_')[0]);
-  let groupString = config.getLabelFor('groupBy', config.options.groupBy, groupBy);
-
-  if (groupBy.type === 'none' && distributedBy.type === 'process') {
-    groupString = 'Process';
-  }
+  const viewString = config.view.find(({matcher}) => matcher(data)).label();
+  const groupString = config.group.find(({matcher}) => matcher(data)).label();
 
   const head = [];
   const body = [];
@@ -45,6 +39,8 @@ export default function processDefaultData({report}) {
     head.push(viewString + ' ' + groupString);
   } else if (view.entity === 'processInstance' && groupBy.type === 'variable') {
     head.push(`${viewString} ${t('report.table.rawData.variable')}: ${groupBy.value.name}`);
+  } else if (['inputVariable', 'outputVariable'].includes(groupBy.type)) {
+    head.push(`${t('report.groupBy.' + groupBy.type)}: ${groupBy.value.name}`);
   } else if (view.entity === 'incident' && groupBy.type === 'flowNodes') {
     head.push(t('common.incident.byFlowNode'));
   } else {

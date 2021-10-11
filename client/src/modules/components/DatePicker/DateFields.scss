@@ -9,13 +9,14 @@
 
     .PickerDateInput:first-child {
       margin-right: 15px;
-      &:after {
-        right: -10px;
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        content: '-';
-      }
+    }
+
+    .PickerDateInput:nth-child(2):before {
+      left: -10px;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      content: '-';
     }
   }
 

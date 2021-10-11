@@ -58,14 +58,18 @@ export default function Number({report, formatter}) {
             viewString = data.view.properties[0].name;
           } else {
             const config = reportConfig[reportType];
-            const selectedView = config.findSelectedOption(config.options.view, 'data', {
-              ...data.view,
-              properties: [measure.property],
-            });
-            viewString = selectedView.key
-              .split('_')
-              .map((key) => t('report.view.' + key))
-              .join(' ');
+            const view = config.view.find(({matcher}) => matcher(data));
+            let measureString = '';
+            if (reportType === 'process') {
+              measureString = t(
+                'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
+              );
+              if (view.key === 'incident' && measure.property === 'duration') {
+                measureString = t('report.view.resolutionDuration');
+              }
+            }
+
+            viewString = `${view.label()} ${measureString}`;
           }
 
           if (measure.property === 'duration' || data.view.entity === 'variable') {

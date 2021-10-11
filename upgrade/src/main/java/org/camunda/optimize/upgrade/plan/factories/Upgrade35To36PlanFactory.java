@@ -42,20 +42,30 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
     return indexIdentifiers.stream()
       .map(indexIdentifier -> new UpdateIndexStep(
         eventBased ? new EventProcessInstanceIndex(indexIdentifier) : new ProcessInstanceIndex(indexIdentifier),
-        getDuplicateDefinitionDataToFlowNodesScript()
+        getDuplicateDefinitionDataToFlowNodesAndIncidentsScript()
       ))
       .collect(Collectors.toList());
   }
 
-  private static String getDuplicateDefinitionDataToFlowNodesScript() {
+  private static String getDuplicateDefinitionDataToFlowNodesAndIncidentsScript() {
     // @formatter:off
     return "" +
       "def processInstance = ctx._source;" +
       "def flowNodeInstances = ctx._source.flowNodeInstances;" +
-      "for (flowNode in flowNodeInstances) {" +
-        "flowNode.definitionKey = processInstance.processDefinitionKey;" +
-        "flowNode.definitionVersion = processInstance.processDefinitionVersion;" +
-        "flowNode.tenantId = processInstance.tenantId;" +
+      "if (flowNodeInstances != null) {" +
+        "for (flowNode in flowNodeInstances) {" +
+          "flowNode.definitionKey = processInstance.processDefinitionKey;" +
+          "flowNode.definitionVersion = processInstance.processDefinitionVersion;" +
+          "flowNode.tenantId = processInstance.tenantId;" +
+        "}" +
+      "}" +
+      "def incidents = ctx._source.incidents;" +
+      "if (incidents != null) {" +
+        "for (incident in incidents) {" +
+          "incident.definitionKey = processInstance.processDefinitionKey;" +
+          "incident.definitionVersion = processInstance.processDefinitionVersion;" +
+          "incident.tenantId = processInstance.tenantId;" +
+        "}"+
       "}";
     // @formatter:on
   }
@@ -73,6 +83,7 @@ public class Upgrade35To36PlanFactory implements UpgradePlanFactory {
         "def configuration = ctx._source.data.configuration;" +
         "if (configuration != null) {" +
           "configuration.measureVisualizations = [\"frequency\": \"bar\", \"duration\": \"line\"];" +
+          "configuration.stackedBar = false;" +
         "}" +
       "}"
       ;

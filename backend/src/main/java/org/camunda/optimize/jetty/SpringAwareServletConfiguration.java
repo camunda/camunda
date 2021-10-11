@@ -25,10 +25,12 @@ import org.springframework.web.filter.DelegatingFilterProxy;
 import javax.servlet.DispatcherType;
 import java.net.URL;
 import java.util.EnumSet;
+import java.util.concurrent.Callable;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 
 /**
  * Wrapper around all Camunda Optimize components, specifically JAX-RS configuration
@@ -103,7 +105,9 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     addLicenseFilter(context);
     addNoCachingFilter(context);
     addEventIngestionQoSFilter(context);
-    addIngestionRequestLimitFilter(context);
+    addEventIngestionRequestLimitFilter(context);
+    addExternalVariableIngestionQoSFilter(context);
+    addExternalVariableIngestionRequestLimitFilter(context);
 
     context.addFilter(
       new FilterHolder(new DelegatingFilterProxy("springSecurityFilterChain")),
@@ -124,34 +128,74 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.addServlet(holderPwd, "/");
   }
 
-  private void addIngestionRequestLimitFilter(final ServletContextHandler context) {
-    FilterHolder ingestionRequestLimitFilter = new FilterHolder();
-    ingestionRequestLimitFilter.setFilter(new MaxRequestSizeFilter(
-      () -> getApplicationContext().getBean(ObjectMapper.class),
+  private void addEventIngestionRequestLimitFilter(final ServletContextHandler context) {
+    addIngestionRequestLimitFilter(
+      context,
       () -> getApplicationContext()
         .getBean(ConfigurationService.class)
         .getEventIngestionConfiguration()
-        .getMaxBatchRequestBytes()
+        .getMaxBatchRequestBytes(),
+      EVENT_BATCH_SUB_PATH
+    );
+  }
+
+  private void addExternalVariableIngestionRequestLimitFilter(final ServletContextHandler context) {
+    addIngestionRequestLimitFilter(
+      context,
+      () -> getApplicationContext()
+        .getBean(ConfigurationService.class)
+        .getVariableIngestionConfiguration()
+        .getMaxBatchRequestBytes(),
+      VARIABLE_SUB_PATH
+    );
+  }
+
+  private void addIngestionRequestLimitFilter(ServletContextHandler context,
+                                              final Callable<Long> maxBatchRequestBytesGetter,
+                                              final String ingestionSubPath) {
+    FilterHolder ingestionRequestLimitFilter = new FilterHolder();
+    ingestionRequestLimitFilter.setFilter(new MaxRequestSizeFilter(
+      () -> getApplicationContext().getBean(ObjectMapper.class),
+      maxBatchRequestBytesGetter
     ));
     context.addFilter(
       ingestionRequestLimitFilter,
-      REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH,
+      REST_API_PATH + INGESTION_PATH + ingestionSubPath,
       EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC)
     );
   }
 
   private void addEventIngestionQoSFilter(ServletContextHandler context) {
-    FilterHolder eventIngestionQoSFilterHolder = new FilterHolder();
-    IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(
+    addIngestionQosFilter(
+      context,
       () -> getApplicationContext()
         .getBean(ConfigurationService.class)
         .getEventIngestionConfiguration()
-        .getMaxRequests()
+        .getMaxRequests(),
+      EVENT_BATCH_SUB_PATH
     );
+  }
+
+  private void addExternalVariableIngestionQoSFilter(ServletContextHandler context) {
+    addIngestionQosFilter(
+      context,
+      () -> getApplicationContext()
+        .getBean(ConfigurationService.class)
+        .getVariableIngestionConfiguration()
+        .getMaxRequests(),
+      VARIABLE_SUB_PATH
+    );
+  }
+
+  private void addIngestionQosFilter(ServletContextHandler context,
+                                     final Callable<Integer> maxRequestGetter,
+                                     final String ingestionSubPath) {
+    FilterHolder eventIngestionQoSFilterHolder = new FilterHolder();
+    IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(maxRequestGetter);
     eventIngestionQoSFilterHolder.setFilter(ingestionQoSFilter);
     context.addFilter(
       eventIngestionQoSFilterHolder,
-      REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH,
+      REST_API_PATH + INGESTION_PATH + ingestionSubPath,
       EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC)
     );
   }

@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -38,7 +38,7 @@ public class AuthorizedCollectionService {
     "User [%s] does not have the role to add/edit collection [%s] resources.";
 
   private final CollectionReader collectionReader;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
 
   public Optional<RoleType> getUsersCollectionResourceRole(final String userId, final String collectionId)
     throws NotFoundException, ForbiddenException {
@@ -103,7 +103,7 @@ public class AuthorizedCollectionService {
     final String collectionId) {
     final Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
 
-    if (!collectionDefinition.isPresent()) {
+    if (collectionDefinition.isEmpty()) {
       log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
       throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
     }

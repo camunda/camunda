@@ -60,7 +60,7 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.typeText(Filter.typeaheadInput, 'dateVar', {replace: true});
   await t.click(Filter.typeaheadOption('dateVar'));
   await t.click(Filter.dateFilterTypeSelect);
-  await t.click(Filter.dateFilterTypeOption('Fixed Date'));
+  await t.click(Filter.dateFilterTypeOption('Between'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.pickerDate('22')).wait(200);
@@ -179,7 +179,7 @@ test('pick a start date from the date picker', async (t) => {
   await t.click(Report.filterOption('Instance Date'));
   await t.click(Report.subFilterOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
-  await t.click(Report.option('Fixed Date'));
+  await t.click(Report.option('Between'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.pickerDate('22'));
@@ -190,6 +190,15 @@ test('pick a start date from the date picker', async (t) => {
     'process/filter/fixed-start-date-filter.png'
   );
 
+  await t.click(Report.primaryModalButton);
+  await t.expect(Report.reportRenderer.visible).ok();
+
+  await t.click(Filter.editButton);
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Report.option('After'));
+  await t.click(Filter.dateFilterStartInput);
+  await t.click(Filter.pickerDate('5'));
+  await t.click(Filter.infoText);
   await t.click(Report.primaryModalButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
@@ -420,6 +429,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(Report.nodeTableCell('Assign Approver Group').exists).ok();
 

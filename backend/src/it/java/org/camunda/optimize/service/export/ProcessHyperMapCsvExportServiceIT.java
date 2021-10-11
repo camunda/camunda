@@ -23,12 +23,11 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
 
@@ -50,7 +49,8 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
   public void hyperMapFrequencyReportHasExpectedValue() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
     importAllEngineEntitiesFromScratch();
     final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
@@ -60,7 +60,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -68,14 +68,15 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
         "/csv/process/hyper/usertask_frequency_group_by_assignee_by_usertask.csv"
       );
 
-    assertThat(actualContent, is(stringExpected));
+    assertThat(actualContent).isEqualTo(stringExpected);
   }
 
   @Test
   public void hyperMapDurationReportHasExpectedValue() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 10L);
 
@@ -87,7 +88,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -95,7 +96,7 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
         "/csv/process/hyper/usertask_duration_group_by_assignee_by_usertask.csv"
       );
 
-    assertThat(actualContent, is(stringExpected));
+    assertThat(actualContent).isEqualTo(stringExpected);
   }
 
   @Test
@@ -110,13 +111,13 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
       FileReaderUtil.readFileWithWindowsLineSeparator("/csv/process/hyper/hypermap_empty_result.csv");
 
-    assertThat(actualContent, is(stringExpected));
+    assertThat(actualContent).isEqualTo(stringExpected);
   }
 
   private ProcessReportDataDto createFrequencyReport(final String processDefinitionKey, final String version) {
@@ -148,9 +149,17 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
 
   private void finishUserTask1AWithDefaultAndTaskB2WithSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
     // finish user task 1 and A with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
     // finish user task 2 and B with second user
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto1.getId()
+    );
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
@@ -188,7 +197,8 @@ public class ProcessHyperMapCsvExportServiceIT extends AbstractIT {
   }
 
   private String createNewSingleMapReport(ProcessReportDataDto data) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName("FooName");
     singleProcessReportDefinitionDto.setData(data);
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);

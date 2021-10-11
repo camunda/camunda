@@ -20,7 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EngineDataCleanupServiceRolloverIT extends AbstractEngineDataCleanupIT {
+public class EngineDataCleanupServiceRolloverIT extends AbstractCleanupIT {
 
   @BeforeEach
   @AfterEach

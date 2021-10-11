@@ -4,159 +4,143 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
-import {Button, Select, Icon} from 'components';
-import {reportConfig} from 'services';
 import {t} from 'translation';
-
-import {addVariables} from './service';
+import {reportConfig, createReportUpdate} from 'services';
+import {Select, Button, Icon} from 'components';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import './GroupBy.scss';
 
-function GroupBy({type, value, onChange, variables, report, view}) {
-  const config = reportConfig[type];
-  const options = addVariables(config.options.groupBy, variables, (type, value) => ({type, value}));
-  const noneOption = options.find(({data}) => data?.type === 'none');
-  const {distributedBy, configuration} = report.data;
+export default function GroupBy({type, report, onChange, variables}) {
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
 
-  const selectedOption = config.findSelectedOption(options, 'data', value);
-  const hasGrouping = selectedOption?.data.type !== 'none';
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
 
-  const canAddGrouping = options.some(({data, options}) => {
-    if (data?.type === 'none') {
-      return false;
-    }
-    if (options) {
-      return options.some(({data}) => config.isAllowed(report, view, data));
-    } else {
-      return config.isAllowed(report, view, data);
-    }
-  });
+  const reportType = type;
 
-  if (!view || !canAddGrouping) {
+  if (!report.view) {
     return null;
   }
 
-  const isNoneAllowed = config.isAllowed(report, view, noneOption.data);
-  const isGroupByProcessAllowed =
-    !['incident', 'variable', null].includes(view.entity) && // group by process not allowed for incident, variable and raw data reports
-    isNoneAllowed && // if group by none is not allowed, group by process is handled in distributeBy component instead
-    report.data.definitions.length > 1; // group by process only allowed for multi-definition reports
+  const groups = reportConfig[type].group;
+  const selectedOption = report.groupBy ? groups.find(({matcher}) => matcher(report)) : {key: null};
+  const hasGroup = selectedOption.key !== 'none';
+  let hasDistribution;
 
-  function canRemoveGrouping() {
-    if (hasGrouping && isNoneAllowed) {
-      return true;
-    }
+  if (type === 'decision') {
+    hasDistribution = false;
+  } else {
+    hasDistribution =
+      reportConfig[type].distribution.find(({matcher}) => matcher(report)).key !== 'none';
+  }
 
-    if (!hasGrouping && distributedBy?.type === 'process' && isNoneAllowed) {
-      return true;
-    }
+  const options = groups
+    .filter(
+      ({visible, key}) =>
+        visible(report) &&
+        key !== 'none' &&
+        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+    )
+    .map(({key, enabled, label}) => {
+      if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
+        return (
+          <Select.Submenu
+            key={key}
+            label={label()}
+            disabled={!enabled(report) || !variables || !variables[key]?.length}
+          >
+            {variables?.[key]?.map(({name}, idx) => {
+              return (
+                <Select.Option key={idx} value={key + '_' + name}>
+                  {name}
+                </Select.Option>
+              );
+            })}
+          </Select.Submenu>
+        );
+      } else if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(key)) {
+        return (
+          <Select.Submenu key={key} label={label()} disabled={!enabled(report)}>
+            <Select.Option value={key + '_automatic'}>
+              {t('report.groupBy.automatic')}
+            </Select.Option>
+            <Select.Option value={key + '_year'}>{t('report.groupBy.year')}</Select.Option>
+            <Select.Option value={key + '_month'}>{t('report.groupBy.month')}</Select.Option>
+            <Select.Option value={key + '_week'}>{t('report.groupBy.week')}</Select.Option>
+            <Select.Option value={key + '_day'}>{t('report.groupBy.day')}</Select.Option>
+            <Select.Option value={key + '_hour'}>{t('report.groupBy.hour')}</Select.Option>
+          </Select.Submenu>
+        );
+      }
+      return (
+        <Select.Option key={key} value={key} disabled={!enabled(report)}>
+          {label()}
+        </Select.Option>
+      );
+    });
 
-    if (hasGrouping && distributedBy?.type !== 'none' && distributedBy?.type !== 'process') {
-      return true;
-    }
-
-    return false;
+  if (options.every(({props}) => props.disabled)) {
+    return null;
   }
 
   return (
-    <li className="GroupBy select">
-      <span className="label">{t(`report.groupBy.label`)}</span>
+    <li className="GroupBy">
+      <span className="label">{t('report.groupBy.label')}</span>
       <Select
-        onChange={(value) => {
-          if (value === 'process') {
-            const changes = config.update('groupBy', noneOption.data, {report});
-            changes.distributedBy = {$set: {type: 'process', value: null}};
-            changes.visualization = {$set: 'table'};
-            changes.configuration.xLabel = {$set: 'Process'};
-
-            if (configuration.aggregationTypes.includes('median')) {
-              if (configuration.aggregationTypes.length === 1) {
-                changes.configuration.aggregationTypes = {$set: ['avg']};
-              } else {
-                changes.configuration.aggregationTypes = {
-                  $set: configuration.aggregationTypes.filter((entry) => entry !== 'median'),
-                };
-              }
-            }
-
-            onChange(changes, true);
-          } else {
-            const foundOption = config.findSelectedOption(options, 'key', value);
-            onChange(config.update('groupBy', foundOption.data, {report}), true);
+        className={classnames({hasNoGrouping: !hasGroup})}
+        label={!hasGroup && '+ ' + t('report.addGrouping')}
+        onChange={(selection) => {
+          let type = selection,
+            value = null;
+          if (
+            selection.startsWith('variable_') ||
+            selection.startsWith('inputVariable_') ||
+            selection.startsWith('outputVariable_')
+          ) {
+            [type, value] = selection.split('_');
+            value = variables[type].find(({name}) => name === selection.substr(type.length + 1));
+          } else if (
+            selection.startsWith('startDate') ||
+            selection.startsWith('endDate') ||
+            selection.startsWith('runningDate') ||
+            selection.startsWith('evaluationDate')
+          ) {
+            [type, value] = selection.split('_');
+            value = {unit: value};
           }
+
+          onChange(
+            createReportUpdate(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
+          );
         }}
-        value={!hasGrouping && distributedBy?.type === 'process' ? 'process' : selectedOption?.key}
-        label={!hasGrouping && distributedBy?.type !== 'process' && `+ ${t('report.addGrouping')}`}
-        className={classnames({
-          hasNoGrouping: !hasGrouping && distributedBy?.type !== 'process',
-          canRemoveGrouping: canRemoveGrouping(),
-        })}
+        value={getValue(selectedOption.key, report.groupBy)}
       >
-        {options
-          .filter(({data}) => data?.type !== 'none')
-          .map(({key, data, options}, idx) => {
-            if (options) {
-              return (
-                <Select.Submenu
-                  key={idx}
-                  label={t(`report.groupBy.${key}`)}
-                  disabled={options.every(({data}) => !config.isAllowed(report, view, data))}
-                >
-                  {options.map(({key, data, label}, idx) => {
-                    return (
-                      <Select.Option
-                        key={idx}
-                        value={key}
-                        disabled={!config.isAllowed(report, view, data)}
-                      >
-                        {key.toLowerCase().includes('variable')
-                          ? label
-                          : t(`report.groupBy.${key.split('_').pop()}`)}
-                      </Select.Option>
-                    );
-                  })}
-                </Select.Submenu>
-              );
-            } else {
-              return (
-                <Select.Option
-                  key={idx}
-                  value={key}
-                  disabled={!config.isAllowed(report, view, data)}
-                >
-                  {t(`report.groupBy.${key.split('_').shift()}`)}
-                </Select.Option>
-              );
-            }
-          })}
-        {isGroupByProcessAllowed && (
-          <Select.Option value="process">{t('common.process.label')}</Select.Option>
-        )}
+        {options}
       </Select>
-      {canRemoveGrouping() && (
+      {((hasGroup && groups.find(({key}) => key === 'none').enabled(report)) ||
+        hasDistribution) && (
         <Button
           className="removeGrouping"
-          onClick={() => {
-            if (distributedBy?.type === 'process') {
-              const changes = config.update('groupBy', noneOption.data, {report});
-              if (hasGrouping) {
-                changes.distributedBy = {$set: {type: 'process', value: null}};
-                changes.visualization = {$set: 'table'};
-              } else {
-                changes.distributedBy = {$set: {type: 'none', value: null}};
-                changes.visualization = {$set: 'number'};
-              }
-              onChange(changes, true);
-            } else {
-              onChange(
-                config.update('groupBy', convertDistributionToGroup(distributedBy), {report}),
-                true
-              );
-            }
-          }}
+          onClick={() =>
+            onChange(
+              createReportUpdate(reportType, report, 'group', 'none', {
+                groupBy: {
+                  $set:
+                    selectedOption.key === 'process'
+                      ? {type: 'none', value: null}
+                      : convertDistributionToGroup(report.distributedBy),
+                },
+                distributedBy: {$set: {type: 'none', value: null}},
+              })
+            )
+          }
         >
           <Icon type="close-small" />
         </Button>
@@ -165,7 +149,16 @@ function GroupBy({type, value, onChange, variables, report, view}) {
   );
 }
 
-export default GroupBy;
+function getValue(selectedOption, groupBy) {
+  if (['variable', 'inputVariable', 'outputVariable'].includes(selectedOption)) {
+    return selectedOption + '_' + groupBy.value.name;
+  }
+  if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(selectedOption)) {
+    return selectedOption + '_' + groupBy.value.unit;
+  }
+
+  return selectedOption;
+}
 
 function convertDistributionToGroup(distributedBy) {
   switch (distributedBy.type) {

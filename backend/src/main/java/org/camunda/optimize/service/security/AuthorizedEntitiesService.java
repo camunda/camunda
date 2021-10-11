@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class AuthorizedEntitiesService {
 
   private final EntitiesReader entitiesReader;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
   private final ReportAuthorizationService reportAuthorizationService;
 
   public List<EntityResponseDto> getAuthorizedPrivateEntities(final String userId) {

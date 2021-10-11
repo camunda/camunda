@@ -7,10 +7,16 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ReportView from './ReportView';
-
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton} from 'components';
 import {checkDeleteConflict} from 'services';
+import {isOptimizeCloudEnvironment} from 'config';
+
+import ReportView from './ReportView';
+
+jest.mock('config', () => ({
+  isSharingEnabled: jest.fn().mockReturnValue(true),
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -23,7 +29,6 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     remove: jest.fn(),
-    isSharingEnabled: jest.fn().mockReturnValue(true),
   };
 });
 
@@ -88,8 +93,9 @@ it('should contain a ReportRenderer with the report evaluation result', () => {
   expect(node.find(ReportRenderer)).toExist();
 });
 
-it('should render a sharing popover', () => {
-  const node = shallow(<ReportView report={report} />);
+it('should render a sharing popover', async () => {
+  const node = await shallow(<ReportView report={report} />);
+  await node.update();
 
   expect(node.find('.share-button')).toExist();
 });
@@ -128,4 +134,11 @@ it('should hide edit/delete if the report current user role is not "editor"', ()
 
   expect(node.find('.delete-button')).not.toExist();
   expect(node.find('.edit-button')).not.toExist();
+});
+
+it('should hide sharing popover in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = await shallow(<ReportView report={report} />);
+
+  expect(node.find('Popover.share-button')).not.toExist();
 });

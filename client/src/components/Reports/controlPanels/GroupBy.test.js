@@ -4,13 +4,18 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Select, Button} from 'components';
-import {reportConfig} from 'services';
+import {reportConfig, createReportUpdate} from 'services';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import GroupBy from './GroupBy';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -20,40 +25,86 @@ jest.mock('services', () => {
     reportConfig: {
       ...rest.reportConfig,
       process: {
-        findSelectedOption: jest.fn().mockReturnValue({key: 'none', data: 'foo'}),
-        getLabelFor: jest.fn().mockReturnValue('foo'),
-        options: {
-          groupBy: [
-            {key: 'none', data: {type: 'none'}},
-            {key: 'duration', data: 'duration'},
-            {key: 'userTasks', data: 'userTask'},
-            {key: 'variable', options: 'variable'},
-          ],
-          visualization: [{data: 'foo'}],
-        },
-        isAllowed: jest.fn().mockReturnValue(true),
-        update: jest.fn(),
+        group: [],
+        distribution: [],
       },
     },
+    createReportUpdate: jest.fn(),
   };
 });
 
 const config = {
   type: 'process',
-  value: {type: 'none'},
   variables: {variable: []},
   onChange: jest.fn(),
   report: {
-    data: {
-      distributedBy: {type: 'distribution'},
-      definitions: [{id: 'definitionId'}],
-    },
+    view: {},
+    groupBy: {type: 'group'},
+    distributedBy: {type: 'distribution'},
+    definitions: [{id: 'definitionId'}],
   },
-  view: 'defined',
 };
 
+beforeEach(() => {
+  reportConfig.process.group = [
+    {
+      key: 'none',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('None'),
+    },
+    {
+      key: 'group1',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Group 1'),
+    },
+    {
+      key: 'group2',
+      matcher: jest.fn().mockReturnValue(true),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Group 2'),
+    },
+    {
+      key: 'variable',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Variable'),
+    },
+    {
+      key: 'assignee',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('assignee'),
+    },
+  ];
+  reportConfig.process.distribution = [
+    {
+      key: 'none',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('None'),
+    },
+    {
+      key: 'distribution',
+      matcher: jest.fn().mockReturnValue(true),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Sample Distribution'),
+    },
+  ];
+
+  createReportUpdate.mockClear();
+});
+
 it('should disable options which would create a wrong combination', () => {
-  reportConfig.process.isAllowed.mockImplementation((report, view, data) => data !== 'duration');
+  reportConfig.process.group[1].enabled.mockReturnValue(false);
 
   const node = shallow(<GroupBy {...config} />);
 
@@ -80,106 +131,35 @@ it('invoke configUpdate with the correct variable data', async () => {
     type: 'variable',
     value: {id: 'test', name: 'testName', type: 'date'},
   };
-  reportConfig.process.update.mockClear();
-  reportConfig.process.update.mockReturnValueOnce({content: 'change'});
-  reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'none', data: selectedOption});
 
-  node.find(Select).simulate('change', 'variable_test');
+  createReportUpdate.mockReturnValue({content: 'change'});
 
-  expect(reportConfig.process.update.mock.calls[0][1]).toBe(selectedOption);
-  expect(spy).toHaveBeenCalledWith({content: 'change'}, true);
+  node.find(Select).simulate('change', 'variable_testName');
+
+  expect(createReportUpdate.mock.calls[0][4].groupBy.value.$set).toEqual(selectedOption.value);
+  expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 
 it('should use the distributedBy value when removing the groupBy', () => {
   const spy = jest.fn();
-  const node = shallow(<GroupBy {...config} value="duration" onChange={spy} />);
+  const node = shallow(<GroupBy {...config} onChange={spy} />);
 
-  reportConfig.process.update.mockClear();
   node.find(Button).simulate('click');
 
-  expect(reportConfig.process.update.mock.calls[0][1]).toEqual({type: 'distribution'});
+  expect(createReportUpdate.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
 });
 
-describe('group by process', () => {
-  it('should display a group by process option if its allowed', () => {
-    const node = shallow(
-      <GroupBy
-        {...config}
-        report={{
-          data: {
-            distributedBy: {type: 'none'},
-            definitions: [{id: 'definitionId1'}, {id: 'definitionId2'}],
-          },
-        }}
-      />
-    );
+it('should hide assignee option in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(<GroupBy {...config} />);
 
-    expect(node.find({value: 'process'})).toExist();
-  });
+  await runAllEffects();
 
-  it('should set distribute by process if group by process is set', () => {
-    const spy = jest.fn();
-    const node = shallow(
-      <GroupBy
-        {...config}
-        report={{
-          data: {
-            distributedBy: {type: 'none'},
-            definitions: [{id: 'definitionId1'}, {id: 'definitionId2'}],
-            configuration: {aggregationTypes: ['avg']},
-          },
-        }}
-        onChange={spy}
-      />
-    );
+  expect(node.find({value: 'assignee'})).not.toExist();
+});
 
-    reportConfig.process.update.mockReturnValueOnce({configuration: {}});
-    node.find(Select).simulate('change', 'process');
+it('should pass null as a value to Select if groupBy is null', () => {
+  const node = shallow(<GroupBy {...config} report={{...config.report, groupBy: null}} />);
 
-    expect(spy.mock.calls[0][0].distributedBy).toEqual({$set: {type: 'process', value: null}});
-  });
-
-  it('should remove median aggregation when grouping by process', () => {
-    const spy = jest.fn();
-    const node = shallow(
-      <GroupBy
-        {...config}
-        report={{
-          data: {
-            distributedBy: {type: 'none'},
-            definitions: [{id: 'definitionId1'}, {id: 'definitionId2'}],
-            configuration: {aggregationTypes: ['avg', 'median', 'min']},
-          },
-        }}
-        onChange={spy}
-      />
-    );
-
-    reportConfig.process.update.mockReturnValueOnce({configuration: {}});
-    node.find(Select).simulate('change', 'process');
-
-    expect(spy.mock.calls[0][0].configuration.aggregationTypes).toEqual({$set: ['avg', 'min']});
-  });
-
-  it('should reset aggregation to average if median is the only aggregation when grouping by process', () => {
-    const spy = jest.fn();
-    const node = shallow(
-      <GroupBy
-        {...config}
-        report={{
-          data: {
-            distributedBy: {type: 'none'},
-            definitions: [{id: 'definitionId1'}, {id: 'definitionId2'}],
-            configuration: {aggregationTypes: ['median']},
-          },
-        }}
-        onChange={spy}
-      />
-    );
-
-    reportConfig.process.update.mockReturnValueOnce({configuration: {}});
-    node.find(Select).simulate('change', 'process');
-
-    expect(spy.mock.calls[0][0].configuration.aggregationTypes).toEqual({$set: ['avg']});
-  });
+  expect(node.find(Select).prop('value')).toBe(null);
 });

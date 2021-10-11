@@ -25,7 +25,7 @@ zeebe:
             jobBatch: false
             message: false
             messageSubscription: false
-            variable: false
+            variable: true
             variableDocument: false
             processInstance: true
             processInstanceCreation: false

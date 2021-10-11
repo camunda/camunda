@@ -30,10 +30,7 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
@@ -147,7 +144,7 @@ public class OptimizeDecisionCleanupServiceTest {
     // when I run the cleanup then it fails with an exception
     OptimizeConfigurationException exception =
       assertThrows(OptimizeConfigurationException.class, () -> doCleanup(createOptimizeCleanupServiceToTest()));
-    assertThat(exception.getMessage(), containsString(configuredKey));
+    assertThat(exception.getMessage()).contains(configuredKey);
   }
 
   private void doCleanup(final CleanupService underTest) {
@@ -164,11 +161,11 @@ public class OptimizeDecisionCleanupServiceTest {
     final Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
       .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    assertThat(filteredInvocationArguments.size(), is(expectedDefinitionKeys.size()));
+    assertThat(filteredInvocationArguments).hasSameSizeAs(expectedDefinitionKeys);
 
     final OffsetDateTime dateFilterValue = filteredInvocationArguments.values().toArray(new OffsetDateTime[]{})[0];
-    assertThat(dateFilterValue, lessThanOrEqualTo(OffsetDateTime.now().minus(expectedTtl)));
-    filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(dateFilterValue)));
+    assertThat(dateFilterValue).isBeforeOrEqualTo(OffsetDateTime.now().minus(expectedTtl));
+    filteredInvocationArguments.values().forEach(instant -> assertThat(instant).isEqualTo(dateFilterValue));
   }
 
   private void assertDeleteDecisionInstancesExecutedFor(Set<String> expectedDecisionDefinitionKeys,

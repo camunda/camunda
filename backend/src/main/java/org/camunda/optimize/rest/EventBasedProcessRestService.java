@@ -29,7 +29,7 @@ import org.camunda.optimize.service.events.EventMappingCleanupService;
 import org.camunda.optimize.service.exceptions.EventProcessManagementForbiddenException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.EventProcessAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -65,7 +65,7 @@ public class EventBasedProcessRestService {
   private final EventProcessAuthorizationService authenticationService;
   private final SessionService sessionService;
   private final DefinitionService definitionService;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
 
   @GET
   @Path("/isEnabled")

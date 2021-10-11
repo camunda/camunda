@@ -139,7 +139,7 @@ public class DataGenerationMain {
     arguments.put("numberOfDecisionInstances", String.valueOf(10_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
     arguments.put("removeDeployments", "true");
-    arguments.put("adjustProcessInstanceDates", "true");
+    arguments.put("adjustProcessInstanceDates", "false");
     arguments.put("startDate", "01/01/2018");
     arguments.put("endDate", "01/01/2020");
     arguments.put("jdbcDriver", JDBC_DRIVER);

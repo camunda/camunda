@@ -9,7 +9,6 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -32,7 +31,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.NestedDefinitionQueryBuilder;
 import org.elasticsearch.common.TriFunction;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
@@ -70,13 +69,10 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_MI_BODY;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -119,6 +115,10 @@ public class ModelElementFilterQueryUtil {
       FlowNodeEndDateFilterDto.class,
       ModelElementFilterQueryUtil::createFlowNodeEndDateFilterQuery
     );
+
+  private static final NestedDefinitionQueryBuilder NESTED_DEFINITION_QUERY_BUILDER = new NestedDefinitionQueryBuilder(
+    FLOW_NODE_INSTANCES, FLOW_NODE_DEFINITION_KEY, FLOW_NODE_DEFINITION_VERSION, FLOW_NODE_TENANT_ID
+  );
 
   public static Optional<NestedQueryBuilder> addInstanceFilterForRelevantViewLevelFilters(final List<ProcessFilterDto<?>> filters,
                                                                                           final FilterContext filterContext) {
@@ -165,8 +165,8 @@ public class ModelElementFilterQueryUtil {
       .minimumShouldMatch(1);
     final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition = reportData.groupFiltersByDefinitionIdentifier();
     reportData.getDefinitions().forEach(definitionDto -> {
-      final BoolQueryBuilder flowNodeDefinitionQuery = boolQuery().must(
-        createFlowNodeDefinitionQuery(
+      final BoolQueryBuilder flowNodeDefinitionQuery = boolQuery()
+        .must(NESTED_DEFINITION_QUERY_BUILDER.createNestedDocDefinitionQuery(
           definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds(), definitionService
         ));
       addModelElementFilters(
@@ -183,27 +183,6 @@ public class ModelElementFilterQueryUtil {
       filtersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList())
     );
     return filterBoolQuery;
-  }
-
-  private static QueryBuilder createFlowNodeDefinitionQuery(final String definitionKey,
-                                                            final List<String> definitionVersions,
-                                                            final List<String> tenantIds,
-                                                            final DefinitionService definitionService) {
-    final BoolQueryBuilder query = boolQuery();
-    query.filter(DefinitionQueryUtil.createTenantIdQuery(nestedFieldReference(FLOW_NODE_TENANT_ID), tenantIds));
-    query.filter(termQuery(nestedFieldReference(FLOW_NODE_DEFINITION_KEY), definitionKey));
-    if (isDefinitionVersionSetToLatest(definitionVersions)) {
-      query.filter(termsQuery(
-        nestedFieldReference(FLOW_NODE_DEFINITION_VERSION),
-        definitionService.getLatestVersionToKey(DefinitionType.PROCESS, definitionKey)
-      ));
-    } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
-      query.filter(termsQuery(nestedFieldReference(FLOW_NODE_DEFINITION_VERSION), definitionVersions));
-    } else if (definitionVersions.isEmpty()) {
-      // if no version is set just return empty results
-      query.mustNot(matchAllQuery());
-    }
-    return query;
   }
 
   private static void addModelElementFilters(final BoolQueryBuilder filterBoolQuery,

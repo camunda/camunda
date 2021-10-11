@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleReq
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -32,14 +32,14 @@ import java.util.stream.Collectors;
 public class EventProcessRoleService implements ConfigurationReloadable {
 
   private final EventProcessMappingWriter eventProcessMappingWriter;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
 
   private final LoadingCache<String, List<EventProcessRoleRequestDto<IdentityDto>>> eventProcessRoleReadCache;
 
   public EventProcessRoleService(final EventProcessMappingReader eventProcessMappingReader,
                                  final EventProcessMappingWriter eventProcessMappingWriter,
                                  final ConfigurationService configurationService,
-                                 final IdentityService identityService) {
+                                 final AbstractIdentityService identityService) {
     this.eventProcessMappingWriter = eventProcessMappingWriter;
     this.identityService = identityService;
 

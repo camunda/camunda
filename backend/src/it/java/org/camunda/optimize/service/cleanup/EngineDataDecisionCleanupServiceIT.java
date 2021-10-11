@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanupIT {
+public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
   @BeforeEach
   public void enableCamundaCleanup() {

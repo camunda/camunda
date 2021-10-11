@@ -4,241 +4,187 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import equal from 'fast-deep-equal';
+import update from 'immutability-helper';
 import {t} from 'translation';
 
-export default function reportConfig({view, groupBy, visualization, combinations}) {
-  /**
-   * Construct a String representing the entry. Suitable for displaying to the user
-   *
-   * @param type type of the menu (View, GroupBy, Visualization)
-   * @param menu One of the type arrays of the reportConfig service (view, groupBy, visualization)
-   * @param data One data entry of the type array. This corresponds to the payload sent to the backend
-   * @param subOption defines whethet the data entry we are searching for is a sub option or not
-   */
-  const getLabelFor = (type, menu, data, subOption = false) => {
-    // special case: variables
-    if (data && data.type && data.type.toLowerCase().includes('variable')) {
-      return t(`report.${type}.${data.type}`) + ': ' + data.value.name;
-    }
+import * as processOptions from './process';
+import * as decisionOptions from './decision';
 
-    for (let i = 0; i < menu.length; i++) {
-      const entry = menu[i];
+const config = {
+  process: processOptions,
+  decision: decisionOptions,
+};
 
-      if (equal(entry.data, data, {strict: true})) {
-        let key;
+export function createReportUpdate(reportType, report, type, newValue, payloadAdjustment) {
+  const options = config[reportType];
+  let newPayload = options[type].find(({key}) => key === newValue).payload(report);
 
-        if (subOption) {
-          key = entry.key.split('_')[1];
-        } else {
-          key = entry.key;
-        }
-        return t(`report.${type}.${key}`);
-      }
+  if (payloadAdjustment) {
+    newPayload = update(newPayload, payloadAdjustment);
+  }
 
-      if (Array.isArray(entry.options)) {
-        const subLabel = getLabelFor(type, entry.options, data, true);
-        if (subLabel) {
-          return t(`report.${type}.${entry.key}`) + ': ' + subLabel;
-        }
-      }
-    }
-  };
+  let newReport = {...report, ...newPayload};
 
-  /**
-   * Checks whether a certain combination of view, groupby and visualization is allowed.
-   */
-  const isAllowed = (report, targetView, targetGroupBy, targetVisualization) => {
-    const viewGroup = getGroupFor(view, targetView);
-    const groupGroup = getGroupFor(groupBy, targetGroupBy);
-    const visualizationGroup = getGroupFor(visualization, targetVisualization);
+  // ensure group is still valid
+  const oldGroup = options.group.find(({matcher}) => matcher(newReport));
+  if (!oldGroup || !oldGroup.visible(newReport) || !oldGroup.enabled(newReport)) {
+    const possibleGroups = options.group
+      .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
+      .sort((a, b) => a.priority - b.priority);
 
-    if (report.data.definitions?.length > 1 && targetVisualization === 'heat') {
-      return false;
-    }
+    newReport = {...newReport, ...possibleGroups[0].payload(newReport)};
+  }
 
-    if (report.data.distributedBy.type !== 'none' && viewGroup !== 'raw') {
-      if (targetVisualization === 'pie' && targetGroupBy.type === 'none') {
-        return true;
-      }
-      if (['pie', 'heat'].includes(targetVisualization)) {
-        // pie charts and heatmaps generally do not support distributed reports
-        return false;
-      }
-    }
-
-    if (viewGroup && groupGroup && visualizationGroup) {
-      let isVisualizationAllowed =
-        combinations[viewGroup]?.[groupGroup]?.includes(visualizationGroup);
-
-      if (report.data.distributedBy.type === 'process' && viewGroup !== 'raw') {
-        isVisualizationAllowed = ['table', 'chart'].includes(visualizationGroup);
-      }
-
-      if (targetVisualization === 'barLine') {
-        // barLine is only supported for multi measure reports
-        return targetView.properties.length > 1 && isVisualizationAllowed;
-      } else {
-        return isVisualizationAllowed;
-      }
-    }
-
-    if (viewGroup && groupGroup) {
-      return combinations[viewGroup]?.[groupGroup];
-    }
-
-    return true;
-  };
-
-  function getGroupFor(type, data) {
-    // special case for variables:
+  // ensure distribution is still valid
+  if (reportType === 'process') {
+    const oldDistribution = options.distribution.find(({matcher}) => matcher(newReport));
     if (
-      data?.type?.toLowerCase().includes('variable') ||
-      data?.entity?.toLowerCase().includes('variable')
+      !oldDistribution ||
+      !oldDistribution.visible(newReport) ||
+      !oldDistribution.enabled(newReport) ||
+      (type === 'view' &&
+        options.view.find(({matcher}) => matcher(report)) !==
+          options.view.find(({matcher}) => matcher(newReport)) &&
+        oldDistribution.key === 'none') || // try to find distribution when switching view
+      (type === 'group' &&
+        ['flowNodes', 'userTasks'].includes(
+          options.group.find(({matcher}) => matcher(report))?.key
+        )) // try to find distribution when switching away from flowNodes
     ) {
-      return 'variable';
-    }
+      const possibleDistributions = options.distribution
+        .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
+        .sort((a, b) => a.priority - b.priority);
 
-    const entry = type.find((entry) => {
-      if (entry.data) {
-        return equal(entry.data, data, {strict: true});
-      } else if (Array.isArray(entry.options)) {
-        return entry.options.find((entry) => equal(entry.data, data, {strict: true}));
-      }
-      return false;
-    });
-
-    if (entry?.group) {
-      return entry.group;
-    }
-
-    const option = entry?.options?.find((entry) => equal(entry.data, data, {strict: true}));
-
-    return option?.group;
-  }
-
-  function getFirstOptionFor(type, group) {
-    return type.find((entry) => entry.group === group).data;
-  }
-
-  /**
-   * Based on a given view (and optional groupby), returns the next payload data, if it is unambiguous.
-   */
-  const getNext = (targetView, targetGroupBy, oldVisualization) => {
-    const viewGroup = getGroupFor(view, targetView);
-
-    const groups = combinations[viewGroup];
-
-    if (!targetGroupBy) {
-      return getFirstOptionFor(groupBy, Object.keys(groups)[0]);
-    } else if (targetGroupBy) {
-      const possibleVisualizationGroups = groups[getGroupFor(groupBy, targetGroupBy)];
-      let visualizationGroup = possibleVisualizationGroups[0];
-      if (oldVisualization) {
-        const oldVisualizationGroup = getGroupFor(visualization, oldVisualization);
-        if (possibleVisualizationGroups.includes(oldVisualizationGroup)) {
-          visualizationGroup = oldVisualizationGroup;
-        }
-      }
-
-      return getFirstOptionFor(visualization, visualizationGroup);
-    }
-  };
-
-  function update(type, data, props) {
-    switch (type) {
-      case 'view':
-        return updateView(data, props);
-      case 'groupBy':
-        return updateGroupBy(data, props);
-      case 'visualization':
-        return updateVisualization(data);
-      default:
-        throw new Error('Tried to update unknown property');
+      newReport = {...newReport, ...possibleDistributions[0].payload(newReport)};
     }
   }
 
-  function updateView(newView, props) {
-    const {groupBy: groupByData, visualization} = props.report.data;
-    const changes = {view: {$set: newView}};
+  // ensure visualization is still valid
+  const oldVisualization = options.visualization.find(({matcher}) => matcher(newReport));
+  if (
+    !oldVisualization ||
+    !oldVisualization.visible(newReport) ||
+    !oldVisualization.enabled(newReport)
+  ) {
+    const possibleVisualizations = options.visualization
+      .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
+      .sort((a, b) => a.priority - b.priority);
 
-    let newGroup = groupByData;
-    if (!isAllowed(props.report, newView, groupByData) || !groupByData) {
-      newGroup = getNext(newView);
-      changes.groupBy = {$set: newGroup};
-    }
+    newReport = {...newReport, ...possibleVisualizations[0].payload(newReport)};
+  }
 
-    if (newView.entity !== 'variable') {
-      const viewObj = findSelectedOption(view, 'data', newView);
-      changes.configuration = {
-        yLabel: {
-          $set: viewObj.key
-            .split('_')
-            .map((key) => t('report.view.' + key))
-            .join(' '),
-        },
-      };
-      if (newGroup) {
-        if (newGroup.type?.toLowerCase().includes('variable')) {
-          changes.configuration.xLabel = {$set: newGroup.value.name};
-        } else {
-          const groupObj = findSelectedOption(groupBy, 'data', newGroup);
-          changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
-        }
+  // --- ensure configuration is still valid ---
+  // update y label on view change
+  if (type === 'view' && ['duration', 'frequency'].includes(newReport.view.properties[0])) {
+    let label = options.view.find(({matcher}) => matcher(newReport)).label() + ' ';
+    if (reportType === 'process') {
+      if (newReport.view.properties[0] === 'frequency') {
+        label += t('report.view.count');
+      } else if (newReport.view.properties[0] === 'duration') {
+        label += t('report.view.duration');
       }
     }
-
-    if (!isAllowed(props.report, newView, newGroup, visualization) || !visualization) {
-      changes.visualization = {$set: getNext(newView, newGroup, visualization)};
-    }
-
-    return changes;
+    newReport.configuration.yLabel = label;
   }
 
-  function updateGroupBy(newGroupBy, props) {
-    const {view, visualization} = props.report.data;
-
-    const changes = {groupBy: {$set: newGroupBy}, configuration: {}};
-
-    if (newGroupBy.type?.toLowerCase().includes('variable')) {
-      changes.configuration.xLabel = {$set: newGroupBy.value.name};
+  // update x label on group and view update
+  if (['view', 'group'].indexOf(type)) {
+    if (['variable', 'inputVariable', 'outputVariable'].includes(newReport.groupBy.type)) {
+      newReport.configuration.xLabel = newReport.groupBy.value.name;
     } else {
-      const groupObj = findSelectedOption(groupBy, 'data', newGroupBy);
-      changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
+      newReport.configuration.xLabel = options.group
+        .find(({matcher}) => matcher(newReport))
+        .label();
     }
-
-    if (!isAllowed(props.report, view, newGroupBy, visualization) || !visualization) {
-      changes.visualization = {$set: getNext(view, newGroupBy)};
-    }
-
-    return changes;
   }
 
-  function updateVisualization(newVisualization) {
-    return {visualization: {$set: newVisualization}};
-  }
+  // update sorting and tablecolumnorder
+  report.configuration.sorting = getDefaultSorting({reportType, data: newReport});
+  report.configuration.tableColumns.columnOrder = [];
 
-  function findSelectedOption(options, compareProp, compareValue) {
-    for (let i = 0; i < options.length; i++) {
-      const option = options[i];
-      if (option.options) {
-        const found = findSelectedOption(option.options, compareProp, compareValue);
-        if (found) {
-          return found;
-        }
-      } else {
-        if (equal(option[compareProp], compareValue, {strict: true})) {
-          return option;
-        }
+  if (reportType === 'process') {
+    // disable and reset heatmap target values if no heatmap target values are allowed
+    if (!isDurationHeatmap(newReport)) {
+      newReport.configuration.heatmapTargetValue = {active: false, values: {}};
+    }
+
+    // remove sum aggregation from incident view
+    if (newReport.view.entity === 'incident') {
+      newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
+        (type) => type !== 'sum'
+      );
+
+      if (newReport.configuration.aggregationTypes.length === 0) {
+        newReport.configuration.aggregationTypes = ['avg'];
       }
+    }
+
+    // remove median aggregation from group by process
+    if (newReport.distributedBy.type === 'process') {
+      newReport.configuration.aggregationTypes = newReport.configuration.aggregationTypes.filter(
+        (type) => type !== 'median'
+      );
+
+      if (newReport.configuration.aggregationTypes.length === 0) {
+        newReport.configuration.aggregationTypes = ['avg'];
+      }
+    }
+
+    // remove process part if its not allowed
+    if (!isProcessInstanceDuration(newReport) || newReport.definitions.length > 1) {
+      newReport.configuration.processPart = null;
+    }
+
+    // remove goals for multi-measure reports
+    if (newReport.view.properties.length > 1) {
+      newReport.configuration.targetValue.active = false;
     }
   }
 
   return {
-    findSelectedOption,
-    getLabelFor,
-    isAllowed,
-    update,
-    options: {view, groupBy, visualization},
+    view: {$set: newReport.view},
+    groupBy: {$set: newReport.groupBy},
+    distributedBy: {$set: newReport.distributedBy},
+    visualization: {$set: newReport.visualization},
+    configuration: {$set: newReport.configuration},
   };
+}
+
+function isDurationHeatmap({view, visualization, definitions}) {
+  return (
+    view &&
+    (view.entity === 'flowNode' || view.entity === 'userTask') &&
+    view.properties[0] === 'duration' &&
+    visualization === 'heat' &&
+    definitions?.[0].key &&
+    definitions?.[0].versions?.length > 0
+  );
+}
+
+function isProcessInstanceDuration({view}) {
+  return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
+}
+
+function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
+  if (visualization !== 'table') {
+    return null;
+  }
+
+  if ((view?.properties?.[0] ?? view?.property) === 'rawData') {
+    const by = reportType === 'process' ? 'startDate' : 'evaluationDateTime';
+    return {by, order: 'desc'};
+  }
+
+  if (['flowNodes', 'userTasks'].includes(groupBy?.type)) {
+    return {by: 'label', order: 'asc'};
+  }
+
+  if (groupBy?.type.toLowerCase().includes('variable')) {
+    // Descending for Date and Boolean
+    // Ascending for Integer, Double, Long, Date
+    const order = ['Date', 'Boolean'].includes(groupBy.value.type) ? 'desc' : 'asc';
+    return {by: 'key', order};
+  }
+
+  return {by: 'key', order: 'desc'};
 }

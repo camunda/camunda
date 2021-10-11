@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -36,8 +35,6 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
 
 public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT {
 
@@ -76,17 +73,15 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     final List<EventProcessRoleResponseDto> roles = eventProcessClient.getEventProcessMappingRoles(expectedId);
 
     // then
-    MatcherAssert.assertThat(roles.size(), is(1));
+    assertThat(roles).hasSize(1);
     final IdentityWithMetadataResponseDto identityRestDto = roles.get(0).getIdentity();
-    MatcherAssert.assertThat(identityRestDto, is(instanceOf(UserDto.class)));
+    assertThat(identityRestDto).isInstanceOf(UserDto.class);
     final UserDto userDto = (UserDto) identityRestDto;
-    MatcherAssert.assertThat(userDto.getFirstName(), is(expectedUserDtoWithData.getFirstName()));
-    MatcherAssert.assertThat(userDto.getLastName(), is(expectedUserDtoWithData.getLastName()));
-    MatcherAssert.assertThat(
-      userDto.getName(),
-      is(expectedUserDtoWithData.getFirstName() + " " + expectedUserDtoWithData.getLastName())
-    );
-    MatcherAssert.assertThat(userDto.getEmail(), is(expectedUserDtoWithData.getEmail()));
+    assertThat(userDto.getFirstName()).isEqualTo(expectedUserDtoWithData.getFirstName());
+    assertThat(userDto.getLastName()).isEqualTo(expectedUserDtoWithData.getLastName());
+    assertThat(userDto.getName())
+      .isEqualTo(expectedUserDtoWithData.getFirstName() + " " + expectedUserDtoWithData.getLastName());
+    assertThat(userDto.getEmail()).isEqualTo(expectedUserDtoWithData.getEmail());
   }
 
   @Test

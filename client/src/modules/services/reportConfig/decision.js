@@ -4,78 +4,124 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {t} from 'translation';
+
 export const view = [
-  {key: 'rawData', group: 'raw', data: {properties: ['rawData']}},
+  {
+    key: 'rawData',
+    label: () => t('report.view.rawData'),
+    visible: () => true,
+    enabled: () => true,
+    matcher: ({view}) => view?.properties[0] === 'rawData',
+    payload: () => ({view: {properties: ['rawData']}}),
+  },
   {
     key: 'evaluationCount',
-    group: 'count',
-    data: {properties: ['frequency']},
+    label: () => t('report.view.evaluationCount'),
+    visible: () => true,
+    enabled: () => true,
+    matcher: ({view}) => view?.properties[0] === 'frequency',
+    payload: () => ({view: {properties: ['frequency']}}),
   },
 ];
 
-export const groupBy = [
-  {key: 'none', group: 'none', data: {type: 'none', value: null}},
+export const group = [
+  {
+    key: 'none',
+    label: () => t('report.groupBy.none'),
+    visible: () => true,
+    enabled: () => true,
+    matcher: ({groupBy}) => groupBy?.type === 'none',
+    payload: () => ({
+      groupBy: {type: 'none', value: null},
+    }),
+    priority: 1,
+  },
   {
     key: 'rules',
-    group: 'rule',
-    data: {type: 'matchedRule', value: null},
+    label: () => t('report.groupBy.rules'),
+    visible: () => true,
+    enabled: ({view}) => view.properties[0] === 'frequency',
+    matcher: ({groupBy}) => groupBy?.type === 'matchedRule',
+    payload: () => ({groupBy: {type: 'matchedRule', value: null}}),
+    priority: 2,
   },
   {
     key: 'evaluationDate',
-    group: 'date',
-    options: [
-      {
-        key: 'evaluationDate_automatic',
-
-        data: {type: 'evaluationDateTime', value: {unit: 'automatic'}},
-      },
-      {
-        key: 'evaluationDate_year',
-
-        data: {type: 'evaluationDateTime', value: {unit: 'year'}},
-      },
-      {
-        key: 'evaluationDate_month',
-
-        data: {type: 'evaluationDateTime', value: {unit: 'month'}},
-      },
-      {
-        key: 'evaluationDate_week',
-
-        data: {type: 'evaluationDateTime', value: {unit: 'week'}},
-      },
-      {
-        key: 'evaluationDate_day',
-
-        data: {type: 'evaluationDateTime', value: {unit: 'day'}},
-      },
-      {
-        key: 'evaluationDate_hour',
-
-        data: {type: 'evaluationDateTime', value: {unit: 'hour'}},
-      },
-    ],
+    label: () => t('report.groupBy.evaluationDate'),
+    visible: () => true,
+    enabled: ({view}) => view.properties[0] === 'frequency',
+    matcher: ({groupBy}) => groupBy?.type === 'evaluationDateTime',
+    payload: () => ({groupBy: {type: 'evaluationDateTime'}}),
+    priority: 3,
   },
-  {key: 'inputVariable', group: 'variable', options: 'inputVariable'},
-  {key: 'outputVariable', group: 'variable', options: 'outputVariable'},
+  {
+    key: 'inputVariable',
+    label: () => t('report.groupBy.inputVariable'),
+    visible: () => true,
+    enabled: ({view}) => view.properties[0] === 'frequency',
+    matcher: ({groupBy}) => groupBy?.type === 'inputVariable',
+    payload: () => ({groupBy: {type: 'inputVariable'}}),
+    priority: 4,
+  },
+  {
+    key: 'outputVariable',
+    label: () => t('report.groupBy.outputVariable'),
+    visible: () => true,
+    enabled: ({view}) => view.properties[0] === 'frequency',
+    matcher: ({groupBy}) => groupBy?.type === 'outputVariable',
+    payload: () => ({groupBy: {type: 'outputVariable'}}),
+    priority: 5,
+  },
 ];
 
 export const visualization = [
-  {key: 'number', group: 'number', data: 'number'},
-  {key: 'table', group: 'table', data: 'table'},
-  {key: 'bar', group: 'chart', data: 'bar'},
-  {key: 'line', group: 'chart', data: 'line'},
-  {key: 'pie', group: 'chart', data: 'pie'},
+  {
+    key: 'number',
+    label: () => t('report.visualization.number'),
+    visible: () => true,
+    enabled: ({groupBy, view}) => groupBy.type === 'none' && view.properties[0] === 'frequency',
+    matcher: ({visualization}) => visualization === 'number',
+    payload: () => ({visualization: 'number'}),
+    priority: 2,
+  },
+  {
+    key: 'table',
+    label: () => t('report.visualization.table'),
+    visible: () => true,
+    enabled: ({groupBy, view}) => groupBy.type !== 'none' || view.properties[0] === 'rawData',
+    matcher: ({visualization}) => visualization === 'table',
+    payload: () => ({visualization: 'table'}),
+    priority: 1,
+  },
+  {
+    key: 'barChart',
+    label: () => t('report.visualization.bar'),
+    visible: () => true,
+    enabled: ({groupBy}) =>
+      ['evaluationDateTime', 'inputVariable', 'outputVariable'].includes(groupBy.type),
+    matcher: ({visualization}) => visualization === 'bar',
+    payload: () => ({visualization: 'bar'}),
+    priority: 3,
+  },
+  {
+    key: 'lineChart',
+    label: () => t('report.visualization.line'),
+    visible: () => true,
+    enabled: ({groupBy}) =>
+      ['evaluationDateTime', 'inputVariable', 'outputVariable'].includes(groupBy.type),
+    matcher: ({visualization}) => visualization === 'line',
+    payload: () => ({visualization: 'line'}),
+    priority: 4,
+  },
+  {
+    key: 'pieChart',
+    label: () => t('report.visualization.pie'),
+    visible: () => true,
+    enabled: ({groupBy}) =>
+      ['evaluationDateTime', 'inputVariable', 'outputVariable'].includes(groupBy.type),
+    matcher: ({visualization}) => visualization === 'pie',
+    payload: () => ({visualization: 'pie'}),
+    priority: 5,
+  },
 ];
-
-export const combinations = {
-  raw: {
-    none: ['table'],
-  },
-  count: {
-    none: ['number'],
-    rule: ['table'],
-    date: ['table', 'chart'],
-    variable: ['table', 'chart'],
-  },
-};

@@ -87,7 +87,7 @@ public class ElasticsearchWriterUtil {
                                         final Object entityDto,
                                         final ObjectMapper objectMapper) {
     Map<String, Object> entityAsMap =
-      objectMapper.convertValue(entityDto, new TypeReference<Map<String, Object>>() {
+      objectMapper.convertValue(entityDto, new TypeReference<>() {
       });
     final Map<String, Object> params = new HashMap<>();
     for (String fieldName : fields) {

@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.service.entities.dashboard.DashboardImportService;
 import org.camunda.optimize.service.entities.report.ReportImportService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +39,7 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SIN
 @Slf4j
 public class EntityImportService {
 
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService collectionService;

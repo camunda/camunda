@@ -153,7 +153,7 @@ public class CloudWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdap
   private AuthenticationSuccessHandler getAuthenticationSuccessHandler() {
     return (request, response, authentication) -> {
       final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
-      final String authToken = sessionService.createAuthToken(user.getNickName());
+      final String authToken = sessionService.createAuthToken(user.getIdToken().getSubject());
 
       if (hasAccess(user)) {
         final String optimizeAuthCookie =

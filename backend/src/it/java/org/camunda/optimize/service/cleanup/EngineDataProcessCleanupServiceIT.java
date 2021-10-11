@@ -27,7 +27,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.JsonBody.json;
 
-public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanupIT {
+public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @BeforeEach
   public void enableProcessCleanup() {

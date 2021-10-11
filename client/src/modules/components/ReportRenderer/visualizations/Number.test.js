@@ -22,8 +22,12 @@ jest.mock('services', () => {
     },
     reportConfig: {
       process: {
-        findSelectedOption: jest.fn().mockReturnValue({key: 'pi_count'}),
-        options: {},
+        view: [
+          {
+            matcher: () => true,
+            label: () => 'Process Instance',
+          },
+        ],
       },
     },
   };
@@ -43,7 +47,7 @@ const report = {
     },
     visualization: 'Number',
   },
-  result: {measures: [{data: 1234}]},
+  result: {measures: [{property: 'frequency', data: 1234}]},
 };
 
 it('should display the number provided per data property', () => {
@@ -74,7 +78,6 @@ it('should show the view label underneath the number', () => {
   const node = shallow(<Number report={report} />);
   expect(node).toIncludeText('Process Instance Count');
 
-  reportConfig.process.findSelectedOption.mockReturnValueOnce({key: 'pi_duration'});
   node.setProps({
     report: {
       reportType: 'process',

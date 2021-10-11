@@ -9,11 +9,11 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -70,10 +70,8 @@ public class DateHistogramFilterUtil {
     );
 
     if (!evaluationDateFilter.isEmpty()) {
-      getExtendedBoundsFromDateFilters(
-        evaluationDateFilter,
-        dateFormatter
-      ).ifPresent(dateHistogramAggregation::extendedBounds);
+      getExtendedBoundsFromDateFilters(evaluationDateFilter, dateFormatter, context)
+        .ifPresent(dateHistogramAggregation::extendedBounds);
     }
     return limitFilterQuery;
   }
@@ -119,10 +117,8 @@ public class DateHistogramFilterUtil {
       );
     } else {
       if (!startDateFilters.isEmpty()) {
-        getExtendedBoundsFromDateFilters(
-          startDateFilters,
-          dateTimeFormatter
-        ).ifPresent(dateHistogramAggregation::extendedBounds);
+        getExtendedBoundsFromDateFilters(startDateFilters, dateTimeFormatter, context)
+          .ifPresent(dateHistogramAggregation::extendedBounds);
       }
       limitFilterQuery = createFilterBoolQueryBuilder(
         startDateFilters, queryFilterEnhancer.getStartDateQueryFilter(), context.getFilterContext()
@@ -154,10 +150,8 @@ public class DateHistogramFilterUtil {
     } else {
       if (!endDateFilters.isEmpty()) {
         // extend bounds of histogram to include entire range in filter
-        getExtendedBoundsFromDateFilters(
-          endDateFilters,
-          dateTimeFormatter
-        ).ifPresent(dateHistogramAggregation::extendedBounds);
+        getExtendedBoundsFromDateFilters(endDateFilters, dateTimeFormatter, context)
+          .ifPresent(dateHistogramAggregation::extendedBounds);
       }
 
       limitFilterQuery = createFilterBoolQueryBuilder(
@@ -177,11 +171,15 @@ public class DateHistogramFilterUtil {
   }
 
   private static Optional<LongBounds> getExtendedBoundsFromDateFilters(final List<DateFilterDataDto<?>> dateFilters,
-                                                                       final DateTimeFormatter dateFormatter) {
+                                                                       final DateTimeFormatter dateFormatter,
+                                                                       final DateAggregationContext context) {
     // in case of several dateFilters, use min (oldest) one as start, and max (newest) one as end
     final Optional<OffsetDateTime> filterStart = getMinDateFilterOffsetDateTime(dateFilters);
     final OffsetDateTime filterEnd = getMaxDateFilterOffsetDateTime(dateFilters);
-    return filterStart.map(start -> new LongBounds(dateFormatter.format(start), dateFormatter.format(filterEnd)));
+    return filterStart.map(start -> new LongBounds(
+      dateFormatter.format(start.atZoneSameInstant(context.getTimezone())),
+      dateFormatter.format(filterEnd.atZoneSameInstant(context.getTimezone()))
+    ));
   }
 
   private static OffsetDateTime getMaxDateFilterOffsetDateTime(final List<DateFilterDataDto<?>> dateFilters) {
@@ -197,7 +195,8 @@ public class DateHistogramFilterUtil {
     return Stream.of(
       dateFilters.stream()
         .filter(FixedDateFilterDataDto.class::isInstance)
-        .map(date -> (OffsetDateTime) date.getStart()),
+        .map(date -> (OffsetDateTime) date.getStart())
+        .filter(Objects::nonNull), // only consider fixed date filters with a set start
       dateFilters.stream()
         .filter(RollingDateFilterDataDto.class::isInstance)
         .map(filter -> {

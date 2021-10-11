@@ -217,6 +217,7 @@ test('drag distributed table columns', async (t) => {
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'User Task', 'Count');
   await u.selectGroupby(t, 'Candidate Group');
+  await u.selectVisualization(t, 'Table');
 
   const originalPositionText = await e.tableGroup(1).textContent;
   await t.drag(e.tableHeader(1), 600, 0);
@@ -311,7 +312,7 @@ test('Disable absolute and relative values for table reports', async (t) => {
   await t.click(e.selectSwitchLabel('Show Absolute Value'));
   await t.click(e.selectSwitchLabel('Show Relative Value'));
 
-  await t.expect(e.reportTable.textContent).contains('Start Date: Month');
+  await t.expect(e.reportTable.textContent).contains('Start Date');
   await t.expect(e.reportTable.textContent).notContains('Process Instance: Count');
   await t.expect(e.reportTable.textContent).notContains('Relative Frequency');
 });
@@ -465,6 +466,7 @@ test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportTable.visible).ok();
 
@@ -851,10 +853,10 @@ test('distribute by start/end date', async (t) => {
   await u.selectVisualization(t, 'Bar Chart');
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('Start Date'));
-  await t.click(e.submenuOption('month'));
+  await t.click(e.submenuOption('Month'));
   await t.click(e.distributedBySelect);
   await t.click(e.dropdownOption('End Date'));
-  await t.click(e.submenuOption('automatic'));
+  await t.click(e.submenuOption('Automatic'));
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
   await t.expect(e.reportChart.visible).ok();
@@ -864,6 +866,7 @@ test('incident reports', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Incident Process', 'All');
   await u.selectView(t, 'Incident', 'Count');
+  await t.click(e.removeGroupButton);
 
   await t.expect(e.reportNumber.visible).ok();
 
@@ -893,6 +896,7 @@ test('multi-measure reports', async (t) => {
   await t.expect(e.reportRenderer.textContent).contains('Process Instance Duration');
 
   await u.selectGroupby(t, 'Start Date', 'Automatic');
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Count');
   await t.expect(e.reportRenderer.textContent).contains('Duration');
@@ -931,6 +935,7 @@ test('multi-aggregation reports', async (t) => {
   await u.selectView(t, 'User Task', 'Duration');
   await t.click(e.aggregationTypeSelect);
   await t.click(e.aggregationOption('Work'));
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Total Duration - Avg');
   await t.expect(e.reportRenderer.textContent).contains('Total Duration - Max');

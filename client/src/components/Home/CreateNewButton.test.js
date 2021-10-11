@@ -17,7 +17,7 @@ jest.mock('config', () => ({
 }));
 
 it('should match snapshot', async () => {
-  const node = shallow(<CreateNewButton />);
+  const node = shallow(<CreateNewButton primary />);
 
   await runLastEffect();
 
@@ -25,14 +25,14 @@ it('should match snapshot', async () => {
 });
 
 it('should not show the collection option if it is in a collection', async () => {
-  const node = shallow(<CreateNewButton collection="123" />);
+  const node = shallow(<CreateNewButton collection="123" createCollection="test" />);
 
   await runLastEffect();
 
-  expect(node).toMatchSnapshot();
+  expect(node.find({onClick: 'test'})).not.toExist();
 });
 
-it('should not show decision option in cloud environment', async () => {
+it('should not show decision and combined report options in cloud environment', async () => {
   isOptimizeCloudEnvironment.mockReturnValueOnce(true);
 
   const node = shallow(<CreateNewButton />);
@@ -40,6 +40,7 @@ it('should not show decision option in cloud environment', async () => {
   await runLastEffect();
 
   expect(node.find({link: 'report/new-decision/edit'})).not.toExist();
+  expect(node.find({link: 'report/new-combined/edit'})).not.toExist();
 });
 
 it('should call the createCollection prop', () => {
@@ -51,9 +52,11 @@ it('should call the createCollection prop', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should call the createProcessReport prop', () => {
+it('should call the createProcessReport prop', async () => {
   const spy = jest.fn();
   const node = shallow(<CreateNewButton createProcessReport={spy} />);
+
+  await runLastEffect();
 
   node.find(Dropdown.Submenu).find(Dropdown.Option).first().simulate('click');
 

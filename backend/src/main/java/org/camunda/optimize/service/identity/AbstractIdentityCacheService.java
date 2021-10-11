@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
 import org.camunda.optimize.service.SearchableIdentityCache;
@@ -30,7 +29,6 @@ import org.springframework.scheduling.support.CronTrigger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +54,10 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     this.backoffCalculator = backoffCalculator;
     this.activeIdentityCache = new SearchableIdentityCache(() -> this.getCacheConfiguration().getMaxEntryLimit());
   }
+
+  protected abstract void populateCache(final SearchableIdentityCache newIdentityCache);
+
+  protected abstract String getCacheLabel();
 
   public IdentityCacheConfiguration getCacheConfiguration() {
     return cacheConfigurationSupplier.get();
@@ -98,7 +100,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     try {
       syncIdentitiesWithRetry();
     } catch (Exception ex) {
-      log.error("Could not sync {} identities with the engine, there was an error.", getCacheLabel(), ex);
+      log.error("Could not sync {} identities, there was an error.", getCacheLabel(), ex);
     }
   }
 
@@ -112,19 +114,19 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
       while (shouldRetry) {
         try {
           synchronizeIdentities();
-          log.info("Engine {} identity sync complete", getCacheLabel());
+          log.info("{} identity sync complete", getCacheLabel());
           shouldRetry = false;
         } catch (final Exception e) {
           if (LocalDateUtil.getCurrentDateTime().isAfter(stopRetryingTime)) {
             log.error(
-              "Could not sync {} identities with the engine. Will stop retrying as next scheduled sync is approaching",
+              "Could not sync {} identities. Will stop retrying as next scheduled sync is approaching",
               getCacheLabel(), e
             );
             shouldRetry = false;
           } else {
             long timeToSleep = backoffCalculator.calculateSleepTime();
             log.error(
-              "Error while syncing {} identities with the engine. Will retry in {} millis",
+              "Error while syncing {} identities. Will retry in {} millis",
               getCacheLabel(), timeToSleep, e
             );
             try {
@@ -237,10 +239,6 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
     return activeIdentityCache.searchAmongIdentitiesWithIds(terms, identityIds, identityTypes, resultLimit);
   }
 
-  protected abstract String getCacheLabel();
-
-  protected abstract void populateCache(final SearchableIdentityCache newIdentityCache);
-
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
     final SearchableIdentityCache previousIdentityCache = activeIdentityCache;
     this.activeIdentityCache = newIdentityCache;
@@ -261,26 +259,6 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   @Override
   protected Trigger createScheduleTrigger() {
     return new CronTrigger(getCacheConfiguration().getCronTrigger());
-  }
-
-  protected List<UserDto> fetchUsersById(final EngineContext engineContext, final Collection<String> userIdBatch) {
-    if (getCacheConfiguration().isIncludeUserMetaData()) {
-      List<UserDto> users = engineContext.getUsersById(userIdBatch);
-      List<String> usersNotInEngine = new ArrayList<>(userIdBatch);
-      usersNotInEngine.removeIf(userId -> users.stream().anyMatch(user -> user.getId().equals(userId)));
-      users.addAll(usersNotInEngine.stream().map(UserDto::new).collect(Collectors.toList()));
-      return users;
-    } else {
-      return userIdBatch.stream().map(UserDto::new).collect(Collectors.toList());
-    }
-  }
-
-  protected List<GroupDto> fetchGroupsById(final EngineContext engineContext, final Collection<String> groupIdBatch) {
-    List<GroupDto> groups = engineContext.getGroupsById(groupIdBatch);
-    List<String> groupsNotInEngine = new ArrayList<>(groupIdBatch);
-    groupsNotInEngine.removeIf(groupId -> groups.stream().anyMatch(group -> group.getId().equals(groupId)));
-    groups.addAll(groupsNotInEngine.stream().map(GroupDto::new).collect(Collectors.toList()));
-    return groups;
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {

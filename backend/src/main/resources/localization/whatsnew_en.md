@@ -1,16 +1,11 @@
-## Multi Process Reports
+## New Dashboard Templates
 
-Add up to 10 Process Definitions to a Report to get an overview of your Processes at a glance.
+Create dashboards for bottleneck detection, process performance evaluation, and process portfolio evaluation with a few clicks.
 
-## Default filtered views for Dashboards
+## Fine-Grained Filtering
 
-Define default values when setting up filters that will be applied immediately when viewing a Dashboard.
+Filter on flow node data and advanced date ranges.
 
-## Sum Aggregation on Duration Reports
+## Improved Multi-Process Reports
 
-Show the total time spent on Processes or specific Flow Nodes by using the new Sum aggregation option in Process
-Instance, Flow Node and User Task Duration Reports.
-
-## New Filter: Flow Node Selection
-
-Use this filter to exclude Flow Nodes from the data set and visualisations.
+Compare or aggregate different processes, with flow node-level filters to extract the exact right data.

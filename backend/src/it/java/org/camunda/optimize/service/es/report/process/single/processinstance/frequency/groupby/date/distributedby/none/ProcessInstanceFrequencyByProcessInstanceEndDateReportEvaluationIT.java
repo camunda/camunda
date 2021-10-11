@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
@@ -29,10 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class ProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluationIT
   extends AbstractProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT {
@@ -85,41 +83,33 @@ public class ProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluationIT
     endDateFilter.setFilterLevel(FilterApplicationLevel.INSTANCE);
     reportData.setFilter(Collections.singletonList(endDateFilter));
 
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+      reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(5));
+    assertThat(resultData).hasSize(5);
+
+    assertThat(resultData.get(0).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
 
     assertThat(
-      resultData.get(0).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate, ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(0).getValue(), is(1.));
+      resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(1), ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.);
 
-    assertThat(
-      resultData.get(1).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(1), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(1).getValue(), is(0.));
+    assertThat(resultData.get(2).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(2), ChronoUnit.DAYS));
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.);
 
-    assertThat(
-      resultData.get(2).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(2), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(2).getValue(), is(1.));
+    assertThat(resultData.get(3).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(3), ChronoUnit.DAYS));
+    assertThat(resultData.get(3).getValue()).isEqualTo(0.);
 
-    assertThat(
-      resultData.get(3).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(3), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(3).getValue(), is(0.));
-
-    assertThat(
-      resultData.get(4).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(4), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(4).getValue(), is(0.));
+    assertThat(resultData.get(4).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(4), ChronoUnit.DAYS));
+    assertThat(resultData.get(4).getValue()).isEqualTo(0.);
   }
 
   @Test
@@ -139,21 +129,20 @@ public class ProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient.evaluateMapReport(
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(
       reportData);
 
     // then
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
 
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-
+    assertThat(resultData).isNotNull().hasSize(1);
     ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
   }
 
 }

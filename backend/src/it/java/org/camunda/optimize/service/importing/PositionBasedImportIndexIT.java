@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.util.ZeebeBpmnModels;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +28,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
       embeddedOptimizeExtension.getAllPositionBasedImportHandlers();
 
     // then
-    assertThat(positionBasedHandlers).hasSize(4)
+    assertThat(positionBasedHandlers).hasSize(6)
       .allSatisfy(handler -> {
         assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
         assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(OffsetDateTime.ofInstant(
@@ -82,7 +83,11 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
   private void deployZeebeData() {
     deployAndStartInstanceForProcess(ZeebeBpmnModels.createSimpleServiceTaskProcess("firstProcess"));
     deployAndStartInstanceForProcess(ZeebeBpmnModels.createSimpleServiceTaskProcess("secondProcess"));
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    waitUntilMinimumDataExportedCount(
+      8,
+      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      getQueryForProcessableEvents()
+    );
   }
 
   private List<Long> getCurrentHandlerPositions() {

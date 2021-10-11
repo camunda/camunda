@@ -4,15 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runLastEffect, runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown} from 'components';
 import {showPrompt} from 'prompt';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import {getVariableNames} from './service';
 
 import {AddFiltersButton} from './AddFiltersButton';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 const props = {
   availableFilters: [],
@@ -177,8 +182,10 @@ it('should include a checkbox to allow custom values', () => {
   expect(postText.find('[type="checkbox"]')).toExist();
 });
 
-it('should show an assignee filter modal with additional content', () => {
+it('should show an assignee filter modal with additional content', async () => {
   const node = shallow(<AddFiltersButton {...props} />);
+
+  await runAllEffects();
 
   node
     .find(Dropdown.Option)
@@ -192,4 +199,17 @@ it('should show an assignee filter modal with additional content', () => {
     node.find('.dashboardAssigneeFilter').prop('getPosttext')({type: 'String'})
   );
   expect(postText.find('[type="checkbox"]')).toExist();
+});
+
+it('should not show assignee/group options in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(<AddFiltersButton {...props} />);
+
+  await runAllEffects();
+
+  expect(
+    node
+      .find(Dropdown.Option)
+      .findWhere((n) => n.text() === 'Assignee' || n.text() === 'Candidate Group').length
+  ).toBe(0);
 });

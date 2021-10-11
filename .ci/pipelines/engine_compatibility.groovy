@@ -57,10 +57,10 @@ spec:
     resources:
       limits:
         cpu: 6
-        memory: 12Gi
+        memory: 20Gi
       requests:
         cpu: 6
-        memory: 12Gi
+        memory: 20Gi
     """
 }
 
@@ -178,33 +178,15 @@ pipeline {
         setBuildEnvVars()
         setCamBpmSnapshotVersion()
         script {
-          env.CAMBPM_7_13_VERSION = getCamBpmVersion('engine-7.13')
           env.CAMBPM_7_14_VERSION = getCamBpmVersion('engine-7.14')
           env.CAMBPM_7_15_VERSION = getCamBpmVersion('engine-7.15')
+          env.CAMBPM_7_16_VERSION = getCamBpmVersion('engine-7.16')
         }
       }
     }
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.13') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.13_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_13_VERSION, env.ES_VERSION)
-            }
-          }
-          steps {
-            integrationTestSteps('7.13')
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage('IT 7.14') {
           agent {
             kubernetes {
@@ -234,6 +216,24 @@ pipeline {
           }
           steps {
             integrationTestSteps('7.15')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT 7.16') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.16_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_7_16_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('7.16')
           }
           post {
             always {

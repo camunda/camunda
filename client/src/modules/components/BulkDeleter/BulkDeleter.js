@@ -17,6 +17,7 @@ export function BulkDeleter({
   conflictMessage,
   onDelete,
   selectedEntries,
+  type = 'delete',
   mightFail,
 }) {
   const [deleting, setDeleting] = useState(false);
@@ -29,7 +30,7 @@ export function BulkDeleter({
 
   return (
     <>
-      <Dropdown.Option onClick={() => setDeleting(true)}>{t('common.delete')}</Dropdown.Option>
+      <Dropdown.Option onClick={() => setDeleting(true)}>{t('common.' + type)}</Dropdown.Option>
       <Deleter
         type="items"
         entity={deleting && selectedEntries}
@@ -44,7 +45,10 @@ export function BulkDeleter({
           )
         }
         onClose={reset}
-        deleteButtonText={t('common.delete')}
+        deleteText={t('common.' + (type === 'remove' ? 'removeEntity' : 'deleteEntity'), {
+          entity: 'items',
+        })}
+        deleteButtonText={t('common.' + type)}
         descriptionText={
           <>
             {conflict && (
@@ -53,7 +57,7 @@ export function BulkDeleter({
                 <br /> <br />
               </>
             )}
-            {t('common.deleter.areYouSureSelected')}
+            {t('common.deleter.areYouSureSelected.' + type)}
           </>
         }
         checkConflicts={checkConflicts}

@@ -5,14 +5,13 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 import {parseISO} from 'date-fns';
 
+import DateFields from './DateFields';
 import DatePicker from './DatePicker';
 
 console.error = jest.fn();
-
-jest.mock('./DateFields', () => (props) => `DateFields: props: ${Object.keys(props)}`);
 
 jest.mock('components', () => {
   return {
@@ -23,23 +22,29 @@ jest.mock('components', () => {
 const startDate = parseISO('2017-08-29');
 const endDate = parseISO('2020-06-05');
 
-it('should contain date fields', () => {
-  const node = mount(<DatePicker initialDates={{startDate, endDate}} />);
-
-  expect(node).toIncludeText('DateFields');
-});
-
 it('should invok onDateChange prop function when a date change happens', () => {
   const spy = jest.fn();
-  const node = mount(<DatePicker onDateChange={spy} initialDates={{startDate, endDate}} />);
-  node.instance().onDateChange('startDate', '2018-09-01');
-  expect(spy).toBeCalled();
+  const node = shallow(
+    <DatePicker onDateChange={spy} type="between" initialDates={{startDate, endDate}} />
+  );
+  node.find(DateFields).prop('onDateChange')('startDate', '2018-09-01');
+  expect(spy).toHaveBeenCalledWith({startDate: parseISO('2018-09-01'), endDate, valid: true});
 });
 
 it('should set valid state to false when startDate or endDate is invalid', () => {
   const spy = jest.fn();
-  const node = mount(<DatePicker onDateChange={spy} initialDates={{startDate, endDate}} />);
-  expect(node.state().valid).toBe(true);
-  node.instance().onDateChange('startDate', 'invalid date');
-  expect(node.state().valid).toBe(false);
+  const node = shallow(
+    <DatePicker type="between" onDateChange={spy} initialDates={{startDate, endDate}} />
+  );
+  node.find(DateFields).prop('onDateChange')('startDate', 'invalidDate');
+  expect(spy.mock.calls[0][0].valid).not.toBe(true);
+});
+
+it('should set startDate or endDate to null if type is before or after', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <DatePicker onDateChange={spy} type="after" initialDates={{startDate, endDate}} />
+  );
+  node.find(DateFields).prop('onDateChange')('startDate', '2018-09-01');
+  expect(spy).toHaveBeenCalledWith({startDate: parseISO('2018-09-01'), endDate: null, valid: true});
 });

@@ -59,7 +59,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     final ProcessInstanceEvent deployedInstance = deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -100,7 +100,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -149,7 +149,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -177,7 +177,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
           .containsExactlyInAnyOrder(
             createFlowNodeInstance(deployedInstance, exportedEvents, START_EVENT, BpmnElementType.START_EVENT),
             new FlowNodeInstanceDto(
-              String.valueOf(deployedInstance.getProcessDefinitionKey()),
+              String.valueOf(deployedInstance.getBpmnProcessId()),
               String.valueOf(deployedInstance.getVersion()),
               null,
               String.valueOf(deployedInstance.getProcessInstanceKey()),
@@ -369,7 +369,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     deployAndStartInstanceForProcess(createLoopingProcess(processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
@@ -386,22 +386,30 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   @Test
   public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
     // given
-    deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
+    final ProcessInstanceEvent processInstance = deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    waitUntilMinimumProcessInstanceEventsExportedCount(1);
     importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(savedInstance -> assertThat(savedInstance.getFlowNodeInstances())
-        .hasSize(2)
-        .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
-        .containsExactlyInAnyOrder(
-          Tuple.tuple(START_EVENT, getBpmnElementTypeNameForType(BpmnElementType.START_EVENT)),
-          Tuple.tuple(SEND_TASK, getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))
-        ));
+      .satisfies(savedInstance -> {
+        assertThat(savedInstance.getFlowNodeInstances())
+          .hasSize(2)
+          .allSatisfy(flowNodeInstanceDto -> {
+            assertThat(flowNodeInstanceDto)
+              .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.definitionKey, processInstance.getBpmnProcessId())
+              .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.definitionVersion, String.valueOf(processInstance.getVersion()))
+              .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.tenantId, null);
+          })
+          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
+          .containsExactlyInAnyOrder(
+            Tuple.tuple(START_EVENT, getBpmnElementTypeNameForType(BpmnElementType.START_EVENT)),
+            Tuple.tuple(SEND_TASK, getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))
+          );
+      });
   }
 
   private FlowNodeInstanceDto createFlowNodeInstance(final ProcessInstanceEvent deployedInstance,
@@ -409,7 +417,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
                                                      final String eventId,
                                                      final BpmnElementType eventType) {
     return new FlowNodeInstanceDto(
-      String.valueOf(deployedInstance.getProcessDefinitionKey()),
+      String.valueOf(deployedInstance.getBpmnProcessId()),
       String.valueOf(deployedInstance.getVersion()),
       null,
       String.valueOf(deployedInstance.getProcessInstanceKey()),
@@ -442,11 +450,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       embeddedOptimizeExtension.getObjectMapper()
     ).stream()
       .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
-  }
-
-  @SneakyThrows
-  private void waitUntilProcessInstanceEventsExported() {
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
   }
 
   private long getExpectedDurationForEvents(final List<ZeebeProcessInstanceRecordDto> eventsForElement) {

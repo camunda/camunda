@@ -185,6 +185,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       });
 
       dataGeneratorProcess.on('exit', () => {
+        engineDataGenerationComplete = true;
         dataGeneratorProcess = null;
         spawnWithArgs('rm -rf databaseDumps/');
       });
@@ -230,11 +231,18 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function setWhatsNewSeenStateForAllUsers() {
-      const seenStateProcess = runDataGenerationProcess('set-whatsnew-seen-state');
+      // wait for users to be generated before setting the what's new seen state
+      setTimeout(() => {
+        if (!engineDataGenerationComplete) {
+          return setWhatsNewSeenStateForAllUsers();
+        }
 
-      seenStateProcess.on('exit', () => {
-        seenStateInitializationComplete = true;
-      });
+        const seenStateProcess = runDataGenerationProcess('set-whatsnew-seen-state');
+
+        seenStateProcess.on('exit', () => {
+          seenStateInitializationComplete = true;
+        });
+      }, 1000);
     }
 
     function runDataGenerationProcess(scriptName) {

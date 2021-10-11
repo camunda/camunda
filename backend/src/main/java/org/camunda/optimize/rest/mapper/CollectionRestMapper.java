@@ -8,7 +8,7 @@ package org.camunda.optimize.rest.mapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -16,7 +16,8 @@ import java.util.Optional;
 @Component
 @AllArgsConstructor
 public class CollectionRestMapper {
-  private final IdentityService identityService;
+
+  private final AbstractIdentityService identityService;
 
   public void prepareRestResponse(final AuthorizedCollectionDefinitionRestDto collectionDefinitionRestDto) {
     resolveOwnerAndModifierNames(collectionDefinitionRestDto.getDefinitionDto());

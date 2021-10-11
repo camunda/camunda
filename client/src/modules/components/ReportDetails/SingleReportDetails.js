@@ -23,28 +23,29 @@ import './SingleReportDetails.scss';
 
 const {formatVersions, formatTenants} = formatters;
 
-function getSelectedView(view, groupBy, type) {
-  if (view.entity === 'variable') {
-    return `${t('report.view.variable')} ${view.properties[0].name}`;
+function getSelectedView(report, type) {
+  if (report.view.entity === 'variable') {
+    return `${t('report.view.variable')} ${report.view.properties[0].name}`;
   }
 
   const config = reportConfig[type];
-  const selectedView = config.findSelectedOption(config.options.view, 'data', view);
-
-  let viewString = selectedView.key
-    .split('_')
-    .map((key) => t('report.view.' + key))
-    .join(' ');
-
-  if (groupBy.type?.toLowerCase().includes('variable')) {
-    return t('report.viewByGroup', {view: viewString, group: t('report.groupBy.' + groupBy.type)});
+  const view = config.view.find(({matcher}) => matcher(report));
+  let measure = '';
+  if (['frequency', 'duration'].includes(report.view.properties[0])) {
+    measure = report.view.properties
+      .map((key) => (key === 'frequency' ? 'count' : key))
+      .map((key) => (key === 'duration' && view.key === 'incident' ? 'resolutionDuration' : key))
+      .map((key) => t('report.view.' + key))
+      .join(` ${t('common.and')} `);
   }
 
-  const selectedGroup = config.findSelectedOption(config.options.groupBy, 'data', groupBy);
-  if (selectedGroup.key !== 'none') {
+  const viewString = `${view.label()} ${measure}`;
+  const group = config.group.find(({matcher}) => matcher(report)).label();
+
+  if (group.key !== 'none') {
     return t('report.viewByGroup', {
       view: viewString,
-      group: t('report.groupBy.' + selectedGroup.key.split('_')[0]),
+      group: group,
     });
   }
 
@@ -98,9 +99,11 @@ export function SingleReportDetails({report, showReportName, mightFail, location
                     {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
                   </div>
                 )}
-                <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
-                  {t('common.entity.viewModel.' + report.reportType)}
-                </Button>
+                {!isShared && (
+                  <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
+                    {t('common.entity.viewModel.' + report.reportType)}
+                  </Button>
+                )}
               </div>
             );
           })}
@@ -115,11 +118,13 @@ export function SingleReportDetails({report, showReportName, mightFail, location
               nowrap: report.data.view.entity === 'variable',
             })}
           >
-            {getSelectedView(report.data.view, report.data.groupBy, type)}
+            {getSelectedView(report.data, type)}
           </h4>
-          <Button className="rawDataButton modalButton" link onClick={() => setShowRawData(true)}>
-            {t('common.entity.viewRawData')}
-          </Button>
+          {!isShared && (
+            <Button className="rawDataButton modalButton" link onClick={() => setShowRawData(true)}>
+              {t('common.entity.viewRawData')}
+            </Button>
+          )}
           <hr />
         </div>
       )}

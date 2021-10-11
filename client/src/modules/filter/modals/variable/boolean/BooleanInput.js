@@ -4,18 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 
 import {t} from 'translation';
 import {Checklist} from 'components';
 
 export default function BooleanInput({changeFilter, setValid, filter}) {
-  const updateValues = (newValues) => {
-    changeFilter({
-      values: newValues,
-    });
-    setValid(newValues.length > 0);
-  };
+  useEffect(() => {
+    setValid(filter.values.length > 0);
+  }, [filter, setValid]);
 
   const formatValue = (value) =>
     value === null
@@ -27,7 +24,9 @@ export default function BooleanInput({changeFilter, setValid, filter}) {
       <Checklist
         selectedItems={filter.values}
         allItems={[true, false, null]}
-        onChange={updateValues}
+        onChange={(values) => {
+          changeFilter({values});
+        }}
         formatter={(values, selectedValues) =>
           values.map((value) => ({
             id: value,

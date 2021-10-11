@@ -105,6 +105,9 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String INCIDENT_FAILED_ACTIVITY_ID = IncidentDto.Fields.failedActivityId;
   public static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
   public static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;
+  public static final String INCIDENT_DEFINITION_KEY = IncidentDto.Fields.definitionKey;
+  public static final String INCIDENT_DEFINITION_VERSION = IncidentDto.Fields.definitionVersion;
+  public static final String INCIDENT_TENANT_ID = IncidentDto.Fields.tenantId;
 
   public ProcessInstanceIndex(final String instanceIndexKey) {
     indexName = getIndexPrefix() + instanceIndexKey.toLowerCase();
@@ -381,6 +384,15 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field("index", true)
       .endObject()
       .startObject(INCIDENT_STATUS)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(INCIDENT_DEFINITION_KEY)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(INCIDENT_DEFINITION_VERSION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(INCIDENT_TENANT_ID)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on

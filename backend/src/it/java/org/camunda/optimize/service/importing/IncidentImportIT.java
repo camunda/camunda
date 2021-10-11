@@ -38,6 +38,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
@@ -63,6 +64,9 @@ public class IncidentImportIT extends AbstractImportIT {
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getIncidents()).hasSize(1);
         processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+          assertThat(incident.getTenantId()).isNull();
           assertThat(incident.getId()).isNotNull();
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNull();
@@ -92,6 +96,9 @@ public class IncidentImportIT extends AbstractImportIT {
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getIncidents()).hasSize(1);
         processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+          assertThat(incident.getTenantId()).isNull();
           assertThat(incident.getId()).isNotNull();
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNotNull();
@@ -121,6 +128,9 @@ public class IncidentImportIT extends AbstractImportIT {
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getIncidents()).hasSize(1);
         processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+          assertThat(incident.getTenantId()).isNull();
           assertThat(incident.getId()).isNotNull();
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNotNull();
@@ -156,6 +166,9 @@ public class IncidentImportIT extends AbstractImportIT {
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getIncidents()).hasSize(1);
         processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+          assertThat(incident.getTenantId()).isNull();
           assertThat(incident.getId()).isNotNull();
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNull();
@@ -164,6 +177,32 @@ public class IncidentImportIT extends AbstractImportIT {
           assertThat(incident.getFailedActivityId()).isNull();
           assertThat(incident.getIncidentMessage()).isNotNull();
           assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
+        });
+      });
+  }
+
+  @Test
+  public void incidentTenantDataIsImported() {
+    // given
+    final String tenantId1 = "tenantId1";
+    engineIntegrationExtension.createTenant(tenantId1);
+    incidentClient.deployAndStartProcessInstanceWithTenantAndWithOpenIncident(tenantId1);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .first()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getIncidents()).hasSize(1);
+        processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getDefinitionKey()).isEqualTo(DEFAULT_PROCESS_ID);
+          assertThat(incident.getDefinitionVersion()).isEqualTo("1");
+          assertThat(incident.getTenantId()).isEqualTo(tenantId1);
         });
       });
   }
@@ -359,10 +398,9 @@ public class IncidentImportIT extends AbstractImportIT {
       .hasSize(2)
       .flatExtracting(ProcessInstanceDto::getIncidents)
       .hasSize(1)
-      .satisfies(incident ->
-                   assertThat(incident)
-                     .extracting(IncidentDto::getId)
-                     .containsExactly(getIncidentIdForIncidentWithProcessInstanceId(historicIncidents))
+      .satisfies(incident -> assertThat(incident)
+        .extracting(IncidentDto::getId)
+        .containsExactly(getIncidentIdForIncidentWithProcessInstanceId(historicIncidents))
       );
   }
 
@@ -445,6 +483,8 @@ public class IncidentImportIT extends AbstractImportIT {
       .incidents(Collections.singletonList(new IncidentDto(
         processInstanceWithIncident.getId(),
         processInstanceWithIncident.getProcessDefinitionKey(),
+        processInstanceWithIncident.getProcessDefinitionVersion(),
+        processInstanceWithIncident.getTenantId(),
         DEFAULT_ENGINE_ALIAS,
         incidentEngineDto.getId(),
         OffsetDateTime.now(),

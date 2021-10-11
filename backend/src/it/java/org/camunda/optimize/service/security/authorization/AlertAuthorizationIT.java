@@ -18,7 +18,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -26,9 +26,6 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class AlertAuthorizationIT extends AbstractAlertIT {
 
@@ -55,7 +52,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(ownAlertId));
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactly(ownAlertId);
   }
 
   @Test
@@ -77,10 +74,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      containsInAnyOrder(alertId1, alertId2)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactlyInAnyOrder(alertId1, alertId2);
   }
 
   @Test
@@ -102,10 +96,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      containsInAnyOrder(alertId1, alertId2)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactlyInAnyOrder(alertId1, alertId2);
   }
 
   @Test
@@ -127,10 +118,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      contains(authorizedAlertId)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactly(authorizedAlertId);
   }
 
   @Test
@@ -152,10 +140,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      contains(authorizedAlertId)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactly(authorizedAlertId);
   }
 
   @Test
@@ -174,7 +159,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(alertId));
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactlyInAnyOrder(alertId);
   }
 
   @Test
@@ -193,10 +178,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      containsInAnyOrder(alertId)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactly(alertId);
   }
 
   @Test
@@ -218,10 +200,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      contains(authorizedAlertId)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactly(authorizedAlertId);
   }
 
   private void createSuperUserAuthorization() {
@@ -251,10 +230,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(
-      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
-      containsInAnyOrder(authorizedAlertId)
-    );
+    assertThat(allAuthorizedAlerts).extracting(AlertDefinitionDto::getId).containsExactly(authorizedAlertId);
   }
 
   private String createAlertInCollectionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition) {

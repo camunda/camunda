@@ -8,6 +8,7 @@ package org.camunda.optimize.service.cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -57,7 +58,7 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
 
   public void runCleanup() {
     log.info("Running optimize history cleanup...");
-    final OffsetDateTime startTime = OffsetDateTime.now();
+    final OffsetDateTime startTime = LocalDateUtil.getCurrentDateTime();
 
     cleanupServices.stream()
       .filter(CleanupService::isEnabled)

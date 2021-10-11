@@ -115,16 +115,18 @@ export class Home extends React.Component {
         <div className="content">
           <EntityList
             name={t('home.title')}
-            action={
+            action={(bulkActive) => (
               <CreateNewButton
+                primary={!bulkActive}
                 createCollection={this.startCreatingCollection}
                 createProcessReport={() => this.setState({creatingProcessReport: true})}
                 createDashboard={() => this.setState({creatingDashboard: true})}
                 importEntity={() => this.fileInput.current.click()}
               />
-            }
+            )}
             bulkActions={[
               <BulkDeleter
+                type="delete"
                 deleteEntities={removeEntities}
                 checkConflicts={checkConflicts}
                 conflictMessage={t('common.deleter.affectedMessage.bulk.report')}

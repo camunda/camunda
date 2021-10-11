@@ -6,53 +6,93 @@
 
 import React from 'react';
 
-import {Select, SelectionPreview} from 'components';
+import {Select, SelectionPreview, Button} from 'components';
 import {t} from 'translation';
+import {reportConfig, createReportUpdate} from 'services';
 
 import AggregationType from './AggregationType';
 
 import './Measure.scss';
 
-export default function Measure({report, updateMeasure, updateAggregation}) {
+export default function Measure({report, onChange}) {
+  const selectedView = reportConfig.process.view.find(({matcher}) => matcher(report));
+
   if (report.view.properties?.length === 2) {
     return (
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <SelectionPreview onClick={() => updateMeasure(['duration'])}>
+          <SelectionPreview
+            onClick={() =>
+              onChange(
+                createReportUpdate('process', report, 'view', selectedView.key, {
+                  view: {properties: {$set: ['duration']}},
+                })
+              )
+            }
+          >
             <span>{t('report.view.count')}</span>
           </SelectionPreview>
         </li>
         <li className="Measure select">
           <span className="label"></span>
-          <SelectionPreview onClick={() => updateMeasure(['frequency'])}>
+          <SelectionPreview
+            onClick={() =>
+              onChange(
+                createReportUpdate('process', report, 'view', selectedView.key, {
+                  view: {properties: {$set: ['frequency']}},
+                })
+              )
+            }
+          >
             <span>
               {report.view.entity === 'incident'
                 ? t('report.view.resolutionDuration')
                 : t('report.view.duration')}
             </span>
           </SelectionPreview>
-          <AggregationType report={report} onChange={updateAggregation} />
+          <AggregationType report={report} onChange={onChange} />
         </li>
       </>
     );
   } else {
     return (
-      <li className="Measure select">
-        <span className="label">{t('report.measure')}</span>
-        <Select
-          value={report.view.properties[0]}
-          onChange={(property) => updateMeasure([property])}
-        >
-          <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
-          <Select.Option value="duration">
-            {report.view.entity === 'incident'
-              ? t('report.view.resolutionDuration')
-              : t('report.view.duration')}
-          </Select.Option>
-        </Select>
-        <AggregationType report={report} onChange={updateAggregation} />
-      </li>
+      <>
+        <li className="Measure select">
+          <span className="label">{t('report.measure')}</span>
+          <Select
+            value={report.view.properties[0]}
+            onChange={(property) =>
+              onChange(
+                createReportUpdate('process', report, 'view', selectedView.key, {
+                  view: {properties: {$set: [property]}},
+                })
+              )
+            }
+          >
+            <Select.Option value="frequency">{t('report.view.count')}</Select.Option>
+            <Select.Option value="duration">
+              {report.view.entity === 'incident'
+                ? t('report.view.resolutionDuration')
+                : t('report.view.duration')}
+            </Select.Option>
+          </Select>
+          <AggregationType report={report} onChange={onChange} />
+        </li>
+        <li className="addMeasure">
+          <Button
+            onClick={() =>
+              onChange(
+                createReportUpdate('process', report, 'view', selectedView.key, {
+                  view: {properties: {$set: ['frequency', 'duration']}},
+                })
+              )
+            }
+          >
+            + {t('report.addMeasure')}
+          </Button>
+        </li>
+      </>
     );
   }
 }

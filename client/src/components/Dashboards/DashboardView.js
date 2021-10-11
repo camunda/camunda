@@ -24,6 +24,7 @@ import {
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import {
   getSharedDashboard,
@@ -61,6 +62,7 @@ export function DashboardView(props) {
   const [filtersShown, setFiltersShown] = useState(availableFilters?.length > 0);
   const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
   const fullScreenHandle = useFullScreenHandle();
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
 
   const themeRef = useRef(theme);
 
@@ -69,6 +71,7 @@ export function DashboardView(props) {
   useEffect(() => {
     themeRef.current = theme;
   }, [theme]);
+
   useEffect(
     () => () => {
       if (themeRef.current === 'dark') {
@@ -77,6 +80,12 @@ export function DashboardView(props) {
     },
     [toggleTheme]
   );
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
 
   function changeFullScreen() {
     if (theme === 'dark') {
@@ -150,24 +159,26 @@ export function DashboardView(props) {
                       </Button>
                     </>
                   )}
-                  <Popover
-                    main
-                    className="tool-button share-button"
-                    icon="share"
-                    title={t('common.sharing.buttonTitle')}
-                    disabled={!sharingEnabled || !isAuthorizedToShare}
-                    tooltip={getShareTooltip()}
-                  >
-                    <ShareEntity
-                      type="dashboard"
-                      resourceId={id}
-                      shareEntity={shareDashboard}
-                      revokeEntitySharing={revokeDashboardSharing}
-                      getSharedEntity={getSharedDashboard}
-                      filter={filter}
-                      defaultFilter={getDefaultFilter(availableFilters)}
-                    />
-                  </Popover>
+                  {!isOptimizeCloud && (
+                    <Popover
+                      main
+                      className="tool-button share-button"
+                      icon="share"
+                      title={t('common.sharing.buttonTitle')}
+                      disabled={!sharingEnabled || !isAuthorizedToShare}
+                      tooltip={getShareTooltip()}
+                    >
+                      <ShareEntity
+                        type="dashboard"
+                        resourceId={id}
+                        shareEntity={shareDashboard}
+                        revokeEntitySharing={revokeDashboardSharing}
+                        getSharedEntity={getSharedDashboard}
+                        filter={filter}
+                        defaultFilter={getDefaultFilter(availableFilters)}
+                      />
+                    </Popover>
+                  )}
                 </React.Fragment>
               )}
               {fullScreenHandle.active && (

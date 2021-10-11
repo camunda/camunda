@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.service.EventProcessRoleService;
-import org.camunda.optimize.service.identity.IdentityService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class EventProcessAuthorizationService {
   private final ConfigurationService configurationService;
   private final EventProcessRoleService eventProcessRoleService;
-  private final IdentityService identityService;
+  private final AbstractIdentityService identityService;
 
   public boolean hasEventProcessManagementAccess(@NonNull final String userId) {
     return configurationService.getEventBasedProcessAccessUserIds().contains(userId) ||

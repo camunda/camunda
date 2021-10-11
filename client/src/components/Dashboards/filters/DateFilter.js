@@ -26,6 +26,10 @@ export default function DateFilter({
 
   const [showDatePicker, setShowDatePicker] = useState(isFixed);
   const [autoOpen, setAutoOpen] = useState(false);
+  const startDate = filter?.start ? parseISO(filter.start) : null;
+  const endDate = filter?.end ? parseISO(filter.end) : null;
+
+  const [fixedType, setFixedType] = useState(getFixedType(startDate, endDate));
 
   useEffect(() => {
     setShowDatePicker(isFixed);
@@ -66,21 +70,26 @@ export default function DateFilter({
     );
   }
 
-  const startDate = filter?.start ? parseISO(filter.start) : null;
-  const endDate = filter?.end ? parseISO(filter.end) : null;
-
   function getFixedDateFilterName(filter) {
     if (!filter) {
-      return t('common.filter.dateModal.unit.fixed');
+      return t('common.filter.dateModal.unit.' + fixedType);
     }
 
     return (
       <>
-        {format(startDate, 'yyyy-MM-dd')}
-        <span className="to"> {t('common.filter.dateModal.to')} </span>
-        {format(endDate, 'yyyy-MM-dd')}
+        {t('common.filter.dateModal.unit.' + fixedType)}{' '}
+        {fixedType !== 'before' && format(startDate, 'yyyy-MM-dd')}
+        {fixedType === 'between' && <span className="to"> {t('common.filter.dateModal.to')} </span>}
+        {fixedType !== 'after' && format(endDate, 'yyyy-MM-dd')}
       </>
     );
+  }
+
+  function openDatePicker(type) {
+    setFilter();
+    setFixedType(type);
+    setShowDatePicker(true);
+    setAutoOpen(true);
   }
 
   return (
@@ -100,14 +109,15 @@ export default function DateFilter({
           autoOpen={autoOpen}
         >
           <DatePicker
+            type={fixedType}
             forceOpen
             initialDates={{startDate, endDate}}
             onDateChange={({startDate, endDate, valid}) => {
               if (valid) {
                 setFilter({
                   type: 'fixed',
-                  start: format(startOfDay(startDate), BACKEND_DATE_FORMAT),
-                  end: format(endOfDay(endDate), BACKEND_DATE_FORMAT),
+                  start: startDate ? format(startOfDay(startDate), BACKEND_DATE_FORMAT) : null,
+                  end: endDate ? format(endOfDay(endDate), BACKEND_DATE_FORMAT) : null,
                   excludeUndefined: false,
                   includeUndefined: false,
                 });
@@ -134,14 +144,14 @@ export default function DateFilter({
             </>
           }
         >
-          <Dropdown.Option
-            onClick={() => {
-              setFilter();
-              setShowDatePicker(true);
-              setAutoOpen(true);
-            }}
-          >
-            {t('common.filter.dateModal.unit.fixed')}
+          <Dropdown.Option onClick={() => openDatePicker('between')}>
+            {t('common.filter.dateModal.unit.between')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={() => openDatePicker('after')}>
+            {t('common.filter.dateModal.unit.after')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={() => openDatePicker('before')}>
+            {t('common.filter.dateModal.unit.before')}
           </Dropdown.Option>
           <Dropdown.Option checked={isFilter('days')} onClick={() => setRelativeFilter('days')}>
             {t('common.filter.dateModal.unit.today')}
@@ -189,3 +199,13 @@ export default function DateFilter({
     </div>
   );
 }
+
+const getFixedType = (start, end) => {
+  if (start && end) {
+    return 'between';
+  } else if (start) {
+    return 'after';
+  } else {
+    return 'before';
+  }
+};

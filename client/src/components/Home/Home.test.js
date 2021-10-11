@@ -54,7 +54,7 @@ it('should display the user name', () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Home {...props} />);
 
-  node.find('EntityList').prop('action').props.createProcessReport();
+  node.find('EntityList').prop('action')().props.createProcessReport();
 
   expect(node.find(ReportTemplateModal)).toExist();
 });

@@ -6,7 +6,9 @@
 package org.camunda.optimize.service.es.filter.process.date.modelelement;
 
 import org.assertj.core.groups.Tuple;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -14,6 +16,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
@@ -109,6 +112,124 @@ public abstract class AbstractFixedFlowNodeDateFilterIT extends AbstractFlowNode
       evaluateReportWithFlowNodeDateFilter(
         ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
         rangeFilter
+      );
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(new Tuple(START_EVENT, 1.), new Tuple(END_EVENT, 1.));
+  }
+
+  @Test
+  public void viewLevel_beforeFilterWorks() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    importAllEngineEntitiesFromScratch();
+
+    // when evaluating with a "before" filter (start of filter is null)
+    final ProcessReportDataDto reportData = buildReportData(
+      ProcessReportDataType.RAW_DATA,
+      createFixedDateViewFilter(null, DATE_1.plusDays(1))
+    );
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+      reportClient.evaluateRawReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(instance2.getId());
+  }
+
+  @Test
+  public void viewLevel_afterFilterWorks() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    importAllEngineEntitiesFromScratch();
+
+    // when evaluating with an "after" filter (end of filter is null)
+    final ProcessReportDataDto reportData = buildReportData(
+      ProcessReportDataType.RAW_DATA,
+      createFixedDateViewFilter(DATE_2.minusDays(1), null)
+    );
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+      reportClient.evaluateRawReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(instance1.getId());
+  }
+
+  @Test
+  public void instanceLevel_beforeFilterWorks() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_2);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_2);
+    importAllEngineEntitiesFromScratch();
+
+    // when evaluating with a "before" filter (start of filter is null)
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+      evaluateReportWithFlowNodeDateFilter(
+        ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+        createFixedDateInstanceFilter(Collections.singletonList(START_EVENT), null, DATE_1.plusDays(1))
+      );
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(new Tuple(START_EVENT, 1.), new Tuple(END_EVENT, 1.));
+  }
+
+  @Test
+  public void instanceLevel_afterFilterWorks() {
+    // given
+    final ProcessInstanceEngineDto instance1 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+
+    updateFlowNodeDate(instance1.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance1.getId(), END_EVENT, DATE_2);
+    updateFlowNodeDate(instance2.getId(), START_EVENT, DATE_1);
+    updateFlowNodeDate(instance2.getId(), END_EVENT, DATE_1);
+    importAllEngineEntitiesFromScratch();
+
+    // when evaluating with a "after" filter (end of filter is null)
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+      evaluateReportWithFlowNodeDateFilter(
+        ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE,
+        createFixedDateInstanceFilter(Collections.singletonList(END_EVENT), DATE_2.minusDays(1), null)
       );
 
     // then

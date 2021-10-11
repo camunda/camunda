@@ -4,12 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
+import {isOptimizeCloudEnvironment} from 'config';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
+
   return (
     <Dropdown
       label={t('common.add')}
@@ -30,27 +39,33 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
           {t('common.filter.types.endDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
-      <Dropdown.Option onClick={openNewFilterModal('incident')}>
-        {t('common.filter.types.incident')}
-      </Dropdown.Option>
+      {!isOptimizeCloud && (
+        <Dropdown.Option onClick={openNewFilterModal('incident')}>
+          {t('common.filter.types.incident')}
+        </Dropdown.Option>
+      )}
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('flowNodeDuration')}
       >
         {t('common.filter.types.duration')}
       </Dropdown.Option>
-      <Dropdown.Option
-        disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('assignee')}
-      >
-        {t('report.groupBy.userAssignee')}
-      </Dropdown.Option>
-      <Dropdown.Option
-        disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('candidateGroup')}
-      >
-        {t('report.groupBy.userGroup')}
-      </Dropdown.Option>
+      {!isOptimizeCloud && (
+        <>
+          <Dropdown.Option
+            disabled={processDefinitionIsNotSelected}
+            onClick={openNewFilterModal('assignee')}
+          >
+            {t('report.groupBy.userAssignee')}
+          </Dropdown.Option>
+          <Dropdown.Option
+            disabled={processDefinitionIsNotSelected}
+            onClick={openNewFilterModal('candidateGroup')}
+          >
+            {t('report.groupBy.userGroup')}
+          </Dropdown.Option>
+        </>
+      )}
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('executedFlowNodes')}

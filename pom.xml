@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.6.0</version>
+  <version>3.7.0</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -23,17 +23,17 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.5.0</project.previousVersion>
+    <project.previousVersion>3.6.0</project.previousVersion>
 
-    <camunda.engine.version>7.15.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.15.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.1.3</zeebe.version>
+    <camunda.engine.version>7.16.0</camunda.engine.version>
+    <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
+    <zeebe.version>1.2.1</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
 
-    <jackson.version>2.12.5</jackson.version>
+    <jackson.version>2.13.0</jackson.version>
     <jsonpath.version>2.6.0</jsonpath.version>
     <elasticsearch.version>7.10.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -42,19 +42,18 @@
     <previous.optimize.elasticsearch.version>7.8.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.1</elasticsearch.log4j.version>
-    <guava.version>30.1.1-jre</guava.version>
-    <spring.version>5.3.9</spring.version>
+    <guava.version>31.0.1-jre</guava.version>
+    <spring.version>5.3.10</spring.version>
     <mockito.version>3.12.4</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
-    <hamcrest.version>1.3</hamcrest.version>
-    <junit.jupiter.version>5.7.2</junit.jupiter.version>
-    <junit.platform.version>1.7.2</junit.platform.version>
+    <junit.jupiter.version>5.8.1</junit.jupiter.version>
+    <junit.platform.version>1.8.1</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.20.2</assertj.version>
+    <assertj.version>3.21.0</assertj.version>
 
     <lombok.version>1.18.20</lombok.version>
-    <logback.version>1.2.5</logback.version>
+    <logback.version>1.2.6</logback.version>
     <slf4j.version>1.7.32</slf4j.version>
 
     <version.node>v14.15.4</version.node>
@@ -114,6 +113,13 @@
     </profile>
 
     <profile>
+      <id>engine-7.16</id>
+      <properties>
+        <camunda.engine.version>7.16.0</camunda.engine.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>engine-7.15</id>
       <properties>
         <camunda.engine.version>7.15.0</camunda.engine.version>
@@ -124,13 +130,6 @@
       <id>engine-7.14</id>
       <properties>
         <camunda.engine.version>7.14.0</camunda.engine.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.13</id>
-      <properties>
-        <camunda.engine.version>7.13.5</camunda.engine.version>
       </properties>
     </profile>
 
@@ -278,12 +277,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
-      <version>${hamcrest.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>${assertj.version}</version>
@@ -381,13 +374,13 @@
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>--illegal-access=permit -Xms256m -Xmx512m</argLine>
+            <argLine>--illegal-access=permit -Xms256m -Xmx1024m</argLine>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.3.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -480,7 +473,7 @@
       <plugin>
         <groupId>org.commonjava.maven.plugins</groupId>
         <artifactId>directory-maven-plugin</artifactId>
-        <version>0.3.1</version>
+        <version>1.0</version>
         <executions>
           <execution>
             <id>directories</id>

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import update from 'immutability-helper';
 
@@ -16,6 +16,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {showPrompt} from 'prompt';
+import {isOptimizeCloudEnvironment} from 'config';
 
 export function AddFiltersButton({
   availableFilters,
@@ -28,6 +29,13 @@ export function AddFiltersButton({
   const [openModalAfterReportUpdate, setOpenModalAfterReportUpdate] = useState(null);
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
   const hasUnsavedReports = reports.some(({id, report}) => report && !id);
@@ -113,17 +121,18 @@ export function AddFiltersButton({
             {t('dashboard.filter.types.variable')}
           </Dropdown.Option>
         </Tooltip>
-        {['assignee', 'candidateGroup'].map((type) => (
-          <Tooltip
-            key={type}
-            content={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
-            position="bottom"
-          >
-            <Dropdown.Option disabled={noReports} onClick={() => saveAndContinue(type)}>
-              {t('common.filter.types.' + type)}
-            </Dropdown.Option>
-          </Tooltip>
-        ))}
+        {!isOptimizeCloud &&
+          ['assignee', 'candidateGroup'].map((type) => (
+            <Tooltip
+              key={type}
+              content={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
+              position="bottom"
+            >
+              <Dropdown.Option disabled={noReports} onClick={() => saveAndContinue(type)}>
+                {t('common.filter.types.' + type)}
+              </Dropdown.Option>
+            </Tooltip>
+          ))}
       </Dropdown>
 
       {showModal === 'variable' && (

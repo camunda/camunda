@@ -10,17 +10,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @AllArgsConstructor
 @Component
@@ -28,6 +36,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PR
 public class ExternalProcessVariableWriter {
 
   private final OptimizeElasticsearchClient esClient;
+  private final DateTimeFormatter dateTimeFormatter;
   private final ObjectMapper objectMapper;
 
   public void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables) {
@@ -49,7 +58,6 @@ public class ExternalProcessVariableWriter {
                                                 final ExternalProcessVariableDto externalVariable) {
     try {
       bulkRequest.add(new IndexRequest(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME)
-                        .id(IdGenerator.getNextId())
                         .source(objectMapper.writeValueAsString(externalVariable), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.warn(
@@ -57,6 +65,32 @@ public class ExternalProcessVariableWriter {
         externalVariable,
         e
       );
+    }
+  }
+
+  public void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp) {
+    final String deletedItemIdentifier = String.format("external variables with timestamp older than %s", timestamp);
+    log.info("Deleting {}", deletedItemIdentifier);
+
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, DeleteByQueryAction.NAME
+    );
+    try {
+      progressReporter.start();
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(rangeQuery(ExternalProcessVariableDto.Fields.ingestionTimestamp).lt(dateTimeFormatter.format(timestamp)));
+
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient,
+        filterQuery,
+        deletedItemIdentifier,
+        false,
+        // use wildcarded index name to catch all indices that exist after potential rollover
+        esClient.getIndexNameService()
+          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new ExternalProcessVariableIndex())
+      );
+    } finally {
+      progressReporter.stop();
     }
   }
 

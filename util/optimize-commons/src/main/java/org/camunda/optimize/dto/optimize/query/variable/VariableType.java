@@ -31,8 +31,7 @@ public enum VariableType {
   DOUBLE(DOUBLE_TYPE),
   INTEGER(INTEGER_TYPE),
   BOOLEAN(BOOLEAN_TYPE),
-  DATE(DATE_TYPE),
-  ;
+  DATE(DATE_TYPE);
 
   private static final Set<VariableType> NUMERIC_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
     INTEGER, SHORT, LONG, DOUBLE

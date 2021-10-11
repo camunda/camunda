@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.none;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -34,6 +36,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
@@ -41,12 +44,14 @@ public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
   private static final String NESTED_INCIDENT_AGGREGATION = "incidentAggregation";
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
+  private final DefinitionService definitionService;
+
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final FilterAggregationBuilder filteredIncidentsAggregation = filter(
       FILTERED_INCIDENT_AGGREGATION,
-      createIncidentAggregationFilter(context.getReportData())
+      createIncidentAggregationFilter(context.getReportData(), definitionService)
     );
     distributedByPart.createAggregations(context).forEach(filteredIncidentsAggregation::subAggregation);
     return Stream.of(nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS).subAggregation(filteredIncidentsAggregation))

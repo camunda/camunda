@@ -13,13 +13,10 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
@@ -48,11 +45,10 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants.size(), is(3));
-    assertThat(
-      tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2)
-    );
+    assertThat(tenants).hasSize(3);
+    assertThat(tenants)
+      .extracting(TenantDto::getId)
+      .containsExactlyInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2);
   }
 
   @Test
@@ -75,11 +71,9 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants.size(), is(2));
-    assertThat(
-      tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId2)
-    );
+    assertThat(tenants).hasSize(2)
+      .extracting(TenantDto::getId)
+      .containsExactlyInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId2);
   }
 
   @Test
@@ -102,11 +96,9 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants.size(), is(3));
-    assertThat(
-      tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2)
-    );
+    assertThat(tenants).hasSize(3)
+      .extracting(TenantDto::getId)
+      .containsExactlyInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1, tenantId2);
   }
 
   @Test
@@ -129,11 +121,9 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final List<TenantDto> tenants = embeddedOptimizeExtension.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
-    assertThat(tenants.size(), is(2));
-    assertThat(
-      tenants.stream().map(TenantDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1)
-    );
+    assertThat(tenants).hasSize(2)
+      .extracting(TenantDto::getId)
+      .containsExactlyInAnyOrder(TenantService.TENANT_NOT_DEFINED.getId(), tenantId1);
   }
 
 }

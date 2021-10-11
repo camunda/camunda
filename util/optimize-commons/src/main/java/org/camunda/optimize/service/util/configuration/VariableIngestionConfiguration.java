@@ -18,9 +18,15 @@ import java.util.Optional;
 @Data
 public class VariableIngestionConfiguration {
   private String accessToken;
+  private long maxBatchRequestBytes;
+  private int maxRequests;
 
   @JsonCreator
-  public VariableIngestionConfiguration(@JsonProperty("accessToken") final String accessToken) {
+  public VariableIngestionConfiguration(@JsonProperty("accessToken") final String accessToken,
+                                        @JsonProperty("maxBatchRequestLength") final long maxBatchRequestBytes,
+                                        @JsonProperty("maxRequests") final int maxRequests) {
+    this.maxBatchRequestBytes = maxBatchRequestBytes;
+    this.maxRequests = maxRequests;
     this.accessToken = Optional.ofNullable(accessToken).orElseGet(() -> {
       final String generatedSecret = RandomStringUtils.random(
         16, 0, 0, true, true, null, new SecureRandom()

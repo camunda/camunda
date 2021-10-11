@@ -62,8 +62,10 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
     return Collections.singletonList(
       nested(NESTED_INCIDENT_AGGREGATION, INCIDENTS)
         .subAggregation(
-          filter(FILTERED_INCIDENT_AGGREGATION, createIncidentAggregationFilter(context.getReportData()))
-            .subAggregation(incidentTermsAggregation)
+          filter(
+            FILTERED_INCIDENT_AGGREGATION,
+            createIncidentAggregationFilter(context.getReportData(), definitionService)
+          ).subAggregation(incidentTermsAggregation)
         )
     );
   }

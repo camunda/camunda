@@ -12,7 +12,7 @@ import {Redirect, withRouter} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {ReportRenderer, LoadingIndicator, EntityNameForm, InstanceCount} from 'components';
-import {updateEntity, createEntity, evaluateReport, getCollection, reportConfig} from 'services';
+import {updateEntity, createEntity, evaluateReport, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
@@ -22,10 +22,8 @@ import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import ConflictModal from './ConflictModal';
 import {Configuration} from './controlPanels/Configuration';
-import ReportSelect from './controlPanels/ReportSelect';
 import ReportWarnings from './ReportWarnings';
-
-const {process: processConfig} = reportConfig;
+import Visualization from './Visualization';
 
 export class ReportEdit extends React.Component {
   state = {
@@ -253,24 +251,10 @@ export class ReportEdit extends React.Component {
               <div className="visualization">
                 <div className="select">
                   <span className="label">{t(`report.visualization.label`)}</span>
-                  <ReportSelect
-                    type={report.reportType}
-                    field="visualization"
-                    value={data.visualization}
-                    report={report}
-                    previous={[data.view, data.groupBy]}
-                    disabled={
-                      !data.definitions.length ||
-                      !data.definitions[0].key ||
-                      !data.view ||
-                      !data.groupBy
-                    }
-                    onChange={(newValue) =>
-                      this.updateReport(
-                        processConfig.update('visualization', newValue, {report}),
-                        true
-                      )
-                    }
+                  <Visualization
+                    type={reportType}
+                    report={data}
+                    onChange={(change) => this.updateReport(change, true)}
                   />
                 </div>
                 <Configuration

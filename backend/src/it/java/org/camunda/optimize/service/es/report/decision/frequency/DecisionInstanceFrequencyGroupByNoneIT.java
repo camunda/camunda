@@ -20,11 +20,9 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefinitionIT {
 
@@ -51,9 +49,8 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(3L));
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData(), is(3.));
+    assertThat(result.getInstanceCount()).isEqualTo(3L);
+    assertThat(result.getFirstMeasureData()).isNotNull().isEqualTo(3.);
   }
 
   @Test
@@ -78,9 +75,8 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(5L));
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData(), is(5.));
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getFirstMeasureData()).isNotNull().isEqualTo(5.);
   }
 
   @Test
@@ -108,9 +104,8 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(5L));
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData(), is(5.));
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getFirstMeasureData()).isNotNull().isEqualTo(5.);
   }
 
   @Test
@@ -135,7 +130,7 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getFirstMeasureData(), is((double) selectedTenants.size()));
+    assertThat(result.getFirstMeasureData()).isEqualTo(selectedTenants.size());
   }
 
   @Test
@@ -170,9 +165,8 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     final ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(2L));
-    assertThat(result.getFirstMeasureData(), is(notNullValue()));
-    assertThat(result.getFirstMeasureData(), is(2.));
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getFirstMeasureData()).isNotNull().isEqualTo(2.);
   }
 
   @Test
@@ -189,7 +183,7 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -206,7 +200,7 @@ public class DecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisionDefi
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
 }

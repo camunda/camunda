@@ -1,109 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should hide add button and edit menu when in readOnly mode 1`] = `
-<div
-  className="SourcesList"
->
-  <EntityList
-    action={false}
-    bulkActions={
-      Array [
-        <BulkDeleterErrorHandler
-          checkConflicts={[Function]}
-          conflictMessage="Removing Data Sources deletes all associated Reports and their Alerts."
-          deleteEntities={[Function]}
-        />,
-      ]
-    }
-    columns={
-      Array [
-        "Definition Name",
-        "Tenants",
-      ]
-    }
-    data={
-      Array [
-        Object {
-          "actions": Array [],
-          "className": "process",
-          "entityType": "process",
-          "icon": "data-source",
-          "id": "process:defKey",
-          "meta": Array [
-            "Not defined, Sales, (Unauthorized Tenant)",
-          ],
-          "name": "definition name",
-          "type": "Process",
-        },
-        Object {
-          "actions": Array [],
-          "className": "decision",
-          "entityType": "process",
-          "icon": "data-source",
-          "id": "decision:defKey2",
-          "meta": Array [
-            "Not defined, Marketing",
-          ],
-          "name": "decision report",
-          "type": "Decision Table",
-        },
-      ]
-    }
-    empty="There are no sources added yet"
-    isLoading={false}
-    name="Data Sources"
-    onChange={[Function]}
-  />
-  <DeleterErrorHandler
-    checkConflicts={[Function]}
-    deleteEntity={[Function]}
-    deleteText="Remove Data Source"
-    descriptionText="The '' Data Source will be removed from the Collection."
-    entity={null}
-    getName={[Function]}
-    onClose={[Function]}
-    onDelete={[Function]}
-    type="source"
-  />
-  <Modal
-    className="saveModal"
-    onClose={[Function]}
-    onConfirm={[Function]}
-    open={null}
-  >
-    <Component>
-      Destructive Changes
-    </Component>
-    <Component />
-    <Component>
-      <ForwardRef(Button)
-        className="close"
-        disabled={false}
-        main={true}
-        onClick={[Function]}
-      >
-        Don't Save
-      </ForwardRef(Button)>
-      <ForwardRef(Button)
-        className="confirm"
-        disabled={false}
-        main={true}
-        onClick={[Function]}
-        primary={true}
-      >
-        Save Changes
-      </ForwardRef(Button)>
-    </Component>
-  </Modal>
-  <AddSourceModalErrorHandler
-    onClose={[Function]}
-    onConfirm={[Function]}
-    open={false}
-    tenantsAvailable={true}
-  />
-</div>
-`;
-
 exports[`should hide edit and tenants in source items if there are not tenants available 1`] = `
 Object {
   "actions": Array [
@@ -130,21 +26,14 @@ exports[`should match snapshot 1`] = `
   className="SourcesList"
 >
   <EntityList
-    action={
-      <ForwardRef(Button)
-        main={true}
-        onClick={[Function]}
-        primary={true}
-      >
-        Add
-      </ForwardRef(Button)>
-    }
+    action={[Function]}
     bulkActions={
       Array [
         <BulkDeleterErrorHandler
           checkConflicts={[Function]}
           conflictMessage="Removing Data Sources deletes all associated Reports and their Alerts."
           deleteEntities={[Function]}
+          type="remove"
         />,
       ]
     }

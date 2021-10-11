@@ -81,7 +81,8 @@
     },
     "collectionTitle": "Dashboards und Berichte",
     "collectionTitleWithAmpersand": "Dashboards & Berichte",
-    "userTitle": "Benutzer und Benutzergruppen",
+    "userTitle": "Benutzer",
+    "userGroupsTitle": "Benutzer und Benutzergruppen",
     "copy": {
       "subEntity": "{entityType} enthält 1 Bericht. Dieser wird ebenfalls kopiert.",
       "subEntities": "{entityType} enthält {number} Berichte. Diese werden ebenfalls kopiert.",
@@ -99,7 +100,8 @@
       "unknown": "Unbekannte Entität"
     },
     "roles": {
-      "addUserTitle": "Benutzer oder Benutzergruppe hinzufügen",
+      "addUserTitle": "Benutzer hinzufügen",
+      "addUserGroupTitle": "Benutzer oder Benutzergruppe hinzufügen",
       "userRole": "Benutzer-Rolle",
       "role": "Rolle",
       "viewer": "Betrachter",
@@ -347,6 +349,7 @@
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
       "duration": {
+        "sum": "Gesamtdauer: ",
         "avg": "Durchschnittliche Dauer: ",
         "min": "Mindestdauer: ",
         "median": "Mediane Dauer: ",
@@ -547,19 +550,47 @@
     "templates": {
       "blank": "Leeres Dashboard",
       "processPerformance": "Prozessleistungsübersicht",
-      "processPerformance_subTitle": "Prozessentwicklungen und -Dauern",
+      "processPerformance_subTitle": "Prozess- und Zwischenfall-Performance",
       "humanPerformance": "Benutzeraufgabenübersicht",
       "humanPerformance_subTitle": "Benutzeraufgabenanzahlen und -Dauern",
-      "totalInstances": "Alle Instanzen",
-      "avgDuration": "Durchschnittliche Instanzdauer",
-      "instanceTrends": "Instanzentwicklungen",
-      "durationTrends": "Instanzdauerentwicklungen",
-      "flownodeFrequency": "Prozessknotenfrequenz",
-      "flownodeDuration": "Prozessknotendauer",
+      "humanBottleneckAnalysis": "Engpassanalyse für Benutzeraufgaben",
+      "humanBottleneckAnalysis_subTitle": "Beheben Sie Engpässe, um die Gesamtprozesszeit zu reduzieren",
+      "portfolioPerformance": "Portfolio-Performance-Übersicht",
+      "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen (Alpha)",
+      "completedInstances": "Abgeschlossene Prozessinstanzen",
+      "runningInstances": "Laufende Prozessinstanzen",
+      "aggregateDuration": "Aggregierte Prozessdauer (ToDo: Aggregationen alternativer Dauer anzeigen)",
+      "activeProcessIncidents": "Aktive Zwischenfälle", 
+      "flownodeDuration": "Welche Prozessschritte nehmen zu viel Zeit in Anspruch? (ToDo: Zielwerte für diese Prozessschritte hinzufügen)",
+      "controlChart": "Ist mein Prozess unter Kontrolle?",
+      "flownodeFrequency": "Wie oft wird jeder Prozessschritt ausgeführt?",
+      "instanceTrends": "Wie oft wird dieser Prozess ausgeführt?",
+      "activeIncidentsHeatmap": "Wo sind die aktiven Zwischenfälle?",
+      "incidentDurationHeatmap": "Wo sind die schlimmsten Zwischenfälle?",
+      "incidentDurationTrend": "Verbessern wir die Behandlung von Zwischenfällen?",
       "idleTime": "Wartezeit",
       "workTime": "Arbeitszeit",
       "tasksStarted": "Gestartete Aufgaben pro Monat",
-      "tasksCompleted": "Abgeschlossene Aufgaben pro Monat"
+      "tasksCompleted": "Abgeschlossene Aufgaben pro Monat",
+      "bottleneckLocation": "Wo ist mein Engpass?",
+      "bottleneckSeverity": "Wie schlimm ist mein Engpass?",
+      "assigneeVariation": "Wie wirkt sich der Bearbeiter auf den Engpass aus?",
+      "durationImprovement": "Verbessert sich der Engpass?",
+      "userTaskImprovement": "Werden Benutzeraufgaben effizienter?",
+      "upstreamWork": "Wird Arbeit reibungslos an den Engpass geliefert? (Zu tun: Bearbeiten Sie den Filter, um alle Prozessknoten VOR dem Engpass einzuschließen)",
+      "bottleneckQueue": "Wie viele Aufgaben warten an meinem Engpass? (Zu tun: Bearbeiten Sie den Filter, um den Prozessknoten AM Engpass auszuwählen)",
+      "workerProductivity": "Wie produktiv sind meine Arbeiter?",
+      "workDuration": "Wie lange dauert jede Benutzeraufgabe?",
+      "completedProcesses": "Abgeschlossene Prozesse (ToDo: Weitere Prozesse hinzufügen)",
+      "activeIncidents": "Aktive Zwischenfälle (ToDo: Weitere Prozesse hinzufügen)",
+      "runningProcesses": "Welche Prozesse laufen? (ToDo: Weitere Prozesse hinzufügen und nach Prozess gruppieren)",
+      "runningTasks": "Welche Benutzeraufgaben sind in Bearbeitung? (ToDo: Weitere Prozesse hinzufügen)",
+      "processTotal": "Wie viel nutzen wir Camunda? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
+      "laborSavings": "Sparen wir die Gesamtarbeitskosten? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
+      "processAcceleration": "Werden meine Prozesse schneller? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
+      "taskAutomation": "Wie schnell automatisieren wir Benutzeraufgaben? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
+      "incidentHandling": "Lösen wir Vorfälle schnell genug? (Zu tun: Weitere Prozesse hinzufügen)",
+      "taskLifecycle": "Wie lange warten Aufgaben auf eine Zuweisung? (ToDo: Weitere Prozesse hinzufügen)"
     },
     "addButton": {
       "addReport": "Einen Report hinzufügen",
@@ -952,6 +983,8 @@
         "operators": {
           "isBetween": "liegt zwischen",
           "between": "zwischen",
+          "after": "nach",
+          "before": "vor",
           "more": "ist mehr als",
           "less": "ist weniger als",
           "greater": "ist größer als",
@@ -999,7 +1032,9 @@
         "unit": {
           "today": "Heute",
           "yesterday": "Gestern",
-          "fixed": "Festes Datum",
+          "between": "Zwischen",
+          "before": "Vor",
+          "after": "Nach",
           "this": "Diese(n/s)...",
           "last": "Letzte(n/s)...",
           "custom": "Gleitend"
@@ -1153,7 +1188,10 @@
         }
       },
       "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?",
-      "areYouSureSelected": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?"
+      "areYouSureSelected": {
+        "delete": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?",
+        "remove": "Sind Sie sicher, dass Sie die ausgewählten Elemente entfernen möchten?"
+      }
     },
     "unit": {
       "automatic": "Automatisch",

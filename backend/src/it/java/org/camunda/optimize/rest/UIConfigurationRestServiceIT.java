@@ -25,9 +25,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 
 public class UIConfigurationRestServiceIT extends AbstractIT {
 
-  private final String WEBHOOK_1_NAME = "webhook1";
-  private final String WEBHOOK_2_NAME = "webhook2";
-
   @Test
   public void getHeaderCustomization() {
     // when
@@ -175,10 +172,12 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getWebhooks() {
     // given
+    final String webhook1Name = "webhook1";
+    final String webhook2Name = "webhook2";
     Map<String, WebhookConfiguration> webhookMap = uiConfigurationClient.createSimpleWebhookConfigurationMap(
       Sets.newHashSet(
-        WEBHOOK_2_NAME,
-        WEBHOOK_1_NAME
+        webhook2Name,
+        webhook1Name
       ));
     embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookMap);
 
@@ -186,7 +185,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     List<String> allWebhooks = uiConfigurationClient.getUIConfiguration().getWebhooks();
 
     // then
-    assertThat(allWebhooks).containsExactly(WEBHOOK_1_NAME, WEBHOOK_2_NAME);
+    assertThat(allWebhooks).containsExactly(webhook1Name, webhook2Name);
   }
 
   @Test

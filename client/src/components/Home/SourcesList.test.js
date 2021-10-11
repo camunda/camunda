@@ -68,7 +68,9 @@ it('should hide add button and edit menu when in readOnly mode', async () => {
   const node = shallow(<SourcesList {...props} readOnly />);
   await node.update();
 
-  expect(node).toMatchSnapshot();
+  expect(node.find(EntityList).prop('action')()).toBe(false);
+
+  expect(node.find(EntityList).prop('data')[0].actions).toEqual([]);
 });
 
 it('should pass entity to Deleter', async () => {

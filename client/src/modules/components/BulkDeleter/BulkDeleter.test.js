@@ -16,6 +16,7 @@ const props = {
   deleteEntities: jest.fn(),
   onDelete: jest.fn(),
   selectedEntries: [{id: 'reportId'}],
+  type: 'delete',
 };
 
 beforeEach(() => {

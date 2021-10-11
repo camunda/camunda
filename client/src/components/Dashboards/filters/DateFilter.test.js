@@ -34,7 +34,7 @@ it('should contain a dropdown to set startDateFilter', () => {
 
   expect(node.find(Dropdown)).toExist();
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find(Dropdown.Option).at(3).simulate('click');
 
   expect(props.setFilter).toHaveBeenCalledWith(todayFilter);
 });
@@ -63,7 +63,7 @@ it('should show the filter state', () => {
   const node = shallow(<DateFilter {...props} filter={todayFilter} />);
 
   expect(node.find(Dropdown).prop('label')).toMatchSnapshot();
-  expect(node.find(Dropdown.Option).at(1)).toHaveProp('checked', true);
+  expect(node.find(Dropdown.Option).at(3)).toHaveProp('checked', true);
 });
 
 it('should reset the filter state', () => {

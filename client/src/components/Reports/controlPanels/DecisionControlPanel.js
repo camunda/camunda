@@ -9,20 +9,13 @@ import classnames from 'classnames';
 
 import {DefinitionSelection, Icon, Button} from 'components';
 import {DecisionFilter} from 'filter';
-import {
-  loadInputVariables,
-  loadOutputVariables,
-  reportConfig,
-  loadDecisionDefinitionXml,
-} from 'services';
+import {loadInputVariables, loadOutputVariables, loadDecisionDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
+import View from './View';
 import GroupBy from './GroupBy';
-import ReportSelect from './ReportSelect';
-
-const {decision: decisionConfig} = reportConfig;
 
 export class DecisionControlPanel extends React.Component {
   state = {
@@ -141,10 +134,6 @@ export class DecisionControlPanel extends React.Component {
     this.props.setLoading(false);
   };
 
-  updateReport = (type, newValue) => {
-    this.props.updateReport(decisionConfig.update(type, newValue, this.props), true);
-  };
-
   render() {
     const {data, result} = this.props.report;
     const {
@@ -160,7 +149,7 @@ export class DecisionControlPanel extends React.Component {
       <div className="DecisionControlPanel ReportControlPanel">
         <div className="controlSections" style={{overflow: 'initial'}}>
           {/* manual style override will be removed once decision reports use multi-definition setup */}
-          <section className={classnames('select', 'source', {hidden: !showSource})}>
+          <section className={classnames('select', 'source', {collapsed: !showSource})}>
             <Button
               className="sectionTitle"
               onClick={() => {
@@ -182,7 +171,7 @@ export class DecisionControlPanel extends React.Component {
               onChange={this.changeDefinition}
             />
           </section>
-          <section className={classnames('reportSetup', {hidden: !showSetup})}>
+          <section className={classnames('reportSetup', {collapsed: !showSetup})}>
             <Button
               className="sectionTitle"
               onClick={() => {
@@ -198,27 +187,22 @@ export class DecisionControlPanel extends React.Component {
             <ul>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
-                <ReportSelect
+                <View
                   type="decision"
-                  field="view"
-                  report={this.props.report}
-                  value={data.view}
+                  report={this.props.report.data}
+                  onChange={(change) => this.props.updateReport(change, true)}
                   variables={this.state.variables}
-                  disabled={!key}
-                  onChange={(newValue) => this.updateReport('view', newValue)}
                 />
               </li>
               <GroupBy
                 type="decision"
-                value={data.groupBy}
-                report={this.props.report}
+                report={this.props.report.data}
                 variables={this.state.variables}
-                onChange={this.props.updateReport}
-                view={data.view}
+                onChange={(change) => this.props.updateReport(change, true)}
               />
             </ul>
           </section>
-          <section className={classnames('filter', {hidden: !showFilter})}>
+          <section className={classnames('filter', {collapsed: !showFilter})}>
             <Button
               className="sectionTitle"
               onClick={() => {

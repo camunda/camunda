@@ -10,12 +10,17 @@ import {shallow} from 'enzyme';
 import {Dropdown, EntityList, Deleter} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import {Collection} from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import {loadCollectionEntities} from './service';
+
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
 
 jest.mock('components/navigation', () => ({refreshBreadcrumbs: jest.fn()}));
 
@@ -126,7 +131,7 @@ it('should modify the collections name with the edit modal', async () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action').props.createProcessReport();
+  node.find('EntityList').prop('action')().props.createProcessReport();
 
   expect(node.find(ReportTemplateModal)).toExist();
 });
@@ -146,8 +151,8 @@ it('should hide edit/delete from context menu for collection items that does not
   expect(node.find('.name').find({type: 'edit'})).not.toExist();
 });
 
-it('should render content depending on the selected tab', () => {
-  const node = shallow(
+it('should render content depending on the selected tab', async () => {
+  const node = await shallow(
     <Collection {...props} match={{params: {id: 'aCollectionId', viewMode: 'users'}}} />
   );
 
@@ -175,7 +180,7 @@ it('should hide create new button if the user role is viewer', () => {
   });
   const node = shallow(<Collection {...props} />);
 
-  expect(node.find('EntityList').prop('action')).toBe(false);
+  expect(node.find('EntityList').prop('action')()).toBe(false);
 });
 
 it('should load collection entities with sort parameters', () => {
@@ -218,4 +223,13 @@ it('should include an option to export reports for superusers', () => {
       .prop('data')[1]
       .actions.find(({text}) => text === 'Export')
   ).not.toBe(undefined);
+});
+
+it('should hide the alerts tab in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = await shallow(
+    <Collection {...props} match={{params: {id: 'aCollectionId', viewMode: 'users'}}} />
+  );
+
+  expect(node.find({to: 'alerts'})).not.toExist();
 });

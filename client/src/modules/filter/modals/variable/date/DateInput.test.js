@@ -61,7 +61,7 @@ it('should convert a start and end-date to two compatible variable filters', () 
     {name: 'aVariableName', type: 'Date'},
     {
       valid: false,
-      type: 'fixed',
+      type: 'between',
       unit: '',
       customNum: '2',
       startDate: parseISO('2018-07-09'),

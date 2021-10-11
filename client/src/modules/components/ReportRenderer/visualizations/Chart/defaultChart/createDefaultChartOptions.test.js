@@ -32,6 +32,7 @@ it('should create dataset option for barchart report', () => {
   expect(options).toEqual({
     backgroundColor: 'testColor',
     borderColor: 'testColor',
+    hoverBackgroundColor: 'testColor',
     borderWidth: 1,
     legendColor: 'testColor',
   });
@@ -91,6 +92,7 @@ it('should create dataset option for pie reports', () => {
     backgroundColor: ['#aec7e9', '#6391d2'],
     borderColor: '#fff',
     borderWidth: undefined,
+    hoverBackgroundColor: ['#aec7e9', '#6391d2'],
   });
 });
 

@@ -21,6 +21,7 @@ import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
@@ -132,7 +133,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
 
   public void deleteVariableDataByProcessInstanceIds(final String processDefinitionKey,
                                                      final List<String> processInstanceIds) {
-    final BulkRequest bulkRequest = new BulkRequest();
+    final BulkRequest bulkRequest = new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
     log.debug(
       "Deleting variable data on [{}] process instance documents with bulk request.",
       processInstanceIds.size()

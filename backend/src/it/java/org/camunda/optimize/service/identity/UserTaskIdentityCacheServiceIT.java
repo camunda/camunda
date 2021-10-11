@@ -39,23 +39,23 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.mockserver.model.HttpRequest.request;
 
 public class UserTaskIdentityCacheServiceIT extends AbstractIT {
-  public static final String ASSIGNEE_ID_JOHN = "john";
-  public static final String JOHN_FIRST_NAME = "The";
-  public static final String JOHN_LAST_NAME = "Imposter";
+  private static final String ASSIGNEE_ID_JOHN = "john";
+  private static final String JOHN_FIRST_NAME = "The";
+  private static final String JOHN_LAST_NAME = "Imposter";
 
-  public static final String ASSIGNEE_ID_JEAN = "jean";
-  public static final String JEAN_FIRST_NAME = "True";
-  public static final String JEAN_LAST_NAME = "CrewMember";
+  private static final String ASSIGNEE_ID_JEAN = "jean";
+  private static final String JEAN_FIRST_NAME = "True";
+  private static final String JEAN_LAST_NAME = "CrewMember";
 
-  public static final String CANDIDATE_GROUP_ID_IMPOSTERS = "imposters";
-  public static final String CANDIDATE_GROUP_NAME_IMPOSTERS = "The Evil Imposters";
+  private static final String CANDIDATE_GROUP_ID_IMPOSTERS = "imposters";
+  private static final String CANDIDATE_GROUP_NAME_IMPOSTERS = "The Evil Imposters";
 
-  public static final String CANDIDATE_GROUP_ID_CREW_MEMBERS = "crewMembers";
-  public static final String CANDIDATE_GROUP_NAME_CREW_MEMBERS = "The Crew Members";
+  private static final String CANDIDATE_GROUP_ID_CREW_MEMBERS = "crewMembers";
+  private static final String CANDIDATE_GROUP_NAME_CREW_MEMBERS = "The Crew Members";
 
   @RegisterExtension
   protected final LogCapturer assigneeCandidateCacheServiceLogger =
-    LogCapturer.create().captureForType(UserTaskIdentityCacheService.class);
+    LogCapturer.create().captureForType(PlatformUserTaskIdentityCacheService.class);
 
   @RegisterExtension
   protected final LogCapturer identityLinkLogImportJobLog =
@@ -101,7 +101,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
     getUserTaskIdentityCacheConfiguration().setMaxEntryLimit(1L);
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JEAN);
 
-    final UserTaskIdentityCacheService assigneeIdentityCacheService = getUserTaskIdentityCacheService();
+    final PlatformUserTaskIdentityCacheService assigneeIdentityCacheService = getUserTaskIdentityCacheService();
     assertThatThrownBy(assigneeIdentityCacheService::synchronizeIdentities)
       // then
       .isInstanceOf(MaxEntryLimitHitException.class);
@@ -291,7 +291,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isNotPresent();
     firstEngineMockServer.verify(getUserRequest);
     assigneeCandidateCacheServiceLogger.assertContains(
-      "Failed to resolve and add assignee/candidateGroup identities from engine camunda-bpm"
+      "Failed to resolve and add platform assignee/candidateGroup identities from engine camunda-bpm"
     );
   }
 
@@ -410,7 +410,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isNotPresent();
     firstEngineMockServer.verify(getGroupRequest);
     assigneeCandidateCacheServiceLogger.assertContains(
-      "Failed to resolve and add assignee/candidateGroup identities from engine camunda-bpm"
+      "Failed to resolve and add platform assignee/candidateGroup identities from engine camunda-bpm"
     );
   }
 
@@ -457,7 +457,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
       .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
   }
 
-  private UserTaskIdentityCacheService getUserTaskIdentityCacheService() {
+  private PlatformUserTaskIdentityCacheService getUserTaskIdentityCacheService() {
     return embeddedOptimizeExtension.getUserTaskIdentityCacheService();
   }
 

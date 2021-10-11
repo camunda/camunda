@@ -18,6 +18,7 @@ export function CreateNewButton({
   collection,
   importEntity,
   user,
+  primary,
 }) {
   const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
 
@@ -28,26 +29,35 @@ export function CreateNewButton({
   }, []);
 
   return (
-    <Dropdown main primary label={t('home.createBtn.default')} className="CreateNewButton">
+    <Dropdown
+      main
+      primary={primary}
+      label={t('home.createBtn.default')}
+      className="CreateNewButton"
+    >
       {!collection && (
         <Dropdown.Option onClick={createCollection}>
           {t('home.createBtn.collection')}
         </Dropdown.Option>
       )}
       <Dropdown.Option onClick={createDashboard}>{t('home.createBtn.dashboard')}</Dropdown.Option>
-      <Dropdown.Submenu label={t('home.createBtn.report.default')}>
+      {isOptimizeCloud ? (
         <Dropdown.Option onClick={createProcessReport}>
-          {t('home.createBtn.report.process')}
+          {t('home.createBtn.report.default')}
         </Dropdown.Option>
-        <Dropdown.Option link="report/new-combined/edit">
-          {t('home.createBtn.report.combined')}
-        </Dropdown.Option>
-        {!isOptimizeCloud && (
+      ) : (
+        <Dropdown.Submenu label={t('home.createBtn.report.default')}>
+          <Dropdown.Option onClick={createProcessReport}>
+            {t('home.createBtn.report.process')}
+          </Dropdown.Option>
+          <Dropdown.Option link="report/new-combined/edit">
+            {t('home.createBtn.report.combined')}
+          </Dropdown.Option>
           <Dropdown.Option link="report/new-decision/edit">
             {t('home.createBtn.report.decision')}
           </Dropdown.Option>
-        )}
-      </Dropdown.Submenu>
+        </Dropdown.Submenu>
+      )}
       {user?.authorizations.includes('import_export') && (
         <Dropdown.Option onClick={importEntity}>{t('common.importJSON')}</Dropdown.Option>
       )}

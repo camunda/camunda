@@ -32,7 +32,7 @@ it('create correct filter from state object', () => {
   });
 
   const filter3 = convertStateToFilter({
-    type: 'fixed',
+    type: 'between',
     startDate: parseISO('2015-01-20T00:00:00'),
     endDate: parseISO('2019-05-11T00:00:00'),
   });
@@ -42,13 +42,37 @@ it('create correct filter from state object', () => {
     start: format(parseISO('2015-01-20T00:00:00'), BACKEND_DATE_FORMAT),
     end: format(parseISO('2019-05-11T23:59:59.999'), BACKEND_DATE_FORMAT),
   });
+
+  const filter4 = convertStateToFilter({
+    type: 'after',
+    startDate: parseISO('2015-01-20T00:00:00'),
+    endDate: null,
+  });
+
+  expect(filter4).toEqual({
+    type: 'fixed',
+    start: format(parseISO('2015-01-20T00:00:00'), BACKEND_DATE_FORMAT),
+    end: null,
+  });
+
+  const filter5 = convertStateToFilter({
+    type: 'before',
+    startDate: null,
+    endDate: parseISO('2019-05-11T00:00:00'),
+  });
+
+  expect(filter5).toEqual({
+    type: 'fixed',
+    start: null,
+    end: format(parseISO('2019-05-11T23:59:59.999'), BACKEND_DATE_FORMAT),
+  });
 });
 
 it('should not crash if start or endDate is not set for fixed filter', () => {
-  expect(convertStateToFilter({type: 'fixed'})).toEqual({
+  expect(convertStateToFilter({type: 'between'})).toEqual({
     type: 'fixed',
-    start: undefined,
-    end: undefined,
+    start: null,
+    end: null,
   });
 });
 

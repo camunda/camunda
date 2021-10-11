@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -21,17 +21,14 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationIT
   extends AbstractProcessInstanceFrequencyByProcessInstanceDateReportEvaluationIT {
@@ -82,45 +79,36 @@ public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationI
     startDateFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     reportData.setFilter(Collections.singletonList(startDateFilterDto));
 
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(5));
+    assertThat(resultData).hasSize(5);
 
-    assertThat(
-      resultData.get(0).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(0).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
 
-    assertThat(
-      resultData.get(1).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(1).getValue(), is(0.));
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.);
 
-    assertThat(
-      resultData.get(2).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(2).getValue(), is(1.));
+    assertThat(resultData.get(2).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS));
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.);
 
-    assertThat(
-      resultData.get(3).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(3).getValue(), is(0.));
+    assertThat(resultData.get(3).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS));
+    assertThat(resultData.get(3).getValue()).isEqualTo(0.);
 
-    assertThat(
-      resultData.get(4).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(4).getValue(), is(0.));
+    assertThat(resultData.get(4).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS));
+    assertThat(resultData.get(4).getValue()).isEqualTo(0.);
   }
 
   @Test
-  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() throws SQLException {
+  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() {
     // given 1 completed + 2 running process instances
     final OffsetDateTime now = OffsetDateTime.now();
 
@@ -136,31 +124,27 @@ public class ProcessInstanceFrequencyByProcessInstanceStartDateReportEvaluationI
       AggregateByDateUnit.DAY
     );
 
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = reportClient.evaluateMapReport(
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(
       reportData);
 
     // then
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount(), is(3L));
+    assertThat(result.getInstanceCount()).isEqualTo(3L);
 
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
 
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).isNotNull().hasSize(3);
+    assertThat(resultData.get(0).getKey())
+      .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS)));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
 
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.DAYS))));
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now.minusDays(1), ChronoUnit.DAYS)));
+    assertThat(resultData.get(1).getValue()).isEqualTo(1.);
 
-    assertThat(
-      resultData.get(1).getKey(),
-      is(localDateTimeToString(truncateToStartOfUnit(now.minusDays(1), ChronoUnit.DAYS)))
-    );
-    assertThat(resultData.get(1).getValue(), is(1.));
-
-    assertThat(
-      resultData.get(2).getKey(),
-      is(localDateTimeToString(truncateToStartOfUnit(now.minusDays(2), ChronoUnit.DAYS)))
-    );
-    assertThat(resultData.get(2).getValue(), is(1.));
+    assertThat(resultData.get(2).getKey())
+      .isEqualTo(localDateTimeToString(truncateToStartOfUnit(now.minusDays(2), ChronoUnit.DAYS)));
+    assertThat(resultData.get(2).getValue()).isEqualTo(1.);
   }
 }

@@ -32,7 +32,13 @@ it('should reset the unit selection when changing the date type', () => {
   const node = shallow(<DateRangeInput {...props} type="this" unit="weeks" onChange={spy} />);
 
   dateTypeSelect(node).prop('onChange')('last');
-  expect(spy).toHaveBeenCalledWith({type: 'last', unit: ''});
+  expect(spy).toHaveBeenCalledWith({
+    type: 'last',
+    unit: '',
+    startDate: null,
+    endDate: null,
+    valid: false,
+  });
 });
 
 it('should have error message if value is invalid', async () => {

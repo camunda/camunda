@@ -113,9 +113,9 @@ export default withErrorHandling(
         <div className="AlertList">
           <EntityList
             name={t('alert.label-plural')}
-            action={
+            action={(bulkActive) =>
               !readOnly && (
-                <Button main primary onClick={this.openAddAlertModal}>
+                <Button main primary={!bulkActive} onClick={this.openAddAlertModal}>
                   {t('alert.createNew')}
                 </Button>
               )
@@ -128,7 +128,7 @@ export default withErrorHandling(
               t('common.condition'),
               t('alert.recipient'),
             ]}
-            bulkActions={[<BulkDeleter deleteEntities={removeAlerts} />]}
+            bulkActions={[<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
             onChange={this.loadAlerts}
             data={
               !isLoading &&

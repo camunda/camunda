@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IngestedEventCleanupServiceRolloverIT extends AbstractEngineDataCleanupIT {
+public class IngestedEventCleanupServiceRolloverIT extends AbstractCleanupIT {
 
   @BeforeEach
   @AfterEach

@@ -33,6 +33,8 @@ public class CleanupConfiguration {
   private DecisionCleanupConfiguration decisionCleanupConfiguration;
   @JsonProperty("ingestedEventCleanup")
   private IngestedEventCleanupConfiguration ingestedEventCleanupConfiguration;
+  @JsonProperty("externalVariableCleanup")
+  private ExternalVariableCleanupConfiguration externalVariableCleanupConfiguration;
 
   public CleanupConfiguration(final String cronTrigger, final Period ttl) {
    this(cronTrigger, ttl, new ProcessCleanupConfiguration(), new DecisionCleanupConfiguration());

@@ -76,7 +76,7 @@ public abstract class AbstractIncidentWriter extends AbstractProcessInstanceData
     final List<IncidentDto> incidents =
       (List<IncidentDto>) (List<?>) incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
-    final String processDefinitionKey = incidents.get(0).getProcessDefinitionKey();
+    final String processDefinitionKey = incidents.get(0).getDefinitionKey();
 
     final Map<String, Object> params = new HashMap<>();
 
@@ -111,9 +111,7 @@ public abstract class AbstractIncidentWriter extends AbstractProcessInstanceData
   }
 
   protected void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
-    createInstanceIndicesIfMissing(incidents.stream()
-                                     .map(IncidentDto::getProcessDefinitionKey)
-                                     .collect(toSet()));
+    createInstanceIndicesIfMissing(incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet()));
   }
 
   protected abstract String createInlineUpdateScript();

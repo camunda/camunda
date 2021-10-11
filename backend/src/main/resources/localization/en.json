@@ -81,7 +81,8 @@
     },
     "collectionTitle": "Dashboards and Reports",
     "collectionTitleWithAmpersand": "Dashboards & Reports",
-    "userTitle": "Users and User Groups",
+    "userTitle": "Users",
+    "userGroupsTitle": "Users and User Groups",
     "copy": {
       "subEntity": "This {entityType} contains 1 Report. It will be copied, too.",
       "subEntities": "This {entityType} contains {number} Reports. They will be copied, too.",
@@ -99,7 +100,8 @@
       "unknown": "Unknown Entity"
     },
     "roles": {
-      "addUserTitle": "Add User or User Group",
+      "addUserTitle": "Add User",
+      "addUserGroupTitle": "Add User or User Group",
       "userRole": "User role",
       "role": "Role",
       "viewer": "Viewer",
@@ -347,6 +349,7 @@
       "targetDuration": "Target duration",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
       "duration": {
+        "sum": "Total duration: ",
         "avg": "Average duration: ",
         "min": "Minimum duration: ",
         "median": "Median duration: ",
@@ -547,19 +550,47 @@
     "templates": {
       "blank": "Blank Dashboard",
       "processPerformance": "Process performance overview",
-      "processPerformance_subTitle": "Process Trends and durations",
-      "humanPerformance": "Human Task performance",
+      "processPerformance_subTitle": "Process and incident performance",
+      "humanPerformance": "Human task performance",
       "humanPerformance_subTitle": "User task counts and durations",
-      "totalInstances": "Total Instances",
-      "avgDuration": "AVG Instance Duration",
-      "instanceTrends": "Instance Trends",
-      "durationTrends": "Instance Duration Trends",
-      "flownodeFrequency": "Flownode Frequency",
-      "flownodeDuration": "Flownode Duration",
+      "humanBottleneckAnalysis": "Human task bottleneck analysis",
+      "humanBottleneckAnalysis_subTitle": "Fix bottlenecks to reduce total process time",
+      "portfolioPerformance": "Portfolio performance overview",
+      "portfolioPerformance_subTitle": "View a summary of up to 10 processes (alpha)",
+      "completedInstances": "Total Completed Process Instances",
+      "runningInstances": "Running Process Instances",
+      "aggregateDuration": "Aggregated Process Duration (To Do: View alternate duration aggregations)",
+      "activeProcessIncidents": "Active Incidents", 
+      "flownodeDuration": "Which process steps take too much time? (To Do: Add Target values for these process steps)",
+      "controlChart": "Is my process within control?",
+      "flownodeFrequency": "How often is each process step run?",
+      "instanceTrends": "How frequently is this process run?",
+      "activeIncidentsHeatmap": "Where are the active incidents?",
+      "incidentDurationHeatmap": "Where are the worst incidents",
+      "incidentDurationTrend": "Are we improving incident handling?",
       "idleTime": "Idle Time",
       "workTime": "Work Time",
       "tasksStarted": "Tasks started per month",
-      "tasksCompleted": "Tasks completed per month"
+      "tasksCompleted": "Tasks completed per month",
+      "bottleneckLocation": "Where is my bottleneck?",
+      "bottleneckSeverity": "How bad is my bottleneck?",
+      "assigneeVariation": "How does task assignee affect the bottleneck?",
+      "durationImprovement": "Is the bottleneck improving?",
+      "userTaskImprovement": "Are user tasks becoming more efficient?",
+      "upstreamWork": "Is work delivered smoothly to the bottleneck? (To Do: Edit the filter to include all flow nodes BEFORE the bottleneck)",
+      "bottleneckQueue": "How many tasks are waiting at my bottleneck? (To Do: Edit the filter to select the flow node AT the bottleneck)",
+      "workerProductivity": "How productive are my workers?",
+      "workDuration": "How long does each user task take?",
+      "completedProcesses": "Processes Completed (To Do: Add other processes)",
+      "activeIncidents": "Active Incidents(To Do: Add other processes)",
+      "runningProcesses": "Which processes are running? (To Do: Add other processes and group by process)",
+      "runningTasks": "Which user tasks are in progress? (To Do: Add other processes)",
+      "processTotal": "How much are we using Camunda? (To Do: Add other processes and group by start date AND process)",
+      "laborSavings": "Are we saving total labor costs? (To Do: Add other processes and group by start date AND process)",
+      "processAcceleration": "Are my processes getting faster? (To Do: Add other processes and group by start date AND process)",
+      "taskAutomation": "How quickly are we automating user tasks? (To Do: Add other processes and group by start date AND process)",
+      "incidentHandling": "Are we resolving incidents fast enough? (To Do: Add other processes)",
+      "taskLifecycle": "How long do tasks wait before assignment? (To Do: Add other processes)"
     },
     "addButton": {
       "addReport": "Add a Report",
@@ -952,6 +983,8 @@
         "operators": {
           "isBetween": "is between",
           "between": "between",
+          "after": "after",
+          "before": "before",
           "more": "is more than",
           "less": "is less than",
           "greater": "is greater than",
@@ -999,7 +1032,9 @@
         "unit": {
           "today": "Today",
           "yesterday": "Yesterday",
-          "fixed": "Fixed Date",
+          "between": "Between",
+          "before": "Before",
+          "after": "After",
           "this": "This...",
           "last": "Last...",
           "custom": "Rolling"
@@ -1153,7 +1188,10 @@
         }
       },
       "areYouSure": "Are you sure you want to proceed?",
-      "areYouSureSelected": "Are you sure you want to delete the selected items?"
+      "areYouSureSelected": {
+        "delete": "Are you sure you want to delete the selected items?",
+        "remove": "Are you sure you want to remove the selected items?"
+      }
     },
     "unit": {
       "automatic": "automatic",

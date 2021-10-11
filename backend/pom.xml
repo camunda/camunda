@@ -5,13 +5,13 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.6.0</version>
+    <version>3.7.0</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.43.v20210629</jetty.version>
+    <jetty.version>9.4.44.v20210927</jetty.version>
     <jersey.version>2.35</jersey.version>
     <spring.security.version>5.5.2</spring.security.version>
     <it.test.excludedGroups />
@@ -73,6 +73,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <version>${zeebe.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -91,6 +92,16 @@
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
       <version>${zeebe.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.elasticsearch</groupId>
+          <artifactId>elasticsearch-x-content</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.elasticsearch.client</groupId>
+          <artifactId>elasticsearch-rest-client</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Javax XML -->
@@ -222,7 +233,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.18.1</version>
+      <version>3.18.2</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -272,7 +283,7 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.0.3</version>
+      <version>3.0.4</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -457,7 +468,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.2.23</version>
+          <version>42.2.24</version>
           <scope>test</scope>
         </dependency>
         <dependency>

@@ -92,6 +92,25 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return deploymentEvent.getProcesses().get(0);
   }
 
+  public long startProcessInstanceWithVariables(String bpmnProcessId, Map<String, Object> variables) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 =
+      getZeebeClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .variables(variables);
+      return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+  }
+
+  public void addVariablesToScope(Long variableScopeKey, Map<String, Object> variables, boolean local) {
+    getZeebeClient()
+      .newSetVariablesCommand(variableScopeKey)
+      .variables(variables)
+      .local(local)
+      .send()
+      .join();
+  }
+
   public ProcessInstanceEvent startProcessInstanceForProcess(String processId) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 startInstanceCommand =
       getZeebeClient().newCreateInstanceCommand().bpmnProcessId(processId).latestVersion();
@@ -135,9 +154,9 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return clientRule.getClient();
   }
 
-  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   private void setZeebeRecordPrefixForTest() {
     final ExporterCfg exporterConfig = embeddedBrokerRule.getBrokerCfg().getExporters().get(OPTIMIZE_EXPORTER_ID);
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
     final Map<String, String> indexArgs = (Map<String, String>) exporterConfig.getArgs().get(EXPORTER_INDEX_CONFIG);
     indexArgs.put(EXPORTER_RECORD_PREFIX, zeebeRecordPrefix);
   }

@@ -6,19 +6,29 @@
 package org.camunda.optimize.service.es.filter.process.date.instance;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class FixedInstanceDateFilterIT extends AbstractFilterIT {
@@ -195,63 +205,78 @@ public class FixedInstanceDateFilterIT extends AbstractFilterIT {
     assertThat(resultData).isEmpty();
   }
 
-  @Test
-  public void filterWithMixedDateCriteria() {
+  @ParameterizedTest
+  @MethodSource("dateReportTypes")
+  public void filtersWithNullFieldsWorkForDateReports(final ProcessReportDataType reportType) {
     // given
-    ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
-    HistoricProcessInstanceDto processInstance =
-      engineIntegrationExtension.getHistoricProcessInstance(engineDto.getId());
-    OffsetDateTime start = processInstance.getStartTime();
-    OffsetDateTime end = processInstance.getEndTime();
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto instance1 = startAndImportSimpleProcess();
+    final ProcessInstanceEngineDto instance2 = startAndImportSimpleProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), now.minusDays(2));
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceEndDate(instance1.getId(), now.minusDays(2));
+    engineDatabaseExtension.changeProcessInstanceEndDate(instance2.getId(), now);
 
-    ProcessReportDataDto reportData = createReportWithInstance(engineDto);
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedStartDate()
-                           .start(start.minus(1, ChronoUnit.DAYS))
-                           .end(null)
-                           .add()
-                           .buildList());
+    importAllEngineEntitiesFromScratch();
 
-    // when
-    List<RawDataProcessInstanceDto> resultData = reportClient.evaluateRawReport(reportData)
-      .getResult()
-      .getFirstMeasureData();
-
-    // then
-    assertThat(resultData).hasSize(1);
-
-    // given
-    reportData.setFilter(ProcessFilterBuilder.filter()
-                           .fixedEndDate()
-                           .start(end.minusSeconds(200L))
-                           .end(null)
-                           .add()
-                           .buildList());
-
-    // when
-    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
-
-    // then
-    assertThat(resultData).hasSize(1);
-
-    // given
+    // works with lte filter
+    final ProcessReportDataDto reportData = createReportData(instance1.getProcessDefinitionKey(), reportType);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
-                           .end(start.minus(1, ChronoUnit.DAYS))
+                           .end(now.minusDays(1))
+                           .add()
+                           .fixedEndDate()
+                           .start(null)
+                           .end(now.minusDays(1))
                            .add()
                            .buildList());
 
     // when
-    resultData = reportClient.evaluateRawReport(reportData).getResult().getFirstMeasureData();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
+      reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultData).isEmpty();
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
+
+    // works with gte filter
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedStartDate()
+                           .start(now)
+                           .end(null)
+                           .add()
+                           .fixedEndDate()
+                           .start(now)
+                           .end(null)
+                           .add()
+                           .buildList());
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
+  }
+
+  private static Stream<ProcessReportDataType> dateReportTypes() {
+    return Stream.of(
+      ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE,
+      ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE
+    );
+  }
+
+  private ProcessReportDataDto createReportData(final String definitionKey,
+                                                final ProcessReportDataType reportType) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+      .setGroupByDateInterval(AggregateByDateUnit.MONTH)
+      .setProcessDefinitionKey(definitionKey)
+      .setProcessDefinitionVersion(ALL_VERSIONS)
+      .setReportDataType(reportType)
+      .build();
   }
 
   private ProcessInstanceEngineDto startAndImportSimpleProcess() {
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(
-      getSingleServiceTaskProcess());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.deployAndStartProcess(getSingleServiceTaskProcess());
     importAllEngineEntitiesFromScratch();
     return processInstanceDto;
   }

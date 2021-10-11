@@ -48,16 +48,27 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
         {t('common.filter.dateModal.preview.last.' + prefix)} {bolden(highlighted)}
       </>
     );
-  } else if (type === 'fixed') {
-    const containsTime =
-      format(startDate, 'HH:mm:ss') !== '00:00:00' || format(endDate, 'HH:mm:ss') !== '23:59:59';
-
-    const dateFormat = containsTime ? `yyyy-MM-dd '${t('common.timeAt')}' HH:mm` : 'yyy-MM-dd';
+  } else if (type === 'between') {
+    const dateFormat = getFixedDateFormat(startDate, endDate);
 
     previewText = (
       <>
         {t('common.filter.list.operators.between')} {bolden(format(startDate, dateFormat))}
         {' ' + t('common.and')} {bolden(format(endDate, dateFormat))}
+      </>
+    );
+  } else if (type === 'after') {
+    previewText = (
+      <>
+        {t('common.filter.list.operators.after')}{' '}
+        {bolden(format(startDate, getFixedDateFormat(startDate, endDate)))}
+      </>
+    );
+  } else if (type === 'before') {
+    previewText = (
+      <>
+        {t('common.filter.list.operators.before')}{' '}
+        {bolden(format(endDate, getFixedDateFormat(startDate, endDate)))}
       </>
     );
   }
@@ -73,20 +84,22 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
     return (
       <div className="DateFilterPreview">
         <span className="parameterName">{variableName}</span>
-        {createOperator(
-          excludeUndefined
-            ? t('common.filter.list.operators.not')
-            : t('common.filter.list.operators.is')
-        )}
-        {previewText}
-        {(excludeUndefined || includeUndefined) && (
-          <>
-            {previewText && operator}
-            {bolden(t('common.null'))}
-            {operator}
-            {bolden(t('common.undefined'))}
-          </>
-        )}
+        <span className="filterText">
+          {createOperator(
+            excludeUndefined
+              ? t('common.filter.list.operators.not')
+              : t('common.filter.list.operators.is')
+          )}
+          {previewText}
+          {(excludeUndefined || includeUndefined) && (
+            <>
+              {previewText && operator}
+              {bolden(t('common.null'))}
+              {operator}
+              {bolden(t('common.undefined'))}
+            </>
+          )}
+        </span>
       </div>
     );
   } else {
@@ -103,4 +116,12 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
 
 function makeSingular(unit) {
   return unit.slice(0, unit.length - 1);
+}
+
+function getFixedDateFormat(startDate, endDate) {
+  const containsTime =
+    (startDate && format(startDate, 'HH:mm:ss') !== '00:00:00') ||
+    (endDate && format(endDate, 'HH:mm:ss') !== '23:59:59');
+
+  return containsTime ? `yyyy-MM-dd '${t('common.timeAt')}' HH:mm` : 'yyy-MM-dd';
 }

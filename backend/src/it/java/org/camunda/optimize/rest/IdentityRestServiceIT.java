@@ -110,7 +110,9 @@ public class IdentityRestServiceIT extends AbstractIT {
   @Test
   public void searchForGroupAndUser_userMetaDataDisabled() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration().setIncludeUserMetaData(false);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getUserIdentityCacheConfiguration()
+      .setIncludeUserMetaData(false);
     embeddedOptimizeExtension.reloadConfiguration();
 
     final String groupId = "group";
@@ -263,7 +265,9 @@ public class IdentityRestServiceIT extends AbstractIT {
   @MethodSource("identities")
   public void getIdentityById_notPresentInCache_userMetaDataDisabled(final IdentityWithMetadataResponseDto expectedIdentity) {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration().setIncludeUserMetaData(false);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getUserIdentityCacheConfiguration()
+      .setIncludeUserMetaData(false);
     embeddedOptimizeExtension.reloadConfiguration();
 
     final HttpRequest engineFetchRequestMatcher;
@@ -378,7 +382,9 @@ public class IdentityRestServiceIT extends AbstractIT {
   @Test
   public void getCurrentUserIdentity_userMetaDataDeactivated() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration().setIncludeUserMetaData(false);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getUserIdentityCacheConfiguration()
+      .setIncludeUserMetaData(false);
     embeddedOptimizeExtension.reloadConfiguration();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();

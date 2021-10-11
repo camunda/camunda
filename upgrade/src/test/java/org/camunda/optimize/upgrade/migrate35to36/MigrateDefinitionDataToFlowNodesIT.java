@@ -34,7 +34,7 @@ public class MigrateDefinitionDataToFlowNodesIT extends AbstractUpgrade35IT {
 
     // and data source has been upgraded
     assertThat(instancesAfterUpgrade)
-      .hasSize(8)
+      .hasSize(9)
       .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances())
         .isNotEmpty()
         .allSatisfy(flowNodeInstanceDto -> {
@@ -49,7 +49,7 @@ public class MigrateDefinitionDataToFlowNodesIT extends AbstractUpgrade35IT {
 
     assertThat(instancesAfterUpgrade)
       .filteredOn(processInstanceDto -> processInstanceDto.getProcessDefinitionKey().equals("ReviewInvoice"))
-      .hasSize(2)
+      .hasSize(3)
       .allSatisfy(instance -> {
         assertThat(instance.getFlowNodeInstances())
           .isNotEmpty()
