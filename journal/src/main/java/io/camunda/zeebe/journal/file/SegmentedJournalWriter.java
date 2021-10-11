@@ -17,7 +17,6 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalRecord;
-import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 
 class SegmentedJournalWriter {
@@ -46,30 +45,35 @@ class SegmentedJournalWriter {
   }
 
   public JournalRecord append(final long asqn, final DirectBuffer data) {
-    try {
-      return currentWriter.append(asqn, data);
-    } catch (final BufferOverflowException e) {
-      if (currentSegment.index() == currentWriter.getNextIndex()) {
-        throw e;
-      }
-
-      journalMetrics.observeSegmentCreation(this::createNewSegment);
-
-      return currentWriter.append(asqn, data);
+    final var appendResult = currentWriter.append(asqn, data);
+    if (appendResult.isRight()) {
+      return appendResult.get();
     }
+
+    if (currentSegment.index() == currentWriter.getNextIndex()) {
+      return appendResult.get();
+    }
+
+    journalMetrics.observeSegmentCreation(this::createNewSegment);
+    final var appendResultOnNewSegment = currentWriter.append(asqn, data);
+    if (appendResultOnNewSegment.isLeft()) {
+      throw appendResultOnNewSegment.getLeft();
+    }
+    return appendResultOnNewSegment.get();
   }
 
   public void append(final JournalRecord record) {
-    try {
-      currentWriter.append(record);
-    } catch (final BufferOverflowException e) {
-      if (currentSegment.index() == currentWriter.getNextIndex()) {
-        throw e;
-      }
-
-      journalMetrics.observeSegmentCreation(this::createNewSegment);
-      currentWriter.append(record);
+    final var writeResult = currentWriter.append(record);
+    if (writeResult.isRight()) {
+      return;
     }
+
+    if (currentSegment.index() == currentWriter.getNextIndex()) {
+      throw writeResult.getLeft();
+    }
+
+    journalMetrics.observeSegmentCreation(this::createNewSegment);
+    currentWriter.append(record);
   }
 
   public void reset(final long index) {
