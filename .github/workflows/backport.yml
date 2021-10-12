@@ -21,25 +21,15 @@ jobs:
       )
     steps:
       - uses: actions/checkout@v2
-        with:
-          # Required to find all branches
-          fetch-depth: 0
       - name: Create backport PRs
-        # Should be kept in sync with `version`
-        uses: zeebe-io/backport-action@v0.0.5
+        uses: zeebe-io/backport-action@v0.0.6
         with:
-          # Required
-          # Version of the backport-action
-          # Must equal the version in `uses`
-          # Recommended: latest tag or `master`
-          version: v0.0.5
-
           # Required
           # Token to authenticate requests to GitHub
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
           # Required
-          # Working directory for the backport script
+          # Working directory for the backport action
           github_workspace: ${{ github.workspace }}
 
           # Optional

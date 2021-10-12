@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
-import java.util.Optional;
+import io.camunda.zeebe.util.Either;
 
 /** A persisted snapshot store than can create a new snapshot and persists it. */
 public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
@@ -19,9 +19,8 @@ public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
    * @param term the term to which the snapshots corresponds to
    * @param processedPosition the processed position in the snapshot
    * @param exportedPosition the exported position in the snapshot
-   * @return an optional with a transient snapshot if new transient snapshot was taken successfully,
-   *     otherwise return an empty optional
+   * @return either an exception or transientSnapshot, if it was taken successfully.
    */
-  Optional<TransientSnapshot> newTransientSnapshot(
+  Either<SnapshotException, TransientSnapshot> newTransientSnapshot(
       long index, long term, long processedPosition, long exportedPosition);
 }

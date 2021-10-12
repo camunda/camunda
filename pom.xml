@@ -2,16 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Root</name>
-  <artifactId>zeebe-root</artifactId>
-  <packaging>pom</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
+
+  <artifactId>zeebe-root</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Zeebe Root</name>
 
   <modules>
     <module>bom</module>
@@ -51,10 +53,10 @@
   </modules>
 
   <scm>
-    <url>https://github.com/camunda-cloud/zeebe</url>
     <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</connection>
     <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git</developerConnection>
     <tag>HEAD</tag>
+    <url>https://github.com/camunda-cloud/zeebe</url>
   </scm>
 
 </project>

@@ -480,13 +480,12 @@ public class ReceivedSnapshotTest {
   }
 
   private PersistedSnapshot takePersistedSnapshot() {
-    final var transientSnapshot =
-        senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).orElseThrow();
+    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
     transientSnapshot.take(this::writeSnapshot).join();
     return transientSnapshot.persist().join();
   }
 
-  private boolean writeSnapshot(final Path path) {
+  private void writeSnapshot(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
 
@@ -498,6 +497,5 @@ public class ReceivedSnapshotTest {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-    return true;
   }
 }

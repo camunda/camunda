@@ -49,8 +49,7 @@ public class SnapshotChunkReaderTest {
     factory.createReceivableSnapshotStore(snapshotDirectory, partitionId);
     final var persistedSnapshotStore = factory.getConstructableSnapshotStore(partitionId);
 
-    final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(1, 2, 3, 2).orElseThrow();
+    final var transientSnapshot = persistedSnapshotStore.newTransientSnapshot(1, 2, 3, 2).get();
     transientSnapshot.take(this::takeSnapshot);
     persistedSnapshot = transientSnapshot.persist().join();
   }

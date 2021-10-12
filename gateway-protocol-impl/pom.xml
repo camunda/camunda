@@ -1,16 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Gateway Protocol Implementation</name>
-  <artifactId>zeebe-gateway-protocol-impl</artifactId>
-  <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
+  <artifactId>zeebe-gateway-protocol-impl</artifactId>
+  <packaging>jar</packaging>
+  <name>Zeebe Gateway Protocol Implementation</name>
 
   <licenses>
     <license>
@@ -98,13 +99,13 @@
             <executions>
               <execution>
                 <id>copy-golang-proto</id>
-                <phase>generate-sources</phase>
                 <goals>
                   <goal>run</goal>
                 </goals>
+                <phase>generate-sources</phase>
                 <configuration>
                   <target>
-                    <copy file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway.pb.go" failonerror="true" />
+                    <copy failonerror="true" file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway.pb.go"></copy>
                   </target>
                 </configuration>
               </execution>
@@ -116,4 +117,3 @@
   </profiles>
 
 </project>
-

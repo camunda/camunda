@@ -2,16 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Protocol Implementation</name>
-  <artifactId>zeebe-protocol-impl</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
 
   <parent>
-    <artifactId>zeebe-parent</artifactId>
     <groupId>io.camunda</groupId>
-    <version>1.2.0-SNAPSHOT</version>
+    <artifactId>zeebe-parent</artifactId>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
+
+  <artifactId>zeebe-protocol-impl</artifactId>
+  <version>1.3.0-SNAPSHOT</version>
+
+  <name>Zeebe Protocol Implementation</name>
 
   <dependencies>
     <dependency>
@@ -82,6 +84,5 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
 
 </project>

@@ -1,17 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Workflow Engine</name>
-  <artifactId>zeebe-workflow-engine</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
+
+  <artifactId>zeebe-workflow-engine</artifactId>
+  <version>1.3.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Zeebe Workflow Engine</name>
 
   <dependencies>
 
@@ -157,14 +160,13 @@
       <scope>test</scope>
     </dependency>
 
-
     <!-- TEMPORARY -->
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
-      <type>test-jar</type>
       <classifier>tests</classifier>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
@@ -179,13 +181,13 @@
         <executions>
           <execution>
             <id>add-source</id>
-            <phase>generate-sources</phase>
             <goals>
               <goal>add-source</goal>
             </goals>
+            <phase>generate-sources</phase>
             <configuration>
-              <sources combine.children="append"><!-- merging with parent
-                  config for benchmarks -->
+              <sources combine.children="append">
+                <!-- merging with parent config for benchmarks -->
                 <source>${project.build.directory}/generated-sources/sbe</source>
               </sources>
             </configuration>
@@ -195,14 +197,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
           <executableDependency>
             <groupId>uk.co.real-logic</groupId>
@@ -222,6 +216,14 @@
             <version>${version.sbe}</version>
           </dependency>
         </dependencies>
+        <executions>
+          <execution>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>generate-sources</phase>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>

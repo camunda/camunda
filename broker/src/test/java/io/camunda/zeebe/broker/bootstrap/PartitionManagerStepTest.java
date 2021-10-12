@@ -14,8 +14,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
+import io.atomix.cluster.MemberConfig;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -86,13 +87,14 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setClusterServices(
           mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS));
 
-      final var mockMemberId = mock(MemberId.class);
+      final var memberConfig = new MemberConfig();
+      final var member = new Member(memberConfig);
 
-      final var mockMember = mock(Member.class);
-      when(mockMember.id()).thenReturn(mockMemberId);
+      final var mockMembershipService = mock(ClusterMembershipService.class);
+      when(mockMembershipService.getLocalMember()).thenReturn(member);
 
-      when(testBrokerStartupContext.getClusterServices().getMembershipService().getLocalMember())
-          .thenReturn(mockMember);
+      when(testBrokerStartupContext.getClusterServices().getMembershipService())
+          .thenReturn(mockMembershipService);
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();

@@ -14,15 +14,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class ClusterServicesStepTest {
-
+  private static final BrokerCfg TEST_CONFIGURATION = new BrokerCfg();
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
@@ -35,6 +38,13 @@ class ClusterServicesStepTest {
 
   @BeforeEach
   void setUp() {
+    final int internalApiPort = SocketUtil.getNextAddress().getPort();
+    final var internalApiCfg = TEST_CONFIGURATION.getNetwork().getInternalApi();
+    internalApiCfg.setPort(internalApiPort);
+    internalApiCfg.setHost("localhost");
+    internalApiCfg.setAdvertisedPort(internalApiPort);
+    internalApiCfg.setAdvertisedHost("localhost");
+
     mockBrokerStartupContext = mock(BrokerStartupContext.class);
 
     mockClusterServices = mock(ClusterServicesImpl.class);
@@ -43,6 +53,7 @@ class ClusterServicesStepTest {
 
     when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
     when(mockBrokerStartupContext.getClusterServices()).thenReturn(mockClusterServices);
+    when(mockBrokerStartupContext.getBrokerConfiguration()).thenReturn(TEST_CONFIGURATION);
 
     future = CONCURRENCY_CONTROL.createFuture();
   }
@@ -58,13 +69,14 @@ class ClusterServicesStepTest {
   }
 
   @Test
-  void shouldStartClusterServicesOnStartup() {
+  void shouldRegisterClusterServicesOnStartup() {
     // when
     sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
     await().until(future::isDone);
 
     // then
-    verify(mockClusterServices).start();
+    final var argumentCaptor = ArgumentCaptor.forClass(ClusterServicesImpl.class);
+    verify(mockBrokerStartupContext).setClusterServices(argumentCaptor.capture());
   }
 
   @Test
@@ -85,5 +97,15 @@ class ClusterServicesStepTest {
 
     // then
     verify(mockClusterServices).stop();
+  }
+
+  @Test
+  void shouldUnregisterClusterServicesOnShutdown() {
+    // when
+    sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    await().until(future::isDone);
+
+    // then
+    verify(mockBrokerStartupContext).setClusterServices(null);
   }
 }

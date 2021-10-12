@@ -4,7 +4,7 @@
   <name>Zeebe BOM</name>
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
+  <version>1.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -14,7 +14,7 @@
     <artifactId>camunda-release-parent</artifactId>
     <version>3.8.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath />
+    <relativePath/>
   </parent>
 
   <properties>
@@ -25,8 +25,6 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
-
-    <version.netty>4.1.68.Final</version.netty>
 
     <version.java>11</version.java>
     <plugin.version.javadoc>3.3.1</plugin.version.javadoc>
@@ -221,13 +219,6 @@
         <version>${project.version}</version>
       </dependency>
 
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${version.netty}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 

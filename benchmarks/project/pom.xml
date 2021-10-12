@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>zeebe-benchmark</artifactId>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
+
+  <artifactId>zeebe-benchmark</artifactId>
 
   <licenses>
     <license>
@@ -88,6 +90,32 @@
     </dependency>
   </dependencies>
 
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
       <plugin>
@@ -103,6 +131,9 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>io.camunda.zeebe.AllInOne</mainClass>
+        </configuration>
         <executions>
           <execution>
             <goals>
@@ -110,9 +141,6 @@
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <mainClass>io.camunda.zeebe.AllInOne</mainClass>
-        </configuration>
       </plugin>
 
       <plugin>
@@ -121,10 +149,10 @@
         <executions>
           <execution>
             <id>all-in-one</id>
-            <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <finalName>all-in-one</finalName>
@@ -137,10 +165,10 @@
           </execution>
           <execution>
             <id>starter</id>
-            <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <finalName>starter</finalName>
@@ -153,10 +181,10 @@
           </execution>
           <execution>
             <id>worker</id>
-            <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>false</createDependencyReducedPom>
               <finalName>worker</finalName>
@@ -171,31 +199,4 @@
       </plugin>
     </plugins>
   </build>
-
-
-  <repositories>
-    <repository>
-      <id>zeebe</id>
-      <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>zeebe-snapshots</id>
-      <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 </project>

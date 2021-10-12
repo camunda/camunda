@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1631863702889,
+  "iteration": 1633608121108,
   "links": [],
   "panels": [
     {
@@ -452,7 +452,7 @@
           "fillGradient": 1,
           "gridPos": {
             "h": 5,
-            "w": 24,
+            "w": 12,
             "x": 0,
             "y": 7
           },
@@ -498,15 +498,6 @@
               "refId": "A"
             },
             {
-              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
-              "format": "time_series",
-              "hide": false,
-              "interval": "",
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}}-{{partition}}-exported",
-              "refId": "B"
-            },
-            {
               "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[1m])) by (pod, partition, processor)",
               "interval": "",
               "legendFormat": "{{pod}}-{{partition}}-{{processor}}-written",
@@ -537,8 +528,115 @@
               "format": "short",
               "label": null,
               "logBase": 1,
+              "max": "5000",
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:255",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
               "max": null,
               "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 1,
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 7
+          },
+          "hiddenSeries": false,
+          "id": 270,
+          "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "hideEmpty": false,
+            "hideZero": false,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": false,
+            "sideWidth": 250,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}}-{{partition}}-exported",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Exporting per Partition",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:254",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": "5000",
+              "min": "0",
               "show": true
             },
             {
@@ -5290,9 +5388,11 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows counts of all gRPC messages, which have been sent to the Zeebe Cluster.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -5320,9 +5420,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -5344,10 +5445,10 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "gRPC requests",
+          "title": "Total gRPC requests",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -5389,7 +5490,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -5417,9 +5519,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -10072,5 +10175,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 18
+  "version": 20
 }

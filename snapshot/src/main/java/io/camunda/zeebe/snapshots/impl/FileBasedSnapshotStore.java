@@ -12,8 +12,11 @@ import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -26,10 +29,8 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -108,36 +109,47 @@ public final class FileBasedSnapshotStore extends Actor
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
-    final List<FileBasedSnapshot> snapshots = new ArrayList<>();
     try (final var stream =
         Files.newDirectoryStream(
             snapshotDirectory, p -> !p.getFileName().toString().endsWith(CHECKSUM_SUFFIX))) {
       for (final var path : stream) {
         final var snapshot = collectSnapshot(path);
         if (snapshot != null) {
-          snapshots.add(snapshot);
           if ((latestPersistedSnapshot == null)
               || snapshot.getMetadata().compareTo(latestPersistedSnapshot.getMetadata()) >= 0) {
             latestPersistedSnapshot = snapshot;
           }
         }
       }
-      // Delete older snapshots
+      // Cleanup of the snapshot directory. Older or corrupted snapshots are deleted
       if (latestPersistedSnapshot != null) {
-        snapshots.remove(latestPersistedSnapshot);
-        if (!snapshots.isEmpty()) {
-          LOGGER.debug("Purging snapshots older than {}", latestPersistedSnapshot);
-          snapshots.forEach(
-              oldSnapshot -> {
-                LOGGER.debug("Deleting snapshot {}", oldSnapshot);
-                oldSnapshot.delete();
-              });
-        }
+        cleanupSnapshotDirectory(snapshotDirectory, latestPersistedSnapshot);
       }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
     return latestPersistedSnapshot;
+  }
+
+  private void cleanupSnapshotDirectory(
+      final Path snapshotDirectory, final FileBasedSnapshot latestPersistedSnapshot)
+      throws IOException {
+    final var latestChecksumFile = latestPersistedSnapshot.getChecksumFile();
+    final var latestDirectory = latestPersistedSnapshot.getDirectory();
+    try (final var paths =
+        Files.newDirectoryStream(
+            snapshotDirectory, p -> !p.equals(latestDirectory) && !p.equals(latestChecksumFile))) {
+      LOGGER.debug("Deleting snapshots other than {}", latestPersistedSnapshot.getId());
+      paths.forEach(
+          p -> {
+            try {
+              LOGGER.debug("Deleting {}", p);
+              FileUtil.deleteFolderIfExists(p);
+            } catch (final IOException e) {
+              LOGGER.warn("Unable to delete {}", p, e);
+            }
+          });
+    }
   }
 
   // TODO(npepinpe): using Either here would improve readability and observability, as validation
@@ -328,11 +340,8 @@ public final class FileBasedSnapshotStore extends Actor
     return newPendingSnapshot;
   }
 
-  // TODO(npepinpe): using Either here would improve readability and observability, as validation
-  //  can have better error messages, and the return type better expresses what we attempt to do,
-  //  i.e. either it failed (with an error) or it succeeded
   @Override
-  public Optional<TransientSnapshot> newTransientSnapshot(
+  public Either<SnapshotException, TransientSnapshot> newTransientSnapshot(
       final long index,
       final long term,
       final long processedPosition,
@@ -342,18 +351,18 @@ public final class FileBasedSnapshotStore extends Actor
         new FileBasedSnapshotMetadata(index, term, processedPosition, exportedPosition);
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
     if (currentSnapshot != null && currentSnapshot.getMetadata().compareTo(newSnapshotId) == 0) {
-      LOGGER.debug(
-          "Previous snapshot was taken for the same processed position {} and exported position {}, will not take snapshot.",
-          processedPosition,
-          exportedPosition);
-      return Optional.empty();
+      final String error =
+          String.format(
+              "Previous snapshot was taken for the same processed position %d and exported position %d.",
+              processedPosition, exportedPosition);
+      return Either.left(new SnapshotAlreadyExistsException(error));
     }
     final var directory = buildPendingSnapshotDirectory(newSnapshotId);
 
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor);
     addPendingSnapshot(newPendingSnapshot);
-    return Optional.of(newPendingSnapshot);
+    return Either.right(newPendingSnapshot);
   }
 
   private void addPendingSnapshot(final PersistableSnapshot pendingSnapshot) {

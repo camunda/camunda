@@ -165,7 +165,7 @@ public class DiskSpaceRecoveryClusteredTest {
   }
 
   private void waitUntilDiskSpaceNotAvailable(final Broker broker) throws InterruptedException {
-    final var diskSpaceMonitor = broker.getDiskSpaceUsageMonitor();
+    final var diskSpaceMonitor = broker.getBrokerContext().getDiskSpaceUsageMonitor();
 
     final CountDownLatch diskSpaceNotAvailable = new CountDownLatch(1);
     diskSpaceMonitor.addDiskUsageListener(
@@ -188,7 +188,7 @@ public class DiskSpaceRecoveryClusteredTest {
   }
 
   private void waitUntilDiskSpaceAvailable(final Broker broker) throws InterruptedException {
-    final var diskSpaceMonitor = broker.getDiskSpaceUsageMonitor();
+    final var diskSpaceMonitor = broker.getBrokerContext().getDiskSpaceUsageMonitor();
     final CountDownLatch diskSpaceAvailableAgain = new CountDownLatch(1);
     diskSpaceMonitor.addDiskUsageListener(
         new DiskSpaceUsageListener() {

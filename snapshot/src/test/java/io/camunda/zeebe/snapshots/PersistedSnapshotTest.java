@@ -42,7 +42,7 @@ public final class PersistedSnapshotTest {
   @Test
   public void shouldDeleteSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).orElseThrow();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
     transientSnapshot.take(this::writeSnapshot);
     final var persistedSnapshot = transientSnapshot.persist().join();
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
@@ -16,7 +17,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final ActorControl actor;
   private final FileBasedSnapshotStore snapshotStore;
   private final FileBasedSnapshotMetadata metadata;
-  private final ActorFuture<Boolean> takenFuture = new CompletableActorFuture<>();
+  private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private long checksum;
@@ -48,28 +49,34 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   }
 
   @Override
-  public ActorFuture<Boolean> take(final Predicate<Path> takeSnapshot) {
+  public ActorFuture<Void> take(final Consumer<Path> takeSnapshot) {
     actor.run(() -> takeInternal(takeSnapshot));
     return takenFuture;
   }
 
-  private void takeInternal(final Predicate<Path> takeSnapshot) {
+  private void takeInternal(final Consumer<Path> takeSnapshot) {
     final var snapshotMetrics = snapshotStore.getSnapshotMetrics();
 
     try (final var ignored = snapshotMetrics.startTimer()) {
       try {
-        isValid = takeSnapshot.test(getPath());
-        if (!isValid) {
-          abortInternal();
-        } else if (!directory.toFile().exists() || directory.toFile().listFiles().length == 0) {
+        takeSnapshot.accept(getPath());
+        if (!directory.toFile().exists() || directory.toFile().listFiles().length == 0) {
           // If no snapshot files are created, snapshot is not valid
-          isValid = false;
+          abortInternal();
+          takenFuture.completeExceptionally(
+              new IllegalStateException(
+                  String.format(
+                      "Expected to find transient snapshot in directory %s, but the directory is empty or does not exists",
+                      directory)));
+
         } else {
           checksum = SnapshotChecksum.calculate(directory);
+
+          snapshot = null;
+          isValid = true;
+          takenFuture.complete(null);
         }
 
-        snapshot = null;
-        takenFuture.complete(isValid);
       } catch (final Exception exception) {
         LOGGER.warn("Unexpected exception on taking snapshot ({})", metadata, exception);
         abortInternal();
@@ -112,14 +119,14 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       return;
     }
 
-    if (!takenFuture.isDone()) {
+    if (!takenFuture.isDone() || takenFuture.isCompletedExceptionally()) {
       future.completeExceptionally(new IllegalStateException("Snapshot is not taken"));
       return;
     }
 
     if (!isValid) {
       future.completeExceptionally(
-          new IllegalStateException("Snapshot is not valid. It may have been deleted."));
+          new SnapshotNotFoundException("Snapshot may have been already deleted."));
       return;
     }
 

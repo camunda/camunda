@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -21,11 +22,11 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthStatus;
-import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -51,7 +52,7 @@ public class ZeebePartitionTest {
   @Before
   public void setup() {
     ctx = mock(PartitionStartupAndTransitionContextImpl.class);
-    transition = spy(new NoopTransition());
+    transition = spy(new PartitionTransitionImpl(List.of(new NoopTransitionStep())));
 
     raft = mock(RaftPartition.class);
     when(raft.id()).thenReturn(new PartitionId("", 0));
@@ -79,6 +80,50 @@ public class ZeebePartitionTest {
 
     // then
     verify(transition).toLeader(1);
+  }
+
+  @Test
+  public void shouldInstallFollowerPartition() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(transition).toFollower(1);
+  }
+
+  @Test
+  public void shouldUpdateCurrentTermAndRoleAfterTransition() {
+    // given
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 2);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(ctx, atLeast(1)).setCurrentRole(Role.FOLLOWER);
+    verify(ctx, atLeast(1)).setCurrentTerm(2);
+  }
+
+  @Test
+  public void shouldUseCurrentTermForInactiveTransition() {
+    // given
+    schedulerRule.submitActor(partition);
+    when(ctx.getCurrentTerm()).thenReturn(3L);
+
+    // when
+    // term given for inactive role is ignored, hence we pass -1 here to verify that it uses
+    // the term from the context. In reality the term passes here will be a valid term.
+    partition.onNewRole(Role.INACTIVE, -1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(transition, atLeast(1)).toInactive(3);
   }
 
   @Test
@@ -160,7 +205,7 @@ public class ZeebePartitionTest {
 
     when(transition.toFollower(anyLong()))
         .thenReturn(CompletableActorFuture.completedExceptionally(new Exception("expected")));
-    when(transition.toInactive())
+    when(transition.toInactive(anyLong()))
         .then(
             invocation -> {
               latch.countDown();
@@ -184,7 +229,7 @@ public class ZeebePartitionTest {
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toFollower(0L);
     order.verify(raft).goInactive();
-    order.verify(transition).toInactive();
+    order.verify(transition).toInactive(anyLong());
   }
 
   @Test
@@ -194,7 +239,7 @@ public class ZeebePartitionTest {
     when(transition.toLeader(anyLong()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new UnrecoverableException("expected")));
-    when(transition.toInactive())
+    when(transition.toInactive(anyLong()))
         .then(
             invocation -> {
               latch.countDown();
@@ -210,36 +255,8 @@ public class ZeebePartitionTest {
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toLeader(0L);
-    order.verify(transition).toInactive();
+    order.verify(transition).toInactive(anyLong());
     order.verify(raft).goInactive();
-  }
-
-  private static class NoopTransition implements PartitionTransition {
-
-    @Override
-    public ActorFuture<Void> toFollower(final long currentTerm) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> toLeader(final long currentTerm) {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public ActorFuture<Void> toInactive() {
-      return CompletableActorFuture.completed(null);
-    }
-
-    @Override
-    public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
-      // Do nothing
-    }
-
-    @Override
-    public void updateTransitionContext(final PartitionTransitionContext transitionContext) {
-      // Do nothing
-    }
   }
 
   private static class NoopStartupStep implements PartitionStartupStep {
@@ -259,6 +276,26 @@ public class ZeebePartitionTest {
     public ActorFuture<PartitionStartupContext> shutdown(
         final PartitionStartupContext partitionStartupContext) {
       return CompletableActorFuture.completed(partitionStartupContext);
+    }
+  }
+
+  private static class NoopTransitionStep implements PartitionTransitionStep {
+
+    @Override
+    public ActorFuture<Void> prepareTransition(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> transitionTo(
+        final PartitionTransitionContext context, final long term, final Role targetRole) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public String getName() {
+      return "noop-transition-step";
     }
   }
 }

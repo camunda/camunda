@@ -1,17 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Transport</name>
-  <artifactId>zeebe-transport</artifactId>
-  <version>1.2.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
+
+  <artifactId>zeebe-transport</artifactId>
+  <version>1.3.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Zeebe Transport</name>
 
   <dependencies>
 
@@ -24,7 +27,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-utils</artifactId>
     </dependency>
-
 
     <dependency>
       <groupId>io.camunda</groupId>

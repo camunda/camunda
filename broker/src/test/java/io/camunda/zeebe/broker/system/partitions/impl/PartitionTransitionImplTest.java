@@ -34,9 +34,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class NewPartitionTransitionImplTest {
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(NewPartitionTransitionImplTest.class);
+class PartitionTransitionImplTest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PartitionTransitionImplTest.class);
 
   private static final TestConcurrencyControl TEST_CONCURRENCY_CONTROL =
       new TestConcurrencyControl();
@@ -67,8 +66,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep2.transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var sut = new NewPartitionTransitionImpl(of(mockStep1, mockStep2), mockContext);
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
 
     // when
     sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE).join();
@@ -90,8 +90,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep2.transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var sut = new NewPartitionTransitionImpl(of(mockStep1, mockStep2), mockContext);
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
 
     // when
     final var actualResult = sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE);
@@ -115,8 +116,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep2.transitionTo(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var sut = new NewPartitionTransitionImpl(of(spyStep1, mockStep2), mockContext);
+    final var sut = new PartitionTransitionImpl(of(spyStep1, mockStep2));
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
 
     final var secondTerm = 2L;
     final var secondRole = Role.FOLLOWER;
@@ -167,8 +169,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep1.prepareTransition(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var transition = new NewPartitionTransitionImpl(of(mockStep1), mockContext);
+    final var transition = new PartitionTransitionImpl(of(mockStep1));
     transition.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    transition.updateTransitionContext(mockContext);
 
     final var firstTransitionFuture = transition.transitionTo(1, Role.FOLLOWER);
 
@@ -219,8 +222,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep1.prepareTransition(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var transition = new NewPartitionTransitionImpl(of(mockStep1), mockContext);
+    final var transition = new PartitionTransitionImpl(of(mockStep1));
     transition.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    transition.updateTransitionContext(mockContext);
 
     transition.transitionTo(1, Role.FOLLOWER);
     transition.transitionTo(2, Role.LEADER);
@@ -266,8 +270,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep2.prepareTransition(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var sut = new NewPartitionTransitionImpl(of(mockStep1, mockStep2), mockContext);
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
 
     final var secondTerm = 2L;
     final var secondRole = Role.FOLLOWER;
@@ -302,8 +307,9 @@ class NewPartitionTransitionImplTest {
     when(mockStep2.prepareTransition(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
-    final var sut = new NewPartitionTransitionImpl(of(mockStep1, mockStep2), mockContext);
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
 
     // when
     final var firstTransitionFuture = sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE);

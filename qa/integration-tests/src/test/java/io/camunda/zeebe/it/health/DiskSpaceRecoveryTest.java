@@ -192,7 +192,8 @@ public class DiskSpaceRecoveryTest {
   }
 
   private void waitUntilDiskSpaceNotAvailable() throws InterruptedException {
-    final var diskSpaceMonitor = embeddedBrokerRule.getBroker().getDiskSpaceUsageMonitor();
+    final var diskSpaceMonitor =
+        embeddedBrokerRule.getBroker().getBrokerContext().getDiskSpaceUsageMonitor();
 
     final CountDownLatch diskSpaceNotAvailable = new CountDownLatch(1);
     diskSpaceMonitor.addDiskUsageListener(
@@ -215,7 +216,8 @@ public class DiskSpaceRecoveryTest {
   }
 
   private void waitUntilDiskSpaceAvailable() throws InterruptedException {
-    final var diskSpaceMonitor = embeddedBrokerRule.getBroker().getDiskSpaceUsageMonitor();
+    final var diskSpaceMonitor =
+        embeddedBrokerRule.getBroker().getBrokerContext().getDiskSpaceUsageMonitor();
     final CountDownLatch diskSpaceAvailableAgain = new CountDownLatch(1);
     diskSpaceMonitor.addDiskUsageListener(
         new DiskSpaceUsageListener() {
