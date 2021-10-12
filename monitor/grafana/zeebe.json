@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1633608121108,
+  "iteration": 1633930524100,
   "links": [],
   "panels": [
     {
@@ -1430,6 +1430,121 @@
       "id": 203,
       "panels": [
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the processing queue size over time. Processing queue defines, what is already appended but not yet processed by the stream processor.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "hiddenSeries": false,
+          "id": 272,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum by (partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - sum by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "interval": "",
+              "legendFormat": "Partition {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [
+            {
+              "$$hashKey": "object:2366",
+              "colorMode": "warning",
+              "fill": true,
+              "line": true,
+              "op": "gt",
+              "value": 100,
+              "yaxis": "left"
+            },
+            {
+              "$$hashKey": "object:2372",
+              "colorMode": "critical",
+              "fill": true,
+              "line": true,
+              "op": "gt",
+              "value": 150,
+              "yaxis": "left"
+            }
+          ],
+          "timeRegions": [],
+          "title": "Processing Queue size",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:2345",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:2346",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "datasource": "${DS_PROMETHEUS}",
           "description": "Shows how many positions are not updated by exporters per partition. Means what is the difference between last committed exporter position and committed log position.",
           "fieldConfig": {
@@ -1456,7 +1571,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 9
           },
           "id": 192,
           "options": {
@@ -1504,7 +1619,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 2
+            "y": 9
           },
           "id": 196,
           "pageSize": null,
@@ -1585,7 +1700,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 2
+            "y": 9
           },
           "id": 200,
           "pageSize": null,
@@ -1678,7 +1793,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 6
+            "y": 13
           },
           "id": 194,
           "options": {
@@ -1725,7 +1840,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 6
+            "y": 13
           },
           "id": 199,
           "pageSize": null,
@@ -1806,7 +1921,7 @@
             "h": 12,
             "w": 5,
             "x": 12,
-            "y": 6
+            "y": 13
           },
           "id": 198,
           "pageSize": null,
@@ -1893,7 +2008,7 @@
             "h": 12,
             "w": 7,
             "x": 17,
-            "y": 6
+            "y": 13
           },
           "id": 268,
           "pageSize": null,
@@ -1986,7 +2101,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 12
+            "y": 19
           },
           "id": 189,
           "options": {
@@ -2034,7 +2149,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 12
+            "y": 19
           },
           "id": 201,
           "pageSize": null,
