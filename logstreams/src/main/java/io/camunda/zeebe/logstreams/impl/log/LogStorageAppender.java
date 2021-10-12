@@ -27,7 +27,6 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
@@ -117,7 +116,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     // Commit position is the position of the last event.
     appendBackpressureMetrics.newEntryToAppend();
     if (appendEntryLimiter.tryAcquire(positions.getRight())) {
-      final var listener = new Listener(this, positions.getRight(), ActorClock.currentTimeMillis());
+      final var listener = new Listener(this, positions.getRight(), System.currentTimeMillis());
       logStorage.append(positions.getLeft(), positions.getRight(), copiedBuffer, listener);
 
       blockPeek.markCompleted();
@@ -230,7 +229,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     actor.run(
         () -> {
           appenderMetrics.setLastAppendedPosition(highestPosition);
-          appenderMetrics.appendLatency(startTime, ActorClock.currentTimeMillis());
+          appenderMetrics.appendLatency(startTime, System.currentTimeMillis());
         });
   }
 
@@ -238,7 +237,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     actor.run(
         () -> {
           appenderMetrics.setLastCommittedPosition(highestPosition);
-          appenderMetrics.commitLatency(startTime, ActorClock.currentTimeMillis());
+          appenderMetrics.commitLatency(startTime, System.currentTimeMillis());
         });
   }
 }

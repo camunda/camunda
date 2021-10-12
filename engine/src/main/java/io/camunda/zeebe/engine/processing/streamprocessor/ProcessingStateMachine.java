@@ -30,7 +30,6 @@ import io.camunda.zeebe.util.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
@@ -232,7 +231,7 @@ public final class ProcessingStateMachine {
       return;
     }
 
-    processingStartTime = ActorClock.currentTimeMillis();
+    processingStartTime = System.currentTimeMillis();
 
     try {
       final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
@@ -432,7 +431,7 @@ public final class ProcessingStateMachine {
           notifyProcessedListener(typedEvent);
 
           metrics.processingDuration(
-              metadata.getRecordType(), processingStartTime, ActorClock.currentTimeMillis());
+              metadata.getRecordType(), processingStartTime, System.currentTimeMillis());
           // continue with next event
           currentProcessor = null;
           actor.submit(this::readNextEvent);
