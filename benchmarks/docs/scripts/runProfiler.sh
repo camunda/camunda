@@ -4,23 +4,12 @@
 #   kubectl cp zeebe-0:/tmp/profiler/flamegraph-2019-03-27_12-42-33.svg .
 set -oxe pipefail
 
-unset JAVA_TOOL_OPTIONS
+filename=$1
 
-if hash apk 2> /dev/null; then
-    apk add --no-cache openjdk11 openjdk11-dbg
-else
-    mkdir -p /usr/share/man/man1
-    apt-get update
-    apt-get install -y openjdk-11-jdk openjdk-11-dbg
-    apt-get install -y wget
-fi
-
-PID=$(jps | grep StandaloneBroker | cut -d " " -f 1)
+PID=$(jps | grep Standalone | cut -d " " -f 1)
 
 mkdir -p /tmp/profiler
 cd /tmp/profiler
-
-wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.5/async-profiler-1.5-linux-x64.tar.gz | tar xzv
 
 # Running Profiler on k8:
 #
@@ -34,4 +23,4 @@ wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/downloa
 #
 # https://blog.alicegoldfuss.com/enabling-perf-in-kubernetes/
 # https://wenfeng-gao.github.io/post/how-to-use-async-profiler-to-profile-java-in-contianer/
-./profiler.sh -e itimer -d 60 -f $PWD/flamegraph-$(date +%Y-%m-%d_%H-%M-%S).svg $PID
+./profiler.sh -e itimer -d 60 -t -f "$PWD/$filename" $PID
