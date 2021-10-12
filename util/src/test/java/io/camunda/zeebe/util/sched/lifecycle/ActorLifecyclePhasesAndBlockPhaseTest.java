@@ -14,7 +14,7 @@ import static io.camunda.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -98,7 +98,7 @@ public final class ActorLifecyclePhasesAndBlockPhaseTest {
     // then
     assertThat(closeFuture).isNotDone();
     assertThat(actor.phases).isEqualTo(newArrayList(STARTING, STARTED, CLOSE_REQUESTED));
-    verifyZeroInteractions(callback);
+    verifyNoMoreInteractions(callback);
   }
 
   @Test

@@ -15,7 +15,7 @@ import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -98,7 +98,7 @@ public final class ActorLifecyclePhasesAndRunOnCompletionTest {
     // then
     assertThat(closeFuture).isDone();
     assertThat(actor.phases).isEqualTo(newArrayList(LifecycleRecordingActor.FULL_LIFECYCLE));
-    verifyZeroInteractions(callback);
+    verifyNoMoreInteractions(callback);
   }
 
   @Test
@@ -124,7 +124,7 @@ public final class ActorLifecyclePhasesAndRunOnCompletionTest {
     // then
     assertThat(closeFuture).isDone();
     assertThat(actor.phases).isEqualTo(LifecycleRecordingActor.FULL_LIFECYCLE);
-    verifyZeroInteractions(callback);
+    verifyNoMoreInteractions(callback);
   }
 
   @Test
@@ -150,7 +150,7 @@ public final class ActorLifecyclePhasesAndRunOnCompletionTest {
     // then
     assertThat(closeFuture).isDone();
     assertThat(actor.phases).isEqualTo(newArrayList(LifecycleRecordingActor.FULL_LIFECYCLE));
-    verifyZeroInteractions(callback);
+    verifyNoMoreInteractions(callback);
   }
 
   @Test
@@ -178,7 +178,7 @@ public final class ActorLifecyclePhasesAndRunOnCompletionTest {
     // then
     assertThat(closeFuture).isNotDone();
     assertThat(actor.phases).isEqualTo(newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING));
-    verifyZeroInteractions(callback);
+    verifyNoMoreInteractions(callback);
   }
 
   @Test
