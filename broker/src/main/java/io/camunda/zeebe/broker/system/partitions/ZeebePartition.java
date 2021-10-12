@@ -23,7 +23,6 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.startup.StartupProcess;
@@ -237,12 +236,12 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> leaderTransition(final long newTerm) {
-    final var installStartTime = ActorClock.currentTimeMillis();
+    final var installStartTime = System.currentTimeMillis();
     final var leaderTransitionFuture = transition.toLeader(newTerm);
     leaderTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
-            final var leaderTransitionLatency = ActorClock.currentTimeMillis() - installStartTime;
+            final var leaderTransitionLatency = System.currentTimeMillis() - installStartTime;
             roleMetrics.setLeaderTransitionLatency(leaderTransitionLatency);
             final List<ActorFuture<Void>> listenerFutures =
                 context.notifyListenersOfBecomingLeader(newTerm);
