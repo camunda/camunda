@@ -680,7 +680,7 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     );
     reportData.setFilter(
       ProcessFilterBuilder.filter()
-        .fixedStartDate()
+        .fixedInstanceStartDate()
         .start(null)
         .end(past.minusSeconds(1L))
         .add()
@@ -694,7 +694,12 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedStartDate().start(past).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedInstanceStartDate()
+                           .start(past)
+                           .end(null)
+                           .add()
+                           .buildList());
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

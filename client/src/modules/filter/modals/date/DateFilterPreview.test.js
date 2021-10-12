@@ -18,7 +18,7 @@ it('should create Today/Yesterday preview', () => {
     },
   };
 
-  const node = shallow(<DateFilterPreview filterType="startDate" filter={filter} />);
+  const node = shallow(<DateFilterPreview filterType="instanceStartDate" filter={filter} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -32,7 +32,7 @@ it('should create correct last... with custom preview', () => {
     },
   };
 
-  const node = shallow(<DateFilterPreview filterType="endDate" filter={filter} />);
+  const node = shallow(<DateFilterPreview filterType="instanceEndDate" filter={filter} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -44,7 +44,7 @@ it('should create correct fixed date preview', () => {
     end: '2019-05-11T23:59:59',
   };
 
-  const node = shallow(<DateFilterPreview filterType="startDate" filter={filter} />);
+  const node = shallow(<DateFilterPreview filterType="instanceStartDate" filter={filter} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -56,7 +56,7 @@ it('should include time information if fixed date filter contains time info', ()
     end: '2019-05-11T19:24:07',
   };
 
-  const node = shallow(<DateFilterPreview filterType="startDate" filter={filter} />);
+  const node = shallow(<DateFilterPreview filterType="instanceStartDate" filter={filter} />);
 
   expect(node).toMatchSnapshot();
 });

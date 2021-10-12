@@ -35,8 +35,8 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
         switch (type) {
           case 'state':
             return <InstanceStateFilter key={type} filter={filter} setFilter={setFilter} />;
-          case 'startDate':
-          case 'endDate':
+          case 'instanceStartDate':
+          case 'instanceEndDate':
             const dateFilter = filter.find((filter) => filter.type === type);
             return (
               <DateFilter

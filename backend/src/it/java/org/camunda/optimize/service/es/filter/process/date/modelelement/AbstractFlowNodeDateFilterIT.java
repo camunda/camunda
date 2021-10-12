@@ -42,10 +42,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_DURATION;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_VARIABLE;
@@ -209,7 +209,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     final List<ProcessFilterDto<?>> filters = createViewLevelDateFilterForDate2();
-    filters.addAll(ProcessFilterBuilder.filter().fixedStartDate().start(DATE_1).end(DATE_1).add().buildList());
+    filters.addAll(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(DATE_1).end(DATE_1).add().buildList());
     final ProcessReportDataDto reportData = buildReportData(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
     final String reportId = reportClient.createSingleProcessReport(reportData);
 
@@ -331,7 +331,7 @@ public abstract class AbstractFlowNodeDateFilterIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     final List<ProcessFilterDto<?>> filters = createInstanceLevelDateFilterForDate1(singletonList(START_EVENT));
-    filters.addAll(ProcessFilterBuilder.filter().fixedStartDate().start(DATE_1).end(DATE_1).add().buildList());
+    filters.addAll(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(DATE_1).end(DATE_1).add().buildList());
     final ProcessReportDataDto reportData = buildReportData(FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, filters);
     final String reportId = reportClient.createSingleProcessReport(reportData);
 

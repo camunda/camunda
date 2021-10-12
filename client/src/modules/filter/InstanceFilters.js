@@ -34,11 +34,11 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
         </Dropdown.Option>
       )}
       <Dropdown.Submenu label={t('common.filter.types.date')}>
-        <Dropdown.Option onClick={openNewFilterModal('startDate')}>
-          {t('common.filter.types.startDate')}
+        <Dropdown.Option onClick={openNewFilterModal('instanceStartDate')}>
+          {t('common.filter.types.instanceStartDate')}
         </Dropdown.Option>
-        <Dropdown.Option onClick={openNewFilterModal('endDate')}>
-          {t('common.filter.types.endDate')}
+        <Dropdown.Option onClick={openNewFilterModal('instanceEndDate')}>
+          {t('common.filter.types.instanceEndDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Submenu
@@ -46,10 +46,10 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
         label={t('common.filter.types.flowNodeDate')}
       >
         <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
-          {t('common.filter.types.startDate')}
+          {t('common.filter.types.instanceStartDate')}
         </Dropdown.Option>
         <Dropdown.Option onClick={openNewFilterModal('flowNodeEndDate')}>
-          {t('common.filter.types.endDate')}
+          {t('common.filter.types.instanceEndDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       <Dropdown.Submenu label={t('common.filter.types.duration')}>

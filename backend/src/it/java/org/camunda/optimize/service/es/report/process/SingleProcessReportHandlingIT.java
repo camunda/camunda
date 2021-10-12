@@ -277,7 +277,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     reportData.setProcessDefinitionVersion("123");
 
     reportData.getFilter().addAll(
-      ProcessFilterBuilder.filter().fixedStartDate()
+      ProcessFilterBuilder.filter().fixedInstanceStartDate()
         .start(OffsetDateTime.now().minusDays(1L))
         .end(OffsetDateTime.now())
         .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList());

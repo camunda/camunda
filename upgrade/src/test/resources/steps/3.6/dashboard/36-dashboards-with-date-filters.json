@@ -1,0 +1,7 @@
+{"index":{"_index":"optimize-dashboard_v4","_id":"dashboard-1"}}
+{"id":"dashboard-1","name":"Dashboardwithfilters","lastModified":"2021-10-04T12:41:13.200+0200","created":"2021-10-04T12:41:10.507+0200","owner":"demo","lastModifier":"demo","collectionId":null,"availableFilters":[{"data":{"defaultValues":null},"type":"startDate"},{"data":{"defaultValues":null},"type":"endDate"},{"data":{"defaultValues":null},"type":"state"}],"reports":[{"configuration":null,"id":"caa1e0ad-5954-4028-8060-1b6f566e7cca","position":null,"dimensions":null}]}
+{"index":{"_index":"optimize-dashboard_v4","_id":"dashboard-2"}}
+{"id":"dashboard-2","name":"Dashboardwithoutfilters","lastModified":"2021-11-04T12:41:13.200+0200","created":"2021-11-04T12:41:10.507+0200","owner":"demo","lastModifier":"demo","collectionId":null,"availableFilters":[],"reports":[{"configuration":null,"id":"caa1e0ad-5954-4028-8060-1b6f566e7cca","position":null,"dimensions":null}]}
+{"index":{"_index":"optimize-dashboard_v4","_id":"dashboard-3"}}
+{"id":"dashboard-2","name":"Dashboardwithnullfilters","lastModified":"2021-10-05T12:41:13.200+0200","created":"2021-10-05T12:41:10.507+0200","owner":"demo","lastModifier":"demo","collectionId":null,"availableFilters":null,"reports":[{"configuration":null,"id":"caa1e0ad-5954-4028-8060-1b6f566e7cca","position":null,"dimensions":null}]}
+

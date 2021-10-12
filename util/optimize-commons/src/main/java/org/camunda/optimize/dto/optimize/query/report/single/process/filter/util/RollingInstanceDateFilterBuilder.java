@@ -9,47 +9,47 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 
-public class RollingDateFilterBuilder {
+public class RollingInstanceDateFilterBuilder {
 
   private final ProcessFilterBuilder filterBuilder;
   private RollingDateFilterStartDto start;
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private RollingDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private RollingInstanceDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static RollingDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    RollingDateFilterBuilder builder = new RollingDateFilterBuilder(filterBuilder);
+  static RollingInstanceDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
+    RollingInstanceDateFilterBuilder builder = new RollingInstanceDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
 
-  static RollingDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    RollingDateFilterBuilder builder = new RollingDateFilterBuilder(filterBuilder);
+  static RollingInstanceDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
+    RollingInstanceDateFilterBuilder builder = new RollingInstanceDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }
 
-  public RollingDateFilterBuilder start(Long value, DateFilterUnit unit) {
+  public RollingInstanceDateFilterBuilder start(Long value, DateFilterUnit unit) {
     this.start = new RollingDateFilterStartDto(value, unit);
     return this;
   }
 
-  public RollingDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
+  public RollingInstanceDateFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
     ProcessFilterDto<DateFilterDataDto<?>> filterDto =
-      type.equals("endDate") ? new EndDateFilterDto() : new StartDateFilterDto();
+      type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
     filterDto.setData(new RollingDateFilterDataDto(start));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);

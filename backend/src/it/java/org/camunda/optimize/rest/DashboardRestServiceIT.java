@@ -15,9 +15,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardBooleanVariableFilterDataDto;
@@ -658,14 +658,14 @@ public class DashboardRestServiceIT extends AbstractIT {
     return Stream.of(
       null,
       Collections.emptyList(),
-      Collections.singletonList(createDashboardStartDateFilterWithDefaultValues(null)),
+      Collections.singletonList(createDashboardInstanceStartDateFilterWithDefaultValues(null)),
       Arrays.asList(
-        createDashboardStartDateFilterWithDefaultValues(null),
-        createDashboardEndDateFilterWithDefaultValues(null)
+        createDashboardInstanceStartDateFilterWithDefaultValues(null),
+        createDashboardInstanceEndDateFilterWithDefaultValues(null)
       ),
       Arrays.asList(
-        createDashboardStartDateFilterWithDefaultValues(null),
-        createDashboardEndDateFilterWithDefaultValues(null),
+        createDashboardInstanceStartDateFilterWithDefaultValues(null),
+        createDashboardInstanceEndDateFilterWithDefaultValues(null),
         createDashboardStateFilterWithDefaultValues(null)
       ),
       Collections.singletonList(createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar")),
@@ -727,8 +727,8 @@ public class DashboardRestServiceIT extends AbstractIT {
         ),
         createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, false),
         createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), MembershipFilterOperator.IN, false),
-        createDashboardStartDateFilterWithDefaultValues(null),
-        createDashboardEndDateFilterWithDefaultValues(null),
+        createDashboardInstanceStartDateFilterWithDefaultValues(null),
+        createDashboardInstanceEndDateFilterWithDefaultValues(null),
         createDashboardStateFilterWithDefaultValues(null)
       ),
       Arrays.asList(
@@ -753,8 +753,8 @@ public class DashboardRestServiceIT extends AbstractIT {
         ),
         createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), MembershipFilterOperator.IN, true),
         createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), MembershipFilterOperator.IN, true),
-        createDashboardStartDateFilterWithDefaultValues(null),
-        createDashboardEndDateFilterWithDefaultValues(null),
+        createDashboardInstanceStartDateFilterWithDefaultValues(null),
+        createDashboardInstanceEndDateFilterWithDefaultValues(null),
         createDashboardStateFilterWithDefaultValues(null)
       ),
       Arrays.asList(
@@ -777,12 +777,12 @@ public class DashboardRestServiceIT extends AbstractIT {
         createDashboardDoubleVariableFilterWithDefaultValues(),
         createDashboardIntegerVariableFilterWithDefaultValues(),
         createDashboardStateFilterWithDefaultValues(Collections.singletonList("canceledInstancesOnly")),
-        createDashboardStartDateFilterWithDefaultValues(
+        createDashboardInstanceStartDateFilterWithDefaultValues(
           new FixedDateFilterDataDto(
             OffsetDateTime.parse("2021-06-07T18:00:00+02:00"),
             OffsetDateTime.parse("2021-06-08T18:00:00+02:00")
           )),
-        createDashboardEndDateFilterWithDefaultValues(
+        createDashboardInstanceEndDateFilterWithDefaultValues(
           new FixedDateFilterDataDto(
             OffsetDateTime.parse("2021-06-05T18:00:00+02:00"),
             OffsetDateTime.parse("2021-06-06T18:00:00+02:00")
@@ -796,22 +796,22 @@ public class DashboardRestServiceIT extends AbstractIT {
         )
       ),
       Collections.singletonList(
-        createDashboardEndDateFilterWithDefaultValues(
+        createDashboardInstanceEndDateFilterWithDefaultValues(
           new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(1L, DateFilterUnit.MINUTES))
         )
       ),
       Collections.singletonList(
-        createDashboardEndDateFilterWithDefaultValues(
+        createDashboardInstanceEndDateFilterWithDefaultValues(
           new RollingDateFilterDataDto(new RollingDateFilterStartDto(2L, DateFilterUnit.YEARS))
         )
       ),
       Collections.singletonList(
-        createDashboardStartDateFilterWithDefaultValues(
+        createDashboardInstanceStartDateFilterWithDefaultValues(
           new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(3L, DateFilterUnit.SECONDS))
         )
       ),
       Collections.singletonList(
-        createDashboardStartDateFilterWithDefaultValues(
+        createDashboardInstanceStartDateFilterWithDefaultValues(
           new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS))
         )
       )
@@ -832,12 +832,12 @@ public class DashboardRestServiceIT extends AbstractIT {
         createDashboardCandidateGroupFilter(Collections.emptyList(), MembershipFilterOperator.NOT_IN, true)
       ),
       Arrays.asList(
-        new DashboardStartDateFilterDto(),
-        new DashboardStartDateFilterDto()
+        new DashboardInstanceStartDateFilterDto(),
+        new DashboardInstanceStartDateFilterDto()
       ),
       Arrays.asList(
-        new DashboardEndDateFilterDto(),
-        new DashboardEndDateFilterDto()
+        new DashboardInstanceEndDateFilterDto(),
+        new DashboardInstanceEndDateFilterDto()
       ),
       Arrays.asList(
         new DashboardStateFilterDto(),
@@ -1035,14 +1035,14 @@ public class DashboardRestServiceIT extends AbstractIT {
     return filterDto;
   }
 
-  private static DashboardFilterDto<?> createDashboardStartDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
-    DashboardStartDateFilterDto filterDto = new DashboardStartDateFilterDto();
+  private static DashboardFilterDto<?> createDashboardInstanceStartDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+    DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
     filterDto.setData(new DashboardDateFilterDataDto(defaultValues));
     return filterDto;
   }
 
-  private static DashboardFilterDto<?> createDashboardEndDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
-    DashboardEndDateFilterDto filterDto = new DashboardEndDateFilterDto();
+  private static DashboardFilterDto<?> createDashboardInstanceEndDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+    DashboardInstanceEndDateFilterDto filterDto = new DashboardInstanceEndDateFilterDto();
     filterDto.setData(new DashboardDateFilterDataDto(defaultValues));
     return filterDto;
   }

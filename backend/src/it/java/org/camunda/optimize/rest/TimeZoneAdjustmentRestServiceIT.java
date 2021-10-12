@@ -885,7 +885,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     List<ProcessFilterDto<?>> fixedStartDateFilter =
       ProcessFilterBuilder.filter()
-        .fixedStartDate()
+        .fixedInstanceStartDate()
         // the offset of the filter should be respected
         .start(now.withOffsetSameInstant(ZoneOffset.ofHours(+18)))
         .end(now.plusHours(1).withOffsetSameInstant(ZoneOffset.ofHours(+18)))
@@ -967,7 +967,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     List<ProcessFilterDto<?>> relativeStartDateFilter =
       ProcessFilterBuilder.filter()
-        .relativeStartDate()
+        .relativeInstanceStartDate()
         // add a relative date filter for this year
         .start(0L, DateFilterUnit.YEARS)
         .add()
@@ -1018,7 +1018,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     List<ProcessFilterDto<?>> relativeStartDateFilter =
       ProcessFilterBuilder.filter()
-        .relativeStartDate()
+        .relativeInstanceStartDate()
         // add a relative date filter for this year
         .start(0L, DateFilterUnit.YEARS)
         .add()

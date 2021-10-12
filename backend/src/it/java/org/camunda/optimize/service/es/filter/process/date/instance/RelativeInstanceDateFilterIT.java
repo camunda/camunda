@@ -90,7 +90,7 @@ public class RelativeInstanceDateFilterIT extends AbstractInstanceDateFilterIT {
       engineDto.getVersionAsString()
     );
     reportData.setFilter(ProcessFilterBuilder.filter()
-                           .relativeStartDate()
+                           .relativeInstanceStartDate()
                            .start(1L, DateFilterUnit.DAYS)
                            .add()
                            .buildList());

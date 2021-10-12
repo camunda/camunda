@@ -54,17 +54,17 @@ it('should reset the filter state', () => {
   const node = shallow(
     <InstanceStateFilter
       {...props}
-      filter={[{type: 'runningInstancesOnly'}, {type: 'startDate'}]}
+      filter={[{type: 'runningInstancesOnly'}, {type: 'instanceStartDate'}]}
     />
   );
 
   node.find(Button).simulate('click');
 
-  expect(props.setFilter).toHaveBeenCalledWith([{type: 'startDate'}]);
+  expect(props.setFilter).toHaveBeenCalledWith([{type: 'instanceStartDate'}]);
 });
 
 it('should disable the reset button if no filter is active', () => {
-  const node = shallow(<InstanceStateFilter {...props} filter={[{type: 'startDate'}]} />);
+  const node = shallow(<InstanceStateFilter {...props} filter={[{type: 'instanceStartDate'}]} />);
 
   expect(node.find(Button)).toHaveProp('disabled', true);
 });
