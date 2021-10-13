@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
-import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 
@@ -18,7 +17,6 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
-  public static final int DEFAULT_MONITORING_API_PORT = 9600;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
 
   private String host = DEFAULT_HOST;
@@ -28,7 +26,6 @@ public final class NetworkCfg implements ConfigurationEntry {
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
-  private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
   @Override
   public void init(final BrokerCfg brokerCfg, final String brokerBase) {
@@ -38,7 +35,6 @@ public final class NetworkCfg implements ConfigurationEntry {
   public void applyDefaults() {
     commandApi.applyDefaults(this);
     internalApi.applyDefaults(this);
-    monitoringApi.applyDefaults(this);
   }
 
   public String getHost() {
@@ -81,14 +77,6 @@ public final class NetworkCfg implements ConfigurationEntry {
     return commandApi;
   }
 
-  public SocketBindingCfg getMonitoringApi() {
-    return monitoringApi;
-  }
-
-  public void setMonitoringApi(final MonitoringApiCfg monitoringApi) {
-    this.monitoringApi = monitoringApi;
-  }
-
   public SocketBindingCfg getInternalApi() {
     return internalApi;
   }
@@ -112,8 +100,6 @@ public final class NetworkCfg implements ConfigurationEntry {
         + commandApi
         + ", internalApi="
         + internalApi
-        + ", monitoringApi="
-        + monitoringApi
         + '}';
   }
 }
