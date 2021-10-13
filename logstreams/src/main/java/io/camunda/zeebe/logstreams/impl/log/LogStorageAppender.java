@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.prometheus.client.Histogram.Timer;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Map;
@@ -116,7 +117,12 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     // Commit position is the position of the last event.
     appendBackpressureMetrics.newEntryToAppend();
     if (appendEntryLimiter.tryAcquire(positions.getRight())) {
-      final var listener = new Listener(this, positions.getRight(), System.currentTimeMillis());
+      final var listener =
+          new Listener(
+              this,
+              positions.getRight(),
+              appenderMetrics.startAppendLatencyTimer(),
+              appenderMetrics.startCommitLatencyTimer());
       logStorage.append(positions.getLeft(), positions.getRight(), copiedBuffer, listener);
 
       blockPeek.markCompleted();
@@ -225,19 +231,21 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     actor.run(() -> appendEntryLimiter.onCommit(highestPosition));
   }
 
-  void notifyWritePosition(final long highestPosition, final long startTime) {
+  void notifyWritePosition(final long highestPosition, final Timer appendLatencyTimer) {
     actor.run(
         () -> {
           appenderMetrics.setLastAppendedPosition(highestPosition);
-          appenderMetrics.appendLatency(startTime, System.currentTimeMillis());
+          // observe append latency
+          appendLatencyTimer.close();
         });
   }
 
-  void notifyCommitPosition(final long highestPosition, final long startTime) {
+  void notifyCommitPosition(final long highestPosition, final Timer commitLatencyTimer) {
     actor.run(
         () -> {
           appenderMetrics.setLastCommittedPosition(highestPosition);
-          appenderMetrics.commitLatency(startTime, System.currentTimeMillis());
+          // observe commit latency
+          commitLatencyTimer.close();
         });
   }
 }

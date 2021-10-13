@@ -9,23 +9,29 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import io.atomix.raft.RaftException.NoLeader;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.prometheus.client.Histogram.Timer;
 import java.util.NoSuchElementException;
 
 public final class Listener implements AppendListener {
   private final LogStorageAppender appender;
   private final long highestPosition;
-  private final long startTime;
+  private final Timer appendLatencyTimer;
+  private final Timer commitLatencyTimer;
 
   public Listener(
-      final LogStorageAppender appender, final long highestPosition, final long startTime) {
+      final LogStorageAppender appender,
+      final long highestPosition,
+      final Timer startAppendLatencyTimer,
+      final Timer startCommitLatencyTimer) {
     this.appender = appender;
     this.highestPosition = highestPosition;
-    this.startTime = startTime;
+    appendLatencyTimer = startAppendLatencyTimer;
+    commitLatencyTimer = startCommitLatencyTimer;
   }
 
   @Override
   public void onWrite(final long address) {
-    appender.notifyWritePosition(highestPosition, startTime);
+    appender.notifyWritePosition(highestPosition, appendLatencyTimer);
   }
 
   @Override
@@ -47,7 +53,7 @@ public final class Listener implements AppendListener {
   @Override
   public void onCommit(final long address) {
     releaseBackPressure();
-    appender.notifyCommitPosition(highestPosition, startTime);
+    appender.notifyCommitPosition(highestPosition, commitLatencyTimer);
   }
 
   @Override
