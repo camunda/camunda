@@ -236,13 +236,12 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> leaderTransition(final long newTerm) {
-    final var installStartTime = System.currentTimeMillis();
+    final var latencyTimer = roleMetrics.startLeaderTransitionLatencyTimer();
     final var leaderTransitionFuture = transition.toLeader(newTerm);
     leaderTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
-            final var leaderTransitionLatency = System.currentTimeMillis() - installStartTime;
-            roleMetrics.setLeaderTransitionLatency(leaderTransitionLatency);
+            latencyTimer.close();
             final List<ActorFuture<Void>> listenerFutures =
                 context.notifyListenersOfBecomingLeader(newTerm);
             actor.runOnCompletion(
