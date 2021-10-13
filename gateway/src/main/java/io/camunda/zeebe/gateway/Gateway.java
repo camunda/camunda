@@ -193,10 +193,8 @@ public final class Gateway {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
-    if (gatewayCfg.getMonitoring().isEnabled()) {
-      final var interceptor = MonitoringServerInterceptor.create(Configuration.allMetrics());
-      interceptors.add(interceptor);
-    }
+    final var interceptor = MonitoringServerInterceptor.create(Configuration.allMetrics());
+    interceptors.add(interceptor);
 
     return ServerInterceptors.intercept(service, interceptors);
   }
