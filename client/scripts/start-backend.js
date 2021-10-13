@@ -151,8 +151,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         process.on('SIGINT', stopDocker);
         process.on('SIGTERM', stopDocker);
 
-        // wait for the engine rest endpoint to be up before resolving the promise
-        serverCheck('http://localhost:8080', resolve);
+        // wait for the engine/zeebe rest endpoint to be up before resolving the promise
+        serverCheck(zeebeMode ? 'http://localhost:9600/ready' : 'http://localhost:8080', resolve);
       });
     }
 
