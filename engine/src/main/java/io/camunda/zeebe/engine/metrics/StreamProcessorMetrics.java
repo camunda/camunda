@@ -76,11 +76,8 @@ public final class StreamProcessorMetrics {
     PROCESSING_LATENCY.labels(partitionIdLabel).observe((processed - written) / 1000f);
   }
 
-  public void processingDuration(
-      final RecordType recordType, final long started, final long processed) {
-    PROCESSING_DURATION
-        .labels(recordType.name(), partitionIdLabel)
-        .observe((processed - started) / 1000f);
+  public Histogram.Timer startProcessingDurationTimer(final RecordType recordType) {
+    return PROCESSING_DURATION.labels(recordType.name(), partitionIdLabel).startTimer();
   }
 
   /** We only process commands. */
