@@ -48,6 +48,14 @@ public final class GatewayCfgTest {
     CUSTOM_CFG.getMonitoring().setEnabled(true).setHost("monitoringHost").setPort(1234);
     CUSTOM_CFG.getThreads().setManagementThreads(100);
     CUSTOM_CFG.getLongPolling().setEnabled(false);
+    CUSTOM_CFG.getInterceptors().add(new InterceptorCfg());
+    CUSTOM_CFG.getInterceptors().get(0).setId("example");
+    CUSTOM_CFG.getInterceptors().get(0).setClassName("io.camunda.zeebe.example.Interceptor");
+    CUSTOM_CFG.getInterceptors().get(0).setJarPath("./interceptor.jar");
+    CUSTOM_CFG.getInterceptors().add(new InterceptorCfg());
+    CUSTOM_CFG.getInterceptors().get(1).setId("example2");
+    CUSTOM_CFG.getInterceptors().get(1).setClassName("io.camunda.zeebe.example.Interceptor2");
+    CUSTOM_CFG.getInterceptors().get(1).setJarPath("./interceptor2.jar");
   }
 
   private final Map<String, String> environment = new HashMap<>();
@@ -166,7 +174,10 @@ public final class GatewayCfgTest {
             .getClassLoader()
             .getResource("security/test-chain.cert.pem")
             .getPath());
-    setEnv("zeebe.gateway.network.minKeepAliveInterval", Duration.ofSeconds(30).toString()); //
+    setEnv("zeebe.gateway.network.minKeepAliveInterval", Duration.ofSeconds(30).toString());
+    setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
+    setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
+    setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -192,6 +203,11 @@ public final class GatewayCfgTest {
         .setCertificateChainPath(
             getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath());
     expected.getLongPolling().setEnabled(false);
+
+    expected.getInterceptors().add(new InterceptorCfg());
+    expected.getInterceptors().get(0).setId("overwritten");
+    expected.getInterceptors().get(0).setClassName("Overwritten");
+    expected.getInterceptors().get(0).setJarPath("./overwritten.jar");
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
