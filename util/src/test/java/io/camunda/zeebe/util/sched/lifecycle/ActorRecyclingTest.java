@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -133,7 +133,7 @@ public final class ActorRecyclingTest {
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
     // expect
-    verifyZeroInteractions(action);
+    verifyNoMoreInteractions(action);
   }
 
   @Test
