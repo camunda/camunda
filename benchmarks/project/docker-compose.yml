@@ -6,7 +6,7 @@ services:
     ports:
       - "26500:26500"
     environment:
-        ZEEBE_METRICS_HTTP_SERVER: "true"
+      ZEEBE_METRICS_HTTP_SERVER: "true"
 
   starter:
     build:
@@ -27,22 +27,3 @@ services:
       - zeebe
     environment:
       JAVA_OPTIONS: "-Dapp.brokerUrl=zeebe:26500"
-
-  all-in-one:
-    build:
-      context: .
-      target: all-in-one
-    image: gcr.io/zeebe-io/all-in-one:SNAPSHOT
-    links:
-      - zeebe
-    environment:
-      JAVA_OPTIONS: "-Dapp.brokerUrl=zeebe:26500"
-
-  prometheus:
-    image: prom/prometheus
-    ports:
-      - "9090:9090"
-    links:
-      - zeebe
-    volumes:
-      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
