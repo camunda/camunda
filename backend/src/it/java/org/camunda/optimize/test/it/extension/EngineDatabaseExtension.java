@@ -48,15 +48,16 @@ public class EngineDatabaseExtension implements Extension {
 
   private static final String ACTIVITY_INSTANCE_TABLE = "ACT_HI_ACTINST";
   private static final String USER_TASK_INSTANCE_TABLE = "ACT_HI_TASKINST";
+  private static final String PROCESS_INSTANCE_TABLE = "ACT_HI_PROCINST";
   private static final String ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD = "ACT_ID_";
   private static final String USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD = "TASK_DEF_KEY_";
   private static final Set<String> FLOW_NODE_INSTANCE_TABLES =
     ImmutableSet.of(ACTIVITY_INSTANCE_TABLE, USER_TASK_INSTANCE_TABLE);
 
   private static final String UPDATE_INSTANCE_END_TIME_SQL =
-    "UPDATE ACT_HI_PROCINST SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    "UPDATE " + PROCESS_INSTANCE_TABLE + " SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
   private static final String UPDATE_INSTANCE_START_TIME_SQL =
-    "UPDATE ACT_HI_PROCINST SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    "UPDATE " + PROCESS_INSTANCE_TABLE + " SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
 
   private static final Map<String, Connection> CONNECTION_CACHE = new HashMap<>();
 
