@@ -102,8 +102,8 @@ public final class StreamProcessorMetrics {
     event(LABEL_SKIPPED);
   }
 
-  public void recoveryTime(final long durationMillis) {
-    STARTUP_RECOVERY_TIME.labels(partitionIdLabel).set(durationMillis);
+  public Gauge.Timer startRecoveryTimer() {
+    return STARTUP_RECOVERY_TIME.labels(partitionIdLabel).startTimer();
   }
 
   public void setLastProcessedPosition(final long position) {
