@@ -46,6 +46,8 @@ public final class Gateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
       cfg -> setNetworkConfig(cfg.getNetwork());
+  private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
+      MonitoringServerInterceptor.create(Configuration.allMetrics());
 
   private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
   private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
@@ -192,9 +194,7 @@ public final class Gateway {
     // chain
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
-
-    final var interceptor = MonitoringServerInterceptor.create(Configuration.allMetrics());
-    interceptors.add(interceptor);
+    interceptors.add(MONITORING_SERVER_INTERCEPTOR);
 
     return ServerInterceptors.intercept(service, interceptors);
   }
