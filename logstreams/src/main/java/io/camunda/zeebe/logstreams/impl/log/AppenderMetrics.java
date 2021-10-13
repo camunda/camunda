@@ -57,11 +57,11 @@ public class AppenderMetrics {
     LAST_APPENDED_POSITION.labels(partitionLabel).set(position);
   }
 
-  public void appendLatency(final long startTime, final long currentTime) {
-    WRITE_LATENCY.labels(partitionLabel).observe((currentTime - startTime) / 1000f);
+  public Histogram.Timer startAppendLatencyTimer() {
+    return WRITE_LATENCY.labels(partitionLabel).startTimer();
   }
 
-  public void commitLatency(final long startTime, final long currentTime) {
-    COMMIT_LATENCY.labels(partitionLabel).observe((currentTime - startTime) / 1000f);
+  public Histogram.Timer startCommitLatencyTimer() {
+    return COMMIT_LATENCY.labels(partitionLabel).startTimer();
   }
 }
