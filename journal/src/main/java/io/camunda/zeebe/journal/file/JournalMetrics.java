@@ -16,6 +16,7 @@
 package io.camunda.zeebe.journal.file;
 
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Gauge.Timer;
 import io.prometheus.client.Histogram;
 
 class JournalMetrics {
@@ -78,8 +79,8 @@ class JournalMetrics {
     SEGMENT_TRUNCATE_TIME.labels(logName).time(segmentTruncation);
   }
 
-  public void observeJournalOpenDuration(final long durationMillis) {
-    JOURNAL_OPEN_DURATION.labels(logName).set(durationMillis / 1000f);
+  public Timer startJournalOpenDurationTimer() {
+    return JOURNAL_OPEN_DURATION.labels(logName).startTimer();
   }
 
   public void incSegmentCount() {

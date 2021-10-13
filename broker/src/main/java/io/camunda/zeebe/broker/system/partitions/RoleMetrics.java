@@ -25,7 +25,7 @@ public class RoleMetrics {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  public void setLeaderTransitionLatency(final long latencyInMs) {
-    LEADER_TRANSITION_LATENCY.labels(partitionIdLabel).set(latencyInMs);
+  public Gauge.Timer startLeaderTransitionLatencyTimer() {
+    return LEADER_TRANSITION_LATENCY.labels(partitionIdLabel).startTimer();
   }
 }

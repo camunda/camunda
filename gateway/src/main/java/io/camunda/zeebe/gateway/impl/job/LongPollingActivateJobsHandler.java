@@ -20,7 +20,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.grpc.protobuf.StatusProto;
 import java.time.Duration;
 import java.util.HashMap;
@@ -232,7 +231,6 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private void addTimeOut(
       final InFlightLongPollingActivateJobsRequestsState state,
       final LongPollingActivateJobsRequest request) {
-    ActorClock.currentTimeMillis();
     final Duration requestTimeout = request.getLongPollingTimeout(longPollingTimeout);
     final ScheduledTimer timeout =
         actor.runDelayed(
