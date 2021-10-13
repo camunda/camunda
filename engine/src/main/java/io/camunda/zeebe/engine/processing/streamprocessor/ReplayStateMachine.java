@@ -155,7 +155,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       if (logStreamBatchReader.hasNext()) {
         currentState = State.REPLAY_EVENT;
 
-        final var replayStartTime = System.currentTimeMillis();
+        final var replayDurationTimer = replayMetrics.startReplayDurationTimer();
         final var batch = logStreamBatchReader.next();
         replayStrategy
             .runWithRetry(() -> tryToReplayBatch(batch), abortCondition)
@@ -164,7 +164,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
                   if (failure != null) {
                     throw new RuntimeException(failure);
                   } else {
-                    replayMetrics.replayDuration(replayStartTime, System.currentTimeMillis());
+                    // observe the replay duration
+                    replayDurationTimer.close();
                     // the position should be visible only after the batch is replayed successfully
                     lastSourceEventPosition =
                         Math.max(lastSourceEventPosition, batchSourceEventPosition);
