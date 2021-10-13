@@ -9,6 +9,3 @@ zeebe:
       internalApi:
         port: 5
 
-      monitoringApi:
-        port: 6
-

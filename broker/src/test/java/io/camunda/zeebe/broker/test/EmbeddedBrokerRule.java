@@ -14,7 +14,6 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommand
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
-import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.cluster.AtomixCluster;
@@ -121,7 +120,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     setGatewayClusterPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setCommandApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setInternalApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
-    setMonitoringPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
   }
 
   @Override
