@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -42,6 +43,10 @@ final class StandaloneBrokerIT {
   @Autowired
   private BrokerCfg config;
 
+  @SuppressWarnings("unused")
+  @LocalServerPort
+  private int managementPort;
+
   @BeforeEach
   void beforeEach() {
     await("until broker is ready").untilAsserted(this::assertBrokerIsReady);
@@ -55,7 +60,7 @@ final class StandaloneBrokerIT {
     final var process = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
     final var partitionActuatorSpec =
         new RequestSpecBuilder()
-            .setPort(config.getNetwork().getMonitoringApi().getPort())
+            .setPort(managementPort)
             .setBasePath("/actuator/partitions")
             .build();
 
@@ -96,12 +101,7 @@ final class StandaloneBrokerIT {
   }
 
   private void assertBrokerIsReady() {
-    given()
-        .port(config.getNetwork().getMonitoringApi().getPort())
-        .when()
-        .get("/ready")
-        .then()
-        .statusCode(204);
+    given().port(managementPort).when().get("/ready").then().statusCode(204);
   }
 
   private String getLatestSnapshotId(final RequestSpecification partitionActuatorSpec) {
