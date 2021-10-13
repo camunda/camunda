@@ -459,9 +459,11 @@
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>
             <developmentBranch>master</developmentBranch>
+            <supportBranchPrefix>maintenance/</supportBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
           <useSnapshotInRelease>true</useSnapshotInRelease>
+          <useSnapshotInSupport>true</useSnapshotInSupport>
           <skipTestProject>true</skipTestProject>
           <skipTag>true</skipTag>
         </configuration>
