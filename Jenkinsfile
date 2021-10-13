@@ -53,6 +53,8 @@ spec:
     emptyDir: {}
   - name: es-snapshot
     emptyDir: {}
+  - name: camunda-invoice-removal
+    emptyDir: {}
   imagePullSecrets:
   - name: registry-camunda-cloud
   initContainers:
@@ -91,7 +93,7 @@ spec:
     """
 }
 
-String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2) {
+String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2, boolean deployDefaultInvoiceProcess = true) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
   Integer jvmMemory = memoryLimitInGb - 1;
   String additionalEnv = usePostgres ? """
@@ -106,6 +108,10 @@ String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, In
       - name: WAIT_FOR
         value: localhost:5432
   """ : ""
+  String invoiceRemovalMount = deployDefaultInvoiceProcess ? "" : """
+    - name: camunda-invoice-removal
+      mountPath: /camunda/webapps/camunda-invoice
+  """
   return """
   - name: cambpm
     image: ${camBpmDockerImage}
@@ -131,6 +137,7 @@ ${additionalEnv}
     - name: cambpm-config
       mountPath: /camunda/webapps/manager/META-INF/context.xml
       subPath: context.xml
+${invoiceRemovalMount}
     """
 }
 
@@ -279,7 +286,7 @@ String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled Chrome (large) and install Maven (small)
   // manually for performance reasons
   return basePodSpec(1, 6, 'selenium/node-chrome:3.141.59-xenon') +
-          camBpmContainerSpec(camBpmVersion, true) +
+          camBpmContainerSpec(camBpmVersion, true, 2, 2, false) +
           elasticSearchContainerSpec(esVersion) +
           postgresContainerSpec() +
           gcloudContainerSpec()
