@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import org.slf4j.Logger;
 
 /**
  * Applies state changes from events to the {@link MutableZeebeState}.
@@ -41,16 +39,8 @@ import org.slf4j.Logger;
  */
 public final class EventAppliers implements EventApplier {
 
-  private static final Logger LOG = Loggers.STREAM_PROCESSING;
-
-  // todo (#6202): after migration this should log at WARN level
   private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
-      intent ->
-          (key, value) ->
-              LOG.trace(
-                  "No state changed: tried to use unimplemented event applier {}.{}",
-                  intent.getClass().getSimpleName(),
-                  intent);
+      intent -> (key, value) -> {};
 
   @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
