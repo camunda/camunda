@@ -28,7 +28,7 @@ const NodeContainer = styled.div`
   }}
 `;
 
-const FlowNodeInstanceLog = styled.div`
+const InstanceHistory = styled.div`
   ${({theme}) => {
     const colors = theme.colors.flowNodeInstanceLog;
 
@@ -47,7 +47,7 @@ const FlowNodeInstanceLog = styled.div`
   }}
 `;
 
-const FlowNodeInstanceSkeleton = styled(FlowNodeInstanceLog)`
+const InstanceHistorySkeleton = styled(InstanceHistory)`
   overflow: hidden;
 
   ${StatusMessage} {
@@ -55,4 +55,4 @@ const FlowNodeInstanceSkeleton = styled(FlowNodeInstanceLog)`
   }
 `;
 
-export {Panel, NodeContainer, FlowNodeInstanceLog, FlowNodeInstanceSkeleton};
+export {Panel, NodeContainer, InstanceHistory, InstanceHistorySkeleton};

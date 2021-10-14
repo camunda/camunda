@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 
 import {PANEL_POSITION} from 'modules/constants';
 
@@ -30,26 +30,28 @@ const OperationsPanel: React.FC = observer(() => {
     return operationsStore.reset;
   }, []);
 
+  const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
+
   return (
-    <InfiniteScroller
-      onVerticalScrollEndReach={() => {
-        if (hasMoreOperations && status !== 'fetching') {
-          operationsStore.fetchNextOperations(
-            operations[operations.length - 1].sortValues
-          );
-        }
-      }}
+    <CollapsablePanel
+      label={CONSTANTS.OPERATIONS_LABEL}
+      panelPosition={PANEL_POSITION.RIGHT}
+      maxWidth={478}
+      isOverlay
+      isCollapsed={isOperationsCollapsed}
+      toggle={toggleOperationsPanel}
+      hasBackgroundColor
+      verticalLabelOffset={27}
+      scrollable
+      ref={scrollableContainerRef}
     >
-      <CollapsablePanel
-        label={CONSTANTS.OPERATIONS_LABEL}
-        panelPosition={PANEL_POSITION.RIGHT}
-        maxWidth={478}
-        isOverlay
-        isCollapsed={isOperationsCollapsed}
-        toggle={toggleOperationsPanel}
-        hasBackgroundColor
-        verticalLabelOffset={27}
-        scrollable
+      <InfiniteScroller
+        onVerticalScrollEndReach={() => {
+          if (hasMoreOperations && status !== 'fetching') {
+            operationsStore.fetchNextOperations();
+          }
+        }}
+        scrollableContainerRef={scrollableContainerRef}
       >
         <OperationsList
           data-testid="operations-list"
@@ -70,8 +72,8 @@ const OperationsPanel: React.FC = observer(() => {
             </EmptyMessage>
           )}
         </OperationsList>
-      </CollapsablePanel>
-    </InfiniteScroller>
+      </InfiniteScroller>
+    </CollapsablePanel>
   );
 });
 

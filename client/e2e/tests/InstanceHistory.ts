@@ -20,23 +20,26 @@ fixture('Instance History')
     await t.useRole(demoUser);
   });
 
-test('Scrolling behavior', async (t) => {
+test('Scrolling behavior - root level', async (t) => {
   const {
-    initialData: {processInstance},
+    initialData: {manyFlowNodeInstancesProcessInstance},
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/instances/${processInstance.processInstanceKey}`);
+  await t.navigateTo(
+    `/instances/${manyFlowNodeInstancesProcessInstance.processInstanceKey}`
+  );
 
   await t
     .expect(
-      screen.queryByTestId(`node-details-${processInstance.processInstanceKey}`)
-        .exists
+      screen.queryByTestId(
+        `node-details-${manyFlowNodeInstancesProcessInstance.processInstanceKey}`
+      ).exists
     )
     .ok()
     .expect(
       within(
         screen.queryByTestId(
-          `node-details-${processInstance.processInstanceKey}`
+          `node-details-${manyFlowNodeInstancesProcessInstance.processInstanceKey}`
         )
       ).queryByTestId('COMPLETED-icon').exists
     )
@@ -78,4 +81,97 @@ test('Scrolling behavior', async (t) => {
     .match(/^StartEvent_1$/)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(201);
+});
+
+test('Scrolling behaviour - tree level', async (t) => {
+  const {
+    initialData: {bigProcessInstance},
+  } = t.fixtureCtx;
+
+  await t.navigateTo(`/instances/${bigProcessInstance.processInstanceKey}`);
+
+  const withinFirstSubtree = within(
+    screen.queryAllByTestId(/^tree-node-/).nth(4)
+  );
+
+  await t.click(
+    withinFirstSubtree.queryByRole('button', {
+      name: 'Unfold Task B (Multi Instance)',
+    })
+  );
+
+  /**
+   * Scrolling down
+   */
+  await t
+    .scrollIntoView(withinFirstSubtree.queryAllByTestId(/^tree-node-/).nth(49))
+    .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)
+    .eql(100);
+
+  await t
+    .scrollIntoView(withinFirstSubtree.queryAllByTestId(/^tree-node-/).nth(99))
+    .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)
+    .eql(150);
+
+  await t
+    .scrollIntoView(withinFirstSubtree.queryAllByTestId(/^tree-node-/).nth(149))
+    .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)
+    .eql(200);
+
+  let firstItemId = await withinFirstSubtree
+    .queryAllByTestId(/^tree-node-/)
+    .nth(0)
+    .getAttribute('data-testid');
+  await t.expect(firstItemId).notEql(null);
+
+  let lastItemId = await withinFirstSubtree
+    .queryAllByTestId(/^tree-node-/)
+    .nth(199)
+    .getAttribute('data-testid');
+  await t.expect(lastItemId).notEql(null);
+
+  await t
+    .scrollIntoView(withinFirstSubtree.queryAllByTestId(/^tree-node-/).nth(199))
+    // @ts-expect-error: firstItemId won't be null here
+    .expect(screen.queryByTestId(firstItemId).exists)
+    .notOk()
+    .expect(
+      withinFirstSubtree
+        .queryAllByTestId(/^tree-node-/)
+        .nth(149)
+        .getAttribute('data-testid')
+    )
+    .eql(lastItemId)
+    .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)
+    .eql(200);
+
+  /**
+   * Scrolling up
+   */
+  firstItemId = await withinFirstSubtree
+    .queryAllByTestId(/^tree-node-/)
+    .nth(0)
+    .getAttribute('data-testid');
+  await t.expect(firstItemId).notEql(null);
+
+  lastItemId = await withinFirstSubtree
+    .queryAllByTestId(/^tree-node-/)
+    .nth(199)
+    .getAttribute('data-testid');
+  await t.expect(lastItemId).notEql(null);
+
+  await t
+    .scrollIntoView(withinFirstSubtree.queryAllByTestId(/^tree-node-/).nth(0))
+    // @ts-expect-error: lastItemId won't be null here
+    .expect(screen.queryByTestId(lastItemId).exists)
+    .notOk()
+    .expect(
+      withinFirstSubtree
+        .queryAllByTestId(/^tree-node-/)
+        .nth(50)
+        .getAttribute('data-testid')
+    )
+    .eql(firstItemId)
+    .expect(withinFirstSubtree.queryAllByTestId(/^tree-node-/).count)
+    .eql(200);
 });

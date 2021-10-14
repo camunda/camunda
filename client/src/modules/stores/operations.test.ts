@@ -42,12 +42,16 @@ describe('stores/operations', () => {
     mockServer.use(
       rest.post('/api/batch-operations', (_, res, ctx) =>
         res.once(ctx.json(operations))
+      ),
+      rest.post('/api/batch-operations', (_, res, ctx) =>
+        res.once(ctx.json(operations))
       )
     );
 
+    await operationsStore.fetchOperations();
     expect(operationsStore.state.page).toBe(1);
-    await operationsStore.fetchNextOperations(['20', '20']);
 
+    await operationsStore.fetchNextOperations();
     expect(operationsStore.state.page).toBe(2);
   });
 

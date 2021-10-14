@@ -10,10 +10,14 @@ import EmptyPanel from 'modules/components/EmptyPanel';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import * as Styled from './styled';
+import {
+  Panel,
+  NodeContainer,
+  InstanceHistory,
+  InstanceHistorySkeleton,
+} from './styled';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -27,49 +31,28 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   } = singleInstanceDiagramStore;
   const LOADING_STATES = ['initial', 'first-fetch'];
   const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
+  const instanceHistoryRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Styled.Panel>
+    <Panel>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
-        <InfiniteScroller
-          onVerticalScrollEndReach={() => {
-            if (instanceExecutionHistory?.id === undefined) {
-              return;
-            }
-            flowNodeInstanceStore.fetchNext(instanceExecutionHistory.id);
-          }}
-          onVerticalScrollStartReach={async (scrollDown) => {
-            if (instanceExecutionHistory?.id === undefined) {
-              return;
-            }
-
-            const fetchedInstancesCount =
-              await flowNodeInstanceStore.fetchPrevious(
-                instanceExecutionHistory.id
-              );
-
-            if (fetchedInstancesCount !== undefined) {
-              scrollDown(
-                fetchedInstancesCount *
-                  (flowNodeInstanceRowRef.current?.offsetHeight ?? 0)
-              );
-            }
-          }}
+        <InstanceHistory
+          data-testid="instance-history"
+          ref={instanceHistoryRef}
         >
-          <Styled.FlowNodeInstanceLog data-testid="instance-history">
-            <Styled.NodeContainer>
-              <ul>
-                <FlowNodeInstancesTree
-                  rowRef={flowNodeInstanceRowRef}
-                  flowNodeInstance={instanceExecutionHistory!}
-                  treeDepth={1}
-                />
-              </ul>
-            </Styled.NodeContainer>
-          </Styled.FlowNodeInstanceLog>
-        </InfiniteScroller>
+          <NodeContainer>
+            <ul>
+              <FlowNodeInstancesTree
+                rowRef={flowNodeInstanceRowRef}
+                scrollableContainerRef={instanceHistoryRef}
+                flowNodeInstance={instanceExecutionHistory!}
+                treeDepth={1}
+              />
+            </ul>
+          </NodeContainer>
+        </InstanceHistory>
       ) : (
-        <Styled.FlowNodeInstanceSkeleton data-testid="flownodeInstance-skeleton">
+        <InstanceHistorySkeleton data-testid="instance-history-skeleton">
           {(flowNodeInstanceStatus === 'error' ||
             diagramStatus === 'error') && (
             <StatusMessage variant="error">
@@ -78,12 +61,11 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) ||
             LOADING_STATES.includes(diagramStatus)) && (
-            // @ts-ignore
             <EmptyPanel type="skeleton" Skeleton={Skeleton} rowHeight={28} />
           )}
-        </Styled.FlowNodeInstanceSkeleton>
+        </InstanceHistorySkeleton>
       )}
-    </Styled.Panel>
+    </Panel>
   );
 });
 

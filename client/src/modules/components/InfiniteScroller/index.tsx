@@ -4,43 +4,114 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useCallback, useRef} from 'react';
 import {logger} from 'modules/logger';
 
 type Props = {
   children?: React.ReactNode;
   onVerticalScrollStartReach?: (scrollUp: (distance: number) => void) => void;
   onVerticalScrollEndReach?: (scrollDown: (distance: number) => void) => void;
+  scrollableContainerRef: React.RefObject<HTMLElement>;
 };
 
 const InfiniteScroller: React.FC<Props> = ({
   children,
   onVerticalScrollStartReach,
   onVerticalScrollEndReach,
+  scrollableContainerRef,
 }) => {
-  const handleScroll = (event: React.UIEvent<HTMLElement, UIEvent>) => {
-    const target = event.target as HTMLElement;
+  const intersectionObserver = useRef<IntersectionObserver | null>(null);
+  const mutationObserver = useRef<MutationObserver | null>(null);
 
-    const scrollUp = (distance: number) => {
-      target.scrollTo(0, target.scrollTop - distance);
-    };
+  const observeIntersections = (node: HTMLElement) => {
+    const firstChild = node.firstElementChild;
+    const lastChild = node.lastElementChild;
+    intersectionObserver.current?.disconnect();
 
-    const scrollDown = (distance: number) => {
-      target.scrollTo(0, target.scrollTop + distance);
-    };
-
-    if (target.scrollHeight - target.clientHeight - target.scrollTop <= 0) {
-      onVerticalScrollEndReach?.(scrollUp);
+    if (firstChild) {
+      intersectionObserver.current?.observe(firstChild);
     }
 
-    if (target.scrollTop === 0) {
-      onVerticalScrollStartReach?.(scrollDown);
+    if (lastChild) {
+      intersectionObserver.current?.observe(lastChild);
     }
   };
 
+  const createMutationObserver = useCallback((node: HTMLElement) => {
+    mutationObserver.current = new MutationObserver(() => {
+      // re-observe the node after the list of children changes
+      intersectionObserver.current?.disconnect();
+      observeIntersections(node);
+    });
+
+    mutationObserver.current.observe(node, {childList: true});
+  }, []);
+
+  const createIntersectionObserver = useCallback(() => {
+    const scrollDown = (distance: number) => {
+      scrollableContainerRef.current?.scrollTo(
+        0,
+        scrollableContainerRef.current.scrollTop + distance
+      );
+    };
+
+    const scrollUp = (distance: number) => {
+      scrollableContainerRef.current?.scrollTo(
+        0,
+        scrollableContainerRef.current.scrollTop - distance
+      );
+    };
+
+    let prevScrollTop = 0;
+    intersectionObserver.current = new IntersectionObserver(
+      (entries) => {
+        if (scrollableContainerRef.current === null) {
+          return;
+        }
+
+        const scrollTop = scrollableContainerRef.current.scrollTop || 0;
+        entries
+          .filter((entry) => entry.isIntersecting)
+          .forEach(({target}) => {
+            if (
+              scrollTop > prevScrollTop &&
+              target.parentElement?.lastElementChild === target
+            ) {
+              onVerticalScrollEndReach?.(scrollUp);
+            } else if (
+              scrollTop < prevScrollTop &&
+              target.parentElement?.firstElementChild === target
+            ) {
+              onVerticalScrollStartReach?.(scrollDown);
+            }
+          });
+        prevScrollTop = scrollTop;
+      },
+      {root: scrollableContainerRef.current, threshold: 0.5}
+    );
+  }, [
+    onVerticalScrollStartReach,
+    onVerticalScrollEndReach,
+    scrollableContainerRef,
+  ]);
+
+  const observedContainerRef = useCallback(
+    (node: HTMLElement) => {
+      if (node === null) {
+        return;
+      }
+      if (intersectionObserver.current === null) {
+        createIntersectionObserver();
+        createMutationObserver(node);
+        observeIntersections(node);
+      }
+    },
+    [createIntersectionObserver, createMutationObserver]
+  );
+
   if (React.isValidElement(children)) {
     return React.cloneElement(children, {
-      onScroll: handleScroll,
+      ref: observedContainerRef,
     });
   }
 

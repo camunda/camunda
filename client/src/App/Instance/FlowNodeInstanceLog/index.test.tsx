@@ -62,10 +62,10 @@ describe('FlowNodeInstanceLog', () => {
     flowNodeInstanceStore.init();
     singleInstanceDiagramStore.fetchProcessXml('1');
 
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('flownodeInstance-skeleton')
+      screen.getByTestId('instance-history-skeleton')
     );
   });
 
@@ -85,11 +85,11 @@ describe('FlowNodeInstanceLog', () => {
     singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
-      await screen.findByTestId('flownodeInstance-skeleton')
+      await screen.findByTestId('instance-history-skeleton')
     ).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('flownodeInstance-skeleton')
+      screen.getByTestId('instance-history-skeleton')
     );
   });
 

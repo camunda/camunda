@@ -145,7 +145,7 @@ describe('Instance', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
 
     mockServer.use(
@@ -157,10 +157,10 @@ describe('Instance', () => {
     jest.runOnlyPendingTimers();
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -169,7 +169,7 @@ describe('Instance', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument();
       expect(
-        screen.queryByTestId('flownodeInstance-skeleton')
+        screen.queryByTestId('instance-history-skeleton')
       ).not.toBeInTheDocument();
       expect(screen.queryByTestId('skeleton-rows')).not.toBeInTheDocument();
     });
@@ -195,7 +195,7 @@ describe('Instance', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
 
     jest.runOnlyPendingTimers();

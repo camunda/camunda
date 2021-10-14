@@ -11,6 +11,7 @@ import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from '@testing-library/react';
+import React from 'react';
 
 // configure enzyme
 Enzyme.configure({adapter: new Adapter()});
@@ -38,6 +39,13 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
       }
     ),
   };
+});
+
+jest.mock('modules/components/InfiniteScroller', () => {
+  const InfiniteScroller: React.FC = ({children}) => {
+    return <>{children}</>;
+  };
+  return {InfiniteScroller};
 });
 
 global.beforeEach(() => {

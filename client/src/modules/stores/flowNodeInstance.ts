@@ -17,6 +17,7 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {isEqual} from 'lodash';
 
 const MAX_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
@@ -110,20 +111,16 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         return flowNodeInstance.running || treePath === processInstanceId;
       })
       .map(([treePath, flowNodeInstance]) => {
-        if (treePath === processInstanceId) {
-          return {
-            treePath,
-            processInstanceId,
-            pageSize:
-              // round up to a multiple of MAX_INSTANCES_PER_REQUEST
-              Math.ceil(
-                flowNodeInstance.children.length / MAX_INSTANCES_PER_REQUEST
-              ) * MAX_INSTANCES_PER_REQUEST,
-            searchAfterOrEqual: flowNodeInstance.children[0].sortValues,
-          };
-        }
-
-        return {treePath, processInstanceId};
+        return {
+          treePath,
+          processInstanceId,
+          pageSize:
+            // round up to a multiple of MAX_INSTANCES_PER_REQUEST
+            Math.ceil(
+              flowNodeInstance.children.length / MAX_INSTANCES_PER_REQUEST
+            ) * MAX_INSTANCES_PER_REQUEST,
+          searchAfterOrEqual: flowNodeInstance.children[0].sortValues,
+        };
       });
 
     if (queries.length === 0) {
@@ -205,8 +202,18 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     return fetchedInstancesCount;
   };
 
-  fetchSubTree = async ({treePath}: {treePath: string}) => {
-    const flowNodeInstances = await this.fetchFlowNodeInstances({treePath});
+  fetchSubTree = async ({
+    treePath,
+    searchAfter,
+  }: {
+    treePath: string;
+    searchAfter?: FlowNodeInstanceType['sortValues'];
+  }) => {
+    const flowNodeInstances = await this.fetchFlowNodeInstances({
+      searchAfter,
+      treePath,
+      pageSize: MAX_INSTANCES_PER_REQUEST,
+    });
     if (flowNodeInstances !== undefined) {
       this.handleFetchSuccess(flowNodeInstances);
     }
@@ -280,6 +287,14 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     }
   );
 
+  getVisibleChildNodes = (flowNodeInstance: FlowNodeInstanceType) => {
+    return (
+      this.state.flowNodeInstances[
+        flowNodeInstance.treePath || flowNodeInstance.id
+      ]?.children || []
+    );
+  };
+
   startFetch = () => {
     if (this.state.status === 'initial') {
       this.state.status = 'first-fetch';
@@ -307,7 +322,11 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   handleFetchSuccess = (flowNodeInstances: FlowNodeInstances) => {
     Object.entries(flowNodeInstances).forEach(
       ([treePath, flowNodeInstance]) => {
-        this.state.flowNodeInstances[treePath] = flowNodeInstance;
+        if (
+          !isEqual(this.state.flowNodeInstances[treePath], flowNodeInstance)
+        ) {
+          this.state.flowNodeInstances[treePath] = flowNodeInstance;
+        }
       }
     );
 
@@ -322,7 +341,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     Object.entries(flowNodeInstances).forEach(
       ([treePath, flowNodeInstance]) => {
         // don't create new trees (this prevents showing a tree when the user collapsed it earlier)
-        if (this.state.flowNodeInstances[treePath] !== undefined) {
+        if (
+          this.state.flowNodeInstances[treePath] !== undefined &&
+          !isEqual(this.state.flowNodeInstances[treePath], flowNodeInstance)
+        ) {
           this.state.flowNodeInstances[treePath] = flowNodeInstance;
         }
       }

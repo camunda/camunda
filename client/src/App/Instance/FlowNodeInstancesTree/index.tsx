@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useRef} from 'react';
 import {observer} from 'mobx-react';
 import {TYPE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
@@ -18,24 +18,28 @@ import {
 import {Bar} from './Bar';
 import {Foldable} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
   treeDepth: number;
   isLastChild?: boolean;
   rowRef?: React.Ref<HTMLDivElement>;
+  scrollableContainerRef: React.RefObject<HTMLElement>;
 };
 
 const FlowNodeInstancesTree: React.FC<Props> = observer(
-  ({flowNodeInstance, treeDepth, isLastChild = true, rowRef}) => {
-    const {
-      state: {flowNodeInstances},
-      fetchSubTree,
-      removeSubTree,
-    } = flowNodeInstanceStore;
-    const visibleChildNodes =
-      flowNodeInstances[flowNodeInstance.treePath || flowNodeInstance.id]
-        ?.children;
+  ({
+    flowNodeInstance,
+    treeDepth,
+    isLastChild = true,
+    scrollableContainerRef,
+  }) => {
+    const {fetchSubTree, removeSubTree, getVisibleChildNodes} =
+      flowNodeInstanceStore;
+
+    const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
+    const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
     const metaData = singleInstanceDiagramStore.getMetaData(
       flowNodeInstance.flowNodeId || null
@@ -60,6 +64,15 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       isMultiInstance,
     });
 
+    const rowRef = useRef<HTMLDivElement>(null);
+
+    const handleEndReach = () => {
+      if (flowNodeInstance?.treePath === undefined) {
+        return;
+      }
+      flowNodeInstanceStore.fetchNext(flowNodeInstance.treePath);
+    };
+
     return (
       <Li
         treeDepth={treeDepth}
@@ -75,12 +88,12 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           />
         </NodeDetails>
         <Foldable
-          isFolded={visibleChildNodes === undefined}
+          isFolded={!hasVisibleChildNodes}
           isFoldable={isFoldable}
           onToggle={
             isFoldable
               ? () => {
-                  visibleChildNodes === undefined
+                  !hasVisibleChildNodes
                     ? fetchSubTree({treePath: flowNodeInstance.treePath})
                     : removeSubTree({
                         treePath: flowNodeInstance.treePath,
@@ -91,7 +104,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         >
           {metaData !== undefined && (
             <Foldable.Summary
-              ref={treeDepth === 1 ? rowRef : null}
+              ref={rowRef}
               data-testid={flowNodeInstance.id}
               onSelection={() => {
                 const isProcessInstance =
@@ -121,25 +134,44 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               />
             </Foldable.Summary>
           )}
-          {visibleChildNodes !== undefined && visibleChildNodes.length > 0 && (
+          {hasVisibleChildNodes && (
             <Foldable.Details>
-              <Ul
-                showConnectionLine={treeDepth >= 2}
-                data-testid={`treeDepth:${treeDepth}`}
-              >
-                {visibleChildNodes.map(
-                  (childNode: FlowNodeInstance, index: number) => {
-                    return (
-                      <FlowNodeInstancesTree
-                        flowNodeInstance={childNode}
-                        treeDepth={treeDepth + 1}
-                        isLastChild={visibleChildNodes.length === index + 1}
-                        key={childNode.id}
-                      />
+              <InfiniteScroller
+                onVerticalScrollEndReach={handleEndReach}
+                onVerticalScrollStartReach={async (scrollDown) => {
+                  const fetchedInstancesCount =
+                    await flowNodeInstanceStore.fetchPrevious(
+                      flowNodeInstance.treePath
+                    );
+
+                  if (fetchedInstancesCount !== undefined) {
+                    scrollDown(
+                      fetchedInstancesCount *
+                        (rowRef.current?.offsetHeight ?? 0)
                     );
                   }
-                )}
-              </Ul>
+                }}
+                scrollableContainerRef={scrollableContainerRef}
+              >
+                <Ul
+                  showConnectionLine={treeDepth >= 2}
+                  data-testid={`treeDepth:${treeDepth}`}
+                >
+                  {visibleChildNodes.map(
+                    (childNode: FlowNodeInstance, index: number) => {
+                      return (
+                        <FlowNodeInstancesTree
+                          flowNodeInstance={childNode}
+                          treeDepth={treeDepth + 1}
+                          isLastChild={visibleChildNodes.length === index + 1}
+                          key={childNode.id}
+                          scrollableContainerRef={scrollableContainerRef}
+                        />
+                      );
+                    }
+                  )}
+                </Ul>
+              </InfiniteScroller>
             </Foldable.Details>
           )}
         </Foldable>

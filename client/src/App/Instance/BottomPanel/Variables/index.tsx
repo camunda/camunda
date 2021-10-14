@@ -101,47 +101,54 @@ const Variables: React.FC = observer(() => {
         {(!isViewMode || displayStatus === 'variables') && (
           <>
             <Styled.Header>Variables</Styled.Header>
-            <InfiniteScroller
-              onVerticalScrollStartReach={async (scrollDown) => {
-                if (variablesStore.shouldFetchPreviousVariables() === false) {
-                  return;
-                }
-                await variablesStore.fetchPreviousVariables(processInstanceId);
 
-                if (
-                  variablesStore.state.items.length === MAX_VARIABLES_STORED &&
-                  variablesStore.state.latestFetch.itemsCount !== 0
-                ) {
-                  scrollDown(
-                    variablesStore.state.latestFetch.itemsCount *
-                      (variableRowRef.current?.offsetHeight ?? 0)
-                  );
-                }
-              }}
-              onVerticalScrollEndReach={() => {
-                if (variablesStore.shouldFetchNextVariables() === false) {
-                  return;
-                }
-                variablesStore.fetchNextVariables(processInstanceId);
-              }}
-            >
-              <Styled.TableScroll ref={scrollableContentRef}>
-                <Table data-testid="variables-list">
-                  <Styled.THead
-                    isVariableHeaderVisible={isVariableHeaderVisible}
-                    scrollBarWidth={
-                      (scrollableContentRef?.current?.offsetWidth ?? 0) -
-                      (scrollableContentRef?.current?.scrollWidth ?? 0)
+            <Styled.TableScroll ref={scrollableContentRef}>
+              <Table data-testid="variables-list">
+                <Styled.THead
+                  isVariableHeaderVisible={isVariableHeaderVisible}
+                  scrollBarWidth={
+                    (scrollableContentRef?.current?.offsetWidth ?? 0) -
+                    (scrollableContentRef?.current?.scrollWidth ?? 0)
+                  }
+                >
+                  {isVariableHeaderVisible && (
+                    <TR>
+                      <TH>Name</TH>
+                      <TH>Value</TH>
+                      <TH />
+                    </TR>
+                  )}
+                </Styled.THead>
+                <InfiniteScroller
+                  onVerticalScrollStartReach={async (scrollDown) => {
+                    if (
+                      variablesStore.shouldFetchPreviousVariables() === false
+                    ) {
+                      return;
                     }
-                  >
-                    {isVariableHeaderVisible && (
-                      <TR>
-                        <TH>Name</TH>
-                        <TH>Value</TH>
-                        <TH />
-                      </TR>
-                    )}
-                  </Styled.THead>
+                    await variablesStore.fetchPreviousVariables(
+                      processInstanceId
+                    );
+
+                    if (
+                      variablesStore.state.items.length ===
+                        MAX_VARIABLES_STORED &&
+                      variablesStore.state.latestFetch.itemsCount !== 0
+                    ) {
+                      scrollDown(
+                        variablesStore.state.latestFetch.itemsCount *
+                          (variableRowRef.current?.offsetHeight ?? 0)
+                      );
+                    }
+                  }}
+                  onVerticalScrollEndReach={() => {
+                    if (variablesStore.shouldFetchNextVariables() === false) {
+                      return;
+                    }
+                    variablesStore.fetchNextVariables(processInstanceId);
+                  }}
+                  scrollableContainerRef={scrollableContentRef}
+                >
                   <tbody>
                     {items.map(
                       ({
@@ -238,9 +245,9 @@ const Variables: React.FC = observer(() => {
                       )
                     )}
                   </tbody>
-                </Table>
-              </Styled.TableScroll>
-            </InfiniteScroller>
+                </InfiniteScroller>
+              </Table>
+            </Styled.TableScroll>
           </>
         )}
         <Restricted scopes={['write']}>

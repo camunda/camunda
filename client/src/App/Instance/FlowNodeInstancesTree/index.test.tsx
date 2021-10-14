@@ -25,6 +25,7 @@ import {
   eventSubProcess,
   createEventSubProcessFlowNodeInstances,
 } from 'modules/testUtils';
+import {createRef} from 'react';
 
 const processId = '1';
 const processInstanceId = CURRENT_INSTANCE.id;
@@ -85,6 +86,7 @@ describe('<FlowNodeInstancesTree />', () => {
           treeDepth={1}
           flowNodeInstance={mockFlowNodeInstance}
           isLastChild={false}
+          scrollableContainerRef={createRef<HTMLElement>()}
         />,
         {
           wrapper: ThemeProvider,
@@ -123,6 +125,7 @@ describe('<FlowNodeInstancesTree />', () => {
           treeDepth={1}
           flowNodeInstance={mockFlowNodeInstance}
           isLastChild={false}
+          scrollableContainerRef={createRef<HTMLElement>()}
         />,
         {
           wrapper: ThemeProvider,
@@ -184,6 +187,7 @@ describe('<FlowNodeInstancesTree />', () => {
           treeDepth={1}
           flowNodeInstance={mockFlowNodeInstance}
           isLastChild={false}
+          scrollableContainerRef={createRef<HTMLElement>()}
         />,
         {
           wrapper: ThemeProvider,
@@ -267,6 +271,7 @@ describe('<FlowNodeInstancesTree />', () => {
           treeDepth={1}
           flowNodeInstance={mockFlowNodeInstance}
           isLastChild={false}
+          scrollableContainerRef={createRef<HTMLElement>()}
         />,
         {
           wrapper: ThemeProvider,
