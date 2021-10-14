@@ -40,7 +40,6 @@ var createInstanceCmd = &cobra.Command{
 		processKey, err := strconv.Atoi(args[0])
 		if err != nil {
 			// Process ID given
-			err = nil
 			zbCmd = client.NewCreateInstanceCommand().
 				BPMNProcessId(args[0]).
 				Version(createInstanceVersionFlag)

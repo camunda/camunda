@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -31,6 +30,7 @@ import (
 	"time"
 
 	"github.com/camunda-cloud/zeebe/clients/go/internal/containersuite"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
 )
@@ -110,6 +110,13 @@ var tests = []testCase{
 		name:       "create instance",
 		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/model.bpmn")},
 		cmd:        strings.Fields("--insecure create instance process"),
+		goldenFile: "testdata/create_instance.golden",
+		jsonOutput: true,
+	},
+	{
+		name:       "create instance",
+		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/model.bpmn")},
+		cmd:        strings.Fields("--insecure create instance 2251799813685251"),
 		goldenFile: "testdata/create_instance.golden",
 		jsonOutput: true,
 	},
