@@ -92,13 +92,15 @@ final class ProcessInstanceElementActivatingApplier
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
       final EventTrigger flowScopeEventTrigger =
           eventScopeInstanceState.peekEventTrigger(flowScopeInstance.getParentKey());
-      eventScopeInstanceState.triggerEvent(
-          elementInstanceKey,
-          flowScopeEventTrigger.getEventKey(),
-          flowScopeEventTrigger.getElementId(),
-          flowScopeEventTrigger.getVariables());
-      eventScopeInstanceState.deleteTrigger(
-          flowScopeInstance.getKey(), flowScopeEventTrigger.getEventKey());
+      if (flowScopeEventTrigger != null) {
+        eventScopeInstanceState.triggerEvent(
+            elementInstanceKey,
+            flowScopeEventTrigger.getEventKey(),
+            flowScopeEventTrigger.getElementId(),
+            flowScopeEventTrigger.getVariables());
+        eventScopeInstanceState.deleteTrigger(
+            flowScopeInstance.getParentKey(), flowScopeEventTrigger.getEventKey());
+      }
     }
 
     // manage the multi-instance loop counter

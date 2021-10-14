@@ -44,9 +44,9 @@ public final class EventSubProcessProcessor
         .applyInputMappings(activating, element)
         .ifRightOrLeft(
             ok -> {
-              stateTransitionBehavior.transitionToActivated(activating);
+              final var activated = stateTransitionBehavior.transitionToActivated(activating);
               stateTransitionBehavior.activateChildInstance(
-                  activating, element.getStartEvents().get(0));
+                  activated, element.getStartEvents().get(0));
             },
             failure -> {
               incidentBehavior.createIncident(failure, activating);

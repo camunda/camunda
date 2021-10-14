@@ -128,8 +128,7 @@ public final class EventAppliers implements EventApplier {
             bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
-        new ProcessInstanceElementTerminatingApplier(
-            elementInstanceState, eventScopeInstanceState));
+        new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATED,
         new ProcessInstanceElementTerminatedApplier(
