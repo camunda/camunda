@@ -8,7 +8,9 @@
     "logout": "Abmelden",
     "logoutFailed": "Abmeldung fehlgeschlagen",
     "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
-    "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten"
+    "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten",
+    "userGuide": "Benutzerhandbuch",
+    "help": "Hilfe"
   },
   "login": {
     "appName": "Optimize",
@@ -560,7 +562,7 @@
       "completedInstances": "Abgeschlossene Prozessinstanzen",
       "runningInstances": "Laufende Prozessinstanzen",
       "aggregateDuration": "Aggregierte Prozessdauer (ToDo: Aggregationen alternativer Dauer anzeigen)",
-      "activeProcessIncidents": "Aktive Zwischenfälle", 
+      "activeProcessIncidents": "Aktive Zwischenfälle",
       "flownodeDuration": "Welche Prozessschritte nehmen zu viel Zeit in Anspruch? (ToDo: Zielwerte für diese Prozessschritte hinzufügen)",
       "controlChart": "Ist mein Prozess unter Kontrolle?",
       "flownodeFrequency": "Wie oft wird jeder Prozessschritt ausgeführt?",

@@ -1,16 +1,7 @@
 .UserMenu {
-  &.Dropdown .activateButton {
-    border: none;
-    background-color: var(--white);
-    height: 100%;
-    padding-top: 0;
-    padding-bottom: 0;
-    padding-left: 0;
-    font-size: 15px;
-    color: var(--grey-lighten-56);
-    font-weight: 500;
-    white-space: nowrap;
-  }
+  margin-left: 13px;
+  padding-left: 20px;
+  border-left: 1px solid var(--silver-darken-87);
 
   &.userLabel {
     align-self: center;
@@ -24,5 +15,6 @@
   hr {
     border: none;
     border-top: 1px solid var(--silver-darken-80);
+    margin: 0;
   }
 }

@@ -7,11 +7,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ChangeLogWithErrorHandling from './ChangeLog';
-import {isChangeLogSeen, setChangeLogAsSeen, getMarkdownText} from './service';
 import {Button} from 'components';
 
-const {WrappedComponent: ChangeLog} = ChangeLogWithErrorHandling;
+import {HelpMenu} from './HelpMenu';
+import {isChangeLogSeen, setChangeLogAsSeen, getMarkdownText} from './service';
 
 jest.mock('./service', () => ({
   isChangeLogSeen: jest.fn().mockReturnValue({seen: false}),
@@ -24,29 +23,29 @@ const props = {
 };
 
 it('show match snapshot', () => {
-  const node = shallow(<ChangeLog {...props} />);
+  const node = shallow(<HelpMenu {...props} />);
 
   expect(node).toMatchSnapshot();
 });
 
 it('should not show the modal if it is seen before', () => {
   isChangeLogSeen.mockReturnValueOnce({seen: true});
-  const node = shallow(<ChangeLog {...props} />);
+  const node = shallow(<HelpMenu {...props} />);
 
   expect(node.find('Modal').props().open).toBe(false);
 });
 
-it('should load markdown when opening modal', () => {
+it('should load markdown when opening whats new modal', () => {
   isChangeLogSeen.mockReturnValueOnce({seen: true});
-  const node = shallow(<ChangeLog {...props} />);
+  const node = shallow(<HelpMenu {...props} />);
 
   node.find(Button).at(0).simulate('click');
 
   expect(getMarkdownText).toHaveBeenCalled();
 });
 
-it('should set status as seen when closing the modal', () => {
-  const node = shallow(<ChangeLog {...props} />);
+it('should set status as seen when closing the whats new modal', () => {
+  const node = shallow(<HelpMenu {...props} />);
   node.find('.close').simulate('click');
 
   expect(setChangeLogAsSeen).toHaveBeenCalled();

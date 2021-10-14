@@ -14,7 +14,7 @@ import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
 
 import HeaderNav from './HeaderNav';
-import ChangeLog from './ChangeLog';
+import HelpMenu from './HelpMenu';
 import UserMenu from './UserMenu';
 
 import {isEventBasedProcessEnabled} from './service';
@@ -74,7 +74,7 @@ export function Header({mightFail, location, noActions}) {
               />
             )}
           </HeaderNav>
-          <ChangeLog />
+          <HelpMenu />
           <UserMenu />
         </>
       )}

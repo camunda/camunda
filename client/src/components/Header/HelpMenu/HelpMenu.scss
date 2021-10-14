@@ -1,17 +1,10 @@
-.ChangeLog {
+.HelpMenu {
   display: flex;
 
-  .Button {
-    padding: 0 20px;
-    border-right: 1px solid rgba(0, 0, 0, 0.1);
-    margin-right: 20px;
-    white-space: nowrap;
-    font-size: 0.8em;
-
-    &:hover {
-      border-right: 1px solid rgba(0, 0, 0, 0.1);
-      text-decoration: none;
-    }
+  .helpDropdown.Dropdown .activateButton span .Icon {
+    position: relative;
+    top: -2px;
+    margin-right: 5px;
   }
 }
 
