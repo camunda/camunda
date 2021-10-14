@@ -20,11 +20,13 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +75,7 @@ public class AuthenticationTest implements AuthenticationTestable {
   @Test
   public void testAccessNoPermission() {
     final ResponseEntity<String> response = get(NO_PERMISSION);
-    assertThat(response.getBody()).contains("No permission for Operate");
+    assertThat(response.getBody()).contains("No permission for Tasklist");
   }
 
   @Test
@@ -120,6 +122,34 @@ public class AuthenticationTest implements AuthenticationTestable {
     // Step 3 assume authentication will be fail
     doThrow(TokenExpiredException.class).when(iamAuthentication).authenticate(any(), any());
     when(iamAuthentication.isAuthenticated()).thenReturn(false);
+    response = get(IAM_CALLBACK_URI, cookies);
+
+    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
+
+    response = get(ROOT, cookies);
+    // Check that access to url is not possible
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+  }
+
+  @Test
+  public void testLoginFailedWithNoReadPermissions() throws Exception {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response))
+        .contains(
+            tasklistProperties.getIam().getIssuerUrl(),
+            URLEncoder.encode(IAM_CALLBACK_URI, Charset.defaultCharset()),
+            tasklistProperties.getIam().getClientId());
+    // Step 3 assume authentication succeed but return no READ permission
+    doThrow(TokenExpiredException.class).when(iamAuthentication).authenticate(any(), any());
+    when(iamAuthentication.isAuthenticated()).thenReturn(true);
+    when(iamAuthentication.getPermissions()).thenReturn(List.of(Permission.WRITE));
     response = get(IAM_CALLBACK_URI, cookies);
 
     assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);

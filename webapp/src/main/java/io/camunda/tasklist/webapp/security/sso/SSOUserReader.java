@@ -11,6 +11,7 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.RolePermissionService;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
@@ -44,8 +45,8 @@ public class SSOUserReader implements UserReader {
               .setFirstname(EMPTY)
               .setLastname(name)
               .setApiUser(false)
-              .setPermissions(
-                  rolePermissionService.getPermissions(tokenAuthentication.getRoles())));
+              // TODO to fix this later. Permissions will come from console - not role name
+              .setPermissions(List.of(Permission.READ, Permission.WRITE)));
     }
     return Optional.empty();
   }

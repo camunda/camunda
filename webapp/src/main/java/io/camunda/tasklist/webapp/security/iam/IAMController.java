@@ -111,7 +111,7 @@ public class IAMController {
   @RequestMapping(value = NO_PERMISSION)
   @ResponseBody
   public String noPermissions() {
-    return "No permission for Operate - Please check your operate configuration or cloud configuration.";
+    return "No permission for Tasklist - Please check your operate configuration or cloud configuration.";
   }
 
   /**

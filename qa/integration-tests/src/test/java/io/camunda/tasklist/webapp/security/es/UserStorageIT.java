@@ -47,7 +47,8 @@ public class UserStorageIT extends TasklistIntegrationTest {
     // given
     final var usernames = new ArrayList<>(List.of("demo", "jane", "joe"));
     usernames.forEach(
-        username -> userDetailsService.addUserWith(username, username, List.of(Role.OWNER.name())));
+        username ->
+            userDetailsService.addUserWith(username, username, List.of(Role.OPERATOR.name())));
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     // when ( getting request of random ordered usernames )
     Collections.shuffle(usernames);

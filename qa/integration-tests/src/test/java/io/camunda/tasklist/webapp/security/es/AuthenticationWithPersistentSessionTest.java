@@ -82,7 +82,7 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
         new UserEntity()
             .setUsername(USERNAME)
             .setPassword(encoder.encode(PASSWORD))
-            .setRoles(List.of(Role.OWNER.name()))
+            .setRoles(List.of(Role.OPERATOR.name()))
             .setFirstname(FIRSTNAME)
             .setLastname(LASTNAME);
     given(userStorage.getByName(USERNAME)).willReturn(user);

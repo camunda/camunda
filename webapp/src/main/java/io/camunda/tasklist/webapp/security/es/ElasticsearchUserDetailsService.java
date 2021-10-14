@@ -57,10 +57,10 @@ public class ElasticsearchUserDetailsService implements UserDetailsService {
         addUserWith(username, tasklistProperties.getPassword(), tasklistProperties.getRoles());
       }
       if (!userExists(READ_ONLY_USER)) {
-        addUserWith(READ_ONLY_USER, READ_ONLY_USER, List.of(Role.USER.name()));
+        addUserWith(READ_ONLY_USER, READ_ONLY_USER, List.of(Role.READER.name()));
       }
       if (!userExists(ACT_USERNAME)) {
-        addUserWith(ACT_USERNAME, ACT_PASSWORD, List.of(Role.OWNER.name()));
+        addUserWith(ACT_USERNAME, ACT_PASSWORD, List.of(Role.OPERATOR.name()));
       }
     }
   }

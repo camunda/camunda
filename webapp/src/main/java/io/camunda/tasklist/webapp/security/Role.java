@@ -6,14 +6,11 @@
 package io.camunda.tasklist.webapp.security;
 
 import java.util.Arrays;
-import java.util.List;
 
 public enum Role {
   OWNER,
-  USER,
-  FULL_ACCESS;
-
-  public static final List<Role> DEFAULTS = List.of(USER);
+  OPERATOR,
+  READER;
 
   public static Role fromString(final String roleAsString) {
     final String roleName = roleAsString.replaceAll("\\s+", "_");

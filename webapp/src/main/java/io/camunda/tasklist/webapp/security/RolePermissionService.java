@@ -7,9 +7,9 @@ package io.camunda.tasklist.webapp.security;
 
 import static io.camunda.tasklist.webapp.security.Permission.READ;
 import static io.camunda.tasklist.webapp.security.Permission.WRITE;
-import static io.camunda.tasklist.webapp.security.Role.FULL_ACCESS;
+import static io.camunda.tasklist.webapp.security.Role.OPERATOR;
 import static io.camunda.tasklist.webapp.security.Role.OWNER;
-import static io.camunda.tasklist.webapp.security.Role.USER;
+import static io.camunda.tasklist.webapp.security.Role.READER;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -26,9 +26,9 @@ public class RolePermissionService {
 
   @PostConstruct
   public void init() {
-    roles2permissions.put(USER, List.of(READ));
+    roles2permissions.put(READER, List.of(READ));
+    roles2permissions.put(OPERATOR, List.of(READ, WRITE));
     roles2permissions.put(OWNER, List.of(READ, WRITE));
-    roles2permissions.put(FULL_ACCESS, List.of(READ, WRITE));
   }
 
   public List<Permission> getPermissions(final List<Role> roles) {
