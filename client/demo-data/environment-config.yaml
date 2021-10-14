@@ -15,4 +15,5 @@ webhookAlerting:
       defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
 zeebe:
   # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
-  enabled: true
+  enabled: ${ZEEBE_IMPORT_ENABLED:false}
+  partitionCount: 2
