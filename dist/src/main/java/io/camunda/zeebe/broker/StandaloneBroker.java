@@ -71,7 +71,7 @@ public class StandaloneBroker
 
   @Override
   public void run(final String... args) {
-    if (isProductionEnvironment()) {
+    if (shouldUseTemporaryFolder()) {
       LOG.info("Launching broker in temporary folder.");
       systemContext = createSystemContextInTempDirectory();
     } else {
@@ -99,7 +99,7 @@ public class StandaloneBroker
     }
   }
 
-  private boolean isProductionEnvironment() {
+  private boolean shouldUseTemporaryFolder() {
     return springEnvironment.acceptsProfiles(
         Profiles.of(Profile.DEVELOPMENT.getId(), Profile.TEST.getId()));
   }
