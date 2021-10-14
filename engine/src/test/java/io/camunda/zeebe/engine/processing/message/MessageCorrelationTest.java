@@ -856,9 +856,13 @@ public final class MessageCorrelationTest {
     // when
     engine.message().withName("message").withCorrelationKey("key-1").publish();
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+    /* Improved wait statement. The first iteration of the wait statement produced flaky test results
+     * (see #7818) due to a bug (see #7995). To avoid the flakiness we analyzed the logs and found a
+     * more precise condition to wait for
+     */
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.BOUNDARY_EVENT)
+        .withMessageName("message")
         .await();
 
     // complete the process instance by triggering the interrupting timer boundary event
