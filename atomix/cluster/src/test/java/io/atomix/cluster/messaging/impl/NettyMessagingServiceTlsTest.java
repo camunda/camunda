@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 final class NettyMessagingServiceTlsTest {
+
   @Test
   void shouldCommunicateOverTls() throws CertificateException {
     // given
