@@ -65,6 +65,8 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.disableExplicitRaftFlush";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION =
       "zeebe.broker.experimental.enablePriorityElection";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED =
+      "zeebe.broker.experimental.queryapi.enabled";
   private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
@@ -511,6 +513,43 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(experimentalCfg.isEnablePriorityElection()).isTrue();
+  }
+
+  @Test
+  public void shouldDisableQueryApiByDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // when
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getQueryApi().isEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldSetEnableQueryApiFromConfig() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+
+    // when
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getQueryApi().isEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldOverrideSetEnableQueryApiViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED, "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getQueryApi().isEnabled()).isTrue();
   }
 
   @Test
