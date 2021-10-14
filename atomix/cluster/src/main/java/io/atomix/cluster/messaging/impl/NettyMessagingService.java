@@ -84,6 +84,7 @@ import org.slf4j.LoggerFactory;
 /** Netty based MessagingService. */
 public final class NettyMessagingService implements ManagedMessagingService {
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+  private static final String TLS_PROTOCOL = "TLSv1.3";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Address advertisedAddress;
@@ -385,7 +386,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
           SslContextBuilder.forClient()
               .trustManager(config.getCertificateChain())
               .sslProvider(SslProvider.OPENSSL_REFCNT)
-              .protocols("TLSv1.3")
+              .protocols(TLS_PROTOCOL)
               .build();
       return CompletableFuture.completedFuture(null);
     } catch (final Exception e) {
@@ -400,7 +401,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
       serverSslContext =
           SslContextBuilder.forServer(config.getCertificateChain(), config.getPrivateKey())
               .sslProvider(SslProvider.OPENSSL_REFCNT)
-              .protocols("TLSv1.3")
+              .protocols(TLS_PROTOCOL)
               .build();
       return CompletableFuture.completedFuture(null);
     } catch (final Exception e) {
