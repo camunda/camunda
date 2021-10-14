@@ -5,8 +5,11 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.RolePermissionService;
+
+import java.util.List;
 import java.util.Map;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -23,9 +26,6 @@ public class SSOUserService implements UserService<TokenAuthentication> {
   @Autowired
   private OperateProperties operateProperties;
 
-  @Autowired
-  RolePermissionService rolePermissionService;
-
   @Override
   public UserDto createUserDtoFrom(
       final TokenAuthentication authentication) {
@@ -38,7 +38,8 @@ public class SSOUserService implements UserService<TokenAuthentication> {
         .setUserId(authentication.getName())
         .setDisplayName(name)
         .setCanLogout(false)
-        .setPermissions(
-            rolePermissionService.getPermissions(authentication.getRoles()));
+        // For now every user will have read and write permission using auth0
+        // TODO implement permissions coming from console
+        .setPermissions(List.of(Permission.WRITE, Permission.READ));
   }
 }

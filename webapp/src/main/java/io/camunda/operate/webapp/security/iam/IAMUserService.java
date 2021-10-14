@@ -17,8 +17,6 @@ import org.springframework.stereotype.Component;
 @Profile(OperateURIs.IAM_AUTH_PROFILE)
 public class IAMUserService implements UserService<IAMAuthentication> {
 
-  @Autowired
-  RolePermissionService rolePermissionService;
   @Override
   public UserDto createUserDtoFrom(
       final IAMAuthentication authentication) {
@@ -26,8 +24,7 @@ public class IAMUserService implements UserService<IAMAuthentication> {
         .setUserId(authentication.getId())
         .setDisplayName(authentication.getName())
         .setCanLogout(false)
-        .setPermissions(rolePermissionService
-            .getPermissions(authentication.getRoles()));
+        .setPermissions(authentication.getPermissions());
   }
 
 }

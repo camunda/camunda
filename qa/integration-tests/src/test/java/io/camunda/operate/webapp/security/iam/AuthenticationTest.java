@@ -22,10 +22,13 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.RolePermissionService;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.List;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,6 +130,34 @@ public class AuthenticationTest implements AuthenticationTestable {
     // Step 3 assume authentication will be fail
     doThrow(TokenExpiredException.class).when(iamAuthentication).authenticate(any(), any());
     when(iamAuthentication.isAuthenticated()).thenReturn(false);
+    response = get(IAM_CALLBACK_URI, cookies);
+
+    assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);
+
+    response = get(ROOT, cookies);
+    // Check that access to url is not possible
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+  }
+
+  @Test
+  public void testLoginFailedWithNoReadPermissions() throws Exception {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response)).contains(
+        operateProperties.getIam().getIssuerUrl(),
+        URLEncoder.encode(IAM_CALLBACK_URI, Charset.defaultCharset()),
+        operateProperties.getIam().getClientId()
+    );
+    // Step 3 assume permissions doesnt contain READ
+    doThrow(TokenExpiredException.class).when(iamAuthentication).authenticate(any(), any());
+    when(iamAuthentication.isAuthenticated()).thenReturn(true);
+    when(iamAuthentication.getPermissions()).thenReturn(List.of(Permission.WRITE));
     response = get(IAM_CALLBACK_URI, cookies);
 
     assertThat(redirectLocationIn(response)).contains(NO_PERMISSION);

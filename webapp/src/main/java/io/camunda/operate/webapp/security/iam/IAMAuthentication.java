@@ -6,11 +6,11 @@
 
 package io.camunda.operate.webapp.security.iam;
 
-import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.iam.sdk.IamApi;
 import io.camunda.iam.sdk.authentication.Tokens;
@@ -19,19 +19,25 @@ import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.Role;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
+
+import io.camunda.operate.webapp.security.util.JWTDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
 @Profile(OperateURIs.IAM_AUTH_PROFILE)
@@ -39,7 +45,8 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class IAMAuthentication extends AbstractAuthenticationToken {
 
-  private static final String FULL_ACCESS = "FULL ACCESS";
+  public static final String READ_PERMISSION_VALUE = "read:*";
+  public static final String WRITE_PERMISSION_VALUE = "write:*";
   protected final transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
@@ -48,8 +55,6 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
   private DecodedJWT jwt;
   private Tokens tokens;
   private UserInfo userInfo;
-
-  private Map<String,Role> iam2operateRoles = Map.of(FULL_ACCESS, Role.OWNER);
 
   public IAMAuthentication() {
     super(null);
@@ -84,20 +89,49 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
     return userInfo.getId();
   }
 
-  public List<Role> getRoles() {
-    if (userInfo.getRoles().isEmpty()) {
-      return Role.DEFAULTS;
-    } else {
-      return map(userInfo.getRoles(), iamRole ->
-            getOrDefaultForNullValue(iam2operateRoles, iamRole, Role.USER)
-      );
+  private boolean hasPermission(String permissionName) {
+    if (jwt == null || !(jwt instanceof JWTDecoder)) {
+      return false;
     }
+    JWTDecoder decoder = (JWTDecoder) jwt;
+    if (decoder.getPayload() == null) {
+      return false;
+    }
+    Claim permissions = decoder.getPayloadObject().getClaim("permissions");
+    if (permissions == null) {
+      return false;
+    }
+
+    return Arrays.asList(permissions.asArray(String.class)).contains(permissionName);
+  }
+
+  private boolean hasReadPermission() {
+    return hasPermission(READ_PERMISSION_VALUE);
+  }
+
+  private boolean hasWritePermission() {
+    return hasPermission(WRITE_PERMISSION_VALUE);
+  }
+
+  public List<Permission> getPermissions() {
+    List<Permission> permissions = new ArrayList<>();
+    if (hasReadPermission()) {
+      permissions.add(Permission.READ);
+    }
+    if (hasWritePermission()) {
+      permissions.add(Permission.WRITE);
+    }
+
+    return permissions;
   }
 
   public void authenticate(final HttpServletRequest req, AuthCodeDto authCodeDto) throws Exception {
     tokens = retrieveTokens(req, authCodeDto);
     userInfo = retrieveUserInfo(tokens);
-    jwt = iamApi.authentication().verifyToken(tokens.getAccessToken());
+    jwt = new JWTDecoder(iamApi.authentication().verifyToken(tokens.getAccessToken()).getToken());
+    if (!getPermissions().contains(Permission.READ)) {
+      throw new InsufficientAuthenticationException("No read permissions");
+    }
     setAuthenticated(true);
   }
 

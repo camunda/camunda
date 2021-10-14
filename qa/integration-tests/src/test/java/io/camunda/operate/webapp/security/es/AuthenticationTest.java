@@ -93,9 +93,9 @@ public class AuthenticationTest implements AuthenticationTestable {
     UserEntity user = new UserEntity()
         .setUserId(USER_ID)
         .setPassword(encoder.encode(PASSWORD))
-        .setRoles(map(List.of(Role.OWNER), Role::name))
+        .setRoles(map(List.of(Role.OPERATOR), Role::name))
         .setDisplayName(FIRSTNAME + " " + LASTNAME)
-            .setRoles(List.of(Role.OWNER.name()));
+            .setRoles(List.of(Role.OPERATOR.name()));
     given(userStorage.getByUserId(USER_ID)).willReturn(user);
   }
 

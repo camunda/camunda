@@ -68,28 +68,6 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return jwt.getSubject();
   }
 
-  public List<Role> getRoles() {
-    return readRolesFromClaim();
-  }
-
-  private List<Role> readRolesFromClaim() {
-    try {
-      Claim claim = jwt.getClaim(claimName);
-      List<Map> userInfos = claim.asList(Map.class);
-      if (userInfos != null) {
-        Optional<Map> maybeUserInfo = userInfos.stream()
-            .filter(this::isIdEqualsOrganization)
-            .findFirst();
-        if (maybeUserInfo.isPresent()) {
-          return map((List<String>) maybeUserInfo.get().get(SSO_ROLES), Role::fromString);
-        }
-      }
-      return Role.DEFAULTS;
-    } catch (Exception e) {
-      return Role.DEFAULTS;
-    }
-  }
-
   @Override
   public boolean isAuthenticated() {
     return super.isAuthenticated() && !hasExpired();

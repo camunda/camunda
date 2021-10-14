@@ -22,7 +22,6 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.Role;
 import io.camunda.operate.webapp.security.RolePermissionService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
@@ -96,9 +95,9 @@ public class AuthenticationWithPersistentSessionsTest implements AuthenticationT
     UserEntity user = new UserEntity()
         .setUserId(USER_ID)
         .setPassword(encoder.encode(PASSWORD))
-        .setRoles(map(List.of(Role.OWNER), Role::name))
+        .setRoles(map(List.of(Role.OPERATOR), Role::name))
         .setDisplayName(FIRSTNAME + " " + LASTNAME)
-            .setRoles(List.of(Role.OWNER.name()));
+            .setRoles(List.of(Role.OPERATOR.name()));
     given(userStorage.getByUserId(USER_ID)).willReturn(user);
   }
 

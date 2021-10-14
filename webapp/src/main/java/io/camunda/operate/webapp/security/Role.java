@@ -9,10 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public enum Role {
-  OWNER,
-  USER;
-
-  public static final List<Role> DEFAULTS = List.of(USER);
+  OWNER, OPERATOR, USER;
 
   public static Role fromString(final String roleAsString) {
     final String roleName = roleAsString.replaceAll("\\s+", "_");
