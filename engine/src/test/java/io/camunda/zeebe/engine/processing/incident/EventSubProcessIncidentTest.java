@@ -122,7 +122,7 @@ public class EventSubProcessIncidentTest {
     // then
     final Record<ProcessInstanceRecordValue> failureEvent =
         RecordingExporter.processInstanceRecords()
-            .withElementId("event_sub_start")
+            .withElementId("event_sub_proc")
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
@@ -140,9 +140,9 @@ public class EventSubProcessIncidentTest {
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
         .hasProcessInstanceKey(processInstanceKey)
-        .hasElementId("event_sub_start")
+        .hasElementId("event_sub_proc")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getValue().getFlowScopeKey());
+        .hasVariableScopeKey(failureEvent.getKey());
 
     assertThat(incidentEventValue.getErrorMessage())
         .contains("no variable found for name 'source'");

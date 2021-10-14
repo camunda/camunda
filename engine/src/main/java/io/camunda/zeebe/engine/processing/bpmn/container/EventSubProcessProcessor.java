@@ -9,17 +9,13 @@ package io.camunda.zeebe.engine.processing.bpmn.container;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
-import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.util.Either;
 
 public final class EventSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -44,10 +40,17 @@ public final class EventSubProcessProcessor
   @Override
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
-    // event sub process is activated by the triggered event. No activate command is written.
-    throw new BpmnProcessingException(
-        activating,
-        "Expected an ACTIVATING and ACTIVATED event for the event sub process but found an ACTIVATE command.");
+    variableMappingBehavior
+        .applyInputMappings(activating, element)
+        .ifRightOrLeft(
+            ok -> {
+              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              stateTransitionBehavior.activateChildInstance(
+                  activated, element.getStartEvents().get(0));
+            },
+            failure -> {
+              incidentBehavior.createIncident(failure, activating);
+            });
   }
 
   @Override
@@ -70,22 +73,6 @@ public final class EventSubProcessProcessor
     if (noActiveChildInstances) {
       onChildTerminated(element, terminating, null);
     }
-  }
-
-  @Override
-  public Either<Failure, ?> onChildActivating(
-      final ExecutableFlowElementContainer element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {
-    if (childContext.getBpmnElementType() != BpmnElementType.START_EVENT) {
-      return Either.right(null);
-    }
-
-    // The input mapping for the event sub process need to happen here, since we immediately moved
-    // the event sub process to ACTIVATED on event triggering. This is done to make sure that we
-    // copy temporary variables (for messages) to the correct scope already on triggering the event,
-    // otherwise we will have issues on concurrent incoming events.
-    return variableMappingBehavior.applyInputMappings(flowScopeContext, element);
   }
 
   @Override

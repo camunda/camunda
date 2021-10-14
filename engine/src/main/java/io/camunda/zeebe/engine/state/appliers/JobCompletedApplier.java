@@ -10,9 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -21,14 +19,10 @@ class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableVariableState variableState;
 
   JobCompletedApplier(final MutableZeebeState state) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
-    eventScopeInstanceState = state.getEventScopeInstanceState();
-    variableState = state.getVariableState();
   }
 
   @Override
@@ -46,11 +40,6 @@ class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
         elementInstance.setJobKey(-1);
         elementInstanceState.updateInstance(elementInstance);
-
-        // no event should be triggered for the element instance afterward
-        eventScopeInstanceState.shutdownInstance(elementInstanceKey);
-
-        variableState.setTemporaryVariables(elementInstanceKey, value.getVariablesBuffer());
       }
     }
   }

@@ -7,19 +7,22 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
@@ -27,18 +30,15 @@ final class ProcessInstanceElementActivatingApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
-  private final MutableVariableState variableState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final MutableVariableState variableState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
-    this.variableState = variableState;
     this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
@@ -51,7 +51,11 @@ final class ProcessInstanceElementActivatingApplier
     final var processDefinitionKey = value.getProcessDefinitionKey();
     final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
     if (eventTrigger != null && value.getElementIdBuffer().equals(eventTrigger.getElementId())) {
-      variableState.setTemporaryVariables(elementInstanceKey, eventTrigger.getVariables());
+      eventScopeInstanceState.triggerEvent(
+          elementInstanceKey,
+          eventTrigger.getEventKey(),
+          eventTrigger.getElementId(),
+          eventTrigger.getVariables());
       eventScopeInstanceState.deleteTrigger(processDefinitionKey, eventTrigger.getEventKey());
     }
 
@@ -84,25 +88,18 @@ final class ProcessInstanceElementActivatingApplier
 
     decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
 
-    if (currentElementType == BpmnElementType.EVENT_SUB_PROCESS) {
-      // copy temp variables into local scope (necessary for start event to apply output mappings)
-      final var temporaryVariables =
-          variableState.getTemporaryVariables(flowScopeInstance.getKey());
-      if (temporaryVariables != null) {
-        variableState.setTemporaryVariables(elementInstanceKey, temporaryVariables);
-        variableState.removeTemporaryVariables(flowScopeInstance.getKey());
-      }
-    }
-
     if (currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
-      // the event variables are stored as temporary variables in the scope of the subprocess
-      // - move them to the scope of the start event to apply the output variable mappings
-      final var variables = variableState.getTemporaryVariables(flowScopeInstance.getKey());
-
-      if (variables != null) {
-        variableState.setTemporaryVariables(elementInstanceKey, variables);
-        variableState.removeTemporaryVariables(flowScopeInstance.getKey());
+      final EventTrigger flowScopeEventTrigger =
+          eventScopeInstanceState.peekEventTrigger(flowScopeInstance.getParentKey());
+      if (flowScopeEventTrigger != null) {
+        eventScopeInstanceState.triggerEvent(
+            elementInstanceKey,
+            flowScopeEventTrigger.getEventKey(),
+            flowScopeEventTrigger.getElementId(),
+            flowScopeEventTrigger.getVariables());
+        eventScopeInstanceState.deleteTrigger(
+            flowScopeInstance.getParentKey(), flowScopeEventTrigger.getEventKey());
       }
     }
 
@@ -234,10 +231,14 @@ final class ProcessInstanceElementActivatingApplier
       final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
 
       final var hasEvents = !eventSupplier.getEvents().isEmpty();
-      if (hasEvents) {
+      if (hasEvents
+          || flowElement instanceof ExecutableJobWorkerElement
+          || flowElement instanceof ExecutableCallActivity) {
         eventScopeInstanceState.createInstance(
             elementInstanceKey, eventSupplier.getInterruptingElementIds());
       }
+    } else if (flowElement instanceof ExecutableJobWorkerElement) {
+      eventScopeInstanceState.createInstance(elementInstanceKey, Collections.emptyList());
     }
   }
 }

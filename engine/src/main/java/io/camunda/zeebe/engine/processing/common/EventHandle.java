@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -131,6 +132,15 @@ public final class EventHandle {
           elementRecord,
           variables);
     }
+  }
+
+  public void triggeringProcessEvent(final JobRecord jobRecord) {
+    triggeringProcessEvent(
+        jobRecord.getProcessDefinitionKey(),
+        jobRecord.getProcessInstanceKey(),
+        jobRecord.getElementInstanceKey(),
+        jobRecord.getElementIdBuffer(),
+        jobRecord.getVariablesBuffer());
   }
 
   private boolean isElementActivated(final ExecutableFlowElement catchEvent) {

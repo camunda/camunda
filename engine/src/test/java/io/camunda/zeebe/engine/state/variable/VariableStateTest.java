@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -411,31 +410,6 @@ public final class VariableStateTest {
 
     // then
     assertThat(variable).isNull();
-  }
-
-  @Test
-  public void shouldSetTemporaryVariables() {
-    // when
-    variableState.setTemporaryVariables(parent, wrapString("a"));
-    variableState.setTemporaryVariables(child, wrapString("b"));
-
-    // then
-    Assertions.assertThat(variableState.getTemporaryVariables(parent)).isEqualTo(wrapString("a"));
-    Assertions.assertThat(variableState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
-  }
-
-  @Test
-  public void shouldRemoveTemporaryVariables() {
-    // given
-    variableState.setTemporaryVariables(parent, wrapString("a"));
-    variableState.setTemporaryVariables(child, wrapString("b"));
-
-    // when
-    variableState.removeTemporaryVariables(parent);
-
-    // then
-    Assertions.assertThat(variableState.getTemporaryVariables(parent)).isNull();
-    Assertions.assertThat(variableState.getTemporaryVariables(child)).isEqualTo(wrapString("b"));
   }
 
   private void declareScope(final long key) {

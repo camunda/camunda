@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
@@ -20,17 +19,14 @@ final class ProcessInstanceElementTerminatedApplier
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableVariableState variableState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementTerminatedApplier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
-      final MutableVariableState variableState,
       final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
-    this.variableState = variableState;
     this.bufferedStartMessageEventStateApplier = bufferedStartMessageEventStateApplier;
   }
 
@@ -41,6 +37,5 @@ final class ProcessInstanceElementTerminatedApplier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
-    variableState.removeTemporaryVariables(key);
   }
 }

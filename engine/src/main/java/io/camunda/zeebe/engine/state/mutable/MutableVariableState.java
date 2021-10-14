@@ -61,8 +61,4 @@ public interface MutableVariableState extends VariableState {
   void removeScope(long scopeKey);
 
   void removeAllVariables(long scopeKey);
-
-  void setTemporaryVariables(long scopeKey, DirectBuffer variables);
-
-  void removeTemporaryVariables(long scopeKey);
 }

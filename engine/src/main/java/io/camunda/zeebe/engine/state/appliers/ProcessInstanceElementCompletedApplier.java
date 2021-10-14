@@ -61,7 +61,8 @@ final class ProcessInstanceElementCompletedApplier
       if (callActivity.getOutputMappings().isPresent()
           || callActivity.isPropagateAllChildVariablesEnabled()) {
         final var variables = variableState.getVariablesAsDocument(key);
-        variableState.setTemporaryVariables(parentElementInstanceKey, variables);
+        eventScopeInstanceState.triggerEvent(
+            parentElementInstanceKey, parentElementInstanceKey, elementId, variables);
       }
     }
 
@@ -69,6 +70,5 @@ final class ProcessInstanceElementCompletedApplier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
-    variableState.removeTemporaryVariables(key);
   }
 }
