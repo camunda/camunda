@@ -56,6 +56,7 @@ import {PanelHeader} from 'modules/components/PanelHeader';
 import {useTaskVariables} from 'modules/queries/get-task-variables';
 import {LoadingTextarea} from './LoadingTextarea';
 import {usePermissions} from 'modules/hooks/usePermissions';
+import {OnNewVariableAdded} from './OnNewVariableAdded';
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
@@ -181,11 +182,6 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                   type="button"
                   variant="small"
                   onClick={() => {
-                    const element = tableContainer.current;
-                    if (element !== null) {
-                      element.scrollTop = element.scrollHeight;
-                    }
-
                     form.mutators.push('newVariables');
                   }}
                 >
@@ -277,83 +273,94 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                         );
                       })}
                       {canCompleteTask && (
-                        <FieldArray name="newVariables">
-                          {({fields}) =>
-                            fields.map((variable, index) => {
-                              const error = getError(
-                                form.getFieldState(`${variable}.name`),
-                                form.getFieldState(`${variable}.value`),
-                              );
-                              return (
-                                <TR key={variable} data-testid={variable}>
-                                  <NameInputTD>
-                                    <Field name={`${variable}.name`}>
-                                      {({input, meta}) => (
-                                        <NameInput
-                                          {...input}
-                                          placeholder="Name"
-                                          aria-label={`New variable ${index} name`}
-                                          aria-invalid={
-                                            meta.error !== undefined &&
-                                            isVariableDirty(
-                                              form.getFieldState(
-                                                `${variable}.name`,
-                                              ),
-                                              form.getFieldState(
-                                                `${variable}.value`,
-                                              ),
-                                            )
-                                          }
-                                        />
-                                      )}
-                                    </Field>
-                                  </NameInputTD>
-                                  <ValueInputTD>
-                                    <Field name={`${variable}.value`}>
-                                      {({input, meta}) => (
-                                        <EditTextarea
-                                          {...input}
-                                          aria-label={`New variable ${index} value`}
-                                          placeholder="Value"
-                                          aria-invalid={
-                                            meta.error !== undefined &&
-                                            isVariableDirty(
-                                              form.getFieldState(
-                                                `${variable}.name`,
-                                              ),
-                                              form.getFieldState(
-                                                `${variable}.value`,
-                                              ),
-                                            )
-                                          }
-                                        />
-                                      )}
-                                    </Field>
-                                  </ValueInputTD>
-                                  <IconTD>
-                                    <IconContainer>
-                                      {error !== undefined && (
-                                        <Warning
-                                          title={error}
-                                          data-testid={`warning-icon-${variable}.value`}
-                                        />
-                                      )}
-                                      <IconButton
-                                        type="button"
-                                        aria-label={`Remove new variable ${index}`}
-                                        onClick={() => {
-                                          fields.remove(index);
-                                        }}
-                                      >
-                                        <Cross />
-                                      </IconButton>
-                                    </IconContainer>
-                                  </IconTD>
-                                </TR>
-                              );
-                            })
-                          }
-                        </FieldArray>
+                        <>
+                          <OnNewVariableAdded
+                            name="newVariables"
+                            execute={() => {
+                              const element = tableContainer.current;
+                              if (element !== null) {
+                                element.scrollTop = element.scrollHeight;
+                              }
+                            }}
+                          />
+                          <FieldArray name="newVariables">
+                            {({fields}) =>
+                              fields.map((variable, index) => {
+                                const error = getError(
+                                  form.getFieldState(`${variable}.name`),
+                                  form.getFieldState(`${variable}.value`),
+                                );
+                                return (
+                                  <TR key={variable} data-testid={variable}>
+                                    <NameInputTD>
+                                      <Field name={`${variable}.name`}>
+                                        {({input, meta}) => (
+                                          <NameInput
+                                            {...input}
+                                            placeholder="Name"
+                                            aria-label={`New variable ${index} name`}
+                                            aria-invalid={
+                                              meta.error !== undefined &&
+                                              isVariableDirty(
+                                                form.getFieldState(
+                                                  `${variable}.name`,
+                                                ),
+                                                form.getFieldState(
+                                                  `${variable}.value`,
+                                                ),
+                                              )
+                                            }
+                                          />
+                                        )}
+                                      </Field>
+                                    </NameInputTD>
+                                    <ValueInputTD>
+                                      <Field name={`${variable}.value`}>
+                                        {({input, meta}) => (
+                                          <EditTextarea
+                                            {...input}
+                                            aria-label={`New variable ${index} value`}
+                                            placeholder="Value"
+                                            aria-invalid={
+                                              meta.error !== undefined &&
+                                              isVariableDirty(
+                                                form.getFieldState(
+                                                  `${variable}.name`,
+                                                ),
+                                                form.getFieldState(
+                                                  `${variable}.value`,
+                                                ),
+                                              )
+                                            }
+                                          />
+                                        )}
+                                      </Field>
+                                    </ValueInputTD>
+                                    <IconTD>
+                                      <IconContainer>
+                                        {error !== undefined && (
+                                          <Warning
+                                            title={error}
+                                            data-testid={`warning-icon-${variable}.value`}
+                                          />
+                                        )}
+                                        <IconButton
+                                          type="button"
+                                          aria-label={`Remove new variable ${index}`}
+                                          onClick={() => {
+                                            fields.remove(index);
+                                          }}
+                                        >
+                                          <Cross />
+                                        </IconButton>
+                                      </IconContainer>
+                                    </IconTD>
+                                  </TR>
+                                );
+                              })
+                            }
+                          </FieldArray>
+                        </>
                       )}
                     </tbody>
                   </Table>
