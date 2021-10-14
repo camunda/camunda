@@ -29,7 +29,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 
 /**
- * Entry point for the standalone gateway application. By default, it enables the {@link
+ * Entry point for the standalone broker application. By default, it enables the {@link
  * Profile#BROKER} profile, loading the appropriate application properties overrides.
  *
  * <p>See {@link #main(String[])} for more.
