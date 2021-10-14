@@ -210,7 +210,7 @@ public class RetryElasticsearchClient {
           final DeleteByQueryRequest request = new DeleteByQueryRequest(indexName).setQuery(query);
           final BulkByScrollResponse response =
               esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-          return response.getBulkFailures().isEmpty();
+          return response.getBulkFailures().isEmpty() && response.getDeleted() > 0;
         });
   }
 

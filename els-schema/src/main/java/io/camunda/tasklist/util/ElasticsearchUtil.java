@@ -75,7 +75,7 @@ public abstract class ElasticsearchUtil {
     return searchRequest;
   }
 
-  private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
+  public static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     switch (queryType) {
       case ONLY_ARCHIVE:
         return template.getIndexPattern() + ",-" + template.getFullQualifiedName();
