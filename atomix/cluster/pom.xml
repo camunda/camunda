@@ -267,10 +267,8 @@
             <!-- dependency used but plugin seems to report a false positive here -->
             <dependency>uk.co.real-logic:sbe-tool</dependency>
             <dependency>net.jqwik:jqwik</dependency>
+            <dependency>io.netty:netty-tcnative-boringssl-static</dependency>
           </usedDependencies>
-          <ignoredDependencies>
-            <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
-          </ignoredDependencies>
         </configuration>
       </plugin>
 
