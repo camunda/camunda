@@ -10,6 +10,7 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 5
+
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
     directory: "clients/go"
@@ -22,3 +23,14 @@ updates:
     open-pull-requests-limit: 5
     ignore:
       - dependency-name: "github.com/docker/*"
+
+  # Enable version updates for the github actions
+  - package-ecosystem: "github-actions"
+    directory: ".github"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix(deps): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
