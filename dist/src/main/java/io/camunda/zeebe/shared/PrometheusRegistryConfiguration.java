@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@SuppressWarnings("unused")
 @AutoConfigureBefore(PrometheusMetricsExportAutoConfiguration.class)
 public class PrometheusRegistryConfiguration {
 
