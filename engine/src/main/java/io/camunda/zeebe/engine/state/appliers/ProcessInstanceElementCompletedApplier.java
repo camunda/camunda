@@ -45,7 +45,7 @@ final class ProcessInstanceElementCompletedApplier
 
     final var parentElementInstanceKey = value.getParentElementInstanceKey();
 
-    if (isCallActivity(value, parentElementInstanceKey)) {
+    if (isChildProcess(value, parentElementInstanceKey)) {
       propagateVariables(key, parentElementInstanceKey);
     }
 
@@ -55,7 +55,7 @@ final class ProcessInstanceElementCompletedApplier
     elementInstanceState.removeInstance(key);
   }
 
-  private boolean isCallActivity(
+  private boolean isChildProcess(
       final ProcessInstanceRecord value, final long parentElementInstanceKey) {
     return parentElementInstanceKey > 0 && value.getBpmnElementType() == BpmnElementType.PROCESS;
   }
