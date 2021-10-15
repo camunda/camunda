@@ -67,7 +67,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var bpmnBehaviors =
         new BpmnBehaviorsImpl(
             expressionProcessor,
-            streamWriterProxy,
             responseWriterProxy,
             sideEffectQueue,
             zeebeState,

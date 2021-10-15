@@ -17,9 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -36,15 +34,12 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
-  private final TypedStreamWriter streamWriter;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnJobBehavior jobBehavior;
-  private final StateWriter stateWriter;
 
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
-      final TypedStreamWriter streamWriter,
       final TypedResponseWriter responseWriter,
       final SideEffects sideEffects,
       final MutableZeebeState zeebeState,
@@ -56,9 +51,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final Writers writers,
       final JobMetrics jobMetrics) {
 
-    stateWriter = writers.state();
+    final StateWriter stateWriter = writers.state();
     final var commandWriter = writers.command();
-    this.streamWriter = streamWriter;
     this.expressionBehavior = expressionBehavior;
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
@@ -129,11 +123,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnStateBehavior stateBehavior() {
     return stateBehavior;
-  }
-
-  @Override
-  public TypedCommandWriter commandWriter() {
-    return streamWriter;
   }
 
   @Override
