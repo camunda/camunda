@@ -62,11 +62,6 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_THREADS_MANAGEMENTTHREADS.
         # managementThreads: 1
 
-      # monitoring:
-        # Enables the metrics collection in the gateway
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_MONITORING_ENABLED.
-        # enabled: false
-
       # security:
         # Enables TLS authentication between clients and the gateway
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED.
@@ -112,10 +107,9 @@
 
     # network:
       # This section contains the network configuration. Particularly, it allows to
-      # configure the hosts and ports the broker should bind to. The broker exposes three sockets:
+      # configure the hosts and ports the broker should bind to. The broker exposes two sockets:
       # 1. command: the socket which is used for gateway-to-broker communication
       # 2. internal: the socket which is used for broker-to-broker communication
-      # 3. monitoring: the socket which is used to monitor the broker
 
       # Controls the default host the broker should bind to. Can be overwritten on a
       # per binding basis for client, management and replication
@@ -159,15 +153,6 @@
         # Sets the port used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
-
-      # monitoringApi:
-        # Overrides the host used for exposing monitoring information
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MONITORINGAPI_HOST.
-        # host: 0.0.0.0
-
-        # Sets the port used for exposing monitoring information
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT.
-        # port: 9600
 
     # data:
       # This section allows to configure Zeebe's data storage. Data is stored in

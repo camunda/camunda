@@ -17,6 +17,7 @@
 package io.atomix.cluster.messaging;
 
 import io.atomix.utils.config.Config;
+import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,9 @@ public class MessagingConfig implements Config {
   private Integer port;
   private Duration shutdownQuietPeriod = Duration.ofMillis(20);
   private Duration shutdownTimeout = Duration.ofSeconds(1);
+  private boolean tlsEnabled = false;
+  private File certificateChain;
+  private File privateKey;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -42,7 +46,7 @@ public class MessagingConfig implements Config {
    * Sets the local interfaces to which to bind the node.
    *
    * @param interfaces the local interfaces to which to bind the node
-   * @return the local cluster configuration
+   * @return this config for chaining
    */
   public MessagingConfig setInterfaces(final List<String> interfaces) {
     this.interfaces = interfaces;
@@ -62,7 +66,7 @@ public class MessagingConfig implements Config {
    * Sets the local port to which to bind the node.
    *
    * @param port the local port to which to bind the node
-   * @return the local cluster configuration
+   * @return this config for chaining
    */
   public MessagingConfig setPort(final Integer port) {
     this.port = port;
@@ -88,7 +92,7 @@ public class MessagingConfig implements Config {
    * otherwise every tests takes an additional 2 second just to shutdown the executor.
    *
    * @param shutdownQuietPeriod the quiet period on shutdown
-   * @return this config
+   * @return this config for chaining
    */
   public MessagingConfig setShutdownQuietPeriod(final Duration shutdownQuietPeriod) {
     this.shutdownQuietPeriod = shutdownQuietPeriod;
@@ -104,9 +108,68 @@ public class MessagingConfig implements Config {
    * Sets the shutdown timeout.
    *
    * @param shutdownTimeout the time to wait for an orderly shutdown of the messaging service
-   * @return this config
+   * @return this config for chaining
    */
-  public void setShutdownTimeout(final Duration shutdownTimeout) {
+  public MessagingConfig setShutdownTimeout(final Duration shutdownTimeout) {
     this.shutdownTimeout = shutdownTimeout;
+    return this;
+  }
+
+  /** @return true if TLS is enabled for inter-cluster communication */
+  public boolean isTlsEnabled() {
+    return tlsEnabled;
+  }
+
+  /**
+   * Sets whether or not to enable TLS for inter-cluster communication.
+   *
+   * @param tlsEnabled true to enable TLS between all nodes, false otherwise
+   * @return this config for chaining
+   */
+  public MessagingConfig setTlsEnabled(final boolean tlsEnabled) {
+    this.tlsEnabled = tlsEnabled;
+    return this;
+  }
+
+  /**
+   * The certificate chain to use for inter-cluster communication. This certificate is used for both
+   * the server and the client.
+   *
+   * @return a file which contains the certificate chain
+   */
+  public File getCertificateChain() {
+    return certificateChain;
+  }
+
+  /**
+   * Sets the certificate chain to use for inter-cluster communication. If using a self-signed
+   * certificate, or one which is not widely trusted, this must be the complete chain.
+   *
+   * <p>Mandatory if TLS is enabled.
+   *
+   * @param certificateChain a file containing the certificate chain
+   * @return this config for chaining
+   */
+  public MessagingConfig setCertificateChain(final File certificateChain) {
+    this.certificateChain = certificateChain;
+    return this;
+  }
+
+  /** @return the private key of the certificate chain */
+  public File getPrivateKey() {
+    return privateKey;
+  }
+
+  /**
+   * Sets the private key of the certificate chain.
+   *
+   * <p>Mandatory if TLS is enabled.
+   *
+   * @param privateKey the private key of the associated certificate chain
+   * @return this config for chaining
+   */
+  public MessagingConfig setPrivateKey(final File privateKey) {
+    this.privateKey = privateKey;
+    return this;
   }
 }

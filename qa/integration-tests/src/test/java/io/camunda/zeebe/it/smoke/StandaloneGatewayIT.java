@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -45,6 +46,10 @@ final class StandaloneGatewayIT {
   @Autowired
   private GatewayCfg config;
 
+  @SuppressWarnings("unused")
+  @LocalServerPort
+  private int managementPort;
+
   /** A simple smoke test which checks that the gateway can start and accept requests. */
   @SmokeTest
   void smokeTest() {
@@ -60,7 +65,7 @@ final class StandaloneGatewayIT {
       // then
       given()
           .contentType(ContentType.JSON)
-          .port(config.getMonitoring().getPort())
+          .port(managementPort)
           .when()
           .get("/actuator")
           .then()
@@ -84,7 +89,7 @@ final class StandaloneGatewayIT {
     final RequestSpecification gatewayServerSpec =
         new RequestSpecBuilder()
             .setContentType(ContentType.JSON)
-            .setPort(config.getMonitoring().getPort())
+            .setPort(managementPort)
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();

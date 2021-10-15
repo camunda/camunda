@@ -49,6 +49,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.net.ConnectException;
@@ -81,6 +84,7 @@ import org.slf4j.LoggerFactory;
 /** Netty based MessagingService. */
 public final class NettyMessagingService implements ManagedMessagingService {
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
+  private static final String TLS_PROTOCOL = "TLSv1.3";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Address advertisedAddress;
@@ -89,20 +93,23 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final ProtocolVersion protocolVersion;
   private final AtomicBoolean started = new AtomicBoolean(false);
   private final HandlerRegistry handlers = new HandlerRegistry();
-  private volatile LocalClientConnection localConnection;
   private final Map<Channel, RemoteClientConnection> connections = Maps.newConcurrentMap();
   private final AtomicLong messageIdGenerator = new AtomicLong(0);
   private final ChannelPool channelPool;
+  private final List<CompletableFuture> openFutures;
+  private final MessagingConfig config;
+
   private EventLoopGroup serverGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends Channel> clientChannelClass;
   private Channel serverChannel;
-  private final List<CompletableFuture> openFutures;
-  private final MessagingConfig config;
 
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
   private ScheduledExecutorService timeoutExecutor;
+  private volatile LocalClientConnection localConnection;
+  private SslContext serverSslContext;
+  private SslContext clientSslContext;
 
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
@@ -282,14 +289,27 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   @Override
+  public boolean isRunning() {
+    return started.get();
+  }
+
+  @Override
   public CompletableFuture<MessagingService> start() {
     if (started.get()) {
       log.warn("Already running at local address: {}", advertisedAddress);
       return CompletableFuture.completedFuture(this);
     }
 
+    final CompletableFuture<Void> serviceLoader;
+    if (config.isTlsEnabled()) {
+      serviceLoader = loadServerSslContext().thenCompose(ok -> loadClientSslContext());
+    } else {
+      serviceLoader = CompletableFuture.completedFuture(null);
+    }
+
     initTransport();
-    return bootstrapServer()
+    return serviceLoader
+        .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
               timeoutExecutor =
@@ -300,11 +320,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
               log.info("Started");
             })
         .thenApply(v -> this);
-  }
-
-  @Override
-  public boolean isRunning() {
-    return started.get();
   }
 
   @Override
@@ -363,6 +378,37 @@ public final class NettyMessagingService implements ManagedMessagingService {
           });
     }
     return CompletableFuture.completedFuture(null);
+  }
+
+  private CompletableFuture<Void> loadClientSslContext() {
+    try {
+      clientSslContext =
+          SslContextBuilder.forClient()
+              .trustManager(config.getCertificateChain())
+              .sslProvider(SslProvider.OPENSSL_REFCNT)
+              .protocols(TLS_PROTOCOL)
+              .build();
+      return CompletableFuture.completedFuture(null);
+    } catch (final Exception e) {
+      return CompletableFuture.failedFuture(
+          new MessagingException(
+              "Failed to start messaging service; invalid client TLS configuration", e));
+    }
+  }
+
+  private CompletableFuture<Void> loadServerSslContext() {
+    try {
+      serverSslContext =
+          SslContextBuilder.forServer(config.getCertificateChain(), config.getPrivateKey())
+              .sslProvider(SslProvider.OPENSSL_REFCNT)
+              .protocols(TLS_PROTOCOL)
+              .build();
+      return CompletableFuture.completedFuture(null);
+    } catch (final Exception e) {
+      return CompletableFuture.failedFuture(
+          new MessagingException(
+              "Failed to start messaging service; invalid server TLS configuration", e));
+    }
   }
 
   private void initTransport() {
@@ -710,8 +756,20 @@ public final class NettyMessagingService implements ManagedMessagingService {
     }
 
     @Override
-    protected void initChannel(final SocketChannel channel) throws Exception {
+    protected void initChannel(final SocketChannel channel) {
+      if (config.isTlsEnabled()) {
+        final var sslHandler = clientSslContext.newHandler(channel.alloc());
+        channel.pipeline().addLast("tls", sslHandler);
+      }
+
       channel.pipeline().addLast("handshake", new ClientHandshakeHandlerAdapter(future));
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause)
+        throws Exception {
+      future.completeExceptionally(cause);
+      super.exceptionCaught(ctx, cause);
     }
   }
 
@@ -719,7 +777,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private class BasicServerChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
-    protected void initChannel(final SocketChannel channel) throws Exception {
+    protected void initChannel(final SocketChannel channel) {
+      if (config.isTlsEnabled()) {
+        final var sslHandler = serverSslContext.newHandler(channel.alloc());
+        channel.pipeline().addLast("tls", sslHandler);
+      }
+
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
     }
   }
