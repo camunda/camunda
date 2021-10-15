@@ -12,12 +12,10 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedResponseWriterProxy;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -40,7 +38,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private final TypedResponseWriterProxy responseWriterProxy = new TypedResponseWriterProxy();
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
@@ -49,7 +46,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final TypedRejectionWriter rejectionWriter;
-
   private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnStreamProcessor(
@@ -65,7 +61,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var bpmnBehaviors =
         new BpmnBehaviorsImpl(
             expressionProcessor,
-            responseWriterProxy,
             sideEffectQueue,
             zeebeState,
             catchEventBehavior,
@@ -88,18 +83,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {}
-
-  @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    // todo (#6202): replace writer proxies by Writers
     // initialize
-    responseWriterProxy.wrap(responseWriter, writer -> sideEffectQueue.add(writer::flush));
     sideEffectQueue.clear();
     sideEffect.accept(sideEffectQueue);
 

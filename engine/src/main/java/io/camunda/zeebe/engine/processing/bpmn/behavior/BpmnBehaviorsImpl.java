@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -40,7 +39,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
-      final TypedResponseWriter responseWriter,
       final SideEffects sideEffects,
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
@@ -80,7 +78,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
-    processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
+    processResultSenderBehavior =
+        new BpmnProcessResultSenderBehavior(zeebeState, writers.response());
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(
             zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
