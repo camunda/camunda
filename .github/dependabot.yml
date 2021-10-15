@@ -27,7 +27,7 @@ updates:
 
   # Enable version updates for the github actions
   - package-ecosystem: "github-actions"
-    directory: ".github"
+    directory: "/"
     schedule:
       interval: "daily"
     commit-message:
