@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.springframework.util.unit.DataSize;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @RunWith(Parameterized.class)
@@ -96,8 +97,20 @@ public class ClusteredSnapshotTest {
   public void shouldSendSnapshotOnReconnect() {
     // given
     final var followerId = clusteringRule.stopAnyFollower();
+    final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final var adminService =
+        clusteringRule.getBroker(leaderId).getBrokerContext().getBrokerAdminService();
     ControllableExporter.updatePosition(true);
-    publishMessages();
+    clusteringRule.fillSegment();
+
+    Awaitility.await("Wait until all events are exported before taking snapshot")
+        .until(
+            () -> {
+              final var partitionStatus = adminService.getPartitionStatus().get(1);
+              return partitionStatus.getExportedPosition()
+                  >= partitionStatus.getProcessedPosition();
+            });
+
     snapshotTrigger.accept(clusteringRule);
 
     // when
@@ -141,11 +154,16 @@ public class ClusteredSnapshotTest {
   }
 
   private void assertThatSnapshotExists() {
-    clusteringRule.getBrokers().forEach(broker -> clusteringRule.getSnapshot(broker).orElseThrow());
+    clusteringRule
+        .getBrokers()
+        .forEach(broker -> assertThat(clusteringRule.getSnapshot(broker)).isNotEmpty());
   }
 
   private void configureBroker(final BrokerCfg brokerCfg) {
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(4));
+
     final DataCfg data = brokerCfg.getData();
+    data.setLogSegmentSize(DataSize.ofKilobytes(4));
     data.setLogIndexDensity(5);
     data.setSnapshotPeriod(SNAPSHOT_INTERVAL);
 

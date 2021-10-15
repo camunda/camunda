@@ -29,6 +29,7 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final RoundRobinPartitionDistributor DEFAULT_PARTITION_DISTRIBUTOR =
       new RoundRobinPartitionDistributor();
+  private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -39,6 +40,7 @@ public class RaftPartitionConfig {
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private PartitionDistributor partitionDistributor = DEFAULT_PARTITION_DISTRIBUTOR;
+  private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
 
   /**
    * Returns the Raft leader election timeout.
@@ -156,5 +158,13 @@ public class RaftPartitionConfig {
 
   public void setPartitionDistributor(final PartitionDistributor partitionDistributor) {
     this.partitionDistributor = partitionDistributor;
+  }
+
+  public int getPreferSnapshotReplicationThreshold() {
+    return preferSnapshotReplicationThreshold;
+  }
+
+  public void setPreferSnapshotReplicationThreshold(int preferSnapshotReplicationThreshold) {
+    this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
   }
 }

@@ -64,7 +64,9 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -765,6 +767,49 @@ public final class ClusteringRule extends ExternalResource {
   public Path getSegmentsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectory();
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
+  }
+
+  /**
+   * Fills one segment with messages. Use {@link #runUntilSegmentsFilled} if you need more control
+   * over the content or count of segments.
+   */
+  public void fillSegment() {
+    runUntilSegmentsFilled(
+        getBrokers(),
+        1,
+        () ->
+            client
+                .newPublishMessageCommand()
+                .messageName("msg")
+                .correlationKey("key")
+                .send()
+                .join());
+  }
+
+  /**
+   * Runs until a given number of segments are filled on all brokers. This is useful for publishing
+   * messages until a segment is full, thus triggering log compaction.
+   */
+  public void runUntilSegmentsFilled(
+      final Collection<Broker> brokers, final int segmentCount, Runnable runnable) {
+    while (brokers.stream().map(this::getSegmentsCount).allMatch(count -> count <= segmentCount)) {
+      runnable.run();
+    }
+    runnable.run();
+  }
+
+  public int getSegmentsCount(final Broker broker) {
+    return getSegments(broker).size();
+  }
+
+  Collection<Path> getSegments(final Broker broker) {
+    try {
+      return Files.list(getSegmentsDirectory(broker))
+          .filter(path -> path.toString().endsWith(".log"))
+          .collect(Collectors.toList());
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public SnapshotId waitForSnapshotAtBroker(final int nodeId) {
