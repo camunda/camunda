@@ -16,8 +16,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalRecord;
-import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 
 class SegmentedJournalWriter {
@@ -46,29 +46,37 @@ class SegmentedJournalWriter {
   }
 
   public JournalRecord append(final long asqn, final DirectBuffer data) {
-    try {
-      return currentWriter.append(asqn, data);
-    } catch (final BufferOverflowException e) {
-      if (currentSegment.index() == currentWriter.getNextIndex()) {
-        throw e;
-      }
-
-      journalMetrics.observeSegmentCreation(this::createNewSegment);
-
-      return currentWriter.append(asqn, data);
+    final var appendResult = currentWriter.append(asqn, data);
+    if (appendResult.isRight()) {
+      return appendResult.get();
     }
+
+    if (currentSegment.index() == currentWriter.getNextIndex()) {
+      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
+    }
+
+    journalMetrics.observeSegmentCreation(this::createNewSegment);
+    final var appendResultOnNewSegment = currentWriter.append(asqn, data);
+    if (appendResultOnNewSegment.isLeft()) {
+      throw appendResultOnNewSegment.getLeft();
+    }
+    return appendResultOnNewSegment.get();
   }
 
   public void append(final JournalRecord record) {
-    try {
-      currentWriter.append(record);
-    } catch (final BufferOverflowException e) {
-      if (currentSegment.index() == currentWriter.getNextIndex()) {
-        throw e;
-      }
+    final var appendResult = currentWriter.append(record);
+    if (appendResult.isRight()) {
+      return;
+    }
 
-      journalMetrics.observeSegmentCreation(this::createNewSegment);
-      currentWriter.append(record);
+    if (currentSegment.index() == currentWriter.getNextIndex()) {
+      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
+    }
+
+    journalMetrics.observeSegmentCreation(this::createNewSegment);
+    final var resultInNewSegment = currentWriter.append(record);
+    if (resultInNewSegment.isLeft()) {
+      throw resultInNewSegment.getLeft();
     }
   }
 

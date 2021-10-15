@@ -18,6 +18,7 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
@@ -26,7 +27,7 @@ import io.camunda.zeebe.journal.file.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.RecordMetadata;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
-import java.nio.BufferOverflowException;
+import io.camunda.zeebe.util.Either;
 import java.nio.BufferUnderflowException;
 import java.nio.MappedByteBuffer;
 import org.agrona.DirectBuffer;
@@ -79,7 +80,7 @@ class MappedJournalSegmentWriter {
     }
   }
 
-  public JournalRecord append(final long asqn, final DirectBuffer data) {
+  public Either<SegmentFull, JournalRecord> append(final long asqn, final DirectBuffer data) {
     // Store the entry index.
     final long recordIndex = getNextIndex();
 
@@ -91,13 +92,13 @@ class MappedJournalSegmentWriter {
 
     final RecordData indexedRecord = new RecordData(recordIndex, asqn, data);
 
-    final int recordLength;
-    try {
-      recordLength = writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
-    } catch (final BufferOverflowException boe) {
+    final var writeResult =
+        writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
+    if (writeResult.isLeft()) {
       buffer.position(startPosition);
-      throw boe;
+      return Either.left(writeResult.getLeft());
     }
+    final int recordLength = writeResult.get();
 
     final long checksum =
         checksumGenerator.compute(
@@ -108,10 +109,10 @@ class MappedJournalSegmentWriter {
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
-    return lastEntry;
+    return Either.right(lastEntry);
   }
 
-  public void append(final JournalRecord record) {
+  public Either<SegmentFull, Void> append(final JournalRecord record) {
     final long nextIndex = getNextIndex();
 
     // If the entry's index is not the expected next index in the segment, fail the append.
@@ -128,14 +129,14 @@ class MappedJournalSegmentWriter {
 
     final RecordData indexedRecord = new RecordData(record.index(), record.asqn(), record.data());
 
-    final int recordLength;
-    try {
-      recordLength = writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
-    } catch (final BufferOverflowException boe) {
+    final var writeResult =
+        writeRecord(startPosition + frameLength + metadataLength, indexedRecord);
+    if (writeResult.isLeft()) {
       buffer.position(startPosition);
-      throw boe;
+      return Either.left(writeResult.getLeft());
     }
 
+    final int recordLength = writeResult.get();
     final long checksum =
         checksumGenerator.compute(
             buffer, startPosition + frameLength + metadataLength, recordLength);
@@ -151,6 +152,7 @@ class MappedJournalSegmentWriter {
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
+    return Either.right(null);
   }
 
   private void updateLastWrittenEntry(
@@ -173,11 +175,15 @@ class MappedJournalSegmentWriter {
     return recordMetadata;
   }
 
-  private int writeRecord(final int offset, final RecordData indexedRecord) {
+  private Either<SegmentFull, Integer> writeRecord(
+      final int offset, final RecordData indexedRecord) {
     final var recordLength = serializer.writeData(indexedRecord, writeBuffer, offset);
-    final int nextEntryOffset = offset + recordLength;
+    if (recordLength.isLeft()) {
+      return Either.left(new SegmentFull("Not enough space to write record"));
+    }
+    final int nextEntryOffset = offset + recordLength.get();
     invalidateNextEntry(nextEntryOffset);
-    return recordLength;
+    return Either.right(recordLength.get());
   }
 
   private void invalidateNextEntry(final int position) {

@@ -142,7 +142,7 @@ class SegmentedJournalReaderTest {
     final var record = new RecordData(Long.MAX_VALUE, Long.MAX_VALUE, data);
     final var serializer = new SBESerializer();
     final ByteBuffer buffer = ByteBuffer.allocate(128);
-    return serializer.writeData(record, new UnsafeBuffer(buffer), 0)
+    return serializer.writeData(record, new UnsafeBuffer(buffer), 0).get()
         + serializer.getMetadataLength();
   }
 }
