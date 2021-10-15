@@ -52,7 +52,8 @@ final class ProcessInstanceElementActivatingApplier
     final var eventTrigger =
         eventScopeInstanceState.peekEventTrigger(value.getProcessDefinitionKey());
     if (eventTrigger != null && value.getElementIdBuffer().equals(eventTrigger.getElementId())) {
-      modifyEventScopeKey(eventTrigger, value.getProcessDefinitionKey(), elementInstanceKey);
+      moveVariablesToNewEventScope(
+          eventTrigger, value.getProcessDefinitionKey(), elementInstanceKey);
     }
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
@@ -73,7 +74,7 @@ final class ProcessInstanceElementActivatingApplier
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
       final EventTrigger flowScopeEventTrigger =
           eventScopeInstanceState.peekEventTrigger(flowScopeInstance.getParentKey());
-      modifyEventScopeKey(
+      moveVariablesToNewEventScope(
           flowScopeEventTrigger, flowScopeInstance.getParentKey(), elementInstanceKey);
     }
 
@@ -97,7 +98,7 @@ final class ProcessInstanceElementActivatingApplier
         value.getFlowScopeKey(), parallelGateway.getId());
   }
 
-  private void modifyEventScopeKey(
+  private void moveVariablesToNewEventScope(
       final EventTrigger eventTrigger, final long oldEventScopeKey, final long newEventScopeKey) {
     // In order to pass the variables of the event trigger to the element instance, we need to
     // create a new event trigger, using the element instance key as the event scope key.
@@ -113,7 +114,6 @@ final class ProcessInstanceElementActivatingApplier
 
   private void applyRootProcessState(
       final long elementInstanceKey, final ProcessInstanceRecord value) {
-    // process instance level
     final var parentElementInstance =
         elementInstanceState.getInstance(value.getParentElementInstanceKey());
     if (parentElementInstance != null) {
