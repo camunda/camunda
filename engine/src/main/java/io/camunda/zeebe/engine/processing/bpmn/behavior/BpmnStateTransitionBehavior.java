@@ -58,7 +58,6 @@ public final class BpmnStateTransitionBehavior {
           processorLookUp,
       final Writers writers,
       final ElementInstanceState elementInstanceState) {
-    // todo (@korthout): replace streamWriter by writers
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
