@@ -23,8 +23,8 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
     return true;
   }
 
-  // TODO clean up after refactoring; this is just a simple hook to be able to append additional
-  // commands/events
+  // TODO (#8003): clean up after refactoring; this is just a simple hook to be able to append
+  // additional commands/events
   default void afterAccept(
       final TypedCommandWriter commandWriter,
       final StateWriter stateWriter,
