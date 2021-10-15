@@ -12,7 +12,7 @@ In order to setup a benchmark you need to have several tools on your machine ins
 
 Follow these guide's to install each of them:
 
- * gcloud https://cloud.google.com/sdk/install?hl=de
+ * gcloud https://cloud.google.com/sdk/install
  * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
  * Helm 3.*  https://helm.sh/docs/intro/install/
  * docker https://docs.docker.com/install/
