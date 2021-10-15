@@ -52,7 +52,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final TypedRejectionWriter rejectionWriter;
 
-  private boolean reprocessingMode = true;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnStreamProcessor(
@@ -92,9 +91,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
-    reprocessingMode = false;
-  }
+  public void onRecovered(final ReadonlyProcessingContext context) {}
 
   @Override
   public void processRecord(
@@ -114,7 +111,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var recordValue = record.getValue();
 
     context.init(record.getKey(), recordValue, intent);
-    context.setReprocessingMode(reprocessingMode);
 
     final var bpmnElementType = recordValue.getBpmnElementType();
     final var processor = processors.getProcessor(bpmnElementType);
