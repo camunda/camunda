@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedResponseWriterProxy;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -41,7 +40,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
   private final TypedResponseWriterProxy responseWriterProxy = new TypedResponseWriterProxy();
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
@@ -101,7 +99,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
     // todo (#6202): replace writer proxies by Writers
     // initialize
-    streamWriterProxy.wrap(streamWriter);
     responseWriterProxy.wrap(responseWriter, writer -> sideEffectQueue.add(writer::flush));
     sideEffectQueue.clear();
     sideEffect.accept(sideEffectQueue);
