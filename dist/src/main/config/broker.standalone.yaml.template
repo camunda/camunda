@@ -668,3 +668,20 @@
         # performance is a bit less predictable when disabling the WAL.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_DISABLEWAL
         # disableWal: false
+
+      # Allows to configure the query API. By default, the broker only offers a command API, which
+      # is used by the gateway to pass commands it received along to the broker. Commands can then
+      # be processed. Zeebe does not directly support querying of brokers, instead it provides a way
+      # to export data to data lakes that can be queried. In highly specific cases, direct querying
+      # of a broker is necessary. For this, Zeebe provides a specialized query API. This query API
+      # can provide the `BPMN Process Id` belonging to a job, process instance or process
+      # definition. For easy access, a Java interface is provided to gateway interceptors, which
+      # you can retrieve using
+      # `io.camunda.zeebe.gateway.interceptors.InterceptorUtil.getQueryApiKey()`. Please read our
+      # documentation on interceptors to learn more about creating and loading interceptors into the
+      # gateway. In addition, please have a look at the Javadoc on InterceptorUtil.getQueryApiKey()
+      # to see how to use this in practise.
+      # queryApi:
+        # Enables the query api in the broker.
+        # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
+        # enabled: false
