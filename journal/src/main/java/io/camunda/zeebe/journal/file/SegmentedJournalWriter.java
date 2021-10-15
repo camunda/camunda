@@ -16,6 +16,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalRecord;
 import org.agrona.DirectBuffer;
 
@@ -51,7 +52,7 @@ class SegmentedJournalWriter {
     }
 
     if (currentSegment.index() == currentWriter.getNextIndex()) {
-      return appendResult.get();
+      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
     }
 
     journalMetrics.observeSegmentCreation(this::createNewSegment);
@@ -63,17 +64,20 @@ class SegmentedJournalWriter {
   }
 
   public void append(final JournalRecord record) {
-    final var writeResult = currentWriter.append(record);
-    if (writeResult.isRight()) {
+    final var appendResult = currentWriter.append(record);
+    if (appendResult.isRight()) {
       return;
     }
 
     if (currentSegment.index() == currentWriter.getNextIndex()) {
-      throw writeResult.getLeft();
+      throw new SegmentSizeTooSmall("Failed appending, segment size is too small");
     }
 
     journalMetrics.observeSegmentCreation(this::createNewSegment);
-    currentWriter.append(record);
+    final var resultInNewSegment = currentWriter.append(record);
+    if (resultInNewSegment.isLeft()) {
+      throw resultInNewSegment.getLeft();
+    }
   }
 
   public void reset(final long index) {
