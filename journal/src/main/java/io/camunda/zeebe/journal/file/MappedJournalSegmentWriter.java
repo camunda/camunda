@@ -179,11 +179,11 @@ class MappedJournalSegmentWriter {
       final int offset, final RecordData indexedRecord) {
     final var recordLength = serializer.writeData(indexedRecord, writeBuffer, offset);
     if (recordLength.isLeft()) {
-      return recordLength;
+      return Either.left(new SegmentFull("Not enough space to write record"));
     }
     final int nextEntryOffset = offset + recordLength.get();
     invalidateNextEntry(nextEntryOffset);
-    return recordLength;
+    return Either.right(recordLength.get());
   }
 
   private void invalidateNextEntry(final int position) {

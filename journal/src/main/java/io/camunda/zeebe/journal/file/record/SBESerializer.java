@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.journal.file.record;
 
-import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
 import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
 import io.camunda.zeebe.journal.file.RecordDataDecoder;
@@ -23,6 +22,7 @@ import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import io.camunda.zeebe.journal.file.RecordMetadataDecoder;
 import io.camunda.zeebe.journal.file.RecordMetadataEncoder;
 import io.camunda.zeebe.util.Either;
+import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,10 +39,10 @@ public final class SBESerializer implements JournalRecordSerializer {
   private final RecordDataDecoder recordDecoder = new RecordDataDecoder();
 
   @Override
-  public Either<SegmentFull, Integer> writeData(
+  public Either<BufferOverflowException, Integer> writeData(
       final RecordData record, final MutableDirectBuffer buffer, final int offset) {
     if (offset + getSerializedLength(record) > buffer.capacity()) {
-      return Either.left(new SegmentFull("Not enough space to write record"));
+      return Either.left(new BufferOverflowException());
     }
 
     headerEncoder
@@ -85,12 +85,6 @@ public final class SBESerializer implements JournalRecordSerializer {
     return headerEncoder.encodedLength() + metadataEncoder.sbeBlockLength();
   }
 
-  private boolean hasMetadata(final DirectBuffer buffer, final int offset) {
-    headerDecoder.wrap(buffer, offset);
-    return (headerDecoder.schemaId() == metadataDecoder.sbeSchemaId()
-        && headerDecoder.templateId() == metadataDecoder.sbeTemplateId());
-  }
-
   @Override
   public RecordMetadata readMetadata(final DirectBuffer buffer, final int offset) {
     if (!hasMetadata(buffer, offset)) {
@@ -126,6 +120,12 @@ public final class SBESerializer implements JournalRecordSerializer {
   public int getMetadataLength(final DirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
     return headerDecoder.encodedLength() + headerDecoder.blockLength();
+  }
+
+  private boolean hasMetadata(final DirectBuffer buffer, final int offset) {
+    headerDecoder.wrap(buffer, offset);
+    return (headerDecoder.schemaId() == metadataDecoder.sbeSchemaId()
+        && headerDecoder.templateId() == metadataDecoder.sbeTemplateId());
   }
 
   private int getSerializedLength(final RecordData record) {
