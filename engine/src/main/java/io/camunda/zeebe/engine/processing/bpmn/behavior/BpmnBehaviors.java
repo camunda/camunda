@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 
 public interface BpmnBehaviors {
 
@@ -24,8 +23,6 @@ public interface BpmnBehaviors {
   BpmnIncidentBehavior incidentBehavior();
 
   BpmnStateBehavior stateBehavior();
-
-  TypedCommandWriter commandWriter();
 
   BpmnStateTransitionBehavior stateTransitionBehavior();
 

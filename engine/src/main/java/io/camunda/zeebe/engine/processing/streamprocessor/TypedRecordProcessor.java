@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWri
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.function.Consumer;
 
-// todo (#6202): remove TypedStreamWriter from this interface's method signatures
+// todo (#8002): remove TypedStreamWriter from this interface's method signatures
 // After the migration, none of these should be in use anymore and replaced by the CommandWriter and
 // StateWriter passed along to the constructors of the concrete processors.
 public interface TypedRecordProcessor<T extends UnifiedRecordValue>

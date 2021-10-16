@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.bpmn.gateway;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -18,11 +17,9 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Optional;
 
 public final class ExclusiveGatewayProcessor
@@ -30,8 +27,6 @@ public final class ExclusiveGatewayProcessor
 
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";
-  private static final String TRANSITION_TO_COMPLETED_PRECONDITION_ERROR =
-      "Expected to transition element to completed, but state is not ELEMENT_ACTIVATING";
 
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
@@ -54,13 +49,17 @@ public final class ExclusiveGatewayProcessor
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     findSequenceFlowToTake(element, activating)
         .ifRightOrLeft(
-            optFlow ->
-                transitionToCompleted(element, activating)
-                    .ifRightOrLeft(
-                        completed ->
-                            optFlow.ifPresent(
-                                flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow)),
-                        incidentBehavior::createIncident),
+            optFlow -> {
+              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+              stateTransitionBehavior
+                  .transitionToCompleted(element, completing)
+                  .ifRightOrLeft(
+                      completed ->
+                          optFlow.ifPresent(
+                              flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow)),
+                      failure -> incidentBehavior.createIncident(failure, completing));
+            },
             failure -> incidentBehavior.createIncident(failure, activating));
   }
 
@@ -79,18 +78,6 @@ public final class ExclusiveGatewayProcessor
     incidentBehavior.resolveIncidents(context);
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
-  }
-
-  private Either<Tuple<Failure, BpmnElementContext>, BpmnElementContext> transitionToCompleted(
-      final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
-    if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
-      throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
-    }
-    final var activated = stateTransitionBehavior.transitionToActivated(activating);
-    final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    return stateTransitionBehavior
-        .transitionToCompleted(element, completing)
-        .mapLeft(failure -> new Tuple<>(failure, completing));
   }
 
   private Either<Failure, Optional<ExecutableSequenceFlow>> findSequenceFlowToTake(

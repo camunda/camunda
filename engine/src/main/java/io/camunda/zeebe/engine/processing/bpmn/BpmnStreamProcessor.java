@@ -12,13 +12,10 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedResponseWriterProxy;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -29,7 +26,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWri
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,8 +38,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
-  private final TypedResponseWriterProxy responseWriterProxy = new TypedResponseWriterProxy();
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
@@ -51,10 +45,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final BpmnElementProcessors processors;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
-  private final MutableElementInstanceState elementInstanceState;
   private final TypedRejectionWriter rejectionWriter;
-
-  private boolean reprocessingMode = true;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnStreamProcessor(
@@ -66,13 +57,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final Writers writers,
       final JobMetrics jobMetrics) {
     processState = zeebeState.getProcessState();
-    elementInstanceState = zeebeState.getElementInstanceState();
 
     final var bpmnBehaviors =
         new BpmnBehaviorsImpl(
             expressionProcessor,
-            streamWriterProxy,
-            responseWriterProxy,
             sideEffectQueue,
             zeebeState,
             catchEventBehavior,
@@ -95,21 +83,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
-    reprocessingMode = false;
-  }
-
-  @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    // todo (#6202): replace writer proxies by Writers
     // initialize
-    streamWriterProxy.wrap(streamWriter);
-    responseWriterProxy.wrap(responseWriter, writer -> sideEffectQueue.add(writer::flush));
     sideEffectQueue.clear();
     sideEffect.accept(sideEffectQueue);
 
@@ -117,7 +97,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var recordValue = record.getValue();
 
     context.init(record.getKey(), recordValue, intent);
-    context.setReprocessingMode(reprocessingMode);
 
     final var bpmnElementType = recordValue.getBpmnElementType();
     final var processor = processors.getProcessor(bpmnElementType);

@@ -126,13 +126,6 @@ public final class ProcessEventProcessors {
             intent ->
                 typedRecordProcessors.onCommand(
                     ValueType.PROCESS_INSTANCE, intent, bpmnStepProcessor));
-
-    Arrays.stream(ProcessInstanceIntent.values())
-        .filter(ProcessInstanceIntent::isBpmnElementEvent)
-        .forEach(
-            intent ->
-                typedRecordProcessors.onEvent(
-                    ValueType.PROCESS_INSTANCE, intent, bpmnStepProcessor));
   }
 
   private static void addMessageStreamProcessors(

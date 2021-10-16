@@ -114,7 +114,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
-  public boolean triggerEvent(
+  public void triggerEvent(
       final long eventScopeKey,
       final long eventKey,
       final DirectBuffer elementId,
@@ -129,10 +129,6 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       }
 
       createTrigger(eventScopeKey, eventKey, elementId, variables);
-
-      return true;
-    } else {
-      return false;
     }
   }
 

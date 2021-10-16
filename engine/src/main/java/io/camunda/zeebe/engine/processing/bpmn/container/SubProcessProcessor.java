@@ -54,7 +54,6 @@ public final class SubProcessProcessor
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
         .ifRightOrLeft(
             ok -> {
-              // todo: take a look if activated should be done after
               final var activated = stateTransitionBehavior.transitionToActivated(activating);
               final ExecutableStartEvent startEvent = element.getNoneStartEvent();
               if (startEvent == null) {

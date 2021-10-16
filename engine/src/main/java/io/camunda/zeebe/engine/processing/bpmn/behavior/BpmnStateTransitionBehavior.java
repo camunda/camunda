@@ -58,7 +58,6 @@ public final class BpmnStateTransitionBehavior {
           processorLookUp,
       final Writers writers,
       final ElementInstanceState elementInstanceState) {
-    // todo (@korthout): replace streamWriter by writers
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
@@ -131,7 +130,7 @@ public final class BpmnStateTransitionBehavior {
    * reason why we throw an exception.
    *
    * <p>Should be removed as soon as possible, e.g. as part of
-   * https://github.com/camunda-cloud/zeebe/issues/6202
+   * https://github.com/camunda-cloud/zeebe/issues/8005
    *
    * @param context the element instance context
    * @param methodName the method which is called

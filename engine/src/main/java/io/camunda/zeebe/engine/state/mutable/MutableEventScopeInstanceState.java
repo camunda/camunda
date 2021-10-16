@@ -55,15 +55,15 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
   EventTrigger pollEventTrigger(long eventScopeKey);
 
   /**
+   * Creates a new event trigger for the given event scope. Ignores the trigger if the event scope
+   * is not accepting anymore or doesn't exist.
+   *
    * @param eventScopeKey the key of the event scope the event is triggered in
    * @param eventKey the key of the event record (used for ordering)
    * @param elementId the id of the element which should be triggered, e.g. boundary event
    * @param variables the variables of the occurred event, i.e. message variables
-   * @return true if the event was accepted by the event scope, false otherwise
    */
-  // TODO: once only the event appliers are calling this, change signature to void as the processors
-  // should have checked that the event could be triggered (#6202)
-  boolean triggerEvent(
+  void triggerEvent(
       long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables);
 
   /**

@@ -167,7 +167,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   @Override
   public Writers getWriters() {
-    // todo (#6202): cleanup - revisit after migration is finished
+    // todo (#8009): cleanup - revisit after migration is finished
     // create newly every time, because the specific writers may differ over time
     final var stateWriter = new EventApplyingStateWriter(streamWriterProxy, eventApplier);
     return new Writers(streamWriterProxy, stateWriter, typedResponseWriter);

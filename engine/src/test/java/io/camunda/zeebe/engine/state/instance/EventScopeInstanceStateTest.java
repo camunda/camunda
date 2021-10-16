@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -73,11 +72,9 @@ public final class EventScopeInstanceStateTest {
     state.createIfNotExists(key, Collections.singleton(eventTrigger.getElementId()));
 
     // when
-    final boolean triggered = triggerEvent(key, eventKey, eventTrigger);
+    triggerEvent(key, eventKey, eventTrigger);
 
     // then
-    assertThat(triggered).isTrue();
-
     Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger);
 
     final EventScopeInstance instance = state.getInstance(key);
@@ -96,13 +93,10 @@ public final class EventScopeInstanceStateTest {
     state.createIfNotExists(key, Collections.singleton(eventTrigger1.getElementId()));
 
     // when
-    final boolean triggered1 = triggerEvent(key, eventKey1, eventTrigger1);
-    final boolean triggered2 = triggerEvent(key, eventKey2, eventTrigger2);
+    triggerEvent(key, eventKey1, eventTrigger1);
+    triggerEvent(key, eventKey2, eventTrigger2);
 
     // then
-    assertThat(triggered1).isTrue();
-    assertThat(triggered2).isFalse();
-
     Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger1);
     Assertions.assertThat(state.pollEventTrigger(key)).isNull();
 
@@ -122,31 +116,16 @@ public final class EventScopeInstanceStateTest {
     state.createIfNotExists(key, Collections.emptyList());
 
     // when
-    final boolean triggered1 = triggerEvent(key, eventKey1, eventTrigger1);
-    final boolean triggered2 = triggerEvent(key, eventKey2, eventTrigger2);
+    triggerEvent(key, eventKey1, eventTrigger1);
+    triggerEvent(key, eventKey2, eventTrigger2);
 
     // then
-    assertThat(triggered1).isTrue();
-    assertThat(triggered2).isTrue();
-
     Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger1);
     Assertions.assertThat(state.pollEventTrigger(key)).isEqualTo(eventTrigger2);
     Assertions.assertThat(state.pollEventTrigger(key)).isNull();
 
     final EventScopeInstance instance = state.getInstance(key);
     Assertions.assertThat(instance.isAccepting()).isTrue();
-  }
-
-  @Test
-  public void shouldNotTriggerOnNonExistingEventScope() {
-    // given
-    final EventTrigger eventTrigger = createEventTrigger();
-
-    // when
-    final boolean triggered = triggerEvent(123, 456, eventTrigger);
-
-    // then
-    assertThat(triggered).isFalse();
   }
 
   @Test
@@ -261,22 +240,6 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
-  public void shouldNotTriggerOnDeletedEventScope() {
-    // given
-    final long key = 123;
-    final EventTrigger eventTrigger = createEventTrigger();
-
-    state.createIfNotExists(key, Collections.singleton(eventTrigger.getElementId()));
-    state.deleteInstance(key);
-
-    // when
-    final boolean triggered = triggerEvent(key, 456, eventTrigger);
-
-    // then
-    assertThat(triggered).isFalse();
-  }
-
-  @Test
   public void shouldDeleteStartEventTriggerOnDeletionOfInstance() {
     // given
     final long scopeKey = 123;
@@ -343,9 +306,9 @@ public final class EventScopeInstanceStateTest {
     Assertions.assertThat(state.getInstance(secondKey).isInterrupting(firstId)).isFalse();
   }
 
-  private boolean triggerEvent(
+  private void triggerEvent(
       final long eventScopeKey, final long eventKey, final EventTrigger eventTrigger) {
-    return state.triggerEvent(
+    state.triggerEvent(
         eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
   }
 
