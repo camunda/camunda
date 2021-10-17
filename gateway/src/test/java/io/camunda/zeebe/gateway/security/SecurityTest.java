@@ -7,23 +7,21 @@
  */
 package io.camunda.zeebe.gateway.security;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.util.sched.ActorScheduler;
-import java.io.IOException;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
-public final class SecurityTest {
-  @Rule public final ExpectedException thrown = ExpectedException.none();
+final class SecurityTest {
   private Gateway gateway;
 
-  @After
+  @AfterEach
   public void tearDown() {
     if (gateway != null) {
       gateway.stop();
@@ -32,77 +30,75 @@ public final class SecurityTest {
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndWrongCert() throws IOException {
+  void shouldNotStartWithTlsEnabledAndWrongCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getSecurity()
         .setCertificateChainPath(
             cfg.getSecurity().getCertificateChainPath().replaceAll("test-chain", "wrong-chain"));
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        String.format(
-            "Expected to find a certificate chain file at the provided location '%s' but none was found.",
-            cfg.getSecurity().getCertificateChainPath()));
-
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a certificate chain file at the provided location '%s' but none was found.",
+            cfg.getSecurity().getCertificateChainPath());
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndWrongKey() throws IOException {
+  void shouldNotStartWithTlsEnabledAndWrongKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getSecurity()
         .setPrivateKeyPath(
             cfg.getSecurity().getPrivateKeyPath().replaceAll("test-server", "wrong-server"));
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        String.format(
-            "Expected to find a private key file at the provided location '%s' but none was found.",
-            cfg.getSecurity().getPrivateKeyPath()));
-
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a private key file at the provided location '%s' but none was found.",
+            cfg.getSecurity().getPrivateKeyPath());
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndNoPrivateKey() throws IOException {
+  void shouldNotStartWithTlsEnabledAndNoPrivateKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getSecurity().setPrivateKeyPath(null);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        "Expected to find a valid path to a private key but none was found. "
-            + "Edit the gateway configuration file to provide one or to disable TLS.");
-
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a valid path to a private key but none was found. "
+                + "Edit the gateway configuration file to provide one or to disable TLS.");
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndNoCert() throws IOException {
+  void shouldNotStartWithTlsEnabledAndNoCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getSecurity().setCertificateChainPath(null);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        "Expected to find a valid path to a certificate chain but none was found. "
-            + "Edit the gateway configuration file to provide one or to disable TLS.");
-
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a valid path to a certificate chain but none was found. "
+                + "Edit the gateway configuration file to provide one or to disable TLS.");
   }
 
   private GatewayCfg createGatewayCfg() {
