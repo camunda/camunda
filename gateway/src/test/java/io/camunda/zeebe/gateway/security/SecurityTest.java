@@ -14,12 +14,22 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 final class SecurityTest {
+  private SelfSignedCertificate certificate;
   private Gateway gateway;
+
+  @BeforeEach
+  void beforeEach() throws Exception {
+    certificate = new SelfSignedCertificate();
+  }
 
   @AfterEach
   public void tearDown() {
@@ -30,12 +40,23 @@ final class SecurityTest {
   }
 
   @Test
+  void shouldStartWithTlsEnabled() throws IOException {
+    // given
+    final GatewayCfg cfg = createGatewayCfg();
+
+    // when
+    gateway = buildGateway(cfg);
+    gateway.start();
+
+    // then
+    SslAssert.assertThat(cfg.getNetwork().toSocketAddress()).isSecuredBy(certificate);
+  }
+
+  @Test
   void shouldNotStartWithTlsEnabledAndWrongCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity()
-        .setCertificateChainPath(
-            cfg.getSecurity().getCertificateChainPath().replaceAll("test-chain", "wrong-chain"));
+    cfg.getSecurity().setCertificateChainPath("/tmp/i-dont-exist.crt");
 
     // when
     gateway = buildGateway(cfg);
@@ -52,9 +73,7 @@ final class SecurityTest {
   void shouldNotStartWithTlsEnabledAndWrongKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity()
-        .setPrivateKeyPath(
-            cfg.getSecurity().getPrivateKeyPath().replaceAll("test-server", "wrong-server"));
+    cfg.getSecurity().setPrivateKeyPath("/tmp/i-dont-exist.key");
 
     // when
     gateway = buildGateway(cfg);
@@ -107,16 +126,8 @@ final class SecurityTest {
         .setSecurity(
             new SecurityCfg()
                 .setEnabled(true)
-                .setCertificateChainPath(
-                    getClass()
-                        .getClassLoader()
-                        .getResource("security/test-chain.cert.pem")
-                        .getPath())
-                .setPrivateKeyPath(
-                    getClass()
-                        .getClassLoader()
-                        .getResource("security/test-server.key.pem")
-                        .getPath()));
+                .setCertificateChainPath(certificate.certificate().getAbsolutePath())
+                .setPrivateKeyPath(certificate.privateKey().getAbsolutePath()));
   }
 
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
