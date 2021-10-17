@@ -10,11 +10,13 @@ package io.camunda.zeebe.gateway.security;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.IOException;
@@ -121,8 +123,12 @@ final class SecurityTest {
   }
 
   private GatewayCfg createGatewayCfg() {
+    final var gatewayAddress = SocketUtil.getNextAddress();
     return new GatewayCfg()
-        .setNetwork(new NetworkCfg().setHost("localhost").setPort(25600))
+        .setNetwork(
+            new NetworkCfg()
+                .setHost(gatewayAddress.getHostName())
+                .setPort(gatewayAddress.getPort()))
         .setSecurity(
             new SecurityCfg()
                 .setEnabled(true)
@@ -131,7 +137,12 @@ final class SecurityTest {
   }
 
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
-    final var atomix = AtomixCluster.builder().build();
+    final var clusterAddress = SocketUtil.getNextAddress();
+    final var atomix =
+        AtomixCluster.builder()
+            // avoid port collisions when using the default port
+            .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
+            .build();
     final var actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 
