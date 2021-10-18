@@ -62,11 +62,6 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_THREADS_MANAGEMENTTHREADS.
         # managementThreads: 1
 
-      # monitoring:
-        # Enables the metrics collection in the gateway
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_MONITORING_ENABLED.
-        # enabled: false
-
       # security:
         # Enables TLS authentication between clients and the gateway
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED.
@@ -85,12 +80,36 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_LONGPOLLING_ENABLED.
         # enabled: true
 
+      # interceptors:
+        # Configure interceptors below.
+        # Please consider reading our documentation on interceptors first.
+        #
+        # Each interceptors should be configured following this template:
+        #
+        # id:
+        #   identifier for this interceptor.
+        #   This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_INTERCEPTORS_0_ID.
+        # jarPath:
+        #   path (relative or absolute) to the JAR file containing the interceptor class and its dependencies.
+        #   all classes must be compiled for the same language version as Zeebe or lower.
+        #   This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_INTERCEPTORS_0_JARPATH.
+        # className:
+        #   entry point of the interceptor, a class which must:
+        #     - implement io.grpc.ServerInterceptor (see: https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html)
+        #     - have public visibility
+        #     - have a public default constructor (i.e. no-arg constructor)
+        #   This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_INTERCEPTORS_0_CLASSNAME.
+        #
+        # Example configuration for a single interceptor
+        # - id: example-interceptor
+        #   className: com.acme.ExampleInterceptor
+        #   jarPath: /path/to/interceptor/example-interceptor.jar
+
     # network:
       # This section contains the network configuration. Particularly, it allows to
-      # configure the hosts and ports the broker should bind to. The broker exposes three sockets:
+      # configure the hosts and ports the broker should bind to. The broker exposes two sockets:
       # 1. command: the socket which is used for gateway-to-broker communication
       # 2. internal: the socket which is used for broker-to-broker communication
-      # 3. monitoring: the socket which is used to monitor the broker
 
       # Controls the default host the broker should bind to. Can be overwritten on a
       # per binding basis for client, management and replication
@@ -134,15 +153,6 @@
         # Sets the port used for internal broker-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
-
-      # monitoringApi:
-        # Overrides the host used for exposing monitoring information
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MONITORINGAPI_HOST.
-        # host: 0.0.0.0
-
-        # Sets the port used for exposing monitoring information
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MONITORINGAPI_PORT.
-        # port: 9600
 
     # data:
       # This section allows to configure Zeebe's data storage. Data is stored in
@@ -643,3 +653,20 @@
         # performance is a bit less predictable when disabling the WAL.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_DISABLEWAL
         # disableWal: false
+
+      # Allows to configure the query API. By default, the broker only offers a command API, which
+      # is used by the gateway to pass commands it received along to the broker. Commands can then
+      # be processed. Zeebe does not directly support querying of brokers, instead it provides a way
+      # to export data to data lakes that can be queried. In highly specific cases, direct querying
+      # of a broker is necessary. For this, Zeebe provides a specialized query API. This query API
+      # can provide the `BPMN Process Id` belonging to a job, process instance or process
+      # definition. For easy access, a Java interface is provided to gateway interceptors, which
+      # you can retrieve using
+      # `io.camunda.zeebe.gateway.interceptors.InterceptorUtil.getQueryApiKey()`. Please read our
+      # documentation on interceptors to learn more about creating and loading interceptors into the
+      # gateway. In addition, please have a look at the Javadoc on InterceptorUtil.getQueryApiKey()
+      # to see how to use this in practise.
+      # queryApi:
+        # Enables the query api in the broker.
+        # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
+        # enabled: false

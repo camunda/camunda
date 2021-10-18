@@ -45,30 +45,37 @@ final class ProcessInstanceElementCompletedApplier
 
     final var parentElementInstanceKey = value.getParentElementInstanceKey();
 
-    if (parentElementInstanceKey > 0 && value.getBpmnElementType() == BpmnElementType.PROCESS) {
-      // called by call activity
-
-      final var parentElementInstance = elementInstanceState.getInstance(parentElementInstanceKey);
-
-      final var elementId = parentElementInstance.getValue().getElementIdBuffer();
-
-      final var callActivity =
-          processState.getFlowElement(
-              parentElementInstance.getValue().getProcessDefinitionKey(),
-              elementId,
-              ExecutableCallActivity.class);
-
-      if (callActivity.getOutputMappings().isPresent()
-          || callActivity.isPropagateAllChildVariablesEnabled()) {
-        final var variables = variableState.getVariablesAsDocument(key);
-        variableState.setTemporaryVariables(parentElementInstanceKey, variables);
-      }
+    if (isChildProcess(value, parentElementInstanceKey)) {
+      propagateVariables(key, parentElementInstanceKey);
     }
 
     bufferedStartMessageEventStateApplier.removeMessageLock(value);
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
-    variableState.removeTemporaryVariables(key);
+  }
+
+  private boolean isChildProcess(
+      final ProcessInstanceRecord value, final long parentElementInstanceKey) {
+    return parentElementInstanceKey > 0 && value.getBpmnElementType() == BpmnElementType.PROCESS;
+  }
+
+  private void propagateVariables(final long key, final long parentElementInstanceKey) {
+    final var parentElementInstance = elementInstanceState.getInstance(parentElementInstanceKey);
+
+    final var elementId = parentElementInstance.getValue().getElementIdBuffer();
+
+    final var callActivity =
+        processState.getFlowElement(
+            parentElementInstance.getValue().getProcessDefinitionKey(),
+            elementId,
+            ExecutableCallActivity.class);
+
+    if (callActivity.getOutputMappings().isPresent()
+        || callActivity.isPropagateAllChildVariablesEnabled()) {
+      final var variables = variableState.getVariablesAsDocument(key);
+      eventScopeInstanceState.triggerEvent(
+          parentElementInstanceKey, parentElementInstanceKey, elementId, variables);
+    }
   }
 }

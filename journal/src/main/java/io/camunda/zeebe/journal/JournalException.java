@@ -51,4 +51,18 @@ public class JournalException extends RuntimeException {
       super(message);
     }
   }
+
+  /** Exception thrown when the segment is full and no records can be appended */
+  public static class SegmentFull extends JournalException {
+    public SegmentFull(final String message) {
+      super(message);
+    }
+  }
+
+  /** Exception thrown when the segment is too small to fit even one record */
+  public static class SegmentSizeTooSmall extends JournalException {
+    public SegmentSizeTooSmall(final String message) {
+      super(message);
+    }
+  }
 }

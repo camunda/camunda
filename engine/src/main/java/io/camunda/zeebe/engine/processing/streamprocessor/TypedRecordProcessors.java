@@ -33,25 +33,10 @@ public final class TypedRecordProcessors {
     return new TypedRecordProcessors(keyGenerator, writers);
   }
 
-  // TODO: could remove the ValueType argument as it follows from the intent
-  public TypedRecordProcessors onEvent(
-      final ValueType valueType, final Intent intent, final TypedRecordProcessor<?> processor) {
-    return onRecord(RecordType.EVENT, valueType, intent, processor);
-  }
-
-  private TypedRecordProcessors onRecord(
-      final RecordType recordType,
-      final ValueType valueType,
-      final Intent intent,
-      final TypedRecordProcessor<?> processor) {
-    recordProcessorMap.put(recordType, valueType, intent.value(), processor);
-
-    return this;
-  }
-
   public TypedRecordProcessors onCommand(
       final ValueType valueType, final Intent intent, final TypedRecordProcessor<?> processor) {
-    return onRecord(RecordType.COMMAND, valueType, intent, processor);
+    recordProcessorMap.put(RecordType.COMMAND, valueType, intent.value(), processor);
+    return this;
   }
 
   public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(

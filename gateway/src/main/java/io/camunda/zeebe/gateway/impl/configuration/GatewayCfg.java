@@ -24,7 +24,6 @@ public class GatewayCfg {
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
   private ThreadsCfg threads = new ThreadsCfg();
-  private MonitoringCfg monitoring = new MonitoringCfg();
   private SecurityCfg security = new SecurityCfg();
   private LongPollingCfg longPolling = new LongPollingCfg();
   private List<InterceptorCfg> interceptors = new ArrayList<>();
@@ -36,7 +35,6 @@ public class GatewayCfg {
 
   public void init(final String defaultHost) {
     network.init(defaultHost);
-    monitoring.init(defaultHost);
     initialized = true;
   }
 
@@ -71,15 +69,6 @@ public class GatewayCfg {
     return this;
   }
 
-  public MonitoringCfg getMonitoring() {
-    return monitoring;
-  }
-
-  public GatewayCfg setMonitoring(final MonitoringCfg monitoring) {
-    this.monitoring = monitoring;
-    return this;
-  }
-
   public SecurityCfg getSecurity() {
     return security;
   }
@@ -108,7 +97,7 @@ public class GatewayCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, cluster, threads, monitoring, security, longPolling, interceptors);
+    return Objects.hash(network, cluster, threads, security, longPolling, interceptors);
   }
 
   @Override
@@ -123,7 +112,6 @@ public class GatewayCfg {
     return Objects.equals(network, that.network)
         && Objects.equals(cluster, that.cluster)
         && Objects.equals(threads, that.threads)
-        && Objects.equals(monitoring, that.monitoring)
         && Objects.equals(security, that.security)
         && Objects.equals(longPolling, that.longPolling)
         && Objects.equals(interceptors, that.interceptors);
@@ -138,8 +126,6 @@ public class GatewayCfg {
         + cluster
         + ", threadsCfg="
         + threads
-        + ", monitoringCfg="
-        + monitoring
         + ", securityCfg="
         + security
         + ", longPollingCfg="

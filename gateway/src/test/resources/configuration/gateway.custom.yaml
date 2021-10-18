@@ -28,3 +28,11 @@ zeebe:
 
     longPolling:
       enabled: false
+
+    interceptors:
+      - id: example
+        className: io.camunda.zeebe.example.Interceptor
+        jarPath: ./interceptor.jar
+      - id: example2
+        className: io.camunda.zeebe.example.Interceptor2
+        jarPath: ./interceptor2.jar

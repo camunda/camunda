@@ -18,7 +18,7 @@ package io.camunda.zeebe.journal.file.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.nio.BufferOverflowException;
+import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -50,7 +50,7 @@ public class SBESerializerTest {
   @Test
   public void shouldWriteRecord() {
     // given - when
-    final var recordWrittenLength = serializer.writeData(record, writeBuffer, 0);
+    final var recordWrittenLength = serializer.writeData(record, writeBuffer, 0).get();
 
     // then
     assertThat(recordWrittenLength).isPositive();
@@ -59,7 +59,7 @@ public class SBESerializerTest {
   @Test
   public void shouldReadRecord() {
     // given
-    final var length = serializer.writeData(record, writeBuffer, 0);
+    final var length = serializer.writeData(record, writeBuffer, 0).get();
 
     // when
     final var recordRead = serializer.readData(writeBuffer, 0, length);
@@ -131,7 +131,7 @@ public class SBESerializerTest {
     final int offset = 10;
 
     // when
-    final var recordWrittenLength = serializer.writeData(record, writeBuffer, offset);
+    final var recordWrittenLength = serializer.writeData(record, writeBuffer, offset).get();
     final var readData = serializer.readData(writeBuffer, offset, recordWrittenLength);
 
     // then
@@ -157,7 +157,6 @@ public class SBESerializerTest {
     final int offset = writeBuffer.capacity() - 1;
 
     // when - then
-    assertThatThrownBy(() -> serializer.writeData(record, writeBuffer, offset))
-        .isInstanceOf(BufferOverflowException.class);
+    assertThat(serializer.writeData(record, writeBuffer, offset)).matches(Either::isLeft);
   }
 }

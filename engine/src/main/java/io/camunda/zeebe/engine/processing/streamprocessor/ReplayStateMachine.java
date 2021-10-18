@@ -28,7 +28,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.util.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
@@ -157,7 +156,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       if (logStreamBatchReader.hasNext()) {
         currentState = State.REPLAY_EVENT;
 
-        final var replayStartTime = ActorClock.currentTimeMillis();
+        final var replayDurationTimer = replayMetrics.startReplayDurationTimer();
         final var batch = logStreamBatchReader.next();
         replayStrategy
             .runWithRetry(() -> tryToReplayBatch(batch), abortCondition)
@@ -166,7 +165,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
                   if (failure != null) {
                     throw new RuntimeException(failure);
                   } else {
-                    replayMetrics.replayDuration(replayStartTime, ActorClock.currentTimeMillis());
+                    // observe the replay duration
+                    replayDurationTimer.close();
                     // the position should be visible only after the batch is replayed successfully
                     lastSourceEventPosition =
                         Math.max(lastSourceEventPosition, batchSourceEventPosition);

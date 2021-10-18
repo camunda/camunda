@@ -232,7 +232,7 @@ public final class SegmentedJournal implements Journal {
 
   /** Opens the segments. */
   private synchronized void open() {
-    final long startTime = System.currentTimeMillis();
+    final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final JournalSegment segment : loadSegments()) {
       segments.put(segment.descriptor().index(), segment);
@@ -255,7 +255,8 @@ public final class SegmentedJournal implements Journal {
       segments.put(1L, currentSegment);
       journalMetrics.incSegmentCount();
     }
-    journalMetrics.observeJournalOpenDuration(System.currentTimeMillis() - startTime);
+    // observe the journal open duration
+    openDurationTimer.close();
 
     // Delete files that were previously marked for deletion but did not get deleted because the
     // node was stopped. It is safe to delete it now since there are no readers opened for these

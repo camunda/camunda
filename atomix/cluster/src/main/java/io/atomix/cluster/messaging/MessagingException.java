@@ -25,6 +25,10 @@ public class MessagingException extends IOException {
     super(message);
   }
 
+  public MessagingException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
+
   /** Exception indicating no remote registered remote handler. */
   public static class NoRemoteHandler extends MessagingException {
     public NoRemoteHandler() {

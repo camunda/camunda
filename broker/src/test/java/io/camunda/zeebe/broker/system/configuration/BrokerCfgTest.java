@@ -17,7 +17,6 @@ import static io.camunda.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIREC
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
-import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,6 +64,8 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.disableExplicitRaftFlush";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION =
       "zeebe.broker.experimental.enablePriorityElection";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED =
+      "zeebe.broker.experimental.queryapi.enabled";
   private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
@@ -118,46 +119,39 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertDefaultPorts(
-        DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT, DEFAULT_MONITORING_API_PORT);
+    assertDefaultPorts(DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 5, 6);
+    assertPorts("specific-ports", 1, 5);
   }
 
   @Test
   public void shouldUsePortOffset() {
     final int offset = 50;
     assertPorts(
-        "port-offset",
-        DEFAULT_COMMAND_API_PORT + offset,
-        DEFAULT_INTERNAL_API_PORT + offset,
-        DEFAULT_MONITORING_API_PORT + offset);
+        "port-offset", DEFAULT_COMMAND_API_PORT + offset, DEFAULT_INTERNAL_API_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
-    assertPorts("specific-ports-offset", 1 + offset, 5 + offset, 6 + offset);
+    assertPorts("specific-ports-offset", 1 + offset, 5 + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironment() {
     environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "5");
     final int offset = 50;
-    assertDefaultPorts(
-        DEFAULT_COMMAND_API_PORT + offset,
-        DEFAULT_INTERNAL_API_PORT + offset,
-        DEFAULT_MONITORING_API_PORT + offset);
+    assertDefaultPorts(DEFAULT_COMMAND_API_PORT + offset, DEFAULT_INTERNAL_API_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 5 + offset, 6 + offset);
+    assertPorts("specific-ports", 1 + offset, 5 + offset);
   }
 
   @Test
@@ -167,11 +161,7 @@ public final class BrokerCfgTest {
 
     // when + then
     Assertions.assertThatThrownBy(
-            () ->
-                assertDefaultPorts(
-                    DEFAULT_COMMAND_API_PORT,
-                    DEFAULT_INTERNAL_API_PORT,
-                    DEFAULT_MONITORING_API_PORT))
+            () -> assertDefaultPorts(DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT))
         .isInstanceOf(BindException.class);
   }
 
@@ -180,10 +170,7 @@ public final class BrokerCfgTest {
     environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "7");
     final int offset = 70;
     assertPorts(
-        "port-offset",
-        DEFAULT_COMMAND_API_PORT + offset,
-        DEFAULT_INTERNAL_API_PORT + offset,
-        DEFAULT_MONITORING_API_PORT + offset);
+        "port-offset", DEFAULT_COMMAND_API_PORT + offset, DEFAULT_INTERNAL_API_PORT + offset);
   }
 
   @Test
@@ -514,6 +501,43 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldDisableQueryApiByDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // when
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getQueryApi().isEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldSetEnableQueryApiFromConfig() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+
+    // when
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getQueryApi().isEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldOverrideSetEnableQueryApiViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED, "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getQueryApi().isEnabled()).isTrue();
+  }
+
+  @Test
   public void shouldOverrideAllClusterPropertiesViaEnvironment() {
     // given
     environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "1");
@@ -703,19 +727,17 @@ public final class BrokerCfgTest {
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
   }
 
-  private void assertDefaultPorts(final int command, final int internal, final int monitoring) {
-    assertPorts("default", command, internal, monitoring);
-    assertPorts("empty", command, internal, monitoring);
+  private void assertDefaultPorts(final int command, final int internal) {
+    assertPorts("default", command, internal);
+    assertPorts("empty", command, internal);
   }
 
-  private void assertPorts(
-      final String configFileName, final int command, final int internal, final int monitoring) {
+  private void assertPorts(final String configFileName, final int command, final int internal) {
     final BrokerCfg brokerCfg = TestConfigReader.readConfig(configFileName, environment);
     final NetworkCfg network = brokerCfg.getNetwork();
     assertThat(network.getCommandApi().getAddress().getPort()).isEqualTo(command);
     assertThat(network.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(command);
     assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
-    assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
   }
 
   private void assertDefaultHost(final String host) {
@@ -740,7 +762,6 @@ public final class BrokerCfgTest {
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
     assertThat(networkCfg.getCommandApi().getAddress().getHostString()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
-    assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
 
   private void assertAdvertisedHost(final String configFileName, final String host) {

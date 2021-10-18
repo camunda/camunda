@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1633608121108,
+  "iteration": 1634130126222,
   "links": [],
   "panels": [
     {
@@ -1430,6 +1430,121 @@
       "id": 203,
       "panels": [
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the processing queue size over time. Processing queue defines, what is already appended but not yet processed by the stream processor.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "hiddenSeries": false,
+          "id": 272,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum by (partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - sum by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "interval": "",
+              "legendFormat": "Partition {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [
+            {
+              "$$hashKey": "object:2366",
+              "colorMode": "warning",
+              "fill": true,
+              "line": true,
+              "op": "gt",
+              "value": 100,
+              "yaxis": "left"
+            },
+            {
+              "$$hashKey": "object:2372",
+              "colorMode": "critical",
+              "fill": true,
+              "line": true,
+              "op": "gt",
+              "value": 150,
+              "yaxis": "left"
+            }
+          ],
+          "timeRegions": [],
+          "title": "Processing Queue size",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:2345",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:2346",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "datasource": "${DS_PROMETHEUS}",
           "description": "Shows how many positions are not updated by exporters per partition. Means what is the difference between last committed exporter position and committed log position.",
           "fieldConfig": {
@@ -1456,7 +1571,7 @@
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 9
           },
           "id": 192,
           "options": {
@@ -1504,7 +1619,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 2
+            "y": 9
           },
           "id": 196,
           "pageSize": null,
@@ -1585,7 +1700,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 2
+            "y": 9
           },
           "id": 200,
           "pageSize": null,
@@ -1678,7 +1793,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 6
+            "y": 13
           },
           "id": 194,
           "options": {
@@ -1725,7 +1840,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 6
+            "y": 13
           },
           "id": 199,
           "pageSize": null,
@@ -1806,7 +1921,7 @@
             "h": 12,
             "w": 5,
             "x": 12,
-            "y": 6
+            "y": 13
           },
           "id": 198,
           "pageSize": null,
@@ -1893,7 +2008,7 @@
             "h": 12,
             "w": 7,
             "x": 17,
-            "y": 6
+            "y": 13
           },
           "id": 268,
           "pageSize": null,
@@ -1986,7 +2101,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 12
+            "y": 19
           },
           "id": 189,
           "options": {
@@ -2034,7 +2149,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 12
+            "y": 19
           },
           "id": 201,
           "pageSize": null,
@@ -6088,6 +6203,106 @@
       "id": 76,
       "panels": [
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the rate of different raft requests send from the leader to different followers",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 10
+          },
+          "hiddenSeries": false,
+          "id": 278,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null as zero",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(atomix_raft_messages_send_total{namespace=~\"$namespace\"}[1m])) by (pod, partition, to, type)",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}} send {{type}} to {{to}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Raft requests per second [1m]",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:1422",
+              "format": "short",
+              "label": "Requests",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:1423",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "cards": {
             "cardPadding": null,
             "cardRound": null
@@ -6111,7 +6326,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6181,7 +6396,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6232,8 +6447,8 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "$DS_PROMETHEUS",
-          "description": "Approximate Install RPC as measured by the follower.",
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the total count of send install requests from the leader to the followers",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -6244,9 +6459,110 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 23
+          },
+          "hiddenSeries": false,
+          "id": 283,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null as zero",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "atomix_raft_messages_send_total{namespace=~\"$namespace\", type=\"InstallRequest\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}} send {{type}} to {{to}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Total install requests send",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:1422",
+              "format": "short",
+              "label": "Install Requests",
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:1423",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Approximate Install RPC as measured by the follower.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 30
           },
           "hiddenSeries": false,
           "id": 79,
@@ -6264,9 +6580,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6334,7 +6651,8 @@
           "description": "Ongoing snapshot replications per partition, from the follower point-of-view.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -6344,7 +6662,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 30
           },
           "hiddenSeries": false,
           "id": 114,
@@ -6361,9 +6679,10 @@
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6444,7 +6763,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 46
+            "y": 37
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6514,7 +6833,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 46
+            "y": 37
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6585,7 +6904,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 53
+            "y": 44
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -6641,7 +6960,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -6651,7 +6971,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 53
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 72,
@@ -6671,9 +6991,10 @@
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6740,9 +7061,11 @@
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
           "decimals": 0,
+          "description": "Shows when a role change has happened. \n1 = Follower\n2 = Candidate\n3 = Leader\n2 - ",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -6752,21 +7075,21 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 61
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 95,
           "interval": "1s",
           "legend": {
-            "alignAsTable": true,
+            "alignAsTable": false,
             "avg": false,
             "current": true,
             "hideEmpty": false,
             "hideZero": true,
             "max": false,
             "min": false,
-            "rightSide": true,
-            "show": true,
+            "rightSide": false,
+            "show": false,
             "sideWidth": 300,
             "total": false,
             "values": true
@@ -6776,10 +7099,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "6.3.5",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6793,8 +7116,9 @@
               "format": "time_series",
               "hide": false,
               "instant": false,
+              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} {{partition}} {{partitionGroupName}}",
+              "legendFormat": "{{pod}} p{{partition}} ",
               "refId": "A"
             }
           ],
@@ -6802,10 +7126,10 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Role Changes",
+          "title": "Role changes over time",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -6818,22 +7142,24 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:239",
               "decimals": 0,
               "format": "short",
-              "label": "Role",
+              "label": "Role (3 = Leader)",
               "logBase": 1,
               "max": "3",
               "min": "1",
               "show": true
             },
             {
+              "$$hashKey": "object:240",
               "decimals": null,
-              "format": "short",
+              "format": "Misc",
               "label": "",
               "logBase": 1,
               "max": null,
               "min": null,
-              "show": true
+              "show": false
             }
           ],
           "yaxis": {
@@ -6850,7 +7176,8 @@
           "description": "",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -6860,7 +7187,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 180,
@@ -6877,9 +7204,10 @@
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6955,7 +7283,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 69
+            "y": 60
           },
           "id": 205,
           "maxPerRow": 6,
@@ -7035,15 +7363,14 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 69
+            "y": 60
           },
-          "id": 256,
+          "id": 279,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
-          "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1623398951903,
+          "repeatIteration": 1634130126219,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -7117,15 +7444,14 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 69
+            "y": 60
           },
-          "id": 257,
+          "id": 280,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
-          "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1623398951903,
+          "repeatIteration": 1634130126219,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -7199,7 +7525,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 74
+            "y": 65
           },
           "id": 209,
           "maxPerRow": 6,
@@ -7261,6 +7587,64 @@
           "type": "table-old"
         },
         {
+          "datasource": "$DS_PROMETHEUS",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1000
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 65
+          },
+          "id": 217,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "last"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "7.4.5",
+          "repeat": null,
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "expr": "max(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace) - min(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace)",
+              "interval": "",
+              "legendFormat": "Partition {{partition}} ({{namespace}})",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Number of records by which the slowest follower is lagging behind",
+          "type": "gauge"
+        },
+        {
           "columns": [
             {
               "text": "Current",
@@ -7279,15 +7663,14 @@
             "h": 5,
             "w": 8,
             "x": 8,
-            "y": 74
+            "y": 70
           },
-          "id": 258,
+          "id": 281,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
-          "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1623398951903,
+          "repeatIteration": 1634130126219,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -7361,15 +7744,14 @@
             "h": 5,
             "w": 8,
             "x": 16,
-            "y": 74
+            "y": 70
           },
-          "id": 259,
+          "id": 282,
           "maxPerRow": 6,
           "pageSize": null,
           "pluginVersion": "6.7.1",
-          "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1623398951903,
+          "repeatIteration": 1634130126219,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -7450,7 +7832,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 79
+            "y": 75
           },
           "id": 215,
           "options": {
@@ -7463,9 +7845,10 @@
               "values": false
             },
             "showThresholdLabels": false,
-            "showThresholdMarkers": true
+            "showThresholdMarkers": true,
+            "text": {}
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "max(atomix_partition_raft_append_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace) - max(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace)",
@@ -7477,63 +7860,6 @@
           "timeFrom": null,
           "timeShift": null,
           "title": "Number of records appended on the leader but not committed",
-          "type": "gauge"
-        },
-        {
-          "datasource": "$DS_PROMETHEUS",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1000
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 12,
-            "x": 12,
-            "y": 79
-          },
-          "id": 217,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "last"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true
-          },
-          "pluginVersion": "7.0.3",
-          "repeat": null,
-          "repeatDirection": "h",
-          "targets": [
-            {
-              "expr": "max(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace) - min(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace)",
-              "interval": "",
-              "legendFormat": "Partition {{partition}} ({{namespace}})",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Number of records by which the slowest follower is lagging behind",
           "type": "gauge"
         }
       ],
@@ -10175,5 +10501,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 20
+  "version": 21
 }

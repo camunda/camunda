@@ -37,8 +37,9 @@ public class SnapshotReplicationListenerTest {
     follower.getContext().addSnapshotReplicationListener(snapshotReplicationListener);
     raftRule.partition(follower);
 
-    final var commitIndex = raftRule.appendEntries(2); // awaits commit
     final var leader = raftRule.getLeader().orElseThrow();
+    leader.getContext().setPreferSnapshotReplicationThreshold(1);
+    final var commitIndex = raftRule.appendEntries(2); // awaits commit
     raftRule.doSnapshotOnMember(leader, commitIndex, 1);
     raftRule.appendEntry();
 

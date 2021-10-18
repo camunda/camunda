@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -38,13 +38,13 @@ public class EventSubProcessInterruptionMarker {
       final long flowScopeElementInstanceKey,
       final long processDefinitionKey,
       final DirectBuffer elementId) {
-    final var catchEvent =
-        processState.getFlowElement(processDefinitionKey, elementId, ExecutableCatchEvent.class);
+    final var flowElement =
+        processState.getFlowElement(processDefinitionKey, elementId, ExecutableFlowElement.class);
     if (!isRootStartEvent(flowScopeElementInstanceKey)
-        && catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS
-        && catchEvent instanceof ExecutableStartEvent
-        && catchEvent.isInterrupting()) {
-      final var executableStartEvent = (ExecutableStartEvent) catchEvent;
+        && flowElement.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS
+        && flowElement instanceof ExecutableStartEvent
+        && ((ExecutableStartEvent) flowElement).isInterrupting()) {
+      final var executableStartEvent = (ExecutableStartEvent) flowElement;
 
       // interrupting event sub process
       elementInstanceState.updateInstance(

@@ -122,8 +122,8 @@ public class NonInterruptingEventSubprocessTest {
     final long processInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
-    final Record<ProcessInstanceRecordValue> startEventActivate =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+    final Record<ProcessInstanceRecordValue> startEventActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("event_sub_start")
             .withElementType(BpmnElementType.START_EVENT)
             .withProcessInstanceKey(processInstanceKey)
@@ -135,7 +135,7 @@ public class NonInterruptingEventSubprocessTest {
             .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
-    Assertions.assertThat(startEventActivate.getValue())
+    Assertions.assertThat(startEventActivated.getValue())
         .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
         .hasProcessInstanceKey(processInstanceKey)
         .hasBpmnElementType(BpmnElementType.START_EVENT)

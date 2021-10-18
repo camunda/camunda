@@ -5,20 +5,13 @@ This folder contains several scripts we wrote in order to test or debug things.
 ## Profile.sh
 
 **Usage:**
+Run executeProfiling.sh with a pod name. It will run in your current namespace and copy two scripts to the given pod.
 
-```bash
-kubectl exec -it zeebe-0 bash -- < profile.sh
-```
+The first script `installProfiler.sh` will install all necessary dependencies to run the async profiler. The second script
+`runProfiler.sh` will execute the profiler. The split was done, to be able to skip the installation phase.
 
-This script will download and install java and the `async-profiler`. It will determine the PID of
-the running `StandaloneBroker` and profile it via the `async-profiler`. The output of that would
-be a flame graph.
-
-This graph can then be copied for example like this:
-
-```
-kubectl cp zeebe-0:/tmp/profiler/flamegraph-2019-03-27_12-42-33.svg .
-```
+If you run `executeProfiling` it makes sure that both scripts are executed on the given pod and copies at the end the resulting
+flamegraph to your current working directory.
 
 ## PartitionDistribution.sh
 
@@ -36,9 +29,9 @@ _Example Output:_
 $ ./partitionDistribution.sh 3 3 3
 Distribution:
 P\N|	N 0|	N 1|	N 2
-P 0|	L  |	F  |	F  
-P 1|	F  |	L  |	F  
-P 2|	F  |	F  |	L  
+P 0|	L  |	F  |	F
+P 1|	F  |	L  |	F
+P 2|	F  |	F  |	L
 
 Partitions per Node:
 N 0: 3

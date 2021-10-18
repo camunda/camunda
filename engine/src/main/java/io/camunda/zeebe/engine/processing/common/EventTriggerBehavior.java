@@ -176,8 +176,8 @@ public class EventTriggerBehavior {
    * Marks a process to be triggered by updating the state with a new {@link
    * ProcessEventIntent#TRIGGERED} event.
    *
-   * @param processDefinitionKey the process instance key of the event trigger
    * @param processInstanceKey the process instance key of the event trigger
+   * @param processDefinitionKey the process instance key of the event trigger
    * @param eventScopeKey the event's scope key, which is used as identifier for the event trigger
    * @param catchEventId the ID of the element which was triggered by the event
    */
@@ -215,18 +215,22 @@ public class EventTriggerBehavior {
           "Expected to activate triggered event, but flow scope is null");
     }
 
+    // We need to activate the event sub process without writing a Triggered event for the process
+    // event. The reason for this is that the event trigger contains variables that are required
+    // for applying the variable output mappings of the start event. Writing the triggered event
+    // would delete the event trigger, causing us to lose access to these variables.
+    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS
+        && triggeredEvent.getElementType() == BpmnElementType.START_EVENT) {
+      activateEventSubProcess(flowScope);
+      return;
+    }
+
     processEventTriggered(
         processEventKey,
         elementRecord.getProcessDefinitionKey(),
         elementRecord.getProcessInstanceKey(),
         eventScopeKey,
         triggeredEvent.getId());
-
-    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS
-        && triggeredEvent.getElementType() == BpmnElementType.START_EVENT) {
-      activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope);
-      return;
-    }
 
     eventRecord
         .setBpmnElementType(triggeredEvent.getElementType())
@@ -253,28 +257,10 @@ public class EventTriggerBehavior {
         eventInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
   }
 
-  private void activateEventSubProcess(
-      final ExecutableStartEvent triggeredStartEvent, final ExecutableFlowElement flowScope) {
-    // First we move the event sub process immediately to ACTIVATED,
-    // to make sure that we can copy the temp variables from the flow scope directly to the
-    // event sub process scope. This is done in the ACTIVATING applier of the event sub process.
+  private void activateEventSubProcess(final ExecutableFlowElement flowScope) {
     eventRecord
         .setBpmnElementType(BpmnElementType.EVENT_SUB_PROCESS)
         .setElementId(flowScope.getId());
-
-    final var eventSubProcessKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
-        eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-    stateWriter.appendFollowUpEvent(
-        eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
-
-    // Then we ACTIVATE the start event and copy the temporary variables further down, such that
-    // we can apply the output mappings.
-    eventRecord
-        .setFlowScopeKey(eventSubProcessKey)
-        .setBpmnElementType(triggeredStartEvent.getElementType())
-        .setElementId(triggeredStartEvent.getId());
-
     commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, eventRecord);
   }
 }

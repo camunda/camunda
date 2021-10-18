@@ -17,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+import org.springframework.util.unit.DataSize;
 
 public class InstallRequestHandlingTest {
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
@@ -28,6 +29,8 @@ public class InstallRequestHandlingTest {
           3,
           3,
           config -> {
+            config.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
+            config.getData().setLogSegmentSize(DataSize.ofKilobytes(8));
             config.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
           });
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
@@ -41,7 +44,7 @@ public class InstallRequestHandlingTest {
     // given
     final var followerId = clusteringRule.stopAnyFollower();
     final var jobKey = clientRule.createSingleJob("type");
-
+    clusteringRule.fillSegment();
     clusteringRule.triggerAndWaitForSnapshots();
 
     // when
@@ -67,6 +70,7 @@ public class InstallRequestHandlingTest {
                 .serviceTask("task", task -> task.zeebeJobType("type"))
                 .endEvent()
                 .done());
+    clusteringRule.fillSegment();
     clusteringRule.triggerAndWaitForSnapshots();
     clusteringRule.startBroker(followerId);
     clusteringRule.waitForSnapshotAtBroker(followerId);

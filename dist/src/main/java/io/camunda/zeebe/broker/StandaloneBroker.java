@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.shared.EnvironmentHelper;
+import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -20,16 +20,21 @@ import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 
-@SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
-@ComponentScan({"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+/**
+ * Entry point for the standalone broker application. By default, it enables the {@link
+ * Profile#BROKER} profile, loading the appropriate application properties overrides.
+ *
+ * <p>See {@link #main(String[])} for more.
+ */
+@SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
@@ -54,23 +59,27 @@ public class StandaloneBroker
 
   public static void main(final String[] args) {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
-    EnvironmentHelper.disableGatewayHealthIndicatorsAndProbes();
-    SpringApplication.run(StandaloneBroker.class, args);
+    final var application =
+        new SpringApplicationBuilder(StandaloneBroker.class)
+            .web(WebApplicationType.SERVLET)
+            .logStartupInfo(true)
+            .profiles(Profile.BROKER.getId())
+            .build(args);
+
+    application.run();
   }
 
   @Override
   public void run(final String... args) {
-    if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
-      systemContext = createSystemContextInBaseDirectory();
-    } else {
-      Loggers.SYSTEM_LOGGER.info("Launching broker in temporary folder.");
+    if (shouldUseTemporaryFolder()) {
+      LOG.info("Launching broker in temporary folder.");
       systemContext = createSystemContextInTempDirectory();
+    } else {
+      systemContext = createSystemContextInBaseDirectory();
     }
 
     systemContext.getScheduler().start();
-
     broker = new Broker(systemContext, springBrokerBridge);
-
     broker.start();
   }
 
@@ -79,12 +88,20 @@ public class StandaloneBroker
     try {
       broker.close();
       systemContext.getScheduler().stop().get();
-    } catch (final ExecutionException | InterruptedException e) {
-      LOG.error(e.getMessage(), e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOG.warn("Shutdown interrupted, most likely harmless", e);
+    } catch (final ExecutionException e) {
+      LOG.error("Failed to shutdown broker gracefully", e);
     } finally {
       deleteTempDirectory();
       LogManager.shutdown();
     }
+  }
+
+  private boolean shouldUseTemporaryFolder() {
+    return springEnvironment.acceptsProfiles(
+        Profiles.of(Profile.DEVELOPMENT.getId(), Profile.TEST.getId()));
   }
 
   private SystemContext createSystemContextInBaseDirectory() {

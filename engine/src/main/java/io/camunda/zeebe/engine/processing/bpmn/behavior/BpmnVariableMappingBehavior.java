@@ -15,8 +15,10 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
@@ -28,6 +30,7 @@ public final class BpmnVariableMappingBehavior {
   private final VariableState variablesState;
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
@@ -37,6 +40,7 @@ public final class BpmnVariableMappingBehavior {
     elementInstanceState = zeebeState.getElementInstanceState();
     variablesState = zeebeState.getVariableState();
     this.variableBehavior = variableBehavior;
+    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
   }
 
   /**
@@ -82,15 +86,20 @@ public final class BpmnVariableMappingBehavior {
     final long scopeKey = getVariableScopeKey(context);
     final Optional<Expression> outputMappingExpression = element.getOutputMappings();
 
-    // event variables are stored as temporary variables
-    final DirectBuffer temporaryVariables =
-        variablesState.getTemporaryVariables(elementInstanceKey);
+    final EventTrigger eventTrigger = eventScopeInstanceState.peekEventTrigger(elementInstanceKey);
+    boolean hasVariables = false;
+    DirectBuffer variables = null;
+
+    if (eventTrigger != null) {
+      variables = eventTrigger.getVariables();
+      hasVariables = variables.capacity() > 0;
+    }
 
     if (outputMappingExpression.isPresent()) {
       // set as local variables
-      if (temporaryVariables != null) {
+      if (hasVariables) {
         variableBehavior.mergeLocalDocument(
-            elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
+            elementInstanceKey, processDefinitionKey, processInstanceKey, variables);
       }
 
       // apply the output mappings
@@ -103,13 +112,13 @@ public final class BpmnVariableMappingBehavior {
                 return null;
               });
 
-    } else if (temporaryVariables != null) {
+    } else if (hasVariables) {
       // merge/propagate the event variables by default
       variableBehavior.mergeDocument(
-          elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
-
+          elementInstanceKey, processDefinitionKey, processInstanceKey, variables);
     } else if (isConnectedToEventBasedGateway(element)
-        || element.getElementType() == BpmnElementType.BOUNDARY_EVENT) {
+        || element.getElementType() == BpmnElementType.BOUNDARY_EVENT
+        || element.getElementType() == BpmnElementType.START_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       variableBehavior.mergeDocument(

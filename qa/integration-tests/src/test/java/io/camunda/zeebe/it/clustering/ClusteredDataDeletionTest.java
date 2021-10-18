@@ -17,10 +17,6 @@ import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,7 +86,7 @@ public final class ClusteredDataDeletionTest {
   public void shouldDeleteDataOnBrokers() {
     // given
     final var brokers = clusteringRule.getBrokers();
-    fillSegments(brokers, SEGMENT_COUNT);
+    clusteringRule.runUntilSegmentsFilled(brokers, SEGMENT_COUNT, this::writeRecord);
 
     // when
     final var segmentCountsBeforeSnapshot = getSegmentCountByNodeId(brokers);
@@ -112,29 +108,8 @@ public final class ClusteredDataDeletionTest {
     return brokers.stream()
         .collect(
             Collectors.toMap(
-                follower -> follower.getConfig().getCluster().getNodeId(), this::getSegmentsCount));
-  }
-
-  private int getSegmentsCount(final Broker broker) {
-    return getSegments(broker).size();
-  }
-
-  private Collection<Path> getSegments(final Broker broker) {
-    try {
-      return Files.list(clusteringRule.getSegmentsDirectory(broker))
-          .filter(path -> path.toString().endsWith(".log"))
-          .collect(Collectors.toList());
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private void fillSegments(final Collection<Broker> brokers, final int segmentCount) {
-
-    while (brokers.stream().map(this::getSegmentsCount).allMatch(count -> count <= segmentCount)) {
-
-      writeRecord();
-    }
+                follower -> follower.getConfig().getCluster().getNodeId(),
+                clusteringRule::getSegmentsCount));
   }
 
   private void writeRecord() {

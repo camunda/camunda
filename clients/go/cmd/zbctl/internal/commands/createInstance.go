@@ -15,8 +15,10 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"strconv"
 	"strings"
+
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 
 	"github.com/spf13/cobra"
 )
@@ -28,16 +30,26 @@ var (
 )
 
 var createInstanceCmd = &cobra.Command{
-	Use:     "instance <processId>",
-	Short:   "Creates new process instance defined by the process ID",
+	Use:     "instance <processId or processKey>",
+	Short:   "Creates new process instance defined by the process ID or process key",
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		zbCmd, err := client.
-			NewCreateInstanceCommand().
-			BPMNProcessId(args[0]).
-			Version(createInstanceVersionFlag).
-			VariablesFromString(createInstanceVariablesFlag)
+		var zbCmd commands.CreateInstanceCommandStep3
+
+		processKey, err := strconv.Atoi(args[0])
+		if err != nil {
+			// Process ID given
+			zbCmd = client.NewCreateInstanceCommand().
+				BPMNProcessId(args[0]).
+				Version(createInstanceVersionFlag)
+		} else {
+			zbCmd = client.NewCreateInstanceCommand().
+				ProcessDefinitionKey(int64(processKey))
+		}
+
+		zbCmd, err = zbCmd.VariablesFromString(createInstanceVariablesFlag)
+
 		if err != nil {
 			return err
 		}

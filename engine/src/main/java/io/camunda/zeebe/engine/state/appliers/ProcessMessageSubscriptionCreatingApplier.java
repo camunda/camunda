@@ -25,12 +25,6 @@ public final class ProcessMessageSubscriptionCreatingApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-    if (subscriptionState.existSubscriptionForElementInstance(
-        value.getElementInstanceKey(), value.getMessageNameBuffer())) {
-      // TODO (saig0): avoid state change on reprocessing of a not yet migrated processor (#6200)
-      return;
-    }
-
     subscriptionState.put(key, value);
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
 public final class BpmnEventSubscriptionBehavior {
@@ -81,7 +82,11 @@ public final class BpmnEventSubscriptionBehavior {
    */
   public Optional<EventTrigger> findEventTrigger(final BpmnElementContext context) {
     final var elementInstanceKey = context.getElementInstanceKey();
-    return Optional.ofNullable(eventScopeInstanceState.peekEventTrigger(elementInstanceKey));
+    // Event triggers could be used to store variables. If the event trigger belongs to the element
+    // itself, we should not activate it, otherwise the element will be activated a second time.
+    return Optional.ofNullable(eventScopeInstanceState.peekEventTrigger(elementInstanceKey))
+        .filter(
+            trigger -> !BufferUtil.contentsEqual(trigger.getElementId(), context.getElementId()));
   }
 
   /**

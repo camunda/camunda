@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import org.slf4j.Logger;
 
 /**
  * Applies state changes from events to the {@link MutableZeebeState}.
@@ -41,18 +39,9 @@ import org.slf4j.Logger;
  */
 public final class EventAppliers implements EventApplier {
 
-  private static final Logger LOG = Loggers.STREAM_PROCESSING;
-
-  // todo (#6202): after migration this should log at WARN level
   private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
-      intent ->
-          (key, value) ->
-              LOG.trace(
-                  "No state changed: tried to use unimplemented event applier {}.{}",
-                  intent.getClass().getSimpleName(),
-                  intent);
+      intent -> (key, value) -> {};
 
-  @SuppressWarnings("rawtypes")
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
   public EventAppliers(final MutableZeebeState state) {
@@ -112,7 +101,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
         new ProcessInstanceElementActivatingApplier(
-            elementInstanceState, processState, variableState, eventScopeInstanceState));
+            elementInstanceState, processState, eventScopeInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(elementInstanceState));
@@ -133,10 +122,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATED,
         new ProcessInstanceElementTerminatedApplier(
-            elementInstanceState,
-            eventScopeInstanceState,
-            variableState,
-            bufferedStartMessageEventStateApplier));
+            elementInstanceState, eventScopeInstanceState, bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
@@ -213,11 +199,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessMessageSubscriptionCreatedApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
-        new ProcessMessageSubscriptionCorrelatedApplier(
-            subscriptionState,
-            state.getVariableState(),
-            state.getElementInstanceState(),
-            state.getProcessState()));
+        new ProcessMessageSubscriptionCorrelatedApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.DELETING,
         new ProcessMessageSubscriptionDeletingApplier(subscriptionState));
@@ -243,7 +225,6 @@ public final class EventAppliers implements EventApplier {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void applyState(final long key, final Intent intent, final RecordValue value) {
     final var eventApplier =
         mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
