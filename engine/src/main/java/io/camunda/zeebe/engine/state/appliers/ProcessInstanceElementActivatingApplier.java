@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -48,15 +49,11 @@ final class ProcessInstanceElementActivatingApplier
     createEventScope(elementInstanceKey, value);
     cleanupSequenceFlowsTaken(value);
 
-    final var processDefinitionKey = value.getProcessDefinitionKey();
-    final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
+    final var eventTrigger =
+        eventScopeInstanceState.peekEventTrigger(value.getProcessDefinitionKey());
     if (eventTrigger != null && value.getElementIdBuffer().equals(eventTrigger.getElementId())) {
-      eventScopeInstanceState.triggerEvent(
-          elementInstanceKey,
-          eventTrigger.getEventKey(),
-          eventTrigger.getElementId(),
-          eventTrigger.getVariables());
-      eventScopeInstanceState.deleteTrigger(processDefinitionKey, eventTrigger.getEventKey());
+      moveVariablesToNewEventScope(
+          eventTrigger, value.getProcessDefinitionKey(), elementInstanceKey);
     }
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
@@ -64,22 +61,7 @@ final class ProcessInstanceElementActivatingApplier
         flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     if (flowScopeInstance == null) {
-      // process instance level
-      final var parentElementInstance =
-          elementInstanceState.getInstance(value.getParentElementInstanceKey());
-      if (parentElementInstance == null) {
-        // root process (not a child process)
-        return;
-      }
-
-      // this check is not really necessary: if parentElementInstance exists,
-      // it should always be a call-activity, but let's try to be safe
-      final var parentElementType = parentElementInstance.getValue().getBpmnElementType();
-      if (parentElementType == BpmnElementType.CALL_ACTIVITY) {
-        parentElementInstance.setCalledChildInstanceKey(elementInstanceKey);
-        elementInstanceState.updateInstance(parentElementInstance);
-      }
-
+      applyRootProcessState(elementInstanceKey, value);
       return;
     }
 
@@ -92,28 +74,11 @@ final class ProcessInstanceElementActivatingApplier
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
       final EventTrigger flowScopeEventTrigger =
           eventScopeInstanceState.peekEventTrigger(flowScopeInstance.getParentKey());
-      if (flowScopeEventTrigger != null) {
-        eventScopeInstanceState.triggerEvent(
-            elementInstanceKey,
-            flowScopeEventTrigger.getEventKey(),
-            flowScopeEventTrigger.getElementId(),
-            flowScopeEventTrigger.getVariables());
-        eventScopeInstanceState.deleteTrigger(
-            flowScopeInstance.getParentKey(), flowScopeEventTrigger.getEventKey());
-      }
+      moveVariablesToNewEventScope(
+          flowScopeEventTrigger, flowScopeInstance.getParentKey(), elementInstanceKey);
     }
 
-    // manage the multi-instance loop counter
-    if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
-      // update the loop counter of the multi-instance body (starting by 1)
-      flowScopeInstance.incrementMultiInstanceLoopCounter();
-      elementInstanceState.updateInstance(flowScopeInstance);
-
-      // set the loop counter of the inner instance
-      final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
-      elementInstanceState.updateInstance(
-          elementInstanceKey, instance -> instance.setMultiInstanceLoopCounter(loopCounter));
-    }
+    manageMultiInstanceLoopCounter(elementInstanceKey, flowScopeInstance, flowScopeElementType);
   }
 
   private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
@@ -133,73 +98,111 @@ final class ProcessInstanceElementActivatingApplier
         value.getFlowScopeKey(), parallelGateway.getId());
   }
 
+  private void moveVariablesToNewEventScope(
+      final EventTrigger eventTrigger, final long oldEventScopeKey, final long newEventScopeKey) {
+    // In order to pass the variables of the event trigger to the element instance, we need to
+    // create a new event trigger, using the element instance key as the event scope key.
+    if (eventTrigger != null) {
+      eventScopeInstanceState.triggerEvent(
+          newEventScopeKey,
+          eventTrigger.getEventKey(),
+          eventTrigger.getElementId(),
+          eventTrigger.getVariables());
+      eventScopeInstanceState.deleteTrigger(oldEventScopeKey, eventTrigger.getEventKey());
+    }
+  }
+
+  private void applyRootProcessState(
+      final long elementInstanceKey, final ProcessInstanceRecord value) {
+    final var parentElementInstance =
+        elementInstanceState.getInstance(value.getParentElementInstanceKey());
+    if (parentElementInstance != null) {
+      // this check is not really necessary: if parentElementInstance exists,
+      // it should always be a call-activity, but let's try to be safe
+      final var parentElementType = parentElementInstance.getValue().getBpmnElementType();
+      if (parentElementType == BpmnElementType.CALL_ACTIVITY) {
+        parentElementInstance.setCalledChildInstanceKey(elementInstanceKey);
+        elementInstanceState.updateInstance(parentElementInstance);
+      }
+    }
+  }
+
   private void decrementActiveSequenceFlow(
       final ProcessInstanceRecord value,
-      final io.camunda.zeebe.engine.state.instance.ElementInstance flowScopeInstance,
+      final ElementInstance flowScopeInstance,
       final BpmnElementType flowScopeElementType,
       final BpmnElementType currentElementType) {
-
-    final boolean isEventSubProcess = currentElementType == BpmnElementType.EVENT_SUB_PROCESS;
 
     // We don't want to decrement the active sequence flow for elements which have no incoming
     // sequence flow and for interrupting event sub processes we reset the count completely.
     // Furthermore some elements are special and need to be handled separately.
+    switch (currentElementType) {
+      case START_EVENT:
+      case BOUNDARY_EVENT:
+        break;
+      case INTERMEDIATE_CATCH_EVENT:
+        decrementIntermediateCatchEventSequenceFlow(value, flowScopeInstance);
+        break;
+      case PARALLEL_GATEWAY:
+        decrementParallelGatewaySequenceFlow(value, flowScopeInstance);
+        break;
+      case EVENT_SUB_PROCESS:
+        decrementEventSubProcessSequenceFlow(value, flowScopeInstance);
+        break;
+      default:
+        if (flowScopeElementType != BpmnElementType.MULTI_INSTANCE_BODY) {
+          flowScopeInstance.decrementActiveSequenceFlows();
+          elementInstanceState.updateInstance(flowScopeInstance);
+        }
+        break;
+    }
+  }
 
-    if (currentElementType != BpmnElementType.START_EVENT
-        && currentElementType != BpmnElementType.BOUNDARY_EVENT
-        && currentElementType != BpmnElementType.PARALLEL_GATEWAY
-        && currentElementType != BpmnElementType.INTERMEDIATE_CATCH_EVENT
-        && flowScopeElementType != BpmnElementType.MULTI_INSTANCE_BODY
-        && !isEventSubProcess) {
+  private void decrementIntermediateCatchEventSequenceFlow(
+      final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
+    // If we are an intermediate catch event and our previous element is an event based gateway,
+    // then we don't want to decrement the active flow, since based on the BPMN spec we DON'T take
+    // the sequence flow.
+
+    final var executableCatchEventElement =
+        processState.getFlowElement(
+            value.getProcessDefinitionKey(),
+            value.getElementIdBuffer(),
+            ExecutableCatchEventElement.class);
+
+    final var incomingSequenceFlow = executableCatchEventElement.getIncoming().get(0);
+    final var previousElement = incomingSequenceFlow.getSource();
+    if (previousElement.getElementType() != BpmnElementType.EVENT_BASED_GATEWAY) {
       flowScopeInstance.decrementActiveSequenceFlows();
       elementInstanceState.updateInstance(flowScopeInstance);
     }
+  }
 
-    if (currentElementType == BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
-      // If we are an intermediate catch event and our previous element is an event based gateway,
-      // then we don't want to decrement the active flow, since based on the BPMN spec we DON'T take
-      // the sequence flow.
+  private void decrementParallelGatewaySequenceFlow(
+      final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
+    // Parallel gateways can have more than one incoming sequence flow, we need to decrement the
+    // active sequence flows based on the incoming count.
 
-      final var executableCatchEventElement =
-          processState.getFlowElement(
-              value.getProcessDefinitionKey(),
-              value.getElementIdBuffer(),
-              ExecutableCatchEventElement.class);
+    final var executableFlowNode =
+        processState.getFlowElement(
+            value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
+    final var size = executableFlowNode.getIncoming().size();
+    IntStream.range(0, size).forEach(i -> flowScopeInstance.decrementActiveSequenceFlows());
+    elementInstanceState.updateInstance(flowScopeInstance);
+  }
 
-      final var incomingSequenceFlow = executableCatchEventElement.getIncoming().get(0);
-      final var previousElement = incomingSequenceFlow.getSource();
-      if (previousElement.getElementType() != BpmnElementType.EVENT_BASED_GATEWAY) {
-        flowScopeInstance.decrementActiveSequenceFlows();
-        elementInstanceState.updateInstance(flowScopeInstance);
-      }
+  private void decrementEventSubProcessSequenceFlow(
+      final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
+    // For interrupting event sub processes we need to reset the active sequence flows, because
+    // we might have interrupted multiple sequence flows.
+    // For non interrupting we do nothing, since we had no incoming sequence flow.
+
+    final var executableFlowElementContainer = getExecutableFlowElementContainer(value);
+    final var executableStartEvent = executableFlowElementContainer.getStartEvents().get(0);
+    if (executableStartEvent.isInterrupting()) {
+      flowScopeInstance.resetActiveSequenceFlows();
     }
-
-    if (currentElementType == BpmnElementType.PARALLEL_GATEWAY) {
-      // Parallel gateways can have more then one incoming sequence flow, we need to decrement the
-      // active sequence flows based on the incoming count.
-
-      final var executableFlowNode =
-          processState.getFlowElement(
-              value.getProcessDefinitionKey(),
-              value.getElementIdBuffer(),
-              ExecutableFlowNode.class);
-      final var size = executableFlowNode.getIncoming().size();
-      IntStream.range(0, size).forEach(i -> flowScopeInstance.decrementActiveSequenceFlows());
-      elementInstanceState.updateInstance(flowScopeInstance);
-    }
-
-    if (isEventSubProcess) {
-      // For interrupting event sub processes we need to reset the active sequence flows, because
-      // we might have interrupted multiple sequence flows.
-      // For non interrupting we do nothing, since we had no incoming sequence flow.
-
-      final var executableFlowElementContainer = getExecutableFlowElementContainer(value);
-      final var executableStartEvent = executableFlowElementContainer.getStartEvents().get(0);
-      if (executableStartEvent.isInterrupting()) {
-        flowScopeInstance.resetActiveSequenceFlows();
-      }
-      elementInstanceState.updateInstance(flowScopeInstance);
-    }
+    elementInstanceState.updateInstance(flowScopeInstance);
   }
 
   private ExecutableFlowElementContainer getExecutableFlowElementContainer(
@@ -208,6 +211,22 @@ final class ProcessInstanceElementActivatingApplier
         value.getProcessDefinitionKey(),
         value.getElementIdBuffer(),
         ExecutableFlowElementContainer.class);
+  }
+
+  private void manageMultiInstanceLoopCounter(
+      final long elementInstanceKey,
+      final ElementInstance flowScopeInstance,
+      final BpmnElementType flowScopeElementType) {
+    if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      // update the loop counter of the multi-instance body (starting by 1)
+      flowScopeInstance.incrementMultiInstanceLoopCounter();
+      elementInstanceState.updateInstance(flowScopeInstance);
+
+      // set the loop counter of the inner instance
+      final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
+      elementInstanceState.updateInstance(
+          elementInstanceKey, instance -> instance.setMultiInstanceLoopCounter(loopCounter));
+    }
   }
 
   private void createEventScope(
