@@ -103,22 +103,28 @@ public class StandaloneGateway
 
   @Override
   public void onApplicationEvent(final ContextClosedEvent event) {
-    try {
-      gateway.stop();
-    } catch (final Exception e) {
-      LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
+    if (gateway != null) {
+      try {
+        gateway.stop();
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
+      }
     }
 
-    try {
-      atomixCluster.stop().orTimeout(10, TimeUnit.SECONDS).join();
-    } catch (final Exception e) {
-      LOG.warn("Failed to gracefully shutdown cluster services", e);
+    if (atomixCluster != null) {
+      try {
+        atomixCluster.stop().orTimeout(10, TimeUnit.SECONDS).join();
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown cluster services", e);
+      }
     }
 
-    try {
-      actorScheduler.close();
-    } catch (final Exception e) {
-      LOG.warn("Failed to gracefully shutdown actor scheduler", e);
+    if (actorScheduler != null) {
+      try {
+        actorScheduler.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown actor scheduler", e);
+      }
     }
 
     LogManager.shutdown();
