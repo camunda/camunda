@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
@@ -20,8 +21,10 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.shared.Profile;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
+import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -47,7 +50,7 @@ import org.springframework.context.event.ContextClosedEvent;
       "io.camunda.zeebe.util.liveness"
     })
 public class StandaloneGateway
-    implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
+    implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   private final GatewayCfg configuration;
@@ -103,6 +106,11 @@ public class StandaloneGateway
 
   @Override
   public void onApplicationEvent(final ContextClosedEvent event) {
+    close();
+  }
+
+  @Override
+  public void close() {
     if (gateway != null) {
       try {
         gateway.stop();
@@ -142,17 +150,22 @@ public class StandaloneGateway
 
   private AtomixCluster createAtomixCluster(final ClusterCfg config) {
     final var membershipProtocol = createMembershipProtocol(config.getMembership());
+    final var builder =
+        AtomixCluster.builder()
+            .withMemberId(config.getMemberId())
+            .withAddress(Address.from(config.getHost(), config.getPort()))
+            .withClusterId(config.getClusterName())
+            .withMembershipProvider(
+                BootstrapDiscoveryProvider.builder()
+                    .withNodes(Address.from(config.getContactPoint()))
+                    .build())
+            .withMembershipProtocol(membershipProtocol);
 
-    return AtomixCluster.builder()
-        .withMemberId(config.getMemberId())
-        .withAddress(Address.from(config.getHost(), config.getPort()))
-        .withClusterId(config.getClusterName())
-        .withMembershipProvider(
-            BootstrapDiscoveryProvider.builder()
-                .withNodes(Address.from(config.getContactPoint()))
-                .build())
-        .withMembershipProtocol(membershipProtocol)
-        .build();
+    if (config.getSecurity().isEnabled()) {
+      applyClusterSecurityConfig(config, builder);
+    }
+
+    return builder.build();
   }
 
   private GroupMembershipProtocol createMembershipProtocol(final MembershipCfg config) {
@@ -176,5 +189,45 @@ public class StandaloneGateway
         .setIoBoundActorThreadCount(0)
         .setSchedulerName("gateway-scheduler")
         .build();
+  }
+
+  private void applyClusterSecurityConfig(
+      final ClusterCfg config, final AtomixClusterBuilder builder) {
+    final var security = config.getSecurity();
+    final var certificateChainPath = security.getCertificateChainPath();
+    final var privateKeyPath = security.getPrivateKeyPath();
+
+    if (certificateChainPath == null) {
+      throw new IllegalArgumentException(
+          "Expected to have a valid certificate chain path for cluster security, but none "
+              + "configured");
+    }
+
+    if (privateKeyPath == null) {
+      throw new IllegalArgumentException(
+          "Expected to have a valid private key path for cluster security, but none was "
+              + "configured");
+    }
+
+    final var certChain = new File(certificateChainPath);
+    final var privateKey = new File(privateKeyPath);
+
+    if (!certChain.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the configured cluster security certificate chain path '%s' to point to a"
+                  + " readable file, but it does not",
+              certificateChainPath));
+    }
+
+    if (!privateKey.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the configured cluster security private key path '%s' to point to a "
+                  + "readable file, but it does not",
+              privateKeyPath));
+    }
+
+    builder.withSecurity(certChain, privateKey);
   }
 }
