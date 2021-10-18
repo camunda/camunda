@@ -27,6 +27,7 @@ public final class ClusterCfg {
   private String host = DEFAULT_CLUSTER_HOST;
   private int port = DEFAULT_CLUSTER_PORT;
   private MembershipCfg membership = new MembershipCfg();
+  private SecurityCfg security = new SecurityCfg();
 
   public String getMemberId() {
     return memberId;
@@ -90,9 +91,18 @@ public final class ClusterCfg {
     this.membership = membership;
   }
 
+  public SecurityCfg getSecurity() {
+    return security;
+  }
+
+  public ClusterCfg setSecurity(final SecurityCfg security) {
+    this.security = security;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(contactPoint, requestTimeout, clusterName, memberId, host, port);
+    return Objects.hash(contactPoint, requestTimeout, clusterName, memberId, host, port, security);
   }
 
   @Override
@@ -109,6 +119,7 @@ public final class ClusterCfg {
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(clusterName, that.clusterName)
         && Objects.equals(memberId, that.memberId)
+        && Objects.equals(security, that.security)
         && Objects.equals(host, that.host);
   }
 
@@ -131,6 +142,8 @@ public final class ClusterCfg {
         + '\''
         + ", port="
         + port
+        + ", security="
+        + security
         + '}';
   }
 }
