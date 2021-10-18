@@ -1087,11 +1087,11 @@
       "nodeDateModal": {
         "info": {
           "flowNodeStartDate": {
-            "instance": "Only display instances where at least on of the selected Flow Nodes started",
+            "instance": "Only display instances where at least one of the selected Flow Nodes started",
             "view": "Only display data from Flow Nodes which started"
           },
           "flowNodeEndDate": {
-            "instance": "Only display instances where at least on of the selected Flow Nodes ended",
+            "instance": "Only display instances where at least one of the selected Flow Nodes ended",
             "view": "Only display data from Flow Nodes which ended"
           }
         }
