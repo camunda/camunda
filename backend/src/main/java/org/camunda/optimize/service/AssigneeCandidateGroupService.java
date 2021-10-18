@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -45,7 +44,6 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -74,13 +72,6 @@ public class AssigneeCandidateGroupService {
       .stream()
       .map(id -> assigneesById.getOrDefault(id, new UserDto(id)))
       .collect(toList());
-  }
-
-  public List<String> getAllAssigneeIdsForProcess(@NonNull final String userId,
-                                                  @NonNull final AssigneeRequestDto requestDto) {
-    ensureNotEmpty(PROCESS_DEFINITION_KEY, requestDto.getProcessDefinitionKey());
-    validateDefinitionAccess(userId, requestDto.getProcessDefinitionKey(), requestDto.getTenantIds());
-    return assigneeAndCandidateGroupsReader.getAssignees(requestDto);
   }
 
   public IdentitySearchResultResponseDto searchForAssigneesAsUser(
@@ -116,13 +107,6 @@ public class AssigneeCandidateGroupService {
       .stream()
       .map(id -> candidateGroupsById.getOrDefault(id, new GroupDto(id)))
       .collect(toList());
-  }
-
-  public List<String> getAllCandidateGroups(@NonNull final String userId,
-                                            @NonNull final AssigneeRequestDto requestDto) {
-    ensureNotEmpty(PROCESS_DEFINITION_KEY, requestDto.getProcessDefinitionKey());
-    validateDefinitionAccess(userId, requestDto.getProcessDefinitionKey(), requestDto.getTenantIds());
-    return assigneeAndCandidateGroupsReader.getCandidateGroups(requestDto);
   }
 
   public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(

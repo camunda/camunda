@@ -8,76 +8,22 @@ package org.camunda.optimize.service.security;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getUserTaskDiagramWithAssignee;
 
 public class AssigneeAuthorizationIT extends AbstractIT {
-
-  @Test
-  public void getAssigneesForUnauthorizedTenant() {
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      TENANT_INDEX_NAME,
-      "newTenant",
-      new TenantDto("newTenant", "newTenant", DEFAULT_ENGINE_ALIAS)
-    );
-
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-
-    AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      "aProcess",
-      Collections.singletonList("ALL"),
-      Collections.singletonList("newTenant")
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAssigneesRequest(requestDto)
-      .execute();
-
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-  }
-
-  @Test
-  public void getAssigneesWithoutAuthentication() {
-    startSimpleUserTaskProcessWithAssignee();
-
-    importAllEngineEntitiesFromScratch();
-
-    AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      "aProcess",
-      Collections.singletonList("ALL"),
-      Collections.singletonList(null)
-    );
-
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetAssigneesRequest(requestDto)
-      .execute();
-
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
 
   @Test
   public void searchForAssignees_forReports_missingCollectionAuth() {

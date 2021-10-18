@@ -11,11 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -26,7 +24,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -79,14 +76,6 @@ public class AssigneeAndCandidateGroupsReader {
     );
   }
 
-  public List<String> getCandidateGroups(@NonNull final AssigneeRequestDto requestDto) {
-    return getSearchResponse(requestDto, ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS);
-  }
-
-  public List<String> getAssignees(@NonNull final AssigneeRequestDto requestDto) {
-    return getSearchResponse(requestDto, ProcessInstanceIndex.USER_TASK_ASSIGNEE);
-  }
-
   public Set<String> getAssigneeIdsForProcess(final Map<String, Set<String>> definitionKeyToTenantsMap) {
     return getUserTaskFieldTerms(ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKeyToTenantsMap);
   }
@@ -111,34 +100,6 @@ public class AssigneeAndCandidateGroupsReader {
         result::addAll
       );
     }
-    return result;
-  }
-
-  private List<String> getSearchResponse(@NonNull final AssigneeRequestDto requestDto, @NonNull final String field) {
-    if (requestDto.getProcessDefinitionVersions() == null || requestDto.getProcessDefinitionVersions().isEmpty()) {
-      log.debug("Cannot fetch {} for process definition with missing versions.", field);
-      return Collections.emptyList();
-    }
-
-    log.debug(
-      "Fetching {} for process definition with key [{}] and versions [{}] and tenants [{}]",
-      field, requestDto.getProcessDefinitionKey(), requestDto.getProcessDefinitionVersions(), requestDto.getTenantIds()
-    );
-
-    final BoolQueryBuilder definitionQuery = DefinitionQueryUtil.createDefinitionQuery(
-      requestDto.getProcessDefinitionKey(),
-      requestDto.getProcessDefinitionVersions(),
-      requestDto.getTenantIds(),
-      new ProcessInstanceIndex(requestDto.getProcessDefinitionKey()),
-      processDefinitionReader::getLatestVersionToKey
-    );
-
-    final List<String> result = new ArrayList<>();
-    consumeUserTaskFieldTermsInBatches(
-      definitionQuery,
-      field,
-      result::addAll
-    );
     return result;
   }
 

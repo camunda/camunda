@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -30,53 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CandidateGroupsRestServiceIT extends AbstractIT {
 
-  public static final String CANDIDATE_GROUP_ID_IMPOSTERS = "imposters";
-  public static final String CANDIDATE_GROUP_NAME_IMPOSTERS = "The Evil Imposters";
+  private static final String CANDIDATE_GROUP_ID_IMPOSTERS = "imposters";
+  private static final String CANDIDATE_GROUP_NAME_IMPOSTERS = "The Evil Imposters";
 
-  public static final String CANDIDATE_GROUP_ID_CREW_MEMBERS = "crewMembers";
-  public static final String CANDIDATE_GROUP_NAME_CREW_MEMBERS = "The Crew Members";
-
-  @Test
-  public void getCandidateGroups() {
-    // given
-    ProcessInstanceEngineDto processInstanceEngineDto = startSimpleUserTaskProcessWithCandidateGroup();
-
-    importAllEngineEntitiesFromScratch();
-    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceEngineDto.getId());
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      "aProcess",
-      Collections.singletonList("ALL"),
-      Collections.singletonList(null)
-    );
-    List<String> assignees = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCandidateGroupsRequest(requestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-
-    // then
-    assertThat(assignees).containsOnly("sales", "marketing");
-  }
-
-  @Test
-  public void getCandidateGroupsForNonExistingProcDef() {
-    // when
-    AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      "lol",
-      Collections.singletonList("ALL"),
-      Collections.singletonList(null)
-    );
-
-    List<String> response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCandidateGroupsRequest(requestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-
-    // then
-    assertThat(response.isEmpty()).isTrue();
-  }
+  private static final String CANDIDATE_GROUP_ID_CREW_MEMBERS = "crewMembers";
+  private static final String CANDIDATE_GROUP_NAME_CREW_MEMBERS = "The Crew Members";
 
   @Test
   public void getCandidateGroupById() {

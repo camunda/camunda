@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -33,55 +32,13 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 
 public class AssigneeRestServiceIT extends AbstractIT {
 
-  public static final String ASSIGNEE_ID_JOHN = "john";
-  public static final String JOHN_FIRST_NAME = "The";
-  public static final String JOHN_LAST_NAME = "Imposter";
+  private static final String ASSIGNEE_ID_JOHN = "john";
+  private static final String JOHN_FIRST_NAME = "The";
+  private static final String JOHN_LAST_NAME = "Imposter";
 
-  public static final String ASSIGNEE_ID_JEAN = "jean";
-  public static final String JEAN_FIRST_NAME = "The";
-  public static final String JEAN_LAST_NAME = "CrewMember";
-
-  @Test
-  public void getAssignees() {
-    // given
-    ProcessInstanceEngineDto processInstanceEngineDto = startSimpleUserTaskProcessWithAssignee();
-
-    importAllEngineEntitiesFromScratch();
-    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceEngineDto.getId());
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      BpmnModels.DEFAULT_PROCESS_ID,
-      Collections.singletonList("ALL"),
-      Collections.singletonList(null)
-    );
-    List<String> assignees = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAssigneesRequest(requestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-
-    // then
-    assertThat(assignees).containsOnly("demo", "john");
-  }
-
-  @Test
-  public void getAssigneesForNonExistingProcDef() {
-    // when
-    AssigneeRequestDto requestDto = new AssigneeRequestDto(
-      "lol",
-      Collections.singletonList("ALL"),
-      Collections.singletonList(null)
-    );
-
-    List<String> response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAssigneesRequest(requestDto)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-
-    // then
-    assertThat(response.isEmpty()).isTrue();
-  }
+  private static final String ASSIGNEE_ID_JEAN = "jean";
+  private static final String JEAN_FIRST_NAME = "The";
+  private static final String JEAN_LAST_NAME = "CrewMember";
 
   @Test
   public void getAssigneeById() {

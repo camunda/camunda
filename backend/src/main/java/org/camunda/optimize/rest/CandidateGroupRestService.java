@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -76,13 +75,4 @@ public class CandidateGroupRestService {
     return assigneeCandidateGroupService.searchForCandidateGroupsAsUser(userId, requestDto);
   }
 
-  @POST
-  @Path("/values")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public List<String> getCandidateGroupsForProcessDefinition(@Context ContainerRequestContext requestContext,
-                                                             AssigneeRequestDto requestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return assigneeCandidateGroupService.getAllCandidateGroups(userId, requestDto);
-  }
 }

@@ -24,7 +24,6 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
-import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
@@ -967,13 +966,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetAssigneesRequest(AssigneeRequestDto requestDto) {
-    this.path = "/assignee/values";
-    this.method = POST;
-    this.body = getBody(requestDto);
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetAssigneesByIdRequest(List<String> ids) {
     this.path = ASSIGNEE_RESOURCE_PATH;
     this.method = GET;
@@ -990,13 +982,6 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildSearchForAssigneesRequest(final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
     this.path = ASSIGNEE_RESOURCE_PATH + ASSIGNEE_REPORTS_SEARCH_SUB_PATH;
-    this.method = POST;
-    this.body = getBody(requestDto);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetCandidateGroupsRequest(AssigneeRequestDto requestDto) {
-    this.path = "/candidateGroup/values";
     this.method = POST;
     this.body = getBody(requestDto);
     return this;
