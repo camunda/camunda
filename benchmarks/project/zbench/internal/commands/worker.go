@@ -95,7 +95,7 @@ func init() {
 
 	workerCmd.
 		Flags().
-		DurationVar(&workerJobTimeoutFlag, "timeout", 10*time.Second, "Specify the time before a job is made activatable again")
+		DurationVar(&workerJobTimeoutFlag, "timeout", 10*time.Second, "Specify the time before a job is made activatable again. Example values: 300ms, 50s or 1m")
 
 	workerCmd.
 		Flags().

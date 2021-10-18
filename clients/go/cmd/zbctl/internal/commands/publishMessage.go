@@ -16,8 +16,9 @@ package commands
 
 import (
 	"context"
-	"github.com/spf13/cobra"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -61,7 +62,7 @@ func init() {
 
 	publishMessageCmd.Flags().StringVar(&publishMessageCorrelationKey, "correlationKey", "", "Specify message correlation key")
 	publishMessageCmd.Flags().StringVar(&publishMessageID, "messageId", "", "Specify the unique id of the message")
-	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message")
+	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message. Example values: 300ms, 50s or 1m")
 	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string")
 
 	if err := publishMessageCmd.MarkFlagRequired("correlationKey"); err != nil {
