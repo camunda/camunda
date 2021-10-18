@@ -55,21 +55,26 @@ const waitForOperate = new Promise((resolve, reject) => {
 
 async function start() {
   const testCafe = await createTestCafe('localhost');
-  let hasFailures = false;
+  let hasFailedTests = false;
 
   await waitForOperate.then(() => {
     console.log('Operate is ready');
   });
 
   try {
-    if (
-      await testCafe
-        .createRunner()
-        .src('./e2e/tests/*.ts')
-        .browsers(browser)
-        .run()
-    ) {
-      hasFailures = true;
+    const runner = await testCafe.createRunner();
+    runner.compilerOptions({
+      typescript: {
+        configPath: './e2e/tsconfig.json',
+      },
+    });
+    const failedTestsCount = await runner
+      .src('./e2e/tests/*.ts')
+      .browsers(browser)
+      .run();
+
+    if (failedTestsCount > 0) {
+      hasFailedTests = true;
     }
   } catch (ex) {
     console.error(ex);
@@ -78,7 +83,7 @@ async function start() {
   } finally {
     await testCafe.close();
 
-    process.exit(hasFailures ? 1 : 0);
+    process.exit(hasFailedTests ? 1 : 0);
   }
 }
 
