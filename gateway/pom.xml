@@ -146,6 +146,13 @@
       <artifactId>netty-common</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
