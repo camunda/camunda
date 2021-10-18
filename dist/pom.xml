@@ -134,6 +134,24 @@
       <artifactId>spring-context</artifactId>
     </dependency>
 
+    <!--
+      the following are only used in tests, but we cannot scope them as tests as they're transitive
+      dependencies required at runtime by other modules; if we scope them as tests here, they will
+      be omitted from the resulting artifact, causing ClassNotFoundException errors at runtime
+      -->
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
+    <!-- /end -->
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -143,18 +161,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
 
