@@ -25,6 +25,7 @@ import io.atomix.utils.Builder;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.File;
 import java.util.Collection;
 import java.util.Properties;
 
@@ -216,6 +217,47 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    */
   public AtomixClusterBuilder withMembershipProvider(final NodeDiscoveryProvider locationProvider) {
     config.setDiscoveryConfig(locationProvider.config());
+    return this;
+  }
+
+  /**
+   * Enables TLS encryption of the messaging service.
+   *
+   * @param certificateChainPath the certificate chain to use
+   * @param privateKeyPath the private key of the chain
+   * @return the cluster builder
+   * @see io.atomix.cluster.messaging.MessagingConfig#setTlsEnabled(boolean)
+   * @see io.atomix.cluster.messaging.MessagingConfig#setCertificateChain(String)
+   * @see io.atomix.cluster.messaging.MessagingConfig#setPrivateKey(String)
+   */
+  public AtomixClusterBuilder withSecurity(
+      final String certificateChainPath, final String privateKeyPath) {
+    config
+        .getMessagingConfig()
+        .setTlsEnabled(true)
+        .setCertificateChain(certificateChainPath)
+        .setPrivateKey(privateKeyPath);
+
+    return this;
+  }
+
+  /**
+   * Enables TLS encryption of the messaging service.
+   *
+   * @param certificateChain the certificate chain to use
+   * @param privateKey the private key of the chain
+   * @return the cluster builder
+   * @see io.atomix.cluster.messaging.MessagingConfig#setTlsEnabled(boolean)
+   * @see io.atomix.cluster.messaging.MessagingConfig#setCertificateChain(String)
+   * @see io.atomix.cluster.messaging.MessagingConfig#setPrivateKey(String)
+   */
+  public AtomixClusterBuilder withSecurity(final File certificateChain, final File privateKey) {
+    config
+        .getMessagingConfig()
+        .setTlsEnabled(true)
+        .setCertificateChain(certificateChain)
+        .setPrivateKey(privateKey);
+
     return this;
   }
 
