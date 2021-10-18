@@ -102,7 +102,7 @@ func init() {
 
 	createInstanceCmd.
 		Flags().
-		DurationVar(&createInstanceRequestTimeoutFlag, "requestTimeout", zbc.DefaultRequestTimeout, "Specify the timeout for a request")
+		DurationVar(&createInstanceRequestTimeoutFlag, "requestTimeout", zbc.DefaultRequestTimeout, "Specify the timeout for a request, example values: 300ms, 50s or 1m")
 
 	// hack to use --withResult without values
 	createInstanceCmd.Flag("withResult").NoOptDefVal = " "
