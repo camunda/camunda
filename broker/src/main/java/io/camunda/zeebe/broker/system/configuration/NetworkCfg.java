@@ -26,6 +26,7 @@ public final class NetworkCfg implements ConfigurationEntry {
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
+  private SecurityCfg security = new SecurityCfg();
 
   @Override
   public void init(final BrokerCfg brokerCfg, final String brokerBase) {
@@ -85,6 +86,14 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.internalApi = internalApi;
   }
 
+  public SecurityCfg getSecurity() {
+    return security;
+  }
+
+  public void setSecurity(final SecurityCfg security) {
+    this.security = security;
+  }
+
   @Override
   public String toString() {
     return "NetworkCfg{"
@@ -100,6 +109,8 @@ public final class NetworkCfg implements ConfigurationEntry {
         + commandApi
         + ", internalApi="
         + internalApi
+        + ", security="
+        + security
         + '}';
   }
 }
