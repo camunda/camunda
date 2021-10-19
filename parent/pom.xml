@@ -107,6 +107,7 @@
     <version.revapi>0.26.0</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.8.9-ea-1</version.immutables>
+    <version.jsr305>3.0.2</version.jsr305>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -745,6 +746,12 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${version.commons-io}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>${version.jsr305}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

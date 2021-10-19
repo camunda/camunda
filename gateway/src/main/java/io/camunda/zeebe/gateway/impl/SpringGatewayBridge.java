@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl;
 
-import io.camunda.zeebe.gateway.Gateway.Status;
+import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
