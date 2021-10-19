@@ -68,6 +68,19 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
 
+      # security:
+        # Enables TLS authentication between this gateway and other nodes in the cluster
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_ENABLED.
+        # enabled: false
+
+        # Sets the path to the certificate chain file.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_CERTIFICATECHAINPATH.
+        # certificateChainPath:
+
+        # Sets the path to the private key file location
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH.
+        # privateKeyPath:
+
       # commandApi:
         # Overrides the host used for gateway-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_HOST.
@@ -601,7 +614,7 @@
       # of a broker is necessary. For this, Zeebe provides a specialized query API. This query API
       # can provide the `BPMN Process Id` belonging to a job, process instance or process
       # definition. For easy access, a Java interface is provided to gateway interceptors, which
-      # you can retrieve using 
+      # you can retrieve using
       # `io.camunda.zeebe.gateway.interceptors.InterceptorUtil.getQueryApiKey()`. Please read our
       # documentation on interceptors to learn more about creating and loading interceptors into the
       # gateway. In addition, please have a look at the Javadoc on InterceptorUtil.getQueryApiKey()
