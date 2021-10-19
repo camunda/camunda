@@ -78,7 +78,7 @@ const Dropdown: React.FC<Props> = ({isInitiallyOpen, slot}) => {
   }
 
   return (
-    <Container ref={dropdownRef}>
+    <Container ref={dropdownRef} slot={slot}>
       <LabelWrapper>{getUserDisplayName(data.currentUser)}</LabelWrapper>
     </Container>
   );
