@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.io.File;
 import java.net.InetSocketAddress;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
@@ -56,7 +57,7 @@ final class StandaloneGatewaySecurityTest {
   void shouldNotStartWithTlsEnabledAndWrongCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getCluster().getSecurity().setCertificateChainPath("/tmp/i-dont-exist.crt");
+    cfg.getCluster().getSecurity().setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
 
     // when
     gateway = buildGateway(cfg);
@@ -73,7 +74,7 @@ final class StandaloneGatewaySecurityTest {
   void shouldNotStartWithTlsEnabledAndWrongKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getCluster().getSecurity().setPrivateKeyPath("/tmp/i-dont-exist.key");
+    cfg.getCluster().getSecurity().setPrivateKeyPath(new File("/tmp/i-dont-exist.key"));
 
     // when
     gateway = buildGateway(cfg);
@@ -134,8 +135,8 @@ final class StandaloneGatewaySecurityTest {
                 .setSecurity(
                     new SecurityCfg()
                         .setEnabled(true)
-                        .setCertificateChainPath(certificate.certificate().getAbsolutePath())
-                        .setPrivateKeyPath(certificate.privateKey().getAbsolutePath())));
+                        .setCertificateChainPath(certificate.certificate())
+                        .setPrivateKeyPath(certificate.privateKey())));
   }
 
   private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
