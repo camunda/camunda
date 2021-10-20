@@ -317,7 +317,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       new DefaultThreadFactory("netty-messaging-timeout-"));
               localConnection = new LocalClientConnection(handlers);
               started.set(true);
-              log.info("Started");
+
+              log.info(
+                  "Started messaging service bound to {}, advertising {}, and using {}",
+                  bindingAddresses,
+                  advertisedAddress,
+                  config.isTlsEnabled() ? "TLS" : "plaintext");
             })
         .thenApply(v -> this);
   }

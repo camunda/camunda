@@ -5,28 +5,27 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.security;
+package io.camunda.zeebe.gateway;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.atomix.cluster.AtomixCluster;
-import io.atomix.utils.net.Address;
-import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import java.io.IOException;
+import java.net.InetSocketAddress;
+import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-final class SecurityTest {
+final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
-  private Gateway gateway;
+  private StandaloneGateway gateway;
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -35,121 +34,111 @@ final class SecurityTest {
 
   @AfterEach
   public void tearDown() {
-    if (gateway != null) {
-      gateway.stop();
-      gateway = null;
-    }
+    CloseHelper.quietClose(gateway);
   }
 
   @Test
-  void shouldStartWithTlsEnabled() throws IOException {
+  void shouldStartWithTlsEnabled() throws Exception {
     // given
     final GatewayCfg cfg = createGatewayCfg();
 
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+    gateway.run();
 
     // then
-    SslAssert.assertThat(cfg.getNetwork().toSocketAddress()).isSecuredBy(certificate);
+    final var clusterAddress =
+        new InetSocketAddress(cfg.getCluster().getHost(), cfg.getCluster().getPort());
+    SslAssert.assertThat(clusterAddress).isSecuredBy(certificate);
   }
 
   @Test
   void shouldNotStartWithTlsEnabledAndWrongCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity().setCertificateChainPath("/tmp/i-dont-exist.crt");
+    cfg.getCluster().getSecurity().setCertificateChainPath("/tmp/i-dont-exist.crt");
 
     // when
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
+    assertThatCode(() -> gateway.run())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected to find a certificate chain file at the provided location '%s' but none was found.",
-            cfg.getSecurity().getCertificateChainPath());
+            "Expected the configured cluster security certificate chain path "
+                + "'/tmp/i-dont-exist.crt' to point to a readable file, but it does not");
   }
 
   @Test
   void shouldNotStartWithTlsEnabledAndWrongKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity().setPrivateKeyPath("/tmp/i-dont-exist.key");
+    cfg.getCluster().getSecurity().setPrivateKeyPath("/tmp/i-dont-exist.key");
 
     // when
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
+    assertThatCode(() -> gateway.run())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected to find a private key file at the provided location '%s' but none was found.",
-            cfg.getSecurity().getPrivateKeyPath());
+            "Expected the configured cluster security private key path '/tmp/i-dont-exist.key' to "
+                + "point to a readable file, but it does not");
   }
 
   @Test
   void shouldNotStartWithTlsEnabledAndNoPrivateKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity().setPrivateKeyPath(null);
+    cfg.getCluster().getSecurity().setPrivateKeyPath(null);
 
     // when
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
+    assertThatCode(() -> gateway.run())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected to find a valid path to a private key but none was found. "
-                + "Edit the gateway configuration file to provide one or to disable TLS.");
+            "Expected to have a valid private key path for cluster security, but none was configured");
   }
 
   @Test
   void shouldNotStartWithTlsEnabledAndNoCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity().setCertificateChainPath(null);
+    cfg.getCluster().getSecurity().setCertificateChainPath(null);
 
     // when
     gateway = buildGateway(cfg);
 
     // then
-    assertThatCode(() -> gateway.start())
+    assertThatCode(() -> gateway.run())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Expected to find a valid path to a certificate chain but none was found. "
-                + "Edit the gateway configuration file to provide one or to disable TLS.");
+            "Expected to have a valid certificate chain path for cluster security, but none "
+                + "configured");
   }
 
   private GatewayCfg createGatewayCfg() {
     final var gatewayAddress = SocketUtil.getNextAddress();
+    final var clusterAddress = SocketUtil.getNextAddress();
     return new GatewayCfg()
         .setNetwork(
             new NetworkCfg()
                 .setHost(gatewayAddress.getHostName())
                 .setPort(gatewayAddress.getPort()))
-        .setSecurity(
-            new SecurityCfg()
-                .setEnabled(true)
-                .setCertificateChainPath(certificate.certificate().getAbsolutePath())
-                .setPrivateKeyPath(certificate.privateKey().getAbsolutePath()));
+        .setCluster(
+            new ClusterCfg()
+                .setHost(clusterAddress.getHostName())
+                .setPort(clusterAddress.getPort())
+                .setSecurity(
+                    new SecurityCfg()
+                        .setEnabled(true)
+                        .setCertificateChainPath(certificate.certificate().getAbsolutePath())
+                        .setPrivateKeyPath(certificate.privateKey().getAbsolutePath())));
   }
 
-  private Gateway buildGateway(final GatewayCfg gatewayCfg) {
-    final var clusterAddress = SocketUtil.getNextAddress();
-    final var atomix =
-        AtomixCluster.builder()
-            .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
-            .build();
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-
-    return new Gateway(
-        gatewayCfg,
-        atomix.getMessagingService(),
-        atomix.getMembershipService(),
-        atomix.getEventService(),
-        actorScheduler);
+  private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
+    return new StandaloneGateway(gatewayCfg, new SpringGatewayBridge());
   }
 }

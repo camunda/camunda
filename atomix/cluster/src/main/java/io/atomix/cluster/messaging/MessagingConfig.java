@@ -143,14 +143,54 @@ public class MessagingConfig implements Config {
 
   /**
    * Sets the certificate chain to use for inter-cluster communication. If using a self-signed
+   * certificate, or one which is not widely trusted, this must be the complete chain. Convenience
+   * method to pass in a path for {@link #setCertificateChain(File)}.
+   *
+   * <p>Mandatory if TLS is enabled.
+   *
+   * @param certificateChainPath a file containing the certificate chain
+   * @return this config for chaining
+   * @throws IllegalArgumentException if the certificate chain is null
+   * @throws IllegalArgumentException if the certificate chain points to a file which does not exist
+   * @throws IllegalArgumentException if the certificate chain points to a file which cannot be read
+   */
+  public MessagingConfig setCertificateChain(final String certificateChainPath) {
+    if (certificateChainPath == null) {
+      throw new IllegalArgumentException(
+          "Expected a certificate chain in order to enable inter-cluster communication security, "
+              + "but none given");
+    }
+
+    return setCertificateChain(new File(certificateChainPath));
+  }
+
+  /**
+   * Sets the certificate chain to use for inter-cluster communication. If using a self-signed
    * certificate, or one which is not widely trusted, this must be the complete chain.
    *
    * <p>Mandatory if TLS is enabled.
    *
    * @param certificateChain a file containing the certificate chain
    * @return this config for chaining
+   * @throws IllegalArgumentException if the certificate chain is null
+   * @throws IllegalArgumentException if the certificate chain points to a file which does not exist
+   * @throws IllegalArgumentException if the certificate chain points to a file which cannot be read
    */
   public MessagingConfig setCertificateChain(final File certificateChain) {
+    if (certificateChain == null) {
+      throw new IllegalArgumentException(
+          "Expected a certificate chain in order to enable inter-cluster communication security, "
+              + "but none given");
+    }
+
+    if (!certificateChain.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the node's inter-cluster communication certificate to be at %s, but either "
+                  + "the file is missing or it is not readable",
+              certificateChain));
+    }
+
     this.certificateChain = certificateChain;
     return this;
   }
@@ -161,14 +201,53 @@ public class MessagingConfig implements Config {
   }
 
   /**
+   * Sets the private key of the certificate chain. Convenience method to pass in a path for {@link
+   * #setPrivateKey(File)}.
+   *
+   * <p>Mandatory if TLS is enabled.
+   *
+   * @param privateKeyPath the private key of the associated certificate chain
+   * @return this config for chaining
+   * @throws IllegalArgumentException if the private key is null
+   * @throws IllegalArgumentException if the private key points to a file which does not exist
+   * @throws IllegalArgumentException if the private key points to a file which cannot be read
+   */
+  public MessagingConfig setPrivateKey(final String privateKeyPath) {
+    if (privateKeyPath == null) {
+      throw new IllegalArgumentException(
+          "Expected a private key in order to enable inter-cluster communication security, but none"
+              + " given");
+    }
+
+    return setPrivateKey(new File(privateKeyPath));
+  }
+
+  /**
    * Sets the private key of the certificate chain.
    *
    * <p>Mandatory if TLS is enabled.
    *
    * @param privateKey the private key of the associated certificate chain
    * @return this config for chaining
+   * @throws IllegalArgumentException if the private key is null
+   * @throws IllegalArgumentException if the private key points to a file which does not exist
+   * @throws IllegalArgumentException if the private key points to a file which cannot be read
    */
   public MessagingConfig setPrivateKey(final File privateKey) {
+    if (privateKey == null) {
+      throw new IllegalArgumentException(
+          "Expected a private key in order to enable inter-cluster communication security, but none"
+              + " given");
+    }
+
+    if (!privateKey.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the node's inter-cluster communication private key to be at %s, but either "
+                  + "the file is missing or it is not readable",
+              privateKey));
+    }
+
     this.privateKey = privateKey;
     return this;
   }
