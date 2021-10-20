@@ -72,22 +72,25 @@ public final class NettySslClient {
    * @return the certificate chain used by the remote server
    */
   public Certificate[] getRemoteCertificateChain(final SocketAddress address) {
-    final CompletableFuture<Certificate[]> certificates = new CompletableFuture<>();
+    final var certificatesFuture = new CompletableFuture<Certificate[]>();
     final var executor = new NioEventLoopGroup(1);
 
     try {
       final var channel =
           new Bootstrap()
-              .handler(new SslCertificateExtractor(certificates))
+              .handler(new SslCertificateExtractor(certificatesFuture))
               .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
               .group(executor)
               .channel(NioSocketChannel.class)
               .connect(address)
-              .addListener(onConnect -> onChannelConnect(address, certificates, onConnect))
+              .addListener(onConnect -> onChannelConnect(address, certificatesFuture, onConnect))
               .channel();
-      channel.closeFuture().addListener(onClose -> onChannelClose(address, certificates, onClose));
+      channel
+          .closeFuture()
+          .addListener(onClose -> onChannelClose(address, certificatesFuture, onClose));
 
-      final Certificate[] certificateChain = certificates.orTimeout(10, TimeUnit.SECONDS).join();
+      final Certificate[] certificateChain =
+          certificatesFuture.orTimeout(10, TimeUnit.SECONDS).join();
       channel.close();
 
       return certificateChain;
