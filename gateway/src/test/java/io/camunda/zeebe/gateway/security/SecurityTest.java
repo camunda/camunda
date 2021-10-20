@@ -140,7 +140,6 @@ final class SecurityTest {
     final var clusterAddress = SocketUtil.getNextAddress();
     final var atomix =
         AtomixCluster.builder()
-            // avoid port collisions when using the default port
             .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
             .build();
     final var actorScheduler = ActorScheduler.newActorScheduler().build();
