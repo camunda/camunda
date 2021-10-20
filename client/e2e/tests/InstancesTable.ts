@@ -9,18 +9,6 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './InstancesTable.setup';
-import {ClientFunction} from 'testcafe';
-
-const scrollDown = ClientFunction((totalInstancesDisplayed) => {
-  const instancesList = document.querySelector(
-    '[data-testid="process-instances-list"]'
-  );
-
-  const rowHeight =
-    instancesList?.getElementsByTagName('tr')[0]?.clientHeight ?? 0;
-
-  instancesList?.scrollTo(0, rowHeight * totalInstancesDisplayed);
-});
 
 fixture('InstancesTable')
   .page(config.endpoint)
@@ -185,13 +173,19 @@ test('Scrolling', async (t) => {
     .contains(descendingInstanceIds[49]);
 
   // scroll until max stored instances is reached (200)
-  await t.scrollIntoView(instanceRows.nth(49));
+  await t.scrollIntoView(
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[49]}`})
+  );
   await t.expect(instanceRows.count).eql(100);
 
-  await t.scrollIntoView(instanceRows.nth(99));
+  await t.scrollIntoView(
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[99]}`})
+  );
   await t.expect(instanceRows.count).eql(150);
 
-  await t.scrollIntoView(instanceRows.nth(149));
+  await t.scrollIntoView(
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[149]}`})
+  );
   await t.expect(instanceRows.count).eql(200);
 
   await t
@@ -202,8 +196,9 @@ test('Scrolling', async (t) => {
     .expect(instanceRows.nth(199).innerText)
     .contains(descendingInstanceIds[199]);
 
-  await scrollDown(200);
-  // await t.scrollIntoView(instanceRows.nth(199)); TODO: OPE-1299 - scrollIntoView does not work correctly after max amount of instances ist reached
+  await t.scrollIntoView(
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
+  );
 
   await t
     .expect(instanceRows.count)
@@ -213,7 +208,9 @@ test('Scrolling', async (t) => {
     .expect(instanceRows.nth(199).innerText)
     .contains(descendingInstanceIds[249]);
 
-  await t.scrollIntoView(instanceRows.nth(0)); // TODO: OPE-1299 - this does not work properly too, it keeps scrolling top but since its already beginning of the list after first scroll, following assertions are passed
+  await t.scrollIntoView(
+    screen.getByRole('row', {name: `Instance ${descendingInstanceIds[50]}`})
+  );
 
   await t
     .expect(instanceRows.count)

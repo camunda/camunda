@@ -16,7 +16,7 @@ export async function setup() {
   const manyFlowNodeInstancesProcessInstance = await createSingleInstance(
     'manyFlowNodeInstancesProcess',
     1,
-    {i: 0, loopCardinality: 100}
+    {i: 0, loopCardinality: 130}
   );
 
   const bigProcessInstance = await createSingleInstance('bigProcess', 1, {

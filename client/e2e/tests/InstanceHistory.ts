@@ -4,11 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {screen, within} from '@testing-library/testcafe';
 import {config} from '../config';
 import {setup} from './InstanceHistory.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
-import {screen, within} from '@testing-library/testcafe';
+import {getFlowNodeInstances} from './api';
 
 fixture('Instance History')
   .page(config.endpoint)
@@ -20,75 +21,93 @@ fixture('Instance History')
     await t.useRole(demoUser);
   });
 
+const getNthTreeNodeTestId = (n: number) =>
+  screen
+    .queryAllByTestId(/^tree-node-/)
+    .nth(n)
+    .getAttribute('data-testid');
+
 test('Scrolling behavior - root level', async (t) => {
   const {
-    initialData: {manyFlowNodeInstancesProcessInstance},
+    initialData: {
+      manyFlowNodeInstancesProcessInstance: {processInstanceKey},
+    },
   } = t.fixtureCtx;
 
-  await t.navigateTo(
-    `/instances/${manyFlowNodeInstancesProcessInstance.processInstanceKey}`
-  );
+  await t.navigateTo(`/instances/${processInstanceKey}`);
 
   await t
-    .expect(
-      screen.queryByTestId(
-        `node-details-${manyFlowNodeInstancesProcessInstance.processInstanceKey}`
-      ).exists
-    )
+    .expect(screen.queryByTestId(`node-details-${processInstanceKey}`).exists)
     .ok()
     .expect(
       within(
-        screen.queryByTestId(
-          `node-details-${manyFlowNodeInstancesProcessInstance.processInstanceKey}`
-        )
+        screen.queryByTestId(`node-details-${processInstanceKey}`)
       ).queryByTestId('COMPLETED-icon').exists
     )
     .ok();
 
+  const flowNodeInstances = await getFlowNodeInstances({
+    processInstanceId: processInstanceKey,
+  });
+
+  const flowNodeInstanceIds = flowNodeInstances[
+    processInstanceKey
+  ].children.map((instance: {id: string}) => instance.id);
+
   await t.expect(screen.queryAllByTestId(/^tree-node-/).count).eql(51);
 
   await t
-    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(50))
-    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
-    .match(/^StartEvent_1$/)
+    .scrollIntoView(
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[49]}`)
+    )
+    .expect(getNthTreeNodeTestId(1))
+    .eql(`tree-node-${flowNodeInstanceIds[0]}`)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(101);
 
   await t
-    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(100))
-    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
-    .match(/^StartEvent_1$/)
+    .scrollIntoView(
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[99]}`)
+    )
+    .expect(getNthTreeNodeTestId(1))
+    .eql(`tree-node-${flowNodeInstanceIds[0]}`)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(151);
 
   await t
-    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(150))
-    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
-    .match(/^StartEvent_1$/)
+    .scrollIntoView(
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[149]}`)
+    )
+    .expect(getNthTreeNodeTestId(1))
+    .eql(`tree-node-${flowNodeInstanceIds[0]}`)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(201);
 
   await t
-    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(200))
-    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
-    .match(/^Continue\?$/)
+    .scrollIntoView(
+      screen.queryByTestId(`tree-node-${flowNodeInstanceIds[199]}`)
+    )
+    .expect(getNthTreeNodeTestId(1))
+    .eql(`tree-node-${flowNodeInstanceIds[50]}`)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(201);
 
   await t
-    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(1))
-    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
-    .match(/^StartEvent_1$/)
+    .scroll(screen.getByTestId('instance-history'), 0, 0)
+    .expect(getNthTreeNodeTestId(1))
+    .eql(`tree-node-${flowNodeInstanceIds[0]}`)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(201);
 });
 
 test('Scrolling behaviour - tree level', async (t) => {
   const {
-    initialData: {bigProcessInstance},
+    initialData: {
+      bigProcessInstance: {processInstanceKey},
+    },
   } = t.fixtureCtx;
 
-  await t.navigateTo(`/instances/${bigProcessInstance.processInstanceKey}`);
+  await t.navigateTo(`/instances/${processInstanceKey}`);
 
   const withinFirstSubtree = within(
     screen.queryAllByTestId(/^tree-node-/).nth(4)

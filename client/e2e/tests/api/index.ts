@@ -4,4 +4,5 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export * from './operations';
+export {createOperation} from './operations';
+export {getFlowNodeInstances} from './flowNodeInstances';
