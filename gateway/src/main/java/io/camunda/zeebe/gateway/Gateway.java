@@ -33,7 +33,6 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -154,36 +153,36 @@ public final class Gateway {
   }
 
   private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
-    if (security.getCertificateChainPath() == null) {
+    final var certificateChainPath = security.getCertificateChainPath();
+    final var privateKeyPath = security.getPrivateKeyPath();
+
+    if (certificateChainPath == null) {
       throw new IllegalArgumentException(
           "Expected to find a valid path to a certificate chain but none was found. "
               + "Edit the gateway configuration file to provide one or to disable TLS.");
     }
 
-    if (security.getPrivateKeyPath() == null) {
+    if (privateKeyPath == null) {
       throw new IllegalArgumentException(
           "Expected to find a valid path to a private key but none was found. "
               + "Edit the gateway configuration file to provide one or to disable TLS.");
     }
 
-    final File certChain = new File(security.getCertificateChainPath());
-    final File privateKey = new File(security.getPrivateKeyPath());
-
-    if (!certChain.exists()) {
+    if (!certificateChainPath.exists()) {
       throw new IllegalArgumentException(
           String.format(
               "Expected to find a certificate chain file at the provided location '%s' but none was found.",
-              security.getCertificateChainPath()));
+              certificateChainPath));
     }
 
-    if (!privateKey.exists()) {
+    if (!privateKeyPath.exists()) {
       throw new IllegalArgumentException(
           String.format(
               "Expected to find a private key file at the provided location '%s' but none was found.",
-              security.getPrivateKeyPath()));
+              privateKeyPath));
     }
 
-    serverBuilder.useTransportSecurity(certChain, privateKey);
+    serverBuilder.useTransportSecurity(certificateChainPath, privateKeyPath);
   }
 
   private BrokerClient buildBrokerClient() {
