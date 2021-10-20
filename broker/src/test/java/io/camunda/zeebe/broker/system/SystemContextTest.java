@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.io.File;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.List;
@@ -323,8 +324,8 @@ final class SystemContextTest {
         .getNetwork()
         .getSecurity()
         .setEnabled(true)
-        .setPrivateKeyPath(certificate.privateKey().getAbsolutePath())
-        .setCertificateChainPath("/tmp/i-dont-exist.crt");
+        .setPrivateKeyPath(certificate.privateKey())
+        .setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
@@ -343,8 +344,8 @@ final class SystemContextTest {
         .getNetwork()
         .getSecurity()
         .setEnabled(true)
-        .setPrivateKeyPath("/tmp/i-dont-exist.key")
-        .setCertificateChainPath(certificate.certificate().getAbsolutePath());
+        .setPrivateKeyPath(new File("/tmp/i-dont-exist.key"))
+        .setCertificateChainPath(certificate.certificate());
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
@@ -364,7 +365,7 @@ final class SystemContextTest {
         .getSecurity()
         .setEnabled(true)
         .setPrivateKeyPath(null)
-        .setCertificateChainPath(certificate.certificate().getAbsolutePath());
+        .setCertificateChainPath(certificate.certificate());
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
@@ -382,7 +383,7 @@ final class SystemContextTest {
         .getNetwork()
         .getSecurity()
         .setEnabled(true)
-        .setPrivateKeyPath(certificate.privateKey().getAbsolutePath())
+        .setPrivateKeyPath(certificate.privateKey())
         .setCertificateChainPath(null);
 
     // when - then

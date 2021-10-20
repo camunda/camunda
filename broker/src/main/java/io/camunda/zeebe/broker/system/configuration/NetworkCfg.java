@@ -31,6 +31,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   @Override
   public void init(final BrokerCfg brokerCfg, final String brokerBase) {
     applyDefaults();
+    security.init(brokerCfg, brokerBase);
   }
 
   public void applyDefaults() {

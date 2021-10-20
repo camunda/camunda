@@ -60,7 +60,7 @@ public final class BrokerNetworkSecurityTest {
         .setSecurity(
             new SecurityCfg()
                 .setEnabled(true)
-                .setCertificateChainPath(CERTIFICATE.certificate().getAbsolutePath())
-                .setPrivateKeyPath(CERTIFICATE.privateKey().getAbsolutePath()));
+                .setCertificateChainPath(CERTIFICATE.certificate())
+                .setPrivateKeyPath(CERTIFICATE.privateKey()));
   }
 }

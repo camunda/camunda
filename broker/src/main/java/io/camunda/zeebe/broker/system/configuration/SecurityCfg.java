@@ -7,14 +7,28 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 
-public final class SecurityCfg {
+public final class SecurityCfg implements ConfigurationEntry {
   private static final boolean DEFAULT_ENABLED = false;
 
   private boolean enabled = DEFAULT_ENABLED;
-  private String certificateChainPath;
-  private String privateKeyPath;
+  private File certificateChainPath;
+  private File privateKeyPath;
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    final var brokerBasePath = Path.of(brokerBase);
+    if (certificateChainPath != null) {
+      certificateChainPath = brokerBasePath.resolve(certificateChainPath.toPath()).toFile();
+    }
+
+    if (privateKeyPath != null) {
+      privateKeyPath = brokerBasePath.resolve(privateKeyPath.toPath()).toFile();
+    }
+  }
 
   public boolean isEnabled() {
     return enabled;
@@ -25,20 +39,20 @@ public final class SecurityCfg {
     return this;
   }
 
-  public String getCertificateChainPath() {
+  public File getCertificateChainPath() {
     return certificateChainPath;
   }
 
-  public SecurityCfg setCertificateChainPath(final String certificateChainPath) {
+  public SecurityCfg setCertificateChainPath(final File certificateChainPath) {
     this.certificateChainPath = certificateChainPath;
     return this;
   }
 
-  public String getPrivateKeyPath() {
+  public File getPrivateKeyPath() {
     return privateKeyPath;
   }
 
-  public SecurityCfg setPrivateKeyPath(final String privateKeyPath) {
+  public SecurityCfg setPrivateKeyPath(final File privateKeyPath) {
     this.privateKeyPath = privateKeyPath;
     return this;
   }

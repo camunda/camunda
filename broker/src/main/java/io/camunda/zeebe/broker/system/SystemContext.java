@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
-import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -242,10 +241,7 @@ public final class SystemContext {
           "Expected to have a valid private key path for network security, but none configured");
     }
 
-    final var certChain = new File(certificateChainPath);
-    final var privateKey = new File(privateKeyPath);
-
-    if (!certChain.canRead()) {
+    if (!certificateChainPath.canRead()) {
       throw new IllegalArgumentException(
           String.format(
               "Expected the configured network security certificate chain path '%s' to point to a"
@@ -253,7 +249,7 @@ public final class SystemContext {
               certificateChainPath));
     }
 
-    if (!privateKey.canRead()) {
+    if (!privateKeyPath.canRead()) {
       throw new IllegalArgumentException(
           String.format(
               "Expected the configured network security private key path '%s' to point to a "
