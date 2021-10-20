@@ -248,8 +248,8 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    * @param privateKey the private key of the chain
    * @return the cluster builder
    * @see io.atomix.cluster.messaging.MessagingConfig#setTlsEnabled(boolean)
-   * @see io.atomix.cluster.messaging.MessagingConfig#setCertificateChain(String)
-   * @see io.atomix.cluster.messaging.MessagingConfig#setPrivateKey(String)
+   * @see io.atomix.cluster.messaging.MessagingConfig#setCertificateChain(File)
+   * @see io.atomix.cluster.messaging.MessagingConfig#setPrivateKey(File)
    */
   public AtomixClusterBuilder withSecurity(final File certificateChain, final File privateKey) {
     config
