@@ -2,6 +2,9 @@
 
 source "${BASH_SOURCE%/*}/../lib/flaky-tests.sh"
 
+# This is a workaround for JDK8, which does not support the --add-exports options
+rm .mvn/jvm.config
+
 # getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
 LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
 MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
