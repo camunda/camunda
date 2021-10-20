@@ -1,5 +1,6 @@
 .idea/*
 !.idea/codeStyles
+!.idea/saveactions_settings.xml
 target
 .classpath
 .checkstyle
