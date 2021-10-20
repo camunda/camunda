@@ -515,6 +515,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     updateDto.setName(updatedDashboard.getName());
     updateDto.setReports(updatedDashboard.getReports());
     updateDto.setAvailableFilters(updatedDashboard.getAvailableFilters());
+    updateDto.setRefreshRateSeconds(updatedDashboard.getRefreshRateSeconds());
     return updateDto;
   }
 

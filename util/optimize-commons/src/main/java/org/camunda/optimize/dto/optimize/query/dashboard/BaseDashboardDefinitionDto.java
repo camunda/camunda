@@ -22,4 +22,5 @@ public class BaseDashboardDefinitionDto {
   protected String lastModifier;
   protected String collectionId;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
+  protected Long refreshRateSeconds;
 }

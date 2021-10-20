@@ -26,14 +26,16 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.6.0")
       .toVersion("3.7.0")
       .addUpgradeSteps(migrateReportFilters())
-      .addUpgradeStep(migrateDashboardDateFilters())
+      .addUpgradeStep(migrateDashboards())
       .build();
   }
 
-  private static UpgradeStep migrateDashboardDateFilters() {
+  private static UpgradeStep migrateDashboards() {
+    // This script migrates the filters and also sets the default dashboard refresh rate
     // @formatter:off
-    final String dashboardFilterMigrationScript =
+    final String dashboardMigrationScript =
       "def filters = ctx._source.availableFilters;" +
+      "ctx._source.refreshRateSeconds = null;" +
       "if (filters != null) {" +
         "for (def filter : filters) {" +
           "if (\"startDate\".equals(filter.type)) {" +
@@ -45,7 +47,7 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
         "}" +
       "}";
     // @formatter:on
-    return new UpdateIndexStep(new DashboardIndex(), dashboardFilterMigrationScript);
+    return new UpdateIndexStep(new DashboardIndex(), dashboardMigrationScript);
   }
 
   private static List<UpgradeStep> migrateReportFilters() {
