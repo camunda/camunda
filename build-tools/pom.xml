@@ -1,9 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Build Tools</name>
-  <artifactId>zeebe-build-tools</artifactId>
-  <packaging>jar</packaging>
 
   <parent>
     <!-- We can't reference zeebe parent as parent otherwise we will have a circle dependency -->
@@ -12,6 +10,9 @@
     <version>1.3.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
+  <artifactId>zeebe-build-tools</artifactId>
+  <packaging>jar</packaging>
+  <name>Zeebe Build Tools</name>
 
   <properties>
     <version.java>8</version.java>
