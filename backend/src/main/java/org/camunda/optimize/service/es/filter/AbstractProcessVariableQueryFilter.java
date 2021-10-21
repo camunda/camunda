@@ -17,12 +17,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.filter.util.DateFilterQueryUtil;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.util.DecisionVariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.util.Collections;
@@ -34,11 +33,14 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
 import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.buildWildcardQuery;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getValueSearchField;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.createExcludeUndefinedOrNullQueryFilterBuilder;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -46,37 +48,17 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 
-@Slf4j
 @RequiredArgsConstructor
-public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryFilter
-  implements QueryFilter<VariableFilterDataDto<?>> {
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
+@Slf4j
+@Component
+public abstract class AbstractProcessVariableQueryFilter extends AbstractVariableQueryFilter {
 
-  abstract String getVariablePath();
-
-  @Override
-  public void addFilters(final BoolQueryBuilder query,
-                         final List<VariableFilterDataDto<?>> variableFilters,
-                         final FilterContext filterContext) {
-    if (variableFilters != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDataDto<?> variable : variableFilters) {
-        filters.add(createFilterQueryBuilder(variable, filterContext.getTimezone()));
-      }
-    }
-  }
-
-  private QueryBuilder createFilterQueryBuilder(final VariableFilterDataDto<?> dto,
-                                                final ZoneId timezone) {
+  protected QueryBuilder createFilterQueryBuilder(final VariableFilterDataDto<?> dto, final ZoneId timezone) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
 
     QueryBuilder queryBuilder = matchAllQuery();
 
     switch (dto.getType()) {
-      case BOOLEAN:
-        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
-        queryBuilder = createBooleanQueryBuilder(booleanVarDto);
-        break;
       case STRING:
         StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         queryBuilder = createStringQueryBuilder(stringVarDto);
@@ -92,9 +74,14 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
         DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         queryBuilder = createDateQueryBuilder(dateVarDto, timezone);
         break;
+      case BOOLEAN:
+        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
+        queryBuilder = createBooleanQueryBuilder(booleanVarDto);
+        break;
       default:
-        logger.warn(
-          "Could not filter for variables! Type [{}] is not supported for variable filters. Ignoring filter.",
+        log.warn(
+          "Could not filter for variables! " +
+            "Type [{}] is not supported for variable filters. Ignoring filter.",
           dto.getType()
         );
     }
@@ -114,47 +101,48 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   }
 
   @Override
-  protected BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final String variableId,
+  protected BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final String variableName,
                                                                             final List<String> values) {
     final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
 
     values.stream()
       .filter(Objects::nonNull)
       .forEach(
-        stringVal -> variableFilterBuilder.should(createContainsGivenStringQuery(variableId, stringVal))
+        stringVal -> variableFilterBuilder.should(createContainsGivenStringQuery(variableName, stringVal))
       );
 
     final boolean hasNullValues = values.stream().anyMatch(Objects::isNull);
     if (hasNullValues) {
-      variableFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(variableId));
+      variableFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(variableName, VariableType.STRING));
     }
 
     return variableFilterBuilder;
   }
 
   @Override
-  protected QueryBuilder createContainsGivenStringQuery(final String variableId,
+  protected QueryBuilder createContainsGivenStringQuery(final String variableName,
                                                         final String valueToContain) {
 
     final BoolQueryBuilder containsVariableString = boolQuery()
-      .must(termQuery(getVariableIdField(), variableId));
+      .must(termQuery(getNestedVariableNameField(), variableName))
+      .must(termQuery(getNestedVariableTypeField(), VariableType.STRING.getId()));
 
     final String lowerCaseValue = valueToContain.toLowerCase();
     QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */
-      ? wildcardQuery(getValueSearchField(getVariablePath(), LOWERCASE_FIELD), buildWildcardQuery(lowerCaseValue))
+      ? wildcardQuery(getValueSearchField(LOWERCASE_FIELD), buildWildcardQuery(lowerCaseValue))
           /*
             using Elasticsearch ngrams to filter for strings < 10 chars,
             because it's fast but increasing the number of chars makes the index bigger
           */
-      : termQuery(getValueSearchField(getVariablePath(), N_GRAM_FIELD), lowerCaseValue);
+      : termQuery(getValueSearchField(N_GRAM_FIELD), lowerCaseValue);
 
     containsVariableString.must(filter);
 
     return nestedQuery(
-      getVariablePath(),
+      VARIABLES,
       containsVariableString,
       ScoreMode.None
     );
@@ -162,8 +150,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
 
   @Override
   protected QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(final OperatorMultipleValuesVariableFilterDataDto dto) {
-    final BoolQueryBuilder variableFilterBuilder = createMultiValueVariableFilterQuery(
-      getVariableId(dto), dto.getType(), dto.getData().getValues()
+    final BoolQueryBuilder variableFilterBuilder = createEqualsOneOrMoreValuesFilterQuery(
+      dto.getName(), dto.getType(), dto.getData().getValues()
     );
 
     if (NOT_IN.equals(dto.getData().getOperator())) {
@@ -177,14 +165,14 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   protected QueryBuilder createBooleanQueryBuilder(final BooleanVariableFilterDataDto dto) {
     ValidationHelper.ensureCollectionNotEmpty("boolean filter value", dto.getData().getValues());
 
-    return createMultiValueVariableFilterQuery(getVariableId(dto), dto.getType(), dto.getData().getValues());
+    return createEqualsOneOrMoreValuesFilterQuery(dto.getName(), dto.getType(), dto.getData().getValues());
   }
 
-  private BoolQueryBuilder createMultiValueVariableFilterQuery(final String variableId,
-                                                               final VariableType variableType,
-                                                               final List<?> values) {
+  private BoolQueryBuilder createEqualsOneOrMoreValuesFilterQuery(final String variableName,
+                                                                  final VariableType variableType,
+                                                                  final List<?> values) {
     final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
-    final String nestedVariableIdFieldLabel = getVariableIdField();
+    final String nestedVariableNameFieldLabel = getNestedVariableNameField();
     final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
 
     final List<?> nonNullValues = values.stream()
@@ -194,17 +182,19 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     if (!nonNullValues.isEmpty()) {
       variableFilterBuilder.should(
         nestedQuery(
-          getVariablePath(),
+          VARIABLES,
           boolQuery()
-            .must(termQuery(nestedVariableIdFieldLabel, variableId))
+            .must(termQuery(nestedVariableNameFieldLabel, variableName))
+            .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
             .must(termsQuery(nestedVariableValueFieldLabel, nonNullValues)),
           ScoreMode.None
         )
       );
     }
 
-    if (nonNullValues.size() < values.size()) {
-      variableFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(variableId));
+    final boolean hasNullValues = nonNullValues.size() < values.size();
+    if (hasNullValues) {
+      variableFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(variableName, variableType));
     }
     return variableFilterBuilder;
   }
@@ -215,20 +205,11 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
 
     String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
-    final BoolQueryBuilder boolQueryBuilder = boolQuery().must(
-      termQuery(getVariableIdField(), getVariableId(dto))
-    );
+    final BoolQueryBuilder boolQueryBuilder = boolQuery()
+      .must(termQuery(getNestedVariableNameField(), dto.getName()))
+      .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
 
-    if (data.getValues().isEmpty()) {
-      logger.warn(
-        "Could not filter for variables! No values provided for operator [{}] and type [{}]. Ignoring filter.",
-        data.getOperator(),
-        dto.getType()
-      );
-      return boolQueryBuilder;
-    }
-
-    QueryBuilder resultQuery = nestedQuery(getVariablePath(), boolQueryBuilder, ScoreMode.None);
+    QueryBuilder resultQuery = nestedQuery(VARIABLES, boolQueryBuilder, ScoreMode.None);
     Object value = retrieveValue(dto);
     switch (data.getOperator()) {
       case IN:
@@ -248,7 +229,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).gte(value));
         break;
       default:
-        logger.warn(
+        log.warn(
           "Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
           data.getOperator(), dto.getType()
         );
@@ -257,18 +238,18 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   }
 
   @Override
-  protected QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto,
-                                                final ZoneId timezone) {
+  protected QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto, final ZoneId timezone) {
     final BoolQueryBuilder dateFilterBuilder = boolQuery().minimumShouldMatch(1);
 
     if (dto.getData().isIncludeUndefined()) {
-      dateFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(getVariableId(dto)));
+      dateFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(dto.getName(), dto.getType()));
     } else if (dto.getData().isExcludeUndefined()) {
-      dateFilterBuilder.should(createExcludeUndefinedOrNullQueryBuilder(getVariableId(dto)));
+      dateFilterBuilder.should(createExcludeUndefinedOrNullQueryBuilder(dto.getName(), dto.getType()));
     }
 
     final BoolQueryBuilder dateValueFilterQuery = boolQuery()
-      .must(termQuery(getVariableIdField(), getVariableId(dto)));
+      .must(termsQuery(getNestedVariableNameField(), dto.getName()))
+      .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
     DateFilterQueryUtil.addFilters(
       dateValueFilterQuery,
       Collections.singletonList(dto.getData()),
@@ -276,58 +257,24 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
       timezone
     );
     if (!dateValueFilterQuery.filter().isEmpty()) {
-      dateFilterBuilder.should(nestedQuery(getVariablePath(), dateValueFilterQuery, ScoreMode.None));
+      dateFilterBuilder.should(nestedQuery(VARIABLES, dateValueFilterQuery, ScoreMode.None));
     }
 
     return dateFilterBuilder;
   }
 
-  private QueryBuilder createFilterForUndefinedOrNullQueryBuilder(final String variableId) {
-    return boolQuery()
-      .should(
-        // undefined
-        boolQuery().mustNot(nestedQuery(
-          getVariablePath(),
-          termQuery(getVariableIdField(), variableId),
-          ScoreMode.None
-        ))
-      )
-      .should(
-        // or null value
-        boolQuery().must(nestedQuery(
-          getVariablePath(),
-          boolQuery()
-            .must(termQuery(getVariableIdField(), variableId))
-            .mustNot(existsQuery(getVariableStringValueField(getVariablePath()))),
-          ScoreMode.None
-        ))
-      )
-      .minimumShouldMatch(1);
-  }
-
-  private QueryBuilder createExcludeUndefinedOrNullQueryBuilder(final String variableId) {
-    return boolQuery()
-      .must(nestedQuery(
-        getVariablePath(),
-        boolQuery()
-          .must(termQuery(getVariableIdField(), variableId))
-          .must(existsQuery(getVariableStringValueField(getVariablePath()))),
-        ScoreMode.None
-      ));
-  }
-
-  private String getVariableId(final VariableFilterDataDto<?> dto) {
-    // the input/output variable id is stored as name as we use the same dto's as for process filters here
-    // with https://jira.camunda.com/browse/OPT-1942 we intend to introduce a dedicated dto to make the difference clear
-    return dto.getName();
-  }
-
   private String getVariableValueFieldForType(final VariableType type) {
-    return DecisionVariableHelper.getVariableValueFieldForType(getVariablePath(), type);
+    return getNestedVariableValueFieldForType(type);
   }
 
-  private String getVariableIdField() {
-    return DecisionVariableHelper.getVariableClauseIdField(getVariablePath());
+  private QueryBuilder createFilterForUndefinedOrNullQueryBuilder(final String variableName,
+                                                                  final VariableType variableType) {
+    return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(variableName, variableType);
+  }
+
+  private QueryBuilder createExcludeUndefinedOrNullQueryBuilder(final String variableName,
+                                                                final VariableType variableType) {
+    return createExcludeUndefinedOrNullQueryFilterBuilder(variableName, variableType);
   }
 
 }

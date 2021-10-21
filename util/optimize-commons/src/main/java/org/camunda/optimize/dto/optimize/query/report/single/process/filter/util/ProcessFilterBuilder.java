@@ -116,6 +116,10 @@ public class ProcessFilterBuilder {
     return DurationFilterBuilder.construct(this);
   }
 
+  public MultipleVariableFilterBuilder multipleVariable() {
+    return MultipleVariableFilterBuilder.construct(this);
+  }
+
   public VariableFilterBuilder variable() {
     return VariableFilterBuilder.construct(this);
   }

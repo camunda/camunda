@@ -30,6 +30,7 @@ import java.util.List;
   @JsonSubTypes.Type(value = InstanceEndDateFilterDto.class, name = "instanceEndDate"),
   @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
   @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
+  @JsonSubTypes.Type(value = MultipleVariableFilterDto.class, name = "multipleVariable"),
   @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
   @JsonSubTypes.Type(value = ExecutingFlowNodeFilterDto.class, name = "executingFlowNodes"),
   @JsonSubTypes.Type(value = CanceledFlowNodeFilterDto.class, name = "canceledFlowNodes"),

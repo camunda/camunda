@@ -26,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
@@ -58,6 +59,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   @Getter
   private final InstanceEndDateQueryFilter instanceEndDateQueryFilter;
   private final ProcessVariableQueryFilter variableQueryFilter;
+  private final ProcessMultiVariableQueryFilter multiVariableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
   private final ExecutingFlowNodeQueryFilter executingFlowNodeQueryFilter;
   private final CanceledFlowNodeQueryFilter canceledFlowNodeQueryFilter;
@@ -95,6 +97,9 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       );
       variableQueryFilter.addFilters(
         query, extractInstanceFilters(filters, VariableFilterDto.class), filterContext
+      );
+      multiVariableQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, MultipleVariableFilterDto.class), filterContext
       );
       executedFlowNodeQueryFilter.addFilters(
         query, extractInstanceFilters(filters, ExecutedFlowNodeFilterDto.class), filterContext
