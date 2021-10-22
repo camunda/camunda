@@ -74,20 +74,6 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,
 } as const;
 
-export const FILTER_TYPES = {
-  RUNNING: 'running',
-  FINISHED: 'finished',
-};
-
-export const INSTANCES_LABELS = {
-  running: 'Running Instances',
-  active: 'Active',
-  incidents: 'Incidents',
-  finished: 'Finished Instances',
-  completed: 'Completed',
-  canceled: 'Canceled',
-};
-
 export const STATE = {
   ACTIVE: 'ACTIVE',
   COMPLETED: 'COMPLETED',
@@ -136,19 +122,6 @@ export const BADGE_TYPE = {
   INCIDENTS: 'INCIDENTS',
   SELECTIONS: 'SELECTIONS',
 } as const;
-
-export const OPERATION_STATE = {
-  SCHEDULED: 'SCHEDULED',
-  LOCKED: 'LOCKED',
-  SENT: 'SENT',
-  COMPLETED: 'COMPLETED',
-};
-
-export const ACTIVE_OPERATION_STATES = [
-  OPERATION_STATE.SCHEDULED,
-  OPERATION_STATE.LOCKED,
-  OPERATION_STATE.SENT,
-];
 
 export const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',

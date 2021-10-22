@@ -6,8 +6,6 @@
 
 import styled, {css} from 'styled-components';
 
-import Modal from 'modules/components/Modal';
-
 const Arrow = styled.div`
   &:before,
   &:after {
@@ -169,17 +167,6 @@ const SummaryDataValue = styled.dd`
   margin-bottom: 8px;
 `;
 
-const ModalBody = styled(Modal.Body)`
-  padding: 0;
-  position: relative;
-  counter-reset: line;
-  overflow: auto;
-
-  & pre {
-    margin: 0;
-  }
-`;
-
 export {
   Arrow,
   Popper,
@@ -192,5 +179,4 @@ export {
   PeterCaseSummaryBody,
   SummaryDataKey,
   SummaryDataValue,
-  ModalBody,
 };

@@ -7,53 +7,11 @@
 import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
 
 /**
- * flushes promises in queue
- */
-export const flushPromises = () => {
-  return new Promise((resolve) => setImmediate(resolve));
-};
-
-/**
  * @returns a jest mock function that resolves with given value
  * @param {*} value to resolve with
  */
 export const mockResolvedAsyncFn = (value: any) => {
   return jest.fn(() => Promise.resolve(value));
-};
-
-/**
- * @returns a jest mock function that rejects with given value
- * @param {*} value to reject with
- */
-export const mockRejectedAsyncFn = (value: any) => {
-  return jest.fn(() => Promise.reject(value));
-};
-
-/**
- * @returns a jest mock function that rejects with given value
- * @param {*} RootComponent which props can be updated
- * @param {*} ChildComponent which props need to be updated
- * @param {*} updateProps new props
- */
-export const setProps = (
-  RootComponent: any,
-  ChildComponent: any,
-  updatedProps: any
-) => {
-  return RootComponent.setProps({
-    children: <ChildComponent {...updatedProps} />,
-  });
-};
-
-/**
- * @returns a higher order function which executes the wrapped method x times;
- * @param {*} x number of times the method should be executed
- */
-const xTimes = (x: any) => (method: any) => {
-  if (x > 0) {
-    method(x);
-    xTimes(x - 1)(method);
-  }
 };
 
 const createRandomId = function* createRandomId(type: string) {
@@ -65,53 +23,9 @@ const createRandomId = function* createRandomId(type: string) {
 };
 
 const randomIdIterator = createRandomId('id');
-const randomActivityIdIterator = createRandomId('activityId');
 const randomProcessIdInterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
-
-/**
- * @returns a mocked selection Object
- * @param {*} customProps Obj with any type of custom property
- */
-export const createQuery = (options = {}) => {
-  return {
-    active: true,
-    activityId: 'string',
-    canceled: true,
-    completed: true,
-    endDateAfter: '2018-11-13T14:55:58.463Z',
-    endDateBefore: '2018-11-13T14:55:58.464Z',
-    errorMessage: 'string',
-    finished: true,
-    incidents: true,
-    running: true,
-    startDateAfter: '2018-11-13T14:55:58.464Z',
-    startDateBefore: '2018-11-13T14:55:58.464Z',
-    variablesQuery: {
-      name: 'string',
-      value: {},
-    },
-    processIds: [],
-    ...options,
-  };
-};
-
-/**
- * @returns a mocked Selection Object with a unique id
- * @param {*} id num value to create unique selection;
- */
-export const createSelection = (options = {}) => {
-  const instanceId = randomIdIterator.next().value;
-
-  return {
-    queries: [createQuery()],
-    selectionId: 1,
-    totalCount: 1,
-    instancesMap: new Map([[instanceId, createInstance({id: instanceId})]]),
-    ...options,
-  };
-};
 
 /**
  * @returns a mocked incident Object
@@ -153,21 +67,6 @@ export const createOperation = (options = {}): InstanceOperationEntity => {
 };
 
 /**
- * @returns a mocked activity Object
- * @param {*} customProps Obj with any type of custom property
- */
-export const createActivity = (options = {}) => {
-  return {
-    activityId: randomActivityIdIterator.next().value,
-    endDate: '2018-10-10T09:20:38.658Z',
-    id: randomIdIterator.next().value,
-    startDate: '2018-10-10T09:20:38.658Z',
-    state: 'ACTIVE',
-    ...options,
-  };
-};
-
-/**
  * @returns a mocked instance Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
@@ -189,30 +88,6 @@ export const createInstance = (options = {}): ProcessInstanceEntity => {
     callHierarchy: [],
     ...options,
   } as const;
-};
-
-export const createMockInstancesObject = (amount = 5, options = {}) => ({
-  processInstances: createArrayOfMockInstances(amount),
-  totalCount: amount,
-  ...options,
-});
-
-/**
- * @returns a mocked array of instance objects
- * @param {number} amount specifies the amount of instances
- * @param {object} options to set custom properties for all instances
- */
-export const createArrayOfMockInstances = (amount: any, options = {}) => {
-  let arrayOfInstances: any = [];
-  xTimes(amount)(() =>
-    arrayOfInstances.push(
-      createInstance({
-        id: randomIdIterator.next().value,
-        ...options,
-      })
-    )
-  );
-  return arrayOfInstances;
 };
 
 /**
@@ -281,28 +156,6 @@ export const groupedProcessesMock = [
 ];
 
 /**
- * @returns a mocked filter Object with a unique id
- * @param {*} customProps Obj with any type of custom property
- */
-export const createFilter = (options = {}) => {
-  return {
-    process: groupedProcessesMock[0].bpmnProcessId,
-    version: '1',
-    active: true,
-    ids: '1,2,3',
-    startDate: '2018-06-21',
-    endDate: '2018-06-22',
-    errorMessage: 'No more retries left.',
-    incidents: true,
-    canceled: true,
-    completed: true,
-    activityId: randomActivityIdIterator.next().value,
-    variable: {name: 'myVariable', value: '123'},
-    ...options,
-  };
-};
-
-/**
  * @returns a mocked process Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
@@ -339,14 +192,6 @@ export const createInstanceByProcess = (options = {}) => {
     ],
     ...options,
   };
-};
-
-/**
- * @returns a mocked InstancesByProcess Object as exposed by 'api/incidents/byProcess'
- * @param {*} customProps array with any number of instanceByProcess Objects
- */
-export const createInstancesByProcess = (options: any) => {
-  return options || [createInstanceByProcess()];
 };
 
 /**

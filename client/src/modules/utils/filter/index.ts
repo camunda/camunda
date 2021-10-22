@@ -377,4 +377,4 @@ export {
   getSorting,
   deleteSearchParams,
 };
-export type {FilterFieldsType, FiltersType, RequestFilters};
+export type {FiltersType, RequestFilters};

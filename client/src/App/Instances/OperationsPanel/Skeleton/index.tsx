@@ -4,14 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import * as Styled from './styled';
 
-function doesMatchMinHeight(height: any) {
+function doesMatchMinHeight(height: number) {
   return window.matchMedia(`(min-height: ${height}px)`).matches;
 }
 
-export function OperationEntry() {
+function OperationEntry() {
   return (
     <Styled.Entry>
       <Styled.EntryStatus>

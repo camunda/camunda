@@ -8,7 +8,7 @@ import React from 'react';
 
 import {MultiRow, Container, Circle, Block} from './styled';
 
-export function Row() {
+function Row() {
   return (
     <Container data-testid="flow-node-instance-log-skeleton-row">
       <Circle />

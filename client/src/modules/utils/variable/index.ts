@@ -5,21 +5,13 @@
  */
 
 export function createBeautyfiedJSON(
-  validJSONstring: any,
+  validJSONstring: string,
   indentationSpace = 0
 ) {
   return JSON.stringify(removeTabs(validJSONstring), null, indentationSpace);
 }
 
-export function removeTabs(validJSONstring: any) {
+function removeTabs(validJSONstring: string) {
   // removes all possible spaces, a user could have added during in-line edit.
   return JSON.parse(validJSONstring);
-}
-
-export function removeWhiteSpaces(value: any) {
-  return value.replace(/\s/g, '');
-}
-
-export function removeLineBreaks(value: any) {
-  return value.replace(/\r?\n|\r/g, '');
 }

@@ -67,4 +67,4 @@ function useNotifications() {
 }
 
 export type {Notification, NotificationContextType};
-export {NotificationProvider, NotificationContext, useNotifications};
+export {NotificationProvider, useNotifications};
