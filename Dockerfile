@@ -21,11 +21,11 @@ RUN chmod +x -R ${TMP_DIR}/bin/
 RUN chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
 
 # Building prod image
-FROM openjdk:11-jre-slim as prod
+FROM eclipse-temurin:17 as prod
 RUN echo "running PROD pre-install commands"
 
 # Building dev image
-FROM openjdk:11 as dev
+FROM eclipse-temurin:17 as dev
 RUN echo "running DEV pre-install commands"
 RUN apt-get update
 RUN wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
