@@ -213,6 +213,7 @@ public final class LogStreamImpl extends Actor
     } else if (appenderFuture != null) {
       appenderFuture.onComplete(onOpenAppender(writerFuture, creator));
     } else {
+      appenderFuture = new CompletableActorFuture<>();
       openAppender().onComplete(onOpenAppender(writerFuture, creator));
     }
   }
@@ -255,21 +256,23 @@ public final class LogStreamImpl extends Actor
   }
 
   private ActorFuture<LogStorageAppender> openAppender() {
-    if (appenderFuture != null) {
-      return appenderFuture;
+    try {
+      tryOpenAppender();
+    } catch (final Exception error) {
+      onOpenAppenderFailed(error);
     }
+    return appenderFuture;
+  }
 
-    final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
-
-    appenderFuture = appenderOpenFuture;
-
+  private void tryOpenAppender() {
     final long lastPosition;
     try {
       lastPosition = getLastPosition();
-    } catch (final UnrecoverableException e) {
+    } catch (final UnrecoverableException error) {
+      LOG.error("Unexpected error when opening appender", error);
       onUnrecoverableFailure();
-      appenderFuture.completeExceptionally(e);
-      return appenderFuture;
+      appenderFuture.completeExceptionally(error);
+      return;
     }
 
     final long initialPosition;
@@ -315,8 +318,6 @@ public final class LogStreamImpl extends Actor
                 onOpenAppenderFailed(throwable);
               }
             });
-
-    return appenderOpenFuture;
   }
 
   private void onOpenAppenderFailed(final Throwable error) {
