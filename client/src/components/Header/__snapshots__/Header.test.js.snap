@@ -20,7 +20,7 @@ exports[`matches the snapshot 1`] = `
       src="url"
     />
     <span>
-      Camunda Optimize
+      Optimize
     </span>
   </Link>
   <HeaderNav>
