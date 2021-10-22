@@ -42,6 +42,7 @@
     <version.animal-sniffer>1.20</version.animal-sniffer>
     <version.assertj>3.20.2</version.assertj>
     <version.awaitility>4.1.0</version.awaitility>
+    <version.bouncycastle>1.69</version.bouncycastle>
     <version.camunda>7.16.0</version.camunda>
     <version.checkstyle>9.0.1</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
@@ -753,6 +754,20 @@
         <artifactId>jsr305</artifactId>
         <version>${version.jsr305}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpkix-jdk15on</artifactId>
+        <version>${version.bouncycastle}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15on</artifactId>
+        <version>${version.bouncycastle}</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -1291,6 +1306,8 @@
                   <dep>org.junit.jupiter:junit-jupiter-engine</dep>
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
                   <dep>org.codehaus.plexus:plexus-utils:jar:1.1</dep>
+                  <dep>org.bouncycastle:bcpkix-jdk15on</dep>
+                  <dep>org.bouncycastle:bcprov-jdk15on</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
