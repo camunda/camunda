@@ -18,7 +18,6 @@ function Row() {
 }
 
 const Skeleton: React.FC = React.memo((props) => {
-  // @ts-expect-error ts-migrate(2769) FIXME: Type '() => Element' is not assignable to type 'Re... Remove this comment to see the full error message
   return <MultiRow Component={Row} {...props} />;
 });
 

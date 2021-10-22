@@ -4,14 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import Badge from './index';
 
-describe('Badge', () => {
+describe('<Badge />', () => {
   it('should contain passed number', () => {
-    const node = shallow(<Badge>123</Badge>);
-    expect(node.contains('123')).toBe(true);
+    const CONTENT = '123';
+    render(<Badge>{CONTENT}</Badge>, {wrapper: ThemeProvider});
+
+    expect(screen.getByText(CONTENT)).toBeInTheDocument();
   });
 });

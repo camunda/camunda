@@ -5,49 +5,57 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
+import {noop} from 'lodash';
 
 import Option from './index';
+import userEvent from '@testing-library/user-event';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-import * as Styled from './styled';
+const CHILD_CONTENT = 'I am a label';
+const Child: React.FC = () => <span>{CHILD_CONTENT}</span>;
 
 describe('Option', () => {
-  let node: any;
-  let Child: any;
-  let onClickMock: any;
-  let mockOnStateChange: any;
-
-  beforeEach(() => {
-    Child = () => <span>I am a label</span>;
-    onClickMock = jest.fn();
-    mockOnStateChange = jest.fn();
-
-    node = shallow(
-      <Option onClick={onClickMock}>
-        <Child />
-      </Option>
-    );
-  });
-
   it('should render a button if no children are passed', () => {
-    node = shallow(<Option onClick={onClickMock} />);
-    expect(node.find(Styled.OptionButton)).toExist();
+    render(<Option onClick={noop} />, {wrapper: ThemeProvider});
+
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   it('should render passed children', () => {
-    expect(node.find(Child)).toExist();
+    render(
+      <Option onClick={noop}>
+        <Child />
+      </Option>,
+      {wrapper: ThemeProvider}
+    );
+
+    expect(screen.getByText(CHILD_CONTENT)).toBeInTheDocument();
   });
 
   it('should handle click event', () => {
-    node = shallow(
+    const onClickMock = jest.fn();
+    const mockOnStateChange = jest.fn();
+    const {rerender} = render(
+      <Option
+        onClick={onClickMock}
+        onStateChange={mockOnStateChange}
+        disabled={true}
+      />,
+      {wrapper: ThemeProvider}
+    );
+
+    userEvent.click(screen.getByRole('button'));
+
+    expect(onClickMock).not.toHaveBeenCalled();
+    expect(mockOnStateChange).not.toHaveBeenCalled();
+
+    rerender(
       <Option onClick={onClickMock} onStateChange={mockOnStateChange} />
     );
 
-    const clickSpy = jest.spyOn(node.instance(), 'handleOnClick');
-    node.setProps({disabled: false});
-    node.find(Styled.Option).simulate('click');
+    userEvent.click(screen.getByRole('button'));
 
-    expect(clickSpy).toHaveBeenCalled();
     expect(onClickMock).toHaveBeenCalled();
     expect(mockOnStateChange).toHaveBeenCalledWith({isOpen: false});
   });

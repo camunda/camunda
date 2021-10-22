@@ -5,7 +5,6 @@
  */
 
 import React, {useState} from 'react';
-import {OPERATION_TYPE} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
@@ -62,21 +61,21 @@ const Operations: React.FC<Props> = observer(
         <OperationItems>
           {hasIncident(instance) && (
             <OperationItems.Item
-              type={OPERATION_TYPE.RESOLVE_INCIDENT}
-              onClick={() => applyOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
+              type="RESOLVE_INCIDENT"
+              onClick={() => applyOperation('RESOLVE_INCIDENT')}
               title={`Retry Instance ${instance.id}`}
             />
           )}
           {isRunning(instance) && (
             <OperationItems.Item
-              type={OPERATION_TYPE.CANCEL_PROCESS_INSTANCE}
+              type="CANCEL_PROCESS_INSTANCE"
               onClick={() => setIsCancellationModalVisible(true)}
               title={`Cancel Instance ${instance.id}`}
             />
           )}
           {!isRunning(instance) && (
             <OperationItems.Item
-              type={OPERATION_TYPE.DELETE_PROCESS_INSTANCE}
+              type="DELETE_PROCESS_INSTANCE"
               onClick={() => setIsDeleteModalVisible(true)}
               title={`Delete Instance ${instance.id}`}
             />
@@ -87,7 +86,7 @@ const Operations: React.FC<Props> = observer(
             bodyText={`About to cancel Instance ${instance.id}. In case there are called instances, these will be canceled too.`}
             onApplyClick={() => {
               setIsCancellationModalVisible(false);
-              applyOperation(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE);
+              applyOperation('CANCEL_PROCESS_INSTANCE');
             }}
             isVisible={isCancellationModalVisible}
             onModalClose={() => setIsCancellationModalVisible(false)}
@@ -105,7 +104,7 @@ const Operations: React.FC<Props> = observer(
           onModalClose={() => setIsDeleteModalVisible(false)}
           instanceId={instance.id}
           onDeleteClick={() => {
-            applyOperation(OPERATION_TYPE.DELETE_PROCESS_INSTANCE);
+            applyOperation('DELETE_PROCESS_INSTANCE');
             setIsDeleteModalVisible(false);
           }}
         />

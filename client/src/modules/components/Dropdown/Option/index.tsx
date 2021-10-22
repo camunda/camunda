@@ -26,7 +26,7 @@ export default class Option extends React.Component<Props> {
   };
 
   renderChildrenProps = () =>
-    React.Children.map(this.props.children, (child, idx) =>
+    React.Children.map(this.props.children, (child) =>
       // @ts-expect-error ts-migrate(2769) FIXME: Type 'undefined' is not assignable to type 'ReactE... Remove this comment to see the full error message
       React.cloneElement(child, {
         onStateChange: this.props.onStateChange,
@@ -41,7 +41,7 @@ export default class Option extends React.Component<Props> {
         // @ts-expect-error ts-migrate(2769) FIXME: Property 'label' does not exist on type 'Intrinsic... Remove this comment to see the full error message
         label={label}
         disabled={disabled}
-        onClick={() => this.handleOnClick()}
+        onClick={this.handleOnClick}
         className={className}
       >
         {!children ? (

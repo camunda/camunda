@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {LinkButton} from 'modules/components/LinkButton';
-import {OPERATION_TYPE} from 'modules/constants';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
@@ -16,21 +15,13 @@ import {useHistory} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
-const {
-  ADD_VARIABLE,
-  UPDATE_VARIABLE,
-  RESOLVE_INCIDENT,
-  CANCEL_PROCESS_INSTANCE,
-  DELETE_PROCESS_INSTANCE,
-} = OPERATION_TYPE;
-
-const TYPE_LABELS = {
-  [ADD_VARIABLE]: 'Edit',
-  [UPDATE_VARIABLE]: 'Edit',
-  [RESOLVE_INCIDENT]: 'Retry',
-  [CANCEL_PROCESS_INSTANCE]: 'Cancel',
-  [DELETE_PROCESS_INSTANCE]: 'Delete',
-} as const;
+const TYPE_LABELS: Readonly<Record<OperationEntityType, string>> = {
+  ADD_VARIABLE: 'Edit',
+  UPDATE_VARIABLE: 'Edit',
+  RESOLVE_INCIDENT: 'Retry',
+  CANCEL_PROCESS_INSTANCE: 'Cancel',
+  DELETE_PROCESS_INSTANCE: 'Delete',
+};
 
 type Props = {
   operation: OperationEntity;
@@ -72,16 +63,16 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           <Styled.Id data-testid="operation-id">{id}</Styled.Id>
         </div>
         <Styled.OperationIcon>
-          {RESOLVE_INCIDENT === type && (
+          {'RESOLVE_INCIDENT' === type && (
             <Styled.Retry data-testid="operation-retry-icon" />
           )}
-          {(UPDATE_VARIABLE === type || ADD_VARIABLE === type) && (
+          {('UPDATE_VARIABLE' === type || 'ADD_VARIABLE' === type) && (
             <Styled.Edit data-testid="operation-edit-icon" />
           )}
-          {CANCEL_PROCESS_INSTANCE === type && (
+          {'CANCEL_PROCESS_INSTANCE' === type && (
             <Styled.Cancel data-testid="operation-cancel-icon" />
           )}
-          {DELETE_PROCESS_INSTANCE === type && (
+          {'DELETE_PROCESS_INSTANCE' === type && (
             <Styled.Delete data-testid="operation-delete-icon" />
           )}
         </Styled.OperationIcon>
@@ -93,7 +84,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         />
       )}
       <Styled.EntryDetails>
-        {DELETE_PROCESS_INSTANCE !== type && (
+        {'DELETE_PROCESS_INSTANCE' !== type && (
           <LinkButton onClick={() => handleInstancesClick(id)}>
             {`${pluralSuffix(instancesCount, 'Instance')}`}
           </LinkButton>

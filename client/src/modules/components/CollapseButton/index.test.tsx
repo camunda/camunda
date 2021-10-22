@@ -4,56 +4,53 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import CollapseButton from './index';
-import {DIRECTION} from 'modules/constants';
-import * as Styled from './styled';
 
-describe('CollapseButton', () => {
-  it('should render Styled.CollapseButton with click listener', () => {
-    // given
+describe('<CollapseButton />', () => {
+  it('should handle click events', () => {
     const onClick = jest.fn();
-    const node = shallow(
-      <CollapseButton onClick={onClick} direction={DIRECTION.UP} />
-    );
+    render(<CollapseButton onClick={onClick} direction="UP" />, {
+      wrapper: ThemeProvider,
+    });
 
-    // then
-    const StyledCollapseButtonNode = node.find(Styled.CollapseButton);
-    expect(StyledCollapseButtonNode).toHaveLength(1);
-    expect(StyledCollapseButtonNode.prop('onClick')).toBe(onClick);
+    userEvent.click(screen.getByRole('button'));
+
+    expect(onClick).toHaveBeenCalled();
   });
 
-  it('should render Up icon if icon direction is UP', () => {
-    // given
-    const node = shallow(<CollapseButton direction={DIRECTION.UP} />);
+  it('should render the correct icon', () => {
+    const {rerender} = render(<CollapseButton direction="UP" />, {
+      wrapper: ThemeProvider,
+    });
 
-    // then
-    expect(node.find(Styled.Up)).toHaveLength(1);
-  });
+    expect(screen.getByTestId('icon-up')).toBeInTheDocument();
+    expect(screen.queryByTestId('icon-down')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-left')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-right')).not.toBeInTheDocument();
 
-  it('should render Down icon if icon direction is DOWN', () => {
-    // given
-    const node = shallow(<CollapseButton direction={DIRECTION.DOWN} />);
+    rerender(<CollapseButton direction="DOWN" />);
 
-    // then
-    expect(node.find(Styled.Down)).toHaveLength(1);
-  });
+    expect(screen.getByTestId('icon-down')).toBeInTheDocument();
+    expect(screen.queryByTestId('icon-up')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-left')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-right')).not.toBeInTheDocument();
 
-  it('should render Left icon if icon direction is LEFT', () => {
-    // given
-    const node = shallow(<CollapseButton direction={DIRECTION.LEFT} />);
+    rerender(<CollapseButton direction="LEFT" />);
 
-    // then
-    expect(node.find(Styled.Left)).toHaveLength(1);
-  });
+    expect(screen.getByTestId('icon-left')).toBeInTheDocument();
+    expect(screen.queryByTestId('icon-up')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-down')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-right')).not.toBeInTheDocument();
 
-  it('should render Right icon if icon direction is RIGHT', () => {
-    // given
-    const node = shallow(<CollapseButton direction={DIRECTION.RIGHT} />);
+    rerender(<CollapseButton direction="RIGHT" />);
 
-    // then
-    expect(node.find(Styled.Right)).toHaveLength(1);
+    expect(screen.getByTestId('icon-right')).toBeInTheDocument();
+    expect(screen.queryByTestId('icon-up')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-down')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon-left')).not.toBeInTheDocument();
   });
 });

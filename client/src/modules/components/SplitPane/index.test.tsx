@@ -4,118 +4,66 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow} from 'enzyme';
-
-import {PANE_ID, EXPAND_STATE} from 'modules/constants';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import SplitPane from './index';
 
+const FirstChild: React.FC = () => <div>First child</div>;
+const SecondChild: React.FC = () => <div>Second child</div>;
+
 describe('SplitPane', () => {
-  it('should render children with handleExpand() and paneId props', () => {
-    // given
-    const FirstChild = () => <div>First Child</div>;
-    const SecondChild = () => <div>Second Child</div>;
-    const node = shallow(
+  it('should render panels', () => {
+    render(
       <SplitPane>
-        <FirstChild />
-        <SecondChild />
-      </SplitPane>
+        <SplitPane.Pane>
+          <FirstChild />
+        </SplitPane.Pane>
+        <SplitPane.Pane>
+          <SecondChild />
+        </SplitPane.Pane>
+      </SplitPane>,
+      {wrapper: ThemeProvider}
     );
 
-    // then
-    const FirstChildNode = node.find(FirstChild);
-    const SecondChildNode = node.find(SecondChild);
-    expect(FirstChildNode).toHaveLength(1);
-    expect(FirstChildNode.prop('paneId')).toBe(PANE_ID.TOP);
-    expect(FirstChildNode.prop('handleExpand')).toBe(
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'handleExpand' does not exist on type 'Co... Remove this comment to see the full error message
-      node.instance().handleExpand
-    );
-    expect(SecondChildNode).toHaveLength(1);
-    expect(SecondChildNode.prop('paneId')).toBe(PANE_ID.BOTTOM);
-    expect(SecondChildNode.prop('handleExpand')).toBe(
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'handleExpand' does not exist on type 'Co... Remove this comment to see the full error message
-      node.instance().handleExpand
-    );
+    expect(screen.getByText('First child')).toBeInTheDocument();
+    expect(screen.getByText('Second child')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-up')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-down')).toBeInTheDocument();
   });
 
-  describe('expandState', () => {
-    it('should render children with proper expandState when no pane is extended', () => {
-      // given
-      const FirstChild = () => <div>First Child</div>;
-      const SecondChild = () => <div>Second Child</div>;
-      const node = shallow(
-        <SplitPane>
+  it('should handle expansion change', () => {
+    render(
+      <SplitPane>
+        <SplitPane.Pane>
           <FirstChild />
+        </SplitPane.Pane>
+        <SplitPane.Pane>
           <SecondChild />
-        </SplitPane>
-      );
+        </SplitPane.Pane>
+      </SplitPane>,
+      {wrapper: ThemeProvider}
+    );
 
-      // then
-      const FirstChildNode = node.find(FirstChild);
-      const SecondChildNode = node.find(SecondChild);
-      expect(FirstChildNode).toHaveLength(1);
-      expect(FirstChildNode.prop('expandState')).toBe(EXPAND_STATE.DEFAULT);
-      expect(SecondChildNode).toHaveLength(1);
-      expect(SecondChildNode.prop('expandState')).toBe(EXPAND_STATE.DEFAULT);
-      expect(node).toMatchSnapshot();
-    });
+    userEvent.click(screen.getByTestId('icon-up'));
 
-    it('should expand and collapse panels correctly', () => {
-      const FirstChild = () => <div>First Child</div>;
-      const SecondChild = () => <div>Second Child</div>;
+    expect(screen.queryByTestId('icon-up')).not.toBeInTheDocument();
+    expect(screen.getByTestId('icon-down')).toBeInTheDocument();
 
-      const node = shallow(
-        <SplitPane>
-          <FirstChild />
-          <SecondChild />
-        </SplitPane>
-      );
+    userEvent.click(screen.getByTestId('icon-down'));
 
-      // Top panel is expanded on handle expand click
-      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-      node.find(FirstChild).prop('handleExpand')('TOP');
-      node.update();
-      expect(node.find(FirstChild).prop('expandState')).toBe(
-        EXPAND_STATE.EXPANDED
-      );
-      expect(node.find(SecondChild).prop('expandState')).toBe(
-        EXPAND_STATE.COLLAPSED
-      );
+    expect(screen.getByTestId('icon-up')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-down')).toBeInTheDocument();
 
-      // Click top panel expand again, which makes it return to default state
-      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-      node.find(FirstChild).prop('handleExpand')('TOP');
-      node.update();
-      expect(node.find(FirstChild).prop('expandState')).toBe(
-        EXPAND_STATE.DEFAULT
-      );
-      expect(node.find(SecondChild).prop('expandState')).toBe(
-        EXPAND_STATE.DEFAULT
-      );
+    userEvent.click(screen.getByTestId('icon-down'));
 
-      // Click bottom panel expand, which makes bottom panel expand
-      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-      node.find(SecondChild).prop('handleExpand')('BOTTOM');
-      node.update();
-      expect(node.find(FirstChild).prop('expandState')).toBe(
-        EXPAND_STATE.COLLAPSED
-      );
-      expect(node.find(SecondChild).prop('expandState')).toBe(
-        EXPAND_STATE.EXPANDED
-      );
+    expect(screen.queryByTestId('icon-down')).not.toBeInTheDocument();
+    expect(screen.getByTestId('icon-up')).toBeInTheDocument();
 
-      // Click again and return to default state
-      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-      node.find(FirstChild).prop('handleExpand')('BOTTOM');
-      node.update();
-      expect(node.find(FirstChild).prop('expandState')).toBe(
-        EXPAND_STATE.DEFAULT
-      );
-      expect(node.find(SecondChild).prop('expandState')).toBe(
-        EXPAND_STATE.DEFAULT
-      );
-    });
+    userEvent.click(screen.getByTestId('icon-up'));
+
+    expect(screen.getByTestId('icon-up')).toBeInTheDocument();
+    expect(screen.getByTestId('icon-down')).toBeInTheDocument();
   });
 });

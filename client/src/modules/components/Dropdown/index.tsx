@@ -9,11 +9,9 @@ import {CSSTransition} from 'react-transition-group';
 
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
-import {DROPDOWN_PLACEMENT} from 'modules/constants';
-
 import * as Styled from './styled';
 
-type OwnProps = {
+type Props = {
   label: React.ReactNode;
   placement?: 'top' | 'bottom';
   buttonStyles?: (...args: any[]) => any;
@@ -23,13 +21,14 @@ type OwnProps = {
   calculateWidth?: (...args: any[]) => any;
 };
 
-type State = any;
-
-type Props = OwnProps & typeof Dropdown.defaultProps;
+type State = {
+  isOpen: boolean;
+  isFocused: boolean;
+};
 
 export default class Dropdown extends React.Component<Props, State> {
-  static defaultProps = {
-    placement: DROPDOWN_PLACEMENT.BOTTOM,
+  static defaultProps: Partial<Props> = {
+    placement: 'bottom',
   };
 
   container: any;
@@ -141,10 +140,8 @@ export default class Dropdown extends React.Component<Props, State> {
           timeout={transitionTiming}
         >
           <Styled.MenuComponent
-            transitionTiming={transitionTiming}
+            $transitionTiming={transitionTiming}
             onKeyDown={this.handleKeyPress}
-            // @ts-expect-error ts-migrate(2769) FIXME: Property 'onStateChange' does not exist on type 'I... Remove this comment to see the full error message
-            onStateChange={this.handleStateChange}
             placement={placement}
           >
             {this.renderChildrenWithProps()}

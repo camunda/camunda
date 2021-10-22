@@ -4,18 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const DIRECTION = {
-  UP: 'UP',
-  DOWN: 'DOWN',
-  RIGHT: 'RIGHT',
-  LEFT: 'LEFT',
-} as const;
-
-export const PANEL_POSITION = {
-  LEFT: 'LEFT',
-  RIGHT: 'RIGHT',
-} as const;
-
 export const TYPE = {
   GATEWAY_EXCLUSIVE: 'GATEWAY_EXCLUSIVE',
   GATEWAY_EVENT_BASED: 'GATEWAY_EVENT_BASED',
@@ -102,19 +90,6 @@ export const EXPAND_STATE = {
 
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
-
-export const DROPDOWN_PLACEMENT = {
-  TOP: 'top',
-  BOTTOM: 'bottom',
-};
-
-export const OPERATION_TYPE = {
-  RESOLVE_INCIDENT: 'RESOLVE_INCIDENT',
-  CANCEL_PROCESS_INSTANCE: 'CANCEL_PROCESS_INSTANCE',
-  DELETE_PROCESS_INSTANCE: 'DELETE_PROCESS_INSTANCE',
-  UPDATE_VARIABLE: 'UPDATE_VARIABLE',
-  ADD_VARIABLE: 'ADD_VARIABLE',
-} as const;
 
 export const BADGE_TYPE = {
   RUNNING_INSTANCES: 'RUNNING_INSTANCES',

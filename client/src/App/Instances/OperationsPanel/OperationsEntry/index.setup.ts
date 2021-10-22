@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {OPERATION_TYPE} from 'modules/constants';
-
 type OperationsMock = {
   RETRY: OperationEntity;
   CANCEL: OperationEntity;
@@ -16,7 +14,7 @@ type OperationsMock = {
 const OPERATIONS: OperationsMock = {
   RETRY: {
     id: 'b42fd629-73b1-4709-befb-7ccd900fb18d',
-    type: OPERATION_TYPE.RESOLVE_INCIDENT,
+    type: 'RESOLVE_INCIDENT',
     endDate: null,
     operationsTotalCount: 2,
     operationsFinishedCount: 1,
@@ -27,7 +25,7 @@ const OPERATIONS: OperationsMock = {
   },
   CANCEL: {
     id: '393ad666-d7f0-45c9-a679-ffa0ef82f88a',
-    type: OPERATION_TYPE.CANCEL_PROCESS_INSTANCE,
+    type: 'CANCEL_PROCESS_INSTANCE',
     endDate: '2020-02-06T14:56:17.932+0100',
     operationsTotalCount: 2,
     operationsFinishedCount: 2,
@@ -38,7 +36,7 @@ const OPERATIONS: OperationsMock = {
   },
   EDIT: {
     id: 'df325d44-6a4c-4428-b017-24f923f1d052',
-    type: OPERATION_TYPE.UPDATE_VARIABLE,
+    type: 'UPDATE_VARIABLE',
     endDate: '2020-02-06T14:56:17.932+0100',
     operationsTotalCount: 4,
     operationsFinishedCount: 4,
@@ -49,7 +47,7 @@ const OPERATIONS: OperationsMock = {
   },
   DELETE: {
     id: 'df325d44-6a4c-4428-b017-24f923f1d052',
-    type: OPERATION_TYPE.DELETE_PROCESS_INSTANCE,
+    type: 'DELETE_PROCESS_INSTANCE',
     endDate: '2020-02-06T14:56:17.932+0100',
     operationsTotalCount: 4,
     operationsFinishedCount: 4,

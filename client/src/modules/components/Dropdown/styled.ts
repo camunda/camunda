@@ -8,22 +8,26 @@ import styled, {css} from 'styled-components';
 
 import Menu from './Menu';
 
-const MenuComponent = styled(Menu)`
-  ${({transitionTiming}) => {
+type Props = {
+  $transitionTiming: Record<'enter' | 'exit', number>;
+};
+
+const MenuComponent = styled(Menu)<Props>`
+  ${({$transitionTiming}) => {
     return css`
       &.transition-enter {
         opacity: 0;
       }
       &.transition-enter-active {
         opacity: 1;
-        transition: opacity ${transitionTiming.enter}ms ease-out;
+        transition: opacity ${$transitionTiming.enter}ms ease-out;
       }
       &.transition-enter-done {
         opacity: 1;
       }
       &.transition-exit {
         opacity: 0;
-        transition: opacity ${transitionTiming.exit}ms;
+        transition: opacity ${$transitionTiming.exit}ms;
       }
     `;
   }}

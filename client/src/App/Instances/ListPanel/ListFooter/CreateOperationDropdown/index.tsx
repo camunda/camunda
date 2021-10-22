@@ -6,7 +6,6 @@
 
 import {useState} from 'react';
 
-import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
 import Option from 'modules/components/Dropdown/Option';
@@ -17,9 +16,11 @@ import {ConfirmOperationModal} from 'modules/components/ConfirmOperationModal';
 import useOperationApply from './useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
-const ACTION_NAMES = {
-  [OPERATION_TYPE.RESOLVE_INCIDENT]: 'retry',
-  [OPERATION_TYPE.CANCEL_PROCESS_INSTANCE]: 'cancel',
+const ACTION_NAMES: Readonly<
+  Record<'RESOLVE_INCIDENT' | 'CANCEL_PROCESS_INSTANCE', string>
+> = {
+  RESOLVE_INCIDENT: 'retry',
+  CANCEL_PROCESS_INSTANCE: 'cancel',
 };
 
 type Props = {
@@ -27,7 +28,7 @@ type Props = {
   selectedCount: number;
 };
 
-const CreateOperationDropdown = ({label, selectedCount}: Props) => {
+const CreateOperationDropdown: React.FC<Props> = ({label, selectedCount}) => {
   const [modalMode, setModalMode] = useState<OperationEntityType | null>(null);
 
   const [dropdownWidth, setDropdownWidth] = useState();
@@ -66,17 +67,16 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
     >
       <Dropdown
         buttonStyles={Styled.dropdownButtonStyles}
-        // @ts-expect-error ts-migrate(2769) FIXME: Type 'string' is not assignable to type '"top" | "... Remove this comment to see the full error message
-        placement={DROPDOWN_PLACEMENT.TOP}
+        placement="top"
         label={label}
         calculateWidth={setDropdownWidth}
       >
         <Option
-          onClick={() => setModalMode(OPERATION_TYPE.RESOLVE_INCIDENT)}
+          onClick={() => setModalMode('RESOLVE_INCIDENT')}
           label="Retry"
         />
         <Option
-          onClick={() => setModalMode(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE)}
+          onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
           label="Cancel"
         />
       </Dropdown>

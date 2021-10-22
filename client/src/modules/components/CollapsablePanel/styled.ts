@@ -8,7 +8,6 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import {rgba} from 'polished';
 
 import BasicCollapseButton from 'modules/components/CollapseButton';
-import {DIRECTION, PANEL_POSITION} from 'modules/constants';
 import BasicPanel from '../Panel';
 
 const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
@@ -24,8 +23,8 @@ type CollapsableProps = {
 const Collapsable = styled.div<CollapsableProps>`
   ${({theme, panelPosition, isOverlay, maxWidth, isCollapsed}) => {
     const colors = theme.colors.modules.collapsablePanel.collapsable;
-    const isLeft = panelPosition === PANEL_POSITION.LEFT;
-    const isRight = panelPosition === PANEL_POSITION.RIGHT;
+    const isLeft = panelPosition === 'LEFT';
+    const isRight = panelPosition === 'RIGHT';
 
     return css`
       position: relative;
@@ -91,7 +90,7 @@ const ExpandedPanel = styled(BasicPanel)<ExpandedPanelProps>`
       visibility: ${isCollapsed ? 'hidden' : 'visible'};
       z-index: ${isCollapsed ? 0 : 1};
       ${panelStyle}
-      ${panelPosition === PANEL_POSITION.RIGHT
+      ${panelPosition === 'RIGHT'
         ? css`
             border-right: none;
           `
@@ -129,7 +128,7 @@ const Header = styled(BasicPanel.Header)<HeaderProps>`
   ${({panelPosition}) => {
     return css`
       border-radius: inherit;
-      ${panelPosition === PANEL_POSITION.RIGHT
+      ${panelPosition === 'RIGHT'
         ? css`
             padding-left: 55px;
           `
@@ -152,13 +151,13 @@ const CollapseButton = styled(BasicCollapseButton)<CollapseButtonProps>`
       border-radius: inherit;
       z-index: 2;
 
-      ${direction === DIRECTION.LEFT
+      ${direction === 'LEFT'
         ? css`
             border-right: none;
             right: 0;
           `
         : ''}
-      ${direction === DIRECTION.RIGHT
+      ${direction === 'RIGHT'
         ? css`
             border-left: none;
             left: 0;

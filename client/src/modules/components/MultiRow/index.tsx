@@ -7,12 +7,12 @@
 import React from 'react';
 
 type Props = {
-  Component?: React.ReactElement;
+  Component?: React.ReactNode;
   rowsToDisplay?: number;
   children?: React.ReactNode;
 };
 
-function MultiRow({Component, rowsToDisplay, children, ...props}: Props) {
+const MultiRow: React.FC<Props> = ({Component, rowsToDisplay, children}) => {
   function rowMultiplier(rowsToDisplay: any) {
     const rows = [];
 
@@ -29,6 +29,6 @@ function MultiRow({Component, rowsToDisplay, children, ...props}: Props) {
       {rowMultiplier(rowsToDisplay)}
     </>
   );
-}
+};
 
 export default MultiRow;

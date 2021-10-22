@@ -4,17 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import Enzyme from 'enzyme';
-import Adapter from 'enzyme-adapter-react-16';
-import 'jest-enzyme';
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from '@testing-library/react';
 import React from 'react';
-
-// configure enzyme
-Enzyme.configure({adapter: new Adapter()});
 
 class MockJSONEditor {
   updateText() {}

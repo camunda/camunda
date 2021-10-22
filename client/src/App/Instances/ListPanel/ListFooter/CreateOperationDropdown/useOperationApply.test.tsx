@@ -29,12 +29,10 @@ const mockedGetSearchString = getSearchString as jest.MockedFunction<
   typeof getSearchString
 >;
 
-const OPERATION_TYPE = 'RESOLVE_INCIDENT';
-
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
 
-  result.current.applyBatchOperation(OPERATION_TYPE, jest.fn());
+  result.current.applyBatchOperation('RESOLVE_INCIDENT', jest.fn());
 }
 
 describe('useOperationApply', () => {

@@ -4,50 +4,44 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow} from 'enzyme';
-
-import {ReactComponent as DiagramReset} from 'modules/components/Icon/diagram-reset.svg';
-import {ReactComponent as Plus} from 'modules/components/Icon/plus.svg';
-import {ReactComponent as Minus} from 'modules/components/Icon/minus.svg';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import DiagramControls from './index';
-import * as Styled from './styled';
 
-describe('DiagramControls', () => {
+describe('<DiagramControls />', () => {
   it('should render diagram controls', () => {
-    // given
     const handleZoomIn = jest.fn(),
       handleZoomOut = jest.fn(),
       handleZoomReset = jest.fn();
-    const node = shallow(
+    render(
       <DiagramControls
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleZoomReset={handleZoomReset}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
-    // then
-    expect(node.find(Styled.DiagramControls)).toHaveLength(1);
+    userEvent.click(screen.getByRole('button', {name: 'Reset diagram zoom'}));
 
-    const ZoomResetNode = node.find(Styled.ZoomReset);
-    expect(ZoomResetNode).toHaveLength(1);
-    expect(ZoomResetNode.prop('onClick')).toBe(handleZoomReset);
-    const DiagramResetNode = ZoomResetNode.find(DiagramReset);
-    expect(DiagramResetNode).toHaveLength(1);
+    expect(handleZoomReset).toHaveBeenCalled();
+    expect(handleZoomIn).not.toHaveBeenCalled();
+    expect(handleZoomOut).not.toHaveBeenCalled();
 
-    const ZoomIn = node.find(Styled.ZoomIn);
-    expect(ZoomIn).toHaveLength(1);
-    expect(ZoomIn.prop('onClick')).toBe(handleZoomIn);
-    const PlusNode = ZoomIn.find(Plus);
-    expect(PlusNode).toHaveLength(1);
+    handleZoomReset.mockClear();
+    userEvent.click(screen.getByRole('button', {name: 'Zoom in diagram'}));
 
-    const ZoomOut = node.find(Styled.ZoomOut);
-    expect(ZoomOut).toHaveLength(1);
-    expect(ZoomOut.prop('onClick')).toBe(handleZoomOut);
-    const MinusNode = ZoomOut.find(Minus);
-    expect(MinusNode).toHaveLength(1);
-    expect(node).toMatchSnapshot();
+    expect(handleZoomIn).toHaveBeenCalled();
+    expect(handleZoomReset).not.toHaveBeenCalled();
+    expect(handleZoomOut).not.toHaveBeenCalled();
+
+    handleZoomIn.mockClear();
+    userEvent.click(screen.getByRole('button', {name: 'Zoom out diagram'}));
+
+    expect(handleZoomOut).toHaveBeenCalled();
+    expect(handleZoomReset).not.toHaveBeenCalled();
+    expect(handleZoomIn).not.toHaveBeenCalled();
   });
 });

@@ -6,15 +6,13 @@
 
 import React from 'react';
 
-import {DIRECTION} from 'modules/constants';
-import * as Styled from './styled';
-
-const iconsMap = {
-  [DIRECTION.UP]: Styled.Up,
-  [DIRECTION.DOWN]: Styled.Down,
-  [DIRECTION.LEFT]: Styled.Left,
-  [DIRECTION.RIGHT]: Styled.Right,
-};
+import {
+  CollapseButton as StyledCollapseButton,
+  Up,
+  Down,
+  Left,
+  Right,
+} from './styled';
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   direction: 'UP' | 'DOWN' | 'RIGHT' | 'LEFT';
@@ -25,12 +23,13 @@ const CollapseButton = React.forwardRef<any, Props>(function CollapseButton(
   {direction, onClick, ...props},
   ref
 ) {
-  const TargetIcon = iconsMap[direction];
-
   return (
-    <Styled.CollapseButton ref={ref} {...props} onClick={onClick}>
-      <TargetIcon data-testid={`icon-${direction}`} />
-    </Styled.CollapseButton>
+    <StyledCollapseButton ref={ref} {...props} onClick={onClick}>
+      {direction === 'UP' && <Up data-testid="icon-up" />}
+      {direction === 'DOWN' && <Down data-testid="icon-down" />}
+      {direction === 'LEFT' && <Left data-testid="icon-left" />}
+      {direction === 'RIGHT' && <Right data-testid="icon-right" />}
+    </StyledCollapseButton>
   );
 });
 

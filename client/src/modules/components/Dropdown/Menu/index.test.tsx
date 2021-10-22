@@ -4,34 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow} from 'enzyme';
-
-import {DROPDOWN_PLACEMENT} from 'modules/constants';
+import {render, screen} from '@testing-library/react';
+import {noop} from 'lodash';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import Menu from './index';
-import * as Styled from './styled';
 
-describe('DropdownMenu', () => {
-  let node: any;
-  beforeEach(() => {
-    node = shallow(
-      // @ts-expect-error ts-migrate(2769) FIXME: Type 'string' is not assignable to type '"top" | "... Remove this comment to see the full error message
-      <Menu onKeyDown={jest.fn()} placement={DROPDOWN_PLACEMENT.TOP}>
+describe('<Menu />', () => {
+  it('should render its children', () => {
+    const {rerender} = render(
+      <Menu onKeyDown={noop} placement="top">
         <span>I am a Dropdown.Option Component</span>
-      </Menu>
+      </Menu>,
+      {wrapper: ThemeProvider}
     );
-  });
 
-  it('should renders its children', () => {
-    expect(node.find(Styled.Li)).toExist();
+    expect(screen.getByRole('listitem')).toBeInTheDocument();
 
-    //when
-    node = shallow(
-      // @ts-expect-error ts-migrate(2769) FIXME: Type 'string' is not assignable to type '"top" | "... Remove this comment to see the full error message
-      <Menu onKeyDown={jest.fn()} placement={DROPDOWN_PLACEMENT.TOP} />
-    );
-    //then
-    expect(node.find(Styled.Li)).not.toExist();
+    rerender(<Menu onKeyDown={noop} placement="top" />);
+
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
   });
 });

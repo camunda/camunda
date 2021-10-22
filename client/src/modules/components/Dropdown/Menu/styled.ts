@@ -6,20 +6,18 @@
 
 import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 
-import {DROPDOWN_PLACEMENT} from 'modules/constants';
-
 type Props = {
-  placement: 'top' | 'bottom';
+  $placement?: 'top' | 'bottom';
 };
 
-const PointerBasics: ThemedInterpolationFunction<Props> = ({placement}) => {
+const PointerBasics: ThemedInterpolationFunction<Props> = ({$placement}) => {
   return css`
     position: absolute;
     border: solid transparent;
     content: ' ';
     pointer-events: none;
     z-index: 2;
-    ${placement === DROPDOWN_PLACEMENT.TOP
+    ${$placement === 'top'
       ? css`
           top: 100%;
           left: 25px;
@@ -33,7 +31,7 @@ const PointerBasics: ThemedInterpolationFunction<Props> = ({placement}) => {
 
 const PointerBody: ThemedInterpolationFunction<Props> = ({
   theme,
-  placement,
+  $placement,
 }) => {
   const colors = theme.colors.modules.dropdown.menu.pointerBody;
 
@@ -41,7 +39,7 @@ const PointerBody: ThemedInterpolationFunction<Props> = ({
     border-width: 7px;
     margin-right: -7px;
     border-bottom-color: ${colors.borderColor};
-    ${placement === DROPDOWN_PLACEMENT.TOP
+    ${$placement === 'top'
       ? css`
           transform: rotate(180deg);
         `
@@ -49,13 +47,16 @@ const PointerBody: ThemedInterpolationFunction<Props> = ({
   `;
 };
 
-const PointerShadow = ({theme, placement}: any) => {
+const PointerShadow: ThemedInterpolationFunction<Props> = ({
+  theme,
+  $placement,
+}) => {
   const colors = theme.colors.modules.dropdown.menu.pointerShadow;
 
   return css`
     border-width: 8px;
     border-bottom-color: ${colors.borderColor};
-    ${placement === DROPDOWN_PLACEMENT.TOP
+    ${$placement === 'top'
       ? css`
           transform: rotate(180deg);
         `
@@ -64,10 +65,10 @@ const PointerShadow = ({theme, placement}: any) => {
 };
 
 const Ul = styled.ul<Props>`
-  ${({theme, placement}) => {
+  ${({theme, $placement}) => {
     const colors = theme.colors.modules.dropdown.menu.ul;
     const shadow = theme.shadows.modules.dropdown.menu.ul;
-    const isTop = placement === DROPDOWN_PLACEMENT.TOP;
+    const isTop = $placement === 'top';
 
     return css`
       ${isTop
@@ -161,11 +162,11 @@ const bottomPointer: ThemedInterpolationFunction<Props> = ({theme}) => {
 };
 
 const Li = styled.li<Props>`
-  ${({theme, placement}) => {
+  ${({theme, $placement}) => {
     const colors = theme.colors.modules.dropdown.menu.li;
 
     return css`
-      ${placement === DROPDOWN_PLACEMENT.TOP ? bottomPointer : topPointer}
+      ${$placement === 'top' ? bottomPointer : topPointer}
 
       &:not(:last-child) {
         border-bottom: 1px solid ${colors.borderColor};

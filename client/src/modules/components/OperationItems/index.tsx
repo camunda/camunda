@@ -27,11 +27,16 @@ type ItemProps = {
 const Item: React.FC<ItemProps> = function ({title, onClick, type, ...rest}) {
   return (
     <Styled.Li onClick={onClick}>
-      {/* @ts-expect-error */}
-      <Styled.Button {...rest} type={type} title={title}>
-        {type === 'RESOLVE_INCIDENT' && <Styled.RetryIcon />}
-        {type === 'CANCEL_PROCESS_INSTANCE' && <Styled.CancelIcon />}
-        {type === 'DELETE_PROCESS_INSTANCE' && <Styled.DeleteIcon />}
+      <Styled.Button {...rest} type="button" title={title}>
+        {type === 'RESOLVE_INCIDENT' && (
+          <Styled.RetryIcon data-testid="retry-operation-icon" />
+        )}
+        {type === 'CANCEL_PROCESS_INSTANCE' && (
+          <Styled.CancelIcon data-testid="cancel-operation-icon" />
+        )}
+        {type === 'DELETE_PROCESS_INSTANCE' && (
+          <Styled.DeleteIcon data-testid="delete-operation-icon" />
+        )}
       </Styled.Button>
     </Styled.Li>
   );

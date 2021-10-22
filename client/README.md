@@ -55,10 +55,6 @@ Related files should be close to each other. React components usually consist of
 
 Should contain a default export with the Component. The component implementation should take care of everything directly related to rendering, lifecycle and state management. Complex operations or backend communication should not be in this file, but imported from the service.js file.
 
-### Component.test.js
-
-Should test the React component. All imports from the component under test should be mocked. We are using [jest](https://github.com/facebook/jest), [enzyme](https://github.com/airbnb/enzyme) as well as [jest-enzyme](https://github.com/FormidableLabs/enzyme-matchers).
-
 ### Component.setup.js
 
 Should contain all static mock data which is used in Component.test.js.
@@ -66,10 +62,6 @@ Should contain all static mock data which is used in Component.test.js.
 ### service.js
 
 Should contain all business logic and manage backend communication for a component. This file should be independent from React.
-
-### service.test.js
-
-Should test the service. You should not need enzyme here as the service should be independent from React or any rendered component.
 
 ### constants.js
 

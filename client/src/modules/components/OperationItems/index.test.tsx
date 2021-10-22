@@ -4,87 +4,123 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {noop} from 'lodash';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import OperationItems from './index';
-import {OPERATION_TYPE} from 'modules/constants';
-
-import * as Styled from './styled';
 
 describe('OperationItems', () => {
-  let node: any;
-  let mockOnClick = jest.fn();
-
-  beforeEach(() => {
-    node = shallow(
-      <OperationItems>
-        <OperationItems.Item
-          type={OPERATION_TYPE.RESOLVE_INCIDENT}
-          onClick={() => mockOnClick()}
-        />
-      </OperationItems>
-    );
-  });
-
   it('should render with its children', () => {
-    expect(node.find(Styled.Ul)).toExist();
-    expect(node.find(OperationItems.Item)).toExist();
+    render(
+      <OperationItems>
+        <OperationItems.Item type="RESOLVE_INCIDENT" onClick={noop} />
+      </OperationItems>,
+      {wrapper: ThemeProvider}
+    );
+
+    expect(screen.getByRole('listitem')).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
   describe('Retry Item', () => {
-    beforeEach(() => {
-      node = shallow(
-        <OperationItems.Item
-          type={OPERATION_TYPE.RESOLVE_INCIDENT}
-          onClick={() => mockOnClick()}
-          title={'Retry Instance 1'}
-        />
-      );
-    });
-
     it('should show the correct icon based on the type', () => {
-      expect(node.find(Styled.Button).props().type).toBe(
-        OPERATION_TYPE.RESOLVE_INCIDENT
+      render(
+        <OperationItems>
+          <OperationItems.Item type="RESOLVE_INCIDENT" onClick={noop} />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
       );
-      expect(node.find(Styled.RetryIcon)).toExist();
+
+      expect(screen.getByTestId('retry-operation-icon')).toBeInTheDocument();
     });
 
-    it('should display title', () => {
-      expect(node.find(Styled.Button).props().title).toBe('Retry Instance 1');
+    it('should render retry button', () => {
+      const BUTTON_TITLE = 'Retry Instance 1';
+      render(
+        <OperationItems>
+          <OperationItems.Item
+            type="RESOLVE_INCIDENT"
+            onClick={noop}
+            title={BUTTON_TITLE}
+          />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      expect(
+        screen.getByRole('button', {name: BUTTON_TITLE})
+      ).toBeInTheDocument();
     });
 
     it('should execute the passed method when clicked', () => {
-      node.find(Styled.Li).simulate('click');
-      expect(mockOnClick).toHaveBeenCalled();
+      const BUTTON_TITLE = 'Retry Instance 1';
+      const MOCK_ON_CLICK = jest.fn();
+      render(
+        <OperationItems>
+          <OperationItems.Item
+            type="RESOLVE_INCIDENT"
+            onClick={MOCK_ON_CLICK}
+            title={BUTTON_TITLE}
+          />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      userEvent.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+
+      expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });
   });
 
   describe('Cancel Item', () => {
-    beforeEach(() => {
-      node = shallow(
-        <OperationItems.Item
-          type={OPERATION_TYPE.CANCEL_PROCESS_INSTANCE}
-          onClick={() => mockOnClick()}
-          title={'Cancel Instance 1'}
-        />
-      );
-    });
-
     it('should show the correct icon based on the type', () => {
-      expect(node.find(Styled.Button).props().type).toBe(
-        OPERATION_TYPE.CANCEL_PROCESS_INSTANCE
+      render(
+        <OperationItems>
+          <OperationItems.Item type="CANCEL_PROCESS_INSTANCE" onClick={noop} />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
       );
-      expect(node.find(Styled.CancelIcon)).toExist();
+
+      expect(screen.getByTestId('cancel-operation-icon')).toBeInTheDocument();
     });
 
-    it('should display title', () => {
-      expect(node.find(Styled.Button).props().title).toBe('Cancel Instance 1');
+    it('should render cancel button', () => {
+      const BUTTON_TITLE = 'Cancel Instance 1';
+      render(
+        <OperationItems>
+          <OperationItems.Item
+            type="CANCEL_PROCESS_INSTANCE"
+            onClick={noop}
+            title={BUTTON_TITLE}
+          />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      expect(
+        screen.getByRole('button', {name: BUTTON_TITLE})
+      ).toBeInTheDocument();
     });
 
     it('should execute the passed method when clicked', () => {
-      node.find(Styled.Li).simulate('click');
-      expect(mockOnClick).toHaveBeenCalled();
+      const BUTTON_TITLE = 'Cancel Instance 1';
+      const MOCK_ON_CLICK = jest.fn();
+      render(
+        <OperationItems>
+          <OperationItems.Item
+            type="CANCEL_PROCESS_INSTANCE"
+            onClick={MOCK_ON_CLICK}
+            title={BUTTON_TITLE}
+          />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      userEvent.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+
+      expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });
   });
 });

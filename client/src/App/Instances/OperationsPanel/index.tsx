@@ -6,8 +6,6 @@
 
 import React, {useEffect, useRef} from 'react';
 
-import {PANEL_POSITION} from 'modules/constants';
-
 import {operationsStore} from 'modules/stores/operations';
 import {CollapsablePanel, OperationsList, EmptyMessage} from './styled';
 import * as CONSTANTS from './constants';
@@ -35,7 +33,7 @@ const OperationsPanel: React.FC = observer(() => {
   return (
     <CollapsablePanel
       label={CONSTANTS.OPERATIONS_LABEL}
-      panelPosition={PANEL_POSITION.RIGHT}
+      panelPosition="RIGHT"
       maxWidth={478}
       isOverlay
       isCollapsed={isOperationsCollapsed}

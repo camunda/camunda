@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import {ReactComponent as DiagramReset} from 'modules/components/Icon/diagram-reset.svg';
 import {ReactComponent as Plus} from 'modules/components/Icon/plus.svg';
 import {ReactComponent as Minus} from 'modules/components/Icon/minus.svg';
@@ -18,22 +16,24 @@ type Props = {
   handleZoomOut: (...args: any[]) => any;
 };
 
-export default function DiagramControls({
+const DiagramControls: React.FC<Props> = ({
   handleZoomReset,
   handleZoomIn,
   handleZoomOut,
-}: Props) {
+}) => {
   return (
     <Styled.DiagramControls>
-      <Styled.ZoomReset onClick={handleZoomReset}>
+      <Styled.ZoomReset onClick={handleZoomReset} title="Reset diagram zoom">
         <DiagramReset />
       </Styled.ZoomReset>
-      <Styled.ZoomIn onClick={handleZoomIn}>
+      <Styled.ZoomIn onClick={handleZoomIn} title="Zoom in diagram">
         <Plus />
       </Styled.ZoomIn>
-      <Styled.ZoomOut onClick={handleZoomOut}>
+      <Styled.ZoomOut onClick={handleZoomOut} title="Zoom out diagram">
         <Minus />
       </Styled.ZoomOut>
     </Styled.DiagramControls>
   );
-}
+};
+
+export default DiagramControls;

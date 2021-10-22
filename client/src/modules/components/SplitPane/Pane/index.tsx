@@ -8,7 +8,7 @@ import React, {Children, cloneElement, useContext} from 'react';
 import {isEqual} from 'lodash';
 
 import Panel from 'modules/components/Panel';
-import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
+import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
@@ -52,7 +52,7 @@ class Pane extends React.Component<Props> {
     this.topButton = (
       <Styled.PaneCollapseButton
         onClick={this.handleTopExpand}
-        direction={DIRECTION.DOWN}
+        direction="DOWN"
         title={`Expand ${top}`}
         ref={this.topButtonRef}
       />
@@ -61,7 +61,7 @@ class Pane extends React.Component<Props> {
     this.bottomButton = (
       <Styled.PaneCollapseButton
         onClick={this.handleBottomExpand}
-        direction={DIRECTION.UP}
+        direction="UP"
         title={`Expand ${bottom}`}
         ref={this.bottomButtonRef}
       />

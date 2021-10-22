@@ -6,28 +6,24 @@
 
 import React from 'react';
 import MultiRow from './index';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 
-const dummyComponent = () => <div>Row</div>;
+const MOCK_CONTENT = 'Row';
+const DummyComponent: React.FC = () => <div>{MOCK_CONTENT}</div>;
 
 describe('MultiRow', () => {
   it('should render no rows', () => {
-    const node = shallow(
-      // @ts-expect-error ts-migrate(2739) FIXME: Type '() => Element' is missing the following prop... Remove this comment to see the full error message
-      <MultiRow Component={dummyComponent} rowsToDisplay={0} />
-    );
+    render(<MultiRow Component={DummyComponent} rowsToDisplay={0} />);
 
-    expect(node).toMatchSnapshot();
+    expect(screen.queryByText(MOCK_CONTENT)).not.toBeInTheDocument();
   });
 
   it('should render 5 rows with child', () => {
-    const node = shallow(
-      // @ts-expect-error ts-migrate(2322) FIXME: Type '() => JSX.Element' is not assignable to type... Remove this comment to see the full error message
-      <MultiRow Component={dummyComponent} rowsToDisplay={5}>
-        <div>Header</div>
-      </MultiRow>
+    const NUMBER_OF_ROWS = 5;
+    render(
+      <MultiRow Component={DummyComponent} rowsToDisplay={NUMBER_OF_ROWS} />
     );
 
-    expect(node).toMatchSnapshot();
+    expect(screen.queryAllByText(MOCK_CONTENT)).toHaveLength(NUMBER_OF_ROWS);
   });
 });

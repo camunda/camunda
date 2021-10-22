@@ -7,7 +7,6 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
@@ -16,7 +15,7 @@ describe('CollapsablePanel', () => {
     render(
       <CollapsablePanel
         label="Cool Panel"
-        panelPosition={PANEL_POSITION.RIGHT}
+        panelPosition="RIGHT"
         isCollapsed={false}
         toggle={() => {}}
       >

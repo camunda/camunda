@@ -7,7 +7,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 
-import {PANEL_POSITION, BADGE_TYPE} from 'modules/constants';
+import {BADGE_TYPE} from 'modules/constants';
 
 import {instancesStore} from 'modules/stores/instances';
 
@@ -38,7 +38,7 @@ const FiltersPanel: React.FC = observer(({children}) => {
       maxWidth={328}
       label="Filters"
       header={<Header />}
-      panelPosition={PANEL_POSITION.LEFT}
+      panelPosition="LEFT"
       isCollapsed={isFiltersCollapsed}
       toggle={toggleFiltersPanel}
       scrollable

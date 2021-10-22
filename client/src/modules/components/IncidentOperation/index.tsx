@@ -6,7 +6,6 @@
 
 import React, {useState} from 'react';
 
-import {OPERATION_TYPE} from 'modules/constants';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import {operationsStore} from 'modules/stores/operations';
 import {useNotifications} from 'modules/notifications';
@@ -42,7 +41,7 @@ const IncidentOperation: React.FC<Props> = observer(
       operationsStore.applyOperation({
         instanceId,
         payload: {
-          operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+          operationType: 'RESOLVE_INCIDENT',
           // @ts-expect-error
           incidentId: incident.id,
         },
@@ -57,7 +56,7 @@ const IncidentOperation: React.FC<Props> = observer(
         )}
         <OperationItems>
           <OperationItems.Item
-            type={OPERATION_TYPE.RESOLVE_INCIDENT}
+            type="RESOLVE_INCIDENT"
             onClick={handleOnClick}
             data-testid="retry-incident"
             title="Retry Incident"

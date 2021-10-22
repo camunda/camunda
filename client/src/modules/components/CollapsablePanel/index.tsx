@@ -6,11 +6,9 @@
 
 import React, {useRef, useEffect} from 'react';
 
-import {PANEL_POSITION} from 'modules/constants';
 import usePrevious from 'modules/hooks/usePrevious';
 import Panel from 'modules/components/Panel';
 import * as Styled from './styled';
-import {DIRECTION} from '../../constants';
 
 const TRANSITION_TIMEOUT = 200;
 
@@ -45,9 +43,6 @@ const CollapsablePanel = React.forwardRef<HTMLDivElement, Props>(
     },
     ref
   ) => {
-    const buttonDirection =
-      panelPosition === PANEL_POSITION.RIGHT ? DIRECTION.RIGHT : DIRECTION.LEFT;
-
     const expandButtonRef = useRef<HTMLButtonElement>(null);
     const collapseButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -103,7 +98,7 @@ const CollapsablePanel = React.forwardRef<HTMLDivElement, Props>(
           <Styled.Header panelPosition={panelPosition}>
             <Styled.CollapseButton
               ref={collapseButtonRef}
-              direction={buttonDirection}
+              direction={panelPosition}
               title={`Collapse ${label}`}
               onClick={toggle}
               data-testid="collapse-button"

@@ -60,7 +60,7 @@ describe('Pane', () => {
       expect(
         screen.queryByRole('button', {name: 'Expand Top'})
       ).not.toBeInTheDocument();
-      expect(screen.getByTestId('icon-UP')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-up')).toBeInTheDocument();
     });
 
     it("'should render both CollapseButtons if pane is in default position", () => {
@@ -83,8 +83,8 @@ describe('Pane', () => {
         screen.getByRole('button', {name: 'Expand Bottom'})
       ).toBeInTheDocument();
 
-      expect(screen.getByTestId('icon-DOWN')).toBeInTheDocument();
-      expect(screen.getByTestId('icon-UP')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-down')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-up')).toBeInTheDocument();
     });
 
     it("should render CollapseButton with DOWN icon if pane is expanded'", () => {
@@ -107,8 +107,8 @@ describe('Pane', () => {
         screen.queryByRole('button', {name: 'Expand Bottom'})
       ).not.toBeInTheDocument();
 
-      expect(screen.getByTestId('icon-DOWN')).toBeInTheDocument();
-      expect(screen.queryByTestId('icon-UP')).not.toBeInTheDocument();
+      expect(screen.getByTestId('icon-down')).toBeInTheDocument();
+      expect(screen.queryByTestId('icon-up')).not.toBeInTheDocument();
     });
   });
 
