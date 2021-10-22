@@ -28,7 +28,7 @@ RUN echo "running PROD pre-install commands"
 FROM eclipse-temurin:17 as dev
 RUN echo "running DEV pre-install commands"
 RUN apt-get update
-RUN wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
+RUN curl -sSL https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
 
 # Building application image
 FROM ${APP_ENV} as app
