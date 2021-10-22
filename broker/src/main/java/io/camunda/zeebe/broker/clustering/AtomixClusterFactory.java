@@ -14,13 +14,11 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
-import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
-import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -37,11 +35,10 @@ public final class AtomixClusterFactory {
     final var localMemberId = Integer.toString(nodeId);
     final var networkCfg = configuration.getNetwork();
 
-    final NodeDiscoveryProvider discoveryProvider =
-        createDiscoveryProvider(clusterCfg, localMemberId);
+    final var discoveryProvider = createDiscoveryProvider(clusterCfg, localMemberId);
 
-    final MembershipCfg membershipCfg = clusterCfg.getMembership();
-    final GroupMembershipProtocol membershipProtocol =
+    final var membershipCfg = clusterCfg.getMembership();
+    final var membershipProtocol =
         SwimMembershipProtocol.builder()
             .withFailureTimeout(membershipCfg.getFailureTimeout())
             .withGossipInterval(membershipCfg.getGossipInterval())
@@ -55,7 +52,7 @@ public final class AtomixClusterFactory {
             .withSyncInterval(membershipCfg.getSyncInterval())
             .build();
 
-    final AtomixClusterBuilder atomixBuilder =
+    final var atomixBuilder =
         new AtomixClusterBuilder(new ClusterConfig())
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
@@ -67,6 +64,12 @@ public final class AtomixClusterFactory {
                     networkCfg.getInternalApi().getAdvertisedHost(),
                     networkCfg.getInternalApi().getAdvertisedPort()))
             .withMembershipProvider(discoveryProvider);
+
+    final var securityCfg = networkCfg.getSecurity();
+    if (securityCfg.isEnabled()) {
+      atomixBuilder.withSecurity(
+          securityCfg.getCertificateChainPath(), securityCfg.getPrivateKeyPath());
+    }
 
     return atomixBuilder.build();
   }

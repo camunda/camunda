@@ -59,7 +59,7 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
       try {
         zeebeClient.newTopologyRequest().send().get();
         resultBuilder = Health.up();
-      } catch (Throwable t) {
+      } catch (final Throwable t) {
         resultBuilder = Health.down().withException(t);
       }
     }
@@ -85,7 +85,8 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
 
     if (gatewayCfg.getSecurity().isEnabled()) {
       clientBuilder =
-          clientBuilder.caCertificatePath(gatewayCfg.getSecurity().getCertificateChainPath());
+          clientBuilder.caCertificatePath(
+              gatewayCfg.getSecurity().getCertificateChainPath().getAbsolutePath());
     } else {
       clientBuilder = clientBuilder.usePlaintext();
     }

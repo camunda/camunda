@@ -5,18 +5,30 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.impl.configuration;
-
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_TLS_ENABLED;
+package io.camunda.zeebe.broker.system.configuration;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 
-public final class SecurityCfg {
+public final class SecurityCfg implements ConfigurationEntry {
+  private static final boolean DEFAULT_ENABLED = false;
 
-  private boolean enabled = DEFAULT_TLS_ENABLED;
+  private boolean enabled = DEFAULT_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    final var brokerBasePath = Path.of(brokerBase);
+    if (certificateChainPath != null) {
+      certificateChainPath = brokerBasePath.resolve(certificateChainPath.toPath()).toFile();
+    }
+
+    if (privateKeyPath != null) {
+      privateKeyPath = brokerBasePath.resolve(privateKeyPath.toPath()).toFile();
+    }
+  }
 
   public boolean isEnabled() {
     return enabled;
@@ -58,7 +70,8 @@ public final class SecurityCfg {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final SecurityCfg that = (SecurityCfg) o;
+
+    final var that = (SecurityCfg) o;
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath);
@@ -66,7 +79,7 @@ public final class SecurityCfg {
 
   @Override
   public String toString() {
-    return "MonitoringCfg{"
+    return "SecurityCfg{"
         + "enabled="
         + enabled
         + ", certificateChainPath='"

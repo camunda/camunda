@@ -16,6 +16,7 @@ import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.it.clustering.DeploymentClusteredTest;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.netty.util.NetUtil;
+import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -65,7 +66,7 @@ public final class SecurityTest {
     gatewayCfg
         .getSecurity()
         .setEnabled(true)
-        .setCertificateChainPath(certificatePath)
-        .setPrivateKeyPath(privateKeyPath);
+        .setCertificateChainPath(new File(certificatePath))
+        .setPrivateKeyPath(new File(privateKeyPath));
   }
 }

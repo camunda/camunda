@@ -17,6 +17,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import java.io.File;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
@@ -207,7 +208,9 @@ public class ResponsiveHealthIndicatorTest {
     securityEnabledGatewayCfg.getNetwork().setHost("testhost");
     securityEnabledGatewayCfg.getNetwork().setPort(1234);
     securityEnabledGatewayCfg.getSecurity().setEnabled(true);
-    securityEnabledGatewayCfg.getSecurity().setCertificateChainPath(CERTIFICATE_CHAIN_PATH);
+    securityEnabledGatewayCfg
+        .getSecurity()
+        .setCertificateChainPath(new File(CERTIFICATE_CHAIN_PATH));
     securityEnabledGatewayCfg.init();
 
     // when

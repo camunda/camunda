@@ -34,13 +34,21 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
-
     final var brokerCfg = brokerStartupContext.getBrokerConfiguration();
-
     final var socketCfg = brokerCfg.getNetwork().getCommandApi();
+    final var securityCfg = brokerCfg.getNetwork().getSecurity();
+
     final var messagingConfig = new MessagingConfig();
     messagingConfig.setInterfaces(List.of(socketCfg.getHost()));
     messagingConfig.setPort(socketCfg.getPort());
+
+    if (securityCfg.isEnabled()) {
+      messagingConfig
+          .setTlsEnabled(true)
+          .setCertificateChain(securityCfg.getCertificateChainPath())
+          .setPrivateKey(securityCfg.getPrivateKeyPath());
+    }
+
     final var messagingService =
         new NettyMessagingService(
             brokerCfg.getCluster().getClusterName(),

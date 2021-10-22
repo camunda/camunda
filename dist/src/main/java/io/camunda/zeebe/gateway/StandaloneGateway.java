@@ -24,7 +24,6 @@ import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
-import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -209,10 +208,7 @@ public class StandaloneGateway
               + "configured");
     }
 
-    final var certChain = new File(certificateChainPath);
-    final var privateKey = new File(privateKeyPath);
-
-    if (!certChain.canRead()) {
+    if (!certificateChainPath.canRead()) {
       throw new IllegalArgumentException(
           String.format(
               "Expected the configured cluster security certificate chain path '%s' to point to a"
@@ -220,7 +216,7 @@ public class StandaloneGateway
               certificateChainPath));
     }
 
-    if (!privateKey.canRead()) {
+    if (!privateKeyPath.canRead()) {
       throw new IllegalArgumentException(
           String.format(
               "Expected the configured cluster security private key path '%s' to point to a "
@@ -228,6 +224,6 @@ public class StandaloneGateway
               privateKeyPath));
     }
 
-    builder.withSecurity(certChain, privateKey);
+    builder.withSecurity(certificateChainPath, privateKeyPath);
   }
 }
