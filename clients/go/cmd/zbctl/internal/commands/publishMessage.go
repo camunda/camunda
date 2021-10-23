@@ -18,6 +18,10 @@ import (
 	"context"
 	"time"
 
+	"errors"
+	"io/ioutil"
+
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +30,7 @@ var (
 	publishMessageID             string
 	publishMessageTTL            time.Duration
 	publishMessageVariables      string
+	// publishMessageVariablesFile  string
 )
 
 var publishMessageCmd = &cobra.Command{
@@ -34,6 +39,18 @@ var publishMessageCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		js := utils.NewJSONStringSerializer()
+		jsonErr := js.Validate("variables", publishMessageVariables)
+		if jsonErr != nil {
+			// not a JSON string
+			fileVariables, err := ioutil.ReadFile(publishMessageVariables)
+			if err != nil {
+				// not a file path
+				return errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
+			}
+			publishMessageVariables = string(fileVariables)
+		}
+
 		request, err := client.NewPublishMessageCommand().
 			MessageName(args[0]).
 			CorrelationKey(publishMessageCorrelationKey).
@@ -63,9 +80,12 @@ func init() {
 	publishMessageCmd.Flags().StringVar(&publishMessageCorrelationKey, "correlationKey", "", "Specify message correlation key")
 	publishMessageCmd.Flags().StringVar(&publishMessageID, "messageId", "", "Specify the unique id of the message")
 	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message. Example values: 300ms, 50s or 1m")
-	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string")
-
+	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string or path to JSON file")
+	// publishMessageCmd.Flags().StringVar(&publishMessageVariablesFile, "variablesFile", "", "Specify filepath to a json file with message variables. Overrides --variables flag")
 	if err := publishMessageCmd.MarkFlagRequired("correlationKey"); err != nil {
 		panic(err)
 	}
+	// if err := publishMessageCmd.MarkFlagFilename("variablesFile", "json"); err != nil {
+	// 	panic(err)
+	// }
 }
