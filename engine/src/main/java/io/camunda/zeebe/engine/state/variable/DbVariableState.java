@@ -87,7 +87,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void setVariableLocal(
+  public synchronized void setVariableLocal(
       final long key,
       final long scopeKey,
       final long processDefinitionKey,
@@ -98,7 +98,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void setVariableLocal(
+  public synchronized void setVariableLocal(
       final long key,
       final long scopeKey,
       final long processDefinitionKey,
@@ -121,7 +121,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void createScope(final long childKey, final long parentKey) {
+  public synchronized void createScope(final long childKey, final long parentKey) {
     this.childKey.wrapLong(childKey);
     this.parentKey.set(parentKey);
 
@@ -129,7 +129,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void removeScope(final long scopeKey) {
+  public synchronized void removeScope(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
 
     removeAllVariables(scopeKey);
@@ -139,7 +139,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void removeAllVariables(final long scopeKey) {
+  public synchronized void removeAllVariables(final long scopeKey) {
     visitVariablesLocal(
         scopeKey,
         dbString -> true,
@@ -148,20 +148,21 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public void setTemporaryVariables(final long scopeKey, final DirectBuffer variables) {
+  public synchronized void setTemporaryVariables(
+      final long scopeKey, final DirectBuffer variables) {
     this.scopeKey.wrapLong(scopeKey);
     temporaryVariables.set(variables);
     temporaryVariableStoreColumnFamily.put(this.scopeKey, temporaryVariables);
   }
 
   @Override
-  public void removeTemporaryVariables(final long scopeKey) {
+  public synchronized void removeTemporaryVariables(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     temporaryVariableStoreColumnFamily.delete(this.scopeKey);
   }
 
   @Override
-  public DirectBuffer getVariableLocal(final long scopeKey, final DirectBuffer name) {
+  public synchronized DirectBuffer getVariableLocal(final long scopeKey, final DirectBuffer name) {
     final VariableInstance variable = getVariableLocal(scopeKey, name, 0, name.capacity());
 
     if (variable != null) {
@@ -180,7 +181,7 @@ public class DbVariableState implements MutableVariableState {
    * @return the value of the variable, or {@code null} if it is not present in the variable scope
    */
   @Override
-  public DirectBuffer getVariable(final long scopeKey, final DirectBuffer name) {
+  public synchronized DirectBuffer getVariable(final long scopeKey, final DirectBuffer name) {
     return getVariable(scopeKey, name, 0, name.capacity());
   }
 
@@ -195,7 +196,7 @@ public class DbVariableState implements MutableVariableState {
    * @return the value of the variable, or {@code null} if it is not present in the variable scope
    */
   @Override
-  public DirectBuffer getVariable(
+  public synchronized DirectBuffer getVariable(
       final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
 
     long currentScopeKey = scopeKey;
@@ -214,7 +215,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public DirectBuffer getVariablesAsDocument(final long scopeKey) {
+  public synchronized DirectBuffer getVariablesAsDocument(final long scopeKey) {
 
     collectedVariables.clear();
     writer.wrap(documentResultBuffer, 0);
@@ -243,7 +244,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public DirectBuffer getVariablesAsDocument(
+  public synchronized DirectBuffer getVariablesAsDocument(
       final long scopeKey, final Collection<DirectBuffer> names) {
 
     variablesToCollect.clear();
@@ -271,7 +272,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public DirectBuffer getVariablesLocalAsDocument(final long scopeKey) {
+  public synchronized DirectBuffer getVariablesLocalAsDocument(final long scopeKey) {
     writer.wrap(documentResultBuffer, 0);
     writer.reserveMapHeader();
 
@@ -294,7 +295,7 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public DirectBuffer getTemporaryVariables(final long scopeKey) {
+  public synchronized DirectBuffer getTemporaryVariables(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     final TemporaryVariables variables = temporaryVariableStoreColumnFamily.get(this.scopeKey);
 
@@ -302,19 +303,20 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public boolean isEmpty() {
+  public synchronized boolean isEmpty() {
     return variablesColumnFamily.isEmpty()
         && childParentColumnFamily.isEmpty()
         && temporaryVariableStoreColumnFamily.isEmpty();
   }
 
   @Override
-  public VariableInstance getVariableInstanceLocal(final long scopeKey, final DirectBuffer name) {
+  public synchronized VariableInstance getVariableInstanceLocal(
+      final long scopeKey, final DirectBuffer name) {
     return getVariableLocal(scopeKey, name, 0, name.capacity());
   }
 
   @Override
-  public long getParentScopeKey(final long childScopeKey) {
+  public synchronized long getParentScopeKey(final long childScopeKey) {
     childKey.wrapLong(childScopeKey);
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);

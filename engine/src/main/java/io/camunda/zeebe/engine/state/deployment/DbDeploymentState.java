@@ -57,21 +57,36 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
-  public void addPendingDeploymentDistribution(final long deploymentKey, final int partition) {
+  public synchronized void addPendingDeploymentDistribution(
+      final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
     pendingDeploymentColumnFamily.put(deploymentPartitionKey, DbNil.INSTANCE);
   }
 
   @Override
-  public void removePendingDeploymentDistribution(final long deploymentKey, final int partition) {
+  public synchronized void removePendingDeploymentDistribution(
+      final long deploymentKey, final int partition) {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partition);
     pendingDeploymentColumnFamily.delete(deploymentPartitionKey);
   }
 
   @Override
-  public boolean hasPendingDeploymentDistribution(final long deploymentKey) {
+  public synchronized void storeDeploymentRecord(final long key, final DeploymentRecord value) {
+    deploymentKey.wrapLong(key);
+    deploymentRaw.setDeploymentRecord(value);
+    deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+  }
+
+  @Override
+  public synchronized void removeDeploymentRecord(final long key) {
+    deploymentKey.wrapLong(key);
+    deploymentRawColumnFamily.delete(deploymentKey);
+  }
+
+  @Override
+  public synchronized boolean hasPendingDeploymentDistribution(final long deploymentKey) {
     this.deploymentKey.wrapLong(deploymentKey);
 
     final var hasPending = new MutableBoolean();
@@ -86,14 +101,21 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
-  public void storeDeploymentRecord(final long key, final DeploymentRecord value) {
+  public synchronized DeploymentRecord getStoredDeploymentRecord(final long key) {
     deploymentKey.wrapLong(key);
-    deploymentRaw.setDeploymentRecord(value);
-    deploymentRawColumnFamily.put(deploymentKey, deploymentRaw);
+
+    final var storedDeploymentRaw = deploymentRawColumnFamily.get(deploymentKey);
+
+    DeploymentRecord record = null;
+    if (storedDeploymentRaw != null) {
+      record = storedDeploymentRaw.getDeploymentRecord();
+    }
+
+    return record;
   }
 
   @Override
-  public void foreachPendingDeploymentDistribution(
+  public synchronized void foreachPendingDeploymentDistribution(
       final PendingDeploymentVisitor pendingDeploymentVisitor) {
 
     final MutableReference<DirectBuffer> lastDeployment = new MutableReference<>();
@@ -119,25 +141,5 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
           pendingDeploymentVisitor.visit(deploymentKey, partitionId, lastDeployment.get());
         });
-  }
-
-  @Override
-  public void removeDeploymentRecord(final long key) {
-    deploymentKey.wrapLong(key);
-    deploymentRawColumnFamily.delete(deploymentKey);
-  }
-
-  @Override
-  public DeploymentRecord getStoredDeploymentRecord(final long key) {
-    deploymentKey.wrapLong(key);
-
-    final var storedDeploymentRaw = deploymentRawColumnFamily.get(deploymentKey);
-
-    DeploymentRecord record = null;
-    if (storedDeploymentRaw != null) {
-      record = storedDeploymentRaw.getDeploymentRecord();
-    }
-
-    return record;
   }
 }

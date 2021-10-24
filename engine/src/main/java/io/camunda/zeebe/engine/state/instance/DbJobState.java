@@ -87,7 +87,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void create(final long key, final JobRecord record) {
+  public synchronized void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     createJob(key, record, type);
   }
@@ -99,7 +99,7 @@ public final class DbJobState implements JobState, MutableJobState {
    * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
    */
   @Override
-  public void activate(final long key, final JobRecord record) {
+  public synchronized void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
@@ -117,7 +117,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void timeout(final long key, final JobRecord record) {
+  public synchronized void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
@@ -129,29 +129,29 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void complete(final long key, final JobRecord record) {
+  public synchronized void complete(final long key, final JobRecord record) {
     delete(key, record);
   }
 
   @Override
-  public void cancel(final long key, final JobRecord record) {
+  public synchronized void cancel(final long key, final JobRecord record) {
     delete(key, record);
   }
 
   @Override
-  public void disable(final long key, final JobRecord record) {
+  public synchronized void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
     makeJobNotActivatable(record.getTypeBuffer());
   }
 
   @Override
-  public void throwError(final long key, final JobRecord updatedValue) {
+  public synchronized void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
     makeJobNotActivatable(updatedValue.getTypeBuffer());
   }
 
   @Override
-  public void delete(final long key, final JobRecord record) {
+  public synchronized void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
@@ -166,18 +166,18 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void fail(final long key, final JobRecord updatedValue) {
+  public synchronized void fail(final long key, final JobRecord updatedValue) {
     final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
     updateJob(key, updatedValue, newState);
   }
 
   @Override
-  public void resolve(final long key, final JobRecord updatedValue) {
+  public synchronized void resolve(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ACTIVATABLE);
   }
 
   @Override
-  public JobRecord updateJobRetries(final long jobKey, final int retries) {
+  public synchronized JobRecord updateJobRetries(final long jobKey, final int retries) {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
@@ -216,7 +216,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void forEachTimedOutEntry(
+  public synchronized void forEachTimedOutEntry(
       final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
 
     deadlinesColumnFamily.whileTrue(
@@ -232,7 +232,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public boolean exists(final long jobKey) {
+  public synchronized boolean exists(final long jobKey) {
     this.jobKey.wrapLong(jobKey);
     return jobsColumnFamily.exists(this.jobKey);
   }
@@ -251,12 +251,12 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public boolean isInState(final long key, final State state) {
+  public synchronized boolean isInState(final long key, final State state) {
     return getState(key) == state;
   }
 
   @Override
-  public void forEachActivatableJobs(
+  public synchronized void forEachActivatableJobs(
       final DirectBuffer type, final BiFunction<Long, JobRecord, Boolean> callback) {
     jobTypeKey.wrapBuffer(type);
 
@@ -270,18 +270,19 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public JobRecord getJob(final long key) {
+  public synchronized JobRecord getJob(final long key) {
     jobKey.wrapLong(key);
     final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
     return jobState == null ? null : jobState.getRecord();
   }
 
   @Override
-  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
+  public synchronized void setJobsAvailableCallback(
+      final Consumer<String> onJobsAvailableCallback) {
     this.onJobsAvailableCallback = onJobsAvailableCallback;
   }
 
-  boolean visitJob(
+  synchronized boolean visitJob(
       final long jobKey,
       final BiFunction<Long, JobRecord, Boolean> callback,
       final Runnable cleanupRunnable) {

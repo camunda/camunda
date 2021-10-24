@@ -70,7 +70,7 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public void createIncident(final long incidentKey, final IncidentRecord incident) {
+  public synchronized void createIncident(final long incidentKey, final IncidentRecord incident) {
     this.incidentKey.wrapLong(incidentKey);
     incidentWrite.setRecord(incident);
     incidentColumnFamily.put(this.incidentKey, incidentWrite);
@@ -88,18 +88,7 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public IncidentRecord getIncidentRecord(final long incidentKey) {
-    this.incidentKey.wrapLong(incidentKey);
-
-    final Incident incident = incidentColumnFamily.get(this.incidentKey);
-    if (incident != null) {
-      return incident.getRecord();
-    }
-    return null;
-  }
-
-  @Override
-  public void deleteIncident(final long key) {
+  public synchronized void deleteIncident(final long key) {
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
     if (incidentRecord != null) {
@@ -118,7 +107,18 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public long getProcessInstanceIncidentKey(final long processInstanceKey) {
+  public synchronized IncidentRecord getIncidentRecord(final long incidentKey) {
+    this.incidentKey.wrapLong(incidentKey);
+
+    final Incident incident = incidentColumnFamily.get(this.incidentKey);
+    if (incident != null) {
+      return incident.getRecord();
+    }
+    return null;
+  }
+
+  @Override
+  public synchronized long getProcessInstanceIncidentKey(final long processInstanceKey) {
     elementInstanceKey.wrapLong(processInstanceKey);
 
     final IncidentKey incidentKey = processInstanceIncidentColumnFamily.get(elementInstanceKey);
@@ -131,7 +131,7 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public long getJobIncidentKey(final long jobKey) {
+  public synchronized long getJobIncidentKey(final long jobKey) {
     this.jobKey.wrapLong(jobKey);
     final IncidentKey incidentKey = jobIncidentColumnFamily.get(this.jobKey);
 
@@ -142,12 +142,12 @@ public final class DbIncidentState implements MutableIncidentState {
   }
 
   @Override
-  public boolean isJobIncident(final IncidentRecord record) {
+  public synchronized boolean isJobIncident(final IncidentRecord record) {
     return record.getJobKey() > 0;
   }
 
   @Override
-  public void forExistingProcessIncident(
+  public synchronized void forExistingProcessIncident(
       final long elementInstanceKey, final ObjLongConsumer<IncidentRecord> resolver) {
     final long processIncidentKey = getProcessInstanceIncidentKey(elementInstanceKey);
 

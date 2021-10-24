@@ -62,7 +62,7 @@ public final class DbBlackListState implements MutableBlackListState {
   }
 
   @Override
-  public boolean isOnBlacklist(final TypedRecord record) {
+  public synchronized boolean isOnBlacklist(final TypedRecord record) {
     final UnpackedObject value = record.getValue();
     if (value instanceof ProcessInstanceRelated) {
       final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
@@ -74,7 +74,7 @@ public final class DbBlackListState implements MutableBlackListState {
   }
 
   @Override
-  public boolean tryToBlacklist(
+  public synchronized boolean tryToBlacklist(
       final TypedRecord<?> typedRecord, final Consumer<Long> onBlacklistingInstance) {
     final Intent intent = typedRecord.getIntent();
     if (shouldBeBlacklisted(intent)) {
@@ -89,7 +89,7 @@ public final class DbBlackListState implements MutableBlackListState {
   }
 
   @Override
-  public void blacklistProcessInstance(final long processInstanceKey) {
+  public synchronized void blacklistProcessInstance(final long processInstanceKey) {
     blacklist(processInstanceKey);
   }
 

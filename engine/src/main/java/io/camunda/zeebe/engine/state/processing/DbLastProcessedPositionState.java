@@ -33,13 +33,13 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
   }
 
   @Override
-  public long getLastSuccessfulProcessedRecordPosition() {
+  public synchronized long getLastSuccessfulProcessedRecordPosition() {
     final LastProcessedPosition position = positionColumnFamily.get(positionKey);
     return position != null ? position.get() : NO_EVENTS_PROCESSED;
   }
 
   @Override
-  public void markAsProcessed(final long position) {
+  public synchronized void markAsProcessed(final long position) {
     this.position.set(position);
     positionColumnFamily.put(positionKey, this.position);
   }

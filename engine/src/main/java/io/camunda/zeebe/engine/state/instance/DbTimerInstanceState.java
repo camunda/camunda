@@ -54,7 +54,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
-  public void put(final TimerInstance timer) {
+  public synchronized void put(final TimerInstance timer) {
     timerKey.wrapLong(timer.getKey());
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
 
@@ -65,7 +65,18 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
-  public long findTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
+  public synchronized void remove(final TimerInstance timer) {
+    elementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    timerInstanceColumnFamily.delete(elementAndTimerKey);
+
+    dueDateKey.wrapLong(timer.getDueDate());
+    dueDateColumnFamily.delete(dueDateCompositeKey);
+  }
+
+  @Override
+  public synchronized long findTimersWithDueDateBefore(
+      final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
     dueDateColumnFamily.whileTrue(
@@ -80,7 +91,9 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
           }
 
           if (!consumed) {
-            nextDueDate = dueDate.getValue();
+            synchronized (this) {
+              nextDueDate = dueDate.getValue();
+            }
           }
           return consumed;
         });
@@ -89,7 +102,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
-  public void forEachTimerForElementInstance(
+  public synchronized void forEachTimerForElementInstance(
       final long elementInstanceKey, final Consumer<TimerInstance> action) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
 
@@ -101,20 +114,10 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
-  public TimerInstance get(final long elementInstanceKey, final long timerKey) {
+  public synchronized TimerInstance get(final long elementInstanceKey, final long timerKey) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
-  }
-
-  @Override
-  public void remove(final TimerInstance timer) {
-    elementInstanceKey.wrapLong(timer.getElementInstanceKey());
-    timerKey.wrapLong(timer.getKey());
-    timerInstanceColumnFamily.delete(elementAndTimerKey);
-
-    dueDateKey.wrapLong(timer.getDueDate());
-    dueDateColumnFamily.delete(dueDateCompositeKey);
   }
 }

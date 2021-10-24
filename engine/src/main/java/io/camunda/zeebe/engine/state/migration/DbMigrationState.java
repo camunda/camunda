@@ -85,7 +85,7 @@ public class DbMigrationState implements MutableMigrationState {
   }
 
   @Override
-  public void migrateMessageSubscriptionSentTime(
+  public synchronized void migrateMessageSubscriptionSentTime(
       final MutableMessageSubscriptionState messageSubscriptionState,
       final MutablePendingMessageSubscriptionState transientState) {
 
@@ -108,7 +108,7 @@ public class DbMigrationState implements MutableMigrationState {
   }
 
   @Override
-  public void migrateProcessMessageSubscriptionSentTime(
+  public synchronized void migrateProcessMessageSubscriptionSentTime(
       final MutableProcessMessageSubscriptionState persistentState,
       final MutablePendingProcessMessageSubscriptionState transientState) {
 

@@ -184,11 +184,6 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
-  }
-
-  @Override
   public MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState() {
     return messageSubscriptionState;
   }
@@ -199,12 +194,22 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
+  }
+
+  @Override
+  public MutableLastProcessedPositionState getLastProcessedPositionState() {
+    return lastProcessedPositionState;
+  }
+
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
   @Override
-  public boolean isEmpty(final ZbColumnFamilies column) {
+  public synchronized boolean isEmpty(final ZbColumnFamilies column) {
     final var newContext = zeebeDb.createContext();
     return zeebeDb.isEmpty(column, newContext);
   }
@@ -221,7 +226,7 @@ public class ZeebeDbState implements MutableZeebeState {
    * @param <KeyType> the key type of the column family
    * @param <ValueType> the value type of the column family
    */
-  public <KeyType extends DbKey, ValueType extends DbValue> void forEach(
+  public synchronized <KeyType extends DbKey, ValueType extends DbValue> void forEach(
       final ZbColumnFamilies columnFamily,
       final KeyType keyInstance,
       final ValueType valueInstance,
@@ -236,10 +241,5 @@ public class ZeebeDbState implements MutableZeebeState {
 
   public KeyGeneratorControls getKeyGeneratorControls() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
   }
 }

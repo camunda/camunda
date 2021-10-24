@@ -54,7 +54,7 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public synchronized void onRecovered(final ReadonlyProcessingContext context) {
     subscriptionColumnFamily.forEach(
         subscription -> {
           if (subscription.isOpening() || subscription.isClosing()) {
@@ -64,7 +64,7 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void put(final long key, final ProcessMessageSubscriptionRecord record) {
+  public synchronized void put(final long key, final ProcessMessageSubscriptionRecord record) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
@@ -76,19 +76,20 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
+  public synchronized void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpened());
     transientState.remove(record);
   }
 
   @Override
-  public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
+  public synchronized void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setClosing());
     transientState.add(record);
   }
 
   @Override
-  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
+  public synchronized boolean remove(
+      final long elementInstanceKey, final DirectBuffer messageName) {
     final ProcessMessageSubscription subscription =
         getSubscription(elementInstanceKey, messageName);
     final boolean found = subscription != null;
@@ -99,7 +100,7 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public ProcessMessageSubscription getSubscription(
+  public synchronized ProcessMessageSubscription getSubscription(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
@@ -107,7 +108,7 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void visitElementSubscriptions(
+  public synchronized void visitElementSubscriptions(
       final long elementInstanceKey, final ProcessMessageSubscriptionVisitor visitor) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
 
@@ -119,7 +120,7 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public boolean existSubscriptionForElementInstance(
+  public synchronized boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
@@ -127,14 +128,14 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void visitSubscriptionBefore(
+  public synchronized void visitSubscriptionBefore(
       final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
     transientState.visitSubscriptionBefore(deadline, visitor);
   }
 
   @Override
-  public void updateSentTime(
+  public synchronized void updateSentTime(
       final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
     transientState.updateSentTime(record, commandSentTime);
   }

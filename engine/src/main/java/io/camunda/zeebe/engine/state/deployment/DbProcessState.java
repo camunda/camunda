@@ -101,7 +101,7 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void putDeployment(final DeploymentRecord deploymentRecord) {
+  public synchronized void putDeployment(final DeploymentRecord deploymentRecord) {
     for (final ProcessMetadata metadata : deploymentRecord.processesMetadata()) {
       for (final DeploymentResource resource : deploymentRecord.getResources()) {
         if (resource.getResourceName().equals(metadata.getResourceName())) {
@@ -114,7 +114,7 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void putLatestVersionDigest(
+  public synchronized void putLatestVersionDigest(
       final DirectBuffer processIdBuffer, final DirectBuffer digest) {
     processId.wrapBuffer(processIdBuffer);
     this.digest.set(digest);
@@ -123,7 +123,7 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public void putProcess(final long key, final ProcessRecord processRecord) {
+  public synchronized void putProcess(final long key, final ProcessRecord processRecord) {
     persistProcess(key, processRecord);
     updateLatestVersion(processRecord);
     putLatestVersionDigest(
@@ -200,7 +200,8 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DeployedProcess getLatestProcessVersionByProcessId(final DirectBuffer processIdBuffer) {
+  public synchronized DeployedProcess getLatestProcessVersionByProcessId(
+      final DirectBuffer processIdBuffer) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
         processesByProcessIdAndVersion.get(processIdBuffer);
 
@@ -220,7 +221,7 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DeployedProcess getProcessByProcessIdAndVersion(
+  public synchronized DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version) {
     final Long2ObjectHashMap<DeployedProcess> versionMap =
         processesByProcessIdAndVersion.get(processId);
@@ -234,7 +235,7 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DeployedProcess getProcessByKey(final long key) {
+  public synchronized DeployedProcess getProcessByKey(final long key) {
     final DeployedProcess deployedProcess = processesByKey.get(key);
 
     if (deployedProcess != null) {
@@ -245,13 +246,14 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public Collection<DeployedProcess> getProcesses() {
+  public synchronized Collection<DeployedProcess> getProcesses() {
     updateCompleteInMemoryState();
     return processesByKey.values();
   }
 
   @Override
-  public Collection<DeployedProcess> getProcessesByBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public synchronized Collection<DeployedProcess> getProcessesByBpmnProcessId(
+      final DirectBuffer bpmnProcessId) {
     updateCompleteInMemoryState();
 
     final Long2ObjectHashMap<DeployedProcess> processesByVersions =
@@ -264,19 +266,19 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
-  public DirectBuffer getLatestVersionDigest(final DirectBuffer processIdBuffer) {
+  public synchronized DirectBuffer getLatestVersionDigest(final DirectBuffer processIdBuffer) {
     processId.wrapBuffer(processIdBuffer);
     final Digest latestDigest = digestByIdColumnFamily.get(processId);
     return latestDigest == null || digest.get().byteArray() == null ? null : latestDigest.get();
   }
 
   @Override
-  public int getProcessVersion(final String bpmnProcessId) {
+  public synchronized int getProcessVersion(final String bpmnProcessId) {
     return (int) versionManager.getCurrentValue(bpmnProcessId);
   }
 
   @Override
-  public <T extends ExecutableFlowElement> T getFlowElement(
+  public synchronized <T extends ExecutableFlowElement> T getFlowElement(
       final long processDefinitionKey, final DirectBuffer elementId, final Class<T> elementType) {
 
     final var deployedProcess = getProcessByKey(processDefinitionKey);

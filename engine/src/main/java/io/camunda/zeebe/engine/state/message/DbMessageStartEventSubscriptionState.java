@@ -59,7 +59,8 @@ public final class DbMessageStartEventSubscriptionState
   }
 
   @Override
-  public void put(final long key, final MessageStartEventSubscriptionRecord subscription) {
+  public synchronized void put(
+      final long key, final MessageStartEventSubscriptionRecord subscription) {
     messageStartEventSubscription.setKey(key).setRecord(subscription);
 
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
@@ -71,7 +72,7 @@ public final class DbMessageStartEventSubscriptionState
   }
 
   @Override
-  public void remove(final long processDefinitionKey, final DirectBuffer messageName) {
+  public synchronized void remove(final long processDefinitionKey, final DirectBuffer messageName) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageName.wrapBuffer(messageName);
 
@@ -80,7 +81,7 @@ public final class DbMessageStartEventSubscriptionState
   }
 
   @Override
-  public boolean exists(final MessageStartEventSubscriptionRecord subscription) {
+  public synchronized boolean exists(final MessageStartEventSubscriptionRecord subscription) {
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
 
@@ -88,7 +89,7 @@ public final class DbMessageStartEventSubscriptionState
   }
 
   @Override
-  public void visitSubscriptionsByMessageName(
+  public synchronized void visitSubscriptionsByMessageName(
       final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
 
     this.messageName.wrapBuffer(messageName);
@@ -100,7 +101,7 @@ public final class DbMessageStartEventSubscriptionState
   }
 
   @Override
-  public void visitSubscriptionsByProcessDefinition(
+  public synchronized void visitSubscriptionsByProcessDefinition(
       final long processDefinitionKey, final MessageStartEventSubscriptionVisitor visitor) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
 

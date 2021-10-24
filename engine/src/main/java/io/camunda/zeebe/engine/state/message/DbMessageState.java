@@ -161,7 +161,7 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void put(final long key, final MessageRecord record) {
+  public synchronized void put(final long key, final MessageRecord record) {
     messageKey.wrapLong(key);
     message.setMessageKey(key).setMessage(record);
     messageColumnFamily.put(messageKey, message);
@@ -181,7 +181,8 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void putMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
+  public synchronized void putMessageCorrelation(
+      final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
@@ -191,18 +192,8 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public boolean existMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
-    ensureGreaterThan("message key", messageKey, 0);
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-
-    this.messageKey.wrapLong(messageKey);
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-
-    return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
-  }
-
-  @Override
-  public void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
+  public synchronized void removeMessageCorrelation(
+      final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
@@ -213,18 +204,7 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public boolean existActiveProcessInstance(
-      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
-    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
-    ensureNotNullOrEmpty("correlation key", correlationKey);
-
-    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
-    this.correlationKey.wrapBuffer(correlationKey);
-    return activeProcessInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
-  }
-
-  @Override
-  public void putActiveProcessInstance(
+  public synchronized void putActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
@@ -236,7 +216,7 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void removeActiveProcessInstance(
+  public synchronized void removeActiveProcessInstance(
       final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
     ensureNotNullOrEmpty("correlation key", correlationKey);
@@ -247,7 +227,7 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void putProcessInstanceCorrelationKey(
+  public synchronized void putProcessInstanceCorrelationKey(
       final long processInstanceKey, final DirectBuffer correlationKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
     ensureNotNullOrEmpty("correlation key", correlationKey);
@@ -258,18 +238,7 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public DirectBuffer getProcessInstanceCorrelationKey(final long processInstanceKey) {
-    ensureGreaterThan("process instance key", processInstanceKey, 0);
-
-    this.processInstanceKey.wrapLong(processInstanceKey);
-    final var correlationKey =
-        processInstanceCorrelationKeyColumnFamiliy.get(this.processInstanceKey);
-
-    return correlationKey != null ? correlationKey.getBuffer() : null;
-  }
-
-  @Override
-  public void removeProcessInstanceCorrelationKey(final long processInstanceKey) {
+  public synchronized void removeProcessInstanceCorrelationKey(final long processInstanceKey) {
     ensureGreaterThan("process instance key", processInstanceKey, 0);
 
     this.processInstanceKey.wrapLong(processInstanceKey);
@@ -277,53 +246,7 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void visitMessages(
-      final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
-
-    messageName.wrapBuffer(name);
-    this.correlationKey.wrapBuffer(correlationKey);
-
-    nameCorrelationMessageColumnFamily.whileEqualPrefix(
-        nameAndCorrelationKey,
-        (compositeKey, nil) -> {
-          final long messageKey = compositeKey.getSecond().getValue();
-          final StoredMessage message = getMessage(messageKey);
-          return visitor.visit(message);
-        });
-  }
-
-  @Override
-  public StoredMessage getMessage(final long messageKey) {
-    this.messageKey.wrapLong(messageKey);
-    return messageColumnFamily.get(this.messageKey);
-  }
-
-  @Override
-  public void visitMessagesWithDeadlineBefore(final long timestamp, final MessageVisitor visitor) {
-    deadlineColumnFamily.whileTrue(
-        ((compositeKey, zbNil) -> {
-          final long deadline = compositeKey.getFirst().getValue();
-          if (deadline <= timestamp) {
-            final long messageKey = compositeKey.getSecond().getValue();
-            final StoredMessage message = getMessage(messageKey);
-            return visitor.visit(message);
-          }
-          return false;
-        }));
-  }
-
-  @Override
-  public boolean exist(
-      final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
-    messageName.wrapBuffer(name);
-    this.correlationKey.wrapBuffer(correlationKey);
-    this.messageId.wrapBuffer(messageId);
-
-    return messageIdColumnFamily.exists(nameCorrelationMessageIdKey);
-  }
-
-  @Override
-  public void remove(final long key) {
+  public synchronized void remove(final long key) {
     final StoredMessage storedMessage = getMessage(key);
     if (storedMessage == null) {
       return;
@@ -351,5 +274,86 @@ public final class DbMessageState implements MutableMessageState {
         ((compositeKey, zbNil) -> {
           correlatedMessageColumnFamily.delete(compositeKey);
         }));
+  }
+
+  @Override
+  public synchronized boolean existMessageCorrelation(
+      final long messageKey, final DirectBuffer bpmnProcessId) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+
+    this.messageKey.wrapLong(messageKey);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+
+    return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
+  }
+
+  @Override
+  public synchronized boolean existActiveProcessInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    return activeProcessInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
+  }
+
+  @Override
+  public synchronized DirectBuffer getProcessInstanceCorrelationKey(final long processInstanceKey) {
+    ensureGreaterThan("process instance key", processInstanceKey, 0);
+
+    this.processInstanceKey.wrapLong(processInstanceKey);
+    final var correlationKey =
+        processInstanceCorrelationKeyColumnFamiliy.get(this.processInstanceKey);
+
+    return correlationKey != null ? correlationKey.getBuffer() : null;
+  }
+
+  @Override
+  public synchronized void visitMessages(
+      final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
+
+    messageName.wrapBuffer(name);
+    this.correlationKey.wrapBuffer(correlationKey);
+
+    nameCorrelationMessageColumnFamily.whileEqualPrefix(
+        nameAndCorrelationKey,
+        (compositeKey, nil) -> {
+          final long messageKey = compositeKey.getSecond().getValue();
+          final StoredMessage message = getMessage(messageKey);
+          return visitor.visit(message);
+        });
+  }
+
+  @Override
+  public synchronized StoredMessage getMessage(final long messageKey) {
+    this.messageKey.wrapLong(messageKey);
+    return messageColumnFamily.get(this.messageKey);
+  }
+
+  @Override
+  public synchronized void visitMessagesWithDeadlineBefore(
+      final long timestamp, final MessageVisitor visitor) {
+    deadlineColumnFamily.whileTrue(
+        ((compositeKey, zbNil) -> {
+          final long deadline = compositeKey.getFirst().getValue();
+          if (deadline <= timestamp) {
+            final long messageKey = compositeKey.getSecond().getValue();
+            final StoredMessage message = getMessage(messageKey);
+            return visitor.visit(message);
+          }
+          return false;
+        }));
+  }
+
+  @Override
+  public synchronized boolean exist(
+      final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
+    messageName.wrapBuffer(name);
+    this.correlationKey.wrapBuffer(correlationKey);
+    this.messageId.wrapBuffer(messageId);
+
+    return messageIdColumnFamily.exists(nameCorrelationMessageIdKey);
   }
 }

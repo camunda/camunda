@@ -74,7 +74,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void onRecovered(final ReadonlyProcessingContext context) {
+  public synchronized void onRecovered(final ReadonlyProcessingContext context) {
     subscriptionColumnFamily.forEach(
         subscription -> {
           if (subscription.isCorrelating()) {
@@ -84,14 +84,15 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public MessageSubscription get(final long elementInstanceKey, final DirectBuffer messageName) {
+  public synchronized MessageSubscription get(
+      final long elementInstanceKey, final DirectBuffer messageName) {
     this.messageName.wrapBuffer(messageName);
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
   @Override
-  public void visitSubscriptions(
+  public synchronized void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final MessageSubscriptionVisitor visitor) {
@@ -107,7 +108,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public boolean existSubscriptionForElementInstance(
+  public synchronized boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
@@ -116,7 +117,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void put(final long key, final MessageSubscriptionRecord record) {
+  public synchronized void put(final long key, final MessageSubscriptionRecord record) {
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
 
@@ -130,7 +131,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
+  public synchronized void updateToCorrelatingState(final MessageSubscriptionRecord record) {
     final var messageKey = record.getMessageKey();
     var messageVariables = record.getVariablesBuffer();
     if (record == messageSubscription.getRecord()) {
@@ -155,13 +156,14 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateToCorrelatedState(final MessageSubscription subscription) {
+  public synchronized void updateToCorrelatedState(final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
     transientState.remove(subscription.getRecord());
   }
 
   @Override
-  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
+  public synchronized boolean remove(
+      final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
 
@@ -176,7 +178,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void remove(final MessageSubscription subscription) {
+  public synchronized void remove(final MessageSubscription subscription) {
     subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
     final var record = subscription.getRecord();
@@ -214,13 +216,14 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void visitSubscriptionBefore(
+  public synchronized void visitSubscriptionBefore(
       final long deadline, final MessageSubscriptionVisitor visitor) {
     transientState.visitSubscriptionBefore(deadline, visitor);
   }
 
   @Override
-  public void updateCommandSentTime(final MessageSubscriptionRecord record, final long sentTime) {
+  public synchronized void updateCommandSentTime(
+      final MessageSubscriptionRecord record, final long sentTime) {
     transientState.updateCommandSentTime(record, sentTime);
   }
 }

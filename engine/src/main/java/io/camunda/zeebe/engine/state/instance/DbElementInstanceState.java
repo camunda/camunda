@@ -101,13 +101,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public ElementInstance newInstance(
+  public synchronized ElementInstance newInstance(
       final long key, final ProcessInstanceRecord value, final ProcessInstanceIntent state) {
     return newInstance(null, key, value, state);
   }
 
   @Override
-  public ElementInstance newInstance(
+  public synchronized ElementInstance newInstance(
       final ElementInstance parent,
       final long key,
       final ProcessInstanceRecord value,
@@ -126,7 +126,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void removeInstance(final long key) {
+  public synchronized void removeInstance(final long key) {
     final ElementInstance instance = getInstance(key);
 
     if (instance != null) {
@@ -156,26 +156,27 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void updateInstance(final ElementInstance scopeInstance) {
+  public synchronized void updateInstance(final ElementInstance scopeInstance) {
     writeElementInstance(scopeInstance);
   }
 
   @Override
-  public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
+  public synchronized void updateInstance(
+      final long key, final Consumer<ElementInstance> modifier) {
     final var scopeInstance = getInstance(key);
     modifier.accept(scopeInstance);
     updateInstance(scopeInstance);
   }
 
   @Override
-  public void setAwaitResultRequestMetadata(
+  public synchronized void setAwaitResultRequestMetadata(
       final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(processInstanceKey);
     awaitProcessInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
   }
 
   @Override
-  public void incrementNumberOfTakenSequenceFlows(
+  public synchronized void incrementNumberOfTakenSequenceFlows(
       final long flowScopeKey,
       final DirectBuffer gatewayElementId,
       final DirectBuffer sequenceFlowElementId) {
@@ -196,7 +197,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void decrementNumberOfTakenSequenceFlows(
+  public synchronized void decrementNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
@@ -224,14 +225,14 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public ElementInstance getInstance(final long key) {
+  public synchronized ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
     return copyElementInstance(elementInstance);
   }
 
   @Override
-  public List<ElementInstance> getChildren(final long parentKey) {
+  public synchronized List<ElementInstance> getChildren(final long parentKey) {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
     if (parentInstance != null) {
@@ -251,14 +252,14 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
+  public synchronized AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
       final long processInstanceKey) {
     elementInstanceKey.wrapLong(processInstanceKey);
     return awaitProcessInstanceResultMetadataColumnFamily.get(elementInstanceKey);
   }
 
   @Override
-  public int getNumberOfTakenSequenceFlows(
+  public synchronized int getNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
