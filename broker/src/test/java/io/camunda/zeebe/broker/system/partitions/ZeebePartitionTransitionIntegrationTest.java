@@ -15,6 +15,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.TestPartitionStep;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -53,6 +54,7 @@ public class ZeebePartitionTransitionIntegrationTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
+    when(ctx.getBrokerCfg()).thenReturn(new BrokerCfg());
   }
 
   @Test
