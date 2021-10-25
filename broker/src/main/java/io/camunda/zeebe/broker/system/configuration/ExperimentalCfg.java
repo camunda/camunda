@@ -21,7 +21,9 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = false;
+  public static final boolean DEFAULT_NEW_TRANSITION_LOGIC_ENABLED = false;
 
+  private boolean newTransitionLogicEnabled = DEFAULT_NEW_TRANSITION_LOGIC_ENABLED;
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
@@ -105,17 +107,31 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.queryApi = queryApi;
   }
 
+  public boolean isNewTransitionLogicEnabled() {
+    return newTransitionLogicEnabled;
+  }
+
+  public void setNewTransitionLogicEnabled(boolean newTransitionLogicEnabled) {
+    this.newTransitionLogicEnabled = newTransitionLogicEnabled;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
-        + "maxAppendsPerFollower="
+        + "newTransitionLogicEnabled="
+        + newTransitionLogicEnabled
+        + ", maxAppendsPerFollower="
         + maxAppendsPerFollower
         + ", maxAppendBatchSize="
         + maxAppendBatchSize
         + ", disableExplicitRaftFlush="
         + disableExplicitRaftFlush
+        + ", enablePriorityElection="
+        + enablePriorityElection
         + ", rocksdb="
         + rocksdb
+        + ", raft="
+        + raft
         + ", partitioning="
         + partitioning
         + ", queryApi="
