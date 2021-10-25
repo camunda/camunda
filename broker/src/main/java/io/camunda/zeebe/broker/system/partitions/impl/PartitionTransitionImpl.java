@@ -136,7 +136,7 @@ public final class PartitionTransitionImpl implements PartitionTransition {
     if (lastTransition == null) {
       nextTransition.start(nextTransitionFuture);
     } else {
-      final var cleanupFuture = lastTransition.cleanup(term, role);
+      final var cleanupFuture = nextTransition.cleanup(term, role);
       cleanupFuture.onComplete(
           (ok, error) -> {
             if (error != null) {

@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -125,6 +126,8 @@ class PartitionTransitionImplTest {
 
     when(mockStep2.transitionTo(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
     final var sut = new PartitionTransitionImpl(of(spyStep1, mockStep2));
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
@@ -148,8 +151,8 @@ class PartitionTransitionImplTest {
     assertThat(secondTransitionFuture.isCompletedExceptionally()).isFalse();
 
     // the first transition was cancelled before the second step
+    verify(mockStep2).prepareTransition(mockContext, secondTerm, secondRole);
     verify(mockStep2, never()).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
-    verify(mockStep2, never()).prepareTransition(mockContext, secondTerm, secondRole);
 
     final var invocationRecorder = inOrder(spyStep1, mockStep2);
     // first transition sequence
@@ -331,7 +334,7 @@ class PartitionTransitionImplTest {
     verify(mockStep1, never()).transitionTo(mockContext, secondTerm, secondRole);
     verify(mockStep2, never()).transitionTo(mockContext, secondTerm, secondRole);
 
-    assertThatThrownBy(() -> secondTransitionFuture.join())
+    assertThatThrownBy(secondTransitionFuture::join)
         .isInstanceOf(CompletionException.class)
         .getCause()
         .isSameAs(testException);
@@ -376,6 +379,14 @@ class PartitionTransitionImplTest {
         .thenReturn(mockStreamProcessorBuilder);
 
     when(mockStreamProcessorBuilder.build()).thenReturn(mockStreamProcessor1, mockStreamProcessor2);
+
+    // a shorthand for "let the getter return the last value that was passed to the setter"
+    doAnswer(
+            answer ->
+                when(mockContext.getStreamProcessor())
+                    .thenReturn((StreamProcessor) answer.getArguments()[0]))
+        .when(mockContext)
+        .setStreamProcessor(any());
 
     final var mockStepBefore = mockStep1;
     when(mockStepBefore.prepareTransition(any(), anyLong(), any()))
@@ -430,7 +441,7 @@ class PartitionTransitionImplTest {
     assertThat(transition3Future).succeedsWithin(ofSeconds(10));
 
     verify(mockStreamProcessorBuilder, times(2)).build();
-    verify(mockStreamProcessor1).closeAsync(); // should fail
+    verify(mockStreamProcessor1).closeAsync();
     verify(mockStreamProcessor2, never()).closeAsync();
 
     // cleanup

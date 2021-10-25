@@ -15,9 +15,10 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 import org.slf4j.Logger;
 
 final class PartitionTransitionProcess {
@@ -25,7 +26,7 @@ final class PartitionTransitionProcess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<PartitionTransitionStep> pendingSteps;
-  private final Stack<PartitionTransitionStep> startedSteps = new Stack<>();
+  private final Deque<PartitionTransitionStep> stepsToCleanUp = new ArrayDeque<>();
   private final ConcurrencyControl concurrencyControl;
   private final PartitionTransitionContext context;
   private final long term;
@@ -39,6 +40,7 @@ final class PartitionTransitionProcess {
       final long term,
       final Role role) {
     this.pendingSteps = new ArrayList<>(requireNonNull(pendingSteps));
+    pendingSteps.forEach(stepsToCleanUp::push);
     this.concurrencyControl = requireNonNull(concurrencyControl);
     this.context = requireNonNull(context);
     this.term = term;
@@ -67,7 +69,6 @@ final class PartitionTransitionProcess {
     concurrencyControl.run(
         () -> {
           final var nextStep = pendingSteps.remove(0);
-          startedSteps.push(nextStep);
 
           LOG.info(
               "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
@@ -96,11 +97,12 @@ final class PartitionTransitionProcess {
     proceedWithTransition(future);
   }
 
+  // TODO transitively rename to prepare in develop branch
   ActorFuture<Void> cleanup(final long newTerm, final Role newRole) {
     LOG.info("Prepare transition from {} on term {} to {}", role, term, newRole);
     final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
 
-    if (startedSteps.isEmpty()) {
+    if (stepsToCleanUp.isEmpty()) {
       LOG.info("No steps to prepare transition");
       cleanupFuture.complete(null);
     } else {
@@ -113,7 +115,7 @@ final class PartitionTransitionProcess {
       final ActorFuture<Void> future, final long newTerm, final Role newRole) {
     concurrencyControl.run(
         () -> {
-          final var nextCleanupStep = startedSteps.pop();
+          final var nextCleanupStep = stepsToCleanUp.pop();
 
           LOG.info(
               "Prepare transition from {} on term {} to {} - preparing {}",
@@ -140,7 +142,7 @@ final class PartitionTransitionProcess {
       return;
     }
 
-    if (startedSteps.isEmpty()) {
+    if (stepsToCleanUp.isEmpty()) {
       LOG.info("Preparing transition from {} on term {} completed", role, term);
       future.complete(null);
 
