@@ -8,3 +8,4 @@ zeebe:
         minStepDownFailureCount: 5
       queryApi:
         enabled: true
+      newTransitionLogicEnabled: true

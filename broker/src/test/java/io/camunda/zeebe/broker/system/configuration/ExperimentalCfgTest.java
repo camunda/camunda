@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -85,5 +86,53 @@ public class ExperimentalCfgTest {
 
     // then
     assertThat(raft.getMinStepDownFailureCount()).isEqualTo(10);
+  }
+
+  @Test
+  public void shouldSetNewTransitionLogicEnabledFromFile() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+
+    // when
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isNewTransitionLogicEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldUseDefaultValueForNewTransitionLogicEnabled() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
+
+    // when
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isNewTransitionLogicEnabled()).isFalse();
+  }
+
+  @Test
+  public void shouldSetNewTransitionLogicEnabledFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.newTransitionLogicEnabled", "true");
+    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
+
+    // when
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isNewTransitionLogicEnabled()).isTrue();
+  }
+
+  @Test
+  public void shouldFailOnUnparsableValue() {
+    // given
+    environment.put("zeebe.broker.experimental.newTransitionLogicEnabled", "yolo");
+
+    // when
+    assertThatThrownBy(() -> TestConfigReader.readConfig("experimental-cfg", environment))
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasRootCauseMessage("Invalid boolean value [yolo]");
   }
 }

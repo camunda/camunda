@@ -21,6 +21,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -64,6 +65,8 @@ public class ZeebePartitionTest {
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
     when(ctx.createTransitionContext()).thenReturn(ctx);
+
+    when(ctx.getBrokerCfg()).thenReturn(new BrokerCfg());
 
     partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
   }

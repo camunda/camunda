@@ -13,7 +13,6 @@ import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
-import io.camunda.zeebe.broker.partitioning.PartitionFactory;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
@@ -58,6 +57,7 @@ public final class ZeebePartition extends Actor
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
   private ActorFuture<Void> currentTransitionFuture;
+  private final boolean newTransitionLogicEnabled;
 
   public ZeebePartition(
       final PartitionStartupAndTransitionContextImpl transitionContext,
@@ -75,7 +75,9 @@ public final class ZeebePartition extends Actor
     transitionContext.setDiskSpaceAvailable(true);
 
     // todo remove after migration
-    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+    newTransitionLogicEnabled =
+        transitionContext.getBrokerCfg().getExperimental().isNewTransitionLogicEnabled();
+    if (newTransitionLogicEnabled) {
       transition.setConcurrencyControl(actor);
     }
     // todo remove after migration
@@ -109,7 +111,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+    if (newTransitionLogicEnabled) {
       startupProcess
           .startup(actor, startupContext)
           .onComplete(
@@ -160,7 +162,7 @@ public final class ZeebePartition extends Actor
                   .getComponentHealthMonitor()
                   .removeComponent(context.getRaftPartition().name());
 
-              if (PartitionFactory.FEATURE_TOGGLE_USE_NEW_CODE) {
+              if (newTransitionLogicEnabled) {
                 startupProcess
                     .shutdown(actor, startupContext)
                     .onComplete(
