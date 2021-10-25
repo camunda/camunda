@@ -7,16 +7,21 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.List.of;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +29,12 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
+import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -114,6 +125,8 @@ class NewPartitionTransitionImplTest {
 
     when(mockStep2.transitionTo(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
     final var sut = new NewPartitionTransitionImpl(of(spyStep1, mockStep2), mockContext);
     sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
@@ -136,8 +149,8 @@ class NewPartitionTransitionImplTest {
     assertThat(secondTransitionFuture.isCompletedExceptionally()).isFalse();
 
     // the first transition was cancelled before the second step
+    verify(mockStep2).prepareTransition(mockContext, secondTerm, secondRole);
     verify(mockStep2, never()).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
-    verify(mockStep2, never()).prepareTransition(mockContext, secondTerm, secondRole);
 
     final var invocationRecorder = inOrder(spyStep1, mockStep2);
     // first transition sequence
@@ -315,10 +328,118 @@ class NewPartitionTransitionImplTest {
     verify(mockStep1, never()).transitionTo(mockContext, secondTerm, secondRole);
     verify(mockStep2, never()).transitionTo(mockContext, secondTerm, secondRole);
 
-    assertThatThrownBy(() -> secondTransitionFuture.join())
+    assertThatThrownBy(secondTransitionFuture::join)
         .isInstanceOf(CompletionException.class)
         .getCause()
         .isSameAs(testException);
+  }
+
+  @Test // regression test for #8044
+  void shouldCloseAllCreatedInstancesOfStreamProcessor() {
+    // given
+    final var actorScheduler = ActorScheduler.newActorScheduler().build();
+    actorScheduler.start();
+    final var actor = new Actor() {};
+
+    actorScheduler.submitActor(actor);
+
+    when(mockContext.getComponentHealthMonitor()).thenReturn(mock(HealthMonitor.class));
+
+    final var mockStreamProcessor1 = mock(StreamProcessor.class);
+    when(mockStreamProcessor1.openAsync(anyBoolean()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+    when(mockStreamProcessor1.closeAsync())
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+    final var mockStreamProcessor2 = mock(StreamProcessor.class);
+    when(mockStreamProcessor2.openAsync(anyBoolean()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+    when(mockStreamProcessor2.closeAsync())
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+
+    final var mockStreamProcessorBuilder = mock(StreamProcessorBuilder.class);
+    when(mockStreamProcessorBuilder.logStream(any())).thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.actorSchedulingService(any()))
+        .thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.zeebeDb(any())).thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.eventApplierFactory(any()))
+        .thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.nodeId(anyInt())).thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.commandResponseWriter(any()))
+        .thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.listener(any())).thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.streamProcessorFactory(any()))
+        .thenReturn(mockStreamProcessorBuilder);
+    when(mockStreamProcessorBuilder.streamProcessorMode(any()))
+        .thenReturn(mockStreamProcessorBuilder);
+
+    when(mockStreamProcessorBuilder.build()).thenReturn(mockStreamProcessor1, mockStreamProcessor2);
+
+    // a shorthand for "let the getter return the last value that was passed to the setter"
+    doAnswer(
+            answer ->
+                when(mockContext.getStreamProcessor())
+                    .thenReturn((StreamProcessor) answer.getArguments()[0]))
+        .when(mockContext)
+        .setStreamProcessor(any());
+
+    final var mockStepBefore = mockStep1;
+    when(mockStepBefore.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+
+    final var streamProcessorStep =
+        new StreamProcessorTransitionStep(() -> mockStreamProcessorBuilder);
+    final var mockStepAfter = mockStep2;
+    when(mockStepAfter.prepareTransition(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+
+    final var sut =
+        new NewPartitionTransitionImpl(
+            of(mockStepBefore, streamProcessorStep, mockStepAfter), mockContext);
+    sut.setConcurrencyControl(actor);
+
+    // when
+
+    // first transition to FOLLOWER; will complete regularly and create a stream processor
+    when(mockStepBefore.transitionTo(mockContext, DEFAULT_TERM, Role.FOLLOWER))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+    when(mockStepAfter.transitionTo(mockContext, DEFAULT_TERM, Role.FOLLOWER))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+    final var transition1Future =
+        sut.transitionTo(DEFAULT_TERM, Role.FOLLOWER); // creates stream processor
+
+    transition1Future.join(); // wait for first transition to complete
+
+    // second transition to CANDIDATE; will be paused on the first step and cancelled before the
+    // stream processor step
+    final ActorFuture<Void> testFutureOfFirstStepInSecondTransition =
+        TEST_CONCURRENCY_CONTROL.createFuture();
+    when(mockStepBefore.transitionTo(mockContext, DEFAULT_TERM, Role.CANDIDATE))
+        .thenReturn(testFutureOfFirstStepInSecondTransition);
+    final var transition2Future = sut.transitionTo(DEFAULT_TERM, Role.CANDIDATE);
+
+    // third transition to LEADER; will cancel current transition 2; will complete regularly and
+    // create a stream processor
+    when(mockStepBefore.transitionTo(mockContext, DEFAULT_TERM, Role.LEADER))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+    when(mockStepAfter.transitionTo(mockContext, DEFAULT_TERM, Role.LEADER))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
+
+    final var transition3Future =
+        sut.transitionTo(DEFAULT_TERM, Role.LEADER); // creates stream processor
+
+    testFutureOfFirstStepInSecondTransition.complete(null); // resume transition 2
+
+    // then
+    assertThat(transition1Future).succeedsWithin(ofSeconds(10));
+    assertThat(transition2Future).succeedsWithin(ofSeconds(10));
+    assertThat(transition3Future).succeedsWithin(ofSeconds(10));
+
+    verify(mockStreamProcessorBuilder, times(2)).build();
+    verify(mockStreamProcessor1).closeAsync();
+    verify(mockStreamProcessor2, never()).closeAsync();
+
+    // cleanup
+    actorScheduler.stop();
   }
 
   private final class WaitingTransitionStep implements PartitionTransitionStep {
