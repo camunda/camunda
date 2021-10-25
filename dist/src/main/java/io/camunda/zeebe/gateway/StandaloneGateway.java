@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.shared.Profile;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.util.Optional;
@@ -47,7 +49,7 @@ import org.springframework.context.event.ContextClosedEvent;
       "io.camunda.zeebe.util.liveness"
     })
 public class StandaloneGateway
-    implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
+    implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   private final GatewayCfg configuration;
@@ -103,22 +105,33 @@ public class StandaloneGateway
 
   @Override
   public void onApplicationEvent(final ContextClosedEvent event) {
-    try {
-      gateway.stop();
-    } catch (final Exception e) {
-      LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
+    close();
+  }
+
+  @Override
+  public void close() {
+    if (gateway != null) {
+      try {
+        gateway.stop();
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
+      }
     }
 
-    try {
-      atomixCluster.stop().orTimeout(10, TimeUnit.SECONDS).join();
-    } catch (final Exception e) {
-      LOG.warn("Failed to gracefully shutdown cluster services", e);
+    if (atomixCluster != null) {
+      try {
+        atomixCluster.stop().orTimeout(10, TimeUnit.SECONDS).join();
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown cluster services", e);
+      }
     }
 
-    try {
-      actorScheduler.close();
-    } catch (final Exception e) {
-      LOG.warn("Failed to gracefully shutdown actor scheduler", e);
+    if (actorScheduler != null) {
+      try {
+        actorScheduler.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to gracefully shutdown actor scheduler", e);
+      }
     }
 
     LogManager.shutdown();
@@ -136,17 +149,22 @@ public class StandaloneGateway
 
   private AtomixCluster createAtomixCluster(final ClusterCfg config) {
     final var membershipProtocol = createMembershipProtocol(config.getMembership());
+    final var builder =
+        AtomixCluster.builder()
+            .withMemberId(config.getMemberId())
+            .withAddress(Address.from(config.getHost(), config.getPort()))
+            .withClusterId(config.getClusterName())
+            .withMembershipProvider(
+                BootstrapDiscoveryProvider.builder()
+                    .withNodes(Address.from(config.getContactPoint()))
+                    .build())
+            .withMembershipProtocol(membershipProtocol);
 
-    return AtomixCluster.builder()
-        .withMemberId(config.getMemberId())
-        .withAddress(Address.from(config.getHost(), config.getPort()))
-        .withClusterId(config.getClusterName())
-        .withMembershipProvider(
-            BootstrapDiscoveryProvider.builder()
-                .withNodes(Address.from(config.getContactPoint()))
-                .build())
-        .withMembershipProtocol(membershipProtocol)
-        .build();
+    if (config.getSecurity().isEnabled()) {
+      applyClusterSecurityConfig(config, builder);
+    }
+
+    return builder.build();
   }
 
   private GroupMembershipProtocol createMembershipProtocol(final MembershipCfg config) {
@@ -170,5 +188,42 @@ public class StandaloneGateway
         .setIoBoundActorThreadCount(0)
         .setSchedulerName("gateway-scheduler")
         .build();
+  }
+
+  private void applyClusterSecurityConfig(
+      final ClusterCfg config, final AtomixClusterBuilder builder) {
+    final var security = config.getSecurity();
+    final var certificateChainPath = security.getCertificateChainPath();
+    final var privateKeyPath = security.getPrivateKeyPath();
+
+    if (certificateChainPath == null) {
+      throw new IllegalArgumentException(
+          "Expected to have a valid certificate chain path for cluster security, but none "
+              + "configured");
+    }
+
+    if (privateKeyPath == null) {
+      throw new IllegalArgumentException(
+          "Expected to have a valid private key path for cluster security, but none was "
+              + "configured");
+    }
+
+    if (!certificateChainPath.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the configured cluster security certificate chain path '%s' to point to a"
+                  + " readable file, but it does not",
+              certificateChainPath));
+    }
+
+    if (!privateKeyPath.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the configured cluster security private key path '%s' to point to a "
+                  + "readable file, but it does not",
+              privateKeyPath));
+    }
+
+    builder.withSecurity(certificateChainPath, privateKeyPath);
   }
 }

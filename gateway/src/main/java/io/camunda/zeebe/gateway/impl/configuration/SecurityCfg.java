@@ -9,13 +9,14 @@ package io.camunda.zeebe.gateway.impl.configuration;
 
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_TLS_ENABLED;
 
+import java.io.File;
 import java.util.Objects;
 
 public final class SecurityCfg {
 
   private boolean enabled = DEFAULT_TLS_ENABLED;
-  private String certificateChainPath;
-  private String privateKeyPath;
+  private File certificateChainPath;
+  private File privateKeyPath;
 
   public boolean isEnabled() {
     return enabled;
@@ -26,20 +27,20 @@ public final class SecurityCfg {
     return this;
   }
 
-  public String getCertificateChainPath() {
+  public File getCertificateChainPath() {
     return certificateChainPath;
   }
 
-  public SecurityCfg setCertificateChainPath(final String certificateChainPath) {
+  public SecurityCfg setCertificateChainPath(final File certificateChainPath) {
     this.certificateChainPath = certificateChainPath;
     return this;
   }
 
-  public String getPrivateKeyPath() {
+  public File getPrivateKeyPath() {
     return privateKeyPath;
   }
 
-  public SecurityCfg setPrivateKeyPath(final String privateKeyPath) {
+  public SecurityCfg setPrivateKeyPath(final File privateKeyPath) {
     this.privateKeyPath = privateKeyPath;
     return this;
   }

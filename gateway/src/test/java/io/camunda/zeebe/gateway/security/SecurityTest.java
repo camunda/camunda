@@ -7,23 +7,34 @@
  */
 package io.camunda.zeebe.gateway.security;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.test.util.asserts.SslAssert;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.io.File;
 import java.io.IOException;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public final class SecurityTest {
-  @Rule public final ExpectedException thrown = ExpectedException.none();
+final class SecurityTest {
+  private SelfSignedCertificate certificate;
   private Gateway gateway;
 
-  @After
+  @BeforeEach
+  void beforeEach() throws Exception {
+    certificate = new SelfSignedCertificate();
+  }
+
+  @AfterEach
   public void tearDown() {
     if (gateway != null) {
       gateway.stop();
@@ -32,99 +43,106 @@ public final class SecurityTest {
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndWrongCert() throws IOException {
+  void shouldStartWithTlsEnabled() throws IOException {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity()
-        .setCertificateChainPath(
-            cfg.getSecurity().getCertificateChainPath().replaceAll("test-chain", "wrong-chain"));
+
+    // when
+    gateway = buildGateway(cfg);
+    gateway.start();
 
     // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        String.format(
+    SslAssert.assertThat(cfg.getNetwork().toSocketAddress()).isSecuredBy(certificate);
+  }
+
+  @Test
+  void shouldNotStartWithTlsEnabledAndWrongCert() {
+    // given
+    final GatewayCfg cfg = createGatewayCfg();
+    cfg.getSecurity().setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
+
+    // when
+    gateway = buildGateway(cfg);
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
             "Expected to find a certificate chain file at the provided location '%s' but none was found.",
-            cfg.getSecurity().getCertificateChainPath()));
-
-    // when
-    gateway = buildGateway(cfg);
-    gateway.start();
+            cfg.getSecurity().getCertificateChainPath());
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndWrongKey() throws IOException {
+  void shouldNotStartWithTlsEnabledAndWrongKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
-    cfg.getSecurity()
-        .setPrivateKeyPath(
-            cfg.getSecurity().getPrivateKeyPath().replaceAll("test-server", "wrong-server"));
-
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        String.format(
-            "Expected to find a private key file at the provided location '%s' but none was found.",
-            cfg.getSecurity().getPrivateKeyPath()));
+    cfg.getSecurity().setPrivateKeyPath(new File("/tmp/i-dont-exist.key"));
 
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a private key file at the provided location '%s' but none was found.",
+            cfg.getSecurity().getPrivateKeyPath());
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndNoPrivateKey() throws IOException {
+  void shouldNotStartWithTlsEnabledAndNoPrivateKey() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getSecurity().setPrivateKeyPath(null);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        "Expected to find a valid path to a private key but none was found. "
-            + "Edit the gateway configuration file to provide one or to disable TLS.");
-
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a valid path to a private key but none was found. "
+                + "Edit the gateway configuration file to provide one or to disable TLS.");
   }
 
   @Test
-  public void shouldNotStartWithTlsEnabledAndNoCert() throws IOException {
+  void shouldNotStartWithTlsEnabledAndNoCert() {
     // given
     final GatewayCfg cfg = createGatewayCfg();
     cfg.getSecurity().setCertificateChainPath(null);
 
-    // then
-    thrown.expect(IllegalArgumentException.class);
-    thrown.expectMessage(
-        "Expected to find a valid path to a certificate chain but none was found. "
-            + "Edit the gateway configuration file to provide one or to disable TLS.");
-
     // when
     gateway = buildGateway(cfg);
-    gateway.start();
+
+    // then
+    assertThatCode(() -> gateway.start())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to find a valid path to a certificate chain but none was found. "
+                + "Edit the gateway configuration file to provide one or to disable TLS.");
   }
 
   private GatewayCfg createGatewayCfg() {
+    final var gatewayAddress = SocketUtil.getNextAddress();
     return new GatewayCfg()
-        .setNetwork(new NetworkCfg().setHost("localhost").setPort(25600))
+        .setNetwork(
+            new NetworkCfg()
+                .setHost(gatewayAddress.getHostName())
+                .setPort(gatewayAddress.getPort()))
         .setSecurity(
             new SecurityCfg()
                 .setEnabled(true)
-                .setCertificateChainPath(
-                    getClass()
-                        .getClassLoader()
-                        .getResource("security/test-chain.cert.pem")
-                        .getPath())
-                .setPrivateKeyPath(
-                    getClass()
-                        .getClassLoader()
-                        .getResource("security/test-server.key.pem")
-                        .getPath()));
+                .setCertificateChainPath(certificate.certificate())
+                .setPrivateKeyPath(certificate.privateKey()));
   }
 
   private Gateway buildGateway(final GatewayCfg gatewayCfg) {
-    final var atomix = AtomixCluster.builder().build();
+    final var clusterAddress = SocketUtil.getNextAddress();
+    final var atomix =
+        AtomixCluster.builder()
+            .withAddress(Address.from(clusterAddress.getHostName(), clusterAddress.getPort()))
+            .build();
     final var actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 

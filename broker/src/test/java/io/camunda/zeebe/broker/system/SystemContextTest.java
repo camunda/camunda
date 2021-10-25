@@ -15,6 +15,9 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
+import java.io.File;
+import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -310,6 +313,85 @@ final class SystemContextTest {
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldThrowExceptionWithNetworkSecurityEnabledAndWrongCert() throws CertificateException {
+    // given
+    final var certificate = new SelfSignedCertificate();
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getNetwork()
+        .getSecurity()
+        .setEnabled(true)
+        .setPrivateKeyPath(certificate.privateKey())
+        .setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected the configured network security certificate chain path "
+                + "'/tmp/i-dont-exist.crt' to point to a readable file, but it does not");
+  }
+
+  @Test
+  void shouldThrowExceptionWithNetworkSecurityEnabledAndWrongKey() throws CertificateException {
+    // given
+    final var certificate = new SelfSignedCertificate();
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getNetwork()
+        .getSecurity()
+        .setEnabled(true)
+        .setPrivateKeyPath(new File("/tmp/i-dont-exist.key"))
+        .setCertificateChainPath(certificate.certificate());
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected the configured network security private key path "
+                + "'/tmp/i-dont-exist.key' to point to a readable file, but it does not");
+  }
+
+  @Test
+  void shouldThrowExceptionWithNetworkSecurityEnabledAndNoPrivateKey() throws CertificateException {
+    // given
+    final var certificate = new SelfSignedCertificate();
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getNetwork()
+        .getSecurity()
+        .setEnabled(true)
+        .setPrivateKeyPath(null)
+        .setCertificateChainPath(certificate.certificate());
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to have a valid private key path for network security, but none configured");
+  }
+
+  @Test
+  void shouldThrowExceptionWithNetworkSecurityEnabledAndNoCert() throws CertificateException {
+    // given
+    final var certificate = new SelfSignedCertificate();
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getNetwork()
+        .getSecurity()
+        .setEnabled(true)
+        .setPrivateKeyPath(certificate.privateKey())
+        .setCertificateChainPath(null);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Expected to have a valid certificate chain path for network security, but none "
+                + "configured");
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {

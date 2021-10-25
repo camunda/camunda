@@ -149,8 +149,25 @@ public class MessagingConfig implements Config {
    *
    * @param certificateChain a file containing the certificate chain
    * @return this config for chaining
+   * @throws IllegalArgumentException if the certificate chain is null
+   * @throws IllegalArgumentException if the certificate chain points to a file which does not exist
+   * @throws IllegalArgumentException if the certificate chain points to a file which cannot be read
    */
   public MessagingConfig setCertificateChain(final File certificateChain) {
+    if (certificateChain == null) {
+      throw new IllegalArgumentException(
+          "Expected a certificate chain in order to enable inter-cluster communication security, "
+              + "but none given");
+    }
+
+    if (!certificateChain.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the node's inter-cluster communication certificate to be at %s, but either "
+                  + "the file is missing or it is not readable",
+              certificateChain));
+    }
+
     this.certificateChain = certificateChain;
     return this;
   }
@@ -167,8 +184,25 @@ public class MessagingConfig implements Config {
    *
    * @param privateKey the private key of the associated certificate chain
    * @return this config for chaining
+   * @throws IllegalArgumentException if the private key is null
+   * @throws IllegalArgumentException if the private key points to a file which does not exist
+   * @throws IllegalArgumentException if the private key points to a file which cannot be read
    */
   public MessagingConfig setPrivateKey(final File privateKey) {
+    if (privateKey == null) {
+      throw new IllegalArgumentException(
+          "Expected a private key in order to enable inter-cluster communication security, but none"
+              + " given");
+    }
+
+    if (!privateKey.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the node's inter-cluster communication private key to be at %s, but either "
+                  + "the file is missing or it is not readable",
+              privateKey));
+    }
+
     this.privateKey = privateKey;
     return this;
   }

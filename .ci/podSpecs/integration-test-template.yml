@@ -14,8 +14,8 @@ spec:
       effect: "NoSchedule"
   containers:
     - name: maven
-      image: maven:3.6.3-jdk-11
-      command: ["cat"]
+      image: maven:3.8.3-eclipse-temurin-17
+      command: [ "cat" ]
       tty: true
       env:
         - name: LIMITS_CPU
@@ -65,4 +65,4 @@ spec:
           memory: 60Gi
   volumes:
     - name: docker-storage
-      emptyDir: {}
+      emptyDir: { }

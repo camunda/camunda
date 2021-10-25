@@ -1,29 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe BOM</name>
-  <groupId>io.camunda</groupId>
-  <artifactId>zeebe-bom</artifactId>
-  <version>1.3.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <inceptionYear>2017</inceptionYear>
-  <url>http://zeebe.io/</url>
 
   <parent>
     <groupId>org.camunda</groupId>
     <artifactId>camunda-release-parent</artifactId>
-    <version>3.8.1</version>
+    <version>3.9.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath/>
+    <relativePath></relativePath>
   </parent>
+  <groupId>io.camunda</groupId>
+  <artifactId>zeebe-bom</artifactId>
+  <version>1.3.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Zeebe BOM</name>
+  <url>http://zeebe.io/</url>
+  <inceptionYear>2017</inceptionYear>
+
+  <scm>
+    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
+    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/zeebe-io/zeebe</url>
+  </scm>
 
   <properties>
     <!-- release parent settings -->
-    <nexus.snapshot.repository>
-      https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/
-    </nexus.snapshot.repository>
-    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
-    </nexus.release.repository>
+    <nexus.snapshot.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
     <version.java>11</version.java>
@@ -196,31 +201,57 @@
 
       <!-- ATOMIX -->
       <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-cluster</artifactId>
-        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-storage</artifactId>
-        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-atomix-utils</artifactId>
-        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <artifactId>zeebe-atomix</artifactId>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-atomix</artifactId>
         <version>${project.version}</version>
       </dependency>
 
     </dependencies>
   </dependencyManagement>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
+    </repository>
+  </repositories>
 
   <profiles>
     <profile>
@@ -246,38 +277,5 @@
       </build>
     </profile>
   </profiles>
-
-  <repositories>
-    <repository>
-      <id>zeebe</id>
-      <name>Zeebe Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-
-    <repository>
-      <id>zeebe-snapshots</id>
-      <name>Zeebe Snapshot Repository</name>
-      <url>https://app.camunda.com/nexus/content/repositories/zeebe-io-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
-  <scm>
-    <url>https://github.com/zeebe-io/zeebe</url>
-    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
 
 </project>

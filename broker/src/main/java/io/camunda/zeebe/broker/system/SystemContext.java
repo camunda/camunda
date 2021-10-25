@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
+import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
@@ -149,6 +150,11 @@ public final class SystemContext {
     if (partitioningConfig.getScheme() == Scheme.FIXED) {
       validateFixedPartitioningScheme(cluster, experimental);
     }
+
+    final var security = brokerCfg.getNetwork().getSecurity();
+    if (security.isEnabled()) {
+      validateNetworkSecurityConfig(security);
+    }
   }
 
   private void validateFixedPartitioningScheme(
@@ -218,6 +224,38 @@ public final class SystemContext {
     }
 
     return members;
+  }
+
+  private void validateNetworkSecurityConfig(final SecurityCfg security) {
+    final var certificateChainPath = security.getCertificateChainPath();
+    final var privateKeyPath = security.getPrivateKeyPath();
+
+    if (certificateChainPath == null) {
+      throw new IllegalArgumentException(
+          "Expected to have a valid certificate chain path for network security, but none "
+              + "configured");
+    }
+
+    if (privateKeyPath == null) {
+      throw new IllegalArgumentException(
+          "Expected to have a valid private key path for network security, but none configured");
+    }
+
+    if (!certificateChainPath.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the configured network security certificate chain path '%s' to point to a"
+                  + " readable file, but it does not",
+              certificateChainPath));
+    }
+
+    if (!privateKeyPath.canRead()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the configured network security private key path '%s' to point to a "
+                  + "readable file, but it does not",
+              privateKeyPath));
+    }
   }
 
   private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {

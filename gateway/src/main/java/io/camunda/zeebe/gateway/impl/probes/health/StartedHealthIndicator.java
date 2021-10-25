@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static java.util.Objects.requireNonNull;
 
-import io.camunda.zeebe.gateway.Gateway.Status;
 import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.health.Status;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
