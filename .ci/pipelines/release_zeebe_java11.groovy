@@ -22,7 +22,7 @@ spec:
       effect: "NoSchedule"
   containers:
     - name: maven
-      image: maven:3.8.3-jdk-8
+      image: maven:3.6.0-jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -41,7 +41,7 @@ spec:
           cpu: 2
           memory: 16Gi
     - name: golang
-      image: golang:1.12.2
+      image: golang:1.13.4
       command: ["cat"]
       tty: true
       resources:
@@ -82,13 +82,15 @@ spec:
         stage('Prepare') {
             steps {
                 git url: 'https://github.com/camunda-cloud/zeebe.git',
-                        branch: "${env.RELEASE_BRANCH}",
-                        credentialsId: 'github-cloud-zeebe-app',
-                        poll: false
+                    branch: "${env.RELEASE_BRANCH}",
+                    credentialsId: 'github-cloud-zeebe-app',
+                    poll: false
 
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
-                    sh '.ci/scripts/release/changelog.sh'
+                }
+                container('golang') {
+                    sh '.ci/scripts/release/prepare-go.sh'
                 }
             }
         }
@@ -116,11 +118,29 @@ spec:
             }
         }
 
+        stage('Update Compat Version') {
+            steps {
+                container('golang') {
+                    sh '.ci/scripts/release/compat-update-go.sh'
+                }
+                container('maven') {
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/release/compat-update-java.sh'
+                    }
+                }
+            }
+        }
+
+
         stage('GitHub Release') {
             when { expression { return params.PUSH_CHANGES } }
             steps {
                 container('maven') {
                     sh '.ci/scripts/release/github-release.sh'
+                }
+
+                container('golang') {
+                    sh '.ci/scripts/release/post-github.sh'
                 }
             }
         }
@@ -129,10 +149,10 @@ spec:
             when { expression { return params.PUSH_DOCKER } }
             steps {
                 build job: 'zeebe-docker', parameters: [
-                        string(name: 'BRANCH', value: env.RELEASE_BRANCH),
-                        string(name: 'VERSION', value: params.RELEASE_VERSION),
-                        booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
-                        booleanParam(name: 'PUSH', value: true)
+                    string(name: 'BRANCH', value: env.RELEASE_BRANCH),
+                    string(name: 'VERSION', value: params.RELEASE_VERSION),
+                    booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
+                    booleanParam(name: 'PUSH', value: true)
                 ]
             }
         }
@@ -141,8 +161,8 @@ spec:
             when { expression { return params.PUSH_DOCS } }
             steps {
                 build job: 'zeebe-docs', parameters: [
-                        string(name: 'BRANCH', value: env.RELEASE_BRANCH),
-                        booleanParam(name: 'LIVE', value: true)
+                    string(name: 'BRANCH', value: env.RELEASE_BRANCH),
+                    booleanParam(name: 'LIVE', value: true)
                 ]
             }
         }
@@ -151,8 +171,8 @@ spec:
     post {
         failure {
             slackSend(
-                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-                    message: "Release job build ${currentBuild.absoluteUrl} failed!")
+                channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                message: "Release job build ${currentBuild.absoluteUrl} failed!")
         }
     }
 }

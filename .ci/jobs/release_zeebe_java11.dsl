@@ -1,10 +1,10 @@
 // vim: set filetype=groovy:
 
-pipelineJob('zeebe-release-java8') {
-    displayName 'Zeebe Release Java 8'
+pipelineJob('zeebe-release-java11') {
+    displayName 'Zeebe Release Java 11'
     definition {
         cps {
-            script(readFileFromWorkspace('.ci/pipelines/release_zeebe_java8.groovy'))
+            script(readFileFromWorkspace('.ci/pipelines/release_zeebe_java11.groovy'))
             sandbox()
         }
     }
