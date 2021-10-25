@@ -14,14 +14,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,7 +29,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -40,6 +37,7 @@ import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -362,23 +360,9 @@ class PartitionTransitionImplTest {
     when(mockStreamProcessor2.closeAsync())
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
 
-    final var mockStreamProcessorBuilder = mock(StreamProcessorBuilder.class);
-    when(mockStreamProcessorBuilder.logStream(any())).thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.actorSchedulingService(any()))
-        .thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.zeebeDb(any())).thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.eventApplierFactory(any()))
-        .thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.nodeId(anyInt())).thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.commandResponseWriter(any()))
-        .thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.listener(any())).thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.streamProcessorFactory(any()))
-        .thenReturn(mockStreamProcessorBuilder);
-    when(mockStreamProcessorBuilder.streamProcessorMode(any()))
-        .thenReturn(mockStreamProcessorBuilder);
-
-    when(mockStreamProcessorBuilder.build()).thenReturn(mockStreamProcessor1, mockStreamProcessor2);
+    final BiFunction<PartitionTransitionContext, Role, StreamProcessor> creator =
+        mock(BiFunction.class);
+    when(creator.apply(any(), any())).thenReturn(mockStreamProcessor1, mockStreamProcessor2);
 
     // a shorthand for "let the getter return the last value that was passed to the setter"
     doAnswer(
@@ -392,8 +376,7 @@ class PartitionTransitionImplTest {
     when(mockStepBefore.prepareTransition(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
 
-    final var streamProcessorStep =
-        new StreamProcessorTransitionStep(() -> mockStreamProcessorBuilder);
+    final var streamProcessorStep = new StreamProcessorTransitionStep(creator);
     final var mockStepAfter = mockStep2;
     when(mockStepAfter.prepareTransition(any(), anyLong(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.createCompletedFuture());
@@ -440,7 +423,6 @@ class PartitionTransitionImplTest {
     assertThat(transition2Future).succeedsWithin(ofSeconds(10));
     assertThat(transition3Future).succeedsWithin(ofSeconds(10));
 
-    verify(mockStreamProcessorBuilder, times(2)).build();
     verify(mockStreamProcessor1).closeAsync();
     verify(mockStreamProcessor2, never()).closeAsync();
 

@@ -11,25 +11,25 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.function.Supplier;
+import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
 
-  private final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier;
+  private final BiFunction<PartitionTransitionContext, Role, StreamProcessor>
+      streamProcessorCreator;
 
   public StreamProcessorTransitionStep() {
-    this(StreamProcessor::builder);
+    this(StreamProcessorTransitionStep::createStreamProcessor);
   }
 
   // Used for testing
   public StreamProcessorTransitionStep(
-      final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier) {
-    this.streamProcessorBuilderSupplier = streamProcessorBuilderSupplier;
+      final BiFunction<PartitionTransitionContext, Role, StreamProcessor> streamProcessorCreator) {
+    this.streamProcessorCreator = streamProcessorCreator;
   }
 
   @Override
@@ -76,7 +76,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     if (shouldInstallOnTransition(targetRole, currentRole)
         || (context.getStreamProcessor() == null && targetRole != Role.INACTIVE)) {
-      final StreamProcessor streamProcessor = createStreamProcessor(context, targetRole);
+      final StreamProcessor streamProcessor = streamProcessorCreator.apply(context, targetRole);
       final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
       final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
@@ -119,12 +119,11 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         || (newRole == Role.CANDIDATE && currentRole != Role.FOLLOWER);
   }
 
-  private StreamProcessor createStreamProcessor(
+  private static StreamProcessor createStreamProcessor(
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
-    return streamProcessorBuilderSupplier
-        .get()
+    return StreamProcessor.builder()
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())

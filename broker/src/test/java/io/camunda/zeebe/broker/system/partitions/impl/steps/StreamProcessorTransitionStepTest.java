@@ -51,7 +51,7 @@ class StreamProcessorTransitionStepTest {
     when(streamProcessorFromPrevRole.closeAsync())
         .thenReturn(TestActorFuture.completedFuture(null));
 
-    step = new StreamProcessorTransitionStep(() -> streamProcessorBuilder);
+    step = new StreamProcessorTransitionStep((ctx, role) -> streamProcessor);
   }
 
   @ParameterizedTest
