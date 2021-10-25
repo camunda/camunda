@@ -103,7 +103,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    SnapshotChecksum.persist(persistedSnapshot.getChecksumFile(), 0xCAFEL);
+    SnapshotChecksum.persist(persistedSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
 
     // when
     snapshotStore.close();
@@ -134,7 +134,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumFile(), 0xCAFEL);
+    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -182,7 +182,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
 
     // when - corrupting old snapshot and adding new valid snapshot
-    SnapshotChecksum.persist(olderSnapshot.getChecksumFile(), 0xCAFEL);
+    SnapshotChecksum.persist(olderSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, otherStore).persist().join();
 
@@ -200,7 +200,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var corruptSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptSnapshot.getChecksumFile(), 0xCAFEL);
+    SnapshotChecksum.persist(corruptSnapshot.getChecksumFile(), new SfvChecksum(0xCAFEL));
 
     // when
     snapshotStore.close();

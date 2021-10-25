@@ -9,7 +9,9 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +49,7 @@ public class SnapshotChecksumTest {
     createChunk(corruptedSnapshot, "file3.txt");
   }
 
-  private void createChunk(final Path snapshot, final String chunkName) throws IOException {
+  static void createChunk(final Path snapshot, final String chunkName) throws IOException {
     Files.writeString(
         snapshot.resolve(chunkName),
         chunkName,
@@ -58,10 +60,10 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateTheSameChecksumForOneFile() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
     // when
-    final var actual = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var actual = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -70,11 +72,11 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateDifferentChecksumWhenFileNameIsDifferent() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
     // when
     Files.move(singleFileSnapshot.resolve("file1.txt"), singleFileSnapshot.resolve("renamed"));
-    final var actual = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var actual = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
     // then
     assertThat(actual).isNotEqualTo(expectedChecksum);
@@ -83,10 +85,11 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateTheSameChecksumForMultipleFiles() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var expectedChecksum =
+        SnapshotChecksum.calculate(multipleFileSnapshot).getCombinedValue();
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot).getCombinedValue();
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -95,10 +98,10 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateDifferentChecksumForDifferentFiles() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot).getCombinedValue();
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot).getCombinedValue();
 
     // then
     assertThat(actual).isNotEqualTo(expectedChecksum);
@@ -115,7 +118,7 @@ public class SnapshotChecksumTest {
     final var actual = SnapshotChecksum.read(checksumPath);
 
     // then
-    assertThat(actual).isEqualTo(expectedChecksum);
+    assertThat(actual.getCombinedValue()).isEqualTo(expectedChecksum.getCombinedValue());
   }
 
   @Test
@@ -127,7 +130,7 @@ public class SnapshotChecksumTest {
 
     // when
     Files.delete(corruptedSnapshot.resolve("file1.txt"));
-    final var actualChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
+    final var actualChecksum = SnapshotChecksum.calculate(corruptedSnapshot).getCombinedValue();
 
     // then
     assertThat(actualChecksum).isNotEqualTo(expectedChecksum);
@@ -147,9 +150,44 @@ public class SnapshotChecksumTest {
     final var expected = checksum.getValue();
 
     // when
-    final var actual = SnapshotChecksum.calculate(largeSnapshot);
+    final var actual = SnapshotChecksum.calculate(largeSnapshot).getCombinedValue();
 
     // then
     assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldReadFormerSimpleChecksumFile() throws IOException {
+    // given
+    final Path temp = temporaryFolder.newFolder().toPath();
+    final File tempFile = new File(temp.toFile(), "checksum");
+    final long expectedChecksum = 0xccaaffeeL;
+    try (final RandomAccessFile file = new RandomAccessFile(tempFile, "rw"); ) {
+      file.writeLong(expectedChecksum);
+    }
+
+    // when
+    final SfvChecksum sfvChecksum = SnapshotChecksum.read(tempFile.toPath());
+    final long combinedValue = sfvChecksum.getCombinedValue();
+
+    // then
+    assertThat(combinedValue).isEqualTo(expectedChecksum);
+  }
+
+  @Test
+  public void shouldWriteTheNumberOfFiles() throws IOException {
+    // given
+    final var folder = temporaryFolder.newFolder().toPath();
+    createChunk(folder, "file1.txt");
+    createChunk(folder, "file2.txt");
+    createChunk(folder, "file3.txt");
+    final SfvChecksum sfvChecksum = SnapshotChecksum.calculate(folder);
+
+    // when
+    final String serialized =
+        new String(sfvChecksum.serializeSfvFileData(), StandardCharsets.UTF_8);
+
+    // then
+    assertThat(serialized).contains("; number of files used for combined value = 3");
   }
 }
