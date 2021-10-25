@@ -134,11 +134,17 @@ describe('<Details />', () => {
       screen.getByText('Claim the Task to start working on it'),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole('button', {name: 'Claim'})).toBeEnabled();
+
     fireEvent.click(screen.getByRole('button', {name: 'Claim'}));
+    expect(screen.getByRole('button', {name: 'Claim'})).toBeDisabled();
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
 
     expect(
       await screen.findByRole('button', {name: 'Unclaim'}),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeEnabled();
+    expect(screen.queryByTestId('spinner')).not.toBeInTheDocument();
 
     expect(
       screen.queryByRole('button', {name: 'Claim'}),
@@ -180,11 +186,19 @@ describe('<Details />', () => {
       screen.queryByText('Claim the Task to start working on it'),
     ).not.toBeInTheDocument();
 
+    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeEnabled();
+
     fireEvent.click(screen.getByRole('button', {name: 'Unclaim'}));
+
+    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeDisabled();
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
 
     expect(
       await screen.findByRole('button', {name: 'Claim'}),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Claim'})).toBeEnabled();
+    expect(screen.queryByTestId('spinner')).not.toBeInTheDocument();
+
     expect(
       screen.queryByRole('button', {name: 'Unclaim'}),
     ).not.toBeInTheDocument();

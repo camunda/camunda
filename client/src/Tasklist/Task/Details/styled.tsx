@@ -8,6 +8,8 @@ import styled from 'styled-components';
 import {Button} from 'modules/components/Button';
 import {ReactComponent as InfoIcon} from 'modules/icons/info.svg';
 import {TD} from 'modules/components/Table';
+import {LoadingOverlay} from 'modules/components/LoadingOverlay';
+import {Spinner as BaseSpinner} from 'modules/components/LoadingOverlay/styled';
 
 const Container = styled.div`
   margin-top: 13px;
@@ -15,7 +17,9 @@ const Container = styled.div`
 
 const ClaimButton = styled(Button)`
   margin-left: 22px;
-  padding: 0 18px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
 `;
 
 const AssigneeTD = styled(TD)`
@@ -43,4 +47,16 @@ const Info = styled(InfoIcon)`
   margin-right: 8px;
 `;
 
-export {Container, ClaimButton, Hint, Info, AssigneeTD, Assignee};
+const Spinner = styled(LoadingOverlay)`
+  background-color: transparent;
+  padding-right: 6px;
+  width: unset;
+  ${BaseSpinner} {
+    width: 10px;
+    height: 10px;
+    border: 2px solid ${({theme}) => theme.colors.ui07};
+    border-right-color: transparent;
+  }
+`;
+
+export {Container, ClaimButton, Hint, Info, AssigneeTD, Assignee, Spinner};

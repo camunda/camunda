@@ -6,7 +6,6 @@
 
 import {useQuery, useMutation} from '@apollo/client';
 import {useParams, useLocation} from 'react-router-dom';
-import * as React from 'react';
 
 import {GetTask, useTask} from 'modules/queries/get-task';
 import {CLAIM_TASK, ClaimTaskVariables} from 'modules/mutations/claim-task';
@@ -24,6 +23,7 @@ import {
   Info,
   AssigneeTD,
   Assignee,
+  Spinner,
 } from './styled';
 import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {FilterValues} from 'modules/constants/filterValues';
@@ -48,6 +48,7 @@ import {getSortValues} from '../getSortValues';
 
 const Details: React.FC = () => {
   const {id} = useParams<{id: string}>();
+
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -60,8 +61,10 @@ const Details: React.FC = () => {
     fetchPolicy: 'cache-only',
   });
   const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
-
-  const [claimTask] = useMutation<GetTask, ClaimTaskVariables>(CLAIM_TASK, {
+  const [claimTask, {loading: claimLoading}] = useMutation<
+    GetTask,
+    ClaimTaskVariables
+  >(CLAIM_TASK, {
     variables: {id},
     refetchQueries: [
       {
@@ -81,31 +84,31 @@ const Details: React.FC = () => {
     ],
   });
 
-  const [unclaimTask] = useMutation<GetTask, UnclaimTaskVariables>(
-    UNCLAIM_TASK,
-    {
-      variables: {id},
-      refetchQueries: [
-        {
-          query: GET_TASKS,
-          variables: {
-            ...getQueryVariables(filter, {
-              username: userData?.currentUser.username,
-              pageSize:
-                currentTaskCount <= MAX_TASKS_PER_REQUEST
-                  ? MAX_TASKS_PER_REQUEST
-                  : MAX_TASKS_DISPLAYED,
-              searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
-            }),
-            isRunAfterMutation: true,
-          },
+  const [unclaimTask, {loading: unclaimLoading}] = useMutation<
+    GetTask,
+    UnclaimTaskVariables
+  >(UNCLAIM_TASK, {
+    variables: {id},
+    refetchQueries: [
+      {
+        query: GET_TASKS,
+        variables: {
+          ...getQueryVariables(filter, {
+            username: userData?.currentUser.username,
+            pageSize:
+              currentTaskCount <= MAX_TASKS_PER_REQUEST
+                ? MAX_TASKS_PER_REQUEST
+                : MAX_TASKS_DISPLAYED,
+            searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
+          }),
+          isRunAfterMutation: true,
         },
-      ],
-    },
-  );
+      },
+    ],
+  });
 
   const {data, fetchMore} = useTask(id);
-
+  const isLoading = (claimLoading || unclaimLoading) ?? false;
   const notifications = useNotifications();
 
   if (data === undefined) {
@@ -183,7 +186,9 @@ const Details: React.FC = () => {
                       variant="small"
                       type="button"
                       onClick={() => handleClick()}
+                      disabled={isLoading}
                     >
+                      {isLoading && <Spinner data-testid="spinner" />}
                       {assignee ? 'Unclaim' : 'Claim'}
                     </ClaimButton>
                   </Restricted>
