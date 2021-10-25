@@ -27,7 +27,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   }
 
   // Used for testing
-  StreamProcessorTransitionStep(
+  public StreamProcessorTransitionStep(
       final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier) {
     this.streamProcessorBuilderSupplier = streamProcessorBuilderSupplier;
   }
