@@ -1,5 +1,9 @@
 #!/bin/bash -xue
 
+# update apt repositories and install missing utilities
+apt update
+apt install -y gpg
+
 # remove origin and use GitHub App (reflected on filesystem and globally active)
 git remote remove origin
 git remote add origin https://${GITHUB_TOKEN_USR}:${GITHUB_TOKEN_PSW}@github.com/camunda-cloud/zeebe.git
