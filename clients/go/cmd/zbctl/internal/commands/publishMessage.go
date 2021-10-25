@@ -30,7 +30,6 @@ var (
 	publishMessageID             string
 	publishMessageTTL            time.Duration
 	publishMessageVariables      string
-	// publishMessageVariablesFile  string
 )
 
 var publishMessageCmd = &cobra.Command{
