@@ -81,11 +81,7 @@ func init() {
 	publishMessageCmd.Flags().StringVar(&publishMessageID, "messageId", "", "Specify the unique id of the message")
 	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message. Example values: 300ms, 50s or 1m")
 	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string or path to JSON file")
-	// publishMessageCmd.Flags().StringVar(&publishMessageVariablesFile, "variablesFile", "", "Specify filepath to a json file with message variables. Overrides --variables flag")
 	if err := publishMessageCmd.MarkFlagRequired("correlationKey"); err != nil {
 		panic(err)
 	}
-	// if err := publishMessageCmd.MarkFlagFilename("variablesFile", "json"); err != nil {
-	// 	panic(err)
-	// }
 }
