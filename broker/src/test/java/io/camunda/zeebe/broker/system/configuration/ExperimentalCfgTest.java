@@ -115,7 +115,7 @@ public class ExperimentalCfgTest {
   @Test
   public void shouldSetNewTransitionLogicEnabledFromEnv() {
     // given
-    environment.put("zeebe.broker.experimental.raft.minStepDownFailureCount", "10");
+    environment.put("zeebe.broker.experimental.newTransitionLogicEnabled", "true");
     final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
 
     // when
