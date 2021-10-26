@@ -25,6 +25,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.Collection;
@@ -50,6 +51,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BrokerCfg brokerCfg;
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
+  private ConcurrencyControl concurrencyControl;
 
   @Override
   public int getPartitionId() {
@@ -268,5 +270,15 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   public void setStateController(final StateController stateController) {
     this.stateController = stateController;
+  }
+
+  @Override
+  public ConcurrencyControl getConcurrencyControl() {
+    return concurrencyControl;
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = concurrencyControl;
   }
 }

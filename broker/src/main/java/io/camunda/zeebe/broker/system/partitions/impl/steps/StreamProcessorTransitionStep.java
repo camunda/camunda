@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
@@ -50,6 +49,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
+    final var concurrencyControl = context.getConcurrencyControl();
     final var currentRole = context.getCurrentRole();
     final var streamprocessor = context.getStreamProcessor();
 
@@ -65,7 +65,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
           });
       return future;
     } else {
-      return CompletableActorFuture.completed(null);
+      return concurrencyControl.createCompletedFuture();
     }
   }
 
@@ -73,12 +73,13 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var currentRole = context.getCurrentRole();
+    final var concurrencyControl = context.getConcurrencyControl();
 
     if (shouldInstallOnTransition(targetRole, currentRole)
         || (context.getStreamProcessor() == null && targetRole != Role.INACTIVE)) {
       final StreamProcessor streamProcessor = streamProcessorCreator.apply(context, targetRole);
       final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
-      final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+      final ActorFuture<Void> future = concurrencyControl.createFuture();
 
       openFuture.onComplete(
           (nothing, err) -> {
@@ -105,7 +106,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
       return future;
     }
 
-    return CompletableActorFuture.completed(null);
+    return concurrencyControl.createCompletedFuture();
   }
 
   @Override

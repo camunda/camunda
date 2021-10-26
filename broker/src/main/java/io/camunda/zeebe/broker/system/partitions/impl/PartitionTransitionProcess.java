@@ -43,6 +43,7 @@ final class PartitionTransitionProcess {
     pendingSteps.forEach(stepsToCleanUp::push);
     this.concurrencyControl = requireNonNull(concurrencyControl);
     this.context = requireNonNull(context);
+    context.setConcurrencyControl(concurrencyControl);
     this.term = term;
     this.role = requireNonNull(role);
   }

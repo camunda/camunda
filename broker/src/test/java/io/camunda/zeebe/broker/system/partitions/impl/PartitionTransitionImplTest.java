@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.List.of;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,8 +29,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -341,13 +338,8 @@ class PartitionTransitionImplTest {
   @Test // regression test for #8044
   void shouldCloseAllCreatedInstancesOfStreamProcessor() {
     // given
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-    final var actor = new Actor() {};
-
-    actorScheduler.submitActor(actor);
-
     when(mockContext.getComponentHealthMonitor()).thenReturn(mock(HealthMonitor.class));
+    when(mockContext.getConcurrencyControl()).thenReturn(TEST_CONCURRENCY_CONTROL);
 
     final var mockStreamProcessor1 = mock(StreamProcessor.class);
     when(mockStreamProcessor1.openAsync(anyBoolean()))
@@ -383,7 +375,7 @@ class PartitionTransitionImplTest {
 
     final var sut =
         new PartitionTransitionImpl(of(mockStepBefore, streamProcessorStep, mockStepAfter));
-    sut.setConcurrencyControl(actor);
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
     sut.updateTransitionContext(mockContext);
 
     // when
@@ -419,15 +411,9 @@ class PartitionTransitionImplTest {
     testFutureOfFirstStepInSecondTransition.complete(null); // resume transition 2
 
     // then
-    assertThat(transition1Future).succeedsWithin(ofSeconds(10));
-    assertThat(transition2Future).succeedsWithin(ofSeconds(10));
-    assertThat(transition3Future).succeedsWithin(ofSeconds(10));
 
     verify(mockStreamProcessor1).closeAsync();
     verify(mockStreamProcessor2, never()).closeAsync();
-
-    // cleanup
-    actorScheduler.stop();
   }
 
   private final class WaitingTransitionStep implements PartitionTransitionStep {
