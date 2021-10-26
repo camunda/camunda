@@ -26,7 +26,7 @@ final class PartitionTransitionProcess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<PartitionTransitionStep> pendingSteps;
-  private final Deque<PartitionTransitionStep> stepsToCleanUp = new ArrayDeque<>();
+  private final Deque<PartitionTransitionStep> stepsToPrepare = new ArrayDeque<>();
   private final ConcurrencyControl concurrencyControl;
   private final PartitionTransitionContext context;
   private final long term;
@@ -40,7 +40,7 @@ final class PartitionTransitionProcess {
       final long term,
       final Role role) {
     this.pendingSteps = new ArrayList<>(requireNonNull(pendingSteps));
-    pendingSteps.forEach(stepsToCleanUp::push);
+    pendingSteps.forEach(stepsToPrepare::push);
     this.concurrencyControl = requireNonNull(concurrencyControl);
     this.context = requireNonNull(context);
     context.setConcurrencyControl(concurrencyControl);
@@ -98,40 +98,39 @@ final class PartitionTransitionProcess {
     proceedWithTransition(future);
   }
 
-  // TODO transitively rename to prepare in develop branch
-  ActorFuture<Void> cleanup(final long newTerm, final Role newRole) {
+  ActorFuture<Void> prepare(final long newTerm, final Role newRole) {
     LOG.info("Prepare transition from {} on term {} to {}", role, term, newRole);
-    final ActorFuture<Void> cleanupFuture = concurrencyControl.createFuture();
+    final ActorFuture<Void> prepareFuture = concurrencyControl.createFuture();
 
-    if (stepsToCleanUp.isEmpty()) {
+    if (stepsToPrepare.isEmpty()) {
       LOG.info("No steps to prepare transition");
-      cleanupFuture.complete(null);
+      prepareFuture.complete(null);
     } else {
-      proceedWithCleanup(cleanupFuture, newTerm, newRole);
+      proceedWithPrepare(prepareFuture, newTerm, newRole);
     }
-    return cleanupFuture;
+    return prepareFuture;
   }
 
-  private void proceedWithCleanup(
+  private void proceedWithPrepare(
       final ActorFuture<Void> future, final long newTerm, final Role newRole) {
     concurrencyControl.run(
         () -> {
-          final var nextCleanupStep = stepsToCleanUp.pop();
+          final var nextPrepareStep = stepsToPrepare.pop();
 
           LOG.info(
               "Prepare transition from {} on term {} to {} - preparing {}",
               role,
               term,
               newRole,
-              nextCleanupStep.getName());
+              nextPrepareStep.getName());
 
-          nextCleanupStep
+          nextPrepareStep
               .prepareTransition(context, newTerm, newRole)
-              .onComplete((ok, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
+              .onComplete((ok, error) -> onPrepareStepCompletion(future, error, newTerm, newRole));
         });
   }
 
-  private void onCleanupStepCompletion(
+  private void onPrepareStepCompletion(
       final ActorFuture<Void> future,
       final Throwable error,
       final long newTerm,
@@ -143,14 +142,14 @@ final class PartitionTransitionProcess {
       return;
     }
 
-    if (stepsToCleanUp.isEmpty()) {
+    if (stepsToPrepare.isEmpty()) {
       LOG.info("Preparing transition from {} on term {} completed", role, term);
       future.complete(null);
 
       return;
     }
 
-    proceedWithCleanup(future, newTerm, newRole);
+    proceedWithPrepare(future, newTerm, newRole);
   }
 
   void cancel() {
