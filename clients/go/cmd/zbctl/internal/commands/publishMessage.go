@@ -38,16 +38,9 @@ var publishMessageCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		js := utils.NewJSONStringSerializer()
-		jsonErr := js.Validate("variables", publishMessageVariables)
-		if jsonErr != nil {
-			// not a JSON string
-			fileVariables, err := ioutil.ReadFile(publishMessageVariables)
-			if err != nil {
-				// not a file path
-				return errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
-			}
-			publishMessageVariables = string(fileVariables)
+		parsedMessageVariables, err := parsePublishMessageVariables(publishMessageVariables)
+		if err != nil {
+			return err
 		}
 
 		request, err := client.NewPublishMessageCommand().
@@ -55,7 +48,7 @@ var publishMessageCmd = &cobra.Command{
 			CorrelationKey(publishMessageCorrelationKey).
 			MessageId(publishMessageID).
 			TimeToLive(publishMessageTTL).
-			VariablesFromString(publishMessageVariables)
+			VariablesFromString(parsedMessageVariables)
 
 		if err != nil {
 			return err
@@ -83,4 +76,19 @@ func init() {
 	if err := publishMessageCmd.MarkFlagRequired("correlationKey"); err != nil {
 		panic(err)
 	}
+}
+
+func parsePublishMessageVariables(messageVariables string) (string, error) {
+	jsStringChecker := utils.NewJSONStringSerializer()
+	jsonErr := jsStringChecker.Validate("variables", messageVariables)
+	if jsonErr != nil {
+		// not a JSON string
+		fileVariables, err := ioutil.ReadFile(messageVariables)
+		if err != nil {
+			// not a file path or valid JSON string
+			return "", errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
+		}
+		return string(fileVariables), nil
+	}
+	return messageVariables, nil
 }
