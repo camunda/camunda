@@ -78,14 +78,13 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     if (shouldInstallOnTransition(targetRole, currentRole)
         || (context.getStreamProcessor() == null && targetRole != Role.INACTIVE)) {
       final StreamProcessor streamProcessor = streamProcessorCreator.apply(context, targetRole);
+      context.setStreamProcessor(streamProcessor);
       final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
       final ActorFuture<Void> future = concurrencyControl.createFuture();
 
       openFuture.onComplete(
           (nothing, err) -> {
             if (err == null) {
-              context.setStreamProcessor(streamProcessor);
-
               // Have to pause/resume it here in case the state changed after streamProcessor was
               // created
               if (!context.shouldProcess()) {
