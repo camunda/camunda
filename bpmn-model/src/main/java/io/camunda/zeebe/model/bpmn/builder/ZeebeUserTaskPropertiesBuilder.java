@@ -37,8 +37,8 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
   B zeebeFormKey(String formKey);
 
   /**
-   * Creates an new user task form with the given context, assuming it is of the format
-   * camunda-forms and embedded inside the diagram.
+   * Creates a new user task form with the given context, assuming it is of the format camunda-forms
+   * and embedded inside the diagram.
    *
    * @param userTaskForm the XML encoded user task form json in the camunda-forms format
    * @return the builder object
@@ -46,8 +46,8 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
   B zeebeUserTaskForm(String userTaskForm);
 
   /**
-   * Creates an new user task form with the given context, assuming it is of the format
-   * camunda-forms and embedded inside the diagram.
+   * Creates a new user task form with the given context, assuming it is of the format camunda-forms
+   * and embedded inside the diagram.
    *
    * @param id the unique identifier of the user task form element
    * @param userTaskForm the XML encoded user task form json in the camunda-forms format
