@@ -21,13 +21,13 @@ public class AlertCreationRequestDto {
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class Fields {}
 
-  protected String name;
-  protected AlertInterval checkInterval;
-  protected String reportId;
-  protected Double threshold;
-  protected AlertThresholdOperator thresholdOperator;
-  protected boolean fixNotification;
-  protected AlertInterval reminder;
-  protected List<String> emails = new ArrayList<>();
-  protected String webhook;
+  private String name;
+  private AlertInterval checkInterval;
+  private String reportId;
+  private Double threshold;
+  private AlertThresholdOperator thresholdOperator;
+  private boolean fixNotification;
+  private AlertInterval reminder;
+  private List<String> emails = new ArrayList<>();
+  private String webhook;
 }

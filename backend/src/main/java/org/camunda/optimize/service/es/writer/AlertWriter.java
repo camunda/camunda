@@ -151,7 +151,7 @@ public class AlertWriter {
     );
   }
 
-  public void writeAlertStatus(boolean alertStatus, String alertId) {
+  public void writeAlertTriggeredStatus(boolean alertStatus, String alertId) {
     log.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
     try {
       XContentBuilder docFieldToUpdate =

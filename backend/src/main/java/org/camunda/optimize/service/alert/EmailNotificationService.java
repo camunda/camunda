@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
+import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
@@ -26,7 +27,11 @@ public class EmailNotificationService implements NotificationService {
   private final ConfigurationService configurationService;
 
   @Override
-  public void notifyRecipients(String text, List<String> recipients) {
+  public void notify(final AlertNotificationDto notification) {
+    notify(notification.getAlertMessage(), notification.getAlert().getEmails());
+  }
+
+  public void notify(final String text, final List<String> recipients) {
     recipients.forEach(recipient -> notifyRecipient(text, recipient));
   }
 

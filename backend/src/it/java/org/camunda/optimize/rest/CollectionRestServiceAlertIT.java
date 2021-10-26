@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -111,9 +112,9 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     final String reportId1 = createNumberReportForCollection(collectionId, definitionType);
     final String reportId2 = createNumberReportForCollection(collectionId, definitionType);
 
-    alertClient.createAlertForReport(reportId1, 1, "Hours");
-    alertClient.createAlertForReport(reportId1, 1, "Hours");
-    alertClient.createAlertForReport(reportId2, 1, "Hours");
+    alertClient.createAlertForReport(reportId1, 1, AlertIntervalUnit.HOURS);
+    alertClient.createAlertForReport(reportId1, 1, AlertIntervalUnit.HOURS);
+    alertClient.createAlertForReport(reportId2, 1, AlertIntervalUnit.HOURS);
 
     // when
     collectionClient.deleteCollection(collectionId);

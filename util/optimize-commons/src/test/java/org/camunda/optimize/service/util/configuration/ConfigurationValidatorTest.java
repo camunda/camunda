@@ -274,7 +274,7 @@ public class ConfigurationValidatorTest {
       "",
       new HashMap<>(),
       "POST",
-      WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER
+      WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString()
     );
     configurationService.setConfiguredWebhooks(webhooks);
 

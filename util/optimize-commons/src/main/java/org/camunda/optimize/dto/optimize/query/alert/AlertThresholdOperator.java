@@ -13,7 +13,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALERT_THRESHOLD_
 public enum AlertThresholdOperator {
   GREATER(ALERT_THRESHOLD_OPERATOR_GREATER),
   LESS(ALERT_THRESHOLD_OPERATOR_LESS),
-    ;
+  ;
 
   private final String id;
 

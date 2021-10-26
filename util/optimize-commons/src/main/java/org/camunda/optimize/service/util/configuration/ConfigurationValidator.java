@@ -122,7 +122,9 @@ public class ConfigurationValidator {
     for (Map.Entry<String, WebhookConfiguration> webhookConfigEntry : webhookMap.entrySet()) {
       final String defaultPayload = webhookConfigEntry.getValue().getDefaultPayload();
       final String url = webhookConfigEntry.getValue().getUrl();
-      final boolean usesPlaceholderString = defaultPayload.contains(WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER);
+      final boolean usesPlaceholderString = defaultPayload.contains(
+        WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString()
+      );
 
       if (url.isEmpty()) {
         webhooksWithoutUrl.add(webhookConfigEntry.getKey());
@@ -150,7 +152,7 @@ public class ConfigurationValidator {
     if (!webhooksWithoutPlaceholder.isEmpty()) {
       errorMsg = errorMsg + String.format(
         "The alert placeholder String '%s' is not used in the following webhooks: %s",
-        WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER,
+        WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString(),
         webhooksWithoutPlaceholder
       );
     }

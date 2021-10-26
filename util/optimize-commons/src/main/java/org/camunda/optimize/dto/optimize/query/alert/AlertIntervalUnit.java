@@ -5,12 +5,19 @@
  */
 package org.camunda.optimize.dto.optimize.query.alert;
 
-import lombok.Data;
-import lombok.experimental.FieldNameConstants;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-@Data
-@FieldNameConstants
-public class AlertInterval {
-  private int value;
-  private AlertIntervalUnit unit;
+public enum AlertIntervalUnit {
+  SECONDS,
+  MINUTES,
+  HOURS,
+  DAYS,
+  WEEKS,
+  MONTHS,
+  ;
+
+  @JsonValue
+  public String getId() {
+    return name().toLowerCase();
+  }
 }

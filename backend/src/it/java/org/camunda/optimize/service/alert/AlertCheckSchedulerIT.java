@@ -5,16 +5,13 @@
  */
 package org.camunda.optimize.service.alert;
 
-import com.icegreen.greenmail.util.GreenMail;
-import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
@@ -28,20 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AlertCheckSchedulerIT extends AbstractAlertIT {
-
-  private GreenMail greenMail;
-
-  @BeforeEach
-  public void cleanUp() throws Exception {
-    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
-    greenMail = initGreenMail();
-  }
-
-  @AfterEach
-  public void tearDown() {
-    greenMail.stop();
-  }
+public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
 
   @Test
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
@@ -241,7 +225,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Minutes");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.MINUTES);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -260,7 +244,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Hours");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.HOURS);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -278,7 +262,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Days");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.DAYS);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -296,7 +280,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // given
     AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
-    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Weeks");
+    AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, AlertIntervalUnit.WEEKS);
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
@@ -311,7 +295,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     return cronTrigger.getNextFireTime().toInstant();
   }
 
-  private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, String intervalUnit) {
+  private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, AlertIntervalUnit intervalUnit) {
     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert("fakeReport", intervalValue, intervalUnit);
 
     AlertDefinitionDto alert = createFakeReport(simpleAlert);

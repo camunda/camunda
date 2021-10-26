@@ -20,11 +20,12 @@ import java.util.function.Supplier;
 @AllArgsConstructor
 public class UiConfigurationClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+  private static final String TEST_WEBHOOK_URL_HOST = "http://127.0.0.1:%d";
+
   public static final String TEST_WEBHOOK_NAME = "testWebhook";
   public static final String TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME = "testWebhook_NonStandardContentType";
   public static final String TEST_INVALID_PORT_WEBHOOK_NAME = "testWebhook_InvalidUrl";
   public static final String TEST_WEBHOOK_METHOD = "POST";
-  public static final String TEST_WEBHOOK_URL_HOST = "http://127.0.0.1:8787";
   public static final String TEST_WEBHOOK_URL_INVALID_PORT = "http://127.0.0.1:1080";
   public static final String TEST_WEBHOOK_URL_PATH = "/webhookpath";
 
@@ -34,12 +35,16 @@ public class UiConfigurationClient {
     return webhookMap;
   }
 
+  public static String createWebhookHostUrl(final int port) {
+    return String.format(TEST_WEBHOOK_URL_HOST, port);
+  }
+
   public WebhookConfiguration createSimpleWebhookConfiguration() {
     return createWebhookConfiguration(
       TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
       Collections.emptyMap(),
       TEST_WEBHOOK_METHOD,
-      WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER
+      WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString()
     );
   }
 

@@ -6,8 +6,7 @@
 package org.camunda.optimize;
 
 import com.google.common.collect.ImmutableMap;
-import com.icegreen.greenmail.util.GreenMail;
-import com.icegreen.greenmail.util.ServerSetup;
+import lombok.SneakyThrows;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -15,6 +14,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -31,6 +31,9 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.verify.VerificationTimes;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
@@ -40,6 +43,8 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -52,19 +57,27 @@ import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUST
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_HOST;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_INVALID_PORT;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.createWebhookHostUrl;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.mockserver.model.HttpRequest.request;
 
 public abstract class AbstractAlertIT extends AbstractIT {
 
-  protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
+  @BeforeEach
+  public void beforeEach() throws Exception {
+    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
+  }
+
+  @SneakyThrows
+  protected void triggerAndCompleteCheckJob(String id) {
     this.triggerAndCompleteJob(checkJobKey(id));
   }
 
-  private void triggerAndCompleteJob(JobKey jobKey) throws SchedulerException, InterruptedException {
+  @SneakyThrows
+  private void triggerAndCompleteJob(JobKey jobKey) {
     SyncListener jobListener = new SyncListener(1);
     embeddedOptimizeExtension.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
     //trigger job
@@ -77,7 +90,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .removeJobListener(jobListener.getName());
   }
 
-  protected void triggerAndCompleteReminderJob(String id) throws SchedulerException, InterruptedException {
+  @SneakyThrows
+  protected void triggerAndCompleteReminderJob(String id) {
     this.triggerAndCompleteJob(reminderJobKey(id));
   }
 
@@ -130,7 +144,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
     AlertCreationRequestDto simpleAlert = setupBasicProcessAlert();
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
-    reminderInterval.setUnit("Seconds");
+    reminderInterval.setUnit(AlertIntervalUnit.SECONDS);
     simpleAlert.setReminder(reminderInterval);
     return simpleAlert;
   }
@@ -353,19 +367,30 @@ public abstract class AbstractAlertIT extends AbstractIT {
     emailAuthenticationConfiguration.setSecurityProtocol(NONE);
   }
 
-  protected void setWebhookConfiguration() {
+  protected void setWebhookConfiguration(final Integer webhookPort) {
+    // payload using all possible placeholders
+    final String payload = "{\n"
+      + Stream.of(WebhookConfiguration.Placeholder.values())
+      .map(placeholder -> String.format("\"%s\": \"%s\"", placeholder.name(), placeholder.getPlaceholderString()))
+      .collect(Collectors.joining(",\n"))
+      + "\n}";
+
+    setWebhookConfiguration(webhookPort, payload);
+  }
+
+  protected void setWebhookConfiguration(final Integer webhookPort, final String payload) {
     Map<String, WebhookConfiguration> webhookConfigurationMap = new HashMap<>();
 
-    final String payload = "{'text': '" + WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER + "'}";
+
 
     final WebhookConfiguration webhook1 = uiConfigurationClient.createWebhookConfiguration(
-      TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
+      createWebhookHostUrl(webhookPort) + TEST_WEBHOOK_URL_PATH,
       ImmutableMap.of("Content-type", "application/json"),
       TEST_WEBHOOK_METHOD,
       payload
     );
     final WebhookConfiguration webhook2 = uiConfigurationClient.createWebhookConfiguration(
-      TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
+      createWebhookHostUrl(webhookPort) + TEST_WEBHOOK_URL_PATH,
       ImmutableMap.of("Content-type", "some/customType"),
       TEST_WEBHOOK_METHOD,
       payload
@@ -384,14 +409,25 @@ public abstract class AbstractAlertIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
   }
 
-  protected GreenMail initGreenMail() {
-    GreenMail greenMail = new GreenMail(
-      new ServerSetup(IntegrationTestConfigurationUtil.getSmtpPort(), null, ServerSetup.PROTOCOL_SMTP)
+  protected AlertCreationRequestDto addReminderToAlert(AlertCreationRequestDto alert) {
+    AlertInterval reminderInterval = new AlertInterval();
+    reminderInterval.setValue(3);
+    reminderInterval.setUnit(AlertIntervalUnit.SECONDS);
+    alert.setReminder(reminderInterval);
+    alert.setThreshold(1500.0);
+    alert.getCheckInterval().setValue(5);
+    return alert;
+  }
+
+  protected void assertWebhookRequestReceived(final MockServerClient client, final Integer times) {
+    client.verify(
+      request().withMethod(TEST_WEBHOOK_METHOD).withPath(TEST_WEBHOOK_URL_PATH),
+      VerificationTimes.exactly(times)
     );
-    greenMail.setUser("from@localhost.com", "demo", "demo");
-    greenMail.setUser("test@camunda.com", "test@camunda.com", "test@camunda.com");
-    greenMail.start();
-    return greenMail;
+  }
+
+  protected void clearWebhookRequestsFromClient(final MockServerClient client) {
+    client.clear(request().withPath(TEST_WEBHOOK_URL_PATH));
   }
 
   private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String definitionKey) {
