@@ -143,6 +143,12 @@ data:
           # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
           # Optimize will replace this placeholder with the content of the alert message.
           defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
+        'SlackWebhookCustomContent':
+          url: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
+          headers:
+            'Content-type': 'application/json'
+          httpMethod: 'POST'
+          defaultPayload: '{"text": "The alert *{{ALERT_NAME}}* was triggered as the threshold of `{{ALERT_THRESHOLD_OPERATOR}}{{ALERT_THRESHOLD_VALUE}}`, you can view the report <here|{{ALERT_REPORT_LINK}}>."}'
     telemetry:
       # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
       # Telemetry can later be enabled/disabled in the UI by superusers
