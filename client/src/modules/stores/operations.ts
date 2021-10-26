@@ -26,7 +26,7 @@ type State = {
   operations: OperationEntity[];
   hasMoreOperations: boolean;
   page: number;
-  status: 'initial' | 'fetching' | 'fetched' | 'error';
+  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
@@ -174,7 +174,11 @@ class Operations extends NetworkReconnectionHandler {
   };
 
   startFetching = () => {
-    this.state.status = 'fetching';
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
+    } else {
+      this.state.status = 'fetching';
+    }
   };
 
   handleFetchSuccess = () => {

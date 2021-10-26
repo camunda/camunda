@@ -55,7 +55,7 @@ const OperationsPanel: React.FC = observer(() => {
           data-testid="operations-list"
           isInitialLoadComplete={status === 'fetched'}
         >
-          {['initial', 'fetching'].includes(status) && <Skeleton />}
+          {['initial', 'first-fetch'].includes(status) && <Skeleton />}
           {operations.map((operation) => (
             <OperationsEntry key={operation.id} operation={operation} />
           ))}
