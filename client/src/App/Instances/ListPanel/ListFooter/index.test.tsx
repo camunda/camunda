@@ -21,7 +21,7 @@ const defaultProps = {
   isCollapsed: false,
 };
 
-const mockInstances = [
+const mockInstances: ProcessInstanceEntity[] = [
   {
     id: '2251799813685625',
     processId: '2251799813685623',
@@ -37,7 +37,7 @@ const mockInstances = [
     parentInstanceId: null,
     rootInstanceId: null,
     callHierarchy: [],
-  } as const,
+  },
   {
     id: '2251799813685627',
     processId: '2251799813685623',
@@ -53,7 +53,7 @@ const mockInstances = [
     parentInstanceId: null,
     rootInstanceId: null,
     callHierarchy: [],
-  } as const,
+  },
 ];
 
 describe('ListFooter', () => {

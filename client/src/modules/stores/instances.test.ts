@@ -10,6 +10,7 @@ import {groupedProcessesMock} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
+import {createOperation} from 'modules/utils/instance';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -388,6 +389,7 @@ describe('stores/instances', () => {
   });
 
   it('should mark instances with active operations', async () => {
+    const cancelOperation = createOperation('CANCEL_PROCESS_INSTANCE');
     mockServer.use(
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
@@ -408,28 +410,53 @@ describe('stores/instances', () => {
       payload: {query: {}},
     });
 
-    instancesStore.markInstancesWithActiveOperations({ids: ['1', '2']});
+    instancesStore.markInstancesWithActiveOperations({
+      ids: ['1', '2'],
+      operationType: 'CANCEL_PROCESS_INSTANCE',
+    });
 
     expect(instancesStore.state.processInstances).toEqual([
-      {...instance, id: '1', hasActiveOperation: true},
-      {...instance, id: '2', hasActiveOperation: true},
+      {
+        ...instance,
+        id: '1',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
+      {
+        ...instance,
+        id: '2',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
       {...instance, id: '3'},
     ]);
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
 
     instancesStore.markInstancesWithActiveOperations({
       ids: ['non_existing_instance_id'],
+      operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
     expect(instancesStore.state.processInstances).toEqual([
-      {...instance, id: '1', hasActiveOperation: true},
-      {...instance, id: '2', hasActiveOperation: true},
+      {
+        ...instance,
+        id: '1',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
+      {
+        ...instance,
+        id: '2',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
       {...instance, id: '3'},
     ]);
 
     instancesStore.markInstancesWithActiveOperations({
       ids: [],
       shouldPollAllVisibleIds: true,
+      operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '1',
@@ -438,9 +465,24 @@ describe('stores/instances', () => {
     ]);
 
     expect(instancesStore.state.processInstances).toEqual([
-      {...instance, id: '1', hasActiveOperation: true},
-      {...instance, id: '2', hasActiveOperation: true},
-      {...instance, id: '3', hasActiveOperation: true},
+      {
+        ...instance,
+        id: '1',
+        hasActiveOperation: true,
+        operations: [cancelOperation, cancelOperation],
+      },
+      {
+        ...instance,
+        id: '2',
+        hasActiveOperation: true,
+        operations: [cancelOperation, cancelOperation],
+      },
+      {
+        ...instance,
+        id: '3',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
     ]);
 
     mockServer.use(
@@ -473,17 +515,32 @@ describe('stores/instances', () => {
     instancesStore.markInstancesWithActiveOperations({
       ids: ['2'],
       shouldPollAllVisibleIds: true,
+      operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(instancesStore.state.processInstances).toEqual([
-      {...instance, id: '1', hasActiveOperation: true},
-      {...instance, id: '2'},
-      {...instance, id: '3', hasActiveOperation: true},
+      {
+        ...instance,
+        id: '1',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
+      {
+        ...instance,
+        id: '2',
+      },
+      {
+        ...instance,
+        id: '3',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
     ]);
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '3']);
 
     instancesStore.markInstancesWithActiveOperations({
       ids: ['non_existing_instance_id'],
       shouldPollAllVisibleIds: true,
+      operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '1',
@@ -492,9 +549,24 @@ describe('stores/instances', () => {
     ]);
 
     expect(instancesStore.state.processInstances).toEqual([
-      {...instance, id: '1', hasActiveOperation: true},
-      {...instance, id: '2', hasActiveOperation: true},
-      {...instance, id: '3', hasActiveOperation: true},
+      {
+        ...instance,
+        id: '1',
+        hasActiveOperation: true,
+        operations: [cancelOperation, cancelOperation],
+      },
+      {
+        ...instance,
+        id: '2',
+        hasActiveOperation: true,
+        operations: [cancelOperation],
+      },
+      {
+        ...instance,
+        id: '3',
+        hasActiveOperation: true,
+        operations: [cancelOperation, cancelOperation],
+      },
     ]);
   });
 
@@ -542,6 +614,7 @@ describe('stores/instances', () => {
     instancesStore.unmarkInstancesWithActiveOperations({
       instanceIds: ['1', '2', '3'],
       shouldPollAllVisibleIds: true,
+      operationType: 'CANCEL_PROCESS_INSTANCE',
     });
 
     await waitFor(() =>
@@ -575,8 +648,55 @@ describe('stores/instances', () => {
     instancesStore.unmarkInstancesWithActiveOperations({
       instanceIds: ['3'],
       shouldPollAllVisibleIds: false,
+      operationType: 'CANCEL_PROCESS_INSTANCE',
     });
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1', '2']);
+  });
+
+  it('should not set active operation state to false if there are still running operations', async () => {
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            totalCount: 100,
+            processInstances: [
+              {
+                ...instanceWithActiveOperation,
+                id: '1',
+                operations: [
+                  {
+                    errorMessage: 'string',
+                    state: 'SENT',
+                    type: 'RESOLVE_INCIDENT',
+                  },
+                  {
+                    errorMessage: 'string',
+                    state: 'SENT',
+                    type: 'CANCEL_PROCESS_INSTANCE',
+                  },
+                ],
+              },
+            ],
+          })
+        )
+      )
+    );
+
+    instancesStore.fetchInstancesFromFilters();
+
+    await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1']);
+
+    instancesStore.unmarkInstancesWithActiveOperations({
+      instanceIds: ['1'],
+      shouldPollAllVisibleIds: false,
+      operationType: 'RESOLVE_INCIDENT',
+    });
+
+    expect(instancesStore.instanceIdsWithActiveOperations).toEqual(['1']);
+    expect(instancesStore.state.processInstances[0].hasActiveOperation).toBe(
+      true
+    );
   });
 
   it('should refresh instances and and call handlers every time there is an instance with completed operation', async () => {

@@ -87,14 +87,16 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
           <Operations
             instance={instance}
             isSelected={isSelected}
-            onOperation={() =>
+            onOperation={(operationType: OperationEntityType) =>
               instancesStore.markInstancesWithActiveOperations({
                 ids: [instance.id],
+                operationType,
               })
             }
-            onError={() => {
+            onError={(operationType: OperationEntityType) => {
               instancesStore.unmarkInstancesWithActiveOperations({
                 instanceIds: [instance.id],
+                operationType,
               });
               notifications.displayNotification('error', {
                 headline: 'Operation could not be created',

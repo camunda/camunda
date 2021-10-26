@@ -251,7 +251,7 @@ describe('useOperationApply', () => {
     instancesStore.fetchInstancesFromFilters();
 
     await waitFor(() =>
-      expect(instancesStore.state.processInstances.length).toBe(2)
+      expect(instancesStore.state.processInstances).toHaveLength(3)
     );
 
     mockServer.use(
@@ -279,6 +279,7 @@ describe('useOperationApply', () => {
     expect(instancesStore.instanceIdsWithActiveOperations).toEqual([
       '2251799813685594',
       '2251799813685596',
+      '2251799813685598',
     ]);
 
     jest.runOnlyPendingTimers();
@@ -300,7 +301,7 @@ describe('useOperationApply', () => {
     instancesStore.init();
     instancesStore.fetchInstancesFromFilters();
     await waitFor(() =>
-      expect(instancesStore.state.processInstances.length).toBe(2)
+      expect(instancesStore.state.processInstances).toHaveLength(3)
     );
 
     // @ts-expect-error ts-migrate(2554) FIXME: Expected 0 arguments, but got 1.

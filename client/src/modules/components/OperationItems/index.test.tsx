@@ -123,4 +123,54 @@ describe('OperationItems', () => {
       expect(MOCK_ON_CLICK).toHaveBeenCalled();
     });
   });
+
+  describe('Delete Item', () => {
+    it('should show the correct icon based on the type', () => {
+      render(
+        <OperationItems>
+          <OperationItems.Item type="DELETE_PROCESS_INSTANCE" onClick={noop} />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      expect(screen.getByTestId('delete-operation-icon')).toBeInTheDocument();
+    });
+
+    it('should render delete button', () => {
+      const BUTTON_TITLE = 'Delete Instance 1';
+      render(
+        <OperationItems>
+          <OperationItems.Item
+            type="DELETE_PROCESS_INSTANCE"
+            onClick={noop}
+            title={BUTTON_TITLE}
+          />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      expect(
+        screen.getByRole('button', {name: BUTTON_TITLE})
+      ).toBeInTheDocument();
+    });
+
+    it('should execute the passed method when clicked', () => {
+      const BUTTON_TITLE = 'Delete Instance 1';
+      const MOCK_ON_CLICK = jest.fn();
+      render(
+        <OperationItems>
+          <OperationItems.Item
+            type="DELETE_PROCESS_INSTANCE"
+            onClick={MOCK_ON_CLICK}
+            title={BUTTON_TITLE}
+          />
+        </OperationItems>,
+        {wrapper: ThemeProvider}
+      );
+
+      userEvent.click(screen.getByRole('button', {name: BUTTON_TITLE}));
+
+      expect(MOCK_ON_CLICK).toHaveBeenCalled();
+    });
+  });
 });

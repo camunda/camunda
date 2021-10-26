@@ -9,6 +9,7 @@ import {createInstance} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
+import {createOperation} from 'modules/utils/instance';
 
 const currentInstanceMock = createInstance();
 
@@ -102,9 +103,7 @@ describe('stores/currentInstance', () => {
   it('should set current instance', async () => {
     const mockInstance = createInstance({id: '123', state: 'ACTIVE'});
     expect(currentInstanceStore.state.instance).toEqual(null);
-    currentInstanceStore.setCurrentInstance(
-      createInstance({id: '123', state: 'ACTIVE'})
-    );
+    currentInstanceStore.setCurrentInstance(mockInstance);
     expect(currentInstanceStore.state.instance).toEqual(mockInstance);
   });
 
@@ -141,14 +140,57 @@ describe('stores/currentInstance', () => {
       createInstance({
         id: '123',
         hasActiveOperation: false,
+        operations: [],
       })
     );
 
     expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
-    currentInstanceStore.activateOperation();
+    currentInstanceStore.activateOperation('CANCEL_PROCESS_INSTANCE');
+
     expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(true);
-    currentInstanceStore.deactivateOperation();
+    expect(currentInstanceStore.state.instance?.operations).toEqual([
+      createOperation('CANCEL_PROCESS_INSTANCE'),
+    ]);
+
+    currentInstanceStore.deactivateOperation('CANCEL_PROCESS_INSTANCE');
+
     expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
+    expect(currentInstanceStore.state.instance?.operations).toEqual([]);
+  });
+
+  it('should not set active operation state to false if there are still running operations', async () => {
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        hasActiveOperation: false,
+      })
+    );
+
+    expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
+    currentInstanceStore.activateOperation('CANCEL_PROCESS_INSTANCE');
+
+    expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(true);
+    expect(currentInstanceStore.state.instance?.operations).toEqual([
+      {
+        errorMessage: 'string',
+        id: 'id_17',
+        state: 'SENT',
+        type: 'RESOLVE_INCIDENT',
+      },
+      createOperation('CANCEL_PROCESS_INSTANCE'),
+    ]);
+
+    currentInstanceStore.deactivateOperation('CANCEL_PROCESS_INSTANCE');
+
+    expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(true);
+    expect(currentInstanceStore.state.instance?.operations).toEqual([
+      {
+        errorMessage: 'string',
+        id: 'id_17',
+        state: 'SENT',
+        type: 'RESOLVE_INCIDENT',
+      },
+    ]);
   });
 
   it('should retry fetch on network reconnection', async () => {

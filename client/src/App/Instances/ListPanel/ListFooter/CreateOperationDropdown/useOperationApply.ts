@@ -32,10 +32,12 @@ export default function useOperationApply() {
       if (selectedInstanceIds.length > 0) {
         instancesStore.markInstancesWithActiveOperations({
           ids: selectedInstanceIds,
+          operationType,
         });
       } else {
         instancesStore.markInstancesWithActiveOperations({
           ids: excludedInstanceIds,
+          operationType,
           shouldPollAllVisibleIds: true,
         });
       }
@@ -48,9 +50,10 @@ export default function useOperationApply() {
           excludeIds: excludedInstanceIds,
         },
         onSuccess,
-        onError: () => {
+        onError: (operationType: OperationEntityType) => {
           instancesStore.unmarkInstancesWithActiveOperations({
             instanceIds: ids,
+            operationType,
             shouldPollAllVisibleIds: selectedInstanceIds.length === 0,
           });
           notifications.displayNotification('error', {

@@ -41,9 +41,9 @@ interface OperationEntity {
 }
 
 interface InstanceOperationEntity {
-  id: string;
+  id?: string;
   type: OperationEntityType;
-  state: 'SENT' | 'COMPLETED';
+  state: 'SENT' | 'COMPLETED' | 'SCHEDULED';
   errorMessage: null | string;
 }
 
@@ -57,7 +57,7 @@ interface ProcessInstanceEntity {
   state: InstanceEntityState;
   bpmnProcessId: string;
   hasActiveOperation: boolean;
-  operations: ReadonlyArray<InstanceOperationEntity>;
+  operations: Array<InstanceOperationEntity>;
   sortValues: ReadonlyArray<string>;
   parentInstanceId: null | string;
   rootInstanceId: null | string;

@@ -58,7 +58,7 @@ export const createIncident = (options = {}) => {
  */
 export const createOperation = (options = {}): InstanceOperationEntity => {
   return {
-    id: 'randomIdIterator.next().value',
+    id: randomIdIterator.next().value,
     errorMessage: 'string',
     state: 'SENT',
     type: 'RESOLVE_INCIDENT',
@@ -87,7 +87,7 @@ export const createInstance = (options = {}): ProcessInstanceEntity => {
     rootInstanceId: null,
     callHierarchy: [],
     ...options,
-  } as const;
+  };
 };
 
 /**
@@ -385,6 +385,7 @@ export const mockProcessInstances = {
       bpmnProcessId: 'withoutIncidentsProcess',
       hasActiveOperation: false,
       operations: [],
+      rootInstanceId: null,
     },
     {
       id: '2251799813685596',
@@ -394,10 +395,25 @@ export const mockProcessInstances = {
       processVersion: 1,
       startDate: '2020-09-03T15:42:25.200+0000',
       endDate: null,
-      state: 'ACTIVE',
+      state: 'INCIDENT',
       bpmnProcessId: 'withoutIncidentsProcess',
       hasActiveOperation: false,
       operations: [],
+      rootInstanceId: null,
+    },
+    {
+      id: '2251799813685598',
+      processId: '2251799813685592',
+      parentInstanceId: null,
+      processName: 'Without Incidents Process',
+      processVersion: 1,
+      startDate: '2020-09-03T15:42:25.200+0000',
+      endDate: '2020-09-03T15:50:25.200+0000',
+      state: 'CANCELED',
+      bpmnProcessId: 'withoutIncidentsProcess',
+      hasActiveOperation: false,
+      operations: [],
+      rootInstanceId: null,
     },
   ],
   totalCount: 912,

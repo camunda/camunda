@@ -10,7 +10,7 @@ import {STATE} from 'modules/constants';
  * @returns a boolean showing if the current instance has an incident
  * @param {*} instance object with full instance data
  */
-export const hasIncident = (instance: any) => {
+const hasIncident = (instance: any) => {
   return instance.state === STATE.INCIDENT;
 };
 
@@ -18,20 +18,20 @@ export const hasIncident = (instance: any) => {
  * @returns a boolean showing if the current instance is running.
  * @param {*} instance object with full instance data
  */
-export const isRunning = (instance: any) => {
+const isRunning = (instance: any) => {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 };
 
-export function getProcessName(instance: ProcessInstanceEntity | null) {
+const getProcessName = (instance: ProcessInstanceEntity | null) => {
   if (instance === null) {
     return '';
   }
 
   const {processName, bpmnProcessId} = instance;
   return processName || bpmnProcessId || '';
-}
+};
 
-export function formatGroupedProcesses(processes = []) {
+const formatGroupedProcesses = (processes = []) => {
   return processes.reduce((obj, value) => {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     obj[value.bpmnProcessId] = {
@@ -41,4 +41,22 @@ export function formatGroupedProcesses(processes = []) {
 
     return obj;
   }, {});
-}
+};
+
+const createOperation = (
+  operationType: OperationEntityType
+): InstanceOperationEntity => {
+  return {
+    type: operationType,
+    state: 'SCHEDULED',
+    errorMessage: null,
+  };
+};
+
+export {
+  hasIncident,
+  isRunning,
+  getProcessName,
+  formatGroupedProcesses,
+  createOperation,
+};

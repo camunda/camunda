@@ -113,7 +113,7 @@ class Operations extends NetworkReconnectionHandler {
     operationType: OperationEntityType;
     query: Query;
     onSuccess: () => void;
-    onError: () => void;
+    onError: (operationType: OperationEntityType) => void;
   }) => {
     try {
       const response = await applyBatchOperation(operationType, query);
@@ -122,10 +122,10 @@ class Operations extends NetworkReconnectionHandler {
         this.prependOperations(await response.json());
         onSuccess();
       } else {
-        onError();
+        onError(operationType);
       }
     } catch {
-      onError();
+      onError(operationType);
     }
   };
 
@@ -137,7 +137,7 @@ class Operations extends NetworkReconnectionHandler {
   }: {
     instanceId: string;
     payload: OperationPayload;
-    onError?: () => void;
+    onError?: (operationType: OperationEntityType) => void;
     onSuccess?: () => void;
   }) => {
     try {
@@ -147,10 +147,10 @@ class Operations extends NetworkReconnectionHandler {
         this.prependOperations(await response.json());
         onSuccess?.();
       } else {
-        onError?.();
+        onError?.(payload.operationType);
       }
     } catch {
-      return onError?.();
+      return onError?.(payload.operationType);
     }
   };
 

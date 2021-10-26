@@ -16,7 +16,6 @@ const iconStyle = ({theme}: any) => {
   return css`
     opacity: 0.7;
     color: ${colors.color};
-    cursor: pointer;
   `;
 };
 
@@ -54,30 +53,6 @@ const dynamicBorderStyles = (backgroundColor: any, borderColor: any) => css`
   }
 `;
 
-const leftBorderStyles = ({theme}: any) => {
-  const colors = theme.colors.modules.operationItems;
-
-  return css`
-    &:before {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 0px;
-      height: 20px;
-      width: 1px;
-      background: ${colors.default.border};
-    }
-
-    &:hover&:before {
-      background: ${colors.hover.border};
-    }
-
-    &:active&:before {
-      background: ${colors.active.border};
-    }
-  `;
-};
-
 const Ul = styled.ul`
   ${({theme}) => {
     const shadow = theme.shadows.modules.operationItems.ul;
@@ -91,8 +66,12 @@ const Ul = styled.ul`
   }}
 `;
 
-const Li = styled.li`
-  ${({theme}) => {
+type LiProps = {
+  disabled?: boolean;
+};
+
+const Li = styled.li<LiProps>`
+  ${({theme, disabled}) => {
     const colors = theme.colors.modules.operationItems;
 
     return css`
@@ -100,7 +79,7 @@ const Li = styled.li`
       padding: 1px;
       border: 1px solid ${colors.default.border};
       background: ${colors.default.background};
-      cursor: pointer;
+      cursor: ${disabled ? 'not-allowed' : 'pointer'};
 
       &:first-child&:last-child {
         border-radius: 12px;
@@ -110,34 +89,6 @@ const Li = styled.li`
         &:before,
         &:after {
           display: none;
-        }
-      }
-
-      &:not(:first-child):not(:last-child) {
-        border-radius: 0px;
-        border-left-width: 0;
-        border-right-width: 0;
-
-        &:hover,
-        &:active {
-          border-left-width: inherit;
-          border-right-width: inherit;
-          border-left-width: 0px;
-        }
-
-        &:hover {
-          ${dynamicBorderStyles(colors.hover.background, colors.hover.border)};
-        }
-
-        &:active {
-          ${dynamicBorderStyles(colors.active.background, colors.active.border)}
-        }
-
-        /* creates custom left border */
-        ${leftBorderStyles}
-
-        > button {
-          border-radius: inherit;
         }
       }
 
@@ -151,7 +102,26 @@ const Li = styled.li`
         }
 
         /* creates custom left border */
-        ${leftBorderStyles}
+        &:before {
+          content: '';
+          position: absolute;
+          top: 2px;
+          left: 0px;
+          height: 20px;
+          width: 1px;
+          background: ${colors.default.border};
+        }
+
+        ${!disabled &&
+        css`
+          &:hover&:before {
+            background: ${colors.hover.border};
+          }
+
+          &:active&:before {
+            background: ${colors.active.border};
+          }
+        `}
 
         /* puts focus in same shape as element */
         > button {
@@ -168,12 +138,18 @@ const Li = styled.li`
           border-right-width: 0;
         }
 
-        &:hover {
-          ${dynamicBorderStyles(colors.hover.background, colors.hover.border)}
-        }
-        &:active {
-          ${dynamicBorderStyles(colors.active.background, colors.active.border)}
-        }
+        ${!disabled &&
+        css`
+          &:hover {
+            ${dynamicBorderStyles(colors.hover.background, colors.hover.border)}
+          }
+          &:active {
+            ${dynamicBorderStyles(
+              colors.active.background,
+              colors.active.border
+            )}
+          }
+        `}
 
         /* Puts focus in same shape as element */
         > button {
@@ -195,15 +171,18 @@ const Li = styled.li`
         }
       }
 
-      &:hover {
-        background: ${colors.hover.background};
-        border: 1px solid ${colors.hover.border};
-      }
+      ${!disabled &&
+      css`
+        &:hover {
+          background: ${colors.hover.background};
+          border: 1px solid ${colors.hover.border};
+        }
 
-      &:active {
-        background: ${colors.active.background};
-        border: 1px solid ${colors.active.border};
-      }
+        &:active {
+          background: ${colors.active.background};
+          border: 1px solid ${colors.active.border};
+        }
+      `}
     `;
   }}
 `;
@@ -215,6 +194,12 @@ const Button = styled.button`
   background: none;
   border: none;
   border-radius: 12px;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
 `;
 
 export {iconStyle, RetryIcon, CancelIcon, DeleteIcon, Ul, Li, Button};

@@ -23,11 +23,11 @@ type Props = {
 
 const IncidentOperation: React.FC<Props> = observer(
   ({instanceId, incident, showSpinner}) => {
-    const [isSpinnerVisible, setIsSpinnerVisible] = useState(false);
+    const [hasActiveOperation, setHasActiveOperation] = useState(false);
     const notifications = useNotifications();
 
     const handleError = () => {
-      setIsSpinnerVisible(false);
+      setHasActiveOperation(false);
       notifications.displayNotification('error', {
         headline: 'Operation could not be created',
       });
@@ -35,7 +35,7 @@ const IncidentOperation: React.FC<Props> = observer(
 
     const handleOnClick = async (e: any) => {
       e.stopPropagation();
-      setIsSpinnerVisible(true);
+      setHasActiveOperation(true);
 
       // incidents operations should listen to main btn who publishes the incident ids which are affected
       operationsStore.applyOperation({
@@ -51,7 +51,7 @@ const IncidentOperation: React.FC<Props> = observer(
 
     return (
       <Styled.Operations>
-        {(isSpinnerVisible || showSpinner) && (
+        {(hasActiveOperation || showSpinner) && (
           <OperationSpinner data-testid="operation-spinner" />
         )}
         <OperationItems>
@@ -60,6 +60,7 @@ const IncidentOperation: React.FC<Props> = observer(
             onClick={handleOnClick}
             data-testid="retry-incident"
             title="Retry Incident"
+            disabled={hasActiveOperation || showSpinner}
           />
         </OperationItems>
       </Styled.Operations>

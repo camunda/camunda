@@ -102,9 +102,11 @@ const InstanceHeader = observer(() => {
       <Restricted scopes={['write']}>
         <Operations
           instance={instance}
-          onOperation={() => currentInstanceStore.activateOperation()}
-          onError={() => {
-            currentInstanceStore.deactivateOperation();
+          onOperation={(operationType: OperationEntityType) =>
+            currentInstanceStore.activateOperation(operationType)
+          }
+          onError={(operationType) => {
+            currentInstanceStore.deactivateOperation(operationType);
             notifications.displayNotification('error', {
               headline: 'Operation could not be created',
             });

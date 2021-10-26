@@ -33,7 +33,9 @@ describe('OperationsEntry', () => {
     });
 
     expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS.RETRY.id)).toBeInTheDocument();
+    expect(
+      screen.getByText('b42fd629-73b1-4709-befb-7ccd900fb18d')
+    ).toBeInTheDocument();
     expect(screen.getByText('Retry')).toBeInTheDocument();
     expect(screen.getByTestId('operation-retry-icon')).toBeInTheDocument();
   });
@@ -45,7 +47,9 @@ describe('OperationsEntry', () => {
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS.CANCEL.id)).toBeInTheDocument();
+    expect(
+      screen.getByText('393ad666-d7f0-45c9-a679-ffa0ef82f88a')
+    ).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByTestId('operation-cancel-icon')).toBeInTheDocument();
   });
@@ -57,7 +61,9 @@ describe('OperationsEntry', () => {
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS.EDIT.id)).toBeInTheDocument();
+    expect(
+      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052')
+    ).toBeInTheDocument();
     expect(screen.getByText('Edit')).toBeInTheDocument();
     expect(screen.getByTestId('operation-edit-icon')).toBeInTheDocument();
   });
@@ -69,7 +75,9 @@ describe('OperationsEntry', () => {
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(screen.getByText(OPERATIONS.DELETE.id)).toBeInTheDocument();
+    expect(
+      screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052')
+    ).toBeInTheDocument();
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
   });

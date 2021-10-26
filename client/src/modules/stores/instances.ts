@@ -21,6 +21,8 @@ import {
 import {logger} from 'modules/logger';
 import {getRequestFilters, getSorting} from 'modules/utils/filter';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {createOperation} from 'modules/utils/instance';
+import {hasActiveOperations} from './utils/hasActiveOperations';
 
 type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 
@@ -388,9 +390,11 @@ class Instances extends NetworkReconnectionHandler {
 
   markInstancesWithActiveOperations = ({
     ids,
+    operationType,
     shouldPollAllVisibleIds = false,
   }: {
     ids: ProcessInstanceEntity['id'][];
+    operationType: OperationEntityType;
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
@@ -398,12 +402,14 @@ class Instances extends NetworkReconnectionHandler {
         .filter((instance) => !ids.includes(instance.id))
         .forEach((instance) => {
           instance.hasActiveOperation = true;
+          instance.operations.push(createOperation(operationType));
         });
     } else {
       this.state.processInstances
         .filter((instance) => ids.includes(instance.id))
         .forEach((instance) => {
           instance.hasActiveOperation = true;
+          instance.operations.push(createOperation(operationType));
         });
     }
   };
@@ -450,9 +456,11 @@ class Instances extends NetworkReconnectionHandler {
 
   unmarkInstancesWithActiveOperations = ({
     instanceIds,
+    operationType,
     shouldPollAllVisibleIds,
   }: {
     instanceIds: string[];
+    operationType: OperationEntityType;
     shouldPollAllVisibleIds?: boolean;
   }) => {
     if (shouldPollAllVisibleIds) {
@@ -461,7 +469,14 @@ class Instances extends NetworkReconnectionHandler {
       this.state.processInstances
         .filter((instance) => instanceIds.includes(instance.id))
         .forEach((instance) => {
-          instance.hasActiveOperation = false;
+          instance.operations = instance.operations.filter(
+            (operation) =>
+              !(operation.type === operationType && operation.id === undefined)
+          );
+
+          if (!hasActiveOperations(instance.operations)) {
+            instance.hasActiveOperation = false;
+          }
         });
     }
   };

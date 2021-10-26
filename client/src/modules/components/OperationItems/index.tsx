@@ -22,12 +22,25 @@ type ItemProps = {
   type: OperationEntityType;
   onClick?: (...args: unknown[]) => any;
   title?: string;
+  disabled?: boolean;
 };
 
-const Item: React.FC<ItemProps> = function ({title, onClick, type, ...rest}) {
+const Item: React.FC<ItemProps> = function ({
+  title,
+  onClick,
+  type,
+  disabled,
+  ...rest
+}) {
   return (
-    <Styled.Li onClick={onClick}>
-      <Styled.Button {...rest} type="button" title={title}>
+    <Styled.Li disabled={disabled}>
+      <Styled.Button
+        {...rest}
+        onClick={onClick}
+        title={title}
+        disabled={disabled}
+        type="button"
+      >
         {type === 'RESOLVE_INCIDENT' && (
           <Styled.RetryIcon data-testid="retry-operation-icon" />
         )}

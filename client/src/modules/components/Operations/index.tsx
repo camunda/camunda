@@ -5,6 +5,8 @@
  */
 
 import React, {useState} from 'react';
+
+import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {operationsStore} from 'modules/stores/operations';
 import {instancesStore} from 'modules/stores/instances';
 import {observer} from 'mobx-react';
@@ -21,8 +23,8 @@ import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal
 type Props = {
   instance: ProcessInstanceEntity;
   isSelected?: boolean;
-  onOperation?: () => void;
-  onError?: () => void;
+  onOperation?: (operationType: OperationEntityType) => void;
+  onError?: (operationType: OperationEntityType) => void;
   forceSpinner?: boolean;
 };
 
@@ -43,7 +45,15 @@ const Operations: React.FC<Props> = observer(
         onError,
       });
 
-      onOperation?.();
+      onOperation?.(operationType);
+    };
+
+    const isOperationActive = (operationType: OperationEntityType) => {
+      return instance.operations.some(
+        (operation) =>
+          operation.type === operationType &&
+          ACTIVE_OPERATION_STATES.includes(operation.state)
+      );
     };
 
     return (
@@ -64,6 +74,7 @@ const Operations: React.FC<Props> = observer(
               type="RESOLVE_INCIDENT"
               onClick={() => applyOperation('RESOLVE_INCIDENT')}
               title={`Retry Instance ${instance.id}`}
+              disabled={isOperationActive('RESOLVE_INCIDENT')}
             />
           )}
           {isRunning(instance) && (
@@ -71,6 +82,7 @@ const Operations: React.FC<Props> = observer(
               type="CANCEL_PROCESS_INSTANCE"
               onClick={() => setIsCancellationModalVisible(true)}
               title={`Cancel Instance ${instance.id}`}
+              disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
             />
           )}
           {!isRunning(instance) && (
@@ -78,6 +90,7 @@ const Operations: React.FC<Props> = observer(
               type="DELETE_PROCESS_INSTANCE"
               onClick={() => setIsDeleteModalVisible(true)}
               title={`Delete Instance ${instance.id}`}
+              disabled={isOperationActive('DELETE_PROCESS_INSTANCE')}
             />
           )}
         </OperationItems>

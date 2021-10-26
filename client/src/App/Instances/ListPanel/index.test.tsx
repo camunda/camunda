@@ -295,7 +295,7 @@ describe('ListPanel', () => {
       userEvent.click(screen.getByText(/apply operation on/i));
       userEvent.click(screen.getByText(/cancel/i));
       userEvent.click(screen.getByText(/^apply$/i));
-      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(2);
+      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
@@ -338,7 +338,7 @@ describe('ListPanel', () => {
       userEvent.click(screen.getByText(/apply operation on/i));
       userEvent.click(screen.getByText(/cancel/i));
       userEvent.click(screen.getByText(/^apply$/i));
-      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(2);
+      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
       await waitFor(() =>
         expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
       );
@@ -373,7 +373,7 @@ describe('ListPanel', () => {
       userEvent.click(screen.getByText(/apply operation on/i));
       userEvent.click(screen.getByText(/cancel/i));
       userEvent.click(screen.getByText(/^apply$/i));
-      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(2);
+      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
 
       await waitFor(() =>
         expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)

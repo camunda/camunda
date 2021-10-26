@@ -14,7 +14,7 @@ import {
   override,
 } from 'mobx';
 import {fetchProcessInstance} from 'modules/api/instances';
-import {getProcessName} from 'modules/utils/instance';
+import {createOperation, getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 
 import {PAGE_TITLE} from 'modules/constants';
@@ -23,6 +23,7 @@ import {History} from 'history';
 import {Locations} from 'modules/routes';
 import {NotificationContextType} from 'modules/notifications';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {hasActiveOperations} from './utils/hasActiveOperations';
 
 type State = {
   instance: null | ProcessInstanceEntity;
@@ -110,15 +111,22 @@ class CurrentInstance extends NetworkReconnectionHandler {
     this.state.instance = currentInstance;
   };
 
-  activateOperation = () => {
+  activateOperation = (operationType: OperationEntityType) => {
     if (this.state.instance !== null) {
       this.state.instance.hasActiveOperation = true;
+      this.state.instance.operations.push(createOperation(operationType));
     }
   };
 
-  deactivateOperation = () => {
+  deactivateOperation = (operationType: OperationEntityType) => {
     if (this.state.instance !== null) {
-      this.state.instance.hasActiveOperation = false;
+      this.state.instance.operations = this.state.instance.operations.filter(
+        ({type, id}) => !(type === operationType && id === undefined)
+      );
+
+      if (!hasActiveOperations(this.state.instance.operations)) {
+        this.state.instance.hasActiveOperation = false;
+      }
     }
   };
 
