@@ -261,7 +261,8 @@ public class ConfigurationValidatorTest {
     configurationService.setUiConfiguration(uiConfiguration);
 
     // then
-    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(() -> underTest.validate(configurationService))
+      .isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
@@ -270,16 +271,14 @@ public class ConfigurationValidatorTest {
     ConfigurationService configurationService = createConfiguration();
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
     Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
-      "myWeebhook",
-      "",
-      new HashMap<>(),
-      "POST",
+      "myWeebhook", "", new HashMap<>(), "POST",
       WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString()
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
     // then
-    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(() -> underTest.validate(configurationService))
+      .isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
@@ -288,16 +287,27 @@ public class ConfigurationValidatorTest {
     ConfigurationService configurationService = createConfiguration();
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
     Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
-      "myWeebhook",
-      "someurl",
-      new HashMap<>(),
-      "POST",
-      ""
+      "myWeebhook", "someurl", new HashMap<>(), "POST", ""
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
     // then
-    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(() -> underTest.validate(configurationService))
+      .isInstanceOf(OptimizeConfigurationException.class);
+  }
+
+  @Test
+  public void webhookPayloadWithOnePlaceholderIsAccepted() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
+      "myWeebhook", "someurl", new HashMap<>(), "POST", "{{ALERT_NAME}}"
+    );
+    configurationService.setConfiguredWebhooks(webhooks);
+
+    // then
+    underTest.validate(configurationService);
   }
 
   @Test
@@ -306,16 +316,17 @@ public class ConfigurationValidatorTest {
     ConfigurationService configurationService = createConfiguration();
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
     Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
-      "myWeebhook",
-      "",
-      new HashMap<>(),
-      "POST",
-      "aPayloadWithoutPlaceholder"
+      "myWeebhook", "someurl", new HashMap<>(), "POST", "aPayloadWithoutPlaceholder"
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
     // then
-    assertThatThrownBy(() -> underTest.validate(configurationService)).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(() -> underTest.validate(configurationService))
+      .isInstanceOf(OptimizeConfigurationException.class)
+      .hasMessage(
+        "At least one alert placeholder [{{ALERT_MESSAGE}}, {{ALERT_NAME}}, {{ALERT_REPORT_LINK}}, " +
+          "{{ALERT_CURRENT_VALUE}}, {{ALERT_THRESHOLD_VALUE}}, {{ALERT_THRESHOLD_OPERATOR}}, {{ALERT_TYPE}}, " +
+          "{{ALERT_INTERVAL}}, {{ALERT_INTERVAL_UNIT}}] must be used in the following webhooks: [myWeebhook]");
   }
 
   private String createAbsolutePath(final String relativePathToLogo) {

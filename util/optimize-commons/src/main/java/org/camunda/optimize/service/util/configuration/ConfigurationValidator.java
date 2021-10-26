@@ -14,16 +14,19 @@ import com.jayway.jsonpath.ReadContext;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.Version;
+import org.camunda.optimize.util.SuppressionConstants;
 
 import java.awt.Color;
 import java.io.InputStream;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
@@ -34,25 +37,24 @@ import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetri
 public class ConfigurationValidator {
 
   public static final String DOC_URL = MessageFormat.format(
-    "https://docs.camunda.org/optimize/{0}.{1}",
-    Version.VERSION_MAJOR,
-    Version.VERSION_MINOR
+    "https://docs.camunda.org/optimize/{0}.{1}", Version.VERSION_MAJOR, Version.VERSION_MINOR
   );
   private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
-  private Map<String, String> deprecatedConfigKeys;
+
+  private final Map<String, String> deprecatedConfigKeys;
 
   public ConfigurationValidator() {
     this(null);
   }
 
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   public ConfigurationValidator(String[] deprecatedConfigLocations) {
-    List<InputStream> deprecatedConfigStreams =
-      getLocationsAsInputStream(deprecatedConfigLocations == null ? DEFAULT_DEPRECATED_CONFIG_LOCATIONS :
-                                  deprecatedConfigLocations);
-    this.deprecatedConfigKeys =
-      (Map<String, String>) parseConfigFromLocations(
-        deprecatedConfigStreams
-      ).map(ReadContext::json).orElse(Collections.emptyMap());
+    final List<InputStream> deprecatedConfigStreams = getLocationsAsInputStream(
+      deprecatedConfigLocations == null ? DEFAULT_DEPRECATED_CONFIG_LOCATIONS : deprecatedConfigLocations
+    );
+
+    this.deprecatedConfigKeys = (Map<String, String>) parseConfigFromLocations(deprecatedConfigStreams)
+      .map(ReadContext::json).orElse(Collections.emptyMap());
   }
 
   public void validate(ConfigurationService configurationService) {
@@ -74,7 +76,7 @@ public class ConfigurationValidator {
     final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet().stream()
       .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey()))
         // in case of array structures we always a list as result, thus we need to check if it contains actual results
-        .flatMap(object -> object instanceof Collection && ((Collection) object).size() == 0
+        .flatMap(object -> object instanceof Collection && ((Collection<?>) object).isEmpty()
           ? Optional.empty()
           : Optional.of(object)
         )
@@ -122,9 +124,8 @@ public class ConfigurationValidator {
     for (Map.Entry<String, WebhookConfiguration> webhookConfigEntry : webhookMap.entrySet()) {
       final String defaultPayload = webhookConfigEntry.getValue().getDefaultPayload();
       final String url = webhookConfigEntry.getValue().getUrl();
-      final boolean usesPlaceholderString = defaultPayload.contains(
-        WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString()
-      );
+      final boolean usesPlaceholderString = Arrays.stream(WebhookConfiguration.Placeholder.values())
+        .anyMatch(placeholder -> defaultPayload.contains(placeholder.getPlaceholderString()));
 
       if (url.isEmpty()) {
         webhooksWithoutUrl.add(webhookConfigEntry.getKey());
@@ -139,20 +140,20 @@ public class ConfigurationValidator {
     String errorMsg = "";
     if (!webhooksWithoutPayload.isEmpty()) {
       errorMsg = errorMsg + String.format(
-        "The following webhooks are missing their payload configuration: %s.%n",
-        webhooksWithoutPayload
+        "The following webhooks are missing their payload configuration: %s.%n", webhooksWithoutPayload
       );
     }
     if (!webhooksWithoutUrl.isEmpty()) {
       errorMsg = errorMsg + String.format(
-        "The following webhooks are missing their URL configuration: %s.%n",
-        webhooksWithoutUrl
+        "The following webhooks are missing their URL configuration: %s.%n", webhooksWithoutUrl
       );
     }
     if (!webhooksWithoutPlaceholder.isEmpty()) {
       errorMsg = errorMsg + String.format(
-        "The alert placeholder String '%s' is not used in the following webhooks: %s",
-        WebhookConfiguration.Placeholder.ALERT_MESSAGE.getPlaceholderString(),
+        "At least one alert placeholder [%s] must be used in the following webhooks: %s",
+        Arrays.stream(WebhookConfiguration.Placeholder.values())
+          .map(WebhookConfiguration.Placeholder::getPlaceholderString)
+          .collect(Collectors.joining(", ")),
         webhooksWithoutPlaceholder
       );
     }
