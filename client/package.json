@@ -84,7 +84,7 @@
     "husky": "7.0.4",
     "jest-environment-jsdom-fifteen": "1.0.2",
     "jest-junit": "13.0.0",
-    "lint-staged": "11.2.5",
+    "lint-staged": "11.2.6",
     "msw": "0.35.0",
     "prettier": "2.4.1",
     "react-scripts": "4.0.3",
