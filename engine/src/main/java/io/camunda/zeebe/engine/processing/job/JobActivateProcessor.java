@@ -17,12 +17,13 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
 public class JobActivateProcessor implements CommandProcessor<JobRecord> {
-  public static final String NOT_FAILED_JOB_MESSAGE =
+
+  private static final String NOT_FAILED_JOB_MESSAGE =
       "Expected to back off failed job with key '%d', but %s";
   private final JobState jobState;
 
   public JobActivateProcessor(final ZeebeState zeebeState) {
-    this.jobState = zeebeState.getJobState();
+    jobState = zeebeState.getJobState();
   }
 
   @Override
