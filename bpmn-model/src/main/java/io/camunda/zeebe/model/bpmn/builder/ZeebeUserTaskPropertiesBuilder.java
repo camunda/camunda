@@ -54,4 +54,36 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeUserTaskForm(String id, String userTaskForm);
+
+  /**
+   * Sets a static assignee for the user task
+   *
+   * @param assignee the assignee of the user task
+   * @return the builder object
+   */
+  B zeebeAssignee(String assignee);
+
+  /**
+   * Sets a dynamic assignee for the user task that is retrieved from the given expression
+   *
+   * @param expression the expression for the assignee of the user task
+   * @return the builder object
+   */
+  B zeebeAssigneeExpression(String expression);
+
+  /**
+   * Sets a static candidateGroups for the user task
+   *
+   * @param candidateGroups the candidateGroups of the user task
+   * @return the builder object
+   */
+  B zeebeCandidateGroups(String candidateGroups);
+
+  /**
+   * Sets a dynamic candidateGroups for the user task that is retrieved from the given expression
+   *
+   * @param expression the expression for the candidateGroups of the user task
+   * @return the builder object
+   */
+  B zeebeCandidateGroupsExpression(String expression);
 }

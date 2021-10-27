@@ -21,6 +21,7 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -76,6 +77,32 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     zeebeUserTaskForm.setTextContent(userTaskForm);
     return zeebeFormKey(
         USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT, USER_TASK_FORM_KEY_BPMN_LOCATION, id);
+  }
+
+  @Override
+  public B zeebeAssignee(final String assignee) {
+    final ZeebeAssignmentDefinition assignment =
+        myself.getCreateSingleExtensionElement(ZeebeAssignmentDefinition.class);
+    assignment.setAssignee(assignee);
+    return myself;
+  }
+
+  @Override
+  public B zeebeAssigneeExpression(final String expression) {
+    return zeebeAssignee(asZeebeExpression(expression));
+  }
+
+  @Override
+  public B zeebeCandidateGroups(final String candidateGroups) {
+    final ZeebeAssignmentDefinition assignment =
+        myself.getCreateSingleExtensionElement(ZeebeAssignmentDefinition.class);
+    assignment.setCandidateGroups(candidateGroups);
+    return myself;
+  }
+
+  @Override
+  public B zeebeCandidateGroupsExpression(final String expression) {
+    return zeebeCandidateGroups(asZeebeExpression(expression));
   }
 
   public B zeebeTaskHeader(final String key, final String value) {
