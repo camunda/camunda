@@ -91,10 +91,8 @@ To work on an issue, follow the following steps:
 1. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
 1. Implement the required changes on your branch and regularly push your
-   changes to the origin so that the CI can run. Git commit will run a
-   pre-commit hook which will check the formatting, style and license headers
-   before committing. If these checks fail please fix the issues. Code format
-   and license headers can be fixed automatically by running maven. Checkstyle
+   changes to the origin so that the CI can run. Code formatting, style and
+   license header are fixed automatically by running maven. Checkstyle
    violations have to be fixed manually.
    ```
    git commit -am 'feat(broker): bpel support'
