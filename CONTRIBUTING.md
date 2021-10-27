@@ -99,13 +99,14 @@ To work on an issue, follow the following steps:
    git push -u origin 123-adding-bpel-support
    ```
 1. If you think you finished the issue please prepare the branch for reviewing.
-   In general the commits should be squashed into meaningful commits with a
-   helpful message. This means cleanup/fix etc commits should be squashed into
-   the related commit. If you made refactorings or similar which are not
-   directly necessary for the task it would be best if they are split up into
-   another commit. Rule of thumb is that you should think about how a reviewer
-   can best understand your changes. Please follow the [commit message
-   guidelines](#commit-message-guidelines).
+   Please consider our [pull requests and code
+   reviews](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews)
+   guide, before requesting a review. In general the commits should be squashed
+   into meaningful commits with a helpful message. This means cleanup/fix etc
+   commits should be squashed into the related commit. If you made refactorings
+   it would be best if they are split up into another commit. Rule of thumb is
+   that you should think about how a reviewer can best understand your changes.
+   Please follow the [commit message guidelines](#commit-message-guidelines).
 1. After finishing up the squashing force push your changes to your branch.
    ```
    git push --force-with-lease
