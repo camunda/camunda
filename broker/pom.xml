@@ -230,6 +230,16 @@
       <scope>test</scope>
       <type>test-jar</type>
     </dependency>
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -241,6 +251,7 @@
           <usedDependencies>
             <!-- dependency used but plugin seems to report a false positive here -->
             <dependency>uk.co.real-logic:sbe-tool</dependency>
+             <dependency>net.jqwik:jqwik</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
