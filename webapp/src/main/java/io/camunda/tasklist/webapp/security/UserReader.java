@@ -51,5 +51,13 @@ public interface UserReader {
 
   String getCurrentOrganizationId();
 
+  default String getCurrentUserId() {
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || authentication.getPrincipal() == null) {
+      return DEFAULT_USER;
+    }
+    return authentication.getPrincipal().toString();
+  }
+
   List<UserDTO> getUsersByUsernames(List<String> usernames);
 }
