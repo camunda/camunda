@@ -73,10 +73,13 @@ final class PartitionTransitionProcess {
 
           LOG.info(
               format("Transition to %s on term %d - executing %s", role, term, nextStep.getName()));
-
-          nextStep
-              .transitionTo(context, term, role)
-              .onComplete((ok, error) -> onStepCompletion(future, error));
+          try {
+            nextStep
+                .transitionTo(context, term, role)
+                .onComplete((ok, error) -> onStepCompletion(future, error));
+          } catch (final Exception e) {
+            future.completeExceptionally(e);
+          }
         });
   }
 
@@ -126,9 +129,14 @@ final class PartitionTransitionProcess {
                   "Preparation before transition to %s on term %d - executing %s",
                   role, term, nextCleanupStep.getName()));
 
-          nextCleanupStep
-              .prepareTransition(context, newTerm, newRole)
-              .onComplete((ok, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
+          try {
+            nextCleanupStep
+                .prepareTransition(context, newTerm, newRole)
+                .onComplete(
+                    (ok, error) -> onCleanupStepCompletion(future, error, newTerm, newRole));
+          } catch (final Exception e) {
+            future.completeExceptionally(e);
+          }
         });
   }
 
