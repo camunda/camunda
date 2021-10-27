@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MapComplexVariableToPrimitiveOne implements VariableImportAdapter {
+public class MapObjectVariableToPrimitiveOne implements VariableImportAdapter {
 
   @Override
   public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
@@ -25,11 +25,12 @@ public class MapComplexVariableToPrimitiveOne implements VariableImportAdapter {
       if (pluginVariableDto.getType().toLowerCase().equals("object") &&
         pluginVariableDto.getValueInfo().get("objectTypeName").equals("org.camunda.foo.Person") &&
         pluginVariableDto.getValueInfo().get("serializationDataFormat").equals("application/json")
-        ) {
+      ) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
           Map<String, String> jsonVariable =
-            objectMapper.readValue(pluginVariableDto.getValue(), new TypeReference<Map<String, String>>() {});
+            objectMapper.readValue(pluginVariableDto.getValue(), new TypeReference<Map<String, String>>() {
+            });
 
           PluginVariableDto nameVar = new PluginVariableDto();
           nameVar.setEngineAlias(pluginVariableDto.getEngineAlias());

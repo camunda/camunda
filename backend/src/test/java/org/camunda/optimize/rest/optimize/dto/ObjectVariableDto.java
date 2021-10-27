@@ -14,7 +14,7 @@ import java.io.Serializable;
 @Getter
 @Setter
 @Accessors(chain = true)
-public class ComplexVariableDto implements Serializable {
+public class ObjectVariableDto implements Serializable {
 
   private String type;
   private Object value;

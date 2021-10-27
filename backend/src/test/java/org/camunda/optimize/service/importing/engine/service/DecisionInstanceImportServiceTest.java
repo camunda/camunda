@@ -155,13 +155,13 @@ public class DecisionInstanceImportServiceTest {
     nullTypeInput.setValue(null);
     historicDecisionInstanceDto.getInputs().add(nullTypeInput);
 
-    final HistoricDecisionInputInstanceDto complexTypeInput = new HistoricDecisionInputInstanceDto();
-    complexTypeInput.setId(UUID.randomUUID().toString());
-    complexTypeInput.setClauseId(UUID.randomUUID().toString());
-    complexTypeInput.setClauseName("clauseName_complex");
-    complexTypeInput.setType("customType");
-    complexTypeInput.setValue("{}");
-    historicDecisionInstanceDto.getInputs().add(complexTypeInput);
+    final HistoricDecisionInputInstanceDto objectTypeInput = new HistoricDecisionInputInstanceDto();
+    objectTypeInput.setId(UUID.randomUUID().toString());
+    objectTypeInput.setClauseId(UUID.randomUUID().toString());
+    objectTypeInput.setClauseName("clauseName");
+    objectTypeInput.setType("customType");
+    objectTypeInput.setValue("{}");
+    historicDecisionInstanceDto.getInputs().add(objectTypeInput);
 
 
     // when
@@ -191,16 +191,16 @@ public class DecisionInstanceImportServiceTest {
     nullTypeOutput.setVariableName("varName_null");
     historicDecisionInstanceDto.getOutputs().add(nullTypeOutput);
 
-    final HistoricDecisionOutputInstanceDto complexTypeOutput = new HistoricDecisionOutputInstanceDto();
-    complexTypeOutput.setId(UUID.randomUUID().toString());
-    complexTypeOutput.setClauseId(UUID.randomUUID().toString());
-    complexTypeOutput.setClauseName("clauseName_complex");
-    complexTypeOutput.setType("customType");
-    complexTypeOutput.setValue("{}");
-    complexTypeOutput.setRuleId(UUID.randomUUID().toString());
-    complexTypeOutput.setRuleOrder(1);
-    complexTypeOutput.setVariableName("varName_complex");
-    historicDecisionInstanceDto.getOutputs().add(complexTypeOutput);
+    final HistoricDecisionOutputInstanceDto objectTypeOutput = new HistoricDecisionOutputInstanceDto();
+    objectTypeOutput.setId(UUID.randomUUID().toString());
+    objectTypeOutput.setClauseId(UUID.randomUUID().toString());
+    objectTypeOutput.setClauseName("clauseName_object");
+    objectTypeOutput.setType("customType");
+    objectTypeOutput.setValue("{}");
+    objectTypeOutput.setRuleId(UUID.randomUUID().toString());
+    objectTypeOutput.setRuleOrder(1);
+    objectTypeOutput.setVariableName("varName_object");
+    historicDecisionInstanceDto.getOutputs().add(objectTypeOutput);
 
 
     // when
