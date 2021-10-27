@@ -1,4 +1,7 @@
-.idea
+.idea/*
+!.idea/codeStyles
+!.idea/externalDependencies.xml
+!.idea/saveactions_settings.xml
 target
 .classpath
 .checkstyle
