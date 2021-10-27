@@ -30,6 +30,7 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Collection;
@@ -79,6 +80,7 @@ public class PartitionStartupAndTransitionContextImpl
 
   private long currentTerm;
   private Role currentRole;
+  private ConcurrencyControl concurrencyControl;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -371,5 +373,15 @@ public class PartitionStartupAndTransitionContextImpl
 
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
+  }
+
+  @Override
+  public ConcurrencyControl getConcurrencyControl() {
+    return concurrencyControl;
+  }
+
+  @Override
+  public void setConcurrencyControl(final ConcurrencyControl concurrencyControl) {
+    this.concurrencyControl = concurrencyControl;
   }
 }

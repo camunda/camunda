@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
@@ -61,6 +62,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   Consumer<TypedRecord<?>> getOnProcessedListener();
 
   TypedRecordProcessorFactory getStreamProcessorFactory();
+
+  ConcurrencyControl getConcurrencyControl();
+
+  void setConcurrencyControl(ConcurrencyControl concurrencyControl);
 
   void setExporterDirector(ExporterDirector exporterDirector);
 

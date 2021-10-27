@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.TestActorFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class StreamProcessorTransitionStepTest {
+
+  private static final TestConcurrencyControl TEST_CONCURRENCY_CONTROL =
+      new TestConcurrencyControl();
 
   TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
   final StreamProcessorBuilder streamProcessorBuilder = spy(StreamProcessorBuilder.class);
@@ -43,6 +47,7 @@ class StreamProcessorTransitionStepTest {
   void setup() {
     transitionContext.setLogStream(mock(LogStream.class));
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
+    transitionContext.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
 
     doReturn(streamProcessor).when(streamProcessorBuilder).build();
 
@@ -51,7 +56,7 @@ class StreamProcessorTransitionStepTest {
     when(streamProcessorFromPrevRole.closeAsync())
         .thenReturn(TestActorFuture.completedFuture(null));
 
-    step = new StreamProcessorTransitionStep(() -> streamProcessorBuilder);
+    step = new StreamProcessorTransitionStep((ctx, role) -> streamProcessor);
   }
 
   @ParameterizedTest
