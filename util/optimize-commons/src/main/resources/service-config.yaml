@@ -404,6 +404,10 @@ email:
   hostname: ''
   # The smtp server port. This one is also used as SSL port for the security connection.
   port: 587
+  # This is the company name that will be shown in the subject and body of e-mails sent by Optimize
+  # This configuration's setting is subject to any legal agreements between Camunda and the user's organization.
+  # Changes are only permitted with formal, written approval by Camunda.
+  companyBranding: Camunda
   # Define configuration properties for the authentication of the email server
   authentication:
     # A switch to control whether the email server requires authentication

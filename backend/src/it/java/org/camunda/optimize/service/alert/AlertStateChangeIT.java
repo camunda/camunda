@@ -140,8 +140,11 @@ public class AlertStateChangeIT extends AbstractAlertEmailIT {
     assertWebhookRequestReceived(client, 1);
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
+    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo(
+      "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
+    assertThat(content).contains(branding);
     assertThat(content).containsSequence(simpleAlert.getName());
     assertThat(content).containsSequence("is not exceeded anymore.");
     assertThat(content).containsSequence(

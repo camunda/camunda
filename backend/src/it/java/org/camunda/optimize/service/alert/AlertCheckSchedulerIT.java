@@ -177,9 +177,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
+    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo(
+      "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
     assertThat(content)
+      .contains(branding)
       .contains(simpleAlert.getName())
       .contains(String.format(
         "http://localhost:%d/#/collection/%s/report/%s/",
@@ -187,6 +190,34 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
         collectionId,
         reportId
       ));
+  }
+
+  @Test
+  public void testCompanyBrandingInSubjectAndBody() throws Exception {
+
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
+    importAllEngineEntitiesFromScratch();
+    String testBrandingName = "Your name here";
+    embeddedOptimizeExtension.getConfigurationService().setAlertEmailCompanyBranding(testBrandingName);
+
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+    final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
+    setEmailConfiguration();
+
+    // when
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
+    alertClient.createAlert(simpleAlert);
+
+    assertThat(greenMail.waitForIncomingEmail(3000, 1)).isTrue();
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(1);
+    assertThat(emails[0].getSubject()).isEqualTo(
+      "[" + testBrandingName + "-Optimize] - Report status");
+    String content = emails[0].getContent().toString();
+    assertThat(content).contains(testBrandingName);
   }
 
   @Test
@@ -211,8 +242,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
+    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo(
+      "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
     assertThat(content)
+      .contains(branding)
       .contains(String.format(
         "http://test.de:8090/#/collection/%s/report/%s/",
         collectionId,

@@ -176,7 +176,7 @@ public class AlertJob implements Job {
                                   final ReportDefinitionDto<?> reportDefinition,
                                   final Double result,
                                   final String statusText) {
-    return "Camunda Optimize - Report Status\n" +
+    return configurationService.getAlertEmailCompanyBranding() + " Optimize - Report Status\n" +
       "Alert name: " + alert.getName() + "\n" +
       "Report name: " + reportDefinition.getName() + "\n" +
       "Status: Given threshold [" +

@@ -82,7 +82,7 @@ public class EmailNotificationService implements NotificationService {
     email.setFrom(configurationService.getAlertEmailAddress());
 
     email.setCharset("utf-8");
-    email.setSubject("[Camunda-Optimize] - Report status");
+    email.setSubject("[" + configurationService.getAlertEmailCompanyBranding() + "-Optimize] - Report status");
     email.setMsg(body);
     email.addTo(to);
     email.send();

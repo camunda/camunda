@@ -165,6 +165,7 @@ public class ConfigurationService {
   private String alertEmailAddress;
   private String alertEmailHostname;
   private Integer alertEmailPort;
+  private String alertEmailCompanyBranding;
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
 
   private Map<String, WebhookConfiguration> configuredWebhooks;
@@ -894,6 +895,13 @@ public class ConfigurationService {
       alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
     }
     return alertEmailPort;
+  }
+
+  public String getAlertEmailCompanyBranding() {
+    if (alertEmailCompanyBranding == null) {
+        alertEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
+    }
+    return alertEmailCompanyBranding;
   }
 
   public Map<String, WebhookConfiguration> getConfiguredWebhooks() {
