@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -374,12 +375,12 @@ public final class TimerStartEventTest {
                 .withProcessDefinitionKey(processDefinitionKey)
                 .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(4))
-        .extracting(Record::getIntent)
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsExactly(
-            ProcessInstanceIntent.ACTIVATE_ELEMENT, // causes the flow node activation
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
-            ProcessInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
-            ProcessInstanceIntent.ACTIVATE_ELEMENT); // triggers the start event
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
