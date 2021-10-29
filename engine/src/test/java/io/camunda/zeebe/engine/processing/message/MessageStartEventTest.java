@@ -11,12 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -24,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
@@ -146,7 +150,6 @@ public final class MessageStartEventTest {
         .containsSequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.COMPLETE_ELEMENT),
@@ -171,7 +174,6 @@ public final class MessageStartEventTest {
         .containsSequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.COMPLETE_ELEMENT),
@@ -274,7 +276,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2] to be correlated")
         .containsExactly("1", "2");
@@ -338,7 +341,8 @@ public final class MessageStartEventTest {
             .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2] to be correlated")
         .containsExactly("1", "2");
@@ -374,7 +378,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2] to be correlated")
         .containsExactly("1", "2");
@@ -410,7 +415,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,3] to be correlated")
         .containsExactly("1", "3");
@@ -454,7 +460,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,3] to be correlated")
         .containsExactly("1", "3");
@@ -489,7 +496,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2] to be correlated")
         .containsExactly("1", "2");
@@ -520,7 +528,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2] to be correlated")
         .containsExactly("1", "2");
@@ -561,7 +570,8 @@ public final class MessageStartEventTest {
     engine.job().withKey(job2.getKey()).complete();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(3))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(3))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2,3] to be correlated")
         .containsExactly("1", "2", "3");
@@ -602,7 +612,8 @@ public final class MessageStartEventTest {
     engine.processInstance().withInstanceKey(job2.getValue().getProcessInstanceKey()).cancel();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(3))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(3))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2,3] to be correlated")
         .containsExactly("1", "2", "3");
@@ -746,7 +757,8 @@ public final class MessageStartEventTest {
     engine.job().withKey(job.getKey()).complete();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,3] to be correlated")
         .containsExactly("1", "3");
@@ -782,7 +794,8 @@ public final class MessageStartEventTest {
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(2))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,3] to be correlated")
         .containsExactly("1", "3");
@@ -830,9 +843,55 @@ public final class MessageStartEventTest {
             });
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("x").limit(4))
+    assertThat(
+            RecordingExporter.variableRecords().withName("x").filterProcessInstanceScope().limit(4))
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2,3,4] to be correlated")
         .containsExactly("1", "2", "3", "4");
+  }
+
+  // https://github.com/camunda-cloud/zeebe/issues/8068
+  @Test
+  public void shouldCreateProcessInstancesAndPassVariables() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
+
+    // when - publish two messages concurrently
+    engine.writeRecords(
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord()
+                    .setName(MESSAGE_NAME_1)
+                    .setTimeToLive(0L)
+                    .setCorrelationKey(CORRELATION_KEY_1)
+                    .setVariables(MsgPackUtil.asMsgPack("x", 1))),
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord()
+                    .setName(MESSAGE_NAME_1)
+                    .setTimeToLive(0L)
+                    .setCorrelationKey(CORRELATION_KEY_2)
+                    .setVariables(MsgPackUtil.asMsgPack("x", 2))));
+
+    // then
+    final var processInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .limit(2)
+            .map(r -> r.getValue().getProcessInstanceKey())
+            .collect(Collectors.toList());
+
+    assertThat(processInstanceKeys)
+        .describedAs("Expected two process instances to be created")
+        .hasSize(2);
+
+    assertThat(RecordingExporter.variableRecords().filterProcessInstanceScope().limit(2))
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getProcessInstanceKey, VariableRecordValue::getValue)
+        .hasSize(2)
+        .describedAs("Expected two process instances with different variables")
+        .contains(tuple(processInstanceKeys.get(0), "1"), tuple(processInstanceKeys.get(1), "2"));
   }
 }
