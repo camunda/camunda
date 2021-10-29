@@ -8,10 +8,12 @@
 package io.camunda.zeebe.logstreams.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.awaitility.Awaitility;
@@ -24,18 +26,23 @@ public class LogStreamErrorTest {
 
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   final LogStorage mockLogStorage = mock(LogStorage.class);
+  final LogStorageReader mockLogReader = mock(LogStorageReader.class);
   private SyncLogStream logStream;
 
   @Before
   public void setup() {
+    doReturn(false).when(mockLogReader).hasNext();
+
+    when(mockLogStorage.newReader())
+        .thenReturn(mockLogReader) // when called in constructor of logStream
+        .thenThrow(new RuntimeException("reader cannot be created")); // When dispatcher is created
+
     logStream =
         SyncLogStream.builder()
             .withLogName("test-log")
             .withLogStorage(mockLogStorage)
             .withActorScheduler(actorSchedulerRule.get())
             .build();
-
-    when(mockLogStorage.newReader()).thenThrow(new RuntimeException("reader cannot be created"));
   }
 
   @After
