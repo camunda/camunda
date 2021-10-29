@@ -469,7 +469,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
                                                                          final String[] filterValues,
                                                                          final Double[] expectedResults) {
     // given
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
     final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
@@ -542,7 +542,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
                                                                                final String[] filterValues,
                                                                                final Double[] expectedResults) {
     // given
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn().truncatedTo(ChronoUnit.DAYS);
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
     final ProcessDefinitionEngineDto processDefinition = deployThreeUserTasksDefinition();
