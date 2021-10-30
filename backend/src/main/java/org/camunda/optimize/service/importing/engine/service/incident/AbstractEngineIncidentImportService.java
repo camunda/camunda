@@ -24,16 +24,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public abstract class AbstractIncidentImportService implements ImportService<HistoricIncidentEngineDto> {
+public abstract class AbstractEngineIncidentImportService implements ImportService<HistoricIncidentEngineDto> {
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   protected final ConfigurationService configurationService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  protected AbstractIncidentImportService(final ConfigurationService configurationService,
-                                          final EngineContext engineContext,
-                                          final ProcessDefinitionResolverService processDefinitionResolverService) {
+  protected AbstractEngineIncidentImportService(final ConfigurationService configurationService,
+                                                final EngineContext engineContext,
+                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
     this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -60,7 +60,7 @@ public abstract class AbstractIncidentImportService implements ImportService<His
     return elasticsearchImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
+  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob<?> elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 

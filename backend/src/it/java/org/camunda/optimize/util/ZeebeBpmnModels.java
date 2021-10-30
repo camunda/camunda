@@ -16,9 +16,13 @@ public class ZeebeBpmnModels {
 
   public static final String START_EVENT = "start";
   public static final String SERVICE_TASK = "service_task";
+  public static final String SERVICE_TASK_2 = "service_task2";
   public static final String SEND_TASK = "send_task";
   public static final String USER_TASK = "user_task";
   public static final String END_EVENT = "end";
+  public static final String END_EVENT_2 = "end2";
+  public static final String END_EVENT_3 = "end3";
+  public static final String CATCH_EVENT = "catchEvent";
   private static final String CONVERGING_GATEWAY = "converging_gateway";
   private static final String DIVERGING_GATEWAY = "diverging_gateway";
 
@@ -39,11 +43,23 @@ public class ZeebeBpmnModels {
   }
 
   public static BpmnModelInstance createSimpleServiceTaskProcess(final String processName) {
-    return Bpmn.createExecutableProcess()
+    return Bpmn.createExecutableProcess(processName)
       .name(processName)
       .startEvent(START_EVENT).name(START_EVENT)
       .serviceTask(SERVICE_TASK).zeebeJobType(SERVICE_TASK).name(SERVICE_TASK)
       .endEvent(END_EVENT).name(null)
+      .done();
+  }
+
+  public static BpmnModelInstance createIncidentProcess(final String processName) {
+    return Bpmn.createExecutableProcess()
+      .name(processName)
+      .startEvent(START_EVENT).name(START_EVENT)
+      .intermediateCatchEvent(
+        CATCH_EVENT,
+        e -> e.message(m -> m.name("catch").zeebeCorrelationKeyExpression("orderId"))
+      )
+      .endEvent(END_EVENT_3).name(null)
       .done();
   }
 

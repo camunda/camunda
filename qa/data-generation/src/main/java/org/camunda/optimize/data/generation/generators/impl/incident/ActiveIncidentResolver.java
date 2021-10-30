@@ -8,7 +8,7 @@ package org.camunda.optimize.data.generation.generators.impl.incident;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
-import org.camunda.optimize.test.util.client.dto.IncidentDto;
+import org.camunda.optimize.test.util.client.dto.EngineIncidentDto;
 import org.camunda.optimize.test.util.client.dto.VariableValueDto;
 
 import java.util.ArrayList;
@@ -21,13 +21,13 @@ public class ActiveIncidentResolver implements IncidentResolver {
 
   @Override
   public void resolveIncidents() {
-    final List<IncidentDto> first100Incidents = engineClient.getFirst100Incidents();
+    final List<EngineIncidentDto> first100Incidents = engineClient.getFirst100Incidents();
     if (first100Incidents.isEmpty()) {
       return;
     }
 
     // we take only half of the incidents to complete to have some open ones left
-    final List<IncidentDto> incidentsToComplete = first100Incidents.subList(0, first100Incidents.size() / 2);
+    final List<EngineIncidentDto> incidentsToComplete = first100Incidents.subList(0, first100Incidents.size() / 2);
     List<String> processInstanceIdsToRetry = new ArrayList<>();
     incidentsToComplete.stream()
       .peek(incident -> processInstanceIdsToRetry.add(incident.getProcessInstanceId()))

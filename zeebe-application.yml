@@ -22,7 +22,7 @@ zeebe:
             deployment: false
             process: true
             error: false
-            incident: false
+            incident: true
             job: false
             jobBatch: false
             message: false

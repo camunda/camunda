@@ -14,6 +14,7 @@ import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.test.ClientRule;
@@ -78,7 +79,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
-    embeddedBrokerRule.stopBroker();
+    embeddedBrokerRule.after();
     clientRule.destroyClient();
   }
 
@@ -99,7 +100,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
         .variables(variables);
-      return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+    return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
   }
 
   public void addVariablesToScope(Long variableScopeKey, Map<String, Object> variables, boolean local) {
@@ -128,16 +129,48 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   @SneakyThrows
   public void completeTaskForInstanceWithJobType(String jobType, Map<String, Object> variables) {
+    handleJob(jobType, (zeebeClient, job) -> {
+      CompleteJobCommandStep1 completeJobCommandStep1 = zeebeClient.newCompleteCommand(job.getKey());
+      Optional.ofNullable(variables).ifPresent(completeJobCommandStep1::variables);
+      completeJobCommandStep1.send().join();
+    });
+  }
+
+  public void throwErrorIncident(String jobType) {
+    handleJob(jobType, (zeebeClient, job) -> {
+      zeebeClient.newThrowErrorCommand(job.getKey())
+        .errorCode("1")
+        .errorMessage("someErrorMessage")
+        .send().join();
+    });
+  }
+
+  public void failTask(String jobType) {
+    handleJob(jobType, (zeebeClient, job) -> {
+      zeebeClient.newFailCommand(job.getKey())
+        .retries(0)
+        .errorMessage("someTaskFailMessage")
+        .send()
+        .join();
+    });
+  }
+
+  public void resolveIncident(Long jobKey, Long incidentKey) {
+    getZeebeClient().newResolveIncidentCommand(incidentKey).send().join();
+  }
+
+  public ControlledActorClock getZeebeClock() {
+    return embeddedBrokerRule.getClock();
+  }
+
+  private void handleJob(String jobType, JobHandler jobHandler) {
     AtomicBoolean jobCompleted = new AtomicBoolean(false);
     JobWorker jobWorker = getZeebeClient().newWorker()
       .jobType(jobType)
-      .handler((jobClient, job) -> {
-        CompleteJobCommandStep1 completeJobCommandStep1 = jobClient.newCompleteCommand(job.getKey());
-        Optional.ofNullable(variables).ifPresent(completeJobCommandStep1::variables);
-        completeJobCommandStep1.send().join();
+      .handler((zeebeClient, type) -> {
+        jobHandler.handle(zeebeClient, type);
         jobCompleted.set(true);
       })
-      .name("workerName")
       .timeout(Duration.ofSeconds(2))
       .open();
     Awaitility.await()
@@ -146,18 +179,15 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     jobWorker.close();
   }
 
-  public ControlledActorClock getZeebeClock() {
-    return embeddedBrokerRule.getClock();
-  }
-
   private ZeebeClient getZeebeClient() {
     return clientRule.getClient();
   }
 
   private void setZeebeRecordPrefixForTest() {
     final ExporterCfg exporterConfig = embeddedBrokerRule.getBrokerCfg().getExporters().get(OPTIMIZE_EXPORTER_ID);
-    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-    final Map<String, String> indexArgs = (Map<String, String>) exporterConfig.getArgs().get(EXPORTER_INDEX_CONFIG);
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final Map<String, String> indexArgs =
+      (Map<String, String>) exporterConfig.getArgs()
+        .get(EXPORTER_INDEX_CONFIG);
     indexArgs.put(EXPORTER_RECORD_PREFIX, zeebeRecordPrefix);
   }
 

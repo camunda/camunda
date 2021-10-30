@@ -30,9 +30,9 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -132,13 +132,25 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     );
   }
 
-  protected String getServiceTaskFlowNodeIdFromProcessInstance(final ProcessInstanceDto processInstanceDto) {
+  protected String getFlowNodeInstanceIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
+                                                                       final String activityId) {
+    return getPropertyIdFromProcessInstanceForActivity(
+      processInstanceDto,
+      activityId,
+      FlowNodeInstanceDto::getFlowNodeInstanceId
+    );
+  }
+
+  protected String getPropertyIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
+                                                               final String activityId,
+                                                               final Function<FlowNodeInstanceDto, String> propertyFunction) {
     return processInstanceDto.getFlowNodeInstances()
       .stream()
-      .filter(flowNodeInstanceDto -> flowNodeInstanceDto.getFlowNodeId().equals(SERVICE_TASK))
-      .map(FlowNodeInstanceDto::getFlowNodeInstanceId)
+      .filter(flowNodeInstanceDto -> flowNodeInstanceDto.getFlowNodeId().equals(activityId))
+      .map(propertyFunction)
       .findFirst()
       .orElseThrow(() -> new OptimizeIntegrationTestException(
-        "Could not find service task for process instance with key: " + processInstanceDto.getProcessDefinitionKey()));
+        "Could not find property for process instance with key: " + processInstanceDto.getProcessDefinitionKey()));
   }
+
 }

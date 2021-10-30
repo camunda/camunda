@@ -71,7 +71,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     final String dashboardId = dashboardClient.createDashboard(dashboard);
     assertThat(dashboardClient.getDashboard(dashboardId).getRefreshRateSeconds()).isEqualTo(5);
     dashboard.setRefreshRateSeconds(null);
-    dashboard.setName("JOSH NEW NAME");
+    dashboard.setName("NEW NAME");
 
     // when
     Response response = embeddedOptimizeExtension

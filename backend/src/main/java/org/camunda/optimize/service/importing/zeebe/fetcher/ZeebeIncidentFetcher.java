@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
+import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
+import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -18,25 +20,29 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_INCIDENT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 
 @Component
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ZeebeProcessDefinitionFetcher extends AbstractZeebeRecordFetcher<ZeebeProcessDefinitionRecordDto> {
+public class ZeebeIncidentFetcher extends AbstractZeebeRecordFetcher<ZeebeIncidentRecordDto> {
 
-  private static final Set<Intent> INTENTS = Set.of(ProcessIntent.CREATED);
+  private static final Set<Intent> INTENTS = Set.of(
+    IncidentIntent.CREATED,
+    IncidentIntent.RESOLVED
+  );
 
-  public ZeebeProcessDefinitionFetcher(final int partitionId,
-                                       final OptimizeElasticsearchClient esClient,
-                                       final ObjectMapper objectMapper,
-                                       final ConfigurationService configurationService) {
+  public ZeebeIncidentFetcher(final int partitionId,
+                              final OptimizeElasticsearchClient esClient,
+                              final ObjectMapper objectMapper,
+                              final ConfigurationService configurationService) {
     super(partitionId, esClient, objectMapper, configurationService);
   }
 
   @Override
   protected String getBaseIndexName() {
-    return ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
+    return ZEEBE_INCIDENT_INDEX_NAME;
   }
 
   @Override
@@ -45,8 +51,8 @@ public class ZeebeProcessDefinitionFetcher extends AbstractZeebeRecordFetcher<Ze
   }
 
   @Override
-  protected Class<ZeebeProcessDefinitionRecordDto> getRecordDtoClass() {
-    return ZeebeProcessDefinitionRecordDto.class;
+  protected Class<ZeebeIncidentRecordDto> getRecordDtoClass() {
+    return ZeebeIncidentRecordDto.class;
   }
 
 }

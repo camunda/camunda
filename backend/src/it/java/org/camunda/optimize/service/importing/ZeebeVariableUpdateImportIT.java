@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -105,7 +106,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
-    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
     importAllZeebeEntitiesFromLastIndex();
@@ -149,7 +150,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(processInstanceKey));
-    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
     importAllZeebeEntitiesFromLastIndex();
@@ -189,7 +190,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(processInstanceKey));
-    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
     importAllZeebeEntitiesFromLastIndex();
@@ -264,7 +265,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(
       processInstanceEvent.getProcessInstanceKey(),
       Map.of("var1", "processInstanceScopeValue"),

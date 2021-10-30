@@ -10,7 +10,7 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-public class IncidentDto {
+public class EngineIncidentDto {
 
   protected String id;
   protected String processDefinitionId;
