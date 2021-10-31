@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import java.time.Duration;
@@ -46,5 +48,17 @@ public final class ResolveIncidentTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldNotHaveNullResponse() {
+    // given
+    final ResolveIncidentCommandStep1 command = client.newResolveIncidentCommand(12);
+
+    // when
+    final ResolveIncidentResponse response = command.send().join();
+
+    // then
+    assertThat(response).isNotNull();
   }
 }

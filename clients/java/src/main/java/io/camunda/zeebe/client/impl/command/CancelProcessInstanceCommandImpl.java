@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.response.CancelProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -63,7 +64,9 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
             CancelProcessInstanceResponse, GatewayOuterClass.CancelProcessInstanceResponse>
         future =
             new RetriableClientFutureImpl<>(
-                retryPredicate, streamObserver -> send(request, streamObserver));
+                CancelProcessInstanceResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;

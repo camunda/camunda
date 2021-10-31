@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import java.time.Duration;
@@ -51,5 +53,17 @@ public final class JobUpdateRetriesTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldNotHaveNullResponse() {
+    // given
+    final UpdateRetriesJobCommandStep1 command = client.newUpdateRetriesCommand(12);
+
+    // when
+    final UpdateRetriesJobResponse response = command.retries(0).send().join();
+
+    // then
+    assertThat(response).isNotNull();
   }
 }

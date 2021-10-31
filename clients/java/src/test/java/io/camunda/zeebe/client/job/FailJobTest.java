@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.response.FailJobResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import java.time.Duration;
@@ -67,5 +69,18 @@ public final class FailJobTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldNotHaveNullResponse() {
+    // given
+    final FailJobCommandStep1 command = client.newFailCommand(12);
+
+    // when
+    final FailJobResponse response =
+        command.retries(0).errorMessage("This failed oops.").send().join();
+
+    // then
+    assertThat(response).isNotNull();
   }
 }
