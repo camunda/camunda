@@ -159,8 +159,12 @@ public class ActorClockEndpoint {
     @JsonProperty("instant")
     private final Instant instant;
 
+    @JsonProperty("epochMilli")
+    private final long epochMilli;
+
     public Response(final Instant instant) {
       this.instant = instant;
+      epochMilli = instant.toEpochMilli();
     }
   }
 }

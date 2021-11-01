@@ -11,6 +11,7 @@ import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * An implementation of {@link ActorClockService} which wraps a mutable clock, allowing for
@@ -28,6 +29,11 @@ public final class ControlledActorClockService implements ActorClockService, Mut
   @Override
   public long epochMilli() {
     return clock.getTimeMillis();
+  }
+
+  @Override
+  public Optional<MutableClock> mutable() {
+    return Optional.of(this);
   }
 
   @Override

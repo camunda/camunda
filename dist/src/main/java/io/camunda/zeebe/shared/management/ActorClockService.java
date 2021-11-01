@@ -15,6 +15,7 @@ import java.util.Optional;
  * A service which wraps an {@link io.camunda.zeebe.util.sched.clock.ActorClock} instance. We can't
  * directly use an actor clock since the interface is by nature immutable, so instead we wrap it.
  */
+@FunctionalInterface
 public interface ActorClockService {
 
   /** @return the current instant of the clock */
