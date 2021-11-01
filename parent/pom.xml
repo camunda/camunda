@@ -925,15 +925,6 @@
               <java>SLASHSTAR_STYLE</java>
             </mapping>
           </configuration>
-          <executions>
-            <execution>
-              <id>add-license</id>
-              <goals>
-                <goal>format</goal>
-              </goals>
-              <phase>process-sources</phase>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- CHECKSTYLE -->
@@ -1689,6 +1680,19 @@
       </activation>
       <build>
         <plugins>
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-license</id>
+                <goals>
+                  <goal>format</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>com.diffplug.spotless</groupId>
             <artifactId>spotless-maven-plugin</artifactId>
