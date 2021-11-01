@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ef -o pipefail
 
-PROPERTIES=("-DskipTests -Dcheckstyle.skip")
+PROPERTIES=("-DskipTests -Dcheckstyle.skip -DautoFormat=false -DcheckFormat")
 GIT_URL=${GIT_URL:-$(git remote get-url origin)}
 GIT_BRANCH=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}
 
