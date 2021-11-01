@@ -971,18 +971,6 @@
           <groupId>com.github.ekryd.sortpom</groupId>
           <artifactId>sortpom-maven-plugin</artifactId>
           <version>${plugin.version.sortpom}</version>
-          <executions>
-            <execution>
-              <id>sortpom</id>
-              <goals>
-                <goal>sort</goal>
-              </goals>
-              <phase>process-resources</phase>
-              <configuration>
-                <createBackupFile>false</createBackupFile>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- Unit tests -->
@@ -1706,6 +1694,22 @@
                   <goal>apply</goal>
                 </goals>
                 <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>com.github.ekryd.sortpom</groupId>
+            <artifactId>sortpom-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sortpom</id>
+                <goals>
+                  <goal>sort</goal>
+                </goals>
+                <phase>process-resources</phase>
+                <configuration>
+                  <createBackupFile>false</createBackupFile>
+                </configuration>
               </execution>
             </executions>
           </plugin>
