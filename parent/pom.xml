@@ -176,6 +176,8 @@
     <enforcer.skip>${skipChecks}</enforcer.skip>
     <mdep.analyze.skip>${skipChecks}</mdep.analyze.skip>
     <sort.skip>${skipChecks}</sort.skip>
+    <spotless.apply.skip>${skipChecks}</spotless.apply.skip>
+    <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
   </properties>
 
   <dependencyManagement>
