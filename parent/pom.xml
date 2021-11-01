@@ -931,7 +931,7 @@
               <goals>
                 <goal>format</goal>
               </goals>
-              <phase>compile</phase>
+              <phase>process-sources</phase>
             </execution>
           </executions>
         </plugin>
