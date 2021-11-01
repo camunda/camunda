@@ -118,7 +118,6 @@
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
-    <plugin.version.fmt>2.12</plugin.version.fmt>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
@@ -171,7 +170,6 @@
     <license.skip>${skipChecks}</license.skip>
     <enforcer.skip>${skipChecks}</enforcer.skip>
     <mdep.analyze.skip>${skipChecks}</mdep.analyze.skip>
-    <fmt.skip>${skipChecks}</fmt.skip>
     <sort.skip>${skipChecks}</sort.skip>
   </properties>
 
@@ -1183,21 +1181,6 @@
 
         <!-- Google code format plugin -->
         <plugin>
-          <groupId>com.coveo</groupId>
-          <artifactId>fmt-maven-plugin</artifactId>
-          <version>${plugin.version.fmt}</version>
-          <executions>
-            <execution>
-              <id>format</id>
-              <goals>
-                <goal>format</goal>
-              </goals>
-              <phase>process-sources</phase>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
           <version>${plugin.version.spotless}</version>
@@ -1695,32 +1678,6 @@
                   <goal>sonar</goal>
                 </goals>
                 <phase>verify</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- profile to disable the fmt-plugin on unsupported jdks -->
-    <profile>
-      <id>fmt-plugin</id>
-      <activation>
-        <jdk>[,9)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.coveo</groupId>
-            <artifactId>fmt-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>format</id>
-                <goals>
-                  <goal>check</goal>
-                  <goal>format</goal>
-                </goals>
-                <phase>none</phase>
               </execution>
             </executions>
           </plugin>
