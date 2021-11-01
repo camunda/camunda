@@ -158,11 +158,16 @@
     <skipITs>${skipTests}</skipITs>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
+    <!-- these properties allow us to enable disable the formatting profiles -->
+    <autoFormat>true</autoFormat>
+    <checkFormat>false</checkFormat>
+
     <!--
-      you can use the following to disable specific checks. the approach taken is to use a single
-      new property, skipChecks, which is the default value for pre-defined properties such as
-      checkstyle.skip. that way, you can use skipChecks, but you can also still use checkstyle.skip
-      if you only want to disable checkstyle
+      you can use the following to disable specific check plugins. this can also be used to skip the
+      formatting goals of these plugins. the approach taken is to use a single new property,
+      skipChecks, which is the default value for pre-defined properties such as checkstyle.skip.
+      that way, you can use skipChecks, but you can also still use checkstyle.skip if you only want
+      to disable checkstyle
       -->
     <skipChecks>false</skipChecks>
     <checkstyle.skip>${skipChecks}</checkstyle.skip>
@@ -1192,18 +1197,6 @@
               </googleJavaFormat>
             </java>
           </configuration>
-          <executions>
-            <execution>
-              <id>spotless-format</id>
-              <goals>
-                <goal>apply</goal>
-              </goals>
-              <phase>process-sources</phase>
-              <configuration>
-                <ratchetFrom>origin/develop</ratchetFrom>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- protobuf generation -->
@@ -1387,11 +1380,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>com.diffplug.spotless</groupId>
-        <artifactId>spotless-maven-plugin</artifactId>
       </plugin>
 
       <plugin>
@@ -1685,9 +1673,51 @@
       </build>
     </profile>
 
+    <!-- profile to auto format -->
+    <profile>
+      <id>autoFormat</id>
+      <activation>
+        <!-- the autoFormat property is true by default, but seems to not be read here, so we need
+        to activate this by default specifically -->
+        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>autoFormat</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <configuration>
+              <ratchetFrom>origin/develop</ratchetFrom>
+            </configuration>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <!-- profile to perform strict validation checks -->
     <profile>
-      <id>checks</id>
+      <id>checkFormat</id>
+      <activation>
+        <!-- generally only the CI pipeline needs to be strict -->
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>checkFormat</name>
+          <value>true</value>
+        </property>
+      </activation>
       <build>
         <plugins>
           <plugin>
