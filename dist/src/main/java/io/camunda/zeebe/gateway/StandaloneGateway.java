@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
+import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
@@ -33,6 +34,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 
@@ -48,12 +50,14 @@ import org.springframework.context.event.ContextClosedEvent;
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.util.liveness"
     })
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
 public class StandaloneGateway
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   private final GatewayCfg configuration;
   private final SpringGatewayBridge springGatewayBridge;
+  private final ActorClockConfiguration clockConfig;
 
   private AtomixCluster atomixCluster;
   private Gateway gateway;
@@ -61,9 +65,12 @@ public class StandaloneGateway
 
   @Autowired
   public StandaloneGateway(
-      final GatewayCfg configuration, final SpringGatewayBridge springGatewayBridge) {
+      final GatewayCfg configuration,
+      final SpringGatewayBridge springGatewayBridge,
+      final ActorClockConfiguration clockConfig) {
     this.configuration = configuration;
     this.springGatewayBridge = springGatewayBridge;
+    this.clockConfig = clockConfig;
   }
 
   public static void main(final String[] args) {
@@ -187,6 +194,7 @@ public class StandaloneGateway
         .setCpuBoundActorThreadCount(config.getThreads().getManagementThreads())
         .setIoBoundActorThreadCount(0)
         .setSchedulerName("gateway-scheduler")
+        .setActorClock(clockConfig.getClock())
         .build();
   }
 
