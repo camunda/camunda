@@ -33,4 +33,9 @@ public interface ProcessMetadataValue extends RecordValue {
 
   /** @return the checksum of the process (MD5) */
   byte[] getChecksum();
+
+  /**
+   * return true if the process is a duplicate (and has been deployed previously), false otherwise
+   */
+  boolean isDuplicate();
 }
