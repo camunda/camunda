@@ -20,7 +20,7 @@ import org.springframework.web.context.annotation.ApplicationScope;
 
 @SuppressWarnings("unused")
 @ConfigurationProperties("zeebe.clock")
-public class ActorClockConfiguration {
+public final class ActorClockConfiguration {
 
   private final ActorClock clock;
   private final ActorClockService service;

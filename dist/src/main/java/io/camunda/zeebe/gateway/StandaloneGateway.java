@@ -34,6 +34,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 
@@ -49,6 +50,7 @@ import org.springframework.context.event.ContextClosedEvent;
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.util.liveness"
     })
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
 public class StandaloneGateway
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
