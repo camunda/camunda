@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -200,6 +201,35 @@ public final class JsonSerializableToJsonTest {
         "Empty DeploymentRecord",
         (Supplier<UnifiedRecordValue>) DeploymentRecord::new,
         "{'resources':[],'processesMetadata':[]}"
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// ProcessRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      new Object[] {
+        "ProcessRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String resourceName = "resource";
+              final DirectBuffer resource = wrapString("contents");
+              final String bpmnProcessId = "testProcess";
+              final long processDefinitionKey = 123;
+
+              final int processVersion = 12;
+              final DirectBuffer checksum = wrapString("checksum");
+              final ProcessRecord record = new ProcessRecord();
+
+              record
+                  .setResourceName(wrapString(resourceName))
+                  .setResource(resource)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setKey(processDefinitionKey)
+                  .setResourceName(wrapString(resourceName))
+                  .setVersion(processVersion)
+                  .setChecksum(checksum);
+
+              return record;
+            },
+        "{'resourceName':'resource','resource':'Y29udGVudHM=', 'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource', 'duplicate':false}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ErrorRecord ///////////////////////////////////////////
