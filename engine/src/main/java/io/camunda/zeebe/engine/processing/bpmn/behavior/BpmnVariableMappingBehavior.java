@@ -109,7 +109,8 @@ public final class BpmnVariableMappingBehavior {
           elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
 
     } else if (isConnectedToEventBasedGateway(element)
-        || element.getElementType() == BpmnElementType.BOUNDARY_EVENT) {
+        || element.getElementType() == BpmnElementType.BOUNDARY_EVENT
+        || element.getElementType() == BpmnElementType.START_EVENT) {
       // event variables are set local variables instead of temporary variables
       final var localVariables = variablesState.getVariablesLocalAsDocument(elementInstanceKey);
       variableBehavior.mergeDocument(
