@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.core.env.Environment;
@@ -35,6 +37,7 @@ import org.springframework.core.env.Profiles;
  * <p>See {@link #main(String[])} for more.
  */
 @SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
@@ -42,6 +45,7 @@ public class StandaloneBroker
   private final BrokerCfg configuration;
   private final Environment springEnvironment;
   private final SpringBrokerBridge springBrokerBridge;
+  private final ActorClockConfiguration clockConfig;
 
   private String tempFolder;
   private SystemContext systemContext;
@@ -51,10 +55,12 @@ public class StandaloneBroker
   public StandaloneBroker(
       final BrokerCfg configuration,
       final Environment springEnvironment,
-      final SpringBrokerBridge springBrokerBridge) {
+      final SpringBrokerBridge springBrokerBridge,
+      final ActorClockConfiguration clockConfig) {
     this.configuration = configuration;
     this.springEnvironment = springEnvironment;
     this.springBrokerBridge = springBrokerBridge;
+    this.clockConfig = clockConfig;
   }
 
   public static void main(final String[] args) {
@@ -110,13 +116,13 @@ public class StandaloneBroker
     if (basePath == null) {
       basePath = Paths.get(".").toAbsolutePath().normalize().toString();
     }
-    return new SystemContext(configuration, basePath, null);
+    return new SystemContext(configuration, basePath, clockConfig.getClock());
   }
 
   private SystemContext createSystemContextInTempDirectory() {
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      return new SystemContext(configuration, tempFolder, null);
+      return new SystemContext(configuration, tempFolder, clockConfig.getClock());
     } catch (final IOException e) {
       throw new UncheckedIOException("Could not create system context", e);
     }
