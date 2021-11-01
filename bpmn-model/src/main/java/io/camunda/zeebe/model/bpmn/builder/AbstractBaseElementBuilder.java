@@ -123,6 +123,14 @@ public abstract class AbstractBaseElementBuilder<
     return getCreateSingleChild(element, typeClass);
   }
 
+  /**
+   * Provides a child element of the given type for which only 1 such child should exist. This
+   * method makes sure it is created if it does not yet exist.
+   *
+   * @param parent the element that is the parent of the requested child
+   * @param typeClass the type of the requested child
+   * @return the requested child
+   */
   protected <T extends BpmnModelElementInstance> T getCreateSingleChild(
       final BpmnModelElementInstance parent, final Class<T> typeClass) {
     final Collection<T> childrenOfType = parent.getChildElementsByType(typeClass);
@@ -143,6 +151,14 @@ public abstract class AbstractBaseElementBuilder<
     }
   }
 
+  /**
+   * Provides the extension element of the given type for which only 1 such extension element should
+   * exist. This method makes sure it is created if it does not yet exist. The specific element is a
+   * child of the extension elements of this element.
+   *
+   * @param typeClass the type of the requested extension element
+   * @return the requested extension element
+   */
   protected <T extends BpmnModelElementInstance> T getCreateSingleExtensionElement(
       final Class<T> typeClass) {
     final ExtensionElements extensionElements = getCreateSingleChild(ExtensionElements.class);

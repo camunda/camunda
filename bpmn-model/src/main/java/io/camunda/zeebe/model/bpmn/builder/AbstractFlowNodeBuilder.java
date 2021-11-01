@@ -208,6 +208,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(UserTask.class, id);
   }
 
+  public UserTaskBuilder userTask(final String id, final Consumer<UserTaskBuilder> consumer) {
+    final UserTaskBuilder builder = createTargetBuilder(UserTask.class, id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public BusinessRuleTaskBuilder businessRuleTask() {
     return createTargetBuilder(BusinessRuleTask.class);
   }
