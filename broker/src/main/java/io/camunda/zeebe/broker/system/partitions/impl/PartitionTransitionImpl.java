@@ -75,9 +75,8 @@ public final class PartitionTransitionImpl implements PartitionTransition {
               new PartitionTransitionProcess(steps, concurrencyControl, context, term, role);
           nextTransitionFuture.onComplete(
               (v, error) -> {
-                // term and role should only bet set after the transition is completed, since on
-                // clean up
-                // we expect old term and role to make decision based on that
+                // term and role should only bet se after the transition is completed, since on
+                // preparation we expect old term and role to make decision based on that
                 if (error == null) {
                   context.setCurrentTerm(term);
                   context.setCurrentRole(role);
@@ -136,11 +135,11 @@ public final class PartitionTransitionImpl implements PartitionTransition {
     if (lastTransition == null) {
       nextTransition.start(nextTransitionFuture);
     } else {
-      final var cleanupFuture = lastTransition.cleanup(term, role);
-      cleanupFuture.onComplete(
+      final var prepareFuture = nextTransition.prepare(term, role);
+      prepareFuture.onComplete(
           (ok, error) -> {
             if (error != null) {
-              LOG.error("Error during transition clean up: {}", error.getMessage(), error);
+              LOG.error("Error during transition preparation: {}", error.getMessage(), error);
               LOG.info("Aborting transition to {} on term {} due to error.", role, term);
               nextTransitionFuture.completeExceptionally(error);
             } else {

@@ -183,16 +183,16 @@ public final class FileBasedSnapshotStore extends Actor
     try {
       final var expectedChecksum = SnapshotChecksum.read(checksumPath);
       final var actualChecksum = SnapshotChecksum.calculate(path);
-      if (expectedChecksum != actualChecksum) {
+      if (expectedChecksum.getCombinedValue() != actualChecksum.getCombinedValue()) {
         LOGGER.warn(
             "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
             path,
-            expectedChecksum,
-            actualChecksum);
+            expectedChecksum.getCombinedValue(),
+            actualChecksum.getCombinedValue());
         return null;
       }
 
-      return new FileBasedSnapshot(path, checksumPath, actualChecksum, metadata);
+      return new FileBasedSnapshot(path, checksumPath, actualChecksum.getCombinedValue(), metadata);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -457,14 +457,15 @@ public final class FileBasedSnapshotStore extends Actor
     moveToSnapshotDirectory(directory, destination);
 
     final var checksumPath = buildSnapshotsChecksumPath(metadata);
-    final long actualChecksum;
+    final SfvChecksum actualChecksum;
     try {
       // computing the checksum on the final destination also lets us detect any failures during the
       // copy/move that could occur
       actualChecksum = SnapshotChecksum.calculate(destination);
-      if (actualChecksum != expectedChecksum) {
+      if (actualChecksum.getCombinedValue() != expectedChecksum) {
         rollbackPartialSnapshot(destination);
-        throw new InvalidSnapshotChecksum(directory, expectedChecksum, actualChecksum);
+        throw new InvalidSnapshotChecksum(
+            directory, expectedChecksum, actualChecksum.getCombinedValue());
       }
 
       SnapshotChecksum.persist(checksumPath, actualChecksum);
@@ -474,7 +475,8 @@ public final class FileBasedSnapshotStore extends Actor
     }
 
     final var newPersistedSnapshot =
-        new FileBasedSnapshot(destination, checksumPath, actualChecksum, metadata);
+        new FileBasedSnapshot(
+            destination, checksumPath, actualChecksum.getCombinedValue(), metadata);
     final var failed =
         !currentPersistedSnapshotRef.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
     if (failed) {

@@ -11,25 +11,24 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.function.Supplier;
+import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
 
-  private final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier;
+  private final BiFunction<PartitionTransitionContext, Role, StreamProcessor>
+      streamProcessorCreator;
 
   public StreamProcessorTransitionStep() {
-    this(StreamProcessor::builder);
+    this(StreamProcessorTransitionStep::createStreamProcessor);
   }
 
   // Used for testing
-  StreamProcessorTransitionStep(
-      final Supplier<StreamProcessorBuilder> streamProcessorBuilderSupplier) {
-    this.streamProcessorBuilderSupplier = streamProcessorBuilderSupplier;
+  public StreamProcessorTransitionStep(
+      final BiFunction<PartitionTransitionContext, Role, StreamProcessor> streamProcessorCreator) {
+    this.streamProcessorCreator = streamProcessorCreator;
   }
 
   @Override
@@ -50,6 +49,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
+    final var concurrencyControl = context.getConcurrencyControl();
     final var currentRole = context.getCurrentRole();
     final var streamprocessor = context.getStreamProcessor();
 
@@ -65,7 +65,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
           });
       return future;
     } else {
-      return CompletableActorFuture.completed(null);
+      return concurrencyControl.createCompletedFuture();
     }
   }
 
@@ -73,18 +73,18 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var currentRole = context.getCurrentRole();
+    final var concurrencyControl = context.getConcurrencyControl();
 
     if (shouldInstallOnTransition(targetRole, currentRole)
         || (context.getStreamProcessor() == null && targetRole != Role.INACTIVE)) {
-      final StreamProcessor streamProcessor = createStreamProcessor(context, targetRole);
+      final StreamProcessor streamProcessor = streamProcessorCreator.apply(context, targetRole);
+      context.setStreamProcessor(streamProcessor);
       final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
-      final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+      final ActorFuture<Void> future = concurrencyControl.createFuture();
 
       openFuture.onComplete(
           (nothing, err) -> {
             if (err == null) {
-              context.setStreamProcessor(streamProcessor);
-
               // Have to pause/resume it here in case the state changed after streamProcessor was
               // created
               if (!context.shouldProcess()) {
@@ -105,7 +105,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
       return future;
     }
 
-    return CompletableActorFuture.completed(null);
+    return concurrencyControl.createCompletedFuture();
   }
 
   @Override
@@ -119,12 +119,11 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         || (newRole == Role.CANDIDATE && currentRole != Role.FOLLOWER);
   }
 
-  private StreamProcessor createStreamProcessor(
+  private static StreamProcessor createStreamProcessor(
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
-    return streamProcessorBuilderSupplier
-        .get()
+    return StreamProcessor.builder()
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())

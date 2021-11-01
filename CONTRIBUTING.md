@@ -5,6 +5,7 @@
 * [GitHub Issue Guidelines](#github-issue-guidelines)
 * [Starting on an Issue](#starting-on-an-issue)
 * [Creating a Pull Request](#creating-a-pull-request)
+* [Backporting changes](#backporting-changes)
 * [Commit Message Guidelines](#commit-message-guidelines)
 * [Contributor License Agreement](#contributor-license-agreement)
 * [Licenses](#licenses)
@@ -91,23 +92,22 @@ To work on an issue, follow the following steps:
 1. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
    and [Zeebe Code Style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) while coding.
 1. Implement the required changes on your branch and regularly push your
-   changes to the origin so that the CI can run. Git commit will run a
-   pre-commit hook which will check the formatting, style and license headers
-   before committing. If these checks fail please fix the issues. Code format
-   and license headers can be fixed automatically by running maven. Checkstyle
+   changes to the origin so that the CI can run. Code formatting, style and
+   license header are fixed automatically by running maven. Checkstyle
    violations have to be fixed manually.
    ```
    git commit -am 'feat(broker): bpel support'
    git push -u origin 123-adding-bpel-support
    ```
 1. If you think you finished the issue please prepare the branch for reviewing.
-   In general the commits should be squashed into meaningful commits with a
-   helpful message. This means cleanup/fix etc commits should be squashed into
-   the related commit. If you made refactorings or similar which are not
-   directly necessary for the task it would be best if they are split up into
-   another commit. Rule of thumb is that you should think about how a reviewer
-   can best understand your changes. Please follow the [commit message
-   guidelines](#commit-message-guidelines).
+   Please consider our [pull requests and code
+   reviews](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews)
+   guide, before requesting a review. In general the commits should be squashed
+   into meaningful commits with a helpful message. This means cleanup/fix etc
+   commits should be squashed into the related commit. If you made refactorings
+   it would be best if they are split up into another commit. Rule of thumb is
+   that you should think about how a reviewer can best understand your changes.
+   Please follow the [commit message guidelines](#commit-message-guidelines).
 1. After finishing up the squashing force push your changes to your branch.
    ```
    git push --force-with-lease
@@ -142,6 +142,38 @@ To work on an issue, follow the following steps:
     3. If there are CI errors the author of the pull request has to check if
        they are caused by its changes and address them. If they are flaky tests
        a merge can be retried with a comment with the content `bors retry`.
+
+## Backporting changes
+
+Some changes need to be copied to older versions. We use the
+[backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process.
+Please follow these steps to backport your changes:
+
+1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates
+   that we want to backport this pull request to the `stable/1.0` branch).
+   - if the pull request is _not yet_ merged, it will be automatically backported when bors has
+     finished merging the pull request.
+   - if the pull request is _already_ merged, create a comment on the pull request that contains
+     `/backport` to trigger the automatic backporting.
+2. The Github Actions bot comments on the pull request once it finishes:
+   - When _successful_, a new backport pull request was automatically created. Simply **approve and
+     merge it** by adding a review with a `bors merge` comment.
+   - If it _failed_, please follow these **manual steps**:
+      1. Locally checkout the target branch (e.g. `stable/1.0`).
+      2. Make sure it's up to date with origin (i.e. `git pull`).
+      3. Checkout a new branch for your backported changes (e.g. `git checkout -b
+         backport-123-to-stable/1.0`).
+      4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+         conflicts.
+      5. Push your cherry-picked changes `git push`.
+      6. Create a pull request for your backport branch:
+         - Make sure it is clear that this backports in the title (e.g. `[Backport stable/1.0] Title
+           of the original PR`).
+         - Make sure to change the target of the pull request to the correct branch (e.g.
+           `stable/1.0`).
+         - Refer to the pull request in the description to link it (e.g. `backports #123`)
+         - Refer to any issues that were referenced in the original pull request (e.g. `relates to
+           #99`).
 
 ## Commit Message Guidelines
 

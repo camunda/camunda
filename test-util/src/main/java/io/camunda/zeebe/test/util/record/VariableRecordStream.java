@@ -38,4 +38,9 @@ public final class VariableRecordStream
   public VariableRecordStream withProcessInstanceKey(final long processInstanceKey) {
     return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
+
+  /** @return only the variables that are created in the process instance scope (i.e. root scope) */
+  public VariableRecordStream filterProcessInstanceScope() {
+    return valueFilter(v -> v.getScopeKey() == v.getProcessInstanceKey());
+  }
 }
