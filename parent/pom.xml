@@ -138,6 +138,7 @@
     <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
     <plugin.version.revapi>0.14.5</plugin.version.revapi>
     <plugin.version.flaky-tests>2.0.3</plugin.version.flaky-tests>
+    <plugin.version.spotless>2.17.3</plugin.version.spotless>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
@@ -1196,6 +1197,30 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${plugin.version.spotless}</version>
+          <configuration>
+            <java>
+              <googleJavaFormat>
+                <version>1.12.0</version>
+                <style>GOOGLE</style>
+              </googleJavaFormat>
+            </java>
+          </configuration>
+          <executions>
+            <execution>
+              <id>spotless-format</id>
+              <goals>
+                <goal>apply</goal>
+              </goals>
+              <phase>process-sources</phase>
+            </execution>
+          </executions>
+        </plugin>
+        
+
         <!-- protobuf generation -->
         <plugin>
           <groupId>org.xolstice.maven.plugins</groupId>
@@ -1380,8 +1405,8 @@
       </plugin>
 
       <plugin>
-        <groupId>com.coveo</groupId>
-        <artifactId>fmt-maven-plugin</artifactId>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
       </plugin>
 
       <plugin>
