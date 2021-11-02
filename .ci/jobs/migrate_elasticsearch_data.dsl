@@ -15,7 +15,7 @@ pipelineJob('migrate-elasticsearch-data') {
       sandbox()
     }
   }
-/*
+
   properties {
     pipelineTriggers {
       triggers {
@@ -25,5 +25,5 @@ pipelineJob('migrate-elasticsearch-data') {
       }
     }
   }
-  */
+
 }
