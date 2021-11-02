@@ -187,12 +187,12 @@ public final class FailJobTest {
     ENGINE.increaseTime(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION));
 
     // verify that our job doesn't activable
-    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).exists()).isFalse();
+    final var reactivatedJobs = ENGINE.jobs().withType(jobType).activate();
+    assertThat(reactivatedJobs.getValue().getJobs()).isEmpty();
 
     ENGINE.increaseTime(backOff.plus(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION)));
 
     // verify that our job made activable
-    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).count()).isEqualTo(1);
     assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).getFirst().getKey())
         .isEqualTo(jobKey);
   }
