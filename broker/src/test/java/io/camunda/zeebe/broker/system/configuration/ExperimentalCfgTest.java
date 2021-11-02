@@ -109,7 +109,7 @@ public class ExperimentalCfgTest {
     final var experimental = cfg.getExperimental();
 
     // then
-    assertThat(experimental.isNewTransitionLogicEnabled()).isFalse();
+    assertThat(experimental.isNewTransitionLogicEnabled()).isTrue();
   }
 
   @Test

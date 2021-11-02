@@ -21,7 +21,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = false;
-  public static final boolean DEFAULT_NEW_TRANSITION_LOGIC_ENABLED = false;
+  public static final boolean DEFAULT_NEW_TRANSITION_LOGIC_ENABLED = true;
 
   private boolean newTransitionLogicEnabled = DEFAULT_NEW_TRANSITION_LOGIC_ENABLED;
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
@@ -111,7 +111,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
     return newTransitionLogicEnabled;
   }
 
-  public void setNewTransitionLogicEnabled(boolean newTransitionLogicEnabled) {
+  public void setNewTransitionLogicEnabled(final boolean newTransitionLogicEnabled) {
     this.newTransitionLogicEnabled = newTransitionLogicEnabled;
   }
 
