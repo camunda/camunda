@@ -1,13 +1,15 @@
-name: Add a new GitHub issue to the specified project column
-on: [issues]
+name: Move new issues into Triage
+
+on:
+  issues:
+    types: [opened]
+
 jobs:
-  add-new-issues-to-project-column:
+  automate-project-columns:
     runs-on: ubuntu-latest
     steps:
-    - name: add-new-issues-to-organization-based-project-column
-      uses: docker://takanabe/github-actions-automate-projects:v0.0.1
-      if: github.event_name == 'issues'
-      env:
-        GITHUB_TOKEN: ${{ secrets.ISSUE_TO_PROJECT }}
-        GITHUB_PROJECT_URL: https://github.com/orgs/camunda-cloud/projects/21
-        GITHUB_PROJECT_COLUMN_NAME: To Do
+      - uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: Operate
+          column: Todo
+          repo-token: ${{ secrets.ISSUE_TO_PROJECT }}
