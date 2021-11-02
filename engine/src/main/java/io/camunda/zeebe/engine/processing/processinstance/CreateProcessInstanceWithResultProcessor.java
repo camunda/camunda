@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.util.function.Consumer;
 
 public final class CreateProcessInstanceWithResultProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
@@ -42,9 +44,10 @@ public final class CreateProcessInstanceWithResultProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final Consumer<SideEffectProducer> sideEffect) {
     wrappedController.setCommand(command).setController(controller);
-    createProcessor.onCommand(command, wrappedController);
+    createProcessor.onCommand(command, wrappedController, sideEffect);
     return shouldRespond;
   }
 
@@ -60,6 +63,7 @@ public final class CreateProcessInstanceWithResultProcessor
 
   private class CommandControlWithAwaitResult
       implements CommandControl<ProcessInstanceCreationRecord> {
+
     TypedRecord<ProcessInstanceCreationRecord> command;
     CommandControl<ProcessInstanceCreationRecord> controller;
 

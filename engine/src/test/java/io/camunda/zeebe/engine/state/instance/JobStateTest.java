@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class JobStateTest {
+
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableJobState jobState;
@@ -60,6 +61,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -78,6 +80,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     assertListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -96,6 +99,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -115,6 +119,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -133,6 +138,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -174,6 +180,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -192,6 +199,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -210,6 +218,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -229,6 +238,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -248,6 +258,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -267,6 +278,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -287,6 +299,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -307,6 +320,7 @@ public final class JobStateTest {
     Assertions.assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -326,6 +340,28 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
+  }
+
+  @Test
+  public void shouldFailJobWithRetriesAndBackOff() {
+    // given
+    final long key = 1L;
+    final var retryBackoff = 100;
+    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(retryBackoff);
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord);
+
+    // then
+    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertJobState(key, State.FAILED);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    assertListedAsBackOff(key, System.currentTimeMillis() + retryBackoff);
   }
 
   @Test
@@ -365,6 +401,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, System.currentTimeMillis() + 1);
   }
 
   @Test
@@ -631,6 +668,16 @@ public final class JobStateTest {
     assertThat(timedOutKeys).doesNotContain(key);
   }
 
+  private void assertListedAsBackOff(final long key, final long since) {
+    final List<Long> backedOffKeys = getBackedOffKeys(since);
+    assertThat(backedOffKeys).contains(key);
+  }
+
+  private void refuteListedAsBackOff(final long key, final long since) {
+    final List<Long> backedOffKeys = getBackedOffKeys(since);
+    assertThat(backedOffKeys).doesNotContain(key);
+  }
+
   private List<Long> getActivatableKeys(final DirectBuffer type) {
     final List<Long> activatableKeys = new ArrayList<>();
 
@@ -643,5 +690,11 @@ public final class JobStateTest {
 
     jobState.forEachTimedOutEntry(since, (k, e) -> timedOutKeys.add(k));
     return timedOutKeys;
+  }
+
+  private List<Long> getBackedOffKeys(final long since) {
+    final List<Long> backedOffKeys = new ArrayList<>();
+    jobState.findBackedOffJobs(since, (k, record) -> backedOffKeys.add(k));
+    return backedOffKeys;
   }
 }

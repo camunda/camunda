@@ -44,6 +44,7 @@ public final class JobEventProcessors {
             zeebeState.getProcessState(),
             eventTriggerBehavior);
 
+    final var jobBackoffChecker = new JobBackoffChecker(jobState);
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
@@ -52,7 +53,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
-            new JobFailProcessor(zeebeState, zeebeState.getKeyGenerator(), jobMetrics))
+            new JobFailProcessor(
+                zeebeState, zeebeState.getKeyGenerator(), jobMetrics, jobBackoffChecker))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
@@ -70,7 +72,7 @@ public final class JobEventProcessors {
             new JobBatchActivateProcessor(
                 writers, zeebeState, zeebeState.getKeyGenerator(), maxRecordSize, jobMetrics))
         .withListener(new JobTimeoutTrigger(jobState))
-        .withListener(new JobBackoffTrigger(jobState))
+        .withListener(jobBackoffChecker)
         .withListener(
             new StreamProcessorLifecycleAware() {
               @Override
