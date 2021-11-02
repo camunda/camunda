@@ -11,5 +11,4 @@ jobs:
       - uses: alex-page/github-project-automation-plus@v0.8.1
         with:
           project: Operate/Tasklist
-          column: Todo
           repo-token: ${{ secrets.ISSUE_TO_PROJECT }}
