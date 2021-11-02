@@ -200,17 +200,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private ApplicationEntry findLastZeebeEntry() {
-    final RaftLogReader reader = raft.getLogReader();
-    reader.seekToAsqn(Long.MAX_VALUE);
+    try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
+      reader.seekToAsqn(Long.MAX_VALUE);
 
-    if (reader.hasNext()) {
-      final IndexedRaftLogEntry lastEntry = reader.next();
-      if (lastEntry != null && lastEntry.isApplicationEntry()) {
-        return lastEntry.getApplicationEntry();
+      if (reader.hasNext()) {
+        final IndexedRaftLogEntry lastEntry = reader.next();
+        if (lastEntry != null && lastEntry.isApplicationEntry()) {
+          return lastEntry.getApplicationEntry();
+        }
       }
+      return null;
     }
-
-    return null;
   }
 
   /** Cancels the timers. */
