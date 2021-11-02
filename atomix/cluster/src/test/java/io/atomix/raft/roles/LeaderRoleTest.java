@@ -32,7 +32,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -91,9 +90,6 @@ public class LeaderRoleTest {
     // since we mock RaftContext we should simulate leader close on transition
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
-
-    final RaftLogReader reader = mock(RaftLogReader.class);
-    when(context.getLogReader()).thenReturn(reader);
   }
 
   @Test
