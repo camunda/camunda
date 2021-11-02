@@ -35,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class FailJobTest {
+
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static String jobType;
@@ -121,19 +122,10 @@ public final class FailJobTest {
             .ofInstance(job.getValue().getProcessInstanceKey())
             .withRetries(3)
             .fail();
+    ENGINE.jobs().withType(jobType).activate();
 
     // then
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
-
-    // explicitly wait for polling
-    ENGINE.increaseTime(JobBackoffTrigger.POLLING_INTERVAL);
-
-    // verify that our job made activable
-    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).count()).isEqualTo(1);
-    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).getFirst().getKey())
-        .isEqualTo(jobKey);
-
-    ENGINE.jobs().withType(jobType).activate();
 
     // and the job is published again
     final var jobBatchActivations =
@@ -192,12 +184,12 @@ public final class FailJobTest {
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
 
     // explicitly wait for polling
-    ENGINE.increaseTime(JobBackoffTrigger.POLLING_INTERVAL);
+    ENGINE.increaseTime(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION));
 
     // verify that our job doesn't activable
     assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).exists()).isFalse();
 
-    ENGINE.increaseTime(backOff.plus(JobBackoffTrigger.POLLING_INTERVAL));
+    ENGINE.increaseTime(backOff.plus(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION)));
 
     // verify that our job made activable
     assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).count()).isEqualTo(1);

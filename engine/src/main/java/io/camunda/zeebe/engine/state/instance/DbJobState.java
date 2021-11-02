@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private final DbLong backoffKey;
   private final DbCompositeKey<DbLong, DbLong> backoffJobKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> backoffColumnFamily;
+  private long nextBackOffDueDate;
 
   private final JobMetrics metrics;
 
@@ -184,11 +186,16 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void fail(final long key, final JobRecord updatedValue) {
     if (updatedValue.getRetries() > 0) {
-      backoffKey.wrapLong(updatedValue.getRetryBackOff() + System.currentTimeMillis());
-      backoffColumnFamily.put(backoffJobKey, DbNil.INSTANCE);
+      if (updatedValue.getRetryBackOff() > 0) {
+        backoffKey.wrapLong(updatedValue.getRetryBackOff() + System.currentTimeMillis());
+        backoffColumnFamily.put(backoffJobKey, DbNil.INSTANCE);
+        updateJob(key, updatedValue, State.FAILED);
+      } else {
+        updateJob(key, updatedValue, State.ACTIVATABLE);
+      }
+    } else {
+      updateJob(key, updatedValue, State.FAILED);
     }
-
-    updateJob(key, updatedValue, State.FAILED);
   }
 
   @Override
@@ -238,7 +245,16 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void forEachTimedOutEntry(
       final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
-    forEachTimedOut(deadlinesColumnFamily, callback, upperBound);
+    deadlinesColumnFamily.whileTrue(
+        (key, value) -> {
+          final long deadline = key.getFirst().getValue();
+          final boolean isDue = deadline < upperBound;
+          if (isDue) {
+            final long jobKey1 = key.getSecond().getValue();
+            return visitJob(jobKey1, callback::apply, () -> deadlinesColumnFamily.delete(key));
+          }
+          return false;
+        });
   }
 
   @Override
@@ -275,14 +291,8 @@ public final class DbJobState implements JobState, MutableJobState {
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
           // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback, () -> {});
+          return visitJob(jobKey, callback::apply, () -> {});
         }));
-  }
-
-  @Override
-  public void forEachBackOffTimedOutJobs(
-      final long upperBound, final BiFunction<Long, JobRecord, Boolean> callback) {
-    forEachTimedOut(backoffColumnFamily, callback, upperBound);
   }
 
   @Override
@@ -297,9 +307,28 @@ public final class DbJobState implements JobState, MutableJobState {
     this.onJobsAvailableCallback = onJobsAvailableCallback;
   }
 
+  @Override
+  public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
+    nextBackOffDueDate = -1L;
+    backoffColumnFamily.whileTrue(
+        (key, value) -> {
+          final long deadline = key.getFirst().getValue();
+          boolean consumed = false;
+          if (deadline <= timestamp) {
+            final long jobKey = key.getSecond().getValue();
+            consumed = visitJob(jobKey, callback, () -> backoffColumnFamily.delete(key));
+          }
+          if (!consumed) {
+            nextBackOffDueDate = deadline;
+          }
+          return consumed;
+        });
+    return nextBackOffDueDate;
+  }
+
   boolean visitJob(
       final long jobKey,
-      final BiFunction<Long, JobRecord, Boolean> callback,
+      final BiPredicate<Long, JobRecord> callback,
       final Runnable cleanupRunnable) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
@@ -307,7 +336,7 @@ public final class DbJobState implements JobState, MutableJobState {
       cleanupRunnable.run();
       return true; // we want to continue with the iteration
     }
-    return callback.apply(jobKey, job);
+    return callback.test(jobKey, job);
   }
 
   private void notifyJobAvailable(final DirectBuffer jobType) {
@@ -350,22 +379,5 @@ public final class DbJobState implements JobState, MutableJobState {
   private void removeJobDeadline(final long deadline) {
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.delete(deadlineJobKey);
-  }
-
-  private void forEachTimedOut(
-      final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> columnFamily,
-      final BiFunction<Long, JobRecord, Boolean> callback,
-      final Long upperBound) {
-    columnFamily.whileTrue(
-        (key, value) -> {
-          final long deadline = key.getFirst().getValue();
-          final boolean isDue = deadline < upperBound;
-          if (isDue) {
-            final long jobKey = key.getSecond().getValue();
-            final boolean visitJob = visitJob(jobKey, callback, () -> columnFamily.delete(key));
-            return visitJob;
-          }
-          return false;
-        });
   }
 }

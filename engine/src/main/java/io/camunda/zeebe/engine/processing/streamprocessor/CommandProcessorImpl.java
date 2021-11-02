@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.util.function.Consumer;
 
 /**
  * Decorates a command processor with simple accept and reject logic.
@@ -64,10 +66,11 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   public void processRecord(
       final TypedRecord<T> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
-    final boolean shouldRespond = wrappedProcessor.onCommand(command, this);
+    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffect);
 
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 
