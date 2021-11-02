@@ -33,7 +33,7 @@ RUN $JAVA_HOME/bin/jlink \
    --output jre17-with-all-modules
 
 # Define your base image
-FROM debian:buster-slim as prod
+FROM ubuntu:focal as prod
 ENV JAVA_HOME=/opt/java/openjdk
 ENV PATH "${JAVA_HOME}/bin:${PATH}"
 COPY --from=jre-build /jre17-with-all-modules $JAVA_HOME
