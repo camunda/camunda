@@ -7,8 +7,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Tasklist Importer 110</name>
-  <artifactId>tasklist-importer-110</artifactId>
+  <name>Tasklist Importer 130</name>
+  <artifactId>tasklist-importer-130</artifactId>
 
   <dependencies>
 
@@ -62,7 +62,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v110</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v120</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

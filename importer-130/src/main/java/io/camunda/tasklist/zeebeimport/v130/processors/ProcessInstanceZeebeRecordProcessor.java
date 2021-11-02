@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v110.processors;
+package io.camunda.tasklist.zeebeimport.v130.processors;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
@@ -19,7 +19,7 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
-import io.camunda.tasklist.zeebeimport.v110.record.value.ProcessInstanceRecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;

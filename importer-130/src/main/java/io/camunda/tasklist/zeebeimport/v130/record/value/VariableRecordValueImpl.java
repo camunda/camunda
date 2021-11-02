@@ -3,9 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v110.record.value;
+package io.camunda.tasklist.zeebeimport.v130.record.value;
 
-import io.camunda.tasklist.zeebeimport.v110.record.RecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.RecordValueImpl;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {

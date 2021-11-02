@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.zeebeimport.v110.processors;
+package io.camunda.tasklist.zeebeimport.v130.processors;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,12 +13,12 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.AbstractImportBatchProcessor;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v110.record.RecordImpl;
-import io.camunda.tasklist.zeebeimport.v110.record.value.JobRecordValueImpl;
-import io.camunda.tasklist.zeebeimport.v110.record.value.ProcessInstanceRecordValueImpl;
-import io.camunda.tasklist.zeebeimport.v110.record.value.VariableDocumentRecordImpl;
-import io.camunda.tasklist.zeebeimport.v110.record.value.VariableRecordValueImpl;
-import io.camunda.tasklist.zeebeimport.v110.record.value.deployment.DeployedProcessImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.RecordImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.value.JobRecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.value.ProcessInstanceRecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.value.VariableDocumentRecordImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.value.VariableRecordValueImpl;
+import io.camunda.tasklist.zeebeimport.v130.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
@@ -100,6 +100,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Override
   public String getZeebeVersion() {
-    return "1.1";
+    return "1.3";
   }
 }
