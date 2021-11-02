@@ -11,7 +11,7 @@ import {Checklist} from 'components';
 
 export default function BooleanInput({changeFilter, setValid, filter}) {
   useEffect(() => {
-    setValid(filter.values.length > 0);
+    setValid?.(filter.values.length > 0);
   }, [filter, setValid]);
 
   const formatValue = (value) =>
@@ -41,3 +41,5 @@ export default function BooleanInput({changeFilter, setValid, filter}) {
 }
 
 BooleanInput.defaultFilter = {values: []};
+
+BooleanInput.isValid = ({values}) => values.length > 0;

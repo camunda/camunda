@@ -109,14 +109,18 @@ it('should use the variables prop to resolve variable names', () => {
 it('should disable editing and pass a warning to variablePreview if variable does not exist', () => {
   const data = [
     {
-      type: 'variable',
+      type: 'multipleVariable',
       data: {
-        name: 'notANameButAnId',
-        type: 'String',
-        data: {
-          operator: 'in',
-          values: ['varValue'],
-        },
+        data: [
+          {
+            name: 'notANameButAnId',
+            type: 'String',
+            data: {
+              operator: 'in',
+              values: ['varValue'],
+            },
+          },
+        ],
       },
       appliedTo: ['definition'],
     },
@@ -124,23 +128,38 @@ it('should disable editing and pass a warning to variablePreview if variable doe
 
   const node = shallow(<FilterList {...props} data={data} variables={[]} />);
 
-  expect(node).toMatchSnapshot();
+  const actionItem = node.find('ActionItem');
+
+  expect(actionItem.prop('warning')).toBe('Variable does not exist');
+  expect(actionItem.prop('onEdit')).toEqual(undefined);
 });
 
-it('should use the DateFilterPreview component for date variables', () => {
+it('should use the DateFilterPreview component for date variables and variable preview for other types', () => {
   const startDate = '2017-11-16T00:00:00';
   const endDate = '2017-11-26T23:59:59';
   const data = [
     {
-      type: 'variable',
+      type: 'multipleVariable',
       data: {
-        name: 'aDateVar',
-        type: 'Date',
-        data: {
-          type: 'fixed',
-          start: startDate,
-          end: endDate,
-        },
+        data: [
+          {
+            name: 'aDateVar',
+            type: 'Date',
+            data: {
+              type: 'fixed',
+              start: startDate,
+              end: endDate,
+            },
+          },
+          {
+            name: 'notANameButAnId',
+            type: 'String',
+            data: {
+              operator: 'in',
+              values: ['varValue'],
+            },
+          },
+        ],
       },
       appliedTo: ['definition'],
     },
@@ -148,6 +167,7 @@ it('should use the DateFilterPreview component for date variables', () => {
   const node = shallow(<FilterList {...props} data={data} />);
 
   expect(node.find('ActionItem').find('DateFilterPreview')).toExist();
+  expect(node.find('ActionItem').find('VariablePreview')).toExist();
 });
 
 it('should display nodeListPreview for flow node filter', () => {

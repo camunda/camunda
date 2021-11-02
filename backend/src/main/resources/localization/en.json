@@ -424,6 +424,7 @@
         "engineName": "Engine Name",
         "tenantId": "Tenant Id",
         "variable": "Var",
+        "multipleVariable": "Var",
         "inputVariable": "InputVar",
         "outputVariable": "OutputVar"
       },
@@ -964,6 +965,7 @@
         "instanceDuration": "Process Instance Duration",
         "flowNodeDuration": "Flow Node Duration",
         "variable": "Variable",
+        "multipleVariable": "Variable",
         "flowNode": "Flow Node",
         "evaluationDateTime": "Evaluation Date Time",
         "inputVariable": "Input Variable",
@@ -1049,6 +1051,7 @@
         "inputPlaceholder": "Select or search for a variable here",
         "noVariables": "No variables found",
         "loadMore": "Load More",
+        "or": "OR",
         "bool": {
           "true": "is true",
           "false": "is false",

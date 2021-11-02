@@ -64,9 +64,9 @@ it('should contain an edit filter modal when a filter should be edited', () => {
 it('should contain a FilterModal component based on the selected new Filter', () => {
   const node = shallow(<Filter {...props} />);
 
-  node.instance().openNewFilterModal('instance')('variable')();
+  node.instance().openNewFilterModal('instance')('multipleVariable')();
 
-  expect(node).toIncludeText('VariableFilter');
+  expect(node).toIncludeText('MultipleVariableFilter');
   expect(node).not.toIncludeText('DateFilter');
 });
 
@@ -75,13 +75,11 @@ it('should contain a EditFilterModal component based on the Filter selected for 
 
   node.instance().openEditFilterModal({
     data: {
-      operator: 'bar',
-      type: 'baz',
-      value: 'foo',
+      data: [{operator: 'bar', type: 'baz', value: 'foo'}],
     },
-    type: 'variable',
+    type: 'multipleVariable',
   })();
-  expect(node).toIncludeText('VariableFilter');
+  expect(node).toIncludeText('MultipleVariableFilter');
   expect(node).not.toIncludeText('DateFilter');
 });
 

@@ -1,0 +1,21 @@
+.MultipleVariableFilterModal {
+  .LabeledTypeahead {
+    margin-bottom: 24px;
+  }
+
+  .orOperator {
+    display: block;
+    margin-bottom: 20px;
+    border-top: 1px solid var(--silver-darken-87);
+    padding-top: 10px;
+    font-size: 12px;
+  }
+
+  .orButton {
+    margin-top: 10px;
+  }
+}
+
+.buttonRow {
+  margin-bottom: 24px;
+}

@@ -157,10 +157,11 @@ export default class FilterList extends React.Component {
         );
       } else {
         if (filter.type.toLowerCase().includes('variable')) {
-          const {name, type, data} = filter.data;
           const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
-          const variableExists = checkVariableExistence(filter.type, name, this.props.variables);
-          const variableName = this.getVariableName(filter.type, name, variableExists);
+          const filters = filter.type === 'multipleVariable' ? filter.data?.data : [filter.data];
+          const variableExists = filters.every((filterData) =>
+            checkVariableExistence(filter.type, filterData.name, this.props.variables)
+          );
 
           let warning;
           if (!definitionIsValid) {
@@ -168,7 +169,6 @@ export default class FilterList extends React.Component {
           } else if (!variableExists) {
             warning = t('report.nonExistingVariable');
           }
-
           list.push(
             <li key={i} className="listItem">
               <ActionItem
@@ -180,15 +180,30 @@ export default class FilterList extends React.Component {
                   this.props.deleteFilter(filter);
                 }}
               >
-                {type === 'Date' ? (
-                  <DateFilterPreview
-                    filterType="variable"
-                    variableName={variableName}
-                    filter={data}
-                  />
-                ) : (
-                  <VariablePreview type={filter.type} variableName={variableName} filter={data} />
-                )}
+                {filters.map(({name, type, data}, idx) => {
+                  const variableName = this.getVariableName(filter.type, name, variableExists);
+                  return (
+                    <div key={idx}>
+                      {type === 'Date' ? (
+                        <DateFilterPreview
+                          filterType="variable"
+                          variableName={variableName}
+                          filter={data}
+                        />
+                      ) : (
+                        <VariablePreview
+                          type={filter.type}
+                          variableName={variableName}
+                          filter={data}
+                        />
+                      )}
+
+                      {filters[idx + 1] && (
+                        <div className="OrOperator">{t('common.filter.variableModal.or')}</div>
+                      )}
+                    </div>
+                  );
+                })}
                 {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>

@@ -6,6 +6,7 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import deepEqual from 'fast-deep-equal';
 
 import {ButtonGroup, Button, Checklist, Input, Icon} from 'components';
 import {t} from 'translation';
@@ -35,7 +36,7 @@ export default class StringInput extends React.Component {
   };
 
   reset() {
-    this.props.setValid(this.props.filter.values.length > 0);
+    this.props.setValid?.(this.props.filter.values.length > 0);
     this.loadAvailableValues();
   }
 
@@ -44,7 +45,7 @@ export default class StringInput extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.variable !== this.props.variable) {
+    if (deepEqual(prevProps.variable !== this.props.variable)) {
       this.reset();
     }
   }
@@ -120,7 +121,7 @@ export default class StringInput extends React.Component {
     let newValues = filter.values;
     if (containToEquality || equalityToContain) {
       newValues = [];
-      setValid(false);
+      setValid?.(false);
     }
 
     changeFilter({operator, values: newValues});
@@ -152,7 +153,7 @@ export default class StringInput extends React.Component {
       operator: this.props.filter.operator,
       values: newValues,
     });
-    this.props.setValid(newValues.length > 0);
+    this.props.setValid?.(newValues.length > 0);
   };
 
   addCustomValue = () => {
@@ -230,7 +231,7 @@ export default class StringInput extends React.Component {
             }}
             onChange={({operator, values, includeUndefined}) => {
               changeFilter({operator, values: includeUndefined ? [...values, null] : values});
-              setValid(includeUndefined || values.length > 0);
+              setValid?.(includeUndefined || values.length > 0);
             }}
             allowUndefined
             allowMultiple
@@ -317,6 +318,10 @@ export default class StringInput extends React.Component {
       },
       appliedTo: [applyTo?.identifier],
     });
+  };
+
+  static isValid = ({includeUndefined, values}) => {
+    return includeUndefined || values.length > 0;
   };
 }
 

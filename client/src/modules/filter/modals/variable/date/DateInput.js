@@ -24,12 +24,12 @@ export default class DateInput extends React.Component {
   };
 
   componentDidMount() {
-    this.props.setValid(isValid(this.props.filter));
+    this.props.setValid?.(isValid(this.props.filter));
   }
 
   changeFilter = (newFilter) => {
     this.props.changeFilter(newFilter);
-    this.props.setValid(isValid(newFilter));
+    this.props.setValid?.(isValid(newFilter));
   };
 
   render() {
@@ -80,4 +80,6 @@ export default class DateInput extends React.Component {
       appliedTo: [applyTo?.identifier],
     });
   };
+
+  static isValid = isValid;
 }

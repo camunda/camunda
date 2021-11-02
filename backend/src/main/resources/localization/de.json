@@ -424,6 +424,7 @@
         "engineName": "Engine Name",
         "tenantId": "Mandanten Id",
         "variable": "Var",
+        "multipleVariable": "Var",
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar"
       },
@@ -964,6 +965,7 @@
         "instanceDuration": "Dauer der Prozessinstanz",
         "flowNodeDuration": "Prozessknoten Dauer",
         "variable": "Variable",
+        "multipleVariable": "Variable",
         "flowNode": "Prozessknoten",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
@@ -1049,6 +1051,7 @@
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
+        "or": "ODER",
         "bool": {
           "true": "ist wahr",
           "false": "ist falsch",

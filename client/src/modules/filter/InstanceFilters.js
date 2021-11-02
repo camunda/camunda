@@ -87,7 +87,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       )}
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('variable')}
+        onClick={openNewFilterModal('multipleVariable')}
       >
         {t('common.filter.types.variable')}
       </Dropdown.Option>

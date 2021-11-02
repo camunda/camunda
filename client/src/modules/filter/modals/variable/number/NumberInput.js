@@ -15,7 +15,7 @@ export default class NumberInput extends React.Component {
   static defaultFilter = {operator: 'in', values: [], includeUndefined: false};
 
   componentDidMount() {
-    this.props.setValid(this.selectionIsValid());
+    this.props.setValid?.(this.selectionIsValid());
   }
 
   setOperator = (newOperator) => (evt) => {
@@ -48,7 +48,7 @@ export default class NumberInput extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (prevProps.filter !== this.props.filter) {
-      this.props.setValid(this.selectionIsValid());
+      this.props.setValid?.(this.selectionIsValid());
     }
   }
 
@@ -108,5 +108,13 @@ export default class NumberInput extends React.Component {
       },
       appliedTo: [applyTo?.identifier],
     });
+  };
+
+  static isValid = ({values, includeUndefined}) => {
+    if (values.length === 0) {
+      return includeUndefined;
+    }
+
+    return values.every((value) => value.trim() && !isNaN(value.trim()));
   };
 }
