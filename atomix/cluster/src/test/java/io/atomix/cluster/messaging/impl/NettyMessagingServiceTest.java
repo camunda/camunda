@@ -29,6 +29,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.ConnectException;
@@ -428,5 +430,173 @@ public class NettyMessagingServiceTest {
     messagingService = (ManagedMessagingService) startFuture.join();
     assertThat(messagingService.bindingAddresses()).contains(bindingAddress);
     assertThat(messagingService.address()).isEqualTo(nonBindableAddress);
+  }
+
+  @Test
+  public void testRemoteHandlerFailure() {
+    // given
+    final String exceptionMessage = "foo bar";
+    final RemoteHandlerFailure execptedException =
+        new MessagingException.RemoteHandlerFailure(exceptionMessage);
+
+    final BiFunction<Address, byte[], byte[]> handler =
+        (ep, data) -> {
+          throw new RuntimeException(exceptionMessage);
+        };
+
+    final String subject = nextSubject();
+    netty2.registerHandler(subject, handler, MoreExecutors.directExecutor());
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    try {
+      response.join();
+      fail("MessagingException.RemoteHandlerFailure expected");
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      assertTrue(cause instanceof MessagingException.RemoteHandlerFailure);
+      assertTrue(execptedException.getMessage().equals(cause.getMessage()));
+    }
+  }
+
+  @Test
+  public void testRemoteHandlerFailureNullValue() {
+    // given
+    final RemoteHandlerFailure execptedException =
+        new MessagingException.RemoteHandlerFailure(null);
+
+    final BiFunction<Address, byte[], byte[]> handler =
+        (ep, data) -> {
+          throw new RuntimeException();
+        };
+
+    final String subject = nextSubject();
+    netty2.registerHandler(subject, handler, MoreExecutors.directExecutor());
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    try {
+      response.join();
+      fail("MessagingException.RemoteHandlerFailure expected");
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      assertTrue(cause instanceof MessagingException.RemoteHandlerFailure);
+      assertTrue(execptedException.getMessage().equals(cause.getMessage()));
+    }
+  }
+
+  @Test
+  public void testRemoteHandlerFailureEmptyStringValue() {
+    // given
+    final String exceptionMessage = "";
+    final RemoteHandlerFailure execptedException =
+        new MessagingException.RemoteHandlerFailure(null);
+
+    final BiFunction<Address, byte[], byte[]> handler =
+        (ep, data) -> {
+          throw new RuntimeException(exceptionMessage);
+        };
+
+    final String subject = nextSubject();
+    netty2.registerHandler(subject, handler, MoreExecutors.directExecutor());
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    try {
+      response.join();
+      fail("MessagingException.RemoteHandlerFailure expected");
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      assertTrue(cause instanceof MessagingException.RemoteHandlerFailure);
+      assertTrue(execptedException.getMessage().equals(cause.getMessage()));
+    }
+  }
+
+  @Test
+  public void testCompletableRemoteHandlerFailure() {
+    // given
+    final String exceptionMessage = "foo bar";
+    final RemoteHandlerFailure execptedException =
+        new MessagingException.RemoteHandlerFailure(exceptionMessage);
+
+    final String subject = nextSubject();
+    netty2.registerHandler(
+        subject,
+        (address, bytes) -> CompletableFuture.failedFuture(new RuntimeException(exceptionMessage)));
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    try {
+      response.join();
+      fail("MessagingException.RemoteHandlerFailure expected");
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      assertTrue(cause instanceof MessagingException.RemoteHandlerFailure);
+      assertTrue(execptedException.getMessage().equals(cause.getMessage()));
+    }
+  }
+
+  @Test
+  public void testCompletableRemoteHandlerFailureNullValue() {
+    // given
+    final RemoteHandlerFailure execptedException =
+        new MessagingException.RemoteHandlerFailure(null);
+
+    final String subject = nextSubject();
+    netty2.registerHandler(
+        subject, (address, bytes) -> CompletableFuture.failedFuture(new RuntimeException()));
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    try {
+      response.join();
+      fail("MessagingException.RemoteHandlerFailure expected");
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      assertTrue(cause instanceof MessagingException.RemoteHandlerFailure);
+      assertTrue(execptedException.getMessage().equals(cause.getMessage()));
+    }
+  }
+
+  @Test
+  public void testCompletableRemoteHandlerFailureEmptyStringValue() {
+    // given
+    final String exceptionMessage = "";
+    final RemoteHandlerFailure execptedException =
+        new MessagingException.RemoteHandlerFailure(null);
+
+    final String subject = nextSubject();
+    netty2.registerHandler(
+        subject,
+        (address, bytes) -> CompletableFuture.failedFuture(new RuntimeException(exceptionMessage)));
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    try {
+      response.join();
+      fail("MessagingException.RemoteHandlerFailure expected");
+    } catch (Exception e) {
+      final Throwable cause = e.getCause();
+      assertTrue(cause instanceof MessagingException.RemoteHandlerFailure);
+      assertTrue(execptedException.getMessage().equals(cause.getMessage()));
+    }
   }
 }

@@ -38,8 +38,8 @@ public class MessagingException extends IOException {
 
   /** Exception indicating handler failure. */
   public static class RemoteHandlerFailure extends MessagingException {
-    public RemoteHandlerFailure() {
-      super("Remote handler failed to handle message");
+    public RemoteHandlerFailure(String message) {
+      super(String.format("Remote handler failed to handle message, cause: %s", message));
     }
   }
 

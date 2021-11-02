@@ -18,6 +18,7 @@ package io.atomix.cluster.messaging.impl;
 
 import com.google.common.collect.Maps;
 import io.atomix.cluster.messaging.MessagingException;
+import io.camunda.zeebe.util.StringUtil;
 import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -43,7 +44,16 @@ abstract class AbstractClientConnection implements ClientConnection {
       } else if (message.status() == ProtocolReply.Status.ERROR_NO_HANDLER) {
         responseFuture.completeExceptionally(new MessagingException.NoRemoteHandler());
       } else if (message.status() == ProtocolReply.Status.ERROR_HANDLER_EXCEPTION) {
-        responseFuture.completeExceptionally(new MessagingException.RemoteHandlerFailure());
+
+        final byte[] payload = message.payload();
+        String exceptionMessage = null;
+
+        if (payload != null && payload.length > 0) {
+          exceptionMessage = StringUtil.fromBytes(payload);
+        }
+
+        responseFuture.completeExceptionally(
+            new MessagingException.RemoteHandlerFailure(exceptionMessage));
       } else if (message.status() == ProtocolReply.Status.PROTOCOL_EXCEPTION) {
         responseFuture.completeExceptionally(new MessagingException.ProtocolException());
       }
