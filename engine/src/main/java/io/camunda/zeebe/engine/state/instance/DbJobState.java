@@ -105,8 +105,8 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   /**
-   * <b>Note:</b> calling this method will reset the variables of the job record. Make sure to write
-   * the job record to the log before updating it in the state.
+   * <b>Note:</b> calling this method will reset the variables of the job record. Make sure to
+   * write the job record to the log before updating it in the state.
    *
    * <p>related to https://github.com/zeebe-io/zeebe/issues/2182
    */
@@ -131,6 +131,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void makeActivable(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
+    backoffKey.wrapLong(record.getRetryBackOff() + System.currentTimeMillis());
     backoffColumnFamily.delete(backoffJobKey);
   }
 
@@ -291,7 +292,8 @@ public final class DbJobState implements JobState, MutableJobState {
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.getSecond().getValue();
           // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback::apply, () -> {});
+          return visitJob(jobKey, callback::apply, () -> {
+          });
         }));
   }
 
