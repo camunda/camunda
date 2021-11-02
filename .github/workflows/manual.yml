@@ -3,12 +3,12 @@ name: Move new issues into Triage
 on:
   issues:
     types: [opened]
-
 jobs:
-  automate-project-columns:
+  Add_New_Issue_To_Project:
     runs-on: ubuntu-latest
     steps:
-      - uses: alex-page/github-project-automation-plus@v0.8.1
-        with:
-          project: Operate/Tasklist
-          repo-token: ${{ secrets.ISSUE_TO_PROJECT }}
+    - uses: konradpabjan/actions-add-new-issue-to-column@v1.1
+      with:
+        action-token: "${{ secrets.ISSUE_TO_PROJECT }}"
+        project-url: "https://github.com/orgs/camunda-cloud/projects/21"
+        column-name: "To do"
