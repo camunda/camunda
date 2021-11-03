@@ -176,7 +176,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       final OperationType type = getType(i);
       Map<String, Object> request = getCreateBatchOperationRequestBody(processInstanceKey, type);
       RequestEntity<Map<String, Object>> requestEntity = RequestEntity.method(HttpMethod.POST, restTemplate.getURL("/api/process-instances/batch-operation"))
-          .headers(restTemplate.getCsrfHeader())
           .contentType(MediaType.APPLICATION_JSON).body(request);
       final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
       if (!response.getStatusCode().equals(HttpStatus.OK)) {

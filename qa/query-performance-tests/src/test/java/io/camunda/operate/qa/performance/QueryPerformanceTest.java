@@ -118,7 +118,6 @@ public class QueryPerformanceTest {
     try {
       RequestEntity<String> requestEntity =
           RequestEntity.method(testQuery.getMethod(), restTemplate.getURL(testQuery.getUrl(), testQuery.getPathParams()))
-              .headers(restTemplate.getCsrfHeader())
               .contentType(MediaType.APPLICATION_JSON)
               .body(testQuery.getBody());
       start = Instant.now();
@@ -133,5 +132,5 @@ public class QueryPerformanceTest {
 
     assertThat(timeElapsed).as(testQuery.getTitle() + " (duration)").isLessThan(timeout);
   }
-  
+
 }

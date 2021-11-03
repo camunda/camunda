@@ -6,7 +6,6 @@
 
 package io.camunda.operate.webapp.security.iam;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -20,7 +19,6 @@ import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.Role;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,7 +88,7 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
   }
 
   private boolean hasPermission(String permissionName) {
-    if (jwt == null || !(jwt instanceof JWTDecoder)) {
+    if (!(jwt instanceof JWTDecoder)) {
       return false;
     }
     JWTDecoder decoder = (JWTDecoder) jwt;

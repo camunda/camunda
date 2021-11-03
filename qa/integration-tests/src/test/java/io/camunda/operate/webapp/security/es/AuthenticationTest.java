@@ -77,9 +77,6 @@ public class AuthenticationTest implements AuthenticationTestable {
   private static final String LASTNAME = "Lastname";
 
   @Autowired
-  private OperateProperties operateProperties;
-
-  @Autowired
   private TestRestTemplate testRestTemplate;
 
   @Autowired
@@ -100,14 +97,14 @@ public class AuthenticationTest implements AuthenticationTestable {
   }
 
   @Test
-  public void shouldSetCookieAndCSRFToken() {
+  public void shouldSetCookie() {
     // given
     // when
     ResponseEntity<Void> response = login(USER_ID, PASSWORD);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response, operateProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(response);
   }
 
   @Test
@@ -127,7 +124,7 @@ public class AuthenticationTest implements AuthenticationTestable {
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse, operateProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(loginResponse);
     // when
     ResponseEntity<?> logoutResponse = logout(loginResponse);
 

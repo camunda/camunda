@@ -1,5 +1,4 @@
 camunda.operate:
-  csrfPreventionEnabled: false
   batchOperationMaxSize: 500
   elasticsearch:
     clusterName: clusterName

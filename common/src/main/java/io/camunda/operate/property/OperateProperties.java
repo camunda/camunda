@@ -30,6 +30,7 @@ public class OperateProperties {
   /**
    * Indicates, whether CSRF prevention is enabled.
    */
+  @Deprecated
   private boolean csrfPreventionEnabled = true;
 
   /**
@@ -114,10 +115,12 @@ public class OperateProperties {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
+  @Deprecated
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
 
+  @Deprecated
   public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }

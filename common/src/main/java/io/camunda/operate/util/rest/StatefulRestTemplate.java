@@ -9,8 +9,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.List;
-import java.util.function.Consumer;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -19,9 +17,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,11 +37,9 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 @Scope(SCOPE_PROTOTYPE)
 public class StatefulRestTemplate extends RestTemplate {
 
-  private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
-  private static final String CSRF_TOKEN_HEADER_NAME = "OPERATE-X-CSRF-TOKEN";
-
   private static final String USERNAME_DEFAULT = "demo";
   private static final String PASSWORD_DEFAULT = "demo";
+  private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
 
   private final String host;
   private final Integer port;
@@ -53,7 +47,6 @@ public class StatefulRestTemplate extends RestTemplate {
   private final CookieStore cookieStore;
   private final HttpContext httpContext;
   private final StatefulHttpComponentsClientHttpRequestFactory statefulHttpComponentsClientHttpRequestFactory;
-  private String csrfToken;
   private String contextPath;
 
   public StatefulRestTemplate(String host, Integer port, String contextPath) {
@@ -69,33 +62,15 @@ public class StatefulRestTemplate extends RestTemplate {
     super.setRequestFactory(statefulHttpComponentsClientHttpRequestFactory);
   }
 
-  public HttpClient getHttpClient() {
-    return httpClient;
-  }
-
   public CookieStore getCookieStore() {
     return cookieStore;
-  }
-
-  public HttpContext getHttpContext() {
-    return httpContext;
-  }
-
-  @Override
-  public <T> ResponseEntity<T> exchange(RequestEntity<?> requestEntity, Class<T> responseType) throws RestClientException {
-    final ResponseEntity<T> responseEntity = super.exchange(requestEntity, responseType);
-    saveCSRFTokenWhenAvailable(responseEntity);
-    return responseEntity;
   }
 
   @Override
   public <T> ResponseEntity<T> postForEntity(URI url, Object request, Class<T> responseType) throws RestClientException {
     RequestEntity<Object> requestEntity = RequestEntity.method(HttpMethod.POST, url)
-        .headers(getCsrfHeader())
         .contentType(MediaType.APPLICATION_JSON).body(request);
-    final ResponseEntity<T> tResponseEntity = exchange(requestEntity, responseType);
-    saveCSRFTokenWhenAvailable(tResponseEntity);
-    return tResponseEntity;
+    return exchange(requestEntity, responseType);
   }
 
   public StatefulHttpComponentsClientHttpRequestFactory getStatefulHttpClientRequestFactory() {
@@ -113,16 +88,7 @@ public class StatefulRestTemplate extends RestTemplate {
       if (!response.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
         throw new OperateRuntimeException(String.format("Unable to login user %s to %s:%s. Response: %s", username, host, port, response));
       }
-      saveCSRFTokenWhenAvailable(response);
     }
-  }
-
-  private ResponseEntity<?> saveCSRFTokenWhenAvailable(ResponseEntity<?> response) {
-    List<String> csrfHeaders = response.getHeaders().get(CSRF_TOKEN_HEADER_NAME);
-    if (csrfHeaders != null && !csrfHeaders.isEmpty()) {
-      csrfToken = csrfHeaders.get(0);
-    }
-    return response;
   }
 
   public URI getURL(String urlPart) {
@@ -144,7 +110,4 @@ public class StatefulRestTemplate extends RestTemplate {
     }
   }
 
-  public Consumer<HttpHeaders> getCsrfHeader() {
-    return (header) -> header.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
-  }
 }

@@ -82,7 +82,7 @@ public class AuthenticationTest implements AuthenticationTestable {
   public void testLoginSuccess() {
     ResponseEntity<?> response = login("fry", "fry");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response, operateProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(response);
   }
 
   @Test

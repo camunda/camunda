@@ -156,8 +156,6 @@ spec:
     - name: operate
       image: camunda/operate:SNAPSHOT
       env:
-        - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
-          value: false
         - name: CAMUNDA_OPERATE_ARCHIVER_WAIT_PERIOD_BEFORE_ARCHIVING
           value: 1m
       resources:

@@ -6,7 +6,6 @@
 package io.camunda.operate.webapp.security;
 
 import java.util.stream.Collectors;
-import org.assertj.core.util.Lists;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
@@ -23,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
 import static io.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
 import static io.camunda.operate.webapp.security.OperateURIs.*;
-import static io.camunda.operate.webapp.security.OperateURIs.X_CSRF_TOKEN;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
@@ -35,18 +33,8 @@ public interface AuthenticationTestable {
   Pattern COOKIE_PATTERN = Pattern.compile("^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
-  default HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
-    HttpHeaders headers = new HttpHeaders();
-    if(responseHeaders.containsKey(X_CSRF_HEADER)) {
-      String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
-      String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(csrfHeader,csrfToken);
-    }
-    return headers;
-  }
-
   default HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
-    HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
+    HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", getSessionCookies(response).stream().findFirst().orElse(""));
 
@@ -55,7 +43,7 @@ public interface AuthenticationTestable {
   }
 
   default List<String> getCookies(ResponseEntity<?> response) {
-    return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
+    return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(List.of());
   }
 
   default List<String> getSessionCookies(ResponseEntity<?> response) {
@@ -63,24 +51,16 @@ public interface AuthenticationTestable {
         .collect(Collectors.toList());
   }
 
-  default List<String> getCSRFCookies(ResponseEntity<?> response) {
-    return getCookies(response).stream().filter(key -> key.contains(X_CSRF_TOKEN))
-        .collect(Collectors.toList());
-  }
-
-  default void assertThatCookiesAreSet(ResponseEntity<?> response,boolean csrfEnabled) {
+  default void assertThatCookiesAreSet(ResponseEntity<?> response) {
     List<String> cookies = getSessionCookies(response);
     assertThat(cookies).isNotEmpty();
     String lastSetCookie = cookies.get(cookies.size()-1);
-    assertThat(lastSetCookie).contains(COOKIE_JSESSIONID);
     assertThat(lastSetCookie.split(";")[0]).matches(COOKIE_PATTERN);
-    if(csrfEnabled) {
-      List<String> csrfTokens = getCSRFCookies(response);
-      assertThat(csrfTokens).isNotEmpty();
-      String lastSetCRSFCookie = csrfTokens.get(csrfTokens.size()-1);
-      assertThat(lastSetCRSFCookie).contains(X_CSRF_TOKEN);
-      assertThat(lastSetCRSFCookie.split(";")[0]).isNotEmpty();
-    }
+    assertSameSiteIsSet(lastSetCookie);
+  }
+
+  default void assertSameSiteIsSet(String cookie)  {
+    assertThat(cookie.contains("SameSite=Lax"));
   }
 
   default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
@@ -89,11 +69,6 @@ public interface AuthenticationTestable {
     if(!sessionCookies.isEmpty()){
       String lastSetCookie = sessionCookies.get(sessionCookies.size()-1);
       assertThat(lastSetCookie).contains(COOKIE_JSESSIONID + emptyValue);
-    }
-    List<String> csrfCookies = getCSRFCookies(response);
-    if(!csrfCookies.isEmpty()){
-      String lastSetCSRFCookie = csrfCookies.get(csrfCookies.size()-1);
-      assertThat(lastSetCSRFCookie).contains(X_CSRF_TOKEN + emptyValue);
     }
   }
 
@@ -124,5 +99,5 @@ public interface AuthenticationTestable {
     return getTestRestTemplate().getForEntity(path, String.class);
   }
 
-  public TestRestTemplate getTestRestTemplate();
+  TestRestTemplate getTestRestTemplate();
 }

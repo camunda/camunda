@@ -37,12 +37,7 @@ public class IAMWebSecurityConfig extends BaseWebConfigurer {
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
-    if (operateProperties.isCsrfPreventionEnabled()) {
-      configureCSRF(http);
-    } else {
-      http.csrf().disable();
-    }
-    http
+    http.csrf().disable()
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
         .antMatchers(API, ROOT).authenticated()

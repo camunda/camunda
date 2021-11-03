@@ -32,10 +32,6 @@ public final class OperateURIs {
       IAM_CALLBACK_URI = "/iam-callback",
       IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback",
 
-      X_CSRF_PARAM = "OPERATE-X-CSRF-PARAM",
-      X_CSRF_HEADER = "OPERATE-X-CSRF-HEADER",
-      X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN",
-
       // For redirects after login
       REQUESTED_URL = "requestedUrl"
   ;
