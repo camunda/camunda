@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpre
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -98,6 +99,19 @@ public final class ZeebeRuntimeValidators {
                         ? definition.getTimeCycle().getTextContent()
                         : null,
                 ExpressionVerification::isOptional)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeAssignmentDefinition.class)
+            .hasValidExpression(
+                ZeebeAssignmentDefinition::getAssignee, ExpressionVerification::isOptional)
+            .hasValidExpression(
+                ZeebeAssignmentDefinition::getCandidateGroups,
+                expression ->
+                    expression
+                        .isOptional()
+                        .ifStaticItSatisfies(
+                            ZeebeExpressionValidator::isBracketedListOfValues,
+                            "be a bracketed list of comma-separated values, e.g. '[a,b,c]'"))
             .build(expressionLanguage),
         // ----------------------------------------
         new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor));

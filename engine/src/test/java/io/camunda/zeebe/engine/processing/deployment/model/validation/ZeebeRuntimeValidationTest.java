@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -336,6 +337,33 @@ public final class ZeebeRuntimeValidationTest {
                 ZeebeOutput.class,
                 "Expected path expression 'true' but is one of the reserved words (null, true, false, function, if, then, else, for, between, instance, of)."))
       },
+      {
+        /* invalid assignee expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeAssigneeExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /* invalid candidateGroups expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeCandidateGroupsExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /* invalid candidateGroups static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeCandidateGroups("a,b,c"))
+            .done(),
+        List.of(
+            expect(
+                ZeebeAssignmentDefinition.class,
+                "Expected static value to be a bracketed list of comma-separated values, e.g. '[a,b,c]', but found 'a,b,c'"))
+      }
     };
   }
 
