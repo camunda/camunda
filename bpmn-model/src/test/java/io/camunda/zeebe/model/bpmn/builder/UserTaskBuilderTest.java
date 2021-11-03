@@ -23,12 +23,12 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class UserTaskBuilderTest {
+class UserTaskBuilderTest {
 
   @Test
-  public void testUserTaskAssigneeCanBeSet() {
+  void testUserTaskAssigneeCanBeSet() {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -46,7 +46,7 @@ public class UserTaskBuilderTest {
   }
 
   @Test
-  public void testUserTaskCandidateGroupsCanBeSet() {
+  void testUserTaskCandidateGroupsCanBeSet() {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -64,7 +64,7 @@ public class UserTaskBuilderTest {
   }
 
   @Test
-  public void testUserTaskAssigneeAndCandidateGroupsCanBothBeSet() {
+  void testUserTaskAssigneeAndCandidateGroupsCanBothBeSet() {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
