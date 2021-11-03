@@ -101,6 +101,10 @@ public class ElasticsearchExporterConfiguration {
     // prefix for index and templates
     public String prefix = "zeebe-record";
 
+    // index settings
+    public Integer numberOfShards = null;
+    public Integer numberOfReplicas = null;
+
     // update index template on startup
     public boolean createTemplate = true;
 

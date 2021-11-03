@@ -203,13 +203,42 @@ public class ElasticsearchClient {
     template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
     template.put("composed_of", Collections.singletonList(configuration.index.prefix));
 
-    // update alias in template in case it was changed in configuration
+    // update template in case something changed there
     final Object templateProperties =
         template.computeIfAbsent("template", key -> new HashMap<String, Object>());
     if (templateProperties instanceof Map) {
       final Map templatePropertyMap = (Map) templateProperties;
+
+      // update settings in template in case it was changed in configuration
+      final Object settingsProperties =
+          templatePropertyMap.computeIfAbsent("settings", key -> new HashMap<String, Object>());
+
+      if (settingsProperties instanceof Map) {
+        final Map settingsPropertyMap = (Map) settingsProperties;
+
+        // update number of shards in template in case it was changed in configuration
+        final Integer numberOfShards = configuration.index.numberOfShards;
+        if (numberOfShards != null) {
+          settingsPropertyMap.put("number_of_shards", numberOfShards);
+        }
+
+        // update number of replicas in template in case it was changed in configuration
+        final Integer numberOfReplicas = configuration.index.numberOfReplicas;
+        if (numberOfReplicas != null) {
+          settingsPropertyMap.put("number_of_replicas", numberOfReplicas);
+        }
+
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "Expected the 'settings' field of the index template '%s' to be a map, but was '%s'",
+                templateName, settingsProperties.getClass()));
+      }
+
+      // update alias in template in case it was changed in configuration
       templatePropertyMap.put(
           "aliases", Collections.singletonMap(aliasName, Collections.emptyMap()));
+
     } else {
       throw new IllegalStateException(
           String.format(
