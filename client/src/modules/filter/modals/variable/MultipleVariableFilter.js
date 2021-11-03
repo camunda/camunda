@@ -32,6 +32,7 @@ export default function MultipleVariableFilter({
   const [variables, setVariables] = useState([]);
   const [applyTo, setApplyTo] = useState(null);
 
+  // load the available varaibles for the selected definition
   useEffect(() => {
     (async () => {
       const validDefinitions = definitions?.filter(
@@ -47,6 +48,7 @@ export default function MultipleVariableFilter({
     })();
   }, [config, definitions, filterData?.appliedTo]);
 
+  // check if the all the variable filters are valid on filters change
   useEffect(() => {
     const isValid = filters.every((filter) => {
       if (!filter.data) {
@@ -59,6 +61,7 @@ export default function MultipleVariableFilter({
     setValid(isValid);
   }, [filters]);
 
+  // initilize the filters state when editing a pre-existing filter
   useEffect(() => {
     if (filterData?.data) {
       const filtersToAdd = filterData.data.data.map((filter) => {
@@ -93,26 +96,19 @@ export default function MultipleVariableFilter({
   const createFilter = (evt) => {
     evt.preventDefault();
 
-    let filterToAdd = filters;
-    const updateFilter = (newFilter) => {
-      filterToAdd = filterToAdd.map((filter) => {
-        if (filter.type === newFilter.data.type && filter.name === newFilter.data.name) {
-          return newFilter.data;
-        }
-        return filter;
-      });
-    };
-
+    const filterToAdd = [];
     filters.forEach((filter) => {
       const InputComponent = getInputComponentForVariable(filter.type);
       if (InputComponent.addFilter) {
         InputComponent.addFilter(
-          updateFilter,
+          (adjustedFilter) => filterToAdd.push(adjustedFilter.data),
           filterType,
           {name: filter.name, type: filter.type},
           filter.data,
           applyTo
         );
+      } else {
+        filterToAdd.push(filter);
       }
     });
 
@@ -124,12 +120,8 @@ export default function MultipleVariableFilter({
     });
   };
 
-  const updateFilterData = (nameOrId, type) => (newFilter) => {
-    setFilters(
-      filters.map((filter) =>
-        filter.name === nameOrId && filter.type === type ? newFilter : filter
-      )
-    );
+  const updateFilterData = (updateIndex, newFilter) => {
+    setFilters(filters.map((filter, idx) => (idx === updateIndex ? newFilter : filter)));
   };
 
   return (
@@ -146,7 +138,7 @@ export default function MultipleVariableFilter({
             applyTo={applyTo}
             setApplyTo={async (applyTo) => {
               setApplyTo(applyTo);
-              setFilters([]);
+              setFilters([{}]);
               setVariables([]);
               setVariables(await config.getVariables(applyTo));
             }}
@@ -157,7 +149,7 @@ export default function MultipleVariableFilter({
             {idx !== 0 && <span className="orOperator">{t('common.filter.variableModal.or')}</span>}
             <FilterInstance
               filter={filter}
-              updateFilterData={updateFilterData(filter.name, filter.type)}
+              updateFilterData={(newFilter) => updateFilterData(idx, newFilter)}
               variables={variables}
               config={config}
               applyTo={applyTo}

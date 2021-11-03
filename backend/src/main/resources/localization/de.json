@@ -1051,7 +1051,7 @@
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
-        "or": "ODER",
+        "or": "oder",
         "bool": {
           "true": "ist wahr",
           "false": "ist falsch",

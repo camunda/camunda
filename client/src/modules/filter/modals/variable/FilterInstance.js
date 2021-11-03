@@ -41,19 +41,12 @@ export default function FilterInstance({
     }
   };
 
-  const getVariableName = (variable) => (variable ? variable.name : null);
-  const getId = (variable) => {
-    if (variable) {
-      return variable.id || variable.name;
-    }
-  };
-
   const selectVariable = (value) => {
     const nameAndType = value.split('_');
     const type = nameAndType.pop();
     const nameOrId = nameAndType.join('_');
     const variable = variables.find(
-      (variable) => getId(variable) === nameOrId && type === variable.type
+      (variable) => variable.name === nameOrId && variable.type === type
     );
 
     updateFilterData({
@@ -76,14 +69,13 @@ export default function FilterInstance({
         >
           {variables.map((variable) => (
             <Typeahead.Option
-              key={getId(variable) + '_' + variable.type}
-              value={getId(variable) + '_' + variable.type}
+              key={variable.name + '_' + variable.type}
+              value={variable.name + '_' + variable.type}
               disabled={filters.some(
-                (filter) =>
-                  filter.name === (variable.name || variable.id) && filter.type === variable.type
+                (filter) => filter.name === variable.name && filter.type === variable.type
               )}
             >
-              {getVariableName(variable)}
+              {variable.name}
             </Typeahead.Option>
           ))}
         </Typeahead>
