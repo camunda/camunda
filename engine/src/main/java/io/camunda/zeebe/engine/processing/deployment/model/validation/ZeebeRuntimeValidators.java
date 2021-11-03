@@ -26,7 +26,7 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeRuntimeValidators {
 
-  public static final Collection<ModelElementValidator<?>> getValidators(
+  public static Collection<ModelElementValidator<?>> getValidators(
       final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
     return List.of(
         // ----------------------------------------
