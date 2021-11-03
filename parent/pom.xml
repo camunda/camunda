@@ -158,10 +158,6 @@
     <skipITs>${skipTests}</skipITs>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
-    <!-- these properties allow us to enable disable the formatting profiles -->
-    <autoFormat>true</autoFormat>
-    <checkFormat>false</checkFormat>
-
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
       formatting goals of these plugins. the approach taken is to use a single new property,
@@ -1658,13 +1654,7 @@
     <profile>
       <id>autoFormat</id>
       <activation>
-        <!-- the autoFormat property is true by default, but seems to not be read here, so we need
-        to activate this by default specifically -->
         <activeByDefault>true</activeByDefault>
-        <property>
-          <name>autoFormat</name>
-          <value>true</value>
-        </property>
       </activation>
       <build>
         <plugins>
@@ -1720,14 +1710,6 @@
     <!-- profile to perform strict validation checks -->
     <profile>
       <id>checkFormat</id>
-      <activation>
-        <!-- generally only the CI pipeline needs to be strict -->
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>checkFormat</name>
-          <value>true</value>
-        </property>
-      </activation>
       <build>
         <plugins>
           <plugin>
