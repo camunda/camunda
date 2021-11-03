@@ -24,6 +24,7 @@ import org.elasticsearch.search.sort.SortOrder;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -74,10 +75,11 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
         String.format("Was not able to retrieve zeebe records of type: %s", getBaseIndexName());
       if (isZeebeInstanceIndexNotFoundException(e)) {
         log.warn("No Zeebe index of type {} found to read records from!", getIndexAlias());
+        return Collections.emptyList();
       } else {
         log.error(errorMessage, e);
+        throw new OptimizeRuntimeException(errorMessage, e);
       }
-      throw new OptimizeRuntimeException(errorMessage, e);
     }
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), getRecordDtoClass(), objectMapper);
   }
