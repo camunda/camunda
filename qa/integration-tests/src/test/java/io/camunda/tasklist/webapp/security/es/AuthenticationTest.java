@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.metric.MetricIT;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Role;
@@ -47,8 +46,6 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
   private static final String FIRSTNAME = "Firstname";
   private static final String LASTNAME = "Lastname";
 
-  @Autowired private TasklistProperties tasklistProperties;
-
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Autowired private PasswordEncoder encoder;
@@ -76,7 +73,7 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(response);
     assertThatClientConfigContains("\"canLogout\": true");
   }
 
@@ -96,12 +93,12 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(loginResponse);
     // when
     final ResponseEntity<String> logoutResponse = logout(loginResponse);
 
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreDeleted(logoutResponse, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreDeleted(logoutResponse);
   }
 
   @Test
@@ -127,7 +124,7 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
   public void shouldReturnCurrentUser() {
     // given authenticated user
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
-    assertThatCookiesAreSet(loginResponse, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(loginResponse);
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(

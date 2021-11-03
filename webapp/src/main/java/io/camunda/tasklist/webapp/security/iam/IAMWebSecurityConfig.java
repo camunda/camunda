@@ -17,7 +17,6 @@ import io.camunda.iam.sdk.IamApi;
 import io.camunda.iam.sdk.IamApiConfiguration;
 import io.camunda.tasklist.property.IamProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.CSRFProtectable;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
-public class IAMWebSecurityConfig extends WebSecurityConfigurerAdapter implements CSRFProtectable {
+public class IAMWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -55,12 +54,9 @@ public class IAMWebSecurityConfig extends WebSecurityConfigurerAdapter implement
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
-    if (tasklistProperties.isCsrfPreventionEnabled()) {
-      configureCSRF(http);
-    } else {
-      http.csrf().disable();
-    }
-    http.authorizeRequests()
+    http.csrf()
+        .disable()
+        .authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
         .antMatchers(GRAPHQL_URL, ROOT_URL, ERROR_URL)

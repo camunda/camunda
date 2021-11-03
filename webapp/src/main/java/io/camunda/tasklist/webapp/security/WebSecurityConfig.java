@@ -12,12 +12,10 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.RESPONSE_CHARACTER_ENCODING;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,9 +38,8 @@ import org.springframework.stereotype.Component;
 @EnableWebSecurity
 @Configuration
 @Component("webSecurityConfig")
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements CSRFProtectable {
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  @Autowired private TasklistProperties tasklistProperties;
   @Autowired private UserDetailsService userDetailsService;
 
   @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
@@ -54,12 +51,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements C
 
   @Override
   public void configure(HttpSecurity http) throws Exception {
-    if (tasklistProperties.isCsrfPreventionEnabled()) {
-      configureCSRF(http);
-    } else {
-      http.csrf().disable();
-    }
-    http.authorizeRequests()
+    http.csrf()
+        .disable()
+        .authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
         .antMatchers(GRAPHQL_URL, ERROR_URL)
@@ -76,7 +70,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements C
         .logoutSuccessHandler(this::logoutSuccessHandler)
         .permitAll()
         .invalidateHttpSession(true)
-        .deleteCookies(COOKIE_JSESSIONID, X_CSRF_TOKEN)
+        .deleteCookies(COOKIE_JSESSIONID)
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
@@ -107,6 +101,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements C
 
   private void successHandler(
       HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-    addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
+    response.setStatus(NO_CONTENT.value());
   }
 }

@@ -67,8 +67,6 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
   private static final String FIRSTNAME = "Firstname";
   private static final String LASTNAME = "Lastname";
 
-  @Autowired private TasklistProperties tasklistProperties;
-
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Autowired private PasswordEncoder encoder;
@@ -89,14 +87,14 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
   }
 
   @Test
-  public void shouldSetCookieAndCSRFToken() {
+  public void shouldSetCookie() {
     // given
     // when
     final ResponseEntity<Void> response = login(USERNAME, PASSWORD);
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(response);
   }
 
   @Test
@@ -106,6 +104,7 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThatCookiesAreDeleted(response);
   }
 
   @Test
@@ -115,12 +114,12 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(loginResponse);
     // when
     final ResponseEntity<String> logoutResponse = logout(loginResponse);
 
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreDeleted(logoutResponse, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreDeleted(logoutResponse);
   }
 
   @Test
@@ -146,7 +145,7 @@ public class AuthenticationWithPersistentSessionTest extends TasklistIntegration
   public void shouldReturnCurrentUser() {
     // given authenticated user
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
-    assertThatCookiesAreSet(loginResponse, tasklistProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreSet(loginResponse);
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(

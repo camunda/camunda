@@ -12,8 +12,6 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNotNull;
@@ -30,11 +28,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
+import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,11 +75,10 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})
-public class AuthenticationWithPersistentSessionsTest {
+public class AuthenticationWithPersistentSessionsTest implements AuthenticationTestable {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
-  private static final String CURRENT_USER_QUERY =
-      "{currentUser{ username \n lastname \n firstname }}";
+
   private static final String COOKIE_KEY = "Cookie";
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
   @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
@@ -104,7 +100,7 @@ public class AuthenticationWithPersistentSessionsTest {
 
   @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
-    return Arrays.asList((claimName, org) -> tokensWithOrgAsMapFrom(claimName, org));
+    return List.of(AuthenticationWithPersistentSessionsTest::tokensWithOrgAsMapFrom);
   }
 
   @Before
@@ -240,18 +236,8 @@ public class AuthenticationWithPersistentSessionsTest {
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.username")).isEqualTo(TASKLIST_TESTUSER);
-    assertThat(graphQLResponse.get("$.data.currentUser.firstname")).isEqualTo("");
+    assertThat(graphQLResponse.get("$.data.currentUser.firstname")).isEmpty();
     assertThat(graphQLResponse.get("$.data.currentUser.lastname")).isEqualTo(TASKLIST_TESTUSER);
-  }
-
-  private ResponseEntity<String> getCurrentUserByGraphQL(final HttpEntity<?> cookies) {
-    final ResponseEntity<String> responseEntity =
-        testRestTemplate.exchange(
-            GRAPHQL_URL,
-            HttpMethod.POST,
-            prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
-            String.class);
-    return responseEntity;
   }
 
   @Test
@@ -265,14 +251,6 @@ public class AuthenticationWithPersistentSessionsTest {
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private String redirectLocationIn(ResponseEntity<?> response) {
-    return response.getHeaders().getLocation().toString();
-  }
-
-  private ResponseEntity<String> get(String path) {
-    return testRestTemplate.getForEntity(path, String.class, new HashMap<String, String>());
-  }
-
   private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
@@ -282,7 +260,7 @@ public class AuthenticationWithPersistentSessionsTest {
   }
 
   private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
-    final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
+    final String emptyJSONEncoded = toEncodedToken(Map.of());
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap =
         Map.of("id", organization, "roles", List.of("owner", "user"));
@@ -343,14 +321,18 @@ public class AuthenticationWithPersistentSessionsTest {
     if (response.getHeaders().containsKey("Set-Cookie")) {
       headers.add(COOKIE_KEY, response.getHeaders().get("Set-Cookie").get(0));
     }
-    final HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), headers);
-    return httpEntity;
+    return new HttpEntity<>(new HashMap<>(), headers);
   }
 
-  private HttpEntity<Map<String, ?>> prepareRequestWithCookies(
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
+  }
+
+  public HttpEntity<Map<String, ?>> prepareRequestWithCookies(
       HttpHeaders httpHeaders, String graphQlQuery) {
 
-    final HttpHeaders headers = getHeaderWithCSRF(httpHeaders);
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     if (httpHeaders.containsKey(COOKIE_KEY)) {
       headers.add(COOKIE_KEY, httpHeaders.get(COOKIE_KEY).get(0));
@@ -362,15 +344,5 @@ public class AuthenticationWithPersistentSessionsTest {
     }
 
     return new HttpEntity<>(body, headers);
-  }
-
-  private HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
-    final HttpHeaders headers = new HttpHeaders();
-    if (responseHeaders.containsKey(X_CSRF_HEADER)) {
-      final String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
-      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(csrfHeader, csrfToken);
-    }
-    return headers;
   }
 }

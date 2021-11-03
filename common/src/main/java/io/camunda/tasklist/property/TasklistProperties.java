@@ -26,7 +26,7 @@ public class TasklistProperties {
 
   private boolean persistentSessionsEnabled = false;
   /** Indicates, whether CSRF prevention is enabled. */
-  private boolean csrfPreventionEnabled = true;
+  @Deprecated private boolean csrfPreventionEnabled = true;
 
   /** Standard user data */
   private String username = "demo";
@@ -93,10 +93,12 @@ public class TasklistProperties {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
+  @Deprecated
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
 
+  @Deprecated
   public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }

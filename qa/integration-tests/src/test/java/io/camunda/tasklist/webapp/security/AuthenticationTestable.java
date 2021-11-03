@@ -9,17 +9,15 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.assertj.core.util.Lists;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,23 +34,13 @@ public interface AuthenticationTestable {
 
   TestRestTemplate getTestRestTemplate();
 
-  default HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
-    final HttpHeaders headers = new HttpHeaders();
-    if (responseHeaders.containsKey(TasklistURIs.X_CSRF_HEADER)) {
-      final String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
-      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(csrfHeader, csrfToken);
-    }
-    return headers;
-  }
-
-  default HttpEntity<Map> prepareRequestWithCookies(HttpHeaders httpHeaders) {
+  default HttpEntity<Map<String, ?>> prepareRequestWithCookies(HttpHeaders httpHeaders) {
     return prepareRequestWithCookies(httpHeaders, null);
   }
 
-  default HttpEntity<Map> prepareRequestWithCookies(HttpHeaders httpHeaders, String graphQlQuery) {
-
-    final HttpHeaders headers = getHeaderWithCSRF(httpHeaders);
+  default HttpEntity<Map<String, ?>> prepareRequestWithCookies(
+      HttpHeaders httpHeaders, String graphQlQuery) {
+    final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", getCookiesAsString(httpHeaders));
 
@@ -77,39 +65,32 @@ public interface AuthenticationTestable {
   }
 
   default ResponseEntity<String> logout(ResponseEntity<?> response) {
-    final HttpEntity<Map> request = prepareRequestWithCookies(response.getHeaders());
+    final HttpEntity<Map<String, ?>> request = prepareRequestWithCookies(response.getHeaders());
     return getTestRestTemplate().postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 
   default ResponseEntity<String> getCurrentUserByGraphQL(final HttpEntity<?> cookies) {
-    final ResponseEntity<String> responseEntity =
-        getTestRestTemplate()
-            .exchange(
-                GRAPHQL_URL,
-                HttpMethod.POST,
-                prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
-                String.class);
-    return responseEntity;
+    return getTestRestTemplate()
+        .exchange(
+            GRAPHQL_URL,
+            HttpMethod.POST,
+            prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
+            String.class);
   }
 
-  default void assertThatCookiesAreSet(ResponseEntity<?> response, boolean csrfEnabled) {
+  default void assertThatCookiesAreSet(ResponseEntity<?> response) {
     final HttpHeaders headers = response.getHeaders();
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
-    assertThat(getSessionCookie(headers).orElse("")).contains(COOKIE_JSESSIONID);
-    if (csrfEnabled) {
-      assertThat(headers).containsKey(X_CSRF_TOKEN);
-      assertThat(headers.get(X_CSRF_TOKEN).get(0)).isNotBlank();
-    }
+    final String sessionCookie = getSessionCookie(headers).orElse("");
+    assertThat(sessionCookie).contains(COOKIE_JSESSIONID);
+    assertThat(sessionCookie).contains("SameSite=Lax");
   }
 
-  default void assertThatCookiesAreDeleted(ResponseEntity<?> response, boolean csrfEnabled) {
+  default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
     final HttpHeaders headers = response.getHeaders();
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
     final List<String> cookies = headers.get(SET_COOKIE_HEADER);
     final String emptyValue = "=;";
-    if (csrfEnabled) {
-      assertThat(cookies).anyMatch((cookie) -> cookie.contains(X_CSRF_TOKEN + emptyValue));
-    }
     assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
   }
 
@@ -118,19 +99,19 @@ public interface AuthenticationTestable {
   }
 
   default String getCookiesAsString(HttpHeaders headers) {
-    return String.format(
-        "%s; %s", getSessionCookie(headers).orElse(""), getCSRFCookie(headers).orElse(""));
+    return getSessionCookie(headers).orElse("");
   }
 
   default Optional<String> getSessionCookie(HttpHeaders headers) {
     return getCookies(headers).stream().filter(key -> key.contains(COOKIE_JSESSIONID)).findFirst();
   }
 
-  default Optional<String> getCSRFCookie(HttpHeaders headers) {
-    return getCookies(headers).stream().filter(key -> key.contains(X_CSRF_TOKEN)).findFirst();
+  default List<String> getCookies(HttpHeaders headers) {
+    return Optional.ofNullable(headers.get(SET_COOKIE_HEADER)).orElse(List.of());
   }
 
-  default List<String> getCookies(HttpHeaders headers) {
-    return Optional.ofNullable(headers.get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
+  default String redirectLocationIn(ResponseEntity<?> response) {
+    final URI uri = response.getHeaders().getLocation();
+    return uri == null ? "" : uri.toString();
   }
 }

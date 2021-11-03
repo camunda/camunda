@@ -66,7 +66,6 @@ services:
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       #- server.servlet.context-path=/tasklist/
       - spring.profiles.active=dev,dev-data,auth
-      - camunda.tasklist.csrfPreventionEnabled=false
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
     volumes:
@@ -146,7 +145,6 @@ services:
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAdress=zeebe:26500
       - spring.profiles.active=dev,dev-data,sso-auth
-      - camunda.tasklist.csrfPreventionEnabled=false
       - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
       - camunda.tasklist.auth0.claimName=https://camunda.com/orgs
       - camunda.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3

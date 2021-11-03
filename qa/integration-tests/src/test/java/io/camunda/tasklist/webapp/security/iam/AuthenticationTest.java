@@ -21,6 +21,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Permission;
+import io.camunda.tasklist.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.net.URLEncoder;
@@ -52,6 +53,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistURIs.class,
       TasklistProperties.class,
       OAuth2WebConfigurer.class,
+      SameSiteCookieTomcatContextCustomizer.class
     },
     properties = {
       "camunda.tasklist.iam.issuer=http://app.iam.localhost",
@@ -82,6 +84,7 @@ public class AuthenticationTest implements AuthenticationTestable {
   public void testLoginSuccess() {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
+    assertThatCookiesAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -173,10 +176,6 @@ public class AuthenticationTest implements AuthenticationTestable {
   protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
-  }
-
-  private String redirectLocationIn(ResponseEntity<?> response) {
-    return response.getHeaders().getLocation().toString();
   }
 
   private String urlFor(String path) {
