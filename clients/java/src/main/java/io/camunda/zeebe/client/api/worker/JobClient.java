@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.api.worker;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 
 /**
  * A client with access to all job-related operation:
@@ -48,6 +49,26 @@ public interface JobClient {
   CompleteJobCommandStep1 newCompleteCommand(long jobKey);
 
   /**
+   * Command to complete a job.
+   *
+   * <pre>
+   * ActivatedJob job = ..;
+   *
+   * jobClient
+   *  .newCompleteCommand(job)
+   *  .variables(json)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the job is linked to a process instance then this command will complete the related
+   * activity and continue the flow.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  CompleteJobCommandStep1 newCompleteCommand(ActivatedJob job);
+
+  /**
    * Command to mark a job as failed.
    *
    * <pre>
@@ -66,6 +87,26 @@ public interface JobClient {
    * @return a builder for the command
    */
   FailJobCommandStep1 newFailCommand(long jobKey);
+
+  /**
+   * Command to mark a job as failed.
+   *
+   * <pre>
+   * ActivatedJob job = ..;
+   *
+   * jobClient
+   *  .newFailCommand(job)
+   *  .retries(3)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * subscription. Otherwise, an incident is created for this job.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  FailJobCommandStep1 newFailCommand(ActivatedJob job);
 
   /**
    * Command to report a business error (i.e. non-technical) that occurs while processing a job.
@@ -87,4 +128,25 @@ public interface JobClient {
    * @return a builder for the command
    */
   ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey);
+
+  /**
+   * Command to report a business error (i.e. non-technical) that occurs while processing a job.
+   *
+   * <pre>
+   * ActivatedJob job = ...;
+   * String code = ...;
+   *
+   * jobClient
+   *  .newThrowErrorCommand(job)
+   *  .errorCode(code)
+   *  .send();
+   * </pre>
+   *
+   * <p>The error is handled in the process by an error catch event. If there is no error catch
+   * event with the specified errorCode then an incident will be raised instead.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  ThrowErrorCommandStep1 newThrowErrorCommand(ActivatedJob job);
 }
