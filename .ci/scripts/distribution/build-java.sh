@@ -4,4 +4,4 @@
 LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
 MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
 
-mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pspotbugs,prepare-offline -DautoFormat=false -DcheckFormat
+mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pspotbugs,prepare-offline -PcheckFormat,-autoFormat

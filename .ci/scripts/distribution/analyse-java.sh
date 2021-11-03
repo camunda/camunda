@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ef -o pipefail
 
-PROPERTIES=("-DskipTests -Dcheckstyle.skip -DautoFormat=false -DcheckFormat")
+PROPERTIES=("-DskipTests -Dcheckstyle.skip")
 GIT_URL=${GIT_URL:-$(git remote get-url origin)}
 GIT_BRANCH=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}
 
@@ -33,4 +33,4 @@ else
 fi
 
 echo "Properties: ${PROPERTIES[@]}"
-mvn -B -s ${MAVEN_SETTINGS_XML} -P sonar sonar:sonar ${PROPERTIES[@]}
+mvn -B -s ${MAVEN_SETTINGS_XML} -P sonar -PcheckFormat,-autoFormat sonar:sonar ${PROPERTIES[@]}

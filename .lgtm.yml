@@ -3,4 +3,4 @@ extraction:
    index:
      java_version: "11"
      build_command:
-       mvn clean install -DskipTests -DskipChecks -DautoFormat=false
+       mvn clean install -DskipTests -DskipChecks -P-autoFormat
