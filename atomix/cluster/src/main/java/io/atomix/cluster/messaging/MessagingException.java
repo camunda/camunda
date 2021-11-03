@@ -31,8 +31,10 @@ public class MessagingException extends IOException {
 
   /** Exception indicating no remote registered remote handler. */
   public static class NoRemoteHandler extends MessagingException {
-    public NoRemoteHandler() {
-      super("No remote message handler registered for this message");
+    public NoRemoteHandler(String subject) {
+      super(
+          String.format(
+              "No remote message handler registered for this message, subject %s", subject));
     }
   }
 

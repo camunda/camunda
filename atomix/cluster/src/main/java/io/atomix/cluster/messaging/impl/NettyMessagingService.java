@@ -256,7 +256,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
                   try {
                     responsePayload = handler.apply(message.sender(), message.payload());
                   } catch (final Exception e) {
-                    log.warn("An error occurred in a message handler:", e);
+                    log.warn(
+                        "Unexpected error while handling message {} from {}",
+                        message.subject(),
+                        message.sender(),
+                        e);
+
                     status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
                     final String exceptionMessage = e.getMessage();
                     if (exceptionMessage != null) {
@@ -284,7 +289,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
                         status = ProtocolReply.Status.OK;
                         responsePayload = result;
                       } else {
-                        log.warn("An error occurred in a message handler:", error);
+                        log.warn(
+                            "Unexpected error while handling message {} from {}",
+                            message.subject(),
+                            message.sender(),
+                            error);
+
                         status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
                         final String exceptionMessage = error.getMessage();
                         if (exceptionMessage != null) {
