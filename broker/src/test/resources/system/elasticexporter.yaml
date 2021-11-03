@@ -25,6 +25,9 @@ zeebe:
         #     prefix: zeebe-record
         #     createTemplate: true
         #
+        #     numberOfShards: 3
+        #     numberOfReplicas: 0
+        #
         #     command: false
         #     event: true
         #     rejection: false

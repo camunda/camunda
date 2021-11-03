@@ -436,6 +436,9 @@
         #     prefix: zeebe-record
         #     createTemplate: true
         #
+        #     numberOfShards: 3
+        #     numberOfReplicas: 0
+        #
         #     command: false
         #     event: true
         #     rejection: false
@@ -453,7 +456,6 @@
         #     processInstance: true
         #     processInstanceCreation: false
         #     processMessageSubscription: false
-
 
     # experimental
       # Be aware that all configuration's which are part of the experimental section
