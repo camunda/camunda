@@ -114,7 +114,8 @@ public class ActorClockEndpoint {
   public WebEndpointResponse<?> resetTime() {
     final var clock = service.mutable();
     if (clock.isEmpty()) {
-      return new WebEndpointResponse<>("Expected to reset the clock, but the it is immutable", 403);
+      return new WebEndpointResponse<>(
+          "Expected to reset the clock, but the clock is immutable", 403);
     }
 
     clock.get().resetTime();
@@ -155,16 +156,22 @@ public class ActorClockEndpoint {
   }
 
   /** A response type for future proofing, in case the format needs to be changed in the future. */
-  private static final class Response {
-    @JsonProperty("instant")
-    private final Instant instant;
-
+  protected static final class Response {
     @JsonProperty("epochMilli")
-    private final long epochMilli;
+    protected final long epochMilli;
+
+    @JsonProperty("instant")
+    protected final Instant instant;
 
     public Response(final Instant instant) {
       this.instant = instant;
       epochMilli = instant.toEpochMilli();
+    }
+
+    @SuppressWarnings("unused") // Used by Jackson deserialization
+    private Response() {
+      this.epochMilli = 0;
+      this.instant = null;
     }
   }
 }
