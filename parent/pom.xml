@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>1.3.0-alpha1</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-parent</artifactId>
-  <version>1.3.0-alpha1</version>
+  <version>1.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe Parent</name>
@@ -965,7 +965,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration></configuration>
+              <configuration />
             </execution>
           </executions>
         </plugin>
@@ -1158,7 +1158,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1251,7 +1251,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence></dependencyConvergence>
+                  <dependencyConvergence />
                 </rules>
               </configuration>
             </execution>
@@ -1262,7 +1262,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                  <banDuplicatePomDependencyVersions />
                 </rules>
               </configuration>
             </execution>

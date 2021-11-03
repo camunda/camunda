@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.3.0-alpha1</version>
+    <version>1.3.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -223,7 +223,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration></configuration>
+            <configuration />
           </execution>
         </executions>
       </plugin>
@@ -238,10 +238,10 @@
             <phase>package</phase>
             <configuration>
               <target>
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl"></copy>
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe"></copy>
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin"></copy>
-                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx"></chmod>
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin" />
+                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx" />
               </target>
             </configuration>
           </execution>
