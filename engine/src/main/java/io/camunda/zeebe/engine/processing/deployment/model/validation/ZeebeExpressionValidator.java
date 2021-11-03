@@ -132,6 +132,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
   public static final class ExpressionVerification {
 
+    private final List<ExpressionRequirement<Expression>> staticRequirements = new ArrayList<>();
     private boolean isNonStatic = false;
     private boolean isMandatory = false;
 
@@ -147,6 +148,12 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
     public ExpressionVerification isOptional() {
       isMandatory = false;
+      return this;
+    }
+
+    public ExpressionVerification satisfiesIfStatic(
+        final Predicate<Expression> verification, final String description) {
+      staticRequirements.add(new ExpressionRequirement<>(verification, description));
       return this;
     }
 
@@ -166,14 +173,35 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
           return;
         }
 
-        if (parseResult.isStatic() && isNonStatic) {
-          resultCollector.addError(
-              0,
-              String.format(
-                  "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
-                  expression, expression));
-        }
+        assertStaticExpression(expression, resultCollector, parseResult);
       });
+    }
+
+    private void assertStaticExpression(
+        final String expression,
+        final ValidationResultCollector resultCollector,
+        final Expression parseResult) {
+      if (!parseResult.isStatic()) {
+        return;
+      }
+
+      if (isNonStatic) {
+        resultCollector.addError(
+            0,
+            String.format(
+                "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
+                expression, expression));
+        return;
+      }
+
+      staticRequirements.stream()
+          .filter(req -> req.negate().test(parseResult))
+          .map(
+              req ->
+                  String.format(
+                      "Expected static value to %s, but found '%s'.",
+                      req.getDescription(), expression))
+          .forEach(failure -> resultCollector.addError(0, failure));
     }
   }
 
@@ -185,6 +213,31 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     private Verification(final Function<T, String> expressionSupplier, final Assertion assertion) {
       this.expressionSupplier = expressionSupplier;
       this.assertion = assertion;
+    }
+  }
+
+  /**
+   * Combines an expression predicate with a description.
+   *
+   * @param <E> The type of expression
+   */
+  private static final class ExpressionRequirement<E extends Expression> implements Predicate<E> {
+
+    private final Predicate<E> predicate;
+    private final String description;
+
+    public ExpressionRequirement(final Predicate<E> predicate, final String description) {
+      this.predicate = predicate;
+      this.description = description;
+    }
+
+    @Override
+    public boolean test(final E e) {
+      return predicate.test(e);
+    }
+
+    public String getDescription() {
+      return description;
     }
   }
 
