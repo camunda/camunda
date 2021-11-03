@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1634130126222,
+  "iteration": 1636024294525,
   "links": [],
   "panels": [
     {
@@ -524,7 +524,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:254",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -533,7 +532,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:255",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -631,7 +629,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:254",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -640,7 +637,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:255",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1478,7 +1474,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - sum by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max by (partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - max by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "interval": "",
               "legendFormat": "Partition {{partition}}",
               "refId": "A"
@@ -1486,7 +1482,6 @@
           ],
           "thresholds": [
             {
-              "$$hashKey": "object:2366",
               "colorMode": "warning",
               "fill": true,
               "line": true,
@@ -1495,7 +1490,6 @@
               "yaxis": "left"
             },
             {
-              "$$hashKey": "object:2372",
               "colorMode": "critical",
               "fill": true,
               "line": true,
@@ -1504,7 +1498,9 @@
               "yaxis": "left"
             }
           ],
+          "timeFrom": null,
           "timeRegions": [],
+          "timeShift": null,
           "title": "Processing Queue size",
           "tooltip": {
             "shared": true,
@@ -1521,7 +1517,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:2345",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1530,7 +1525,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:2346",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1590,12 +1584,12 @@
           "pluginVersion": "7.4.5",
           "targets": [
             {
-              "expr": "zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"} - zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "expr": "max by (exporter, pod, partition) (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - max by (exporter, pod, partition) (zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "time_series",
               "instant": true,
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{exporter}} {{partition}}",
+              "legendFormat": "{{exporter}} {{partition}} {{pod}}",
               "refId": "A"
             }
           ],
@@ -1671,7 +1665,7 @@
           ],
           "targets": [
             {
-              "expr": "sum by (partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max by (partition) (zeebe_log_appender_last_appended_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -1752,7 +1746,7 @@
           ],
           "targets": [
             {
-              "expr": "sum by (partition) (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max by (partition) (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -1812,7 +1806,7 @@
           "pluginVersion": "7.4.5",
           "targets": [
             {
-              "expr": "sum (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - sum (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
+              "expr": "max (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"}) by (partition)",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -1892,7 +1886,7 @@
           ],
           "targets": [
             {
-              "expr": "sum by (exporter, partition) (zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max by (exporter, partition) (zeebe_exporter_last_updated_exported_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -1973,18 +1967,12 @@
           ],
           "targets": [
             {
-              "expr": "sum by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
               "instant": true,
               "interval": "",
               "legendFormat": "",
               "refId": "A"
-            },
-            {
-              "expr": "",
-              "interval": "",
-              "legendFormat": "",
-              "refId": "B"
             }
           ],
           "timeFrom": null,
@@ -2060,7 +2048,7 @@
           ],
           "targets": [
             {
-              "expr": "sum by (partition, pod) (zeebe_replay_last_source_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
+              "expr": "max by (partition, pod) (zeebe_replay_last_source_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "table",
               "instant": true,
               "interval": "",
@@ -2120,7 +2108,7 @@
           "pluginVersion": "7.4.5",
           "targets": [
             {
-              "expr": "zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"} - zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"}",
+              "expr": "max by (partition) (zeebe_log_appender_last_committed_position{namespace=~\"$namespace\", partition=~\"$partition\"}) - max by (partition) (zeebe_stream_processor_last_processed_position{namespace=~\"$namespace\", partition=~\"$partition\"})",
               "format": "time_series",
               "instant": true,
               "interval": "",
@@ -2201,18 +2189,12 @@
           ],
           "targets": [
             {
-              "expr": "sum by (partition) (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"})",
+              "expr": "max by (partition) (zeebe_exporter_last_exported_position{namespace=~\"$namespace\", partition=~\"$partition\", exporter=\"elasticsearch\"})",
               "format": "table",
               "instant": true,
               "interval": "",
               "legendFormat": "",
               "refId": "A"
-            },
-            {
-              "expr": "",
-              "interval": "",
-              "legendFormat": "",
-              "refId": "B"
             }
           ],
           "timeFrom": null,
@@ -2654,7 +2636,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:142",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2663,7 +2644,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:143",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2757,7 +2737,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:142",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2766,7 +2745,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:143",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2860,7 +2838,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:142",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2869,7 +2846,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:143",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -6279,7 +6255,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1422",
               "format": "short",
               "label": "Requests",
               "logBase": 1,
@@ -6288,7 +6263,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1423",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -6519,7 +6493,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1422",
               "format": "short",
               "label": "Install Requests",
               "logBase": 1,
@@ -6528,7 +6501,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1423",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7142,7 +7114,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:239",
               "decimals": 0,
               "format": "short",
               "label": "Role (3 = Leader)",
@@ -7152,7 +7123,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:240",
               "decimals": null,
               "format": "Misc",
               "label": "",
@@ -10501,5 +10471,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 21
+  "version": 22
 }
