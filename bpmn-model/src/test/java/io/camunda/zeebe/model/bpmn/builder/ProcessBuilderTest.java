@@ -27,7 +27,6 @@ import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.TRANSACTION_ID;
 import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Fail.fail;
 import static org.junit.Assert.assertEquals;
 
@@ -51,7 +50,6 @@ import io.camunda.zeebe.model.bpmn.instance.Escalation;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Event;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
@@ -76,7 +74,6 @@ import io.camunda.zeebe.model.bpmn.instance.TimeDuration;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Transaction;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.Model;
@@ -2136,60 +2133,5 @@ public class ProcessBuilderTest {
     assertEquals("user", userName);
     final String endName = ((FlowElement) instance.getModelElementById("end")).getName();
     assertEquals("name", endName);
-  }
-
-  @Test
-  public void testUserTaskAssigneeCanBeSet() {
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .userTask("userTask1", task -> task.zeebeAssignee("user1"))
-            .endEvent()
-            .done();
-
-    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
-    final ExtensionElements extensionElements =
-        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
-    assertThat(extensionElements.getChildElementsByType(ZeebeAssignmentDefinition.class))
-        .hasSize(1)
-        .extracting(ZeebeAssignmentDefinition::getAssignee)
-        .containsExactly("user1");
-  }
-
-  @Test
-  public void testUserTaskCandidateGroupsCanBeSet() {
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .userTask("userTask1", task -> task.zeebeCandidateGroups("role1"))
-            .endEvent()
-            .done();
-
-    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
-    final ExtensionElements extensionElements =
-        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
-    assertThat(extensionElements.getChildElementsByType(ZeebeAssignmentDefinition.class))
-        .hasSize(1)
-        .extracting(ZeebeAssignmentDefinition::getCandidateGroups)
-        .containsExactly("role1");
-  }
-
-  @Test
-  public void testUserTaskAssigneeAndCandidateGroupsCanBothBeSet() {
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .userTask("userTask1", b -> b.zeebeAssignee("user1").zeebeCandidateGroups("role1"))
-            .endEvent()
-            .done();
-
-    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
-    final ExtensionElements extensionElements =
-        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
-    assertThat(extensionElements.getChildElementsByType(ZeebeAssignmentDefinition.class))
-        .hasSize(1)
-        .extracting(
-            ZeebeAssignmentDefinition::getAssignee, ZeebeAssignmentDefinition::getCandidateGroups)
-        .containsExactly(tuple("user1", "role1"));
   }
 }
