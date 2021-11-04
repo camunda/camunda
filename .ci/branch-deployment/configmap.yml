@@ -71,6 +71,7 @@ data:
         # A port number that will be used by the embedded jetty server to process
         # secure HTTPS connections.
         https: 8091
+      accessUrl: 'https://stage.optimize.camunda.cloud/'
 
     # Configuration for engines used to import data. Please note that you have to have at
     # least one engine configured at all times.
@@ -148,7 +149,7 @@ data:
           headers:
             'Content-type': 'application/json'
           httpMethod: 'POST'
-          defaultPayload: '{"text": "The alert *{{ALERT_NAME}}* was triggered as the threshold of `{{ALERT_THRESHOLD_OPERATOR}}{{ALERT_THRESHOLD_VALUE}}`, you can view the report <here|{{ALERT_REPORT_LINK}}>."}'
+          defaultPayload: '{"text": "The alert *{{ALERT_NAME}}* was triggered as *{{ALERT_TYPE}}*, you can view the report <{{ALERT_REPORT_LINK}}|here>."}'
     telemetry:
       # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
       # Telemetry can later be enabled/disabled in the UI by superusers
