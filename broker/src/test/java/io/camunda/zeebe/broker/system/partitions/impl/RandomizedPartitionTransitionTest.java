@@ -20,9 +20,13 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -109,6 +113,54 @@ public class RandomizedPartitionTransitionTest {
 
     assertThat(instanceTracker.getOpenedInstances())
         .describedAs("Active stream processors at end of transition sequence")
+        .hasSizeLessThan(2);
+  }
+
+  /**
+   * Verifies that during transitions at most one {@code ZeebeDb} is created. It sets up the
+   * following transition chain:
+   *
+   * <ol>
+   *   <li>Pausable dummy step
+   *   <li>{@code ZeebeDbPartitionTransitionStep}
+   * </ol>
+   *
+   * The first step is there to manipulate execution order. In particular, the step will wait for a
+   * countdown latch thus pausing transition execution. This in turn, allows scheduling successive
+   * transition which cancel their predecessors
+   *
+   * @param operations the operations to run
+   */
+  @Property(generation = GenerationMode.RANDOMIZED)
+  void atMostOneZeebeDbIsOpenAtAnyTime(
+      @ForAll("testOperations") final List<TestOperation> operations) {
+    LOGGER.debug(
+        format("Testing property 'atMostOneZeebeDbIsOpenAtAnyTime' on sequence %s", operations));
+
+    final var instanceTracker =
+        new PropertyAssertingInstanceTracker<ZeebeDb>() {
+          @Override
+          void assertProperties() {
+            if (opened.size() > 1) {
+              throw new IllegalStateException("More than one zeebe db opened at the same time");
+            }
+          }
+        };
+
+    final var firstStep = new PausableStep(operations);
+    final var zeebeDbStep = new ZeebeDbPartitionTransitionStep();
+
+    final var context = new TestPartitionTransitionContext();
+    context.setStateController(new TestStateController(instanceTracker));
+
+    final var sut = new PartitionTransitionImpl(of(firstStep, zeebeDbStep));
+    sut.setConcurrencyControl(actor);
+    sut.updateTransitionContext(context);
+
+    runOperations(operations, sut);
+
+    assertThat(instanceTracker.getOpenedInstances())
+        .describedAs("Zeebe DB processes at end of transition sequence")
         .hasSizeLessThan(2);
   }
 
@@ -373,6 +425,43 @@ public class RandomizedPartitionTransitionTest {
     @Override
     public String getName() {
       return "RandomizedPartitionTransitionTest.testActor";
+    }
+  }
+
+  private static final class TestStateController implements StateController {
+
+    private final PropertyAssertingInstanceTracker<ZeebeDb> instanceTracker;
+    private ZeebeDb zeebeDb;
+
+    private TestStateController(final PropertyAssertingInstanceTracker<ZeebeDb> instanceTracker) {
+      this.instanceTracker = instanceTracker;
+    }
+
+    @Override
+    public ActorFuture<TransientSnapshot> takeTransientSnapshot(
+        final long lowerBoundSnapshotPosition) {
+      throw new IllegalStateException("Not implemented");
+    }
+
+    @Override
+    public ActorFuture<ZeebeDb> recover() {
+      zeebeDb = mock(ZeebeDb.class);
+      instanceTracker.registerCreation(zeebeDb);
+      instanceTracker.registerOpen(zeebeDb);
+      return CompletableActorFuture.completed(zeebeDb);
+    }
+
+    @Override
+    public ActorFuture<Void> closeDb() {
+      if (zeebeDb != null) {
+        instanceTracker.registerClose(zeebeDb);
+      }
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public void close() throws Exception {
+      throw new IllegalStateException("Not implemented");
     }
   }
 
