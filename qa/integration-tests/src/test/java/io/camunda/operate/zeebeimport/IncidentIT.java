@@ -60,7 +60,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   @InjectMocks
-  private io.camunda.operate.zeebeimport.v1_1.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
+  private io.camunda.operate.zeebeimport.v1_2.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
 
   @Before
   public void before() {
