@@ -16,6 +16,7 @@ public class DeployedProcessImpl implements Process {
   private int version;
   private byte[] checksum;
   private byte[] resource;
+  private boolean duplicate;
 
   public DeployedProcessImpl() {
   }
@@ -51,6 +52,11 @@ public class DeployedProcessImpl implements Process {
   }
 
   @Override
+  public boolean isDuplicate() {
+    return duplicate;
+  }
+
+  @Override
   public String toJson() {
     throw new UnsupportedOperationException("toJson operation is not supported");
   }
@@ -81,6 +87,11 @@ public class DeployedProcessImpl implements Process {
     return this;
   }
 
+  public DeployedProcessImpl setDuplicate(final boolean duplicate) {
+    this.duplicate = duplicate;
+    return this;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -92,6 +103,7 @@ public class DeployedProcessImpl implements Process {
     final DeployedProcessImpl that = (DeployedProcessImpl) o;
     return processDefinitionKey == that.processDefinitionKey &&
         version == that.version &&
+        duplicate == that.duplicate &&
         Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
         Objects.equals(resourceName, that.resourceName) &&
         Arrays.equals(checksum, that.checksum) &&
@@ -100,7 +112,8 @@ public class DeployedProcessImpl implements Process {
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(bpmnProcessId, resourceName, processDefinitionKey, version);
+    int result = Objects
+        .hash(bpmnProcessId, resourceName, processDefinitionKey, version, duplicate);
     result = 31 * result + Arrays.hashCode(checksum);
     result = 31 * result + Arrays.hashCode(resource);
     return result;
@@ -115,6 +128,7 @@ public class DeployedProcessImpl implements Process {
         ", version=" + version +
         ", checksum=" + Arrays.toString(checksum) +
         ", resource=" + Arrays.toString(resource) +
+        ", duplicate=" + duplicate +
         '}';
   }
 }
