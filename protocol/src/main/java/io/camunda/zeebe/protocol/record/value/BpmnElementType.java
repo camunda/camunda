@@ -63,7 +63,7 @@ public enum BpmnElementType {
   }
 
   public Optional<String> getElementTypeName() {
-    return Optional.of(elementTypeName);
+    return Optional.ofNullable(elementTypeName);
   }
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
