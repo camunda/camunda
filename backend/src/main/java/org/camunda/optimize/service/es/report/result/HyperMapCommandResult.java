@@ -55,8 +55,7 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
   private void addHeaderLine(List<String[]> mergedCsvReports) {
     ProcessReportDataDto data = (ProcessReportDataDto) reportData;
     final String[] reportNameHeader =
-      new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey(),
-        data.getGroupBy().createCommandKey()};
+      new String[]{data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey()};
     mergedCsvReports.add(0, reportNameHeader);
   }
 
