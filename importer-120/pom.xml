@@ -23,7 +23,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
-      <version>${version.zeebe}</version>
+      <version>${project.previous_version}</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 
