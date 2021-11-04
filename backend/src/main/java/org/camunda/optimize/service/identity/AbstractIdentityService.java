@@ -76,16 +76,11 @@ public abstract class AbstractIdentityService {
     return getUserById(userOrGroupId)
       .map(IdentityWithMetadataResponseDto.class::cast)
       .or(() -> getGroupById(userOrGroupId))
-      .map(identityDto -> {
-        if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
-          throw new ForbiddenException(String.format(
-            "The user with ID %s is not authorized to access the identity with ID %s", userId, userOrGroupId
-          ));
-        }
-        return identityDto;
-      });
+      // In case the user performing the query is unauthorized she cannot misuse this query to check if a user exists or
+      // not. By mapping to null the user will get a 404 error message for the case that the searched user doesn't exist
+      // as well as for the case that it does exist, but the user doesn't have the rights to see the result
+      .map(identityDto -> isUserAuthorizedToAccessIdentity(userId, identityDto) ? identityDto : null);
   }
-
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId,
                                                                    final String searchString,
                                                                    final int maxResults) {
@@ -100,7 +95,7 @@ public abstract class AbstractIdentityService {
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
       result = syncedIdentityCache.searchIdentitiesAfter(searchString, IdentityType.values(), maxResults, result);
     }
-    return new IdentitySearchResultResponseDto(result.getTotal(), filteredIdentities);
+    return new IdentitySearchResultResponseDto(filteredIdentities.size(), filteredIdentities);
   }
 
   public void validateUserAuthorizedToAccessRoleOrFail(final String userId, final IdentityDto identityDto) {
