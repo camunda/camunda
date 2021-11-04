@@ -116,28 +116,28 @@
     <plugin.version.build-helper>3.2.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
+    <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
+    <plugin.version.dependency>3.1.2</plugin.version.dependency>
+    <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
-    <plugin.version.fmt>2.12</plugin.version.fmt>
+    <plugin.version.flaky-tests>2.0.3</plugin.version.flaky-tests>
+    <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
     <plugin.version.license>4.1</plugin.version.license>
-    <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
+    <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
+    <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.2.0</plugin.version.resources>
+    <plugin.version.revapi>0.14.5</plugin.version.revapi>
     <plugin.version.scala>4.5.4</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
-    <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
-    <plugin.version.versions>2.8.1</plugin.version.versions>
-    <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
-    <plugin.version.dependency>3.1.2</plugin.version.dependency>
-    <plugin.version.spotbugs>4.4.2.2</plugin.version.spotbugs>
     <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
     <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
-    <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
-    <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
-    <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
-    <plugin.version.revapi>0.14.5</plugin.version.revapi>
-    <plugin.version.flaky-tests>2.0.3</plugin.version.flaky-tests>
+    <plugin.version.spotbugs>4.4.2.2</plugin.version.spotbugs>
+    <plugin.version.spotless>2.17.3</plugin.version.spotless>
+    <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
+    <plugin.version.versions>2.8.1</plugin.version.versions>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
@@ -159,10 +159,11 @@
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
-      you can use the following to disable specific checks. the approach taken is to use a single
-      new property, skipChecks, which is the default value for pre-defined properties such as
-      checkstyle.skip. that way, you can use skipChecks, but you can also still use checkstyle.skip
-      if you only want to disable checkstyle
+      you can use the following to disable specific check plugins. this can also be used to skip the
+      formatting goals of these plugins. the approach taken is to use a single new property,
+      skipChecks, which is the default value for pre-defined properties such as checkstyle.skip.
+      that way, you can use skipChecks, but you can also still use checkstyle.skip if you only want
+      to disable checkstyle
       -->
     <skipChecks>false</skipChecks>
     <checkstyle.skip>${skipChecks}</checkstyle.skip>
@@ -170,8 +171,9 @@
     <license.skip>${skipChecks}</license.skip>
     <enforcer.skip>${skipChecks}</enforcer.skip>
     <mdep.analyze.skip>${skipChecks}</mdep.analyze.skip>
-    <fmt.skip>${skipChecks}</fmt.skip>
     <sort.skip>${skipChecks}</sort.skip>
+    <spotless.apply.skip>${skipChecks}</spotless.apply.skip>
+    <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
   </properties>
 
   <dependencyManagement>
@@ -919,15 +921,6 @@
               <java>SLASHSTAR_STYLE</java>
             </mapping>
           </configuration>
-          <executions>
-            <execution>
-              <id>add-license</id>
-              <goals>
-                <goal>format</goal>
-              </goals>
-              <phase>compile</phase>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- CHECKSTYLE -->
@@ -974,18 +967,6 @@
           <groupId>com.github.ekryd.sortpom</groupId>
           <artifactId>sortpom-maven-plugin</artifactId>
           <version>${plugin.version.sortpom}</version>
-          <executions>
-            <execution>
-              <id>sortpom</id>
-              <goals>
-                <goal>sort</goal>
-              </goals>
-              <phase>process-resources</phase>
-              <configuration>
-                <createBackupFile>false</createBackupFile>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- Unit tests -->
@@ -1182,18 +1163,17 @@
 
         <!-- Google code format plugin -->
         <plugin>
-          <groupId>com.coveo</groupId>
-          <artifactId>fmt-maven-plugin</artifactId>
-          <version>${plugin.version.fmt}</version>
-          <executions>
-            <execution>
-              <id>format</id>
-              <goals>
-                <goal>format</goal>
-              </goals>
-              <phase>process-sources</phase>
-            </execution>
-          </executions>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${plugin.version.spotless}</version>
+          <configuration>
+            <java>
+              <googleJavaFormat>
+                <version>1.12.0</version>
+                <style>GOOGLE</style>
+              </googleJavaFormat>
+            </java>
+          </configuration>
         </plugin>
 
         <!-- protobuf generation -->
@@ -1377,11 +1357,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>com.coveo</groupId>
-        <artifactId>fmt-maven-plugin</artifactId>
       </plugin>
 
       <plugin>
@@ -1675,25 +1650,56 @@
       </build>
     </profile>
 
-    <!-- profile to disable the fmt-plugin on unsupported jdks -->
+    <!-- profile to auto format -->
     <profile>
-      <id>fmt-plugin</id>
+      <id>autoFormat</id>
       <activation>
-        <jdk>[,9)</jdk>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
           <plugin>
-            <groupId>com.coveo</groupId>
-            <artifactId>fmt-maven-plugin</artifactId>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
             <executions>
               <execution>
-                <id>format</id>
+                <id>add-license</id>
                 <goals>
-                  <goal>check</goal>
                   <goal>format</goal>
                 </goals>
-                <phase>none</phase>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <configuration>
+              <ratchetFrom>origin/develop</ratchetFrom>
+            </configuration>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>com.github.ekryd.sortpom</groupId>
+            <artifactId>sortpom-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sortpom</id>
+                <goals>
+                  <goal>sort</goal>
+                </goals>
+                <phase>process-resources</phase>
+                <configuration>
+                  <createBackupFile>false</createBackupFile>
+                </configuration>
               </execution>
             </executions>
           </plugin>
@@ -1703,7 +1709,7 @@
 
     <!-- profile to perform strict validation checks -->
     <profile>
-      <id>checks</id>
+      <id>checkFormat</id>
       <build>
         <plugins>
           <plugin>
@@ -1720,11 +1726,11 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>com.coveo</groupId>
-            <artifactId>fmt-maven-plugin</artifactId>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
             <executions>
               <execution>
-                <id>format</id>
+                <id>spotless-check</id>
                 <goals>
                   <goal>check</goal>
                 </goals>
