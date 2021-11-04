@@ -334,6 +334,10 @@ public final class EngineRule extends ExternalResource {
     environmentRule.writeBatch(records);
   }
 
+  public void writeRecords(final long sourceRecordPosition, final RecordToWrite... records) {
+    environmentRule.writeBatch(sourceRecordPosition, records);
+  }
+
   public CommandResponseWriter getCommandResponseWriter() {
     return environmentRule.getCommandResponseWriter();
   }
