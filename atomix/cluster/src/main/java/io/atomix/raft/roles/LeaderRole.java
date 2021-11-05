@@ -97,6 +97,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   @Override
   public synchronized CompletableFuture<Void> stop() {
     raft.resetLastHeartbeat();
+    // Close open resources (eg:- journal readers) used for replication by the leader
+    raft.getCluster().getRemoteMemberStates().forEach(RaftMemberContext::closeReplicationContext);
+
     return super.stop()
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
@@ -197,17 +200,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private ApplicationEntry findLastZeebeEntry() {
-    final RaftLogReader reader = raft.getLogReader();
-    reader.seekToAsqn(Long.MAX_VALUE);
+    try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
+      reader.seekToAsqn(Long.MAX_VALUE);
 
-    if (reader.hasNext()) {
-      final IndexedRaftLogEntry lastEntry = reader.next();
-      if (lastEntry != null && lastEntry.isApplicationEntry()) {
-        return lastEntry.getApplicationEntry();
+      if (reader.hasNext()) {
+        final IndexedRaftLogEntry lastEntry = reader.next();
+        if (lastEntry != null && lastEntry.isApplicationEntry()) {
+          return lastEntry.getApplicationEntry();
+        }
       }
+      return null;
     }
-
-    return null;
   }
 
   /** Cancels the timers. */
@@ -228,7 +231,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   /** Sets the current node as the cluster leader. */
   private void takeLeadership() {
     raft.setLeader(raft.getCluster().getLocalMember().memberId());
-    raft.getCluster().getRemoteMemberStates().forEach(m -> m.resetState(raft.getLog()));
+    raft.getCluster().getRemoteMemberStates().forEach(m -> m.openReplicationContext(raft.getLog()));
   }
 
   /** Appends initial entries to the log to take leadership. */
