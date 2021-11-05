@@ -109,9 +109,9 @@ public final class ZeebeRuntimeValidators {
                 expression ->
                     expression
                         .isOptional()
-                        .ifStaticItSatisfies(
-                            ZeebeExpressionValidator::isBracketedListOfValues,
-                            "be a bracketed list of comma-separated values, e.g. '[a,b,c]'"))
+                        .satisfiesIfStatic(
+                            ZeebeExpressionValidator::isListOfCsv,
+                            "be a list of comma-separated values, e.g. 'a,b,c'"))
             .build(expressionLanguage),
         // ----------------------------------------
         new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor));

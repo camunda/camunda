@@ -103,21 +103,14 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     }
   }
 
-  public static boolean isBracketedListOfValues(final Expression staticExp) {
+  public static boolean isListOfCsv(final Expression staticExp) {
     final String value = staticExp.getExpression();
-    if (!value.startsWith("[")) {
-      return false;
-    }
-    if (!value.endsWith("]")) {
-      return false;
-    }
-    final var bracketsTrimmed = value.substring(1, value.length() - 1);
-    if (bracketsTrimmed.isEmpty()) {
+    if (value.isEmpty()) {
       return true;
     }
-    final var values = bracketsTrimmed.split(",");
-    if (values.length < StringUtils.countMatches(bracketsTrimmed, ",") + 1) {
-      // one of the values was an empty string, e.g. [a,,c]
+    final var values = value.split(",");
+    if (values.length < StringUtils.countMatches(value, ",") + 1) {
+      // one of the values was an empty string, e.g. 'a,,c'
       return false;
     }
     return Arrays.stream(values).noneMatch(String::isEmpty);

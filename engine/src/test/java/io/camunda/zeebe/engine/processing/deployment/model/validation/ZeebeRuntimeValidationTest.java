@@ -357,12 +357,12 @@ public final class ZeebeRuntimeValidationTest {
         /* invalid candidateGroups static value */
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .userTask("task", b -> b.zeebeCandidateGroups("a,b,c"))
+            .userTask("task", b -> b.zeebeCandidateGroups("1,,"))
             .done(),
         List.of(
             expect(
                 ZeebeAssignmentDefinition.class,
-                "Expected static value to be a bracketed list of comma-separated values, e.g. '[a,b,c]', but found 'a,b,c'"))
+                "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found '1,,'"))
       }
     };
   }

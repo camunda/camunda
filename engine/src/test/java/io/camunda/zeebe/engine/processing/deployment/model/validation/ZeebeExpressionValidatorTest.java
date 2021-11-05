@@ -21,46 +21,43 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ZeebeExpressionValidatorTest {
 
   @Nested
-  @DisplayName("ZeebeExpressionValidator.isBracketedListOfValues(Expression)")
+  @DisplayName("ZeebeExpressionValidator.isListOfCsv(Expression)")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  class IsBracketedListOfValues {
+  class IsListOfValues {
 
     @ParameterizedTest
-    @MethodSource("bracketedLists")
-    void shouldAcceptBracketedLists(final String value) {
+    @MethodSource("csv")
+    void shouldAcceptCsv(final String value) {
       final var expression = new StaticExpression(value);
-      assertThat(ZeebeExpressionValidator.isBracketedListOfValues(expression)).isTrue();
+      assertThat(ZeebeExpressionValidator.isListOfCsv(expression)).isTrue();
     }
 
     @ParameterizedTest
-    @MethodSource("notBracketedLists")
-    void shouldRejectNotBracketedLists(final String value) {
+    @MethodSource("notCsv")
+    void shouldRejectNotCsv(final String value) {
       final var expression = new StaticExpression(value);
-      assertThat(ZeebeExpressionValidator.isBracketedListOfValues(expression)).isFalse();
+      assertThat(ZeebeExpressionValidator.isListOfCsv(expression)).isFalse();
     }
 
-    Stream<Arguments> bracketedLists() {
-      return Stream.of(
-          Arguments.of("[]"),
-          Arguments.of("[a]"),
-          Arguments.of("[a,b]"),
-          Arguments.of("[a,b,c]"),
-          Arguments.of("[\"abcd\",\"efgh\",\"ijkl\"]"),
-          Arguments.of("[1]"),
-          Arguments.of("[1,2]"),
-          Arguments.of("[1,a,3]"),
-          Arguments.of("[[]]"),
-          Arguments.of("[[],[]]"));
-    }
-
-    Stream<Arguments> notBracketedLists() {
+    Stream<Arguments> csv() {
       return Stream.of(
           Arguments.of(""),
-          Arguments.of("["),
-          Arguments.of("]"),
-          Arguments.of("[,]"),
-          Arguments.of("[a,,c]"),
-          Arguments.of("[,b,]"));
+          Arguments.of("a"),
+          Arguments.of("a,b"),
+          Arguments.of("a,b,c"),
+          Arguments.of("\"abcd\",\"efgh\",\"ijkl\""),
+          Arguments.of("1"),
+          Arguments.of("1,2"),
+          Arguments.of("1,a,3"));
+    }
+
+    Stream<Arguments> notCsv() {
+      return Stream.of(
+          Arguments.of(","),
+          Arguments.of("a,"),
+          Arguments.of(",b"),
+          Arguments.of(",b,"),
+          Arguments.of("a,,c"));
     }
   }
 }
