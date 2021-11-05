@@ -182,8 +182,10 @@ public class FailOverReplicationTest {
   }
 
   @Test
+  // regression test https://github.com/camunda-cloud/zeebe/issues/8129
   public void shouldNotProduceDuplicatedKeys() {
     // given
+    // we produce some records on the old leader
     final var previousLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var previousLeader = clusteringRule.getBroker(previousLeaderId);
     client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
@@ -195,16 +197,14 @@ public class FailOverReplicationTest {
         .send()
         .join();
 
-    // disconnect leader - becomes follower
+    // since the snapshot is the same on all nodes we know that all have the same state
+    // and processed or replayed everything
+    clusteringRule.awaitSameSnapshotOnAllNodes();
+
+    // we disconnect the leader and step down
     clusteringRule.disconnect(previousLeader);
     clusteringRule.stepDown(previousLeader, 1);
-    // remove old log content
-    RecordingExporter.reset();
-    final var newLeaderInfo = clusteringRule.awaitOtherLeader(1, previousLeaderId);
-    final var newLeaderId = newLeaderInfo.getNodeId();
-    assertThat(newLeaderId).isNotEqualTo(previousLeaderId);
 
-    // old log is replayed on new leader so we can collect keys
     final var previousKeys =
         RecordingExporter.processInstanceRecords()
             .limitToProcessInstanceCompleted()
@@ -213,9 +213,14 @@ public class FailOverReplicationTest {
             .map(Record::getKey)
             .filter(k -> k != -1L)
             .collect(Collectors.toList());
-
-    // remove all content again
+    // remove old exported records content - for easier verification later
     RecordingExporter.reset();
+
+    // when
+    // we await a new leader
+    final var newLeaderInfo = clusteringRule.awaitOtherLeader(1, previousLeaderId);
+    final var newLeaderId = newLeaderInfo.getNodeId();
+    assertThat(newLeaderId).isNotEqualTo(previousLeaderId);
 
     // produce new stuff on new leader
     client
@@ -235,8 +240,10 @@ public class FailOverReplicationTest {
             .filter(k -> k != -1L)
             .toArray(Long[]::new);
 
+    // then
     assertThat(newKeys).isNotEmpty();
     assertThat(previousKeys)
+        .isNotEmpty()
         .describedAs("Keys should always be unique for different entities.")
         .doesNotContain(newKeys);
   }
