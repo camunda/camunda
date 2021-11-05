@@ -48,7 +48,7 @@
     <version.docker-java-api>3.2.8</version.docker-java-api>
     <version.elasticsearch>7.13.2</version.elasticsearch>
     <version.error-prone>2.7.1</version.error-prone>
-    <version.grpc>1.38.1</version.grpc>
+    <version.grpc>1.42.0</version.grpc>
     <version.gson>2.8.7</version.gson>
     <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -1115,7 +1115,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1212,7 +1212,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>
@@ -1223,7 +1223,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>
