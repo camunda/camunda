@@ -235,6 +235,7 @@ public class FailOverReplicationTest {
             .filter(k -> k != -1L)
             .toArray(Long[]::new);
 
+    assertThat(newKeys).isNotEmpty();
     assertThat(previousKeys)
         .describedAs("Keys should always be unique for different entities.")
         .doesNotContain(newKeys);
