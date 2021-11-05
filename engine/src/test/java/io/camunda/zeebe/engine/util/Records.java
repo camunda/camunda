@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -205,6 +207,13 @@ public final class Records {
         .setRepetitions(0)
         .setProcessDefinitionKey(1);
     return event;
+  }
+
+  public static VariableDocumentRecord variableDocument(
+      final long instanceKey, final String variables) {
+    return new VariableDocumentRecord()
+        .setScopeKey(instanceKey)
+        .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
   }
 
   public static <T extends UnpackedObject & RecordValue> T cloneValue(final RecordValue value) {
