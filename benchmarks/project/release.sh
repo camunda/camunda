@@ -1,4 +1,15 @@
 #!/bin/bash -eu
+# Usage: ./release.sh [-p] VERSION
+# Example usage:
+#   $ ./release.sh 1.2.4
+# This script will build the Docker images for the worker and starter applications in this project,
+# for the given version. The `VERSION` should be the semantic version, and match the tag that you
+# want to build. The script will checkout that tag in a temporary worktree, and run the docker
+# commands from that worktree.
+#
+# By default, the script is interactive, and it will ask the user whether or not to push the images.
+# You can specify the `-p` flag to automatically push, or the environment variable PUSH=1, e.g.:
+#   $ ./release.sh -p 1.2.4
 
 WORKTREE="$(pwd)/.release"
 function cleanup() {
