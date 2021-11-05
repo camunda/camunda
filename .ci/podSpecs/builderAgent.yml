@@ -33,6 +33,24 @@ spec:
         requests:
           cpu: 8
           memory: 27Gi
+    - name: e2e
+      image: markhobson/maven-chrome:jdk-11
+      command: ["cat"]
+      tty: true
+      env:
+        - name: LIMITS_CPU
+          value: 4
+        - name: OLD_ZEEBE_TESTS_THREADS
+          value: 2
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+      resources:
+        limits:
+          cpu: 8
+          memory: 8Gi
+        requests:
+          cpu: 8
+          memory: 8Gi
     - name: node
       image: node:16.5.0-alpine
       command: ["cat"]
