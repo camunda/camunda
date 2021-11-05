@@ -17,15 +17,17 @@ package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import java.time.Duration;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class FailJobTest extends ClientTest {
 
   @Test
-  public void shouldFailJob() {
+  public void shouldFailJobByKey() {
     // given
     final long jobKey = 12;
     final int newRetries = 23;
@@ -36,6 +38,22 @@ public final class FailJobTest extends ClientTest {
     // then
     final FailJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getRetries()).isEqualTo(newRetries);
+  }
+
+  @Test
+  public void shouldFailJob() {
+    // given
+    final int newRetries = 23;
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newFailCommand(job).retries(newRetries).send().join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getRetries()).isEqualTo(newRetries);
   }
 

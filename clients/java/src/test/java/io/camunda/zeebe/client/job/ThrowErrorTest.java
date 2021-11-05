@@ -17,15 +17,17 @@ package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import java.time.Duration;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class ThrowErrorTest extends ClientTest {
 
   @Test
-  public void shouldThrowError() {
+  public void shouldThrowErrorByJobKey() {
     // given
     final long jobKey = 12;
     final String errorCode = "errorCode";
@@ -36,6 +38,24 @@ public final class ThrowErrorTest extends ClientTest {
     // then
     final ThrowErrorRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getErrorCode()).isEqualTo(errorCode);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldThrowError() {
+    // given
+    final String errorCode = "errorCode";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final ThrowErrorRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getErrorCode()).isEqualTo(errorCode);
 
     rule.verifyDefaultRequestTimeout();

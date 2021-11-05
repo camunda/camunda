@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -195,6 +196,27 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey);
+
+  /**
+   * Command to update the retries of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   *
+   * zeebeClient
+   *  .newUpdateRetriesCommand(job)
+   *  .retries(3)
+   *  .send();
+   * </pre>
+   *
+   * <p>If the given retries are greater than zero then this job will be picked up again by a job
+   * worker. This will not close a related incident, which still has to be marked as resolved with
+   * {@link #newResolveIncidentCommand newResolveIncidentCommand(long incidentKey)} .
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job);
 
   /**
    * Registers a new job worker for jobs of a given type.
