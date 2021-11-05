@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -332,7 +333,7 @@ public class Generator {
 
     AlertInterval interval = new AlertInterval();
     interval.setValue(17);
-    interval.setUnit("Minutes");
+    interval.setUnit(AlertIntervalUnit.MINUTES);
 
     alertCreation.setCheckInterval(interval);
     alertCreation.setReminder(interval);

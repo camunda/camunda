@@ -17,8 +17,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
 @FieldNameConstants
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = DashboardStartDateFilterDto.class, name = "startDate"),
-  @JsonSubTypes.Type(value = DashboardEndDateFilterDto.class, name = "endDate"),
+  @JsonSubTypes.Type(value = DashboardInstanceStartDateFilterDto.class, name = "instanceStartDate"),
+  @JsonSubTypes.Type(value = DashboardInstanceEndDateFilterDto.class, name = "instanceEndDate"),
   @JsonSubTypes.Type(value = DashboardStateFilterDto.class, name = "state"),
   @JsonSubTypes.Type(value = DashboardVariableFilterDto.class, name = "variable"),
   @JsonSubTypes.Type(value = DashboardAssigneeFilterDto.class, name = "assignee"),

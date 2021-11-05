@@ -43,7 +43,9 @@ test('add sources, map and publish a process', async (t) => {
 
   await t.click(e.optionsButton(e.processTypeahead));
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
-  await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
+  await t.click(
+    e.typeaheadOption(e.processTypeahead, 'Invoice Receipt with alternative correlation variable')
+  );
   await t.expect(e.optionsButton(e.variableTypeahead).hasAttribute('disabled')).notOk();
   await t.click(e.optionsButton(e.variableTypeahead));
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));

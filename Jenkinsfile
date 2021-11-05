@@ -53,6 +53,8 @@ spec:
     emptyDir: {}
   - name: es-snapshot
     emptyDir: {}
+  - name: camunda-invoice-removal
+    emptyDir: {}
   imagePullSecrets:
   - name: registry-camunda-cloud
   initContainers:
@@ -91,7 +93,7 @@ spec:
     """
 }
 
-String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2) {
+String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2, boolean deployDefaultInvoiceProcess = true) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
   Integer jvmMemory = memoryLimitInGb - 1;
   String additionalEnv = usePostgres ? """
@@ -106,6 +108,10 @@ String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, In
       - name: WAIT_FOR
         value: localhost:5432
   """ : ""
+  String invoiceRemovalMount = deployDefaultInvoiceProcess ? "" : """
+    - name: camunda-invoice-removal
+      mountPath: /camunda/webapps/camunda-invoice
+  """
   return """
   - name: cambpm
     image: ${camBpmDockerImage}
@@ -131,6 +137,7 @@ ${additionalEnv}
     - name: cambpm-config
       mountPath: /camunda/webapps/manager/META-INF/context.xml
       subPath: context.xml
+${invoiceRemovalMount}
     """
 }
 
@@ -275,11 +282,17 @@ String itLatestPodSpec(String camBpmVersion, String esVersion) {
           elasticSearchContainerSpec(esVersion, 6, 4)
 }
 
+String itZeebePodSpec(String camBpmVersion, String esVersion) {
+  return basePodSpec(4, 4) +
+          camBpmContainerSpec(camBpmVersion, false, 6, 4) +
+          elasticSearchContainerSpec(esVersion, 6, 4)
+}
+
 String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled Chrome (large) and install Maven (small)
   // manually for performance reasons
   return basePodSpec(1, 6, 'selenium/node-chrome:3.141.59-xenon') +
-          camBpmContainerSpec(camBpmVersion, true) +
+          camBpmContainerSpec(camBpmVersion, true, 2, 2, false) +
           elasticSearchContainerSpec(esVersion) +
           postgresContainerSpec() +
           gcloudContainerSpec()
@@ -444,7 +457,7 @@ pipeline {
             }
           }
         }
-        stage('IT Latest') {
+        stage('IT Latest CamBPM') {
           agent {
             kubernetes {
               cloud 'optimize-ci'
@@ -455,7 +468,27 @@ pipeline {
           }
           steps {
             unstash name: "optimize-stash-client"
-            integrationTestSteps('latest')
+            // Exclude all Zeebe tests
+            integrationTestSteps('latest', 'Zeebe-test', '')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT Latest Zeebe') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            unstash name: "optimize-stash-client"
+            integrationTestSteps('latest', '', 'Zeebe-test')
           }
           post {
             always {
@@ -578,9 +611,9 @@ String getBranchName() {
   return (env.BRANCH_NAME == 'master') ? env.BRANCH_NAME : env.CHANGE_BRANCH
 }
 
-void integrationTestSteps(String engineVersion = 'latest') {
+void integrationTestSteps(String engineVersion = 'latest', String excludedGroups = '', String includedGroups = '') {
   container('maven') {
-    runMaven("verify -Dskip.docker -Dskip.fe.build -Pit,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dit.test.excludedGroups=${excludedGroups} -Dit.test.includedGroups=${includedGroups} -Dskip.docker -Dskip.fe.build -Pit,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 

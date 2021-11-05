@@ -28,7 +28,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
       embeddedOptimizeExtension.getAllPositionBasedImportHandlers();
 
     // then
-    assertThat(positionBasedHandlers).hasSize(6)
+    assertThat(positionBasedHandlers).hasSize(8)
       .allSatisfy(handler -> {
         assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
         assertThat(handler.getLastImportExecutionTimestamp()).isEqualTo(OffsetDateTime.ofInstant(

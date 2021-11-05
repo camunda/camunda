@@ -9,11 +9,11 @@ import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -21,11 +21,6 @@ import java.time.OffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AlertReminderSchedulerIT extends AbstractAlertIT {
-
-  @BeforeEach
-  public void cleanUp() throws Exception {
-    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
-  }
 
   @Test
   public void reminderJobsAreRemovedOnAlertDeletion() throws Exception {
@@ -80,7 +75,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
-    reminderInterval.setUnit("Seconds");
+    reminderInterval.setUnit(AlertIntervalUnit.SECONDS);
     simpleAlert.setReminder(reminderInterval);
 
     String id = alertClient.createAlert(simpleAlert);
@@ -111,10 +106,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     // when
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId, 10, "Seconds");
+    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId, 10, AlertIntervalUnit.SECONDS);
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
-    reminderInterval.setUnit("Minutes");
+    reminderInterval.setUnit(AlertIntervalUnit.MINUTES);
     simpleAlert.setReminder(reminderInterval);
 
     simpleAlert.setThreshold(1500.0);
@@ -181,7 +176,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     // given
     AlertCreationRequestDto simpleAlert = createBasicAlertWithReminder();
     AlertInterval checkInterval = new AlertInterval();
-    checkInterval.setUnit("Minutes");
+    checkInterval.setUnit(AlertIntervalUnit.MINUTES);
     checkInterval.setValue(10);
     simpleAlert.setCheckInterval(checkInterval);
 

@@ -45,20 +45,18 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     startManagementServer();
 
     function buildAndStartOptimize() {
-      buildBackend()
-        .then(() => {
-          if (!dockerProcess) {
-            startDocker().then(restoreSqlDump);
-          }
-          startBackend()
-            .then(postStartupActions)
-            .catch(() => {
-              console.log('Optimize process killed, restarting...');
-            });
-        })
-        .catch(() => {
+      Promise.all([
+        dockerProcess ? Promise.resolve() : startDocker().then(restoreSqlDump),
+        buildBackend().catch(() => {
           console.log('Optimize build interrupted');
-        });
+        }),
+      ]).then(() => {
+        startBackend()
+          .then(postStartupActions)
+          .catch(() => {
+            console.log('Optimize process killed, restarting...');
+          });
+      });
     }
 
     if (ciMode) {
@@ -103,8 +101,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         const eventUserIds = users.join(',') + ',demo';
         const superUserIds = 'demo';
         backendProcess = spawnWithArgs(
-          `java -cp ../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar:../../client/demo-data/  -Xms1g -Xmx2g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -DOPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret -DOPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}] -DOPTIMIZE_SUPER_USER_IDS=[${superUserIds}] ${
-            zeebeMode ? '-Dspring.profiles.active=cloud' : ''
+          `java -cp ../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar:../../client/demo-data/  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -DOPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret -DOPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}] -DOPTIMIZE_SUPER_USER_IDS=[${superUserIds}] ${
+            zeebeMode ? '-Dspring.profiles.active=cloud -DZEEBE_IMPORT_ENABLED=true' : ''
           } org.camunda.optimize.Main`,
           {
             cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
@@ -153,8 +151,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         process.on('SIGINT', stopDocker);
         process.on('SIGTERM', stopDocker);
 
-        // wait for the engine rest endpoint to be up before resolving the promise
-        serverCheck('http://localhost:8080', resolve);
+        // wait for the engine/zeebe rest endpoint to be up before resolving the promise
+        serverCheck(zeebeMode ? 'http://localhost:9600/ready' : 'http://localhost:8080', resolve);
       });
     }
 
@@ -169,25 +167,28 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       }, 1000);
     }
 
-    async function restoreSqlDump() {
-      await downloadFile('gs://optimize-data/optimize_data-e2e.sqlc', 'databaseDumps/dump.sqlc');
+    function restoreSqlDump() {
+      return new Promise(async (resolve) => {
+        await downloadFile('gs://optimize-data/optimize_data-e2e.sqlc', 'databaseDumps/dump.sqlc');
 
-      dataGeneratorProcess = spawnWithArgs(
-        'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
-      );
+        dataGeneratorProcess = spawnWithArgs(
+          'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
+        );
 
-      dataGeneratorProcess.stdout.on('data', (data) => {
-        addLog(data.toString(), 'dataGenerator');
-      });
+        dataGeneratorProcess.stdout.on('data', (data) => {
+          addLog(data.toString(), 'dataGenerator');
+        });
 
-      dataGeneratorProcess.stderr.on('data', (data) => {
-        addLog(data.toString(), 'dataGenerator', true);
-      });
+        dataGeneratorProcess.stderr.on('data', (data) => {
+          addLog(data.toString(), 'dataGenerator', true);
+        });
 
-      dataGeneratorProcess.on('exit', () => {
-        engineDataGenerationComplete = true;
-        dataGeneratorProcess = null;
-        spawnWithArgs('rm -rf databaseDumps/');
+        dataGeneratorProcess.on('exit', () => {
+          engineDataGenerationComplete = true;
+          dataGeneratorProcess = null;
+          resolve();
+          spawnWithArgs('rm -rf databaseDumps/');
+        });
       });
     }
 

@@ -59,11 +59,11 @@ public class IdentityAuthorizationIT extends AbstractIT {
     final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
 
     // then only return identities the current user has access to are returned
-    // the total count however still reflects all users
+    // To not leak any unauthorized information, the total count reflects only what the user is allowed to see
     assertThat(searchResult)
       .isEqualTo(
         new IdentitySearchResultResponseDto(
-          4L, Lists.newArrayList(userIdentity1, groupIdentity1)
+          2L, Lists.newArrayList(userIdentity1, groupIdentity1)
         ));
   }
 
@@ -82,8 +82,9 @@ public class IdentityAuthorizationIT extends AbstractIT {
       .buildGetIdentityById(notAuthorizedGroup.getId())
       .execute();
 
-    // then access is forbidden
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    // then assert that result is shown as "Not Found" so that no information about the existence (or not) of a user
+    // is leaked to the unauthorized user
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -102,8 +103,9 @@ public class IdentityAuthorizationIT extends AbstractIT {
       .buildGetIdentityById(notAuthorizedUser.getId())
       .execute();
 
-    // then access is forbidden
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    // then assert that result is shown as "Not Found" so that no information about the existence (or not) of a user
+    // is leaked to the unauthorized user
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest
@@ -135,10 +137,10 @@ public class IdentityAuthorizationIT extends AbstractIT {
     // the search returns the 1 match which kermit is permitted to see.
     // If the limit did not work properly, the result would be empty because the first limited search result returns
     // user1, which kermit is not allowed to see.
-    // The total count however still reflects all users.
+    // To not leak any unauthorized information, the total count reflects only what the user is allowed to see
     assertThat(searchResult)
       .isEqualTo(new IdentitySearchResultResponseDto(
-        3L, Lists.newArrayList(user2)
+        1L, Lists.newArrayList(user2)
       ));
   }
 
@@ -176,10 +178,10 @@ public class IdentityAuthorizationIT extends AbstractIT {
     // The search returns the 2 matches which kermit is permitted to see.
     // If the limit did not work properly, the result would only have user2 in it because the first limited search
     // result returns user1 and user2, and of those kermit is only allowed to see user2.
-    // The total count however still reflects all users.
+    // To not leak any unauthorized information, the total count reflects only what the user is allowed to see
     assertThat(searchResult)
       .isEqualTo(new IdentitySearchResultResponseDto(
-        4L, Lists.newArrayList(user2, user4)
+        2L, Lists.newArrayList(user2, user4)
       ));
   }
 }

@@ -36,6 +36,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -93,7 +94,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(startedInstanceKey));
 
-    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", false), true);
     waitUntilMinimumVariableDocumentsExportedCount(2);
 
@@ -124,7 +125,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(startedInstance.getProcessInstanceKey()));
 
-    String flowNodeId = getServiceTaskFlowNodeIdFromProcessInstance(savedProcessInstance);
+    String flowNodeId = getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), processVariable, false);
     waitUntilMinimumVariableDocumentsExportedCount(1);
 

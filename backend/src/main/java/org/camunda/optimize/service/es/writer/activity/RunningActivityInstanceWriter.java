@@ -13,8 +13,8 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_DEFINITION_VERSION;
@@ -30,14 +30,13 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_N
 @Slf4j
 public class RunningActivityInstanceWriter extends AbstractActivityInstanceWriter {
 
-  private static final Set<String> USER_TASK_FIELDS_TO_UPDATE = Set.of(
-    FLOW_NODE_ID, USER_TASK_INSTANCE_ID, FLOW_NODE_INSTANCE_ID,
-    FLOW_NODE_DEFINITION_KEY, FLOW_NODE_DEFINITION_VERSION, FLOW_NODE_TENANT_ID
-  );
-  private static final String UPDATE_USER_TASK_FIELDS_SCRIPT = USER_TASK_FIELDS_TO_UPDATE
-    .stream()
-    .map(fieldKey -> String.format("existingTask.%s = newFlowNode.%s;%n", fieldKey, fieldKey))
-    .collect(Collectors.joining());
+  private static final String UPDATE_USER_TASK_FIELDS_SCRIPT =
+    Stream.of(
+        FLOW_NODE_ID, USER_TASK_INSTANCE_ID, FLOW_NODE_INSTANCE_ID,
+        FLOW_NODE_DEFINITION_KEY, FLOW_NODE_DEFINITION_VERSION, FLOW_NODE_TENANT_ID
+      )
+      .map(fieldKey -> String.format("existingTask.%s = newFlowNode.%s;%n", fieldKey, fieldKey))
+      .collect(Collectors.joining());
 
   public RunningActivityInstanceWriter(final OptimizeElasticsearchClient esClient,
                                        final ElasticSearchSchemaManager elasticSearchSchemaManager,

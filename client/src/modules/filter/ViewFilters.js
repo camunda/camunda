@@ -33,10 +33,10 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
         label={t('common.filter.types.flowNodeDate')}
       >
         <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
-          {t('common.filter.types.startDate')}
+          {t('common.filter.types.instanceStartDate')}
         </Dropdown.Option>
         <Dropdown.Option onClick={openNewFilterModal('flowNodeEndDate')}>
-          {t('common.filter.types.endDate')}
+          {t('common.filter.types.instanceEndDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
       {!isOptimizeCloud && (

@@ -16,7 +16,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 public class DashboardIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String ID = "id";
   public static final String NAME = "name";
@@ -24,6 +24,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String CREATED = "created";
   public static final String OWNER = "owner";
   public static final String LAST_MODIFIER = "lastModifier";
+  public static final String REFRESH_RATE_SECONDS = "refreshRateSeconds";
   public static final String REPORTS = "reports";
   public static final String COLLECTION_ID = "collectionId";
   public static final String AVAILABLE_FILTERS = "availableFilters";
@@ -74,6 +75,9 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(LAST_MODIFIER)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(REFRESH_RATE_SECONDS)
         .field("type", "keyword")
       .endObject()
       .startObject(REPORTS)

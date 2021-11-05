@@ -11,6 +11,6 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @FieldNameConstants
 public class AlertInterval {
-  protected int value;
-  protected String unit;
+  private int value;
+  private AlertIntervalUnit unit;
 }

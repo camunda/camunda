@@ -85,7 +85,7 @@ void runRelease(params) {
     passwordVariable: 'GITHUB_ACCESS_TOKEN',
   )]) {
     // Access Optimize repo using access token.
-    sh 'git remote set-url origin https://$GITHUB_APP:$GITHUB_ACCESS_TOKEN@github.com/camunda/camunda-optimize.git'
+    sh 'git remote set-url origin https://$GITHUB_APP:$GITHUB_ACCESS_TOKEN@github.com/camunda/camunda-optimize-examples.git'
 
     sh ("""
       ### adjust the readme and add the new version to the version overview
@@ -183,7 +183,7 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'https://github.com/camunda/camunda-optimize',
+        git url: 'https://github.com/camunda/camunda-optimize-examples',
             branch: "${params.BRANCH}",
             credentialsId: optimizeUtils.defaultCredentialsId(),
             poll: false

@@ -21,6 +21,7 @@ public class ConfigurationServiceConstants {
   public static final String EMAIL_ENABLED = "$.email.enabled";
   public static final String EMAIL_HOSTNAME = "$.email.hostname";
   public static final String EMAIL_PORT = "$.email.port";
+  public static final String EMAIL_BRANDING = "$.email.companyBranding";
 
   public static final String EMAIL_AUTHENTICATION = "$.email.authentication";
 

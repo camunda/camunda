@@ -61,14 +61,14 @@ import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
-import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.util.client.dto.IncidentDto;
+import org.camunda.optimize.test.util.client.dto.EngineIncidentDto;
 import org.camunda.optimize.test.util.client.dto.MessageCorrelationDto;
 import org.camunda.optimize.test.util.client.dto.TaskDto;
 import org.camunda.optimize.test.util.client.dto.VariableValueDto;
@@ -820,7 +820,7 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  public List<IncidentDto> getFirst100Incidents() {
+  public List<EngineIncidentDto> getFirst100Incidents() {
     HttpRequestBase get = new HttpGet(getIncidentUri());
     final URI uri;
     try {
@@ -839,7 +839,7 @@ public class SimpleEngineClient {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       return objectMapper.readValue(
         responseString,
-        new TypeReference<List<IncidentDto>>() {
+        new TypeReference<List<EngineIncidentDto>>() {
         }
       );
     } catch (IOException e) {
@@ -1803,7 +1803,7 @@ public class SimpleEngineClient {
         fields.put("value", typedVariable.getValue());
         fields.put("type", typedVariable.getType());
         variables.put(nameToValue.getKey(), fields);
-      } else if (value instanceof ComplexVariableDto) {
+      } else if (value instanceof ObjectVariableDto) {
         variables.put(nameToValue.getKey(), value);
       } else {
         Map<String, Object> fields = new HashMap<>();

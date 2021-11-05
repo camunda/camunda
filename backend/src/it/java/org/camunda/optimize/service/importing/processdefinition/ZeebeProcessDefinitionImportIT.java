@@ -8,25 +8,16 @@ package org.camunda.optimize.service.importing.processdefinition;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
-import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
@@ -34,8 +25,6 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
 
@@ -192,35 +181,6 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
       .extracting(DefinitionOptimizeResponseDto::getName)
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
-  }
-
-  @SneakyThrows
-  private void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
-    final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    Awaitility.given().ignoreExceptions()
-      .await()
-      .timeout(5, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .indices()
-          .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
-      ).isTrue());
-    final CountRequest definitionCountRequest =
-      new CountRequest(expectedIndex)
-        .query(boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED)));
-    Awaitility.given().ignoreExceptions()
-      .await()
-      .timeout(5, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .count(definitionCountRequest, esClient.requestOptions())
-          .getCount())
-        .isEqualTo(expectedDefinitionsCount));
   }
 
   private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {

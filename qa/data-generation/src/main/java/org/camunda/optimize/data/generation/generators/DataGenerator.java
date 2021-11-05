@@ -13,7 +13,7 @@ import org.camunda.optimize.data.generation.UserAndGroupProvider;
 import org.camunda.optimize.data.generation.generators.impl.incident.ActiveIncidentResolver;
 import org.camunda.optimize.data.generation.generators.impl.incident.IdleIncidentResolver;
 import org.camunda.optimize.data.generation.generators.impl.incident.IncidentResolver;
-import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
@@ -122,19 +122,19 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     try {
       personAsString = objectMapper.writeValueAsString(person);
     } catch (JsonProcessingException e) {
-      logger.warn("Could not serialize complex variable!", e);
+      logger.warn("Could not serialize object variable!", e);
     }
-    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
-    complexVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
-    complexVariableDto.setValue(personAsString);
-    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
+    ObjectVariableDto objectVariableDto = new ObjectVariableDto();
+    objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
+    objectVariableDto.setValue(personAsString);
+    ObjectVariableDto.ValueInfo info = new ObjectVariableDto.ValueInfo();
     info.setObjectTypeName("java.lang.Object");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
-    complexVariableDto.setValueInfo(info);
+    objectVariableDto.setValueInfo(info);
 
 
     Map<String, Object> variables = new HashMap<>();
-    variables.put("person", complexVariableDto);
+    variables.put("person", objectVariableDto);
     int integer = RandomUtils.nextInt();
     variables.put("stringVar", "aStringValue");
     variables.put("boolVar", RandomUtils.nextBoolean());

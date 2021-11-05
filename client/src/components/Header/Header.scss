@@ -1,7 +1,6 @@
 .Header {
   border-bottom: 1px solid var(--silver-darken-87);
   font-size: 15px;
-  font-weight: 500;
   padding: 11px 20px;
   padding-bottom: 10px;
   display: flex;
@@ -36,6 +35,19 @@
     }
   }
 
+  .Dropdown .activateButton {
+    border: none;
+    background-color: var(--white);
+    height: 100%;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    font-size: 15px;
+    color: var(--grey-lighten-56);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
   a {
     text-decoration: none;
     white-space: nowrap;
@@ -48,6 +60,7 @@
     align-items: center;
     margin-right: 20px;
     white-space: nowrap;
+    font-weight: 500;
 
     img {
       width: auto;

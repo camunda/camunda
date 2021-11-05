@@ -8,7 +8,7 @@ package org.camunda.optimize.test.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -34,7 +34,7 @@ public class VariableTestUtil {
     Map<String, Object> variables = new HashMap<>();
     for (VariableType type : VariableType.values()) {
       String varName = String.format("%sVar", type.getId().toLowerCase());
-      variables.put(varName, new ComplexVariableDto().setType(type.getId()).setValue(null));
+      variables.put(varName, new ObjectVariableDto().setType(type.getId()).setValue(null));
     }
     return variables;
   }

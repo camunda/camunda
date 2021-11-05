@@ -54,7 +54,11 @@ export function UserMenu({user, history, mightFail}) {
   }
 
   if (options.length === 0) {
-    return <span className="UserMenu userLabel">{user?.name}</span>;
+    if (!user) {
+      return null;
+    }
+
+    return <span className="UserMenu userLabel">{user.name}</span>;
   }
 
   return (

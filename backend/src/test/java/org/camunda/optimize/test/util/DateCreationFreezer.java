@@ -85,6 +85,6 @@ public class DateCreationFreezer {
       LocalDateUtil.setCurrentTime(dateToFreeze);
       return LocalDateUtil.getCurrentDateTime();
     }
-
   }
+
 }

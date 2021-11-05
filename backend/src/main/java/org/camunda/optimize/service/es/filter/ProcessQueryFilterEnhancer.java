@@ -19,13 +19,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Comp
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.MultipleVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
@@ -34,7 +35,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
@@ -54,10 +55,11 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFilterDto<?>> {
 
   @Getter
-  private final StartDateQueryFilter startDateQueryFilter;
+  private final InstanceStartDateQueryFilter instanceStartDateQueryFilter;
   @Getter
-  private final EndDateQueryFilter endDateQueryFilter;
+  private final InstanceEndDateQueryFilter instanceEndDateQueryFilter;
   private final ProcessVariableQueryFilter variableQueryFilter;
+  private final ProcessMultiVariableQueryFilter multiVariableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
   private final ExecutingFlowNodeQueryFilter executingFlowNodeQueryFilter;
   private final CanceledFlowNodeQueryFilter canceledFlowNodeQueryFilter;
@@ -87,14 +89,17 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
                                final List<ProcessFilterDto<?>> filters,
                                final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(filters)) {
-      startDateQueryFilter.addFilters(
-        query, extractInstanceFilters(filters, StartDateFilterDto.class), filterContext
+      instanceStartDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, InstanceStartDateFilterDto.class), filterContext
       );
-      endDateQueryFilter.addFilters(
-        query, extractInstanceFilters(filters, EndDateFilterDto.class), filterContext
+      instanceEndDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, InstanceEndDateFilterDto.class), filterContext
       );
       variableQueryFilter.addFilters(
         query, extractInstanceFilters(filters, VariableFilterDto.class), filterContext
+      );
+      multiVariableQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, MultipleVariableFilterDto.class), filterContext
       );
       executedFlowNodeQueryFilter.addFilters(
         query, extractInstanceFilters(filters, ExecutedFlowNodeFilterDto.class), filterContext

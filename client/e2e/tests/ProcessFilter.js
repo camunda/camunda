@@ -45,12 +45,18 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-string.png');
 
   await t.click(Filter.variableFilterOperatorButton('contains'));
-  await t.typeText(Filter.variableFilterValueInput, 'aSubString anotherSubstring', {replace: true});
+  await t
+    .typeText(Filter.variableFilterValueInput, 'aSubString', {replace: true})
+    .pressKey('tab')
+    .typeText(Filter.variableFilterValueInput, 'anotherSubstring')
+    .pressKey('tab');
 
   await t.typeText(Filter.typeaheadInput, 'integerVar', {replace: true});
   await t.click(Filter.typeaheadOption('integerVar'));
 
-  await t.typeText(Filter.variableFilterValueInput, '14 30 100', {replace: true});
+  await t
+    .typeText(Filter.variableFilterValueInput, '14', {replace: true})
+    .pressKey('tab 3 0 tab 1 0 0 tab');
 
   await t.takeElementScreenshot(
     Report.modalContainer,
@@ -109,7 +115,7 @@ test('should apply a filter to the report result', async (t) => {
     .resizeWindow(1400, 850)
     .click(Report.filterButton)
     .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png', {
-      crop: {top: 220},
+      crop: {top: 120, bottom: 500},
     })
     .maximizeWindow();
 

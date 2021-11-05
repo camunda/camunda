@@ -43,11 +43,6 @@ public class ZeebeVariableFetcher extends AbstractZeebeRecordFetcher<ZeebeVariab
   }
 
   @Override
-  protected String getRecordDescription() {
-    return "variable";
-  }
-
-  @Override
   protected Set<Intent> getIntentsForRecordType() {
     return INTENTS;
   }

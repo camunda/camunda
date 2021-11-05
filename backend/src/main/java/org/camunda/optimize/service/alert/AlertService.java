@@ -40,10 +40,9 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -56,6 +55,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,8 +73,6 @@ import static org.camunda.optimize.service.es.schema.index.AlertIndex.THRESHOLD_
 @Component
 @Slf4j
 public class AlertService implements ReportReferencingService {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
   private final ApplicationContext applicationContext;
   private final AlertReader alertReader;
   private final AlertWriter alertWriter;
@@ -92,7 +90,7 @@ public class AlertService implements ReportReferencingService {
     checkAlertWebhooksAllExist(alerts);
     try {
       if (schedulerFactoryBean == null) {
-        QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
+        SpringBeanJobFactory sampleJobFactory = new SpringBeanJobFactory();
         sampleJobFactory.setApplicationContext(applicationContext);
 
         schedulerFactoryBean = new SchedulerFactoryBean();
@@ -128,11 +126,11 @@ public class AlertService implements ReportReferencingService {
         schedulerFactoryBean.start();
       }
     } catch (Exception e) {
-      logger.error("Couldn't initialize alert scheduling.", e);
+      log.error("Couldn't initialize alert scheduling.", e);
       try {
         destroy();
       } catch (Exception destroyException) {
-        logger.error("Failed destroying alertService", destroyException);
+        log.error("Failed destroying alertService", destroyException);
       }
       throw new RuntimeException(e);
     }
@@ -145,7 +143,7 @@ public class AlertService implements ReportReferencingService {
         schedulerFactoryBean.stop();
         schedulerFactoryBean.destroy();
       } catch (Exception e) {
-        logger.error("Can't destroy scheduler", e);
+        log.error("Can't destroy scheduler", e);
       }
       this.schedulerFactoryBean = null;
     }
@@ -154,7 +152,7 @@ public class AlertService implements ReportReferencingService {
   private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
     List<Trigger> triggers = new ArrayList<>();
 
-    for (Map.Entry<AlertDefinitionDto, JobDetail> e : reminderDetails.entrySet()) {
+    for (Entry<AlertDefinitionDto, JobDetail> e : reminderDetails.entrySet()) {
       if (e.getKey().getReminder() != null) {
         triggers.add(alertReminderJobFactory.createTrigger(e.getKey(), e.getValue()));
       }
@@ -166,7 +164,7 @@ public class AlertService implements ReportReferencingService {
   private List<Trigger> createCheckTriggers(Map<AlertDefinitionDto, JobDetail> details) {
     List<Trigger> triggers = new ArrayList<>();
 
-    for (Map.Entry<AlertDefinitionDto, JobDetail> e : details.entrySet()) {
+    for (Entry<AlertDefinitionDto, JobDetail> e : details.entrySet()) {
       triggers.add(alertCheckJobFactory.createTrigger(e.getKey(), e.getValue()));
     }
 
@@ -211,7 +209,7 @@ public class AlertService implements ReportReferencingService {
         "The following webhooks no longer exist in the service-config, yet are associated with existing alerts:%n%s",
         missingWebhookSummary
       );
-      logger.error(errorMsg);
+      log.error(errorMsg);
     }
   }
 
@@ -257,7 +255,7 @@ public class AlertService implements ReportReferencingService {
     } catch (Exception e) {
       String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
         toCreate.getReportId() + "] does not exist.";
-      logger.error(errorMessage);
+      log.error(errorMessage);
       throw new BadRequestException(errorMessage, e);
     }
 
@@ -301,7 +299,7 @@ public class AlertService implements ReportReferencingService {
         getScheduler().scheduleJob(jobDetail, alertCheckJobFactory.createTrigger(alert, jobDetail));
       }
     } catch (SchedulerException e) {
-      logger.error("can't schedule new alert", e);
+      log.error("can't schedule new alert", e);
     }
   }
 
@@ -362,7 +360,7 @@ public class AlertService implements ReportReferencingService {
       unscheduleReminderJob(toDelete);
 
     } catch (SchedulerException e) {
-      logger.error("can't adjust scheduler for alert [{}]", alertId, e);
+      log.error("can't adjust scheduler for alert [{}]", alertId, e);
     }
     toDelete.setTriggered(false);
   }

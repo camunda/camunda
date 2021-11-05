@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
 import org.camunda.optimize.service.util.DateFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
@@ -138,7 +138,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
   }
 
   @Test
-  public void mapComplexVariableToPrimitiveOne() throws Exception {
+  public void mapObjectVariableToPrimitiveOne() throws Exception {
     // given
     addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util5");
 
@@ -148,15 +148,15 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     ObjectMapper objectMapper = new ObjectMapper();
     String personAsString = objectMapper.writeValueAsString(person);
 
-    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
-    complexVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
-    complexVariableDto.setValue(personAsString);
-    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
+    ObjectVariableDto objectVariableDto = new ObjectVariableDto();
+    objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
+    objectVariableDto.setValue(personAsString);
+    ObjectVariableDto.ValueInfo info = new ObjectVariableDto.ValueInfo();
     info.setObjectTypeName("org.camunda.foo.Person");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
-    complexVariableDto.setValueInfo(info);
+    objectVariableDto.setValueInfo(info);
     Map<String, Object> variables = new HashMap<>();
-    variables.put("person", complexVariableDto);
+    variables.put("person", objectVariableDto);
     ProcessInstanceEngineDto instanceDto = deploySimpleServiceTaskWithVariables(variables);
     importAllEngineEntitiesFromScratch();
 

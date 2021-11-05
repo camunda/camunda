@@ -62,6 +62,7 @@ import {ReactComponent as show} from './show.svg';
 import {ReactComponent as hide} from './hide.svg';
 import {ReactComponent as warningOutline} from './warning-outline.svg';
 import {ReactComponent as infoOutline} from './info-outline.svg';
+import {ReactComponent as questionMark} from './question-mark.svg';
 
 const icons = {
   autorefresh,
@@ -122,6 +123,7 @@ const icons = {
   show,
   'warning-outline': warningOutline,
   'info-outline': infoOutline,
+  'question-mark': questionMark,
 };
 
 export default icons;

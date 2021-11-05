@@ -8,17 +8,17 @@ package org.camunda.optimize.service.entities;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -36,14 +36,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -73,9 +73,9 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -167,7 +167,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     // A distributedBy report with filters and custom bucket config
     final RollingDateFilterDataDto filterData = new RollingDateFilterDataDto(new RollingDateFilterStartDto(
       4L, DateFilterUnit.DAYS));
-    final EndDateFilterDto endDateFilter = new EndDateFilterDto();
+    final InstanceEndDateFilterDto endDateFilter = new InstanceEndDateFilterDto();
     endDateFilter.setData(filterData);
     endDateFilter.setFilterLevel(FilterApplicationLevel.INSTANCE);
     final ProcessReportDataDto filteredDistrByReport = TemplatedProcessReportDataBuilder
@@ -367,9 +367,9 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     dashboard.setOwner("owner");
     dashboard.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     dashboard.setLastModified(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
-    DashboardStartDateFilterDto startDateFilter = new DashboardStartDateFilterDto();
+    DashboardInstanceStartDateFilterDto startDateFilter = new DashboardInstanceStartDateFilterDto();
     startDateFilter.setData(new DashboardDateFilterDataDto(null));
-    DashboardEndDateFilterDto endDateFilter = new DashboardEndDateFilterDto();
+    DashboardInstanceEndDateFilterDto endDateFilter = new DashboardInstanceEndDateFilterDto();
     endDateFilter.setData(new DashboardDateFilterDataDto(null));
     dashboard.setAvailableFilters(Arrays.asList(
       startDateFilter,
@@ -455,7 +455,8 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     return createProcessDefinition(DEFINITION_KEY, tenantId, version);
   }
 
-  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String key, final String tenantId, final String version) {
+  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String key, final String tenantId,
+                                                                      final String version) {
     return ProcessDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
       .key(key)

@@ -32,7 +32,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
@@ -131,9 +131,9 @@ public class ValidationHelper {
           throw new OptimizeValidationException(
             String.format("%s is not a valid application level for this filter type", filterDto.getFilterLevel()));
         }
-        if (filterDto instanceof StartDateFilterDto) {
-          StartDateFilterDto startDateFilterDto = (StartDateFilterDto) filterDto;
-          DateFilterDataDto<?> startDateFilterDataDto = startDateFilterDto.getData();
+        if (filterDto instanceof InstanceStartDateFilterDto) {
+          InstanceStartDateFilterDto instanceStartDateFilterDto = (InstanceStartDateFilterDto) filterDto;
+          DateFilterDataDto<?> startDateFilterDataDto = instanceStartDateFilterDto.getData();
           ensureAtLeastOneNotNull(
             "start date filter ", startDateFilterDataDto.getStart(), startDateFilterDataDto.getEnd());
         } else if (filterDto instanceof VariableFilterDto) {

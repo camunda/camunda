@@ -1,0 +1,55 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.importing.zeebe.mediator;
+
+import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
+import org.camunda.optimize.service.importing.PositionBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
+import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
+import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeIncidentFetcher;
+import org.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public class ZeebeIncidentImportMediator
+  extends PositionBasedImportMediator<ZeebeIncidentImportIndexHandler, ZeebeIncidentRecordDto> {
+
+  private final ZeebeIncidentFetcher zeebeIncidentFetcher;
+
+  public ZeebeIncidentImportMediator(final ZeebeIncidentImportIndexHandler importIndexHandler,
+                                     final ZeebeIncidentFetcher zeebeIncidentFetcher,
+                                     final ZeebeIncidentImportService importService,
+                                     final ConfigurationService configurationService,
+                                     final BackoffCalculator idleBackoffCalculator) {
+    this.importIndexHandler = importIndexHandler;
+    this.zeebeIncidentFetcher = zeebeIncidentFetcher;
+    this.importService = importService;
+    this.configurationService = configurationService;
+    this.idleBackoffCalculator = idleBackoffCalculator;
+  }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE_SUB_ENTITIES;
+  }
+
+  @Override
+  protected boolean importNextPage(final Runnable importCompleteCallback) {
+    return importNextPagePositionBased(getIncidents(), importCompleteCallback);
+  }
+
+  private List<ZeebeIncidentRecordDto> getIncidents() {
+    return zeebeIncidentFetcher.getZeebeRecordsForPrefixAndPartitionFrom(importIndexHandler.getNextPage());
+  }
+
+}

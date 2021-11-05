@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.service.alert.AlertService;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -314,7 +315,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId, 1, "Hours");
+    AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId, 1, AlertIntervalUnit.HOURS);
     String id = alertClient.createAlert(alert);
 
     // when
@@ -360,8 +361,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    String alertId1 = alertClient.createAlertForReport(reportId, 1, "Hours");
-    String alertId2 = alertClient.createAlertForReport(reportId, 1, "Hours");
+    String alertId1 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
+    String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 
     // when
     Response response = embeddedOptimizeExtension
@@ -401,8 +402,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    String alertId1 = alertClient.createAlertForReport(reportId, 1, "Hours");
-    String alertId2 = alertClient.createAlertForReport(reportId, 1, "Hours");
+    String alertId1 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
+    String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 
     // when
     Response response = alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, alertId2));
@@ -418,8 +419,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    String alertId1 = alertClient.createAlertForReport(reportId, 1, "Hours");
-    String alertId2 = alertClient.createAlertForReport(reportId, 1, "Hours");
+    String alertId1 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
+    String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 
     // when
     Response response = alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, "doesntExist", alertId2));

@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.reader.ExternalEventReader;
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriterFactory;
 import org.camunda.optimize.service.es.writer.ExternalEventWriter;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -47,6 +48,11 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
   }
 
   public void saveEventBatch(final List<EventDto> eventDtos) {
+    final Long rightNow = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
+    // all events of a batch share the same ingestion timestamp as this is the point in time they got ingested
+    for (EventDto eventDto : eventDtos) {
+      eventDto.setIngestionTimestamp(rightNow);
+    }
     externalEventWriter.upsertEvents(eventDtos);
   }
 

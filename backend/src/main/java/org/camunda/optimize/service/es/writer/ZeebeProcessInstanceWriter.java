@@ -134,7 +134,7 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
 
       // Update the flow node instances
       "def flowNodesById = existingInstance.flowNodeInstances.stream()\n" +
-        ".collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode, (f1, f2) -> f1));\n" +
+      "  .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode, (f1, f2) -> f1));\n" +
       "def newFlowNodes = params.instance.flowNodeInstances;\n" +
       "for (def newFlowNode : newFlowNodes) {\n" +
       "  def existingFlowNode = flowNodesById.get(newFlowNode.flowNodeInstanceId);\n" +
@@ -157,7 +157,47 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
       "    flowNodesById.put(newFlowNode.flowNodeInstanceId, newFlowNode);\n" +
       "  }\n" +
       "}\n" +
-      "existingInstance.flowNodeInstances = flowNodesById.values();\n";
+      "existingInstance.flowNodeInstances = flowNodesById.values();\n" +
+
+    // Update the incidents
+    "def incidentsById = existingInstance.incidents.stream()\n" +
+    "  .collect(Collectors.toMap(incident -> incident.id, incident -> incident, (f1, f2) -> f1));\n" +
+    "def newIncidents = params.instance.incidents;\n" +
+    "for (def newIncident : newIncidents) {\n" +
+    "  def existingIncident = incidentsById.get(newIncident.id);\n" +
+    "  if (existingIncident != null) {\n" +
+    "    if (newIncident.endTime != null) {\n" +
+    "      existingIncident.endTime = newIncident.endTime;\n" +
+    "    }\n" +
+    "    if (newIncident.createTime != null) {\n" +
+    "      existingIncident.createTime = newIncident.createTime;\n" +
+    "    }\n" +
+    "    if (existingIncident.createTime != null && existingIncident.endTime != null) {\n" +
+    "      def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);\n" +
+    "      existingIncident.durationInMs = dateFormatter.parse(existingIncident.endTime).getTime() " +
+    "        - dateFormatter.parse(existingIncident.createTime).getTime();\n" +
+    "    }\n" +
+    "    if (existingIncident.incidentStatus.equals(\"open\")) {\n" +
+    "      existingIncident.incidentStatus = newIncident.incidentStatus;\n" +
+    "    }\n" +
+    "  } else {\n" +
+    "    incidentsById.put(newIncident.id, newIncident);\n" +
+    "  }\n" +
+    "}\n" +
+    // We have to set the correct element ID for incidents, replacing the key with the BPMN element
+    "def flowNodeIdsByFlowNodeInstanceIds = flowNodesById.values()\n" +
+    "  .stream()\n" +
+    "  .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode.flowNodeId));\n" +
+    "existingInstance.incidents = incidentsById.values()\n" +
+    "  .stream()\n" +
+    "  .peek(incident -> {" +
+    "     def flowNodeId = flowNodeIdsByFlowNodeInstanceIds.get(incident.activityId);\n" +
+    "     if (flowNodeId != null) {\n" +
+    "       incident.activityId = flowNodeId;\n" +
+    "     }\n" +
+    "     return incident;\n" +
+    "  })\n" +
+    "  .collect(Collectors.toList());\n";
     // @formatter:on
   }
 

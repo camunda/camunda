@@ -17,8 +17,8 @@ export function incompatibleFilters(filterData, view) {
     bothExist(['canceledInstancesOnly', 'nonCanceledInstancesOnly']) ||
     bothExist(['canceledInstancesOnly', 'suspendedInstancesOnly']) ||
     bothExist(['nonSuspendedInstancesOnly', 'suspendedInstancesOnly']) ||
-    bothExist(['endDate', 'runningInstancesOnly']) ||
-    bothExist(['endDate', 'suspendedInstancesOnly']) ||
+    bothExist(['instanceEndDate', 'runningInstancesOnly']) ||
+    bothExist(['instanceEndDate', 'suspendedInstancesOnly']) ||
     ((view?.entity === 'flowNode' || view?.entity === 'userTask') &&
       (bothExist(['completedFlowNodesOnly', 'runningFlowNodesOnly']) ||
         bothExist(['canceledFlowNodesOnly', 'runningFlowNodesOnly']) ||

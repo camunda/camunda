@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequ
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -162,12 +162,12 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variablesWithComplexTypeAreNotImported() throws JsonProcessingException {
+  public void objectVariablesTypeAreNotImported() throws JsonProcessingException {
     // given
     final String variableName = "var";
-    final ComplexVariableDto complexVariableDto = createComplexVariableDto();
+    final ObjectVariableDto objectVariableDto = createObjectVariableDto();
     final Map<String, Object> variables = new HashMap<>();
-    variables.put(variableName, complexVariableDto);
+    variables.put(variableName, objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
     importAllEngineEntitiesFromScratch();
     importAllEngineEntitiesFromScratch();
@@ -183,7 +183,7 @@ public class VariableImportIT extends AbstractImportIT {
       "Refuse to add variable [%s] with type [%s] from variable import adapter plugin. " +
         "Variable has no type or type is not supported",
       variableName,
-      complexVariableDto.getType()
+      objectVariableDto.getType()
     ));
   }
 
@@ -194,9 +194,9 @@ public class VariableImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService()
       .setEngineImportVariableIncludeObjectVariableValue(includeObjectVariableValue);
 
-    final ComplexVariableDto complexVariableDto = createComplexVariableDto();
+    final ObjectVariableDto objectVariableDto = createObjectVariableDto();
     final Map<String, Object> variables = new HashMap<>();
-    variables.put("var", complexVariableDto);
+    variables.put("var", objectVariableDto);
     deployAndStartSimpleServiceTaskWithVariables(variables);
 
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
@@ -464,15 +464,15 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
-  private ComplexVariableDto createComplexVariableDto() {
-    ComplexVariableDto complexVariableDto = new ComplexVariableDto();
-    complexVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
-    complexVariableDto.setValue(null);
-    ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
+  private ObjectVariableDto createObjectVariableDto() {
+    ObjectVariableDto objectVariableDto = new ObjectVariableDto();
+    objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
+    objectVariableDto.setValue(null);
+    ObjectVariableDto.ValueInfo info = new ObjectVariableDto.ValueInfo();
     info.setObjectTypeName("java.util.ArrayList");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
-    complexVariableDto.setValueInfo(info);
-    return complexVariableDto;
+    objectVariableDto.setValueInfo(info);
+    return objectVariableDto;
   }
 
   private List<ProcessVariableNameResponseDto> getVariablesForProcessInstance(ProcessInstanceEngineDto instanceDto) {

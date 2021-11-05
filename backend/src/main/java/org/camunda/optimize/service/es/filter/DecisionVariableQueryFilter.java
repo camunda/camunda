@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.filter.util.DateFilterQueryUtil;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DecisionVariableHelper;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -102,24 +101,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     return queryBuilder;
   }
 
-  private QueryBuilder createStringQueryBuilder(final StringVariableFilterDataDto stringVarDto) {
-    validateMultipleValuesFilterDataDto(stringVarDto);
-
-    if (stringVarDto.hasContainsOperation()) {
-      return createContainsOneOfTheGivenStringsQueryBuilder(stringVarDto);
-    } else if (stringVarDto.hasEqualsOperation()) {
-      return createEqualsOneOrMoreValuesQueryBuilder(stringVarDto);
-    } else {
-      final String message = String.format(
-        "String variable operator [%s] is not supported!",
-        stringVarDto.getData().getOperator().getId()
-      );
-      log.debug(message);
-      throw new OptimizeRuntimeException(message);
-    }
-  }
-
-  private QueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final StringVariableFilterDataDto dto) {
+  @Override
+  protected QueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final StringVariableFilterDataDto dto) {
     final BoolQueryBuilder containOneOfTheGivenStrings =
       createContainsOneOfTheGivenStringsQueryBuilder(dto.getName(), dto.getData().getValues());
 
@@ -130,8 +113,9 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     }
   }
 
-  private BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final String variableId,
-                                                                          final List<String> values) {
+  @Override
+  protected BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final String variableId,
+                                                                            final List<String> values) {
     final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
 
     values.stream()
@@ -148,8 +132,9 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     return variableFilterBuilder;
   }
 
-  private QueryBuilder createContainsGivenStringQuery(final String variableId,
-                                                      final String valueToContain) {
+  @Override
+  protected QueryBuilder createContainsGivenStringQuery(final String variableId,
+                                                        final String valueToContain) {
 
     final BoolQueryBuilder containsVariableString = boolQuery()
       .must(termQuery(getVariableIdField(), variableId));
@@ -175,7 +160,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     );
   }
 
-  private QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(final OperatorMultipleValuesVariableFilterDataDto dto) {
+  @Override
+  protected QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(final OperatorMultipleValuesVariableFilterDataDto dto) {
     final BoolQueryBuilder variableFilterBuilder = createMultiValueVariableFilterQuery(
       getVariableId(dto), dto.getType(), dto.getData().getValues()
     );
@@ -187,7 +173,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     }
   }
 
-  private QueryBuilder createBooleanQueryBuilder(final BooleanVariableFilterDataDto dto) {
+  @Override
+  protected QueryBuilder createBooleanQueryBuilder(final BooleanVariableFilterDataDto dto) {
     ValidationHelper.ensureCollectionNotEmpty("boolean filter value", dto.getData().getValues());
 
     return createMultiValueVariableFilterQuery(getVariableId(dto), dto.getType(), dto.getData().getValues());
@@ -222,7 +209,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     return variableFilterBuilder;
   }
 
-  private QueryBuilder createNumericQueryBuilder(OperatorMultipleValuesVariableFilterDataDto dto) {
+  @Override
+  protected QueryBuilder createNumericQueryBuilder(OperatorMultipleValuesVariableFilterDataDto dto) {
     validateMultipleValuesFilterDataDto(dto);
 
     String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
@@ -268,8 +256,9 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     return resultQuery;
   }
 
-  private QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto,
-                                              final ZoneId timezone) {
+  @Override
+  protected QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto,
+                                                final ZoneId timezone) {
     final BoolQueryBuilder dateFilterBuilder = boolQuery().minimumShouldMatch(1);
 
     if (dto.getData().isIncludeUndefined()) {

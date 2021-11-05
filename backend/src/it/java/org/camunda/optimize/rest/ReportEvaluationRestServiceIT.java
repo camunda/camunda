@@ -902,7 +902,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private List<ProcessFilterDto<?>> createFixedDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
-    return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
+    return ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(endDate).add().buildList();
   }
 
   private List<ProcessFilterDto<?>> createLongVariableFilter(String variableName, Long variableValue) {

@@ -16,11 +16,12 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class DashboardDefinitionUpdateDto {
-
   protected String name;
   protected OffsetDateTime lastModified;
   protected String lastModifier;
   protected List<ReportLocationDto> reports;
   protected String collectionId;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
+  @JsonInclude
+  protected Long refreshRateSeconds;
 }

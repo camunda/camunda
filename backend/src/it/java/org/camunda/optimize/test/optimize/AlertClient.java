@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -28,13 +29,15 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 @AllArgsConstructor
 public class AlertClient {
 
+  public static final String TEST_ALERT_NAME = "test alert";
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public String createAlertForReport(final String reportId) {
     return createAlert(createSimpleAlert(reportId));
   }
 
-  public String createAlertForReport(final String reportId, final int intervalValue, final String unit) {
+  public String createAlertForReport(final String reportId, final int intervalValue, final AlertIntervalUnit unit) {
     return createAlert(createSimpleAlert(reportId, intervalValue, unit));
   }
 
@@ -117,10 +120,10 @@ public class AlertClient {
   }
 
   public AlertCreationRequestDto createSimpleAlert(String reportId) {
-    return createSimpleAlert(reportId, 1, "Seconds");
+    return createSimpleAlert(reportId, 1, AlertIntervalUnit.SECONDS);
   }
 
-  public AlertCreationRequestDto createSimpleAlert(String reportId, int intervalValue, String unit) {
+  public AlertCreationRequestDto createSimpleAlert(String reportId, int intervalValue, AlertIntervalUnit unit) {
     AlertCreationRequestDto alertCreationRequestDto = new AlertCreationRequestDto();
 
     AlertInterval interval = new AlertInterval();
@@ -130,7 +133,7 @@ public class AlertClient {
     alertCreationRequestDto.setThreshold(0.0);
     alertCreationRequestDto.setThresholdOperator(AlertThresholdOperator.GREATER);
     alertCreationRequestDto.setEmails(Collections.singletonList("test@camunda.com"));
-    alertCreationRequestDto.setName("test alert");
+    alertCreationRequestDto.setName(TEST_ALERT_NAME);
     alertCreationRequestDto.setReportId(reportId);
 
     return alertCreationRequestDto;

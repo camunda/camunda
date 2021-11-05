@@ -27,6 +27,7 @@ import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInsta
 import org.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler;
 import org.camunda.optimize.service.importing.ingested.handler.IngestedImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
+import org.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeVariableImportIndexHandler;
@@ -166,6 +167,10 @@ public class ImportIndexHandlerRegistry {
 
   public ZeebeProcessInstanceImportIndexHandler getZeebeProcessInstanceImportIndexHandler(Integer partitionId) {
     return getZeebeImportIndexHandler(partitionId, ZeebeProcessInstanceImportIndexHandler.class);
+  }
+
+  public ZeebeIncidentImportIndexHandler getZeebeIncidentImportIndexHandler(Integer partitionId) {
+    return getZeebeImportIndexHandler(partitionId, ZeebeIncidentImportIndexHandler.class);
   }
 
   public ZeebeVariableImportIndexHandler getZeebeVariableImportIndexHandler(Integer partitionId) {

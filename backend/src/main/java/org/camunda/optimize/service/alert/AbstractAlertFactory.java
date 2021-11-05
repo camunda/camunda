@@ -35,7 +35,7 @@ public abstract class AbstractAlertFactory<T extends Job> {
   }
 
   private long durationInMs(AlertInterval checkInterval) {
-    ChronoUnit parsedUnit = unitOf(checkInterval.getUnit());
+    ChronoUnit parsedUnit = unitOf(checkInterval.getUnit().name());
     long millis = Duration.between(
         OffsetDateTime.now(),
         OffsetDateTime.now().plus(checkInterval.getValue(), parsedUnit)
@@ -53,7 +53,7 @@ public abstract class AbstractAlertFactory<T extends Job> {
       OffsetDateTime startFuture = OffsetDateTime.now()
           .plus(
               getInterval(alert).getValue(),
-              unitOf(getInterval(alert).getUnit())
+              unitOf(getInterval(alert).getUnit().name())
           );
 
       trigger = newTrigger()

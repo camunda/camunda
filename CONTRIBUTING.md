@@ -42,6 +42,10 @@ This applies to __all kind of projects__.
 
     <type>(<scope>): <subject>
 
+###### Examples
+    chore(eventIngestion): initialize ingestionTimestamp in Service layer
+    feature(zeebe): import Zeebe processes as process definitions into Optimize
+
 #### Long form (with body)
 
     <type>(<scope>): <subject>
@@ -53,6 +57,14 @@ This applies to __all kind of projects__.
     <BLANK LINE>
 
     <footer>
+
+###### Example
+    feature(zeebe): import Zeebe processes as process definitions
+
+    This is a long description of the issue that I however wrap at 80
+    characters for better readability
+
+    relates to OPT-XXXX
 
 First line cannot be longer than __70 characters__, second line is always blank and other lines should be wrapped at __80 characters__! This makes the message easier to read on github as well as in various git tools.
 

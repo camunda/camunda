@@ -1,5 +1,5 @@
 {
-  "appName": "Camunda Optimize",
+  "appName": "Optimize",
   "navigation": {
     "homepage": "Home",
     "analysis": "Analyse",
@@ -8,7 +8,9 @@
     "logout": "Abmelden",
     "logoutFailed": "Abmeldung fehlgeschlagen",
     "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
-    "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten"
+    "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten",
+    "userGuide": "Benutzerhandbuch",
+    "help": "Hilfe"
   },
   "login": {
     "appName": "Optimize",
@@ -560,7 +562,7 @@
       "completedInstances": "Abgeschlossene Prozessinstanzen",
       "runningInstances": "Laufende Prozessinstanzen",
       "aggregateDuration": "Aggregierte Prozessdauer (ToDo: Aggregationen alternativer Dauer anzeigen)",
-      "activeProcessIncidents": "Aktive Zwischenfälle", 
+      "activeProcessIncidents": "Aktive Zwischenfälle",
       "flownodeDuration": "Welche Prozessschritte nehmen zu viel Zeit in Anspruch? (ToDo: Zielwerte für diese Prozessschritte hinzufügen)",
       "controlChart": "Ist mein Prozess unter Kontrolle?",
       "flownodeFrequency": "Wie oft wird jeder Prozessschritt ausgeführt?",
@@ -624,8 +626,8 @@
       },
       "types": {
         "state": "Instanzstatus",
-        "startDate": "Startdatum",
-        "endDate": "Enddatum",
+        "instanceStartDate": "Startdatum",
+        "instanceEndDate": "Enddatum",
         "variable": "Variable",
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
@@ -955,8 +957,8 @@
         "date": "Instanzdatum",
         "assignee": "Bearbeiter",
         "candidateGroup": "Potenzielle Gruppe",
-        "startDate": "Startdatum",
-        "endDate": "Enddatum",
+        "instanceStartDate": "Startdatum",
+        "instanceEndDate": "Enddatum",
         "duration": "Dauer",
         "instance": "Prozessinstanz",
         "instanceDuration": "Dauer der Prozessinstanz",
@@ -1007,8 +1009,8 @@
       "dateModal": {
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "info": {
-          "startDate": "Prozessinstanzen <b>gestartet</b>",
-          "endDate": "Prozessinstanzen <b>beendet</b>",
+          "instanceStartDate": "Prozessinstanzen <b>gestartet</b>",
+          "instanceEndDate": "Prozessinstanzen <b>beendet</b>",
           "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
         },
         "invalidInput": "Bitte geben Sie einen positiven ganzzahligen Wert ein",

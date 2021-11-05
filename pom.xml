@@ -27,7 +27,7 @@
 
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.2.1</zeebe.version>
+    <zeebe.version>1.2.2</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
@@ -43,8 +43,8 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.1</elasticsearch.log4j.version>
     <guava.version>31.0.1-jre</guava.version>
-    <spring.version>5.3.10</spring.version>
-    <mockito.version>3.12.4</mockito.version>
+    <spring.version>5.3.12</spring.version>
+    <mockito.version>4.0.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <junit.jupiter.version>5.8.1</junit.jupiter.version>
     <junit.platform.version>1.8.1</junit.platform.version>
@@ -52,7 +52,7 @@
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.21.0</assertj.version>
 
-    <lombok.version>1.18.20</lombok.version>
+    <lombok.version>1.18.22</lombok.version>
     <logback.version>1.2.6</logback.version>
     <slf4j.version>1.7.32</slf4j.version>
 
@@ -321,7 +321,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.1.0</version>
+      <version>4.1.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -459,9 +459,11 @@
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>
             <developmentBranch>master</developmentBranch>
+            <supportBranchPrefix>maintenance/</supportBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
           <useSnapshotInRelease>true</useSnapshotInRelease>
+          <useSnapshotInSupport>true</useSnapshotInSupport>
           <skipTestProject>true</skipTestProject>
           <skipTag>true</skipTag>
         </configuration>

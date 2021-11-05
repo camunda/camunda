@@ -17,7 +17,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 
 @Slf4j
-public class OpenIncidentImportService extends AbstractIncidentImportService {
+public class OpenIncidentImportService extends AbstractEngineIncidentImportService {
 
   private final OpenIncidentWriter openIncidentWriter;
 

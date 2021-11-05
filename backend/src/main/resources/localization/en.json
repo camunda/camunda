@@ -1,5 +1,5 @@
 {
-  "appName": "Camunda Optimize",
+  "appName": "Optimize",
   "navigation": {
     "homepage": "Home",
     "analysis": "Analysis",
@@ -8,7 +8,9 @@
     "logout": "Logout",
     "logoutFailed": "Logout failed.",
     "logoutSuccess": "You logged out successfully.",
-    "configLoadingError": "An error occurred while loading the UI configurations"
+    "configLoadingError": "An error occurred while loading the UI configurations",
+    "userGuide": "User Guide",
+    "help": "Help"
   },
   "login": {
     "appName": "Optimize",
@@ -560,7 +562,7 @@
       "completedInstances": "Total Completed Process Instances",
       "runningInstances": "Running Process Instances",
       "aggregateDuration": "Aggregated Process Duration (To Do: View alternate duration aggregations)",
-      "activeProcessIncidents": "Active Incidents", 
+      "activeProcessIncidents": "Active Incidents",
       "flownodeDuration": "Which process steps take too much time? (To Do: Add Target values for these process steps)",
       "controlChart": "Is my process within control?",
       "flownodeFrequency": "How often is each process step run?",
@@ -624,8 +626,8 @@
       },
       "types": {
         "state": "Instance State",
-        "startDate": "Start Date",
-        "endDate": "End Date",
+        "instanceStartDate": "Start Date",
+        "instanceEndDate": "End Date",
         "variable": "Variable",
         "runningInstancesOnly": "Running",
         "completedInstancesOnly": "Completed",
@@ -955,8 +957,8 @@
         "date": "Instance Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
-        "startDate": "Start Date",
-        "endDate": "End Date",
+        "instanceStartDate": "Start Date",
+        "instanceEndDate": "End Date",
         "duration": "Duration",
         "instance": "Process instance",
         "instanceDuration": "Process Instance Duration",
@@ -1007,8 +1009,8 @@
       "dateModal": {
         "endDateWarning": "Reports with an active End Date Filter will only show completed instances.",
         "info": {
-          "startDate": "Process Instances <b>started</b>",
-          "endDate": "Process Instances <b>ended</b>",
+          "instanceStartDate": "Process Instances <b>started</b>",
+          "instanceEndDate": "Process Instances <b>ended</b>",
           "evaluationDateTime": "Decision Instances <b>evaluated</b>"
         },
         "invalidInput": "Please enter a positive integer value",
@@ -1087,11 +1089,11 @@
       "nodeDateModal": {
         "info": {
           "flowNodeStartDate": {
-            "instance": "Only display instances where at least on of the selected Flow Nodes started",
+            "instance": "Only display instances where at least one of the selected Flow Nodes started",
             "view": "Only display data from Flow Nodes which started"
           },
           "flowNodeEndDate": {
-            "instance": "Only display instances where at least on of the selected Flow Nodes ended",
+            "instance": "Only display instances where at least one of the selected Flow Nodes ended",
             "view": "Only display data from Flow Nodes which ended"
           }
         }

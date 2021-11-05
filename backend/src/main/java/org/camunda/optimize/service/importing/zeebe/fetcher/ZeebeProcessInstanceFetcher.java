@@ -44,11 +44,6 @@ public class ZeebeProcessInstanceFetcher extends AbstractZeebeRecordFetcher<Zeeb
   }
 
   @Override
-  protected String getRecordDescription() {
-    return "processInstance";
-  }
-
-  @Override
   protected Set<Intent> getIntentsForRecordType() {
     return INTENTS;
   }

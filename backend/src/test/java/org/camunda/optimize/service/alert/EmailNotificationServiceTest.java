@@ -76,7 +76,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
+    notificationService.notify("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -92,7 +92,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
-    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
+    notificationService.notify("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -107,7 +107,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
+    notificationService.notify("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -123,7 +123,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
-    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
+    notificationService.notify("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -137,7 +137,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipients("some body text", newArrayList("to1@localhost.com", "to2@localhost.com"));
+    notificationService.notify("some body text", newArrayList("to1@localhost.com", "to2@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
@@ -153,7 +153,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipients(
+    notificationService.notify(
       "some body text",
       newArrayList("invalidAddressThatThrowsError", "to2@localhost.com")
     );
@@ -171,7 +171,7 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipients(
+    notificationService.notify(
       "some body text",
       newArrayList("invalidAddressThatThrowsError")
     );

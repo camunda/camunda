@@ -42,7 +42,7 @@ export async function isAuthorizedToShareDashboard(dashboardId) {
 
 export function convertFilterToDefaultValues(availableFilter, filters) {
   // dates
-  if (availableFilter.type === 'startDate' || availableFilter.type === 'endDate') {
+  if (availableFilter.type === 'instanceStartDate' || availableFilter.type === 'instanceEndDate') {
     return filters.find(({type}) => type === availableFilter.type)?.data ?? null;
   }
 
@@ -128,7 +128,10 @@ export function getDefaultFilter(availableFilters) {
         );
       }
 
-      if (availableFilter.type === 'startDate' || availableFilter.type === 'endDate') {
+      if (
+        availableFilter.type === 'instanceStartDate' ||
+        availableFilter.type === 'instanceEndDate'
+      ) {
         return filters.push({
           type: availableFilter.type,
           filterLevel: 'instance',

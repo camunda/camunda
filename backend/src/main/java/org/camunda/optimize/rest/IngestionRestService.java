@@ -34,6 +34,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -83,24 +84,6 @@ public class IngestionRestService {
       ));
   }
 
-  private List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
-    return cloudEventDtos.stream()
-      .map(cloudEventDto -> EventDto.builder()
-        .id(cloudEventDto.getId())
-        .eventName(cloudEventDto.getType())
-        .timestamp(
-          cloudEventDto.getTime()
-            .orElse(LocalDateUtil.getCurrentDateTime().toInstant())
-            .toEpochMilli()
-        )
-        .traceId(cloudEventDto.getTraceid())
-        .group(cloudEventDto.getGroup().orElse(null))
-        .source(cloudEventDto.getSource())
-        .data(cloudEventDto.getData())
-        .build())
-      .collect(toList());
-  }
-
   private void validateVariableType(final List<ExternalProcessVariableRequestDto> variables) {
     if (variables.stream().anyMatch(variable -> !VariableHelper.isVariableTypeSupported(variable.getType()))) {
       throw new BadRequestException(String.format(
@@ -138,8 +121,28 @@ public class IngestionRestService {
     return configurationService.getVariableIngestionConfiguration().getAccessToken();
   }
 
+  private static List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
+    Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
+    return cloudEventDtos.stream()
+      .map(cloudEventDto -> EventDto.builder()
+        .id(cloudEventDto.getId())
+        .eventName(cloudEventDto.getType())
+        .timestamp(
+          cloudEventDto.getTime()
+            .orElse(rightNow) //In case no time was passed as a parameter, use the current time instead
+            .toEpochMilli()
+        )
+        .traceId(cloudEventDto.getTraceid())
+        .group(cloudEventDto.getGroup().orElse(null))
+        .source(cloudEventDto.getSource())
+        .data(cloudEventDto.getData())
+        .build())
+      .collect(toList());
+  }
+
   @Data
   private static class ValidList<E> implements List<E> {
+
     @Delegate
     private List<E> list = new ArrayList<>();
   }

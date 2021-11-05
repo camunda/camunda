@@ -22,13 +22,16 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 public class DBConnector {
   private Connection connection = null;
   private static final int BATCH_SIZE = 10000;
+  private static final String PROCESS_INSTANCE_TABLE = "ACT_HI_PROCINST";
 
   public DBConnector(final String driver, final String dbUrl, final String dbUser, final String dbUserPassword) {
     initDatabaseConnection(driver, dbUrl, dbUser, dbUserPassword);
@@ -51,9 +54,9 @@ public class DBConnector {
 
   @SneakyThrows
   public void updateProcessInstances(String startDate, String endDate) {
-    List<String> ids = new ArrayList<>();
+    Map<String, String> ids = new HashMap<>();
     //get ids of first batch
-    String sql = "SELECT ID_ FROM ACT_HI_PROCINST ORDER BY ID_ LIMIT ? OFFSET ?";
+    String sql = "SELECT ID_, END_TIME_ FROM " + PROCESS_INSTANCE_TABLE + " ORDER BY ID_ LIMIT ? OFFSET ?";
     try (final PreparedStatement statement = connection.prepareStatement(sql)) {
       int currentOffset = 0;
       while (true) {
@@ -65,19 +68,24 @@ public class DBConnector {
 
         while (rs.next()) {
           currentBatchRowCount++;
-          ids.add(rs.getString(1));
-
+          ids.put(rs.getString(1), rs.getString( 2));
         }
         OffsetDateTime[] startDates = new OffsetDateTime[currentBatchRowCount];
         OffsetDateTime[] endDates = new OffsetDateTime[currentBatchRowCount];
-        String[] instanceIds = ids.toArray(new String[0]);
+        String[] instanceIds = ids.keySet().toArray(new String[0]);
 
         for (int i = 0; i < instanceIds.length; i++) {
           List<LocalDateTime> dates = generateDates(startDate, endDate);
           OffsetDateTime startDateTime = OffsetDateTime.of(dates.get(0), ZoneOffset.UTC);
           OffsetDateTime endDateTime = OffsetDateTime.of(dates.get(1), ZoneOffset.UTC);
           startDates[i] = startDateTime;
-          endDates[i] = endDateTime;
+          //Only set the new end date in case an end date already existed (process is not done)
+          if(ids.get(instanceIds[i]) != null) {
+            endDates[i] = endDateTime;
+          } else {
+            endDates[i] = null;
+          }
+
         }
         changeProcessInstanceStartAndEndDateInBatches(startDates, endDates, instanceIds);
         ids.clear();
@@ -94,13 +102,18 @@ public class DBConnector {
   @SneakyThrows
   public void changeProcessInstanceStartAndEndDateInBatches(OffsetDateTime[] startDateTime,
                                                             OffsetDateTime[] endDateTime, String[] processInstanceId) {
-    String sql = "UPDATE ACT_HI_PROCINST " +
-      "SET START_TIME_ = ? , END_TIME_ = ?" +
+    String sql = "UPDATE " + PROCESS_INSTANCE_TABLE +
+      " SET START_TIME_ = ? , END_TIME_ = ?" +
       "WHERE ID_ = ?";
     try (final PreparedStatement statement = connection.prepareStatement(sql)) {
       for (int i = 0; i < processInstanceId.length; i++) {
         statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDateTime[i]));
-        statement.setTimestamp(2, toLocalTimestampWithoutNanos(endDateTime[i]));
+        //Only add the end date to the SQL statement if there is an end date to set
+        if(endDateTime[i] != null) {
+          statement.setTimestamp(2, toLocalTimestampWithoutNanos(endDateTime[i]));
+        } else {
+          statement.setNull(2, java.sql.Types.TIMESTAMP);
+        }
         statement.setString(3, processInstanceId[i]);
         statement.addBatch();
       }

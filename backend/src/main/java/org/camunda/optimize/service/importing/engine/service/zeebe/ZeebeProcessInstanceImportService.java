@@ -10,16 +10,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.ZeebeProcessInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;
@@ -39,53 +35,22 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 @Slf4j
-public class ZeebeProcessInstanceImportService implements ImportService<ZeebeProcessInstanceRecordDto> {
+public class ZeebeProcessInstanceImportService
+  extends ZeebeProcessInstanceSubEntityImportService<ZeebeProcessInstanceRecordDto> {
 
   private static final Set<BpmnElementType> TYPES_TO_IGNORE = Set.of(
     BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW, BpmnElementType.TESTING_ONLY
   );
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  private final ZeebeProcessInstanceWriter processInstanceWriter;
-  private final ConfigurationService configurationService;
-  private final int partitionId;
-
   public ZeebeProcessInstanceImportService(final ConfigurationService configurationService,
                                            final ZeebeProcessInstanceWriter processInstanceWriter,
-                                           final int partitionId) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
-      getClass().getSimpleName(), configurationService
-    );
-    this.processInstanceWriter = processInstanceWriter;
-    this.partitionId = partitionId;
-    this.configurationService = configurationService;
+                                           final int partitionId,
+                                           final ProcessDefinitionReader processDefinitionReader) {
+    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader);
   }
 
   @Override
-  public void executeImport(final List<ZeebeProcessInstanceRecordDto> zeebeProcessInstanceRecords,
-                            final Runnable importCompleteCallback) {
-    log.trace("Importing process definitions from zeebe records...");
-
-    boolean newDataIsAvailable = !zeebeProcessInstanceRecords.isEmpty();
-    if (newDataIsAvailable) {
-      final List<ProcessInstanceDto> newOptimizeEntities =
-        mapZeebeRecordsToOptimizeEntities(zeebeProcessInstanceRecords);
-      final ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
-    }
-  }
-
-  @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
-  }
-
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
-  }
-
-  private List<ProcessInstanceDto> mapZeebeRecordsToOptimizeEntities(
+  protected List<ProcessInstanceDto> mapZeebeRecordsToOptimizeEntities(
     List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
     return zeebeRecords.stream()
       .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
@@ -95,29 +60,21 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
   }
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
-    final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(recordsForInstance);
+    // All instances in the list should have the same process data, so we can simply take the first entry
+    final ZeebeProcessInstanceRecordDto firstRecord = recordsForInstance.get(0);
+    final ZeebeProcessInstanceDataDto firstRecordValue = firstRecord.getValue();
+    final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
+      firstRecordValue.getBpmnProcessId(),
+      firstRecordValue.getProcessInstanceKey(),
+      firstRecordValue.getProcessDefinitionKey()
+    );
+    instanceToAdd.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
+    instanceToAdd.setIncidents(Collections.emptyList());
+    instanceToAdd.setVariables(Collections.emptyList());
+
     updateProcessStateAndDateProperties(instanceToAdd, recordsForInstance);
     updateFlowNodeEventsForProcess(instanceToAdd, recordsForInstance);
     return instanceToAdd;
-  }
-
-  private ProcessInstanceDto createSkeletonProcessInstance(final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
-    // All instances in the list should have the same process data so we can simply take the first entry
-    final ZeebeProcessInstanceRecordDto firstRecord = recordsForInstance.get(0);
-    final ZeebeProcessInstanceDataDto firstRecordValue = firstRecord.getValue();
-    final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
-    processInstanceDto.setProcessInstanceId(String.valueOf(firstRecordValue.getProcessInstanceKey()));
-    processInstanceDto.setProcessDefinitionId(String.valueOf(firstRecordValue.getProcessDefinitionKey()));
-    processInstanceDto.setProcessDefinitionKey(firstRecordValue.getBpmnProcessId());
-    processInstanceDto.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
-    processInstanceDto.setDataSource(new ZeebeDataSourceDto(
-      configurationService.getConfiguredZeebe().getName(),
-      partitionId
-    ));
-    // We don't currently store variables or incidents for zeebe process instances
-    processInstanceDto.setIncidents(Collections.emptyList());
-    processInstanceDto.setVariables(Collections.emptyList());
-    return processInstanceDto;
   }
 
   private void updateProcessStateAndDateProperties(final ProcessInstanceDto instanceToAdd,
@@ -157,12 +114,12 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
         FlowNodeInstanceDto flowNodeForKey = flowNodeInstancesByRecordKey.getOrDefault(
           recordKey, createSkeletonFlowNodeInstance(processFlowNodeInstance));
         final ProcessInstanceIntent instanceIntent = processFlowNodeInstance.getIntent();
-        if (instanceIntent.equals(ELEMENT_COMPLETED)) {
+        if (instanceIntent == ELEMENT_COMPLETED) {
           flowNodeForKey.setEndDate(dateForTimestamp(processFlowNodeInstance));
-        } else if (instanceIntent.equals(ELEMENT_TERMINATED)) {
+        } else if (instanceIntent == ELEMENT_TERMINATED) {
           flowNodeForKey.setCanceled(true);
           flowNodeForKey.setEndDate(dateForTimestamp(processFlowNodeInstance));
-        } else if (instanceIntent.equals(ELEMENT_ACTIVATING)) {
+        } else if (instanceIntent == ELEMENT_ACTIVATING) {
           flowNodeForKey.setStartDate(dateForTimestamp(processFlowNodeInstance));
         }
         updateDurationIfMissing(flowNodeForKey);
@@ -198,16 +155,6 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     }
   }
 
-  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
-    final List<ProcessInstanceDto> processDefinitions,
-    final Runnable importCompleteCallback) {
-    ZeebeProcessInstanceElasticsearchImportJob procDefImportJob = new ZeebeProcessInstanceElasticsearchImportJob(
-      processInstanceWriter, configurationService, importCompleteCallback
-    );
-    procDefImportJob.setEntitiesToImport(processDefinitions);
-    return procDefImportJob;
-  }
-
   private void updateDurationIfMissing(final ProcessInstanceDto instanceToAdd) {
     if (instanceToAdd.getDuration() == null && instanceToAdd.getStartDate() != null && instanceToAdd.getEndDate() != null) {
       instanceToAdd.setDuration(instanceToAdd.getStartDate().until(instanceToAdd.getEndDate(), ChronoUnit.MILLIS));
@@ -216,8 +163,8 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
 
   private void updateDurationIfMissing(final FlowNodeInstanceDto flowNodeToAdd) {
     if (flowNodeToAdd.getTotalDurationInMs() == null && flowNodeToAdd.getStartDate() != null && flowNodeToAdd.getEndDate() != null) {
-      flowNodeToAdd.setTotalDurationInMs(flowNodeToAdd.getStartDate()
-                                           .until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
+      flowNodeToAdd.setTotalDurationInMs(
+        flowNodeToAdd.getStartDate().until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
     }
   }
 

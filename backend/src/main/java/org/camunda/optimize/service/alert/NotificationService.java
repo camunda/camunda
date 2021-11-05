@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.alert;
 
-import java.util.List;
+import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 
 public interface NotificationService {
-
-  void notifyRecipients(String text, List<String> recipients);
+  void notify(AlertNotificationDto notification);
 }

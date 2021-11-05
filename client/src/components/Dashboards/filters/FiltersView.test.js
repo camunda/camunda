@@ -37,8 +37,8 @@ it('should pass a single filter to the date filter component', () => {
   };
   const node = shallow(
     <FiltersView
-      availableFilters={[{type: 'state'}, {type: 'startDate'}]}
-      filter={[{type: 'runningInstancesOnly'}, {type: 'startDate', data: dateFilter}]}
+      availableFilters={[{type: 'state'}, {type: 'instanceStartDate'}]}
+      filter={[{type: 'runningInstancesOnly'}, {type: 'instanceStartDate', data: dateFilter}]}
     />
   );
 

@@ -51,24 +51,20 @@ if (ciMode && !chromeheadlessMode) {
         throw new Error(`unexpected response ${response.statusText}`);
       }
 
-      stream.pipeline(
-        response.body,
-        fs.createWriteStream('BrowserStackLocal'),
-        (err) => {
-          if (err) {
-            console.error('Pipeline failed.', err);
-          } else {
-            console.log('BrowserStackLocal file downloaded. Starting daemon.');
-            fs.chmodSync('BrowserStackLocal', 0o755); 
-            spawnWithArgs(
-              `./BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon start --parallel-runs 3`,
-              {
-                cwd: path.resolve(__dirname, '..'),
-              }
-            );
-          }
+      stream.pipeline(response.body, fs.createWriteStream('BrowserStackLocal'), (err) => {
+        if (err) {
+          console.error('Pipeline failed.', err);
+        } else {
+          console.log('BrowserStackLocal file downloaded. Starting daemon.');
+          fs.chmodSync('BrowserStackLocal', 0o755);
+          spawnWithArgs(
+            `./BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon start --parallel-runs 3`,
+            {
+              cwd: path.resolve(__dirname, '..'),
+            }
+          );
         }
-      );
+      });
     }
   );
 }

@@ -5,57 +5,32 @@
  */
 package org.camunda.optimize.service.alert;
 
-import com.icegreen.greenmail.util.GreenMail;
-import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
-import org.mockserver.verify.VerificationTimes;
 
 import javax.mail.internet.MimeMessage;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.mockserver.model.HttpRequest.request;
 
 @ExtendWith(MockServerExtension.class)
-@MockServerSettings(ports = {8787})
-public class AlertStateChangeIT extends AbstractAlertIT {
-
-  private GreenMail greenMail;
-
-  @BeforeEach
-  public void cleanUp() throws Exception {
-    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
-    greenMail = initGreenMail();
-  }
-
-  @AfterEach
-  public void tearDown() {
-    greenMail.stop();
-  }
+@MockServerSettings
+public class AlertStateChangeIT extends AbstractAlertEmailIT {
 
   @Test
   public void reminderJobsSendEmailEveryTime() throws Exception {
@@ -98,78 +73,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
   }
 
   @Test
-  @SneakyThrows
-  public void reminderJobsSendWebhookRequestEveryTime(MockServerClient client) {
-    // given
-    setWebhookConfiguration();
-
-    long daysToShift = 0L;
-    long durationInSec = 2L;
-    ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-    simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
-    addReminderToAlert(simpleAlert);
-    String alertId = alertClient.createAlert(simpleAlert);
-
-    // when/then
-    triggerAndCompleteCheckJob(alertId);
-    clearWebhookRequestsFromClient(client);
-
-    triggerAndCompleteReminderJob(alertId);
-    assertWebhookRequestReceived(client, 1);
-
-    triggerAndCompleteReminderJob(alertId);
-    assertWebhookRequestReceived(client, 2);
-  }
-
-  @Test
-  @SneakyThrows
-  public void sendWebhookRequestWithCustomContentType(MockServerClient client) {
-    // given
-    setWebhookConfiguration();
-
-    long daysToShift = 0L;
-    long durationInSec = 2L;
-    ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-    simpleAlert.setWebhook(TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME);
-    addReminderToAlert(simpleAlert);
-    String alertId = alertClient.createAlert(simpleAlert);
-
-    // when/then
-    clearWebhookRequestsFromClient(client);
-    triggerAndCompleteCheckJob(alertId);
-    assertWebhookRequestReceived(client, 1);
-  }
-
-  @Test
-  @SneakyThrows
-  public void sendWebhookRequestWithInvalidUrlDoesNotFail(MockServerClient client) {
-    // given
-    setWebhookConfiguration();
-
-    long daysToShift = 0L;
-    long durationInSec = 2L;
-    ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-    simpleAlert.setWebhook(TEST_INVALID_PORT_WEBHOOK_NAME);
-    addReminderToAlert(simpleAlert);
-    String alertId = alertClient.createAlert(simpleAlert);
-
-    // when/then
-    clearWebhookRequestsFromClient(client);
-    triggerAndCompleteCheckJob(alertId);
-    assertWebhookRequestReceived(client, 0);
-  }
-
-  @Test
   public void changeNotificationIsNotSentByDefault(MockServerClient client) throws Exception {
     // given
     setEmailConfiguration();
-    setWebhookConfiguration();
+    setWebhookConfiguration(client.getPort());
     long daysToShift = 0L;
     long durationInSec = 2L;
 
@@ -202,7 +109,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
   public void changeNotificationIsSent(MockServerClient client) throws Exception {
     // given
     setEmailConfiguration();
-    setWebhookConfiguration();
+    setWebhookConfiguration(client.getPort());
 
     long daysToShift = 0L;
     long durationInSec = 2L;
@@ -233,8 +140,11 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     assertWebhookRequestReceived(client, 1);
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-    assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
+    String branding = embeddedOptimizeExtension.getConfigurationService().getAlertEmailCompanyBranding();
+    assertThat(emails[0].getSubject()).isEqualTo(
+      "[" + branding + "-Optimize] - Report status");
     String content = emails[0].getContent().toString();
+    assertThat(content).contains(branding);
     assertThat(content).containsSequence(simpleAlert.getName());
     assertThat(content).containsSequence("is not exceeded anymore.");
     assertThat(content).containsSequence(
@@ -248,11 +158,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
   }
 
   @Test
-  @SneakyThrows
   public void emailNotificationStillSentWhenWebhookFails() {
     // given
     setEmailConfiguration();
-    setWebhookConfiguration();
+    setWebhookConfiguration(88992);
 
     long daysToShift = 0L;
     long durationInSec = 2L;
@@ -269,32 +178,6 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails).hasSize(1);
-  }
-
-  @Test
-  @SneakyThrows
-  public void webhookNotificationStillSentWhenEmailFails(MockServerClient client) {
-    // given
-    setWebhookConfiguration();
-    setEmailConfiguration();
-    embeddedOptimizeExtension.getConfigurationService()
-      .setAlertEmailPort(9999); // set to incorrect port so that email notifications fail
-
-    long daysToShift = 0L;
-    long durationInSec = 2L;
-    ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-    simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
-    addReminderToAlert(simpleAlert);
-    String alertId = alertClient.createAlert(simpleAlert);
-
-    // when
-    clearWebhookRequestsFromClient(client);
-    triggerAndCompleteCheckJob(alertId);
-
-    // then
-    assertWebhookRequestReceived(client, 1);
   }
 
   @Test
@@ -400,31 +283,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     return reportClient.createSingleProcessReport(report);
   }
 
-  private void assertWebhookRequestReceived(final MockServerClient client, final Integer times) {
-    client.verify(
-      request()
-        .withMethod(TEST_WEBHOOK_METHOD)
-        .withPath(TEST_WEBHOOK_URL_PATH),
-      VerificationTimes.exactly(times)
-    );
-  }
-
-  private void clearWebhookRequestsFromClient(final MockServerClient client) {
-    client.clear(request().withPath(TEST_WEBHOOK_URL_PATH));
-  }
-
   private AlertCreationRequestDto createAlertWithReminder(String reportId) {
     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
     return addReminderToAlert(simpleAlert);
   }
 
-  private AlertCreationRequestDto addReminderToAlert(AlertCreationRequestDto alert) {
-    AlertInterval reminderInterval = new AlertInterval();
-    reminderInterval.setValue(3);
-    reminderInterval.setUnit("Seconds");
-    alert.setReminder(reminderInterval);
-    alert.setThreshold(1500.0);
-    alert.getCheckInterval().setValue(5);
-    return alert;
-  }
 }
