@@ -23,6 +23,7 @@ jobs:
         with:
           languages: java
           queries: +security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
       - name: Build
         run: mvn -B -T1C -DskipTests -DskipChecks install
       - name: Perform CodeQL Analysis
