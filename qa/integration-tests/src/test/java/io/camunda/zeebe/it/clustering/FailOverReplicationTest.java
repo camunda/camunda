@@ -15,7 +15,9 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -177,6 +179,73 @@ public class FailOverReplicationTest {
 
     assertThat(nextLeader.getNodeId()).isEqualTo(getNodeId(followerA));
     clusteringRule.waitForSnapshotAtBroker(previousLeader);
+  }
+
+  @Test
+  // regression test https://github.com/camunda-cloud/zeebe/issues/8129
+  public void shouldNotProduceDuplicatedKeys() {
+    // given
+    // we produce some records on the old leader
+    final var previousLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final var previousLeader = clusteringRule.getBroker(previousLeaderId);
+    client.newDeployCommand().addProcessModel(PROCESS, PROCESS_RESOURCE_NAME).send().join();
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .withResult()
+        .send()
+        .join();
+
+    // since the snapshot is the same on all nodes we know that all have the same state
+    // and processed or replayed everything
+    clusteringRule.awaitSameSnapshotOnAllNodes();
+
+    // we disconnect the leader and step down
+    clusteringRule.disconnect(previousLeader);
+    clusteringRule.stepDown(previousLeader, 1);
+
+    final var previousKeys =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
+            .collect(Collectors.toList())
+            .stream()
+            .map(Record::getKey)
+            .filter(k -> k != -1L)
+            .collect(Collectors.toList());
+    // remove old exported records content - for easier verification later
+    RecordingExporter.reset();
+
+    // when
+    // we await a new leader
+    final var newLeaderInfo = clusteringRule.awaitOtherLeader(1, previousLeaderId);
+    final var newLeaderId = newLeaderInfo.getNodeId();
+    assertThat(newLeaderId).isNotEqualTo(previousLeaderId);
+
+    // produce new stuff on new leader
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .withResult()
+        .send()
+        .join();
+
+    final var newKeys =
+        RecordingExporter.processInstanceRecords()
+            .limitToProcessInstanceCompleted()
+            .collect(Collectors.toList())
+            .stream()
+            .map(Record::getKey)
+            .filter(k -> k != -1L)
+            .toArray(Long[]::new);
+
+    // then
+    assertThat(newKeys).isNotEmpty();
+    assertThat(previousKeys)
+        .isNotEmpty()
+        .describedAs("Keys should always be unique for different entities.")
+        .doesNotContain(newKeys);
   }
 
   private int getNodeId(final Broker broker) {

@@ -67,6 +67,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -774,26 +775,48 @@ public final class ClusteringRule extends ExternalResource {
     broker.getBrokerAdminService().takeSnapshot();
   }
 
-  public void triggerAndWaitForSnapshots() {
+  /**
+   * Verifies and awaits that the same snapshot is taken on all nodes. It will not do any
+   * sophisticated computation in order to determine it is the same. The snapshot metadata contain
+   * the exporter and processing position, which should be the same (equal). If this is the case the
+   * snapshot is expected to be the same.
+   */
+  public void awaitSameSnapshotOnAllNodes() {
+    Awaitility.await("Await the same snapshot on all nodes.")
+        .timeout(Duration.ofMinutes(1))
+        .until(
+            this::triggerAndWaitForSnapshots,
+            (snapshotList) -> {
+              final var distinctCount = snapshotList.stream().distinct().count();
+              return snapshotList.size() == brokers.size() && distinctCount == 1;
+            });
+  }
+
+  public ArrayList<SnapshotId> triggerAndWaitForSnapshots() {
     // Ensure that the exporter positions are distributed to the followers
     getClock().addTime(ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL);
     getBrokers().stream()
         .map(Broker::getBrokerAdminService)
         .forEach(BrokerAdminService::takeSnapshot);
 
+    final var snapshots = new ArrayList<SnapshotId>();
     getBrokers()
         .forEach(
-            broker ->
-                Awaitility.await()
-                    .pollInterval(2, TimeUnit.SECONDS)
-                    .timeout(60, TimeUnit.SECONDS)
-                    .until(
-                        () -> {
-                          // Trigger snapshot again in case snapshot is not already taken
-                          broker.getBrokerAdminService().takeSnapshot();
-                          return getSnapshot(broker);
-                        },
-                        Optional::isPresent));
+            broker -> {
+              final var brokerSnapshot =
+                  Awaitility.await()
+                      .pollInterval(2, TimeUnit.SECONDS)
+                      .timeout(60, TimeUnit.SECONDS)
+                      .until(
+                          () -> {
+                            // Trigger snapshot again in case snapshot is not already taken
+                            broker.getBrokerAdminService().takeSnapshot();
+                            return getSnapshot(broker);
+                          },
+                          Optional::isPresent);
+              brokerSnapshot.ifPresent(snapshots::add);
+            });
+    return snapshots;
   }
 
   /**
