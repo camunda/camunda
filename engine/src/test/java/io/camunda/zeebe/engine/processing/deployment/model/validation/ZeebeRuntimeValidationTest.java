@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -27,7 +28,6 @@ import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -74,7 +74,7 @@ public final class ZeebeRuntimeValidationTest {
             .conditionExpression(INVALID_EXPRESSION)
             .endEvent()
             .done(),
-        Arrays.asList(expect(ConditionExpression.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ConditionExpression.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // static expression
@@ -85,7 +85,7 @@ public final class ZeebeRuntimeValidationTest {
             .condition(STATIC_EXPRESSION)
             .endEvent()
             .done(),
-        Arrays.asList(expect(ConditionExpression.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ConditionExpression.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         // not a valid expression
@@ -94,7 +94,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeInputExpression(INVALID_EXPRESSION, "foo"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeInput.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // static expression
@@ -103,7 +103,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeInput(STATIC_EXPRESSION, "bar"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeInput.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         // empty expression
@@ -112,7 +112,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeInput("", "bar"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, MISSING_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeInput.class, MISSING_EXPRESSION_MESSAGE))
       },
       {
         // empty path expression
@@ -121,7 +121,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeInputExpression("foo", ""))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, MISSING_PATH_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeInput.class, MISSING_PATH_EXPRESSION_MESSAGE))
       },
       {
         // invalid target expression
@@ -130,7 +130,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeInputExpression("foo", INVALID_PATH_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeInput.class, INVALID_PATH_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeInput.class, INVALID_PATH_EXPRESSION_MESSAGE))
       },
       { // not a valid expression
         Bpmn.createExecutableProcess("process")
@@ -138,7 +138,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeOutputExpression(INVALID_EXPRESSION, "foo"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeOutput.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeOutput.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // static expression
@@ -147,7 +147,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeOutput(STATIC_EXPRESSION, "bar"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeOutput.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeOutput.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         // empty expression
@@ -156,7 +156,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeOutput("", "bar"))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeOutput.class, MISSING_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeOutput.class, MISSING_EXPRESSION_MESSAGE))
       },
       {
         // invalid target expression
@@ -165,7 +165,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeOutputExpression("foo", INVALID_PATH_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeOutput.class, INVALID_PATH_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeOutput.class, INVALID_PATH_EXPRESSION_MESSAGE))
       },
       {
         // empty path expression
@@ -174,7 +174,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask("task", s -> s.zeebeOutputExpression("foo", ""))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeOutput.class, MISSING_PATH_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeOutput.class, MISSING_PATH_EXPRESSION_MESSAGE))
       },
       {
         // name expression is invalid
@@ -184,7 +184,7 @@ public final class ZeebeRuntimeValidationTest {
             .message(b -> b.name("message").zeebeCorrelationKeyExpression(INVALID_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeSubscription.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeSubscription.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // static expression
@@ -194,7 +194,7 @@ public final class ZeebeRuntimeValidationTest {
             .message(b -> b.name("message").zeebeCorrelationKey(STATIC_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeSubscription.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeSubscription.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -203,7 +203,7 @@ public final class ZeebeRuntimeValidationTest {
             .message(b -> b.name("message").zeebeCorrelationKeyExpression(INVALID_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeSubscription.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeSubscription.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // static expression
@@ -213,7 +213,7 @@ public final class ZeebeRuntimeValidationTest {
             .message(b -> b.name("message").zeebeCorrelationKey(STATIC_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeSubscription.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeSubscription.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         // input collection expression is not supported
@@ -223,7 +223,7 @@ public final class ZeebeRuntimeValidationTest {
                 "task",
                 t -> t.multiInstance(m -> m.zeebeInputCollectionExpression(INVALID_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // input collection expression is static
@@ -232,7 +232,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask(
                 "task", t -> t.multiInstance(m -> m.zeebeInputCollection(STATIC_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeLoopCharacteristics.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         // output element expression is not supported
@@ -246,7 +246,7 @@ public final class ZeebeRuntimeValidationTest {
                             m.zeebeInputCollectionExpression("x")
                                 .zeebeOutputElementExpression(INVALID_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // output element  expression is static
@@ -260,7 +260,7 @@ public final class ZeebeRuntimeValidationTest {
                             m.zeebeInputCollectionExpression("x")
                                 .zeebeOutputElement(STATIC_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, STATIC_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeLoopCharacteristics.class, STATIC_EXPRESSION_MESSAGE))
       },
       {
         // output element expression is not supported
@@ -275,7 +275,7 @@ public final class ZeebeRuntimeValidationTest {
                                 .zeebeOutputCollection("bar")
                                 .zeebeOutputElementExpression(INVALID_EXPRESSION)))
             .done(),
-        Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // process id expression is not supported
@@ -283,7 +283,7 @@ public final class ZeebeRuntimeValidationTest {
             .startEvent()
             .callActivity("call", c -> c.zeebeProcessIdExpression(INVALID_EXPRESSION))
             .done(),
-        Arrays.asList(expect(ZeebeCalledElement.class, INVALID_EXPRESSION_MESSAGE))
+        List.of(expect(ZeebeCalledElement.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         /* message on start event has expression that contains a variable reference
@@ -294,7 +294,7 @@ public final class ZeebeRuntimeValidationTest {
             .startEvent()
             .message(messageBuilder -> messageBuilder.nameExpression("variableReference"))
             .done(),
-        Arrays.asList(
+        List.of(
             expect(
                 StartEvent.class,
                 "Expected constant expression but found '=variableReference', which could not be evaluated without context: "
@@ -308,7 +308,7 @@ public final class ZeebeRuntimeValidationTest {
             .startEvent()
             .message(messageBuilder -> messageBuilder.nameExpression("false"))
             .done(),
-        Arrays.asList(
+        List.of(
             expect(
                 StartEvent.class,
                 "Expected constant expression of type String for message name '=false', but was BOOLEAN"))
@@ -320,7 +320,7 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask(
                 "task", task -> task.zeebeJobType("test").zeebeInputExpression("x", "null"))
             .done(),
-        Arrays.asList(
+        List.of(
             expect(
                 ZeebeInput.class,
                 "Expected path expression 'null' but is one of the reserved words (null, true, false, function, if, then, else, for, between, instance, of)."))
@@ -332,11 +332,38 @@ public final class ZeebeRuntimeValidationTest {
             .serviceTask(
                 "task", task -> task.zeebeJobType("test").zeebeOutputExpression("x", "true"))
             .done(),
-        Arrays.asList(
+        List.of(
             expect(
                 ZeebeOutput.class,
                 "Expected path expression 'true' but is one of the reserved words (null, true, false, function, if, then, else, for, between, instance, of)."))
       },
+      {
+        /* invalid assignee expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeAssigneeExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /* invalid candidateGroups expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeCandidateGroupsExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /* invalid candidateGroups static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeCandidateGroups("1,,"))
+            .done(),
+        List.of(
+            expect(
+                ZeebeAssignmentDefinition.class,
+                "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found '1,,'"))
+      }
     };
   }
 
