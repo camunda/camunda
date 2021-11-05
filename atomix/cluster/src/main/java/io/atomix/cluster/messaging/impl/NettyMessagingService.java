@@ -27,6 +27,7 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.StringUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -255,8 +256,17 @@ public final class NettyMessagingService implements ManagedMessagingService {
                   try {
                     responsePayload = handler.apply(message.sender(), message.payload());
                   } catch (final Exception e) {
-                    log.warn("An error occurred in a message handler:", e);
+                    log.warn(
+                        "Unexpected error while handling message {} from {}",
+                        message.subject(),
+                        message.sender(),
+                        e);
+
                     status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                    final String exceptionMessage = e.getMessage();
+                    if (exceptionMessage != null) {
+                      responsePayload = StringUtil.getBytes(exceptionMessage);
+                    }
                   }
                   connection.reply(message, status, Optional.ofNullable(responsePayload));
                 }));
@@ -272,14 +282,26 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 .apply(message.sender(), message.payload())
                 .whenComplete(
                     (result, error) -> {
+                      byte[] responsePayload = null;
                       final ProtocolReply.Status status;
+
                       if (error == null) {
                         status = ProtocolReply.Status.OK;
+                        responsePayload = result;
                       } else {
-                        log.warn("An error occurred in a message handler:", error);
+                        log.warn(
+                            "Unexpected error while handling message {} from {}",
+                            message.subject(),
+                            message.sender(),
+                            error);
+
                         status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                        final String exceptionMessage = error.getMessage();
+                        if (exceptionMessage != null) {
+                          responsePayload = StringUtil.getBytes(error.getMessage());
+                        }
                       }
-                      connection.reply(message, status, Optional.ofNullable(result));
+                      connection.reply(message, status, Optional.ofNullable(responsePayload));
                     }));
   }
 

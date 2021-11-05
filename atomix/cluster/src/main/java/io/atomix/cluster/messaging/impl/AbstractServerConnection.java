@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import io.camunda.zeebe.util.StringUtil;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -32,13 +33,20 @@ abstract class AbstractServerConnection implements ServerConnection {
 
   @Override
   public void dispatch(final ProtocolRequest message) {
-    final BiConsumer<ProtocolRequest, ServerConnection> handler = handlers.get(message.subject());
+    final String subject = message.subject();
+    final BiConsumer<ProtocolRequest, ServerConnection> handler = handlers.get(subject);
     if (handler != null) {
-      log.trace("Received message type {} from {}", message.subject(), message.sender());
+      log.trace("Received message type {} from {}", subject, message.sender());
       handler.accept(message, this);
     } else {
-      log.debug("No handler for message type {} from {}", message.subject(), message.sender());
-      reply(message, ProtocolReply.Status.ERROR_NO_HANDLER, Optional.empty());
+      log.debug("No handler for message type {} from {}", subject, message.sender());
+
+      byte[] subjectBytes = null;
+      if (subject != null) {
+        subjectBytes = StringUtil.getBytes(subject);
+      }
+
+      reply(message, ProtocolReply.Status.ERROR_NO_HANDLER, Optional.ofNullable(subjectBytes));
     }
   }
 }
