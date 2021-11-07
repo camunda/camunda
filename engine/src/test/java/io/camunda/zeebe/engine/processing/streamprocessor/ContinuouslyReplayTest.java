@@ -62,8 +62,6 @@ public class ContinuouslyReplayTest {
               processingState.entrySet().stream()
                   .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
                   // ignores transient states
-                  .filter(entry -> entry.getKey() != ZbColumnFamilies.KEY)
-                  // on followers we don't need to reset the key
                   // this will happen anyway then on leader replay
                   .forEach(
                       entry -> {

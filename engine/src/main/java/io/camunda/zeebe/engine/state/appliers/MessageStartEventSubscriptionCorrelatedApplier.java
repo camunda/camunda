@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -19,13 +18,9 @@ public final class MessageStartEventSubscriptionCorrelatedApplier
         MessageStartEventSubscriptionIntent, MessageStartEventSubscriptionRecord> {
 
   private final MutableMessageState messageState;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public MessageStartEventSubscriptionCorrelatedApplier(
-      final MutableMessageState messageState,
-      final MutableEventScopeInstanceState eventScopeInstanceState) {
+  public MessageStartEventSubscriptionCorrelatedApplier(final MutableMessageState messageState) {
     this.messageState = messageState;
-    this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override
@@ -41,12 +36,5 @@ public final class MessageStartEventSubscriptionCorrelatedApplier
       messageState.putActiveProcessInstance(value.getBpmnProcessIdBuffer(), correlationKey);
       messageState.putProcessInstanceCorrelationKey(value.getProcessInstanceKey(), correlationKey);
     }
-
-    // write the event trigger for the start event
-    eventScopeInstanceState.triggerStartEvent(
-        value.getProcessDefinitionKey(),
-        value.getMessageKey(),
-        value.getStartEventIdBuffer(),
-        value.getVariablesBuffer());
   }
 }

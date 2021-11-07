@@ -65,12 +65,12 @@ public class TestMessagingService implements ManagedMessagingService {
       final Address address, final String type) {
     final TestMessagingService service = getService(address);
     if (service == null) {
-      return (e, p) -> Futures.exceptionalFuture(new NoRemoteHandler());
+      return (e, p) -> Futures.exceptionalFuture(new NoRemoteHandler(type));
     }
     final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler =
         service.handlers.get(checkNotNull(type));
     if (handler == null) {
-      return (e, p) -> Futures.exceptionalFuture(new NoRemoteHandler());
+      return (e, p) -> Futures.exceptionalFuture(new NoRemoteHandler(type));
     }
     return handler;
   }

@@ -169,8 +169,7 @@ public final class EventAppliers implements EventApplier {
             state.getMessageStartEventSubscriptionState()));
     register(
         MessageStartEventSubscriptionIntent.CORRELATED,
-        new MessageStartEventSubscriptionCorrelatedApplier(
-            state.getMessageState(), state.getEventScopeInstanceState()));
+        new MessageStartEventSubscriptionCorrelatedApplier(state.getMessageState()));
     register(
         MessageStartEventSubscriptionIntent.DELETED,
         new MessageStartEventSubscriptionDeletedApplier(

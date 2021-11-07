@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -32,7 +33,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -62,7 +62,7 @@ public class LeaderRoleTest {
 
   @Before
   public void setup() {
-    context = Mockito.mock(RaftContext.class);
+    context = Mockito.mock(RaftContext.class, RETURNS_DEEP_STUBS);
 
     when(context.getName()).thenReturn("leader");
     when(context.getElectionTimeout()).thenReturn(Duration.ofMillis(100));
@@ -92,8 +92,7 @@ public class LeaderRoleTest {
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
 
-    final RaftLogReader reader = mock(RaftLogReader.class);
-    when(context.getLogReader()).thenReturn(reader);
+    when(context.getCluster().getRemoteMemberStates()).thenReturn(List.of());
   }
 
   @Test

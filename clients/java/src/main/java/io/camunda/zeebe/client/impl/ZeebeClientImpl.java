@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.ActivateJobsCommandImpl;
@@ -288,6 +289,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job) {
+    return newUpdateRetriesCommand(job.getKey());
+  }
+
+  @Override
   public JobWorkerBuilderStep1 newWorker() {
     return new JobWorkerBuilderImpl(
         config,
@@ -316,12 +322,27 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public CompleteJobCommandStep1 newCompleteCommand(ActivatedJob job) {
+    return newCompleteCommand(job.getKey());
+  }
+
+  @Override
   public FailJobCommandStep1 newFailCommand(final long jobKey) {
     return jobClient.newFailCommand(jobKey);
   }
 
   @Override
+  public FailJobCommandStep1 newFailCommand(ActivatedJob job) {
+    return newFailCommand(job.getKey());
+  }
+
+  @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
     return jobClient.newThrowErrorCommand(jobKey);
+  }
+
+  @Override
+  public ThrowErrorCommandStep1 newThrowErrorCommand(ActivatedJob job) {
+    return newThrowErrorCommand(job.getKey());
   }
 }

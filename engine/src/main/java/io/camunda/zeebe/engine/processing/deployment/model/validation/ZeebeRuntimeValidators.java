@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpre
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -25,7 +26,7 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeRuntimeValidators {
 
-  public static final Collection<ModelElementValidator<?>> getValidators(
+  public static Collection<ModelElementValidator<?>> getValidators(
       final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
     return List.of(
         // ----------------------------------------
@@ -98,6 +99,19 @@ public final class ZeebeRuntimeValidators {
                         ? definition.getTimeCycle().getTextContent()
                         : null,
                 ExpressionVerification::isOptional)
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeAssignmentDefinition.class)
+            .hasValidExpression(
+                ZeebeAssignmentDefinition::getAssignee, ExpressionVerification::isOptional)
+            .hasValidExpression(
+                ZeebeAssignmentDefinition::getCandidateGroups,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            ZeebeExpressionValidator::isListOfCsv,
+                            "be a list of comma-separated values, e.g. 'a,b,c'"))
             .build(expressionLanguage),
         // ----------------------------------------
         new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor));

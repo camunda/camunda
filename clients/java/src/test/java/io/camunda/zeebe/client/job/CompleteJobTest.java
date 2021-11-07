@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.util.ClientTest;
@@ -28,11 +29,12 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class CompleteJobTest extends ClientTest {
 
   @Test
-  public void shouldCompleteJob() {
+  public void shouldCompleteJobByKey() {
     // given
     final long jobKey = 12;
 
@@ -42,6 +44,23 @@ public final class CompleteJobTest extends ClientTest {
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getVariables()).isEmpty();
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJob() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newCompleteCommand(job).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getVariables()).isEmpty();
 
     rule.verifyDefaultRequestTimeout();
@@ -142,7 +161,6 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   public static class POJO {
-
     private String key;
 
     public String getKey() {

@@ -2,3 +2,5 @@ extraction:
  java:
    index:
      java_version: "11"
+     build_command:
+       mvn clean install -DskipTests -DskipChecks -P-autoFormat
