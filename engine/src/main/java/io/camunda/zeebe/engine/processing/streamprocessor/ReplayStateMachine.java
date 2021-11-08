@@ -72,7 +72,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private long batchSourceEventPosition = StreamProcessor.UNSET_POSITION;
 
   private long snapshotPosition;
-  private long highestRecordKey = -1L;
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
 
@@ -234,9 +233,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    * the last source event, which has caused the last applied event.
    */
   private void onRecordsReplayed() {
-    // restore the key generate with the highest key from the log
-    keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
     LOG.info(LOG_STMT_REPLAY_FINISHED, lastReadRecordPosition);
     recoveryFuture.complete(lastSourceEventPosition);
   }
@@ -267,8 +263,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
     // records from other partitions should not influence the key generator of this partition
     if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
-      // remember the highest key on the stream to restore the key generator after replay
-      highestRecordKey = Math.max(currentRecordKey, highestRecordKey);
+      keyGeneratorControls.setKeyIfHigher(currentRecordKey);
     }
   }
 

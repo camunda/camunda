@@ -38,6 +38,9 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_FORM_KEY = "formKey";
 
+  public static final String ATTRIBUTE_ASSIGNEE = "assignee";
+  public static final String ATTRIBUTE_CANDIDATE_GROUPS = "candidateGroups";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -50,6 +53,8 @@ public class ZeebeConstants {
 
   public static final String ELEMENT_FORM_DEFINITION = "formDefinition";
   public static final String ELEMENT_USER_TASK_FORM = "userTaskForm";
+
+  public static final String ELEMENT_ASSIGNMENT_DEFINITION = "assignmentDefinition";
 
   public static final String ELEMENT_LOOP_CHARACTERISTICS = "loopCharacteristics";
 

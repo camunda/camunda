@@ -53,6 +53,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
   }
 
+  @Override
   public int getVersion() {
     return versionProp.getValue();
   }
@@ -70,6 +71,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   @Override
   public byte[] getChecksum() {
     return BufferUtil.bufferAsArray(checksumProp.getValue());
+  }
+
+  @Override
+  public boolean isDuplicate() {
+    return false;
   }
 
   public ProcessRecord setChecksum(final DirectBuffer checksumBuffer) {

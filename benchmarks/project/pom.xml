@@ -32,7 +32,6 @@
     <!-- maven plugin versions -->
     <plugin.version.exec>1.6.0</plugin.version.exec>
     <plugin.version.shade>3.2.1</plugin.version.shade>
-    <plugin.version.fmt>2.9</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
   </properties>
 
@@ -121,11 +120,6 @@
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>com.coveo</groupId>
-        <artifactId>fmt-maven-plugin</artifactId>
       </plugin>
 
       <plugin>

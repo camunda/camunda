@@ -36,6 +36,9 @@
             },
             "checksum": {
               "enabled": false
+            },
+            "duplicate": {
+              "type": "boolean"
             }
           }
         }

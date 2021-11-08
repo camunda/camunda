@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.ConnectException;
@@ -40,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -428,5 +430,193 @@ public class NettyMessagingServiceTest {
     messagingService = (ManagedMessagingService) startFuture.join();
     assertThat(messagingService.bindingAddresses()).contains(bindingAddress);
     assertThat(messagingService.address()).isEqualTo(nonBindableAddress);
+  }
+
+  @Test
+  public void testRemoteHandlerFailure() {
+    // given
+    final var exceptionMessage = "foo bar";
+    final var expectedException = new MessagingException.RemoteHandlerFailure(exceptionMessage);
+
+    final BiFunction<Address, byte[], byte[]> handler =
+        (ep, data) -> {
+          throw new RuntimeException(exceptionMessage);
+        };
+
+    final var subject = nextSubject();
+    netty2.registerHandler(subject, handler, MoreExecutors.directExecutor());
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testRemoteHandlerFailureNullValue() {
+    // given
+    final var expectedException = new MessagingException.RemoteHandlerFailure(null);
+
+    final BiFunction<Address, byte[], byte[]> handler =
+        (ep, data) -> {
+          throw new RuntimeException();
+        };
+
+    final var subject = nextSubject();
+    netty2.registerHandler(subject, handler, MoreExecutors.directExecutor());
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testRemoteHandlerFailureEmptyStringValue() {
+    // given
+    final var exceptionMessage = "";
+    final var expectedException = new MessagingException.RemoteHandlerFailure(null);
+
+    final BiFunction<Address, byte[], byte[]> handler =
+        (ep, data) -> {
+          throw new RuntimeException(exceptionMessage);
+        };
+
+    final var subject = nextSubject();
+    netty2.registerHandler(subject, handler, MoreExecutors.directExecutor());
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testCompletableRemoteHandlerFailure() {
+    // given
+    final var exceptionMessage = "foo bar";
+    final var expectedException = new MessagingException.RemoteHandlerFailure(exceptionMessage);
+
+    final var subject = nextSubject();
+    netty2.registerHandler(
+        subject,
+        (address, bytes) -> CompletableFuture.failedFuture(new RuntimeException(exceptionMessage)));
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testCompletableRemoteHandlerFailureNullValue() {
+    // given
+    final var expectedException = new MessagingException.RemoteHandlerFailure(null);
+
+    final var subject = nextSubject();
+    netty2.registerHandler(
+        subject, (address, bytes) -> CompletableFuture.failedFuture(new RuntimeException()));
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testCompletableRemoteHandlerFailureEmptyStringValue() {
+    // given
+    final var exceptionMessage = "";
+    final var expectedException = new MessagingException.RemoteHandlerFailure(null);
+
+    final var subject = nextSubject();
+    netty2.registerHandler(
+        subject,
+        (address, bytes) -> CompletableFuture.failedFuture(new RuntimeException(exceptionMessage)));
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testNoRemoteHandlerException() {
+    // given
+    final var subject = nextSubject();
+    final var expectedException = new MessagingException.NoRemoteHandler(subject);
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.NoRemoteHandler.class)
+        .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void testNoRemoteHandlerExceptionEmptyStringValue() {
+    // given
+    final var subject = "";
+    final var expectedException = new MessagingException.NoRemoteHandler(null);
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(MessagingException.NoRemoteHandler.class)
+        .withMessage(expectedException.getMessage());
   }
 }

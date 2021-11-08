@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -99,6 +103,19 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     }
   }
 
+  public static boolean isListOfCsv(final Expression staticExp) {
+    final String value = staticExp.getExpression();
+    if (value.isEmpty()) {
+      return true;
+    }
+    final var values = value.split(",");
+    if (values.length < StringUtils.countMatches(value, ",") + 1) {
+      // one of the values was an empty string, e.g. 'a,,c'
+      return false;
+    }
+    return Arrays.stream(values).noneMatch(String::isEmpty);
+  }
+
   public static class Builder<T extends ModelElementInstance> {
 
     private final Class<T> elementType;
@@ -132,6 +149,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
   public static final class ExpressionVerification {
 
+    private final List<ExpressionRequirement<Expression>> staticRequirements = new ArrayList<>();
     private boolean isNonStatic = false;
     private boolean isMandatory = false;
 
@@ -147,6 +165,12 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
     public ExpressionVerification isOptional() {
       isMandatory = false;
+      return this;
+    }
+
+    public ExpressionVerification satisfiesIfStatic(
+        final Predicate<Expression> verification, final String description) {
+      staticRequirements.add(new ExpressionRequirement<>(verification, description));
       return this;
     }
 
@@ -166,14 +190,35 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
           return;
         }
 
-        if (parseResult.isStatic() && isNonStatic) {
-          resultCollector.addError(
-              0,
-              String.format(
-                  "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
-                  expression, expression));
-        }
+        assertStaticExpression(expression, resultCollector, parseResult);
       });
+    }
+
+    private void assertStaticExpression(
+        final String expression,
+        final ValidationResultCollector resultCollector,
+        final Expression parseResult) {
+      if (!parseResult.isStatic()) {
+        return;
+      }
+
+      if (isNonStatic) {
+        resultCollector.addError(
+            0,
+            String.format(
+                "Expected expression but found static value '%s'. An expression must start with '=' (e.g. '=%s').",
+                expression, expression));
+        return;
+      }
+
+      staticRequirements.stream()
+          .filter(req -> req.negate().test(parseResult))
+          .map(
+              req ->
+                  String.format(
+                      "Expected static value to %s, but found '%s'.",
+                      req.getDescription(), expression))
+          .forEach(failure -> resultCollector.addError(0, failure));
     }
   }
 
@@ -185,6 +230,31 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     private Verification(final Function<T, String> expressionSupplier, final Assertion assertion) {
       this.expressionSupplier = expressionSupplier;
       this.assertion = assertion;
+    }
+  }
+
+  /**
+   * Combines an expression predicate with a description.
+   *
+   * @param <E> The type of expression
+   */
+  private static final class ExpressionRequirement<E extends Expression> implements Predicate<E> {
+
+    private final Predicate<E> predicate;
+    private final String description;
+
+    public ExpressionRequirement(final Predicate<E> predicate, final String description) {
+      this.predicate = predicate;
+      this.description = description;
+    }
+
+    @Override
+    public boolean test(final E e) {
+      return predicate.test(e);
+    }
+
+    public String getDescription() {
+      return description;
     }
   }
 

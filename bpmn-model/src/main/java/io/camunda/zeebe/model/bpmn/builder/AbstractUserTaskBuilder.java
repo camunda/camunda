@@ -21,6 +21,7 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -28,7 +29,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 
 /** @author Sebastian Menski */
 public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<B>>
-    extends AbstractTaskBuilder<B, UserTask> {
+    extends AbstractTaskBuilder<B, UserTask> implements ZeebeUserTaskPropertiesBuilder<B> {
 
   protected AbstractUserTaskBuilder(
       final BpmnModelInstance modelInstance, final UserTask element, final Class<?> selfType) {
@@ -46,26 +47,12 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return myself;
   }
 
-  /** camunda extensions */
-
-  /**
-   * Sets the form key with the format 'format:location:id' of the build user task.
-   *
-   * @param format the format of the reference form
-   * @param location the location where the form is available
-   * @param id the id of the form
-   * @return the builder object
-   */
+  @Override
   public B zeebeFormKey(final String format, final String location, final String id) {
     return zeebeFormKey(String.format("%s:%s:%s", format, location, id));
   }
 
-  /**
-   * Sets the form key of the build user task.
-   *
-   * @param formKey the form key to set
-   * @return the builder object
-   */
+  @Override
   public B zeebeFormKey(final String formKey) {
     final ZeebeFormDefinition formDefinition =
         getCreateSingleExtensionElement(ZeebeFormDefinition.class);
@@ -73,13 +60,7 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return myself;
   }
 
-  /**
-   * Creates an new user task form with the given context, assuming it is of the format
-   * camunda-forms and embedded inside the diagram.
-   *
-   * @param userTaskForm the XML encoded user task form json in the camunda-forms format
-   * @return the builder object
-   */
+  @Override
   public B zeebeUserTaskForm(final String userTaskForm) {
     final ZeebeUserTaskForm zeebeUserTaskForm = createZeebeUserTaskForm();
     zeebeUserTaskForm.setTextContent(userTaskForm);
@@ -89,20 +70,39 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
         zeebeUserTaskForm.getId());
   }
 
-  /**
-   * Creates an new user task form with the given context, assuming it is of the format
-   * camunda-forms and embedded inside the diagram.
-   *
-   * @param id the unique identifier of the user task form element
-   * @param userTaskForm the XML encoded user task form json in the camunda-forms format
-   * @return the builder object
-   */
+  @Override
   public B zeebeUserTaskForm(final String id, final String userTaskForm) {
     final ZeebeUserTaskForm zeebeUserTaskForm = createZeebeUserTaskForm();
     zeebeUserTaskForm.setId(id);
     zeebeUserTaskForm.setTextContent(userTaskForm);
     return zeebeFormKey(
         USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT, USER_TASK_FORM_KEY_BPMN_LOCATION, id);
+  }
+
+  @Override
+  public B zeebeAssignee(final String assignee) {
+    final ZeebeAssignmentDefinition assignment =
+        myself.getCreateSingleExtensionElement(ZeebeAssignmentDefinition.class);
+    assignment.setAssignee(assignee);
+    return myself;
+  }
+
+  @Override
+  public B zeebeAssigneeExpression(final String expression) {
+    return zeebeAssignee(asZeebeExpression(expression));
+  }
+
+  @Override
+  public B zeebeCandidateGroups(final String candidateGroups) {
+    final ZeebeAssignmentDefinition assignment =
+        myself.getCreateSingleExtensionElement(ZeebeAssignmentDefinition.class);
+    assignment.setCandidateGroups(candidateGroups);
+    return myself;
+  }
+
+  @Override
+  public B zeebeCandidateGroupsExpression(final String expression) {
+    return zeebeCandidateGroups(asZeebeExpression(expression));
   }
 
   public B zeebeTaskHeader(final String key, final String value) {

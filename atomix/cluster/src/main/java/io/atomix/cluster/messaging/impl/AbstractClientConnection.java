@@ -18,6 +18,7 @@ package io.atomix.cluster.messaging.impl;
 
 import com.google.common.collect.Maps;
 import io.atomix.cluster.messaging.MessagingException;
+import io.camunda.zeebe.util.StringUtil;
 import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -41,9 +42,12 @@ abstract class AbstractClientConnection implements ClientConnection {
       if (message.status() == ProtocolReply.Status.OK) {
         responseFuture.complete(message.payload());
       } else if (message.status() == ProtocolReply.Status.ERROR_NO_HANDLER) {
-        responseFuture.completeExceptionally(new MessagingException.NoRemoteHandler());
+        final String subject = extractMessage(message);
+        responseFuture.completeExceptionally(new MessagingException.NoRemoteHandler(subject));
       } else if (message.status() == ProtocolReply.Status.ERROR_HANDLER_EXCEPTION) {
-        responseFuture.completeExceptionally(new MessagingException.RemoteHandlerFailure());
+        final String exceptionMessage = extractMessage(message);
+        responseFuture.completeExceptionally(
+            new MessagingException.RemoteHandlerFailure(exceptionMessage));
       } else if (message.status() == ProtocolReply.Status.PROTOCOL_EXCEPTION) {
         responseFuture.completeExceptionally(new MessagingException.ProtocolException());
       }
@@ -52,6 +56,16 @@ abstract class AbstractClientConnection implements ClientConnection {
           "Received a reply for message id:[{}] but was unable to locate the request handle",
           message.id());
     }
+  }
+
+  private String extractMessage(final ProtocolReply message) {
+    final byte[] payload = message.payload();
+    String exceptionMessage = null;
+
+    if (payload != null && payload.length > 0) {
+      exceptionMessage = StringUtil.fromBytes(payload);
+    }
+    return exceptionMessage;
   }
 
   @Override

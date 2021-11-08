@@ -18,6 +18,10 @@ import (
 	"context"
 	"time"
 
+	"errors"
+	"io/ioutil"
+
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +38,17 @@ var publishMessageCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		parsedMessageVariables, err := parsePublishMessageVariables(publishMessageVariables)
+		if err != nil {
+			return err
+		}
+
 		request, err := client.NewPublishMessageCommand().
 			MessageName(args[0]).
 			CorrelationKey(publishMessageCorrelationKey).
 			MessageId(publishMessageID).
 			TimeToLive(publishMessageTTL).
-			VariablesFromString(publishMessageVariables)
+			VariablesFromString(parsedMessageVariables)
 
 		if err != nil {
 			return err
@@ -63,9 +72,23 @@ func init() {
 	publishMessageCmd.Flags().StringVar(&publishMessageCorrelationKey, "correlationKey", "", "Specify message correlation key")
 	publishMessageCmd.Flags().StringVar(&publishMessageID, "messageId", "", "Specify the unique id of the message")
 	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message. Example values: 300ms, 50s or 1m")
-	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string")
-
+	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string or path to JSON file")
 	if err := publishMessageCmd.MarkFlagRequired("correlationKey"); err != nil {
 		panic(err)
 	}
+}
+
+func parsePublishMessageVariables(messageVariables string) (string, error) {
+	jsStringChecker := utils.NewJSONStringSerializer()
+	jsonErr := jsStringChecker.Validate("variables", messageVariables)
+	if jsonErr != nil {
+		// not a JSON string
+		fileVariables, err := ioutil.ReadFile(messageVariables)
+		if err != nil {
+			// not a file path or valid JSON string
+			return "", errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
+		}
+		return string(fileVariables), nil
+	}
+	return messageVariables, nil
 }

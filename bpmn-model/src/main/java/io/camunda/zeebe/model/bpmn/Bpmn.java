@@ -211,6 +211,7 @@ import io.camunda.zeebe.model.bpmn.impl.instance.di.PlaneImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.di.ShapeImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.di.StyleImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAssignmentDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeFormDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
@@ -639,6 +640,7 @@ public class Bpmn {
     ZeebeCalledElementImpl.registerType(bpmnModelBuilder);
     ZeebeFormDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeUserTaskFormImpl.registerType(bpmnModelBuilder);
+    ZeebeAssignmentDefinitionImpl.registerType(bpmnModelBuilder);
   }
 
   /** @return the {@link Model} instance to use */
