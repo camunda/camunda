@@ -803,7 +803,13 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${plugin.version.compiler}</version>
           <configuration>
+            <parameters>true</parameters>
             <release>${version.java}</release>
+            <compilerArgs>
+              <!-- ensure we generate a class file for package-info.java files to avoid recompiling every time -->
+              <arg>-Xpkginfo:always</arg>
+            </compilerArgs>
+            <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
         </plugin>
 
@@ -1184,6 +1190,7 @@
           <artifactId>protobuf-maven-plugin</artifactId>
           <version>${plugin.version.protobuf-maven-plugin}</version>
           <configuration>
+            <checkStaleness>true</checkStaleness>
             <protocArtifact>com.google.protobuf:protoc:${version.protobuf}:exe:${os.detected.classifier}</protocArtifact>
             <pluginId>grpc-java</pluginId>
             <pluginArtifact>io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}</pluginArtifact>
@@ -1341,9 +1348,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <parameters>true</parameters>
-        </configuration>
       </plugin>
 
       <plugin>
