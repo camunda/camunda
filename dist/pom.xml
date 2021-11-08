@@ -264,10 +264,12 @@
             <phase>package</phase>
             <configuration>
               <target>
-                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx"></chmod>
+                <?SORTPOM IGNORE?> <!-- ordering is important here, chmod needs to run after copying -->
                 <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe"></copy>
                 <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin"></copy>
                 <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl"></copy>
+                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx"></chmod>
+                <?SORTPOM RESUME?>
               </target>
             </configuration>
           </execution>
