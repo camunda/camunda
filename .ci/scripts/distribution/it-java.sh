@@ -19,7 +19,7 @@ tempFile=$(mktemp)
 if [ -n "$SUREFIRE_FORK_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DforkCount=$SUREFIRE_FORK_COUNT")
   # if we know the fork count, we can limit the max heap for each fork to ensure we're not OOM killed
-  export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -XX:MaxRAMPercentage=$((100 / (MAVEN_PARALLELISM * $SUREFIRE_FORK_COUNT)))"
+  export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -XX:MaxRAMFraction=$((MAVEN_PARALLELISM * SUREFIRE_FORK_COUNT))"
 fi
 
 if [ -n "$JUNIT_THREAD_COUNT" ]; then
