@@ -285,7 +285,11 @@ export default class StringInput extends React.Component {
               </div>
             )}
             <div className="customValueButtonRow">
+              {showCustomValueSuccess && (
+                <div className="notification">{t('common.filter.variableModal.addedToList')}</div>
+              )}
               <Button
+                small
                 disabled={showCustomValueInput}
                 className="customValueButton"
                 onClick={() => {
@@ -295,9 +299,6 @@ export default class StringInput extends React.Component {
                 <Icon type="plus" />
                 {t('common.value')}
               </Button>
-              {showCustomValueSuccess && (
-                <div className="notification">{t('common.filter.variableModal.addedToList')}</div>
-              )}
             </div>
           </div>
         )}

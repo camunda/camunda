@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
+import classnames from 'classnames';
 
-import {Labeled, Typeahead} from 'components';
+import {Button, Icon, Labeled, Tooltip, Typeahead} from 'components';
 import {t} from 'translation';
 
 import {BooleanInput} from './boolean';
@@ -17,6 +18,9 @@ import {DateInput} from './date';
 import './FilterInstance.scss';
 
 export default function FilterInstance({
+  expanded,
+  toggleExpanded,
+  onRemove,
   filter,
   variables,
   updateFilterData,
@@ -57,7 +61,38 @@ export default function FilterInstance({
   const InputComponent = getInputComponentForVariable(filter.type);
 
   return (
-    <section className="FilterInstance">
+    <section className={classnames('FilterInstance', {collapsed: !expanded && filter.name})}>
+      {filter.name && (
+        <div
+          tabIndex="0"
+          className="sectionTitle"
+          onClick={toggleExpanded}
+          onKeyDown={(evt) => {
+            if ((evt.key === ' ' || evt.key === 'Enter') && evt.target === evt.currentTarget) {
+              toggleExpanded();
+            }
+          }}
+        >
+          <span className="highlighted">{filter.name}</span> {t('common.filter.list.operators.is')}…
+          {expanded && filters.length > 1 && (
+            <Tooltip content={t('common.delete')}>
+              <Button
+                icon
+                className="removeButton"
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  onRemove();
+                }}
+              >
+                <Icon type="delete" />
+              </Button>
+            </Tooltip>
+          )}
+          <span className={classnames('sectionToggle', {expanded})}>
+            <Icon type="down" />
+          </span>
+        </div>
+      )}
       <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
         <Typeahead
           onChange={selectVariable}

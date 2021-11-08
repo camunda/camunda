@@ -28,6 +28,10 @@
     display: flex;
     margin-top: 15px;
 
+    .customValueButton {
+      margin-left: auto;
+    }
+
     .notification {
       flex: 1;
       text-align: center;

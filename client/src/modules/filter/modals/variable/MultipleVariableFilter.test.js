@@ -5,12 +5,10 @@
  */
 
 import React, {runAllEffects} from 'react';
+import {shallow} from 'enzyme';
 
 import MultipleVariableFilter from './MultipleVariableFilter';
-
 import {DateInput} from './date';
-
-import {shallow} from 'enzyme';
 
 jest.mock('./date', () => {
   const DateInput = () => 'DateInput';
@@ -47,6 +45,7 @@ const filterData = {
           values: ['value1', 'value2'],
         },
       },
+      {},
     ],
   },
   appliedTo: ['definition'],
@@ -219,19 +218,50 @@ it('should create another FilterInstance when clicking the OR button', async () 
   await runAllEffects();
 
   node.find('FilterInstance').prop('updateFilterData')({
-    type: 'Boolean',
     name: 'foo',
+    type: 'String',
     data: {
-      name: 'foo',
-      type: 'String',
-      data: {
-        operator: 'not in',
-        values: ['value1', 'value2'],
-      },
+      operator: 'not in',
+      values: ['value1', 'value2'],
     },
   });
 
   node.find('.orButton').simulate('click');
 
   expect(node.find('FilterInstance').length).toBe(2);
+});
+
+it('should set/unset the expanded state of one of the added filters', async () => {
+  const node = await shallow(<MultipleVariableFilter {...props} filterData={filterData} />);
+  await runAllEffects();
+
+  expect(node.find({expanded: true})).not.toExist();
+
+  node.find('FilterInstance').at(0).prop('toggleExpanded')();
+  expect(node.find('FilterInstance').at(0).prop('expanded')).toBe(true);
+
+  node.find('FilterInstance').at(0).prop('toggleExpanded')();
+  expect(node.find('FilterInstance').at(0).prop('expanded')).toBe(false);
+});
+
+it('should set the filter as expanded if it is being updated', async () => {
+  const node = await shallow(<MultipleVariableFilter {...props} filterData={filterData} />);
+  await runAllEffects();
+
+  node.find('FilterInstance').at(1).prop('updateFilterData')({
+    name: 'var2',
+    type: 'String',
+    data: {},
+  });
+
+  expect(node.find('FilterInstance').at(1).prop('expanded')).toBe(true);
+});
+
+it('should remove a variable filter', async () => {
+  const node = await shallow(<MultipleVariableFilter {...props} filterData={filterData} />);
+  await runAllEffects();
+
+  node.find('FilterInstance').at(1).prop('onRemove')();
+
+  expect(node.find('FilterInstance').length).toBe(1);
 });

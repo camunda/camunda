@@ -1048,6 +1048,7 @@
       },
       "variableModal": {
         "inputLabel": "Variablenname",
+        "info": "Nur Instanzen anzeigen, bei denen...",
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",

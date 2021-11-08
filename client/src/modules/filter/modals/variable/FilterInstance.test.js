@@ -12,6 +12,9 @@ import FilterInstance from './FilterInstance';
 
 const testVar = {name: 'testVar', type: 'String'};
 const props = {
+  expanded: false,
+  toggleExpanded: jest.fn(),
+  onRemove: jest.fn(),
   filter: {},
   variables: [testVar],
   updateFilterData: jest.fn(),
@@ -21,7 +24,7 @@ const props = {
 };
 
 beforeEach(() => {
-  props.updateFilterData.mockClear();
+  jest.clearAllMocks();
 });
 
 it('should select a variable from the list of available variables', () => {
@@ -48,4 +51,40 @@ it('should update filter data on input component change ', () => {
     name: filter.name,
     type: filter.type,
   });
+});
+
+it('should only show filter header if variable is selected', () => {
+  const node = shallow(<FilterInstance {...props} />);
+
+  expect(node.find('.sectionTitle')).not.toExist();
+
+  node.setProps({filter: {...testVar, data: {}}});
+
+  expect(node.find('.sectionTitle .highlighted')).toIncludeText(testVar.name);
+});
+
+it('should invoke toggleExpanded when clicking on the filter', () => {
+  const node = shallow(<FilterInstance {...props} filter={{...testVar, data: {}}} />);
+
+  node.find('.sectionTitle').simulate('click');
+
+  expect(props.toggleExpanded).toHaveBeenCalled();
+});
+
+it('should invoke onRemove when clicking the remove button', () => {
+  const node = shallow(
+    <FilterInstance
+      {...props}
+      filter={{...testVar, data: {}}}
+      filters={[
+        {name: 'var1', type: 'String', data: {}},
+        {name: 'var2', type: 'String', data: {}},
+      ]}
+      expanded
+    />
+  );
+
+  node.find('.sectionTitle .removeButton').simulate('click', {stopPropagation: jest.fn()});
+
+  expect(props.onRemove).toHaveBeenCalled();
 });

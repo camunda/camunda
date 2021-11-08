@@ -29,6 +29,7 @@ export default function MultipleVariableFilter({
 }) {
   const [valid, setValid] = useState(false);
   const [filters, setFilters] = useState([{}]);
+  const [expandedFilter, setExpandedFilter] = useState(0);
   const [variables, setVariables] = useState([]);
   const [applyTo, setApplyTo] = useState(null);
 
@@ -71,6 +72,7 @@ export default function MultipleVariableFilter({
           : filter;
       });
 
+      setExpandedFilter(filtersToAdd.length === 1 ? 0 : -1);
       setFilters(filtersToAdd);
       setValid(true);
     }
@@ -121,6 +123,9 @@ export default function MultipleVariableFilter({
   };
 
   const updateFilterData = (updateIndex, newFilter) => {
+    if (updateIndex !== expandedFilter) {
+      setExpandedFilter(updateIndex);
+    }
     setFilters(filters.map((filter, idx) => (idx === updateIndex ? newFilter : filter)));
   };
 
@@ -144,24 +149,33 @@ export default function MultipleVariableFilter({
             }}
           />
         )}
+        <div className="info">{t('common.filter.variableModal.info')}</div>
         {filters.map((filter, idx) => (
-          <div key={idx}>
+          <div className="variableContainer" key={filter.name + filter.type}>
             {idx !== 0 && <span className="orOperator">{t('common.filter.variableModal.or')}</span>}
             <FilterInstance
+              expanded={idx === expandedFilter}
+              toggleExpanded={() => {
+                setExpandedFilter(idx === expandedFilter ? -1 : idx);
+              }}
               filter={filter}
               updateFilterData={(newFilter) => updateFilterData(idx, newFilter)}
               variables={variables}
               config={config}
               applyTo={applyTo}
               filters={filters}
+              onRemove={() => {
+                setExpandedFilter(-1);
+                setFilters(filters.filter((_, filterIdx) => filterIdx !== idx));
+              }}
             />
           </div>
         ))}
         <Button
           className="orButton"
-          small
-          disabled={!valid}
+          disabled={!valid || variables.length <= filters.length}
           onClick={() => {
+            setExpandedFilter(filters.length);
             setFilters([...filters, {}]);
           }}
         >

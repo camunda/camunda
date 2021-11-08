@@ -52,7 +52,7 @@
 
   .StringInput {
     &:not(.containMode) + .customValueCheckbox {
-      transform: translate(100px, -25px);
+      transform: translateY(-20px);
     }
     .customValueButtonRow .notification {
       display: none;

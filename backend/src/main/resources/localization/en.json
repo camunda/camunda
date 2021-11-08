@@ -1048,6 +1048,7 @@
       },
       "variableModal": {
         "inputLabel": "Variable Name",
+        "info": "Only display instances where...",
         "inputPlaceholder": "Select or search for a variable here",
         "noVariables": "No variables found",
         "loadMore": "Load More",
