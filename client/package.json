@@ -63,7 +63,7 @@
     "@storybook/addons": "6.3.12",
     "@storybook/preset-create-react-app": "3.2.0",
     "@storybook/react": "6.3.12",
-    "@testing-library/jest-dom": "5.14.1",
+    "@testing-library/jest-dom": "5.15.0",
     "@testing-library/react": "11.2.7",
     "@testing-library/testcafe": "4.4.0",
     "@testing-library/user-event": "13.5.0",
