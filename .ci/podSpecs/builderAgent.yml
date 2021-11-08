@@ -47,10 +47,10 @@ spec:
       resources:
         limits:
           cpu: 8
-          memory: 27Gi
+          memory: 1Gi
         requests:
           cpu: 8
-          memory: 27Gi
+          memory: 1Gi
     - name: node
       image: node:16.5.0-alpine
       command: ["cat"]
