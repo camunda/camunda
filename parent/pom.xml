@@ -1100,6 +1100,8 @@
           <version>${plugin.version.scala}</version>
           <configuration>
             <scalaVersion>${version.scala}</scalaVersion>
+            <source>${version.java}</source>
+            <target>${version.java}</target>
           </configuration>
           <executions>
             <execution>
