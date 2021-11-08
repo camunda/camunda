@@ -5,7 +5,7 @@ FIND_OUTPUT=$(find . -iname '*workflow*' -not -path '.*/node_modules/*' -not -pa
 # if grep doesn't find a match it exits with 1, which we ignore as we check the output later
 GREP_OUTPUT=$(grep --exclude-dir={.git,node_modules,target,.ci,.github,vendor} -i -P 'workflow(?![-\s]+(?i)engine)' -r . || true)
 
-if [ -n "${FIND_OUTPUT}" -o -n "${GREP_OUTPUT}" ]; then
+if [ -n "${FIND_OUTPUT}" ] || [ -n "${GREP_OUTPUT}" ]; then
 	echo "Found occurence of workflow in file names or content"
 	echo "## File Names:"
 	echo "${FIND_OUTPUT}"

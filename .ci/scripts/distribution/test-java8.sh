@@ -15,7 +15,7 @@ MAVEN_PROPERTIES=(
   -DtestMavenId=3
   -Dsurefire.rerunFailingTestsCount=7
 )
-tmpfile=$(mktemp)
+tempFile=$(mktemp)
 
 if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DforkCount=$SUREFIRE_FORK_COUNT")
@@ -23,18 +23,18 @@ if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
   export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -XX:MaxRAMPercentage=$((100 / ($MAVEN_PARALLELISM * $SUREFIRE_FORK_COUNT)))"
 fi
 
-mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -pl clients/java \
+mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" -pl clients/java \
  -P parallel-tests,extract-flaky-tests "${MAVEN_PROPERTIES[@]}" \
- verify | tee ${tmpfile}
+ verify | tee "${tempFile}"
 status=${PIPESTATUS[0]}
 
 # delay checking the maven status after we've analysed flaky tests
-analyseFlakyTests "${tmpfile}" "./FlakyTests.txt" || exit $?
+analyseFlakyTests "${tempFile}" "./FlakyTests.txt" || exit $?
 
 if [[ $status != 0 ]]; then
-  exit $status;
+  exit "${status}";
 fi
 
-if grep -q "\[INFO\] Build failures were ignored\." ${tmpfile}; then
+if grep -q "\[INFO\] Build failures were ignored\." "${tempFile}"; then
   exit 1
 fi
