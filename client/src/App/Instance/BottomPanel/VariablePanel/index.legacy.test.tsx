@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {VariablePanel} from './index';
+import {VariablePanel} from './index.legacy';
 import {
   render,
   screen,
@@ -45,7 +45,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
   );
 };
 
-describe.skip('VariablePanel', () => {
+describe('VariablePanel', () => {
   beforeEach(() => {
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>

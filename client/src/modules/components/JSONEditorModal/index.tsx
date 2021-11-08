@@ -16,7 +16,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {isValidJSON} from 'modules/utils';
 type Props = {
   onClose?: () => void;
-  onSave?: (value: string | undefined) => void;
+  onSave?: (value: string) => void;
   value: string | undefined;
   title?: string;
   isModalVisible: boolean;

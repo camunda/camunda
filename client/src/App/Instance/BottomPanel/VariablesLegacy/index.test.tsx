@@ -177,9 +177,7 @@ describe('Variables', () => {
       });
     });
 
-    //TODO: unskip when #1832 is implemented
-
-    it.skip('should show/hide spinner next to variable according to it having an active operation', async () => {
+    it('should show/hide spinner next to variable according to it having an active operation', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
       mockServer.use(
         rest.post(
@@ -238,15 +236,14 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByTestId('add-variable-form')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
       userEvent.click(screen.getByTitle(/add variable/i));
-      expect(screen.getByTestId('add-variable-form')).toBeInTheDocument();
+      expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
       userEvent.click(screen.getByTitle(/exit edit mode/i));
-      expect(screen.queryByTestId('add-variable-form')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
-    //TODO: unskip when #1830 is implemented
-    it.skip('should not allow empty value', async () => {
+    it('should not allow empty value', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -280,9 +277,8 @@ describe('Variables', () => {
         await screen.findByTitle('Value has to be JSON')
       ).toBeInTheDocument();
     });
-    //TODO: unskip when #1830 is implemented
 
-    it.skip('should not allow empty characters in variable name', async () => {
+    it('should not allow empty characters in variable name', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -344,9 +340,7 @@ describe('Variables', () => {
       expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
     });
 
-    //TODO: unskip when #1830 is implemented
-
-    it.skip('should not allow to add duplicate variables', async () => {
+    it('should not allow to add duplicate variables', async () => {
       jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -396,9 +390,8 @@ describe('Variables', () => {
       jest.clearAllTimers();
       jest.useRealTimers();
     });
-    //TODO: unskip when #1830 is implemented
 
-    it.skip('should not allow to add variable with invalid name', async () => {
+    it('should not allow to add variable with invalid name', async () => {
       jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -447,8 +440,7 @@ describe('Variables', () => {
       jest.useRealTimers();
     });
 
-    //TODO: unskip when #1832 is implemented.
-    it.skip('clicking edit variables while add mode is open, should not display a validation error', async () => {
+    it('clicking edit variables while add mode is open, should not display a validation error', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -472,9 +464,7 @@ describe('Variables', () => {
     });
   });
 
-  //TODO: unskip when #1832 is implemented.
-
-  describe.skip('Edit variable', () => {
+  describe('Edit variable', () => {
     it('should show/hide edit button next to variable according to it having an active operation', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -904,8 +894,7 @@ describe('Variables', () => {
       expect(screen.getByText(/add variable/i)).toBeDisabled();
     });
 
-    //TODO: unskip when #1832 is implemented.
-    it.skip('should hide/disable add variable button if add/edit variable button is clicked', async () => {
+    it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -1017,8 +1006,7 @@ describe('Variables', () => {
     });
   });
 
-  //TODO: JSON modal button is not clickable   (#1838)
-  it.skip('should have JSON editor when adding a new Variable', async () => {
+  it('should have JSON editor when adding a new Variable', async () => {
     currentInstanceStore.setCurrentInstance(instanceMock);
 
     mockServer.use(
@@ -1049,8 +1037,7 @@ describe('Variables', () => {
     ).toBeInTheDocument();
   });
 
-  //TODO: unskip when #1832 and #1838 is implemented.
-  it.skip('should have JSON editor when editing a Variable', async () => {
+  it('should have JSON editor when editing a Variable', async () => {
     currentInstanceStore.setCurrentInstance(instanceMock);
 
     mockServer.use(
