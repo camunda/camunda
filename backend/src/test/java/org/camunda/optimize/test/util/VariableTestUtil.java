@@ -14,6 +14,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_PERSISTABLE_PROCESS_VARIABLE_TYPES;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableTestUtil {
 
@@ -32,7 +34,7 @@ public class VariableTestUtil {
 
   public static Map<String, Object> createAllPrimitiveTypeVariablesWithNullValues() {
     Map<String, Object> variables = new HashMap<>();
-    for (VariableType type : VariableType.values()) {
+    for (VariableType type : ALL_PERSISTABLE_PROCESS_VARIABLE_TYPES) {
       String varName = String.format("%sVar", type.getId().toLowerCase());
       variables.put(varName, new ObjectVariableDto().setType(type.getId()).setValue(null));
     }

@@ -94,6 +94,7 @@ import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -118,6 +119,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -257,8 +259,12 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
+    return getAllDocumentsOfIndexAs(indexName, type, matchAllQuery());
+  }
+
+  public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type, final QueryBuilder query) {
     try {
-      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
+      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
     } catch (ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
         "Cannot evaluate document count for index " + indexName,
@@ -277,8 +283,13 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   @SneakyThrows
   public SearchResponse getSearchResponseForAllDocumentsOfIndices(final String[] indexNames) {
+    return getSearchResponseForAllDocumentsOfIndices(indexNames, matchAllQuery());
+  }
+
+  @SneakyThrows
+  public SearchResponse getSearchResponseForAllDocumentsOfIndices(final String[] indexNames, final QueryBuilder query) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
+      .query(query)
       .trackTotalHits(true)
       .size(100);
 
@@ -377,7 +388,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return Long.valueOf(totalVariableCount).intValue();
   }
 
-  // TODO remove debugging helper
   public MinMaxStatDto getEndDateRangeForInstancesWithVariables() {
     final AggregationBuilder endDateStatsAgg = AggregationBuilders
       .stats("endDateStats")
@@ -405,7 +415,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
-  // TODO remove debugging helper
   @SneakyThrows
   public Set<String> getInstanceDefinitionKeysForFinishedInstancesWithVariables() {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -524,6 +533,14 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   public List<ProcessInstanceDto> getAllProcessInstances() {
     return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
+  }
+
+  public Optional<ProcessInstanceDto> getProcessInstanceById(final String instanceId) {
+    return getAllDocumentsOfIndexAs(
+      PROCESS_INSTANCE_MULTI_ALIAS,
+      ProcessInstanceDto.class,
+      termQuery(PROCESS_INSTANCE_ID, instanceId)
+    ).stream().findFirst();
   }
 
   @SneakyThrows
@@ -671,7 +688,12 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames);
+    return getAllDocumentsOfIndicesAs(indexNames, type, matchAllQuery());
+  }
+
+  private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type,
+                                                 final QueryBuilder query) {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames, query);
     return mapHits(response.getHits(), type, getObjectMapper());
   }
 

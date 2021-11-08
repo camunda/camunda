@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isDecisionVariableTypeSupported;
 
 @Slf4j
 public class DecisionInstanceImportService implements ImportService<HistoricDecisionInstanceDto> {
@@ -234,7 +234,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private boolean isValidInputInstanceDto(final PluginDecisionInputDto inputInstanceDto) {
-    if (!isVariableTypeSupported(inputInstanceDto.getType())) {
+    if (!isDecisionVariableTypeSupported(inputInstanceDto.getType())) {
       log.info(
         "Refuse to add input variable [id: {}, clauseId: {}, clauseName: {}, type: {}] " +
           "for decision instance with id [{}]. Variable has no type or type is not supported.",
@@ -251,7 +251,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
 
   private boolean isValidOutputInstanceDto(final PluginDecisionOutputDto outputInstanceDto) {
-    if (!isVariableTypeSupported(outputInstanceDto.getType())) {
+    if (!isDecisionVariableTypeSupported(outputInstanceDto.getType())) {
       log.info(
         "Refuse to add output variable [id: {}, clauseId: {}, clauseName: {}, type: {}] " +
           "for decision instance with id [{}]. Variable has no type or type is not supported.",

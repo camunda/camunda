@@ -21,6 +21,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.INTEGER_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LONG_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SHORT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
 
@@ -31,7 +32,8 @@ public enum VariableType {
   DOUBLE(DOUBLE_TYPE),
   INTEGER(INTEGER_TYPE),
   BOOLEAN(BOOLEAN_TYPE),
-  DATE(DATE_TYPE);
+  DATE(DATE_TYPE),
+  OBJECT(OBJECT_TYPE);
 
   private static final Set<VariableType> NUMERIC_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
     INTEGER, SHORT, LONG, DOUBLE

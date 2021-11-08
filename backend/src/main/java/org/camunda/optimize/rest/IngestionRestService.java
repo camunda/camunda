@@ -85,10 +85,10 @@ public class IngestionRestService {
   }
 
   private void validateVariableType(final List<ExternalProcessVariableRequestDto> variables) {
-    if (variables.stream().anyMatch(variable -> !VariableHelper.isVariableTypeSupported(variable.getType()))) {
+    if (variables.stream().anyMatch(variable -> !VariableHelper.isProcessVariableTypeSupported(variable.getType()))) {
       throw new BadRequestException(String.format(
         "A given variable type is not supported. The type must always be one of: %s",
-        ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES
+        ReportConstants.ALL_SUPPORTED_PROCESS_VARIABLE_TYPES
       ));
     }
   }

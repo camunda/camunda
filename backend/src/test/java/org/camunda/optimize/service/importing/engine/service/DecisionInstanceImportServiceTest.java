@@ -276,7 +276,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   private void addAllSupportedInputVariables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (VariableType type : ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (VariableType type : ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES) {
       HistoricDecisionInputInstanceDto input = new HistoricDecisionInputInstanceDto();
       input.setId(UUID.randomUUID().toString());
       input.setClauseId(UUID.randomUUID().toString());
@@ -288,7 +288,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   private void addAllSupportedOutputVariables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (VariableType type : ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (VariableType type : ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES) {
       HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
       output.setId(UUID.randomUUID().toString());
       output.setClauseId(UUID.randomUUID().toString());

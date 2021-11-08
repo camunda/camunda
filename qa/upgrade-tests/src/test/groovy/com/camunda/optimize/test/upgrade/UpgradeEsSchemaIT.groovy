@@ -6,7 +6,6 @@
 package com.camunda.optimize.test.upgrade
 
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex
-import org.camunda.optimize.service.metadata.PreviousVersion
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -112,7 +111,8 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
                 .isFalse()
       }
       new File(getNewOptimizeOutputLogPath()).eachLine { line ->
-        def matcherWarn = line =~ /WARN/
+        // ignore warns about incorrect serializationDataFormat in default processes from ObjectVariableFlatteningService
+        def matcherWarn = line =~ /WARN(?!.*will not be imported due to unsupported serializationDataFormat:.*)/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
                 .isFalse()

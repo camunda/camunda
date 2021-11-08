@@ -29,7 +29,8 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.DateFormatterUtil.getDateStringInOptimizeDateFormat;
 import static org.camunda.optimize.service.util.DateFormatterUtil.isValidOptimizeDateFormat;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypePersistable;
+import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypeSupported;
 
 @Slf4j
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
@@ -41,13 +42,15 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private final EngineContext engineContext;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final ObjectVariableFlatteningService objectVariableFlatteningService;
 
   public VariableUpdateInstanceImportService(final ConfigurationService configurationService,
                                              final VariableImportAdapterProvider variableImportAdapterProvider,
                                              final ProcessVariableUpdateWriter variableWriter,
                                              final CamundaEventImportService camundaEventService,
                                              final EngineContext engineContext,
-                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                             final ProcessDefinitionResolverService processDefinitionResolverService,
+                                             final ObjectVariableFlatteningService objectVariableFlatteningService) {
     this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -58,6 +61,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.objectVariableFlatteningService = objectVariableFlatteningService;
   }
 
   @Override
@@ -92,13 +96,15 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     for (VariableImportAdapter variableImportAdapter : variableImportAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
+    pluginVariableList.removeIf(variable -> !isValidVariable(variable));
+    pluginVariableList = objectVariableFlatteningService.flattenObjectVariables(pluginVariableList);
     return convertPluginListToImportList(pluginVariableList);
   }
 
   private List<ProcessVariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
     List<ProcessVariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
     for (PluginVariableDto dto : pluginVariableList) {
-      if (isValidVariable(dto)) {
+      if (isProcessVariableTypePersistable(dto.getType())) {
         normalizeDateVariableFormats(dto);
         if (dto instanceof ProcessVariableDto) {
           variableImportList.add((ProcessVariableDto) dto);
@@ -180,7 +186,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
         variableDto.getId()
       );
       return false;
-    } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
+    } else if (isNullOrEmpty(variableDto.getType()) || !isProcessVariableTypeSupported(variableDto.getType())) {
       log.info(
         "Refuse to add variable [{}] with type [{}] from variable import adapter plugin. " +
           "Variable has no type or type is not supported.",

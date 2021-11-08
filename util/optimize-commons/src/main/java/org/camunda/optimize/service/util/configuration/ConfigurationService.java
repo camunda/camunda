@@ -899,7 +899,7 @@ public class ConfigurationService {
 
   public String getAlertEmailCompanyBranding() {
     if (alertEmailCompanyBranding == null) {
-        alertEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
+      alertEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
     }
     return alertEmailCompanyBranding;
   }

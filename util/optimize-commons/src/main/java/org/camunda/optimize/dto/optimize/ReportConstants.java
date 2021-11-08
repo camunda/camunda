@@ -134,10 +134,31 @@ public class ReportConstants {
   public static final String BOOLEAN_TYPE_LOWERCASE = "boolean";
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
+  public static final String OBJECT_TYPE = "Object";
+  public static final String OBJECT_TYPE_LOWERCASE = "object";
 
   public static final String GROUP_NONE_KEY = "____none";
 
-  public static final List<VariableType> ALL_SUPPORTED_VARIABLE_TYPES = ImmutableList.copyOf(VariableType.values());
+  public static final List<VariableType> ALL_PERSISTABLE_PROCESS_VARIABLE_TYPES = List.of(
+    VariableType.STRING,
+    VariableType.SHORT,
+    VariableType.LONG,
+    VariableType.DOUBLE,
+    VariableType.INTEGER,
+    VariableType.BOOLEAN,
+    VariableType.DATE
+  );
+  public static final List<VariableType> ALL_SUPPORTED_PROCESS_VARIABLE_TYPES =
+    ImmutableList.copyOf(VariableType.values());
+  public static final List<VariableType> ALL_SUPPORTED_DECISION_VARIABLE_TYPES = List.of(
+    VariableType.STRING,
+    VariableType.SHORT,
+    VariableType.LONG,
+    VariableType.DOUBLE,
+    VariableType.INTEGER,
+    VariableType.BOOLEAN,
+    VariableType.DATE
+  );
 
   // A report result can have three states in theory for duration reports:
   // * an arbitrary positive value,

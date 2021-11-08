@@ -16,6 +16,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -49,7 +50,6 @@ public class DeployServlet extends HttpServlet {
 
     resp.setContentType("application/json");
     resp.getWriter().flush();
-
   }
 
   private ProcessEngine createProcessEngine(final String name) {
@@ -62,6 +62,7 @@ public class DeployServlet extends HttpServlet {
     configuration.setJobExecutorDeploymentAware(true);
     configuration.getProcessEnginePlugins().add(new SpinProcessEnginePlugin());
     configuration.setRestrictUserOperationLogToAuthenticatedUsers(false);
+    configuration.setDefaultSerializationFormat(MediaType.APPLICATION_JSON);
 
     // For the details of what this config parameter does:
     // https://docs.camunda.org/manual/latest/reference/deployment-descriptors/tags/process-engine/#queryMaxResultsLimit

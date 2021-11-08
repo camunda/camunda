@@ -6,14 +6,18 @@
 package org.camunda.optimize.service.importing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -23,7 +27,6 @@ import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.VariableTestUtil;
-import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,20 +42,31 @@ import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
 import javax.ws.rs.core.MediaType;
+import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.stream.Collectors.toSet;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
@@ -94,7 +108,7 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariableNamesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
@@ -132,7 +146,7 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariableNamesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then variables are stored as expected after ES writes successful
@@ -153,7 +167,7 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariableNamesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
@@ -161,30 +175,193 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).isEmpty();
   }
 
+  @SneakyThrows
   @Test
-  public void objectVariablesTypeAreNotImported() throws JsonProcessingException {
+  public void objectVariablesAreFlattened() {
     // given
-    final String variableName = "var";
-    final ObjectVariableDto objectVariableDto = createObjectVariableDto();
+    final Map<String, Object> person = createPersonVariableWithAllTypes();
+    final ObjectVariableDto objectVariableDto = createMapJsonObjectVariableDto(person);
     final Map<String, Object> variables = new HashMap<>();
-    variables.put(variableName, objectVariableDto);
+    variables.put("objectVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
-    importAllEngineEntitiesFromScratch();
-    importAllEngineEntitiesFromScratch();
+    final List<Tuple> expectedFlattenedVars = List.of(
+      Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
+      Tuple.tuple("objectVar.age", LONG.getId(), "28"),
+      Tuple.tuple("objectVar.IQ", LONG.getId(), "99999999999999"),
+      Tuple.tuple("objectVar.birthday", DATE.getId(), "1992-11-17T00:00:00.000+0100"),
+      Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), "99.9"),
+      Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), "false"),
+      Tuple.tuple("objectVar.hands", LONG.getId(), "2"),
+      Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), "true"),
+      Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), "false"),
+      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "2") // additional _listSize variable for lists
+    );
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
-    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instanceDto);
+    final List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
-    assertThat(variablesResponseDtos).isEmpty();
-    assertThat(storedVariableUpdateInstances).isEmpty();
-    variableImportServiceLogCapturer.assertContains(String.format(
-      "Refuse to add variable [%s] with type [%s] from variable import adapter plugin. " +
-        "Variable has no type or type is not supported",
-      variableName,
-      objectVariableDto.getType()
-    ));
+    assertThat(instanceVariables)
+      .hasSize(10)
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactlyInAnyOrderElementsOf(expectedFlattenedVars);
+    assertThat(storedVariableUpdateInstances)
+      .hasSize(10)
+      .allSatisfy(var -> {
+        assertThat(var.getProcessInstanceId()).isEqualTo(instanceDto.getId());
+        assertThat(var.getTenantId()).isNull();
+        assertThat(var.getInstanceId()).isNotNull();
+      });
+    assertThat(storedVariableUpdateInstances.stream().map(VariableUpdateInstanceDto::getTimestamp).collect(toSet()))
+      .singleElement() // all flattened variables have the same timestamp as the original object variable
+      .isNotNull();
+    assertThat(storedVariableUpdateInstances)
+      .extracting(
+        VariableUpdateInstanceDto::getName,
+        VariableUpdateInstanceDto::getType,
+        VariableUpdateInstanceDto::getValue
+      )
+      .containsExactlyInAnyOrderElementsOf(expectedFlattenedVars);
+  }
+
+  @SneakyThrows
+  @Test
+  public void flattenedObjectVariablesAreUpdated() {
+    // given an instance with an object variable
+    final Map<String, Object> objectVar = new HashMap<>();
+    objectVar.put("name", "Pond");
+    objectVar.put("age", "28");
+    objectVar.put("likes", List.of("optimize", "garlic"));
+    ObjectVariableDto objectVariableDto = createMapJsonObjectVariableDto(objectVar);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVariableDto);
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleUserTaskDiagram(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // and the variable is updated while the instance is running
+    objectVar.put("age", "29");
+    objectVar.put("likes", List.of("optimize", "garlic", "tofu"));
+    objectVariableDto = createMapJsonObjectVariableDto(objectVar);
+    engineIntegrationExtension.updateVariableInstanceForProcessInstance(
+      instance.getId(),
+      "objectVar",
+      new ObjectMapper().writeValueAsString(objectVariableDto)
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    // when
+    importAllEngineEntitiesFromLastIndex();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instance);
+
+    // then
+    assertThat(instanceVariables)
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue,
+        SimpleProcessVariableDto::getVersion
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple("objectVar.name", STRING.getId(), "Pond", 2L),
+        Tuple.tuple("objectVar.age", STRING.getId(), "29", 2L),
+        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "3", 2L)
+      );
+  }
+
+  @SneakyThrows
+  @Test
+  public void listVariablesAreFlattened() {
+    // given
+    final Map<String, Object> pet1 = new HashMap<>();
+    final Map<String, Object> pet2 = new HashMap<>();
+    pet1.put("name", "aDog");
+    pet1.put("type", "dog");
+    pet2.put("name", "aCat");
+    pet2.put("type", "cat");
+    final ObjectVariableDto objectVariableDto = createListJsonObjectVariableDto(List.of(pet1, pet2));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectListVar", objectVariableDto);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instanceDto);
+
+    // then
+    assertThat(instanceVariables)
+      .singleElement()
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactly("objectListVar._listSize", LONG.getId(), "2");
+  }
+
+  @SneakyThrows
+  @Test
+  public void objectVariablesThatAreStringsAreImported() {
+    // given
+    final String variableValue = "\"someString\"";
+    final ObjectVariableDto objectVariableDto =
+      createJsonObjectVariableDto(variableValue, "java.lang.String");
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectStringVar", objectVariableDto);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instanceDto);
+
+    // then
+    assertThat(instanceVariables)
+      .singleElement()
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactly("objectStringVar", STRING.getId(), "someString");
+  }
+
+  @SneakyThrows
+  @Test
+  public void differentDateFormatForObjectVariableDateProperties() {
+    // given
+    final Map<String, Object> objectVar = new HashMap<>();
+    objectVar.put(
+      "dateProperty",
+      new Date(OffsetDateTime.parse("2021-11-01T05:05:00+01:00").toInstant().toEpochMilli())
+    );
+    final SimpleDateFormat objectVarDateFormat = new SimpleDateFormat("EEEEE dd MMMMM yyyy HH:mm:ss.SSSZ");
+    final ObjectVariableDto objectVariableDto = createJsonObjectVariableDto(
+      new ObjectMapper().setDateFormat(objectVarDateFormat).writeValueAsString(objectVar),
+      "java.util.HashMap"
+    );
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVariableDto);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instanceDto);
+
+    // then
+    assertThat(instanceVariables)
+      .singleElement()
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactly("objectVar.dateProperty", DATE.getId(), "2021-11-01T05:05:00.000+0100");
   }
 
   @ParameterizedTest
@@ -194,7 +371,7 @@ public class VariableImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService()
       .setEngineImportVariableIncludeObjectVariableValue(includeObjectVariableValue);
 
-    final ObjectVariableDto objectVariableDto = createObjectVariableDto();
+    final ObjectVariableDto objectVariableDto = createMapJsonObjectVariableDto(null);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("var", objectVariableDto);
     deployAndStartSimpleServiceTaskWithVariables(variables);
@@ -226,7 +403,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableUpdateImport() throws JsonProcessingException {
     // given
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
@@ -234,7 +411,7 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariableNamesForProcessInstance(instanceDto);
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
@@ -289,7 +466,7 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariableNamesForProcessInstance(instanceDto);
 
     // then
     assertThat(variablesResponseDtos).hasSize(1);
@@ -422,7 +599,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void deletingARuntimeVariableAlsoRemovesItFromOptimize() {
     // given
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
@@ -456,7 +633,7 @@ public class VariableImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    final List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    final List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariableNamesForProcessInstance(instanceDto);
     final List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
@@ -464,20 +641,61 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
-  private ObjectVariableDto createObjectVariableDto() {
+  @SneakyThrows
+  private ObjectVariableDto createMapJsonObjectVariableDto(final Map<String, Object> variable) {
+    return createJsonObjectVariableDto(
+      new ObjectMapper().setDateFormat(new SimpleDateFormat(OPTIMIZE_DATE_FORMAT)).writeValueAsString(variable),
+      "java.util.HashMap"
+    );
+  }
+
+  @SneakyThrows
+  private ObjectVariableDto createListJsonObjectVariableDto(final List<Object> variable) {
+    return createJsonObjectVariableDto(
+      new ObjectMapper().setDateFormat(new SimpleDateFormat(OPTIMIZE_DATE_FORMAT)).writeValueAsString(variable),
+      "java.util.ArrayList"
+    );
+  }
+
+  @SneakyThrows
+  private ObjectVariableDto createJsonObjectVariableDto(final String value,
+                                                        final String objectTypeName) {
     ObjectVariableDto objectVariableDto = new ObjectVariableDto();
     objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
-    objectVariableDto.setValue(null);
+    objectVariableDto.setValue(value);
     ObjectVariableDto.ValueInfo info = new ObjectVariableDto.ValueInfo();
-    info.setObjectTypeName("java.util.ArrayList");
+    info.setObjectTypeName(objectTypeName);
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
     objectVariableDto.setValueInfo(info);
     return objectVariableDto;
   }
 
-  private List<ProcessVariableNameResponseDto> getVariablesForProcessInstance(ProcessInstanceEngineDto instanceDto) {
+  private Map<String, Object> createPersonVariableWithAllTypes() {
+    Map<String, Object> person = new HashMap<>();
+    person.put("name", "Pond");
+    person.put("age", 28);
+    person.put("IQ", 99999999999999L);
+    person.put("birthday", new Date(OffsetDateTime.parse("1992-11-17T00:00:00+01:00").toInstant().toEpochMilli()));
+    person.put("muscleMassInPercent", 99.9);
+    person.put("deceased", false);
+    person.put("hands", (short) 2);
+    person.put("likes", List.of("optimize", "garlic"));
+    Map<String, Boolean> skillsMap = new HashMap<>();
+    skillsMap.put("read", true);
+    skillsMap.put("write", false);
+    person.put("skills", skillsMap);
+    return person;
+  }
+
+  private List<ProcessVariableNameResponseDto> getVariableNamesForProcessInstance(ProcessInstanceEngineDto instanceDto) {
     return variablesClient
       .getProcessVariableNames(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());
+  }
+
+  private List<SimpleProcessVariableDto> getVariablesForProcessInstance(ProcessInstanceEngineDto instanceDto) {
+    return elasticSearchIntegrationTestExtension.getProcessInstanceById(instanceDto.getId())
+      .map(ProcessInstanceDto::getVariables)
+      .orElse(Collections.emptyList());
   }
 
   private List<VariableUpdateInstanceDto> getStoredVariableUpdateInstances() throws JsonProcessingException {
@@ -522,4 +740,5 @@ public class VariableImportIT extends AbstractImportIT {
       assertThat(frequency.getValue()).isEqualTo(4L);
     }
   }
+
 }

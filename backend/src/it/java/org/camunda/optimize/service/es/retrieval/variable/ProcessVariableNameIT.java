@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
 public class ProcessVariableNameIT extends AbstractVariableIT {
 
@@ -352,7 +352,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     assertThat(variableResponse).hasSize(variables.size());
     for (ProcessVariableNameResponseDto responseDto : variableResponse) {
       assertThat(variables.containsKey(responseDto.getName())).isTrue();
-      assertThat(isVariableTypeSupported(responseDto.getType())).isTrue();
+      assertThat(VariableHelper.isProcessVariableTypeSupported(responseDto.getType())).isTrue();
     }
   }
 
