@@ -1,7 +1,6 @@
 #!/bin/sh -eux
-
-# getconf is a POSIX way to get the number of processors available which works on both Linux and macOS
-LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
-MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
-
-mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pspotbugs,prepare-offline -PcheckFormat,-autoFormat
+# Specifically for building, use as many CPUs as are available
+mvn -B -T1C -s "${MAVEN_SETTINGS_XML}" \
+  -DskipTests \
+  -Pspotbugs,prepare-offline -PcheckFormat,-autoFormat \
+  clean install
