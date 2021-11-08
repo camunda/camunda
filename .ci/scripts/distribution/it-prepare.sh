@@ -6,6 +6,7 @@ MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
 MAVEN_PROPERTIES=(
   -DskipUTs
   -DskipChecks
+  -Dmaven.javadoc.skip=true
 )
 
 # make sure to specify the profiles used in the verify goal when running preparing to go offline, as
