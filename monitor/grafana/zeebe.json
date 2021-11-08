@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1636355418008,
+  "iteration": 1636367540721,
   "links": [],
   "panels": [
     {
@@ -2234,7 +2234,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 3
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -2298,7 +2298,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 3
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -2368,7 +2368,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 8
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2473,7 +2473,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 8
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2579,7 +2579,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 37
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 4,
@@ -2679,7 +2679,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 37
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 266,
@@ -2780,7 +2780,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 37
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 267,
@@ -2866,43 +2866,42 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "$DS_PROMETHEUS",
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the process instance creation rate over all partitions in the namespace. It will only count root process instances, so call activity process instance creations are excluded.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
-              "links": []
+              "custom": {}
             },
             "overrides": []
           },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 5,
-            "w": 24,
+            "h": 8,
+            "w": 6,
             "x": 0,
-            "y": 43
+            "y": 20
           },
           "hiddenSeries": false,
-          "id": 15,
+          "id": 290,
           "legend": {
             "avg": false,
             "current": false,
             "max": false,
             "min": false,
-            "show": true,
+            "show": false,
             "total": false,
             "values": false
           },
           "lines": true,
           "linewidth": 1,
-          "links": [],
           "nullPointMode": "null",
           "options": {
             "alertThreshold": true
           },
           "percentage": false,
           "pluginVersion": "7.4.5",
-          "pointradius": 5,
+          "pointradius": 2,
           "points": false,
           "renderer": "flot",
           "seriesOverrides": [],
@@ -2911,35 +2910,20 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(zeebe_running_process_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"})",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Process Instance",
+              "expr": "sum(rate(zeebe_executed_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", action=\"activated\"}[1m])) by (namespace)",
+              "interval": "",
+              "legendFormat": "Process instance creation {{namespace}}",
               "refId": "A"
-            },
-            {
-              "expr": "sum(zeebe_pending_jobs_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"})",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Jobs",
-              "refId": "B"
-            },
-            {
-              "expr": "sum(zeebe_pending_incidents_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"})",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Incidents",
-              "refId": "C"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Running Process Instances",
+          "title": "Process instance creation per second [1m]",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2952,14 +2936,310 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:144",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:145",
               "format": "short",
               "label": null,
               "logBase": 1,
               "max": null,
               "min": null,
               "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the process instance completion rate over all partitions in the namespace. It will only count root process instances, so call activity process instance creations are excluded.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 20
+          },
+          "hiddenSeries": false,
+          "id": 291,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_executed_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", action=\"completed\"}[1m])) by (namespace)",
+              "interval": "",
+              "legendFormat": "Process instance completion {{namespace}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Process instance completion per second [1m]",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:144",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
             },
             {
+              "$$hashKey": "object:145",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the Job creation rate over all partitions in the namespace",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 20
+          },
+          "hiddenSeries": false,
+          "id": 288,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_job_events_total{namespace=~\"$namespace\", pod=~\"$pod\", action=\"created\"}[1m])) by (namespace)",
+              "interval": "",
+              "legendFormat": "Job creation {{namespace}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Job creation per second [1m]",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:144",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:145",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Shows the Job completion rate over all partitions in the namespace.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 20
+          },
+          "hiddenSeries": false,
+          "id": 289,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.5",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_job_events_total{namespace=~\"$namespace\", pod=~\"$pod\", action=\"completed\"}[1m])) by (namespace)",
+              "interval": "",
+              "legendFormat": "Job completion {{namespace}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Job completion per second [1m]",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:144",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:145",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3673,7 +3953,9 @@
             }
           ],
           "thresholds": [],
+          "timeFrom": null,
           "timeRegions": [],
+          "timeShift": null,
           "title": "GC Count per second [1m]",
           "tooltip": {
             "shared": true,
@@ -10668,5 +10950,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 23
+  "version": 24
 }
