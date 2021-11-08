@@ -78,6 +78,29 @@ public final class RaftMemberContext {
     failures = 0;
     failureTime = 0;
 
+    if (reader != null) {
+      closeReader();
+      openReader(log);
+    }
+  }
+
+  private void closeReader() {
+    if (reader != null) {
+      reader.close();
+      reader = null;
+    }
+  }
+
+  public void openReplicationContext(final RaftLog log) {
+    resetState(log);
+    openReader(log);
+  }
+
+  public void closeReplicationContext() {
+    closeReader();
+  }
+
+  private void openReader(final RaftLog log) {
     switch (member.getType()) {
       case PASSIVE:
         reader = log.openCommittedReader();

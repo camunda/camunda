@@ -468,8 +468,6 @@ public class PassiveRole extends InactiveRole {
       final long lastEntryTerm,
       final CompletableFuture<AppendResponse> future) {
 
-    final RaftLogReader reader = raft.getLogReader();
-
     // If the previous log index is greater than the last entry index, fail the attempt.
     if (request.prevLogIndex() > lastEntryIndex) {
       log.debug(
@@ -482,24 +480,26 @@ public class PassiveRole extends InactiveRole {
 
     // If the previous log index is less than the last written entry index, look up the entry.
     if (request.prevLogIndex() < lastEntryIndex) {
-      // Reset the reader to the previous log index.
-      reader.seek(request.prevLogIndex());
+      try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
+        // Reset the reader to the previous log index.
+        reader.seek(request.prevLogIndex());
 
-      // The previous entry should exist in the log if we've gotten this far.
-      if (!reader.hasNext()) {
-        log.debug("Rejected {}: Previous entry does not exist in the local log", request);
-        return failAppend(lastEntryIndex, future);
-      }
+        // The previous entry should exist in the log if we've gotten this far.
+        if (!reader.hasNext()) {
+          log.debug("Rejected {}: Previous entry does not exist in the local log", request);
+          return failAppend(lastEntryIndex, future);
+        }
 
-      // Read the previous entry and validate that the term matches the request previous log term.
-      final IndexedRaftLogEntry previousEntry = reader.next();
-      if (request.prevLogTerm() != previousEntry.term()) {
-        log.debug(
-            "Rejected {}: Previous entry term ({}) does not match local log's term for the same entry ({})",
-            request,
-            request.prevLogTerm(),
-            previousEntry.term());
-        return failAppend(request.prevLogIndex() - 1, future);
+        // Read the previous entry and validate that the term matches the request previous log term.
+        final IndexedRaftLogEntry previousEntry = reader.next();
+        if (request.prevLogTerm() != previousEntry.term()) {
+          log.debug(
+              "Rejected {}: Previous entry term ({}) does not match local log's term for the same entry ({})",
+              request,
+              request.prevLogTerm(),
+              previousEntry.term());
+          return failAppend(request.prevLogIndex() - 1, future);
+        }
       }
     }
     // If the previous log term doesn't equal the last entry term, fail the append, sending the
@@ -529,7 +529,6 @@ public class PassiveRole extends InactiveRole {
     long lastLogIndex = request.prevLogIndex();
 
     if (!request.entries().isEmpty()) {
-      final RaftLogReader reader = raft.getLogReader();
 
       // If the previous term is zero, that indicates the previous index represents the beginning of
       // the log.
@@ -546,7 +545,7 @@ public class PassiveRole extends InactiveRole {
         // Get the last entry written to the log by the writer.
         final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
 
-        final boolean failedToAppend = tryToAppend(future, reader, entry, index, lastEntry);
+        final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
         if (failedToAppend) {
           flush(lastLogIndex - 1, request.prevLogIndex());
           return;
@@ -586,7 +585,6 @@ public class PassiveRole extends InactiveRole {
 
   private boolean tryToAppend(
       final CompletableFuture<AppendResponse> future,
-      final RaftLogReader reader,
       final PersistedRaftRecord entry,
       final long index,
       final IndexedRaftLogEntry lastEntry) {
@@ -595,7 +593,7 @@ public class PassiveRole extends InactiveRole {
       // If the last written entry index is greater than the next append entry index,
       // we need to validate that the entry that's already in the log matches this entry.
       if (lastEntry.index() > index) {
-        failedToAppend = !replaceExistingEntry(future, reader, entry, index);
+        failedToAppend = !replaceExistingEntry(future, entry, index);
       } else if (lastEntry.index() == index) {
         // If the last written entry is equal to the append entry index, we don't need
         // to read the entry from disk and can just compare the last entry in the writer.
@@ -636,32 +634,34 @@ public class PassiveRole extends InactiveRole {
 
   private boolean replaceExistingEntry(
       final CompletableFuture<AppendResponse> future,
-      final RaftLogReader reader,
       final PersistedRaftRecord entry,
       final long index) {
-    // Reset the reader to the current entry index.
-    reader.seek(index);
 
-    // If the reader does not have any next entry, that indicates an inconsistency between
-    // the reader and writer.
-    if (!reader.hasNext()) {
-      throw new IllegalStateException("Log reader inconsistent with log writer");
+    try (final RaftLogReader reader = raft.getLog().openUncommittedReader()) {
+      // Reset the reader to the current entry index.
+      reader.seek(index);
+
+      // If the reader does not have any next entry, that indicates an inconsistency between
+      // the reader and writer.
+      if (!reader.hasNext()) {
+        throw new IllegalStateException("Log reader inconsistent with log writer");
+      }
+
+      // Read the existing entry from the log.
+      final IndexedRaftLogEntry existingEntry = reader.next();
+
+      // If the existing entry term doesn't match the leader's term for the same entry,
+      // truncate
+      // the log and append the leader's entry.
+      if (existingEntry.term() != entry.term()) {
+        raft.getLog().deleteAfter(index - 1);
+        raft.getLog().flush();
+        raft.setLastWrittenIndex(index - 1);
+
+        return appendEntry(index, entry, future);
+      }
+      return true;
     }
-
-    // Read the existing entry from the log.
-    final IndexedRaftLogEntry existingEntry = reader.next();
-
-    // If the existing entry term doesn't match the leader's term for the same entry,
-    // truncate
-    // the log and append the leader's entry.
-    if (existingEntry.term() != entry.term()) {
-      raft.getLog().deleteAfter(index - 1);
-      raft.getLog().flush();
-      raft.setLastWrittenIndex(index - 1);
-
-      return appendEntry(index, entry, future);
-    }
-    return true;
   }
 
   /**
