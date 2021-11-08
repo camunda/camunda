@@ -319,6 +319,49 @@ public final class StateControllerImplTest {
     assertThat(runtimeDirectory).doesNotExist();
   }
 
+  @Test
+  public void shouldSetExporterPositionToZero() throws Exception {
+    // given
+    snapshotController.recover();
+    snapshotController.openDb();
+
+    exporterPosition.set(-1L);
+    final long snapshotPosition = 5;
+
+    // when
+    final var transientSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
+
+    // then
+    final var snapshot = transientSnapshot.get().snapshotId();
+    assertThat(snapshot.getIndex()).isEqualTo(0);
+    assertThat(snapshot.getTerm()).isEqualTo(0);
+    assertThat(snapshot.getProcessedPosition()).isEqualTo(snapshotPosition);
+    assertThat(snapshot.getExportedPosition()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldKeepIndexAndTerm() throws Exception {
+    // given
+    snapshotController.recover();
+    snapshotController.openDb();
+
+    final long snapshotPosition = 5;
+    exporterPosition.set(4L);
+    takeSnapshot(snapshotPosition);
+
+    exporterPosition.set(-1L);
+
+    // when
+    final var transientSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
+
+    // then
+    final var snapshot = transientSnapshot.get().snapshotId();
+    assertThat(snapshot.getIndex()).isEqualTo(4);
+    assertThat(snapshot.getTerm()).isEqualTo(1);
+    assertThat(snapshot.getProcessedPosition()).isEqualTo(snapshotPosition);
+    assertThat(snapshot.getExportedPosition()).isEqualTo(0);
+  }
+
   private File takeSnapshot(final long position) {
     final var snapshot = snapshotController.takeTransientSnapshot(position).orElseThrow();
     return snapshot.persist().join().getPath().toFile();
