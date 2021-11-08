@@ -58,7 +58,7 @@ fi
 VERSION=${1:-}
 if [ -n "$VERSION" ]; then
 	echo "Checking out release worktree under .worktree/release. In case of interruption, make sure to manually clean it up afterwards"
-	git worktree add -d -q "${WORKTREE}" "${VERSION}"
+	git worktree add -q "${WORKTREE}" "${VERSION}"
 	pushd "${WORKTREE}/benchmarks/project" > /dev/null 2>&1
 fi
 
