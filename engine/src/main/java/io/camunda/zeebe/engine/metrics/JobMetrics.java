@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.metrics;
 
 import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
 
 public final class JobMetrics {
 
@@ -18,14 +17,6 @@ public final class JobMetrics {
           .name("job_events_total")
           .help("Number of job events")
           .labelNames("action", "partition", "type")
-          .register();
-
-  private static final Gauge PENDING_JOBS =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("pending_jobs_total")
-          .help("Number of pending jobs")
-          .labelNames("partition", "type")
           .register();
 
   private final String partitionIdLabel;
@@ -40,11 +31,6 @@ public final class JobMetrics {
 
   public void jobCreated(final String type) {
     jobEvent("created", type);
-    PENDING_JOBS.labels(partitionIdLabel, type).inc();
-  }
-
-  private void jobFinished(final String type) {
-    PENDING_JOBS.labels(partitionIdLabel, type).dec();
   }
 
   public void jobActivated(final String type, final int activatedJobs) {
@@ -57,7 +43,6 @@ public final class JobMetrics {
 
   public void jobCompleted(final String type) {
     jobEvent("completed", type);
-    jobFinished(type);
   }
 
   public void jobFailed(final String type) {
@@ -66,11 +51,9 @@ public final class JobMetrics {
 
   public void jobCanceled(final String type) {
     jobEvent("canceled", type);
-    jobFinished(type);
   }
 
   public void jobErrorThrown(final String type) {
     jobEvent("error thrown", type);
-    jobFinished(type);
   }
 }
