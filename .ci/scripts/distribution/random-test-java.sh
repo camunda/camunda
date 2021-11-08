@@ -10,7 +10,7 @@ JUNIT_THREAD_COUNT=${JUNIT_THREAD_COUNT:-}
 MAVEN_PROPERTIES=(
   -DskipITs
   -DskipChecks
-  -DtestMavenId=1
+  -DtestMavenId=4
   -Dsurefire.rerunFailingTestsCount=0
   -Dmaven.javadoc.skip=true
 )
