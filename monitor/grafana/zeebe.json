@@ -3623,7 +3623,7 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "${DS_PROMETHEUS}",
-          "description": "Shows the GC count per second, aggregated per pod and GC type.",
+          "description": "Shows the number of garbage collections (GC) per second, aggregated per pod and GC type.",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -3719,7 +3719,7 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "${DS_PROMETHEUS}",
-          "description": "Shows the GC proportion per second. Means shows the rate which is spent in GC in a second.",
+          "description": "Shows the garbage collection (GC) time proportion per second. Means shows the rate which is spent in GC in a second.",
           "fieldConfig": {
             "defaults": {
               "custom": {}
