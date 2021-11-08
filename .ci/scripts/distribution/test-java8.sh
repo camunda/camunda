@@ -13,7 +13,7 @@ MAVEN_PROPERTIES=(
   -DskipITs
   -DskipChecks
   -DtestMavenId=3
-  -Dsurefire.rerunFailingTestsCount=7
+  -Dsurefire.rerunFailingTestsCount=3
 )
 tempFile=$(mktemp)
 
