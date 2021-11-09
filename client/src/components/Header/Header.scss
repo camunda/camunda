@@ -46,6 +46,10 @@
     color: var(--grey-lighten-56);
     font-weight: 500;
     white-space: nowrap;
+
+    .Icon {
+      top: 5px;
+    }
   }
 
   a {
