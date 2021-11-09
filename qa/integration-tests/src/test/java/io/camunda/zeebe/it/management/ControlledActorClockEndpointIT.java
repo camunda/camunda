@@ -42,7 +42,7 @@ import org.testcontainers.shaded.org.awaitility.Awaitility;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-public class ControlledActorClockIT {
+public class ControlledActorClockEndpointIT {
   private static final String ELASTICSEARCH_HOST = "elasticsearch";
   private static final String INDEX_PREFIX = "exporter-clock-test";
   private Network network;
