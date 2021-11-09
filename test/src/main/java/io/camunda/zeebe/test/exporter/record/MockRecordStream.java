@@ -10,6 +10,11 @@ package io.camunda.zeebe.test.exporter.record;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockRecordStream extends StreamWrapper<MockRecord, MockRecordStream> {
 
   public MockRecordStream(final Stream<MockRecord> wrappedStream) {
