@@ -135,7 +135,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   @SneakyThrows
   public void completeTaskForInstanceWithJobType(String jobType, Map<String, Object> variables) {
-    handleJob(jobType, (zeebeClient, job) -> {
+    handleSingleJob(jobType, (zeebeClient, job) -> {
       CompleteJobCommandStep1 completeJobCommandStep1 = zeebeClient.newCompleteCommand(job.getKey());
       Optional.ofNullable(variables).ifPresent(completeJobCommandStep1::variables);
       completeJobCommandStep1.send().join();
@@ -143,7 +143,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void throwErrorIncident(String jobType) {
-    handleJob(jobType, (zeebeClient, job) -> {
+    handleSingleJob(jobType, (zeebeClient, job) -> {
       zeebeClient.newThrowErrorCommand(job.getKey())
         .errorCode("1")
         .errorMessage("someErrorMessage")
@@ -152,7 +152,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void failTask(String jobType) {
-    handleJob(jobType, (zeebeClient, job) -> {
+    handleSingleJob(jobType, (zeebeClient, job) -> {
       zeebeClient.newFailCommand(job.getKey())
         .retries(0)
         .errorMessage("someTaskFailMessage")
@@ -165,13 +165,20 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  private void handleJob(String jobType, JobHandler jobHandler) {
+  private void handleSingleJob(String jobType, JobHandler jobHandler) {
     AtomicBoolean jobCompleted = new AtomicBoolean(false);
     JobWorker jobWorker = zeebeClient.newWorker()
       .jobType(jobType)
       .handler((zeebeClient, type) -> {
-        jobHandler.handle(zeebeClient, type);
-        jobCompleted.set(true);
+        if (jobCompleted.compareAndSet(false, true)) {
+          jobHandler.handle(zeebeClient, type);
+        } else {
+          zeebeClient.newFailCommand(type.getKey())
+            .retries(type.getRetries())
+            .errorMessage("skip job handling, already handled in this way")
+            .send()
+            .join();
+        }
       })
       .timeout(Duration.ofSeconds(2))
       .open();

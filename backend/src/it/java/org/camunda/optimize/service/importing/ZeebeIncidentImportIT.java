@@ -151,10 +151,8 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
-        // We can't make a stronger assertion as there is sometimes a possibly unexpected incident from Zeebe here.
-        // We can fix after the resolution of: https://github.com/camunda-cloud/zeebe/issues/8089
         assertThat(savedInstance.getIncidents()).isNotEmpty()
-          .contains(
+          .containsExactly(
             createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
           );
       });
@@ -191,9 +189,7 @@ public class ZeebeIncidentImportIT extends AbstractZeebeIT {
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getIncidents()).isNotEmpty()
-          // We can't make a stronger assertion as there is sometimes a possibly unexpected incident from Zeebe here.
-          // We can fix after the resolution of: https://github.com/camunda-cloud/zeebe/issues/8089
-          .contains(
+          .containsExactly(
             createIncident(savedInstance, deployedInstance, SERVICE_TASK, RESOLVED)
           );
       });
