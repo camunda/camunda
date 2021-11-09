@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.engine.IdentityCacheConfiguration;
+import org.springframework.scheduling.support.CronExpression;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,6 +24,11 @@ public abstract class AbstractPlatformIdentityCacheService extends AbstractIdent
                                                  final List<IdentityCacheSyncListener> identityCacheSyncListeners,
                                                  final BackoffCalculator backoffCalculator) {
     super(cacheConfigurationSupplier, identityCacheSyncListeners, backoffCalculator);
+  }
+
+  @Override
+  protected CronExpression evaluateCronExpression() {
+    return CronExpression.parse(getCacheConfiguration().getCronTrigger());
   }
 
   protected List<UserDto> fetchUsersById(final EngineContext engineContext, final Collection<String> userIdBatch) {

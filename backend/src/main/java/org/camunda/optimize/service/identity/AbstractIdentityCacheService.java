@@ -65,19 +65,17 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    initCronExpression();
+    this.cronExpression = evaluateCronExpression();
     resetCache();
   }
 
-  private void initCronExpression() {
-    this.cronExpression = CronExpression.parse(getCacheConfiguration().getCronTrigger());
-  }
+  protected abstract CronExpression evaluateCronExpression();
 
   @PostConstruct
   public void init() {
     log.info("Initializing {} identity sync.", getCacheLabel());
     getCacheConfiguration().validate();
-    initCronExpression();
+    this.cronExpression = evaluateCronExpression();
     startScheduledSync();
   }
 
