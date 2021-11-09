@@ -44,14 +44,12 @@ export default function FilterInstance({
   const selectVariable = (value) => {
     const nameAndType = value.split('_');
     const type = nameAndType.pop();
-    const nameOrId = nameAndType.join('_');
-    const variable = variables.find(
-      (variable) => variable.name === nameOrId && variable.type === type
-    );
+    const name = nameAndType.join('_');
+    const variable = variables.find((variable) => variable.name === name && variable.type === type);
 
     updateFilterData({
-      name: nameOrId,
-      type: type,
+      name,
+      type,
       data: getInputComponentForVariable(variable.type).defaultFilter,
     });
   };

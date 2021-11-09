@@ -32,7 +32,7 @@ export default function MultipleVariableFilter({
   const [variables, setVariables] = useState([]);
   const [applyTo, setApplyTo] = useState(null);
 
-  // load the available varaibles for the selected definition
+  // load the available variables for the selected definition
   useEffect(() => {
     (async () => {
       const validDefinitions = definitions?.filter(
@@ -61,7 +61,7 @@ export default function MultipleVariableFilter({
     setValid(isValid);
   }, [filters]);
 
-  // initilize the filters state when editing a pre-existing filter
+  // initialize the filters state when editing a pre-existing filter
   useEffect(() => {
     if (filterData?.data) {
       const filtersToAdd = filterData.data.data.map((filter) => {
