@@ -25,6 +25,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class ProcessInstanceAssert
     extends AbstractAssert<ProcessInstanceAssert, ProcessInstanceEvent> {
   private static final ZeebeObjectMapper OBJECT_MAPPER = new ZeebeObjectMapper();

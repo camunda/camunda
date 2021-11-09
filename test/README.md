@@ -2,6 +2,11 @@
 
 JUnit test rules for Zeebe applications.
 
+## 🚨 Deprecation Warning 🚨
+
+This module is deprecated and will be removed in a future release.
+See [8143](https://github.com/camunda-cloud/zeebe/issues/8143) for more information.
+
 ## Usage example
 
 Add `zeebe-test` as test dependency to your project.
