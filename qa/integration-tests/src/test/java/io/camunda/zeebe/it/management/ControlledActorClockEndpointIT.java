@@ -15,13 +15,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
+import io.camunda.zeebe.test.util.actuator.ClockActuatorClient;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
@@ -52,6 +52,8 @@ public class ControlledActorClockEndpointIT {
   private final HttpClient httpClient = HttpClient.newHttpClient();
   private final ObjectMapper mapper = new ObjectMapper();
 
+  private ClockActuatorClient clockActuatorClient;
+
   @BeforeEach
   void startContainers() {
     network = Network.newNetwork();
@@ -67,7 +69,7 @@ public class ControlledActorClockEndpointIT {
   @Test
   void testPinningTime() throws IOException, InterruptedException {
     // given - Zeebe actor clock is pinned
-    final var pinnedAt = pinZeebeTime();
+    final var pinnedAt = clockActuatorClient.pinZeebeTime(Instant.now().minus(Duration.ofDays(3)));
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
 
     // when - producing records
@@ -98,7 +100,7 @@ public class ControlledActorClockEndpointIT {
   void testOffsetTime() throws IOException, InterruptedException {
     // given - Zeebe actor clock is offset
     final var beforeRecords = Instant.now();
-    final var offsetZeebeTime = offsetZeebeTime();
+    final var offsetZeebeTime = clockActuatorClient.offsetZeebeTime(Duration.ofHours(5));
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
 
     // when - producing records
@@ -149,38 +151,6 @@ public class ControlledActorClockEndpointIT {
         .collect(Collectors.toList());
   }
 
-  private Instant pinZeebeTime() throws IOException, InterruptedException {
-    final var pinAt = Instant.now().minus(Duration.ofDays(1));
-    final var body =
-        BodyPublishers.ofString(String.format("{\"epochMilli\": %s}", pinAt.toEpochMilli()));
-    zeebeRequest("/actuator/clock/pin", body);
-    return pinAt;
-  }
-
-  private Duration offsetZeebeTime() throws IOException, InterruptedException {
-    final var offsetBy = Duration.ofHours(3);
-    final var body =
-        BodyPublishers.ofString(String.format("{\"offsetMilli\": %s}", offsetBy.toMillis()));
-    zeebeRequest("/actuator/clock/add", body);
-    return offsetBy;
-  }
-
-  private void zeebeRequest(final String endpoint, final BodyPublisher body)
-      throws IOException, InterruptedException {
-    final var fullEndpoint =
-        URI.create(
-            String.format("http://%s/%s", zeebeContainer.getExternalMonitoringAddress(), endpoint));
-    final var httpRequest =
-        HttpRequest.newBuilder(fullEndpoint)
-            .method("POST", body)
-            .header("Content-Type", "application/json")
-            .build();
-    final var httpResponse = httpClient.send(httpRequest, BodyHandlers.ofString());
-    if (httpResponse.statusCode() != 200) {
-      throw new IllegalStateException("Pinning time failed: " + httpResponse.body());
-    }
-  }
-
   void startElasticsearch() {
     final var version = RestClient.class.getPackage().getImplementationVersion();
     elasticsearchContainer =
@@ -216,6 +186,7 @@ public class ControlledActorClockEndpointIT {
             .usePlaintext()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .build();
+    clockActuatorClient = new ClockActuatorClient(zeebeContainer.getExternalMonitoringAddress());
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
