@@ -55,6 +55,8 @@ spec:
     emptyDir: {}
   - name: camunda-invoice-removal
     emptyDir: {}
+  - name: docker-storage
+    emptyDir: {}
   imagePullSecrets:
   - name: registry-camunda-cloud
   initContainers:
@@ -83,6 +85,8 @@ spec:
         value: ${mavenForkCount}
       - name: TZ
         value: Europe/Berlin
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
     resources:
       limits:
         cpu: ${mavenCpuLimit}
@@ -90,6 +94,39 @@ spec:
       requests:
         cpu: ${mavenCpuLimit}
         memory: ${mavenMemoryLimit}Gi
+    """
+}
+
+String dockerInDockerSpec(Integer dockerCpuLimit = 4){
+String dockerMemoryLimit = dockerCpuLimit + 4;
+return """
+  - name: docker
+    image: docker:20.10.5-dind
+    args:
+      - --storage-driver
+      - overlay2
+      - --ipv6
+      - --fixed-cidr-v6
+      - "2001:db8:1::/64"
+    env:
+      # The new dind versions expect secure access using cert
+      # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+      # (see https://hub.docker.com/_/docker?tab=description&page=1)
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+    securityContext:
+      privileged: true
+    volumeMounts:
+      - mountPath: /var/lib/docker
+        name: docker-storage
+    tty: true
+    resources:
+      limits:
+        cpu: ${dockerCpuLimit}
+        memory: ${dockerMemoryLimit}Gi
+      requests:
+        cpu: ${dockerCpuLimit}
+        memory: ${dockerMemoryLimit}Gi
     """
 }
 
@@ -283,9 +320,10 @@ String itLatestPodSpec(String camBpmVersion, String esVersion) {
 }
 
 String itZeebePodSpec(String camBpmVersion, String esVersion) {
-  return basePodSpec(4, 4) +
-          camBpmContainerSpec(camBpmVersion, false, 6, 4) +
-          elasticSearchContainerSpec(esVersion, 6, 4)
+   return basePodSpec(6, 6) +
+          camBpmContainerSpec(camBpmVersion, false, 2, 4) +
+          elasticSearchContainerSpec(esVersion, 6, 6) +
+          dockerInDockerSpec(12);
 }
 
 String e2eTestPodSpec(String camBpmVersion, String esVersion) {

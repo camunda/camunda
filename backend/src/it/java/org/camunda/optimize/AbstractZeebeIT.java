@@ -42,7 +42,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
 
   @RegisterExtension
   @Order(5)
-  protected ZeebeExtension zeebeExtension = new ZeebeExtension();
+  protected static ZeebeExtension zeebeExtension = new ZeebeExtension();
 
   @BeforeEach
   public void setupZeebeImportAndReloadConfiguration() {

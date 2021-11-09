@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -283,6 +284,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   }
 
   @Test
+  @Disabled("OPT-5719")
   public void zeebeVariableImport_importZeebeVariableDataFromMultipleDays() {
     // given
     final Process deployedProcess = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
@@ -291,7 +293,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       Map.of("var1", "someValue1")
     );
 
-    zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
+    //zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.addVariablesToScope(startedInstanceKey, Map.of("var2", "someValue2"), false);
 
     // when

@@ -76,34 +76,6 @@
       <version>${zeebe.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-test</artifactId>
-      <version>${zeebe.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
-      <version>${zeebe.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-elasticsearch-exporter</artifactId>
-      <version>${zeebe.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.elasticsearch</groupId>
-          <artifactId>elasticsearch-x-content</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.elasticsearch.client</groupId>
-          <artifactId>elasticsearch-rest-client</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
 
     <!-- Javax XML -->
     <dependency>
@@ -298,6 +270,11 @@
     </dependency>
 
     <!--Test dependencies-->
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-container</artifactId>
+      <version>3.0.0</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>

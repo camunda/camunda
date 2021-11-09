@@ -7,7 +7,7 @@ zeebe:
       optimize:
         className: io.camunda.zeebe.exporter.ElasticsearchExporter
         args:
-          url: "http://localhost:9200"
+          url: "http://host.testcontainers.internal:9200"
           bulk:
             delay: 1
             size: 1

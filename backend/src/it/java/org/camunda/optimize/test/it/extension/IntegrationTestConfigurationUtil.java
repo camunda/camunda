@@ -35,6 +35,10 @@ public class IntegrationTestConfigurationUtil {
     return PROPERTIES.getProperty("camunda.engine.version");
   }
 
+  public static String getZeebeVersion() {
+    return PROPERTIES.getProperty("zeebe.version");
+  }
+
   public static String getEngineDateFormat() {
     return PROPERTIES.getProperty("camunda.engine.serialization.date.format");
   }
