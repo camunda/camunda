@@ -40,6 +40,6 @@ class UserTaskBuilderTest {
 
     assertThat(zeebeUserTaskForms).hasSize(1);
     final ZeebeUserTaskForm zeebeUserTaskForm = zeebeUserTaskForms.iterator().next();
-    assertThat(zeebeUserTaskForm.getId()).isNotNull();
+    assertThat(zeebeUserTaskForm.getId()).isNotEmpty();
   }
 }
