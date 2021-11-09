@@ -4611,13 +4611,13 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(jvm_threads_current{namespace=~\"$namespace\", pod=~\"$pod\"}) by (namespace, pod)",
+              "expr": "jvm_threads_current{namespace=~\"$namespace\", pod=~\"$pod\"}",
               "interval": "",
               "legendFormat": "JVM Threads on {{pod}} (ns: {{namespace}})",
               "refId": "A"
             },
             {
-              "expr": "sum(jvm_threads_daemon{namespace=~\"$namespace\", pod=~\"$pod\"}) by (namespace, pod)",
+              "expr": "jvm_threads_daemon{namespace=~\"$namespace\", pod=~\"$pod\"}",
               "hide": false,
               "interval": "",
               "legendFormat": "JVM daemon threads on {{pod}} (ns: {{namespace}})",
