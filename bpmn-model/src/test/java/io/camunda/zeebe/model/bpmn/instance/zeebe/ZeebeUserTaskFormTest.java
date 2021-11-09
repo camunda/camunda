@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 public class ZeebeUserTaskFormTest extends BpmnModelElementInstanceTest {
 
@@ -29,7 +30,7 @@ public class ZeebeUserTaskFormTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<ChildElementAssumption> getChildElementAssumptions() {
-    return null;
+    return Collections.emptyList();
   }
 
   @Override

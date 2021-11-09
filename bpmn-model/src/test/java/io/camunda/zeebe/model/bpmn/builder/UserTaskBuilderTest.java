@@ -89,7 +89,7 @@ class UserTaskBuilderTest {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .userTask("userTask1", task -> task.zeebeAssignee("user1"))
+            .userTask("userTask1")
             .zeebeUserTaskForm("{}")
             .endEvent()
             .done();
@@ -99,6 +99,6 @@ class UserTaskBuilderTest {
 
     assertThat(zeebeUserTaskForms).hasSize(1);
     final ZeebeUserTaskForm zeebeUserTaskForm = zeebeUserTaskForms.iterator().next();
-    assertThat(zeebeUserTaskForm.getId()).isNotNull();
+    assertThat(zeebeUserTaskForm.getId()).isNotEmpty();
   }
 }
