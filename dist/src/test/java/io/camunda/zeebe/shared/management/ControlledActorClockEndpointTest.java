@@ -71,7 +71,7 @@ final class ControlledActorClockEndpointTest {
         .satisfies(
             (body) ->
                 assertThat(body.epochMilli)
-                    .isCloseTo(Instant.now().toEpochMilli(), byLessThan(offset)));
+                    .isCloseTo(Instant.now().toEpochMilli(), byLessThan(offset + 1)));
   }
 
   @Test
