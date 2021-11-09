@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
  * it isn't).
  *
  * <p>NOTE: if the clock is not controllable (set via `zeebe.clock.controlled`), any write or delete
- * operations will simply do nothing.
+ * operations will result in a 403 response.
  */
 @Component
 @WebEndpoint(id = "clock", enableByDefault = false)
@@ -158,10 +158,10 @@ public class ActorClockEndpoint {
   /** A response type for future proofing, in case the format needs to be changed in the future. */
   protected static final class Response {
     @JsonProperty("epochMilli")
-    protected final long epochMilli;
+    final long epochMilli;
 
     @JsonProperty("instant")
-    protected final Instant instant;
+    final Instant instant;
 
     public Response(final Instant instant) {
       this.instant = instant;
@@ -170,8 +170,8 @@ public class ActorClockEndpoint {
 
     @SuppressWarnings("unused") // Used by Jackson deserialization
     private Response() {
-      this.epochMilli = 0;
-      this.instant = null;
+      epochMilli = 0;
+      instant = null;
     }
   }
 }
