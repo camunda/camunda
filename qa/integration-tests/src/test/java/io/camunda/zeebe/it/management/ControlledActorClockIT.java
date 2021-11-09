@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.jackson.record.AbstractRecord;
+import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.net.URI;
@@ -29,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.agrona.CloseHelper;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +43,9 @@ import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 public class ControlledActorClockIT {
+  private static final String ELASTICSEARCH_HOST = "elasticsearch";
   private static final String INDEX_PREFIX = "exporter-clock-test";
+  private Network network;
   private ElasticsearchContainer elasticsearchContainer;
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;
@@ -50,15 +54,14 @@ public class ControlledActorClockIT {
 
   @BeforeEach
   void startContainers() {
-    final var network = Network.newNetwork();
-    startElasticsearch(network);
-    startZeebe(network);
+    network = Network.newNetwork();
+    startElasticsearch();
+    startZeebe();
   }
 
   @AfterEach
   void stopContainers() {
-    zeebeContainer.stop();
-    elasticsearchContainer.stop();
+    CloseHelper.closeAll(zeebeClient, zeebeContainer, elasticsearchContainer, network);
   }
 
   @Test
@@ -85,10 +88,8 @@ public class ControlledActorClockIT {
         .untilAsserted(
             () -> {
               final var records = searchExportedRecords();
-              assertThat(records).isNotNull();
-              assertThat(records.size())
-                  .isEqualTo(10); // deploy + instance produces exactly 10 records
               assertThat(records)
+                  .hasSize(10) // deploy + instance produces exactly 10 records
                   .allMatch((record) -> record.getTimestamp() == pinnedAt.toEpochMilli());
             });
   }
@@ -118,16 +119,15 @@ public class ControlledActorClockIT {
         .untilAsserted(
             () -> {
               final var records = searchExportedRecords();
-              assertThat(records).isNotNull();
-              assertThat(records.size())
-                  .isEqualTo(10); // deploy + instance produces exactly 10 records
               assertThat(records)
+                  .hasSize(10)
                   .allSatisfy(
                       (record) -> {
                         final var timestamp = Instant.ofEpochMilli(record.getTimestamp());
                         final var afterRecords = Instant.now();
-                        assertThat(timestamp).isBefore(afterRecords.plus(offsetZeebeTime));
-                        assertThat(timestamp).isAfter(beforeRecords.plus(offsetZeebeTime));
+                        assertThat(timestamp)
+                            .isBefore(afterRecords.plus(offsetZeebeTime))
+                            .isAfter(beforeRecords.plus(offsetZeebeTime));
                       });
             });
   }
@@ -141,10 +141,10 @@ public class ControlledActorClockIT {
     final var request = HttpRequest.newBuilder(uri).method("POST", BodyPublishers.noBody()).build();
     final var response = httpClient.send(request, BodyHandlers.ofInputStream());
     final var result = mapper.readValue(response.body(), EsSearchResponseDto.class);
-    if (result.documentsWrapper == null) {
+    if (result.esDocumentsWrapper == null) {
       return null;
     }
-    return result.documentsWrapper.documents.stream()
+    return result.esDocumentsWrapper.documents.stream()
         .map(esDocumentDto -> esDocumentDto.record)
         .collect(Collectors.toList());
   }
@@ -169,7 +169,7 @@ public class ControlledActorClockIT {
       throws IOException, InterruptedException {
     final var fullEndpoint =
         URI.create(
-            String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
+            String.format("http://%s/%s", zeebeContainer.getExternalMonitoringAddress(), endpoint));
     final var httpRequest =
         HttpRequest.newBuilder(fullEndpoint)
             .method("POST", body)
@@ -181,14 +181,14 @@ public class ControlledActorClockIT {
     }
   }
 
-  void startElasticsearch(final Network network) {
+  void startElasticsearch() {
     final var version = RestClient.class.getPackage().getImplementationVersion();
     elasticsearchContainer =
         new ElasticsearchContainer(
                 DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
                     .withTag(version))
             .withNetwork(network)
-            .withNetworkAliases("elasticsearch")
+            .withNetworkAliases(ELASTICSEARCH_HOST)
             .withCreateContainerCmdModifier(
                 cmd ->
                     Objects.requireNonNull(cmd.getHostConfig())
@@ -196,14 +196,16 @@ public class ControlledActorClockIT {
     elasticsearchContainer.start();
   }
 
-  private void startZeebe(final Network network) {
+  private void startZeebe() {
     zeebeContainer =
-        new ZeebeContainer(DockerImageName.parse("camunda/zeebe:current-test"))
+        new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage())
             .withNetwork(network)
             .withEnv(
                 "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
                 "io.camunda.zeebe.exporter.ElasticsearchExporter")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:9200")
+            .withEnv(
+                "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
+                String.format("http://%s:9200", ELASTICSEARCH_HOST))
             .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
             .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
             .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", INDEX_PREFIX)
@@ -217,18 +219,18 @@ public class ControlledActorClockIT {
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  static class EsDocumentDto {
+  private static final class EsDocumentDto {
     @JsonProperty(value = "_source", required = true)
     AbstractRecord<?> record;
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  static class EsSearchResponseDto {
+  private static final class EsSearchResponseDto {
     @JsonProperty(value = "hits", required = true)
-    DocumentsWrapper documentsWrapper;
+    EsDocumentsWrapper esDocumentsWrapper;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    static final class DocumentsWrapper {
+    private static final class EsDocumentsWrapper {
       @JsonProperty(value = "hits", required = true)
       final List<EsDocumentDto> documents = Collections.emptyList();
     }
