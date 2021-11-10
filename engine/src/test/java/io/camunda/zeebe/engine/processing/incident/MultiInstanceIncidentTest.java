@@ -403,26 +403,20 @@ public final class MultiInstanceIncidentTest {
   @Test
   public void shouldCreateIncidentWhenInputCollectionModifiedConcurrently() {
     // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess("multi-task")
-                    .startEvent()
-                    .serviceTask(ELEMENT_ID, t -> t.zeebeJobType(jobType))
-                    .sequenceFlowId("from-task-to-multi-instance")
-                    .serviceTask(
-                        "multi-instance",
-                        t ->
-                            t.zeebeJobType(jobType)
-                                .multiInstance(
-                                    b ->
-                                        b.parallel()
-                                            .zeebeInputCollectionExpression(INPUT_COLLECTION)
-                                            .zeebeInputElement(INPUT_ELEMENT)))
-                    .endEvent()
-                    .done())
-            .deploy();
+    final var process =
+        Bpmn.createExecutableProcess("multi-task")
+            .startEvent()
+            .serviceTask(ELEMENT_ID, t -> t.zeebeJobType(jobType))
+            .sequenceFlowId("from-task-to-multi-instance")
+            .serviceTask("multi-instance", t -> t.zeebeJobType(jobType))
+            .multiInstance(
+                b ->
+                    b.parallel()
+                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                        .zeebeInputElement(INPUT_ELEMENT))
+            .endEvent()
+            .done();
+    final var deployment = ENGINE.deployment().withXmlResource(process).deploy();
     final long processInstanceKey =
         ENGINE
             .processInstance()
@@ -499,15 +493,7 @@ public final class MultiInstanceIncidentTest {
             IncidentRecordValue::getElementId,
             IncidentRecordValue::getErrorType,
             IncidentRecordValue::getErrorMessage)
-        .containsExactly(
-            tuple(
-                "multi-instance",
-                ErrorType.EXTRACT_VALUE_ERROR,
-                "Expected result of the expression 'items' to be 'ARRAY', but was 'NUMBER'."),
-            tuple(
-                "multi-instance",
-                ErrorType.EXTRACT_VALUE_ERROR,
-                "Expected result of the expression 'items' to be 'ARRAY', but was 'NUMBER'."),
+        .containsOnly(
             tuple(
                 "multi-instance",
                 ErrorType.EXTRACT_VALUE_ERROR,
