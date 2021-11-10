@@ -430,7 +430,6 @@ public final class MultiInstanceIncidentTest {
             .getFirst();
     final var job = findNthJob(processInstanceKey, 1);
     final var nextKey = ENGINE.getZeebeState().getKeyGenerator().nextKey();
-    final int index = Math.toIntExact(ENGINE.getLastWrittenPosition(1));
     ENGINE.stop();
     RecordingExporter.reset();
 
@@ -451,28 +450,30 @@ public final class MultiInstanceIncidentTest {
                 deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey());
 
     ENGINE.writeRecords(
-        RecordToWrite.command().key(job.getKey()).job(JobIntent.COMPLETE, job.getValue()));
-    ENGINE.writeRecords(
-        index + 1,
-        RecordToWrite.event().key(job.getKey()).job(JobIntent.COMPLETED, job.getValue()),
-        RecordToWrite.command()
-            .key(serviceTask.getKey())
-            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, serviceTask.getValue()));
-    ENGINE.writeRecords(
-        index + 3,
+        RecordToWrite.command().key(job.getKey()).job(JobIntent.COMPLETE, job.getValue()),
         RecordToWrite.event()
+            .causedBy(0)
+            .key(job.getKey())
+            .job(JobIntent.COMPLETED, job.getValue()),
+        RecordToWrite.command()
+            .causedBy(0)
+            .key(serviceTask.getKey())
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, serviceTask.getValue()),
+        RecordToWrite.event()
+            .causedBy(2)
             .key(serviceTask.getKey())
             .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETING, serviceTask.getValue()),
         RecordToWrite.event()
+            .causedBy(2)
             .key(serviceTask.getKey())
             .processInstance(ProcessInstanceIntent.ELEMENT_COMPLETED, serviceTask.getValue()),
         RecordToWrite.event()
+            .causedBy(2)
             .key(nextKey)
             .processInstance(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, sequenceFlow),
         RecordToWrite.command()
-            .key(nextKey + 1)
-            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, multiInstanceBody));
-    ENGINE.writeRecords(
+            .causedBy(2)
+            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, multiInstanceBody),
         RecordToWrite.command()
             .variable(
                 VariableDocumentIntent.UPDATE,
