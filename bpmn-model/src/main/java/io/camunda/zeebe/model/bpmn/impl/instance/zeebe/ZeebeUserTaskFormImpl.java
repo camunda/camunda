@@ -15,15 +15,21 @@
  */
 package io.camunda.zeebe.model.bpmn.impl.instance.zeebe;
 
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ID;
+
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.camunda.zeebe.model.bpmn.impl.instance.BaseElementImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-public class ZeebeUserTaskFormImpl extends BaseElementImpl implements ZeebeUserTaskForm {
+public class ZeebeUserTaskFormImpl extends BpmnModelElementInstanceImpl
+    implements ZeebeUserTaskForm {
+
+  protected static Attribute<String> idAttribute;
 
   public ZeebeUserTaskFormImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -36,6 +42,18 @@ public class ZeebeUserTaskFormImpl extends BaseElementImpl implements ZeebeUserT
             .namespaceUri(BpmnModelConstants.ZEEBE_NS)
             .instanceProvider(ZeebeUserTaskFormImpl::new);
 
+    idAttribute = typeBuilder.stringAttribute(BPMN_ATTRIBUTE_ID).idAttribute().build();
+
     typeBuilder.build();
+  }
+
+  @Override
+  public String getId() {
+    return idAttribute.getValue(this);
+  }
+
+  @Override
+  public void setId(final String id) {
+    idAttribute.setValue(this, id);
   }
 }
