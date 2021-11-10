@@ -48,12 +48,8 @@ public final class ControlledActorClock implements ActorClock {
     this.currentTime = currentTime.toEpochMilli();
   }
 
-  protected boolean usesPointInTime() {
+  private boolean usesPointInTime() {
     return currentTime > 0;
-  }
-
-  protected boolean usesOffset() {
-    return currentOffset > 0;
   }
 
   @Override
@@ -66,11 +62,7 @@ public final class ControlledActorClock implements ActorClock {
     if (usesPointInTime()) {
       return currentTime;
     } else {
-      long now = System.currentTimeMillis();
-      if (usesOffset()) {
-        now = now + currentOffset;
-      }
-      return now;
+      return System.currentTimeMillis() + currentOffset;
     }
   }
 
