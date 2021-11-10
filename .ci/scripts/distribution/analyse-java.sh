@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ef -o pipefail
 
-PROPERTIES=("-DskipTests -Dcheckstyle.skip")
+PROPERTIES=("-DskipTests -DskipChecks")
 GIT_URL=${GIT_URL:-$(git remote get-url origin)}
 GIT_BRANCH=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}
 
@@ -32,5 +32,5 @@ else
   git fetch --no-tags "${GIT_URL}" "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
 fi
 
-echo "Properties: ${PROPERTIES[@]}"
-mvn -B -s ${MAVEN_SETTINGS_XML} -P sonar -PcheckFormat,-autoFormat sonar:sonar ${PROPERTIES[@]}
+printf "Properties: %s\n" "${PROPERTIES[@]}"
+mvn -B -s "${MAVEN_SETTINGS_XML}" -P sonar -PcheckFormat,-autoFormat sonar:sonar "${PROPERTIES[@]}"

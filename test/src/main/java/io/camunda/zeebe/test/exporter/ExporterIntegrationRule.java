@@ -115,7 +115,11 @@ import org.junit.rules.ExternalResource;
  *
  * NOTE: calls to the various configure methods are additive, so it is possible to configure more
  * than one exporter, as long as the IDs are different.
+ *
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
  */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class ExporterIntegrationRule extends ExternalResource {
 
   public static final BpmnModelInstance SAMPLE_PROCESS =

@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.metrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
 
 public final class ProcessEngineMetrics {
 
@@ -27,14 +26,6 @@ public final class ProcessEngineMetrics {
           .name("element_instance_events_total")
           .help("Number of process element instance events")
           .labelNames("action", "type", "partition")
-          .register();
-
-  private static final Gauge RUNNING_PROCESS_INSTANCES =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("running_process_instances_total")
-          .help("Number of running process instances")
-          .labelNames("partition")
           .register();
 
   private static final Counter EXECUTED_INSTANCES =
@@ -55,14 +46,6 @@ public final class ProcessEngineMetrics {
     ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel).inc();
   }
 
-  private void processInstanceCreated() {
-    RUNNING_PROCESS_INSTANCES.labels(partitionIdLabel).inc();
-  }
-
-  private void processInstanceFinished() {
-    RUNNING_PROCESS_INSTANCES.labels(partitionIdLabel).dec();
-  }
-
   private void increaseRootProcessInstance(final String action) {
     EXECUTED_INSTANCES
         .labels(ORGANIZATION_ID, "ROOT_PROCESS_INSTANCE", action, partitionIdLabel)
@@ -70,12 +53,8 @@ public final class ProcessEngineMetrics {
   }
 
   public void elementInstanceActivated(final BpmnElementContext context) {
-    final BpmnElementType elementType = context.getBpmnElementType();
+    final var elementType = context.getBpmnElementType();
     elementInstanceEvent(ACTION_ACTIVATED, elementType);
-
-    if (isProcessInstance(elementType)) {
-      processInstanceCreated();
-    }
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(ACTION_ACTIVATED);
@@ -83,12 +62,8 @@ public final class ProcessEngineMetrics {
   }
 
   public void elementInstanceCompleted(final BpmnElementContext context) {
-    final BpmnElementType elementType = context.getBpmnElementType();
+    final var elementType = context.getBpmnElementType();
     elementInstanceEvent(ACTION_COMPLETED, elementType);
-
-    if (isProcessInstance(elementType)) {
-      processInstanceFinished();
-    }
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(ACTION_COMPLETED);
@@ -96,12 +71,8 @@ public final class ProcessEngineMetrics {
   }
 
   public void elementInstanceTerminated(final BpmnElementContext context) {
-    final BpmnElementType elementType = context.getBpmnElementType();
+    final var elementType = context.getBpmnElementType();
     elementInstanceEvent(ACTION_TERMINATED, elementType);
-
-    if (isProcessInstance(elementType)) {
-      processInstanceFinished();
-    }
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(ACTION_TERMINATED);

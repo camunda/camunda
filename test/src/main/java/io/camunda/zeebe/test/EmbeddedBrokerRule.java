@@ -51,6 +51,11 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";

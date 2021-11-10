@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -140,6 +141,7 @@ final class StandaloneGatewaySecurityTest {
   }
 
   private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
-    return new StandaloneGateway(gatewayCfg, new SpringGatewayBridge());
+    return new StandaloneGateway(
+        gatewayCfg, new SpringGatewayBridge(), new ActorClockConfiguration(false));
   }
 }

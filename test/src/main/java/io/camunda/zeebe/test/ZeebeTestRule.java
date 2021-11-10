@@ -21,6 +21,11 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class ZeebeTestRule extends ExternalResource {
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();

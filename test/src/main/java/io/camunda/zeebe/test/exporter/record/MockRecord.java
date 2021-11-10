@@ -14,6 +14,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Objects;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockRecord extends ExporterMappedObject implements Record, Cloneable {
 
   private long position = 0;

@@ -14,6 +14,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockController implements Controller {
 
   public static final long UNKNOWN_POSITION = -1;
