@@ -119,6 +119,32 @@ public final class RecordToWrite {
     return this;
   }
 
+  /**
+   * Used to refer to the record that caused this record to be written. For example, when you want
+   * to write a Job Created event that was the result of the processing of a Service Task
+   * Activate_Element command. When using this with {@link
+   * EngineRule#writeRecords(RecordToWrite...)} or {@link
+   * StreamProcessorRule#writeBatch(RecordToWrite...)} the writer will set the index as the source
+   * index of this record. In addition, the source record position of this record will be set to the
+   * position of the referenced record.
+   *
+   * <pre>
+   *   ENGINE.writeRecords(
+   *     RecordToWrite.command().job(COMPLETE, job),
+   *     RecordToWrite.event().causedBy(0).job(COMPLETED, job),
+   *     RecordToWrite.command().causedBy(0).processInstance(COMPLETE_ELEMENT, task),
+   *     RecordToWrite.event().causedBy(2).processInstance(ELEMENT_COMPLETING, task),
+   *     RecordToWrite.event().causedBy(2).processInstance(ELEMENT_COMPLETED, task),
+   *     RecordToWrite.event().causedBy(2).processInstance(SEQUENCE_FLOW_TAKEN, flow),
+   *     RecordToWrite.command().causedBy(2).processInstance(ACTIVATE_ELEMENT, end),
+   *     RecordToWrite.event().causedBy(6).processInstance(ELEMENT_ACTIVATING, end),
+   *     ...
+   *   );
+   * </pre>
+   *
+   * @param index The index in the batch of the source record, also known as sourceIndex of this.
+   * @return this
+   */
   public RecordToWrite causedBy(final int index) {
     sourceIndex = index;
     return this;
