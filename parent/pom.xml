@@ -132,7 +132,7 @@
     <plugin.version.revapi>0.14.5</plugin.version.revapi>
     <plugin.version.scala>4.5.4</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
-    <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
+    <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
     <plugin.version.spotbugs>4.4.2.2</plugin.version.spotbugs>
     <plugin.version.spotless>2.17.3</plugin.version.spotless>
