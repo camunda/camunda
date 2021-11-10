@@ -322,14 +322,12 @@ public final class TestStreams {
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
 
-  public long writeBatch(
-      final String logName, final long sourceRecordPosition, final RecordToWrite[] recordToWrites) {
+  public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {
     final SynchronousLogStream logStream = getLogStream(logName);
     final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
 
     for (final RecordToWrite recordToWrite : recordToWrites) {
       logStreamBatchWriter
-          .sourceRecordPosition(sourceRecordPosition)
           .event()
           .key(recordToWrite.getKey())
           .sourceIndex(recordToWrite.getSourceIndex())
