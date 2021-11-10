@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -11,6 +10,7 @@
   </parent>
 
   <artifactId>camunda-cloud-zeebe</artifactId>
+
   <packaging>jar</packaging>
 
   <name>Zeebe Distribution</name>
@@ -92,12 +92,27 @@
     </dependency>
 
     <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <exclusions>
         <exclusion>
-          <!-- Conflicts with histogram in elasticsearch exporter dependency -->
           <groupId>org.hdrhistogram</groupId>
+          <!-- Conflicts with histogram in elasticsearch exporter dependency -->
           <artifactId>HdrHistogram</artifactId>
         </exclusion>
       </exclusions>
@@ -191,30 +206,30 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
+          <assembleDirectory>${project.build.directory}/camunda-cloud-zeebe</assembleDirectory>
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
-          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <extraJvmArguments>-Xms128m
             --illegal-access=deny
             -XX:+ExitOnOutOfMemoryError</extraJvmArguments>
-          <repositoryLayout>flat</repositoryLayout>
-          <useWildcardClassPath>true</useWildcardClassPath>
-          <repositoryName>lib</repositoryName>
-          <assembleDirectory>${project.build.directory}/camunda-cloud-zeebe</assembleDirectory>
+          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
             <platform>unix</platform>
           </platforms>
           <programs>
             <program>
-              <mainClass>io.camunda.zeebe.broker.StandaloneBroker</mainClass>
               <id>broker</id>
+              <mainClass>io.camunda.zeebe.broker.StandaloneBroker</mainClass>
             </program>
             <program>
-              <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
               <id>gateway</id>
+              <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
             </program>
           </programs>
+          <repositoryLayout>flat</repositoryLayout>
+          <repositoryName>lib</repositoryName>
+          <useWildcardClassPath>true</useWildcardClassPath>
         </configuration>
         <executions>
           <execution>
@@ -238,10 +253,12 @@
             <phase>package</phase>
             <configuration>
               <target>
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl"></copy>
+                <?SORTPOM IGNORE?> <!-- ordering is important here, chmod needs to run after copying -->
                 <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe"></copy>
                 <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin"></copy>
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl"></copy>
                 <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx"></chmod>
+                <?SORTPOM RESUME?>
               </target>
             </configuration>
           </execution>
@@ -257,8 +274,8 @@
             </goals>
             <phase>package</phase>
             <configuration>
-              <attach>true</attach>
               <appendAssemblyId>false</appendAssemblyId>
+              <attach>true</attach>
               <descriptors>
                 <descriptor>src/main/assembly.xml</descriptor>
               </descriptors>
