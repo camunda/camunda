@@ -1,6 +1,7 @@
 .idea/*
 !.idea/codeStyles
 !.idea/externalDependencies.xml
+!.idea/google-java-format.xml
 !.idea/saveactions_settings.xml
 target
 .classpath
