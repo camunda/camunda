@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -63,6 +64,12 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       firstRecordValue.getProcessDefinitionKey()
     );
     return updateProcessVariables(instanceToAdd, recordsForInstance);
+  }
+
+  private ProcessDefinitionOptimizeDto getStoredDefinitionForRecord(final Long definitionKey) {
+    return processDefinitionReader.getProcessDefinition(String.valueOf(definitionKey))
+      .orElseThrow(() -> new OptimizeRuntimeException(
+        "The process definition with id " + definitionKey + " has not yet been imported to Optimize"));
   }
 
   private ProcessInstanceDto updateProcessVariables(final ProcessInstanceDto instanceToAdd,

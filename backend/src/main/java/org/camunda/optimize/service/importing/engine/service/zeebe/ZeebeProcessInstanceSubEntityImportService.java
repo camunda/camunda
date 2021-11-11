@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.service.zeebe;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -14,7 +13,6 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ZeebeProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -74,12 +72,6 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
       partitionId
     ));
     return processInstanceDto;
-  }
-
-  protected ProcessDefinitionOptimizeDto getStoredDefinitionForRecord(final Long definitionKey) {
-    return processDefinitionReader.getProcessDefinition(String.valueOf(definitionKey))
-      .orElseThrow(() -> new OptimizeRuntimeException(
-        "The process definition with id " + definitionKey + " has not yet been imported to Optimize"));
   }
 
   private void addElasticsearchImportJobToQueue(ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob) {
