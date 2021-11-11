@@ -1940,6 +1940,11 @@
   resolved "https://registry.yarnpkg.com/@mdx-js/util/-/util-1.6.22.tgz#219dfd89ae5b97a8801f015323ffa4b62f45718b"
   integrity sha512-H1rQc1ZOHANWBvPcW+JpGwr+juXSxM8Q8YCkm3GhZd8REu1fHR3z99CErO1p9pkcfcxZnMdIZdIsXkOHY0NilA==
 
+"@miherlosev/esm@3.2.26":
+  version "3.2.26"
+  resolved "https://registry.yarnpkg.com/@miherlosev/esm/-/esm-3.2.26.tgz#a516b35d8b8b4eac29598f1c2c23e30a4d260200"
+  integrity sha512-TaW4jTGVE1/ln2VGFChnheMh589QCAZy1MVnLvjjSzZ4pEAa4WYAWPwFkDVZbSdPQdLfZy7LuTyZjWRkhX9/Gg==
+
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/@mrmlnc/readdir-enhanced/-/readdir-enhanced-2.2.1.tgz#524af240d1a360527b730475ecfa1344aa540dde"
@@ -7336,11 +7341,6 @@ eslint@^7.11.0:
     table "^6.0.9"
     text-table "^0.2.0"
     v8-compile-cache "^2.0.3"
-
-esm@^3.2.25:
-  version "3.2.25"
-  resolved "https://registry.yarnpkg.com/esm/-/esm-3.2.25.tgz#342c18c29d56157688ba5ce31f8431fbb795cc10"
-  integrity sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
 
 esotope-hammerhead@0.6.1:
   version "0.6.1"
@@ -15643,10 +15643,10 @@ testcafe-browser-tools@2.0.16:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@24.5.4:
-  version "24.5.4"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.5.4.tgz#e64fa961215596347e8f4be49e192cab53745990"
-  integrity sha512-ve2rgOQEh4R48L8eu945DDeLOH/Owj8ZmJL0lQBnsLrZA60vsSxpvOczuj98f2u1jtgGjcxOeRTIkNypcRZAyA==
+testcafe-hammerhead@24.5.7:
+  version "24.5.7"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-24.5.7.tgz#8d4efb45ee7543841c88452de17cd5929418bff0"
+  integrity sha512-4pY6GQQaCZAlOolWB2vaYZ/MIpgtmOrZeh4BVbENkbh6DDiPeOxvC0K6yZS5JfINRau5S9mzuNkm2FS7G0urSA==
   dependencies:
     acorn-hammerhead "0.5.0"
     asar "^2.0.1"
@@ -15705,10 +15705,10 @@ testcafe-hammerhead@>=19.4.0:
     tunnel-agent "0.6.0"
     webauth "^1.1.0"
 
-testcafe-legacy-api@5.1.1:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/testcafe-legacy-api/-/testcafe-legacy-api-5.1.1.tgz#04f9e4a97960a757f1c52bb4a8ea414d2bcd8dd0"
-  integrity sha512-WRy9XvH/u+HE19oXs70xuxlcC+x4Yhydhhy5PadK/Ro9ssupSjEFxc/gzTWWcvdxAXO8JWgsXl/x4v5RMYtMow==
+testcafe-legacy-api@5.1.2:
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/testcafe-legacy-api/-/testcafe-legacy-api-5.1.2.tgz#a030719a43684f03fea723b4bea2e0b5fead2dde"
+  integrity sha512-vc9A4rFUdijlBFnNOVMk0hFfxnrAmtA7FMz1P/LtvNyui5JfkLmbyIQcJbxR2rjTINp0owZ2c+xQvYms/us7Fw==
   dependencies:
     async "0.2.6"
     dedent "^0.6.0"
@@ -15750,10 +15750,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@1.16.1:
-  version "1.16.1"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.16.1.tgz#1757d09b5d28059be00ab10e6f214ff9b289e0a9"
-  integrity sha512-efb4S7YIyu8BpG4dZQBCgPE3V1YWU8J32v7/cPr1zW1yY/9F2B0y1lMTpeFJ3rUMdHSZpwYi6y00dEfEnNeN/Q==
+testcafe@1.17.0:
+  version "1.17.0"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.17.0.tgz#aff87b50217463a8954fd110539fa44ec3cfe4e9"
+  integrity sha512-kf/y3XxuAHjQ46WbaPyZPaHOlf6c0LiEK86UI6vovnLdHknzcQoVaFSouKrCy2yt1/e4RHrFqmKBSHP8Frnhfg==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
@@ -15771,6 +15771,7 @@ testcafe@1.16.1:
     "@babel/preset-flow" "^7.12.1"
     "@babel/preset-react" "^7.12.1"
     "@babel/runtime" "^7.12.5"
+    "@miherlosev/esm" "3.2.26"
     "@types/node" "^12.20.10"
     async-exit-hook "^1.1.2"
     babel-plugin-module-resolver "^4.0.0"
@@ -15793,7 +15794,6 @@ testcafe@1.16.1:
     emittery "^0.4.1"
     endpoint-utils "^1.0.2"
     error-stack-parser "^1.3.6"
-    esm "^3.2.25"
     execa "^4.0.3"
     globby "^11.0.4"
     graceful-fs "^4.1.11"
@@ -15831,8 +15831,8 @@ testcafe@1.16.1:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.16"
-    testcafe-hammerhead "24.5.4"
-    testcafe-legacy-api "5.1.1"
+    testcafe-hammerhead "24.5.7"
+    testcafe-legacy-api "5.1.2"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
     testcafe-reporter-minimal "^2.1.0"
