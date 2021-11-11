@@ -75,6 +75,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
       final Integer numberOfReplicas = settings.getNumberOfReplicas();
 
       final int expectedNumberOfShards = numberOfShardsForIndex(indexName);
+      final int expectedNumberOfReplicas = numberOfReplicasForIndex();
 
       assertThat(numberOfShards)
           .withFailMessage(
@@ -83,9 +84,9 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
           .isEqualTo(expectedNumberOfShards);
       assertThat(numberOfReplicas)
           .withFailMessage(
-              "Expected number of replicas of index %s to be 0 but was %d",
-              indexName, numberOfReplicas)
-          .isEqualTo(0);
+              "Expected number of replicas of index %s to be %d but was %d",
+              indexName, expectedNumberOfReplicas, numberOfReplicas)
+          .isEqualTo(expectedNumberOfReplicas);
     }
   }
 
@@ -120,8 +121,18 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     return MAPPER.convertValue(jsonNode, new TypeReference<>() {});
   }
 
+  private int numberOfReplicasForIndex() {
+    if (configuration != null && configuration.index.getNumberOfReplicas() != null) {
+      return configuration.index.getNumberOfReplicas();
+    } else {
+      return 0;
+    }
+  }
+
   private int numberOfShardsForIndex(final String indexName) {
-    if (indexName.startsWith(
+    if (configuration != null && configuration.index.getNumberOfShards() != null) {
+      return configuration.index.getNumberOfShards();
+    } else if (indexName.startsWith(
             esClient.indexPrefixForValueTypeWithDelimiter(ValueType.PROCESS_INSTANCE))
         || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
       return 3;
