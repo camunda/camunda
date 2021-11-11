@@ -18,7 +18,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
-import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
@@ -58,6 +57,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
       Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE));
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
+    uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
 
     final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());

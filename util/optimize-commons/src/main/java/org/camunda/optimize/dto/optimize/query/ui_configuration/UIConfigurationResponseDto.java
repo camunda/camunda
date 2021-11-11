@@ -28,6 +28,7 @@ public class UIConfigurationResponseDto {
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private List<String> webhooks;
   private boolean logoutHidden;
+  private Integer exportCsvLimit;
 
   // mirrors SettingsDto
   private boolean metadataTelemetryEnabled;
