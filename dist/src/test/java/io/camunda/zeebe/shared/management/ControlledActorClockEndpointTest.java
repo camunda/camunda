@@ -13,7 +13,6 @@ import io.camunda.zeebe.shared.management.ActorClockEndpoint.Response;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.assertj.core.api.ObjectAssert;
@@ -22,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 final class ControlledActorClockEndpointTest {
 
-  private final InstanceOfAssertFactory<Response, ObjectAssert<Response>> instanceOfRecord =
+  private final InstanceOfAssertFactory<Response, ObjectAssert<Response>> responseType =
       new InstanceOfAssertFactory<>(Response.class, Assertions::assertThat);
 
   private final ActorClockEndpoint endpoint =
@@ -51,7 +50,7 @@ final class ControlledActorClockEndpointTest {
 
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody())
-        .asInstanceOf(instanceOfRecord)
+        .asInstanceOf(responseType)
         .satisfies((body) -> assertThat(body.epochMilli).isEqualTo(millis))
         .isNotNull();
   }
@@ -59,6 +58,7 @@ final class ControlledActorClockEndpointTest {
   @Test
   void canOffsetMutableClock() {
     // given
+    final var marginOfError = Duration.ofMinutes(1);
     final var offset = Duration.ofMinutes(10);
 
     // when
@@ -66,17 +66,17 @@ final class ControlledActorClockEndpointTest {
 
     // then
 
-    // the minimum time we would expect the actor clock to have. It should have at least advanced
-    // by the offset we have specified.
-    final var offsetMinimum = Instant.now().plus(offset).truncatedTo(ChronoUnit.MILLIS);
-    // the maximum time we would expect the actor clock to have. This can be flaky, but only if the
-    // test thread is sleeping for more than one minute.
-    final var offsetMaximum = Instant.now().plus(offset.plus(Duration.ofMinutes(1)));
+    // The clock should have at least advanced by the offset we've specified + margin of error.
+    final var offsetMinimum = Instant.now().plus(offset.minus(marginOfError));
+    // The clock shouldn't have advanced by more than the offset we've specified + margin of error.
+    final var offsetMaximum = Instant.now().plus(offset.plus(marginOfError));
 
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody())
         .isNotNull()
-        .asInstanceOf(instanceOfRecord)
+        .asInstanceOf(responseType)
+        // This can be flaky, but only if the test thread is sleeping for more than the margin of
+        // error.
         .satisfies((body) -> assertThat(body.instant).isBetween(offsetMinimum, offsetMaximum));
   }
 
@@ -106,7 +106,7 @@ final class ControlledActorClockEndpointTest {
     assertThat(firstResponse.getStatus()).isEqualTo(200);
     assertThat(firstResponse.getBody())
         .isNotNull()
-        .asInstanceOf(instanceOfRecord)
+        .asInstanceOf(responseType)
         .satisfies((body) -> assertThat(body.epochMilli).isEqualTo(millis));
 
     // when
