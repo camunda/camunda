@@ -437,7 +437,7 @@ public final class OAuthCredentialsProviderTest {
   @Test
   public void shouldThrowExceptionIfTimeout() {
     // given
-    mockCredentials(10);
+    mockCredentials(10_000);
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder
         .usePlaintext()
@@ -568,7 +568,7 @@ public final class OAuthCredentialsProviderTest {
   private static String encode(final String param) {
     try {
       return URLEncoder.encode(param, StandardCharsets.UTF_8.name());
-    } catch (UnsupportedEncodingException e) {
+    } catch (final UnsupportedEncodingException e) {
       throw new UncheckedIOException("Failed while encoding OAuth request parameters: ", e);
     }
   }
