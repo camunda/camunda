@@ -10,24 +10,15 @@ import {ENDPOINTS} from './endpoints';
 import {config} from '../../config';
 
 const sessionToken = /^OPERATE-SESSION=[0-9A-Z]{32}$/i;
-const csrfToken =
-  /^OPERATE-X-CSRF-TOKEN=[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type TokensType = {
-  csrf?: string;
   session?: string;
 };
 
 const getCredentials = memoize(
-  async (): Promise<
-    | {
-        Cookie: string;
-      }
-    | {
-        Cookie: string;
-        'OPERATE-X-CSRF-TOKEN': string;
-      }
-  > => {
+  async (): Promise<{
+    Cookie: string;
+  }> => {
     const {username, password} = config.agentUser;
     const {headers} = await fetch(ENDPOINTS.login(), {
       method: 'POST',
@@ -54,10 +45,6 @@ const getCredentials = memoize(
           return {...accumulator, session: cookieValue};
         }
 
-        if (csrfToken.test(cookieValue)) {
-          return {...accumulator, csrf: cookieValue};
-        }
-
         return accumulator;
       }, {});
 
@@ -65,16 +52,8 @@ const getCredentials = memoize(
       throw new Error('Missing credential');
     }
 
-    if (!tokens.hasOwnProperty('csrf')) {
-      return {
-        Cookie: `${tokens.session}`,
-      };
-    }
-
     return {
-      'OPERATE-X-CSRF-TOKEN':
-        tokens.csrf === undefined ? '' : tokens.csrf.split('=')[1],
-      Cookie: `${tokens.session}; ${tokens.csrf}`,
+      Cookie: `${tokens.session};`,
     };
   }
 );

@@ -4,21 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getToken} from 'modules/Csrf';
 import {mergePathname} from './mergePathname';
 
 let responseInterceptor: null | ((response: Response) => Promise<void>) = null;
 
 async function request({url, method, body, headers, signal}: any) {
-  const csrfToken = getToken(document.cookie);
-
-  if (csrfToken) {
-    headers = {
-      'OPERATE-X-CSRF-TOKEN': csrfToken,
-      ...headers,
-    };
-  }
-
   const response = await fetch(
     mergePathname(window.clientConfig?.contextPath ?? '/', url),
     {
