@@ -93,6 +93,7 @@ export function Heatmap({report, context}) {
                       name: formatters.formatFileName(name),
                     }) + '.csv'
                   }
+                  totalCount={result.instanceCount}
                 >
                   <Icon type="save" />
                   {t('common.instanceIds')}

@@ -37,6 +37,7 @@ export default function OutlierDetailsModal({selectedNode, onClose, config}) {
                 name={name}
                 value={higherOutlier.boundValue}
                 config={config}
+                totalCount={totalCount}
               />
             </p>
             <DurationChart data={data} />
@@ -45,7 +46,7 @@ export default function OutlierDetailsModal({selectedNode, onClose, config}) {
             <p className="description">
               {t('analysis.outlier.totalInstances')}: {totalCount}
             </p>
-            <VariablesTable config={config} selectedNode={selectedNode} />
+            <VariablesTable config={config} selectedNode={selectedNode} totalCount={totalCount} />
           </Tabs.Tab>
         </Tabs>
       </Modal.Content>

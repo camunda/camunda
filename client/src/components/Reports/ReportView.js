@@ -110,7 +110,11 @@ export default class ReportView extends React.Component {
                 </Popover>
               )}
               {this.shouldShowCSVDownload() && (
-                <DownloadButton main href={this.constructCSVDownloadLink()}>
+                <DownloadButton
+                  main
+                  href={this.constructCSVDownloadLink()}
+                  totalCount={calculateTotalEntries(report)}
+                >
                   <Icon type="save" />
                   {t('report.downloadCSV')}
                 </DownloadButton>
@@ -134,4 +138,12 @@ export default class ReportView extends React.Component {
       </div>
     );
   }
+}
+
+function calculateTotalEntries({data, result}) {
+  if (data?.view?.properties[0] === 'rawData') {
+    return result.instanceCount;
+  }
+
+  return result?.measures?.[0].data.length;
 }

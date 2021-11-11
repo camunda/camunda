@@ -799,6 +799,7 @@
     "documentation": "documentation",
     "open": "Open",
     "for": "for",
+    "download": "Download",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
@@ -1200,6 +1201,10 @@
         "delete": "Are you sure you want to delete the selected items?",
         "remove": "Are you sure you want to remove the selected items?"
       }
+    },
+    "csvLimit": {
+      "Warning": "Warning: CSV will not contain all requested data",
+      "info": "This download will contain the first {exportLimit} of {totalCount} records. Contact your administrator to increase this system limit or filter your data to resolve this issue."
     },
     "unit": {
       "automatic": "automatic",
