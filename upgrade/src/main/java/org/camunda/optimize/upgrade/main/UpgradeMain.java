@@ -32,23 +32,21 @@ public class UpgradeMain {
     new HashSet<>(Arrays.asList("n", "no"))
   );
 
-  private static final UpgradeExecutionDependencies UPGRADE_DEPENDENCIES = createUpgradeDependencies();
-
-  private static final UpgradeProcedure UPGRADE_PROCEDURE = UpgradeProcedureFactory.create(UPGRADE_DEPENDENCIES);
-
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
   }
 
   public static void main(String... args) {
     try {
+      final UpgradeExecutionDependencies upgradeDependencies = createUpgradeDependencies();
+      final UpgradeProcedure upgradeProcedure = UpgradeProcedureFactory.create(upgradeDependencies);
       String targetVersion = Arrays.stream(args)
         .filter(arg -> arg.matches("\\d\\.\\d\\.\\d"))
         .findFirst()
         .orElse(Version.VERSION);
 
       final UpgradePlan upgradePlan =
-        new UpgradePlanRegistry(UPGRADE_DEPENDENCIES)
+        new UpgradePlanRegistry(upgradeDependencies)
           .getUpgradePlanForTargetVersion(targetVersion);
 
       if (upgradePlan == null) {
@@ -65,11 +63,11 @@ public class UpgradeMain {
 
       log.info("Executing upgrade...");
 
-      UPGRADE_PROCEDURE.performUpgrade(upgradePlan);
+      upgradeProcedure.performUpgrade(upgradePlan);
       System.exit(0);
     } catch (final Exception e) {
       log.error(e.getMessage(), e);
-      System.exit(2);
+      System.exit(1);
     }
   }
 
