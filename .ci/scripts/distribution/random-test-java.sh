@@ -14,7 +14,6 @@ MAVEN_PROPERTIES=(
   -Dsurefire.rerunFailingTestsCount=0
   -Dmaven.javadoc.skip=true
 )
-tempFile=$(mktemp)
 
 if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DforkCount=$SUREFIRE_FORK_COUNT")
@@ -26,4 +25,7 @@ if [ ! -z "$JUNIT_THREAD_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DjunitThreadCount=$JUNIT_THREAD_COUNT")
 fi
 
-mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" test -P parallel-tests,include-random-tests "${MAVEN_PROPERTIES[@]}" | tee "${tempFile}"
+mvn -o -B --fail-never -T "${MAVEN_PARALLELISM}" -s "${MAVEN_SETTINGS_XML}" \
+  -P parallel-tests,include-random-tests \
+  "${MAVEN_PROPERTIES[@]}" \
+  test

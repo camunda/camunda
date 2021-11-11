@@ -170,14 +170,14 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
 
                 stage('Test (Random)') {
                     environment {
-                        SUREFIRE_REPORT_NAME_SUFFIX = 'java-testrun-random'
+                        SUREFIRE_REPORT_NAME_SUFFIX = 'random-testrun'
                         MAVEN_PARALLELISM = 2
                         SUREFIRE_FORK_COUNT = 6
                         JUNIT_THREAD_COUNT = 6
@@ -191,7 +191,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -209,7 +209,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -276,7 +276,7 @@ pipeline {
 
                             post {
                                 always {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                                     stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
                                 }
 

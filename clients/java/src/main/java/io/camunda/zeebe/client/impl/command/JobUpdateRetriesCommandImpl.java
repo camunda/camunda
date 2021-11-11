@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
 import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.response.UpdateRetriesJobResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -70,7 +71,9 @@ public final class JobUpdateRetriesCommandImpl
             UpdateRetriesJobResponse, GatewayOuterClass.UpdateJobRetriesResponse>
         future =
             new RetriableClientFutureImpl<>(
-                retryPredicate, streamObserver -> send(request, streamObserver));
+                UpdateRetriesJobResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;

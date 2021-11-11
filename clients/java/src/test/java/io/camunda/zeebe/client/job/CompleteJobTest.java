@@ -17,7 +17,9 @@ package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.client.util.StringUtil;
@@ -146,7 +148,20 @@ public final class CompleteJobTest extends ClientTest {
     rule.verifyRequestTimeout(requestTimeout);
   }
 
+  @Test
+  public void shouldNotHaveNullResponse() {
+    // given
+    final CompleteJobCommandStep1 command = client.newCompleteCommand(12);
+
+    // when
+    final CompleteJobResponse response = command.send().join();
+
+    // then
+    assertThat(response).isNotNull();
+  }
+
   public static class POJO {
+
     private String key;
 
     public String getKey() {
