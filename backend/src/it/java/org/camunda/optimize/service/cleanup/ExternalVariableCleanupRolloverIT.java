@@ -42,7 +42,7 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
     // given
     getExternalVariableCleanupConfiguration().setEnabled(true);
     final List<ExternalProcessVariableRequestDto> varsToCleanIndex1 = IntStream.range(0, 10)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
 
     // freeze time to manipulate ingestion timestamp
@@ -56,10 +56,10 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
     embeddedOptimizeExtension.getExternalProcessVariableIndexRolloverService().triggerRollover();
 
     final List<ExternalProcessVariableRequestDto> varsToCleanIndex2 = IntStream.range(20, 30)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
     final List<ExternalProcessVariableRequestDto> varsToKeepIndex2 = IntStream.range(40, 50)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
 
     // freeze time to manipulate ingestion timestamp

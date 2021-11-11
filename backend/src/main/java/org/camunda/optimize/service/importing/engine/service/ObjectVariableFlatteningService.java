@@ -51,9 +51,9 @@ public class ObjectVariableFlatteningService {
     List<PluginVariableDto> resultList = new ArrayList<>();
     for (PluginVariableDto pluginVariableDto : variables) {
       if (VARIABLE_TYPE_OBJECT.equalsIgnoreCase(pluginVariableDto.getType())) {
-        final String serializationDataFormat =
-          String.valueOf(pluginVariableDto.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT));
-        if (APPLICATION_JSON.equals(serializationDataFormat)) {
+        final Optional<String> serializationDataFormat =
+          Optional.ofNullable(String.valueOf(pluginVariableDto.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
+        if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
           flattenJsonObjectVariable(pluginVariableDto, resultList);
         } else {
           log.warn("Object variable '{}' will not be imported due to unsupported serializationDataFormat: {}. " +

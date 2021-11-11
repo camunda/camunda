@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate35to36.indices;
 
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
@@ -14,7 +14,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
@@ -22,7 +21,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTIN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 
-public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
+public class ExternalProcessVariableIndexV1Old extends DefaultIndexMappingCreator {
 
   public static final String VARIABLE_ID = ExternalProcessVariableDto.Fields.variableId;
   public static final String VARIABLE_NAME = ExternalProcessVariableDto.Fields.variableName;
@@ -31,9 +30,8 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
   public static final String PROCESS_INSTANCE_ID = ExternalProcessVariableDto.Fields.processInstanceId;
   public static final String PROCESS_DEFINITION_KEY = ExternalProcessVariableDto.Fields.processDefinitionKey;
   public static final String INGESTION_TIMESTAMP = ExternalProcessVariableDto.Fields.ingestionTimestamp;
-  public static final String SERIALIZATION_DATA_FORMAT = ExternalProcessVariableDto.Fields.serializationDataFormat;
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 1;
 
   @Override
   public String getIndexName() {
@@ -60,28 +58,25 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(VARIABLE_ID)
-        .field("type", TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_NAME)
-        .field("type", TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_TYPE)
-        .field("type", TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_VALUE)
-        .field(MAPPING_ENABLED_SETTING, false)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(PROCESS_INSTANCE_ID)
-        .field("type", TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(PROCESS_DEFINITION_KEY)
-        .field("type", TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(INGESTION_TIMESTAMP)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-      .endObject()
-      .startObject(SERIALIZATION_DATA_FORMAT)
-        .field("type", TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
       .endObject();
     // @formatter:on
   }
@@ -93,8 +88,8 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
     final XContentBuilder newXContentBuilder = super.getStaticSettings(xContentBuilder, configurationService);
     return newXContentBuilder
       .startObject(SORT_SETTING)
-        .field(SORT_FIELD_SETTING, INGESTION_TIMESTAMP)
-        .field(SORT_ORDER_SETTING, "desc")
+      .field(SORT_FIELD_SETTING, INGESTION_TIMESTAMP)
+      .field(SORT_ORDER_SETTING, "desc")
       .endObject();
     // @formatter:on
   }

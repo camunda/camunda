@@ -134,7 +134,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractIT {
 
   private void ingestExternalVariables() {
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, NUMBER_OF_VARIABLES_IN_BATCH)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
     ingestionClient.ingestVariables(variables);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

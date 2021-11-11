@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.migrate35to36;
 
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate35to36.indices.DashboardIndexV4Old;
+import org.camunda.optimize.upgrade.migrate35to36.indices.ExternalProcessVariableIndexV1Old;
 import org.camunda.optimize.upgrade.migrate35to36.indices.SingleDecisionReportIndexV7Old;
 import org.camunda.optimize.upgrade.migrate35to36.indices.SingleProcessReportIndexV7Old;
 import org.elasticsearch.common.collect.List;
@@ -20,6 +21,8 @@ public class AbstractUpgrade36IT extends AbstractUpgradeIT {
   protected static final SingleDecisionReportIndexV7Old SINGLE_DECISION_REPORT_INDEX =
     new SingleDecisionReportIndexV7Old();
   protected static final DashboardIndexV4Old DASHBOARD_INDEX = new DashboardIndexV4Old();
+  protected static final ExternalProcessVariableIndexV1Old EXTERNAL_PROCESS_VARIABLE_INDEX =
+    new ExternalProcessVariableIndexV1Old();
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -27,7 +30,8 @@ public class AbstractUpgrade36IT extends AbstractUpgradeIT {
     initSchema(List.of(
       SINGLE_PROCESS_REPORT_INDEX,
       SINGLE_DECISION_REPORT_INDEX,
-      DASHBOARD_INDEX
+      DASHBOARD_INDEX,
+      EXTERNAL_PROCESS_VARIABLE_INDEX
     ));
     setMetadataVersion(FROM_VERSION);
   }

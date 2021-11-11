@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.IdGenerator;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
@@ -64,7 +65,7 @@ public class IngestionClient {
     return ingestedEvents;
   }
 
-  public ExternalProcessVariableRequestDto createExternalVariable() {
+  public ExternalProcessVariableRequestDto createPrimitiveExternalVariable() {
     return new ExternalProcessVariableRequestDto()
       .setId("anId")
       .setName("aName")
@@ -72,6 +73,17 @@ public class IngestionClient {
       .setType(VariableType.STRING)
       .setProcessInstanceId("anInstanceId")
       .setProcessDefinitionKey("aDefinitionKey");
+  }
+
+  public ExternalProcessVariableRequestDto createObjectExternalVariable(final String value) {
+    return new ExternalProcessVariableRequestDto()
+      .setId("anId")
+      .setName("objectVarName")
+      .setValue(value)
+      .setType(VariableType.OBJECT)
+      .setProcessInstanceId("anInstanceId")
+      .setProcessDefinitionKey("aDefinitionKey")
+      .setSerializationDataFormat(MediaType.APPLICATION_JSON);
   }
 
   public CloudEventRequestDto createCloudEventDto() {

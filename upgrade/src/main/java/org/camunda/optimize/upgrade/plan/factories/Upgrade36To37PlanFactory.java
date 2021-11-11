@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.plan.factories;
 
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -27,6 +28,7 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
       .toVersion("3.7.0")
       .addUpgradeSteps(migrateReportFilters())
       .addUpgradeStep(migrateDashboards())
+      .addUpgradeStep(migrateExternalProcessVariableIndex())
       .build();
   }
 
@@ -72,5 +74,8 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
       .collect(Collectors.toList());
   }
 
+  private static UpgradeStep migrateExternalProcessVariableIndex() {
+    return new UpdateIndexStep(new ExternalProcessVariableIndex(), "ctx._source.serializationDataFormat = null;");
+  }
 
 }
