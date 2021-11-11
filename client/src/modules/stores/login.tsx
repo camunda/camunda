@@ -6,7 +6,6 @@
 
 import {makeAutoObservable} from 'mobx';
 
-import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {resetApolloStore} from 'modules/apollo-client';
 import {mergePathname} from 'modules/utils/mergePathname';
 
@@ -89,19 +88,10 @@ class Login {
 
 /* istanbul ignore next */
 function request(input: string, init?: RequestInit) {
-  const token = getCsrfToken(document.cookie);
-
   return fetch(mergePathname(BASENAME, input), {
     ...init,
     credentials: 'include',
     mode: 'cors',
-    headers:
-      token === null
-        ? init?.headers
-        : {
-            ...init?.headers,
-            [CsrfKeyName]: token,
-          },
   });
 }
 

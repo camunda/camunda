@@ -8,7 +8,6 @@
 
 import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
 
-import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {login} from 'modules/stores/login';
 import {mergePathname} from 'modules/utils/mergePathname';
 import {MAX_TASKS_DISPLAYED} from 'modules/constants/tasks';
@@ -76,15 +75,6 @@ function createApolloClient({
     link: new HttpLink({
       uri: mergePathname(window.clientConfig?.contextPath ?? '/', '/graphql'),
       async fetch(uri: RequestInfo, options: RequestInit) {
-        const token = getCsrfToken(document.cookie);
-
-        if (token !== null) {
-          options.headers = {
-            ...options.headers,
-            [CsrfKeyName]: token,
-          };
-        }
-
         const response = await fetch(uri, options);
         if (response.ok) {
           login.activateSession();
