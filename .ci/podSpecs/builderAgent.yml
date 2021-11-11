@@ -52,7 +52,7 @@ spec:
           cpu: 8
           memory: 1Gi
     - name: node
-      image: node:16.5.0-alpine
+      image: node:16.13.0-alpine
       command: ["cat"]
       tty: true
       env:
