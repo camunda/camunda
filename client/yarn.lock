@@ -3371,10 +3371,10 @@
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha1-7ihweulOEdK4J7y+UnC86n8+ce4=
 
-"@types/jsoneditor@8.6.2":
-  version "8.6.2"
-  resolved "https://registry.yarnpkg.com/@types/jsoneditor/-/jsoneditor-8.6.2.tgz#f5bbbaf194260ddeb21cd48e1eeef77e05b66962"
-  integrity sha512-ZzL6XANCYEWtYMfD5DLM5yjJdJ+cnuqtxOaJ5vV521HIDOuSyJM7eH8GXB72HL6HCZclqRr7Ix4UnHKeSS4WjA==
+"@types/jsoneditor@9.5.1":
+  version "9.5.1"
+  resolved "https://registry.yarnpkg.com/@types/jsoneditor/-/jsoneditor-9.5.1.tgz#5db5604845acfac85fda0412ab4757e0fab73d22"
+  integrity sha512-HCIYfEForEAuoo2d9FhhOLDfWrk2l3YmiiAxj71Q3Hgv7XS9LxObWD8KVf1EdxW9ravUqV8p6EXOPZR5ORnpYQ==
   dependencies:
     "@types/ace" "*"
     ajv "^6.12.0"
