@@ -17,6 +17,7 @@ const configuration = {
   yLabel: '',
   targetValue: {active: false},
   stackedBar: false,
+  logScale: false,
 };
 
 const barReport = {
@@ -139,4 +140,17 @@ it('should show Color Picker for distributed by process reports that are grouped
   );
 
   expect(node.find('ColorPicker')).toExist();
+});
+
+it('should set logScale to true when enabling logarithmic scale switch', () => {
+  const spy = jest.fn();
+  const node = shallow(<BarChartConfig report={barReport} onChange={spy} />);
+
+  node
+    .find('fieldset')
+    .at(2)
+    .find('Switch')
+    .simulate('change', {target: {checked: true}});
+
+  expect(spy).toHaveBeenCalledWith({logScale: {$set: true}});
 });

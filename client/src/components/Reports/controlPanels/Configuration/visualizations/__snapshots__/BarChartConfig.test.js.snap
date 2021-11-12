@@ -26,8 +26,16 @@ exports[`it should display correct configuration for barchart 1`] = `
   </fieldset>
   <fieldset>
     <legend>
-      Axis Labels
+      Axis Settings
     </legend>
+    <Switch
+      checked={false}
+      label="Logarithmic Scale (base 10)"
+      onChange={[Function]}
+    />
+    <label>
+      Axis Label
+    </label>
     <ForwardRef(Input)
       onChange={[Function]}
       placeholder="X Axis Label"
@@ -58,6 +66,7 @@ exports[`it should display correct configuration for barchart 1`] = `
               "color": "#1991c8",
               "hideAbsoluteValue": false,
               "hideRelativeValue": false,
+              "logScale": false,
               "showInstanceCount": false,
               "stackedBar": false,
               "targetValue": Object {

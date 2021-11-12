@@ -176,9 +176,11 @@ export function createBarOptions({
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
+  const axisType = configuration.logScale ? 'logarithmic' : undefined;
 
   const yAxes = {
     'axis-0': {
+      type: axisType,
       grid: {
         color: getColorFor('grid', isDark),
       },
@@ -193,7 +195,7 @@ export function createBarOptions({
       },
       ticks: {
         ...(maxDuration && !hasMultipleAxes
-          ? createDurationFormattingOptions(targetLine, maxDuration)
+          ? createDurationFormattingOptions(targetLine, maxDuration, configuration.logScale)
           : {}),
         beginAtZero: true,
         color: getColorFor('label', isDark),
@@ -210,6 +212,7 @@ export function createBarOptions({
     yAxes['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t('report.view.count')}`;
 
     yAxes['axis-1'] = {
+      type: axisType,
       grid: {
         drawOnChartArea: false,
       },
@@ -223,7 +226,7 @@ export function createBarOptions({
         },
       },
       ticks: {
-        ...createDurationFormattingOptions(targetLine, maxDuration),
+        ...createDurationFormattingOptions(targetLine, maxDuration, configuration.logScale),
         beginAtZero: true,
         color: getColorFor('label', isDark),
       },

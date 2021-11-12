@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {parseISO, isValid} from 'date-fns';
+import {Chart} from 'chart.js';
 
 import {format} from 'dates';
 import {t} from 'translation';
@@ -223,7 +224,7 @@ export function formatReportResult(data, result) {
   return formattedResult;
 }
 
-export function createDurationFormattingOptions(targetLine, dataMinStep) {
+export function createDurationFormattingOptions(targetLine, dataMinStep, logScale) {
   // since the duration is given in milliseconds, chart.js cannot create nice y axis
   // ticks. So we define our own set of possible stepSizes and find one that the maximum
   // value of the dataset fits into or the maximum target line value if it is defined.
@@ -256,10 +257,17 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
   }
 
   return {
-    callback: function (v) {
+    callback: function (v, ...args) {
       let label = this.getLabelForValue(v);
       if (typeof label === 'string') {
         label = parseFloat(label.replace(/,/g, ''));
+      }
+
+      if (logScale) {
+        const logValue = Chart.defaults.scales.logarithmic.ticks.callback.call(this, v, ...args);
+        if (!logValue) {
+          return '';
+        }
       }
 
       return +(label / niceStepSize.base).toFixed(2) + niceStepSize.unit;

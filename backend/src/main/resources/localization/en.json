@@ -483,8 +483,10 @@
         },
         "showAbsolute": "Show Absolute Value"
       },
-      "axisLabels": {
-        "legend": "Axis Labels",
+      "axisSettings": {
+        "legend": "Axis Settings",
+        "logScale": "Logarithmic Scale (base 10)",
+        "label": "Axis Label",
         "xAxis": "X Axis Label",
         "yAxis": "Y Axis Label"
       },

@@ -41,6 +41,7 @@ Object {
         },
         "text": undefined,
       },
+      "type": undefined,
     },
     "xAxes": Object {
       "axis": "x",
@@ -125,6 +126,7 @@ Object {
         },
         "text": "Flow Node Count",
       },
+      "type": undefined,
     },
     "axis-1": Object {
       "axis": "y",
@@ -149,6 +151,7 @@ Object {
         },
         "text": "Flow Node Duration",
       },
+      "type": undefined,
     },
     "xAxes": Object {
       "axis": "x",

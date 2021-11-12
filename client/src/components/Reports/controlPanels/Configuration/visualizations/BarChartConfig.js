@@ -70,16 +70,22 @@ export default function BarChartConfig({onChange, report}) {
         </fieldset>
       )}
       <fieldset>
-        <legend>{t('report.config.axisLabels.legend')}</legend>
+        <legend>{t('report.config.axisSettings.legend')}</legend>
+        <Switch
+          checked={configuration.logScale}
+          onChange={({target: {checked}}) => onChange({logScale: {$set: checked}})}
+          label={t('report.config.axisSettings.logScale')}
+        />
+        <label>{t('report.config.axisSettings.label')}</label>
         <Input
-          placeholder={t('report.config.axisLabels.xAxis')}
+          placeholder={t('report.config.axisSettings.xAxis')}
           type="text"
           value={configuration.xLabel}
           onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
         {!isMultiMeasure && (
           <Input
-            placeholder={t('report.config.axisLabels.yAxis')}
+            placeholder={t('report.config.axisSettings.yAxis')}
             type="text"
             value={configuration.yLabel}
             onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}

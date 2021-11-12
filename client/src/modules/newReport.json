@@ -15,6 +15,7 @@
         "alwaysShowAbsolute": false,
         "showGradientBars": true,
         "stackedBar": false,
+        "logScale": false,
         "xml": null,
         "tableColumns": {
           "includeNewVariables": true,
@@ -94,6 +95,7 @@
     "data": {
       "configuration": {
         "pointMarkers": true,
+        "logScale": false,
         "hideRelativeValue": false,
         "hideAbsoluteValue": false,
         "alwaysShowRelative": false,
@@ -174,7 +176,8 @@
         },
         "ylabel": "",
         "xlabel": "",
-        "sorting": null
+        "sorting": null,
+        "logScale": false
       },
       "definitions": [
         {

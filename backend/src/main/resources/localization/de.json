@@ -483,8 +483,10 @@
         },
         "showAbsolute": "Absolutwert anzeigen"
       },
-      "axisLabels": {
-        "legend": "Achsen-Beschriftungen",
+      "axisSettings": {
+        "legend": "Achseneinstellungen",
+        "logScale": "Logarithmische Skala (Basis 10)",
+        "label": "Achsenbeschriftung",
         "xAxis": "X-Achse Beschriftung",
         "yAxis": "Y-Achse Beschriftung"
       },
