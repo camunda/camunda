@@ -5,12 +5,12 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 
 import com.auth0.AuthenticationController;
@@ -78,7 +78,7 @@ public class SSOController {
 
   /**
    * Logged in callback - Is called by auth0 with results of user authentication (GET) <br>
-   * Redirects to root url if successful, otherwise it will redirected to an error url.
+   * Redirects to root url if successful, otherwise it will be redirected to an error url.
    */
   @GetMapping(value = SSO_CALLBACK)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)

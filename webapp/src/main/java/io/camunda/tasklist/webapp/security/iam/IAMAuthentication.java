@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.webapp.security.iam;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_CALLBACK_URI;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -16,7 +17,6 @@ import io.camunda.iam.sdk.authentication.UserInfo;
 import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.tasklist.webapp.security.Permission;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.util.JWTDecoder;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
-@Profile(TasklistURIs.IAM_AUTH_PROFILE)
+@Profile(IAM_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class IAMAuthentication extends AbstractAuthenticationToken {
@@ -83,7 +83,7 @@ public class IAMAuthentication extends AbstractAuthenticationToken {
   }
 
   private boolean hasPermission(String permissionName) {
-    if (jwt == null || !(jwt instanceof JWTDecoder)) {
+    if (!(jwt instanceof JWTDecoder)) {
       return false;
     }
     final JWTDecoder decoder = (JWTDecoder) jwt;

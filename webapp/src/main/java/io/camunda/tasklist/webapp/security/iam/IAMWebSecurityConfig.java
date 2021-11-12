@@ -5,10 +5,10 @@
  */
 package io.camunda.tasklist.webapp.security.iam;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;

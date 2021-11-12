@@ -5,13 +5,13 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SSOWebSecurityConfig.class);
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -69,7 +69,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   protected void authenticationEntry(
       HttpServletRequest req, HttpServletResponse res, AuthenticationException ex)
       throws IOException {
-    String requestedUrl = req.getRequestURI().toString();
+    String requestedUrl = req.getRequestURI();
     if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
       requestedUrl = requestedUrl + "?" + req.getQueryString();
     }

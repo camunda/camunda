@@ -6,10 +6,10 @@
 package io.camunda.tasklist.webapp.security.iam;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
 
 import io.camunda.iam.sdk.authentication.UserInfo;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile(TasklistURIs.IAM_AUTH_PROFILE)
+@Profile(IAM_AUTH_PROFILE)
 public class IAMUserReader implements UserReader {
 
   @Override

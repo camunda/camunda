@@ -5,6 +5,9 @@
  */
 package io.camunda.tasklist;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILES;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
+
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.HashMap;
@@ -73,8 +76,8 @@ public class Application {
         configurableApplicationContext -> {
           final ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
           final Set<String> activeProfiles = Set.of(env.getActiveProfiles());
-          if (TasklistURIs.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
-            env.addActiveProfile(TasklistURIs.DEFAULT_AUTH);
+          if (AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
+            env.addActiveProfile(DEFAULT_AUTH);
           }
         });
   }

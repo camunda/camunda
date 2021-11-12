@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.management;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
@@ -14,7 +15,7 @@ import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesIni
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import org.junit.Test;
@@ -38,13 +39,14 @@ import org.springframework.test.context.junit4.SpringRunner;
       TestApplicationWithNoBeans.class,
       ElsIndicesHealthIndicator.class,
       WebSecurityConfig.class,
+      TasklistProfileService.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       TasklistProperties.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-@ActiveProfiles(TasklistURIs.AUTH_PROFILE)
+@ActiveProfiles(AUTH_PROFILE)
 public class HealthCheckAuthenticationTest {
 
   @Autowired private TestRestTemplate testRestTemplate;

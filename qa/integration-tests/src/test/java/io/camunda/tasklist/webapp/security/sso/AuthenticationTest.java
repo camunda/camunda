@@ -6,6 +6,7 @@
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
@@ -71,7 +72,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})
+@ActiveProfiles({SSO_AUTH_PROFILE, "test"})
 public class AuthenticationTest implements AuthenticationTestable {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();

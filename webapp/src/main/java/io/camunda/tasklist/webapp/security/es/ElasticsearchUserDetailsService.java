@@ -6,13 +6,13 @@
 package io.camunda.tasklist.webapp.security.es;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import io.camunda.tasklist.webapp.security.Role;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 @Configuration
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + TasklistURIs.IAM_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE + " & !" + IAM_AUTH_PROFILE)
 public class ElasticsearchUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER =

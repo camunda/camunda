@@ -5,7 +5,7 @@
  */
 package io.camunda.tasklist.webapp.security.sso;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.auth0.Tokens;

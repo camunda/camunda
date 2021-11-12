@@ -6,7 +6,7 @@
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.property.TasklistProperties;

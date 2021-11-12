@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.webapp.security.es;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -15,7 +16,6 @@ import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Role;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,7 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over GraphQL API /currentUser to get current user */
-@ActiveProfiles({TasklistURIs.AUTH_PROFILE, "test"})
+@ActiveProfiles({AUTH_PROFILE, "test"})
 public class AuthenticationTest extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";

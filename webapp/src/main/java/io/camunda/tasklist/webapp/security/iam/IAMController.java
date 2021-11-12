@@ -5,7 +5,7 @@
  */
 package io.camunda.tasklist.webapp.security.iam;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_CALLBACK_URI;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_LOGOUT_CALLBACK_URI;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
@@ -66,7 +66,7 @@ public class IAMController {
   /**
    * Logged in callback - Is called by Camunda Account with results of user authentication (GET)
    * <br>
-   * Redirects to root url if successful, otherwise it will redirected to an error url.
+   * Redirects to root url if successful, otherwise it will be redirected to an error url.
    *
    * @param req request
    * @param res response
@@ -116,7 +116,7 @@ public class IAMController {
 
   /**
    * Log out callback - Is called by Camunda Account during the single sign off process<br>
-   * Redirects to provided url if successful, otherwise it will redirected to an error url.
+   * Redirects to provided url if successful, otherwise it will be redirected to an error url.
    *
    * @param req request
    * @param res response

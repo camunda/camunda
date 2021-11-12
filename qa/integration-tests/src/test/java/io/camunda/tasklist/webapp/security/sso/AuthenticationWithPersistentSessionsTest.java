@@ -6,6 +6,7 @@
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
@@ -29,7 +30,6 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
@@ -74,7 +74,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
       "camunda.tasklist.persistentSessionsEnabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})
+@ActiveProfiles({SSO_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsTest implements AuthenticationTestable {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();

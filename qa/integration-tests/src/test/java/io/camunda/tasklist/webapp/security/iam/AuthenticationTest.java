@@ -5,8 +5,8 @@
  */
 package io.camunda.tasklist.webapp.security.iam;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.IAM_CALLBACK_URI;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;

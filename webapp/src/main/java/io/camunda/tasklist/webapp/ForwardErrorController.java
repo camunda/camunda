@@ -7,8 +7,8 @@ package io.camunda.tasklist.webapp;
 
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 
+import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import java.util.Arrays;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.error.ErrorController;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,7 +29,7 @@ public class ForwardErrorController implements ErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
-  @Autowired private Environment environment;
+  @Autowired private TasklistProfileService profileService;
 
   @RequestMapping("/error")
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
@@ -70,16 +69,8 @@ public class ForwardErrorController implements ErrorController {
         || !authentication.isAuthenticated();
   }
 
-  private boolean isSSOProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.SSO_AUTH_PROFILE);
-  }
-
-  private boolean isIAMProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.IAM_AUTH_PROFILE);
-  }
-
   private boolean shouldSaveRequestedURI(String requestedURI) {
-    return (isSSOProfile() || isIAMProfile())
+    return (profileService.isSSOProfile() || profileService.isIAMProfile())
         && !requestedURI.equals(TasklistURIs.LOGIN_RESOURCE)
         && isNotLoggedIn();
   }

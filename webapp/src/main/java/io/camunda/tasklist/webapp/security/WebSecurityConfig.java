@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.webapp.security;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ERROR_URL;
@@ -34,7 +35,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
-@Profile(TasklistURIs.AUTH_PROFILE)
+@Profile(AUTH_PROFILE)
 @EnableWebSecurity
 @Configuration
 @Component("webSecurityConfig")
@@ -43,6 +44,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   @Autowired private UserDetailsService userDetailsService;
 
   @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
+
+  @Autowired private TasklistProfileService profileService;
 
   @Override
   public void configure(AuthenticationManagerBuilder builder) throws Exception {
@@ -91,7 +94,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     final PrintWriter writer = response.getWriter();
     final String jsonResponse =
-        Json.createObjectBuilder().add("message", ex.getMessage()).build().toString();
+        Json.createObjectBuilder()
+            .add("message", profileService.getMessageByProfileFor(ex))
+            .build()
+            .toString();
 
     writer.append(jsonResponse);
 
