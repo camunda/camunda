@@ -216,6 +216,24 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
+  public void shouldRemoveTransientWhenCurrentSnapshotIsNewer() {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(10L, 10L, 10L, 10L).get();
+    transientSnapshot.take(this::writeSnapshot);
+    transientSnapshot.persist().join();
+
+    // when
+    final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 1L, 1L, 1L).get();
+    oldSnapshot.take(this::writeSnapshot);
+    oldSnapshot.persist().join();
+
+    // then
+    assertThat(pendingDir)
+        .as("transient and outdated snapshot has been deleted")
+        .isEmptyDirectory();
+  }
+
+  @Test
   public void shouldNotRemoveTransientSnapshotWithGreaterIdOnPersist() {
     // given
     final var newerTransientSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
