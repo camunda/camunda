@@ -65,6 +65,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     classes = {
         TestApplicationWithNoBeans.class,
         SSOWebSecurityConfig.class,
+        Auth0Service.class,
         SSOController.class,
         TokenAuthentication.class,
         SSOUserService.class,
