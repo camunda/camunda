@@ -12,7 +12,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
@@ -23,6 +23,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.RolePermissionService;
 import java.util.Arrays;
 import java.util.Base64;
@@ -70,7 +71,8 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         AuthenticationRestService.class,
         RolePermissionService.class,
         OperateURIs.class,
-        OperateProperties.class
+        OperateProperties.class,
+        OperateProfileService.class
     },
     properties = {
         "server.servlet.context-path=" + AuthenticationTest.CONTEXT_PATH,

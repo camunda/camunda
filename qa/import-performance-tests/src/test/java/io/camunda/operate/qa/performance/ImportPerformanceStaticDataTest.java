@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.qa.performance;
 
+import io.camunda.operate.webapp.security.OperateProfileService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -15,7 +16,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebe.ZeebeESConstants;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
@@ -47,7 +47,7 @@ public class ImportPerformanceStaticDataTest {
     logger.info("Operate will be started");
     applicationContext = new SpringApplicationBuilder(Application.class)
       .addCommandLineProperties(true)
-      .profiles(OperateURIs.AUTH_PROFILE)
+      .profiles(OperateProfileService.AUTH_PROFILE)
       .run();
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }

@@ -17,7 +17,7 @@ import io.camunda.iam.sdk.authentication.UserInfo;
 import io.camunda.iam.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.iam.sdk.rest.exception.RestException;
 import io.camunda.operate.util.RetryOperation;
-import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
-@Profile(OperateURIs.IAM_AUTH_PROFILE)
+@Profile(OperateProfileService.IAM_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class IAMAuthentication extends AbstractAuthenticationToken {

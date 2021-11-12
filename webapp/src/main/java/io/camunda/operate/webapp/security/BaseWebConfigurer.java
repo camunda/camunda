@@ -37,6 +37,9 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
   @Autowired
   protected OperateProperties operateProperties;
 
+  @Autowired
+  OperateProfileService errorMessageService;
+
   @Override
   protected void configure(HttpSecurity http) throws Exception {
     http.csrf().disable()
@@ -99,12 +102,15 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
 
     PrintWriter writer = response.getWriter();
     response.setContentType(APPLICATION_JSON.getMimeType());
+
     String jsonResponse = Json.createObjectBuilder()
-        .add("message", ex.getMessage())
+        .add("message", errorMessageService.getMessageByProfileFor(ex))
         .build()
         .toString();
 
     writer.append(jsonResponse);
     response.setStatus(UNAUTHORIZED.value());
   }
+
+
 }

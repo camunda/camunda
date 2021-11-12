@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.security;
 
-import static io.camunda.operate.webapp.security.OperateURIs.AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.AUTH_PROFILE;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;

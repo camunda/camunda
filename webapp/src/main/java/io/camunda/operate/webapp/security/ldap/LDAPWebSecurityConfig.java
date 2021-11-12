@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.security.ldap;
 
-import static io.camunda.operate.webapp.security.OperateURIs.LDAP_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.LDAP_AUTH_PROFILE;
 
 import io.camunda.operate.property.LdapProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;

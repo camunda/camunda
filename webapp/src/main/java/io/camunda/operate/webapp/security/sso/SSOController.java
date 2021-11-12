@@ -11,7 +11,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
-import static io.camunda.operate.webapp.security.OperateURIs.SSO_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
 import com.auth0.IdentityVerificationException;

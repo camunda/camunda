@@ -7,7 +7,7 @@ package io.camunda.operate.webapp.security.iam;
 
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_LOGOUT_CALLBACK_URI;
-import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;

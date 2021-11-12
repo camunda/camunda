@@ -10,6 +10,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.*;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
 import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -35,9 +36,12 @@ import org.springframework.util.MultiValueMap;
 @SpringBootTest(
     classes = {
         OperateProperties.class,
-        TestApplicationWithNoBeans.class, AuthenticationRestService.class,
+        TestApplicationWithNoBeans.class,
+        AuthenticationRestService.class,
         RolePermissionService.class,
-        LDAPWebSecurityConfig.class, LDAPUserService.class
+        LDAPWebSecurityConfig.class,
+        LDAPUserService.class,
+        OperateProfileService.class
     },
     properties = {
         "spring.ldap.embedded.base-dn=dc=springframework,dc=org",

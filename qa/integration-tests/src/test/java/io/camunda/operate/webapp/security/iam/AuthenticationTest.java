@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.security.iam;
 
-import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.IAM_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
@@ -21,6 +21,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.RolePermissionService;
@@ -55,7 +56,8 @@ import org.springframework.test.context.junit4.SpringRunner;
         RolePermissionService.class,
         AuthenticationRestService.class,
         OperateURIs.class,
-        OperateProperties.class
+        OperateProperties.class,
+        OperateProfileService.class
     },
     properties = {
         "camunda.operate.iam.issuer=http://app.iam.localhost",

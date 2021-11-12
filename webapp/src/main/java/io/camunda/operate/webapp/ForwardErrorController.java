@@ -9,14 +9,12 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 
 import io.camunda.operate.util.ConversionUtils;
-import java.util.Arrays;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import javax.servlet.RequestDispatcher;
-import io.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.error.ErrorController;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,7 +31,7 @@ public class ForwardErrorController implements ErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
   @Autowired
-  private Environment environment;
+  private OperateProfileService operateProfileService;
 
   @RequestMapping(value = "/error")
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
@@ -45,11 +43,11 @@ public class ForwardErrorController implements ErrorController {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
       if (requestedURI.contains("/api/")) {
+        ModelAndView modelAndView = new ModelAndView();
         Integer statusCode = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         Exception exception = (Exception) request.getAttribute(
             "org.springframework.boot.web.servlet.error.DefaultErrorAttributes.ERROR");
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.addObject("message", exception != null ? exception.getMessage() : "");
+        modelAndView.addObject("message", operateProfileService.getMessageByProfileFor(exception));
         modelAndView.setStatus(HttpStatus.valueOf(statusCode));
         return modelAndView;
       }
@@ -58,7 +56,7 @@ public class ForwardErrorController implements ErrorController {
   }
 
   private boolean isLoginDelegated() {
-    return isIAMProfile() || isSSOProfile();
+    return operateProfileService.isIAMProfile() || operateProfileService.isSSOProfile();
   }
 
   private ModelAndView forwardToRootPage() {
@@ -88,14 +86,6 @@ public class ForwardErrorController implements ErrorController {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
-  }
-
-  private boolean isSSOProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(OperateURIs.SSO_AUTH_PROFILE);
-  }
-
-  private boolean isIAMProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(OperateURIs.IAM_AUTH_PROFILE);
   }
 
 }

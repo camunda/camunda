@@ -17,7 +17,7 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.management.ElsIndicesHealthIndicator;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
-import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,12 +37,20 @@ import org.springframework.test.context.junit4.SpringRunner;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, ElsIndicesHealthIndicator.class, WebSecurityConfig.class,
-      ElasticsearchSessionRepository.class, RetryElasticsearchClient.class, OperateWebSessionIndex.class },
+  classes = {
+      OperateProperties.class,
+      TestApplicationWithNoBeans.class,
+      ElsIndicesHealthIndicator.class,
+      WebSecurityConfig.class,
+      ElasticsearchSessionRepository.class,
+      RetryElasticsearchClient.class,
+      OperateWebSessionIndex.class,
+      OperateProfileService.class
+  },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-@ActiveProfiles(OperateURIs.AUTH_PROFILE)
+@ActiveProfiles(OperateProfileService.AUTH_PROFILE)
 public class HealthCheckAuthenticationTest {
 
   @Autowired

@@ -15,12 +15,10 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.Role;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +28,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
-@Profile(OperateURIs.SSO_AUTH_PROFILE)
+@Profile(OperateProfileService.SSO_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {

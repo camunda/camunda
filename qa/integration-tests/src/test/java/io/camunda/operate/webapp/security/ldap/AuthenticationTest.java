@@ -13,6 +13,7 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -35,9 +36,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(
     classes = {
         OperateProperties.class,
-        TestApplicationWithNoBeans.class, AuthenticationRestService.class,
-        LDAPWebSecurityConfig.class, LDAPUserService.class,
-        RetryElasticsearchClient.class, ElasticsearchSessionRepository.class, OperateWebSessionIndex.class
+        TestApplicationWithNoBeans.class,
+        AuthenticationRestService.class,
+        LDAPWebSecurityConfig.class,
+        LDAPUserService.class,
+        RetryElasticsearchClient.class,
+        ElasticsearchSessionRepository.class,
+        OperateWebSessionIndex.class,
+        OperateProfileService.class
     },
     properties = {
         "camunda.operate.ldap.baseDn=dc=planetexpress,dc=com",

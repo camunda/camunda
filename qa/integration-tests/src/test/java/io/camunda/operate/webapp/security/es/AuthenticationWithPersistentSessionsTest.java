@@ -6,7 +6,7 @@
 package io.camunda.operate.webapp.security.es;
 
 import static io.camunda.operate.util.CollectionUtil.map;
-import static io.camunda.operate.webapp.security.OperateURIs.AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.Permission.READ;
 import static io.camunda.operate.webapp.security.Permission.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Role;
 import io.camunda.operate.webapp.security.RolePermissionService;
@@ -61,7 +62,10 @@ import org.springframework.test.context.junit4.SpringRunner;
       RolePermissionService.class,
       AuthenticationRestService.class,
       ElasticSearchUserDetailsService.class,
-      RetryElasticsearchClient.class,ElasticsearchSessionRepository.class, OperateWebSessionIndex.class
+      RetryElasticsearchClient.class,
+      ElasticsearchSessionRepository.class,
+      OperateWebSessionIndex.class,
+      OperateProfileService.class
   },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {

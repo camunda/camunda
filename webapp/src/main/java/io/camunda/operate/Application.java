@@ -6,7 +6,7 @@
 package io.camunda.operate;
 
 import io.camunda.operate.data.DataGenerator;
-import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -58,8 +58,8 @@ public class Application {
     springApplication.addInitializers(configurableApplicationContext -> {
       ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
       Set<String> activeProfiles = Set.of(env.getActiveProfiles());
-      if (OperateURIs.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
-        env.addActiveProfile(OperateURIs.DEFAULT_AUTH);
+      if (OperateProfileService.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains)) {
+        env.addActiveProfile(OperateProfileService.DEFAULT_AUTH);
       }
     });
   }

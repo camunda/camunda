@@ -5,44 +5,31 @@
  */
 package io.camunda.operate.webapp.security;
 
-import java.util.Set;
-
 public final class OperateURIs {
 
   // Used as constants class
    private OperateURIs(){}
 
    public static final String
-      RESPONSE_CHARACTER_ENCODING = "UTF-8",
-      ROOT = "/",
-      API = "/api/**",
+      RESPONSE_CHARACTER_ENCODING = "UTF-8";
+  public static final String ROOT = "/";
+  public static final String API = "/api/**";
 
-      LDAP_AUTH_PROFILE = "ldap-auth",
-      AUTH_PROFILE = "auth",
-      LOGIN_RESOURCE = "/api/login",
-      LOGOUT_RESOURCE = "/api/logout",
-      COOKIE_JSESSIONID = "OPERATE-SESSION",
+  public static final String LOGIN_RESOURCE = "/api/login";
+  public static final String LOGOUT_RESOURCE = "/api/logout";
+  public static final String COOKIE_JSESSIONID = "OPERATE-SESSION";
 
-      SSO_AUTH_PROFILE = "sso-auth",
-      SSO_CALLBACK_URI = "/sso-callback",
-      NO_PERMISSION = "/noPermission",
+  public static final String SSO_CALLBACK_URI = "/sso-callback";
+  public static final String NO_PERMISSION = "/noPermission";
 
-      IAM_AUTH_PROFILE = "iam-auth",
+  public static final String IAM_CALLBACK_URI = "/iam-callback";
+  public static final String IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback";
 
-      IAM_CALLBACK_URI = "/iam-callback",
-      IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback",
-
-      // For redirects after login
+  public static final String// For redirects after login
       REQUESTED_URL = "requestedUrl"
   ;
 
-   public static final String DEFAULT_AUTH = AUTH_PROFILE;
-   public static final Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE,
-                                                          LDAP_AUTH_PROFILE,
-                                                          SSO_AUTH_PROFILE,
-                                                          IAM_AUTH_PROFILE);
-
-   public static final String[] AUTH_WHITELIST = {
+  public static final String[] AUTH_WHITELIST = {
        "/swagger-resources",
        "/swagger-resources/**",
        "/swagger-ui.html",

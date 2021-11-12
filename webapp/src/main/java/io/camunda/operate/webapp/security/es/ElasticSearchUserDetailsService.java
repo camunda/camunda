@@ -8,12 +8,12 @@ package io.camunda.operate.webapp.security.es;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Role;
 import java.util.List;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE + " & !" + OperateURIs.IAM_AUTH_PROFILE)
+@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE + " & ! " + OperateProfileService.SSO_AUTH_PROFILE + " & !" + OperateProfileService.IAM_AUTH_PROFILE)
 public class ElasticSearchUserDetailsService implements UserDetailsService {
 
   private static final Logger logger = LoggerFactory.getLogger(

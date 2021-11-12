@@ -7,7 +7,7 @@ package io.camunda.operate.webapp.security.iam;
 
 import static io.camunda.operate.webapp.security.OperateURIs.API;
 import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
-import static io.camunda.operate.webapp.security.OperateURIs.IAM_AUTH_PROFILE;
+import static io.camunda.operate.webapp.security.OperateProfileService.IAM_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
 import io.camunda.iam.sdk.IamApi;

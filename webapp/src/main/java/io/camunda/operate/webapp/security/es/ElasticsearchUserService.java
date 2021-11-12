@@ -7,7 +7,7 @@
 package io.camunda.operate.webapp.security.es;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.RolePermissionService;
 import io.camunda.operate.webapp.security.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile(
-      "!"     + OperateURIs.LDAP_AUTH_PROFILE
-    + " & ! " + OperateURIs.SSO_AUTH_PROFILE
-    + " & !"  + OperateURIs.IAM_AUTH_PROFILE
+      "!"     + OperateProfileService.LDAP_AUTH_PROFILE
+    + " & ! " + OperateProfileService.SSO_AUTH_PROFILE
+    + " & !"  + OperateProfileService.IAM_AUTH_PROFILE
 )
 public class ElasticsearchUserService implements UserService<UsernamePasswordAuthenticationToken> {
 

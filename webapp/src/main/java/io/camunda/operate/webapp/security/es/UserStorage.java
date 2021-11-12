@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.security.es;
 
+import io.camunda.operate.webapp.security.OperateProfileService;
 import java.io.IOException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.entities.UserEntity;
@@ -12,7 +13,6 @@ import io.camunda.operate.webapp.es.reader.AbstractReader;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.OperateURIs;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 @Component
-@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE + " & !" + OperateURIs.IAM_AUTH_PROFILE)
+@Profile("!" + OperateProfileService.LDAP_AUTH_PROFILE + " & ! " + OperateProfileService.SSO_AUTH_PROFILE + " & !" + OperateProfileService.IAM_AUTH_PROFILE)
 @DependsOn("schemaStartup")
 public class UserStorage extends AbstractReader {
 
