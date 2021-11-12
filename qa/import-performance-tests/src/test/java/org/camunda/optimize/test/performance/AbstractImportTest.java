@@ -128,7 +128,7 @@ public abstract class AbstractImportTest {
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
       .as("processInstanceTypeCount").isEqualTo(engineDatabaseExtension.countHistoricProcessInstances());
     assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount())
-      .as("variableInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricVariableInstances());
+      .as("variableInstanceCount").isGreaterThanOrEqualTo(engineDatabaseExtension.countHistoricVariableInstances());
     assertThat(elasticSearchIntegrationTestExtension.getActivityCount())
       .as("historicActivityInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricActivityInstances());
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))

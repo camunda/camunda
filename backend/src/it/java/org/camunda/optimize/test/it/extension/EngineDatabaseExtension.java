@@ -480,10 +480,8 @@ public class EngineDatabaseExtension implements Extension {
     statement.next();
     int totalAmount = statement.getInt("total");
 
-    // subtract all case and object variables
-    sql = "select count(*) as total from act_hi_varinst " +
-      "where var_type_ not in ('string', 'double', 'integer', 'long', 'short', 'date', 'boolean' ) " +
-      "or CASE_INST_ID_  is not null;";
+    // subtract all case variables
+    sql = "SELECT count(*) as total FROM act_hi_varinst WHERE CASE_INST_ID_ is not null;";
     statement =
       connection.createStatement().executeQuery(sql);
     statement.next();

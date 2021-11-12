@@ -124,7 +124,7 @@ pipeline {
                 EXPECTED_NUMBER_OF_PROCESS_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_procinst;") || true
                 EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_actinst;") || true
                 EXPECTED_NUMBER_OF_USER_TASKS=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) as total from act_hi_taskinst;") || true
-                EXPECTED_NUMBER_OF_VARIABLES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_varinst where var_type_ in (\'string\', \'double\', \'integer\', \'long\', \'short\', \'date\', \'boolean\' ) and CASE_INST_ID_  is  null;") || true
+                EXPECTED_NUMBER_OF_VARIABLES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_varinst where CASE_INST_ID_  is  null;") || true
                 EXPECTED_NUMBER_OF_DECISION_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_decinst;") || true
 
                 echo "NUMBER_OF_DECISION_INSTANCES"
@@ -134,7 +134,7 @@ pipeline {
                 echo "NUMBER_OF_ACTIVITY_INSTANCES"
                 test "\$NUMBER_OF_ACTIVITY_INSTANCES" = "\${EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES}" || error=true
                 echo "NUMBER_OF_VARIABLES"
-                test "\$NUMBER_OF_VARIABLES" = "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
+                test "\$NUMBER_OF_VARIABLES" -ge "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
                 echo "NUMBER_OF_USER_TASKS"
                 test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
                 echo "NUMBER_OF_INCOMPLETE_USER_TASKS"

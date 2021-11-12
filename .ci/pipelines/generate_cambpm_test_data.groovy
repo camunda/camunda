@@ -237,7 +237,7 @@ pipeline {
                 env.EXPECTED_NUMBER_OF_PROCESS_INSTANCES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_procinst;"', returnStdout: true).trim()
                 env.EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_actinst;"', returnStdout: true).trim()
                 env.EXPECTED_NUMBER_OF_USER_TASKS = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) as total from act_hi_taskinst;"', returnStdout: true).trim()
-                env.EXPECTED_NUMBER_OF_VARIABLES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_varinst where var_type_ in (\'string\', \'double\', \'integer\', \'long\', \'short\', \'date\', \'boolean\' ) and CASE_INST_ID_  is  null;"', returnStdout: true).trim()
+                env.EXPECTED_NUMBER_OF_VARIABLES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_varinst where CASE_INST_ID_ is null;"', returnStdout: true).trim()
                 env.EXPECTED_NUMBER_OF_DECISION_INSTANCES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_decinst;"', returnStdout: true).trim()
               }
               // Export dump
