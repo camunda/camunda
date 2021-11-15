@@ -113,15 +113,17 @@ export default function FilterInstance({
           ))}
         </Typeahead>
       </Labeled>
-      <InputComponent
-        config={config}
-        variable={{name: filter.name, type: filter.type}}
-        changeFilter={(data) => {
-          updateFilterData({...filter, data});
-        }}
-        filter={filter.data}
-        definition={applyTo}
-      />
+      {applyTo && (
+        <InputComponent
+          config={config}
+          variable={{name: filter.name, type: filter.type}}
+          changeFilter={(data) => {
+            updateFilterData({...filter, data});
+          }}
+          filter={filter.data}
+          definition={applyTo}
+        />
+      )}
     </section>
   );
 }
