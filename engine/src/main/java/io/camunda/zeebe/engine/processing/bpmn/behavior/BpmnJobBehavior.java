@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -22,9 +23,11 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -80,9 +83,19 @@ public final class BpmnJobBehavior {
     final var scopeKey = context.getElementInstanceKey();
     final var type = element.getJobWorkerProperties().getType();
     final var retries = element.getJobWorkerProperties().getRetries();
+    final var assignee = element.getJobWorkerProperties().getAssignee();
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> expressionBehavior.evaluateStringExpression(type, scopeKey).map(p::type))
-        .flatMap(p -> expressionBehavior.evaluateLongExpression(retries, scopeKey).map(p::retries));
+        .flatMap(p -> expressionBehavior.evaluateLongExpression(retries, scopeKey).map(p::retries))
+        .flatMap(p -> evaluateAssigneeExpression(assignee, scopeKey).map(p::assignee));
+  }
+
+  private Either<Failure, String> evaluateAssigneeExpression(
+      final Expression assignee, final long scopeKey) {
+    if (assignee == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior.evaluateStringExpression(assignee, scopeKey);
   }
 
   private void writeJobCreatedEvent(
@@ -90,7 +103,8 @@ public final class BpmnJobBehavior {
       final ExecutableJobWorkerElement jobWorkerElement,
       final JobProperties props) {
 
-    final var encodedHeaders = encodeHeaders(jobWorkerElement);
+    final var taskHeaders = jobWorkerElement.getJobWorkerProperties().getTaskHeaders();
+    final var encodedHeaders = encodeHeaders(taskHeaders, props.getAssignee());
 
     jobRecord
         .setType(props.getType())
@@ -107,8 +121,11 @@ public final class BpmnJobBehavior {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
   }
 
-  private DirectBuffer encodeHeaders(final ExecutableJobWorkerElement element) {
-    final var headers = element.getJobWorkerProperties().getTaskHeaders();
+  private DirectBuffer encodeHeaders(final Map<String, String> taskHeaders, final String assignee) {
+    final var headers = new HashMap<>(taskHeaders);
+    if (assignee != null) {
+      headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
+    }
     return headerEncoder.encode(headers);
   }
 
@@ -134,6 +151,7 @@ public final class BpmnJobBehavior {
   private static final class JobProperties {
     private String type;
     private Long retries;
+    private String assignee;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -151,6 +169,15 @@ public final class BpmnJobBehavior {
 
     public Long getRetries() {
       return retries;
+    }
+
+    public JobProperties assignee(final String assignee) {
+      this.assignee = assignee;
+      return this;
+    }
+
+    public String getAssignee() {
+      return assignee;
     }
   }
 
