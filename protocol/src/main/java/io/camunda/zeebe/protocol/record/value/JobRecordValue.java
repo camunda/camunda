@@ -45,6 +45,12 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
   long getRetryBackOff();
 
   /**
+   * @return the timestamp when this job record was received. This method is used by backoff to
+   *     determine the date when the job is needed to be activable again.
+   */
+  long getReceivedTime();
+
+  /**
    * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit
    *     is milliseconds since unix epoch). If the deadline is exceeded, it can happen that the job
    *     is handed to another worker and the work is performed twice. If this property is not set it

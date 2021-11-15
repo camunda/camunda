@@ -26,6 +26,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   private static final String EMPTY_STRING = "";
   private static final String RETRIES = "retries";
@@ -40,6 +41,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
+  private final LongProperty receivedTimeProp = new LongProperty("receivedTime", -1);
 
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
@@ -63,6 +65,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(workerProp)
         .declareProperty(retriesProp)
         .declareProperty(retryBackoffProp)
+        .declareProperty(receivedTimeProp)
         .declareProperty(typeProp)
         .declareProperty(customHeadersProp)
         .declareProperty(variableProp)
@@ -81,6 +84,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
     retryBackoffProp.setValue(record.getRetryBackOff());
+    receivedTimeProp.setValue(record.getReceivedTime());
     typeProp.setValue(record.getTypeBuffer());
     final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
     customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
@@ -137,6 +141,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public long getRetryBackOff() {
     return retryBackoffProp.getValue();
+  }
+
+  @Override
+  public long getReceivedTime() {
+    return receivedTimeProp.getValue();
   }
 
   @Override
@@ -232,13 +241,13 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  public JobRecord setRetries(final int retries) {
-    retriesProp.setValue(retries);
+  public JobRecord setReceivedTime(final long receivedTime) {
+    receivedTimeProp.setValue(receivedTime);
     return this;
   }
 
-  public JobRecord setRetryBackoff(final long retryBackoff) {
-    retryBackoffProp.setValue(retryBackoff);
+  public JobRecord setRetries(final int retries) {
+    retriesProp.setValue(retries);
     return this;
   }
 
@@ -263,6 +272,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  public JobRecord setRetryBackoff(final long retryBackoff) {
+    retryBackoffProp.setValue(retryBackoff);
+    return this;
   }
 
   @JsonIgnore
