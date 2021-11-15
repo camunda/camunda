@@ -186,14 +186,14 @@ public final class FailJobTest {
     // explicitly wait for polling
     ENGINE.increaseTime(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION));
 
-    // verify that our job doesn't activable
+    // verify that our job didn't recur after backoff
     final var reactivatedJobs = ENGINE.jobs().withType(jobType).activate();
     assertThat(reactivatedJobs.getValue().getJobs()).isEmpty();
 
     ENGINE.increaseTime(backOff.plus(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION)));
 
-    // verify that our job made activable
-    assertThat(jobRecords(JobIntent.MADE_ACTIVABLE).withType(jobType).getFirst().getKey())
+    // verify that our job recurred after backoff
+    assertThat(jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).getFirst().getKey())
         .isEqualTo(jobKey);
   }
 

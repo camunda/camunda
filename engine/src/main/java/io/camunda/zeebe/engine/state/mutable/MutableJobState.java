@@ -16,7 +16,7 @@ public interface MutableJobState extends JobState {
 
   void activate(long key, JobRecord record);
 
-  void makeActivable(long key, JobRecord record);
+  void recurAfterBackoff(long key, JobRecord record);
 
   void timeout(long key, JobRecord record);
 
