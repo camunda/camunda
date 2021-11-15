@@ -35,8 +35,8 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
 
   THROW_ERROR((short) 11, false),
   ERROR_THROWN((short) 12),
-  MAKE_ACTIVABLE((short) 13),
-  MADE_ACTIVABLE((short) 14);
+  RECUR_AFTER_BACKOFF((short) 13),
+  RECURRED_AFTER_BACKOFF((short) 14);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -83,9 +83,9 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
       case 12:
         return ERROR_THROWN;
       case 13:
-        return MAKE_ACTIVABLE;
+        return RECUR_AFTER_BACKOFF;
       case 14:
-        return MADE_ACTIVABLE;
+        return RECURRED_AFTER_BACKOFF;
       default:
         return UNKNOWN;
     }

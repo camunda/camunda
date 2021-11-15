@@ -129,7 +129,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void makeActivable(final long key, final JobRecord record) {
+  public void recurAfterBackoff(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
     backoffKey.wrapLong(record.getRetryBackOff() + record.getReceivedTime());
     backoffColumnFamily.delete(backoffJobKey);

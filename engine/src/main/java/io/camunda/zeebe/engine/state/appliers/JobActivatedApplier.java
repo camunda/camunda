@@ -18,11 +18,11 @@ public class JobActivatedApplier implements TypedEventApplier<JobIntent, JobReco
   private final MutableJobState jobState;
 
   JobActivatedApplier(final MutableZeebeState zeebeState) {
-    this.jobState = zeebeState.getJobState();
+    jobState = zeebeState.getJobState();
   }
 
   @Override
   public void applyState(final long key, final JobRecord value) {
-    jobState.makeActivable(key, value);
+    jobState.recurAfterBackoff(key, value);
   }
 }

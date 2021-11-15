@@ -31,7 +31,7 @@ public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
                     (key, record) -> {
                       typedCommandWriter.reset();
                       typedCommandWriter.appendFollowUpCommand(
-                          key, JobIntent.MAKE_ACTIVABLE, record);
+                          key, JobIntent.RECUR_AFTER_BACKOFF, record);
 
                       return typedCommandWriter.flush() >= 0;
                     }));

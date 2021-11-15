@@ -46,7 +46,7 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
 
   /**
    * @return the timestamp when this job record was received. This method is used by backoff to
-   *     determine the date when the job is needed to be activable again.
+   *     determine the date when the job is needed to be recurred after backoff.
    */
   long getReceivedTime();
 
