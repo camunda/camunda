@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -101,12 +102,14 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
     failedJob.setRetryBackoff(retryBackOff);
+    final long receivedTime = ActorClock.currentTimeMillis();
+    failedJob.setReceivedTime(receivedTime);
     commandControl.accept(JobIntent.FAILED, failedJob);
     jobMetrics.jobFailed(failedJob.getType());
     if (retries > 0 && retryBackOff > 0) {
       sideEffect.accept(
           () -> {
-            jobBackoffChecker.scheduleBackOff(retryBackOff + System.currentTimeMillis());
+            jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
             return true;
           });
     }
