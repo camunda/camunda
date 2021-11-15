@@ -32,8 +32,8 @@ public class ImportIndexIT extends AbstractImportIT {
     // given
     final int currentTimeBackOff = 1000;
     embeddedOptimizeExtension.getConfigurationService().setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
 
     // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
     Thread.sleep(currentTimeBackOff);
@@ -75,9 +75,9 @@ public class ImportIndexIT extends AbstractImportIT {
   @Test
   public void indexAfterRestartOfOptimizeHasCorrectProcessDefinitionsToImport() {
     // given
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -96,12 +96,12 @@ public class ImportIndexIT extends AbstractImportIT {
   @Test
   public void afterRestartOfOptimizeAlsoNewDataIsImported() {
     // given
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // and
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -116,7 +116,7 @@ public class ImportIndexIT extends AbstractImportIT {
   @Test
   public void itIsPossibleToResetTheImportIndex() {
     // given
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -139,7 +139,7 @@ public class ImportIndexIT extends AbstractImportIT {
     // as well as running & suspended ones
     final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
     engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.createTenant("id", "name");
 

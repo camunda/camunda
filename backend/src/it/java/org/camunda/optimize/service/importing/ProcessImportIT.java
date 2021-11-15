@@ -93,7 +93,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     BpmnModelInstance exampleProcess = getSimpleBpmnDiagram();
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
@@ -182,7 +182,7 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void allProcessDefinitionFieldDataIsAvailable() {
     // given
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -213,7 +213,7 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -248,7 +248,7 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void allProcessInstanceDataIsAvailable() {
     // given
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -301,7 +301,7 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -336,7 +336,7 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void failingJobDoesNotUpdateImportIndex() throws InterruptedException {
     // given
-    final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTask();
+    final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();
     final OffsetDateTime firstInstanceEndTime =
       engineIntegrationExtension.getHistoricProcessInstance(instance1.getId()).getEndTime();
 
@@ -344,7 +344,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
 
     // deploy another not yet imported instance
-    final ProcessInstanceEngineDto instance2 = deployAndStartSimpleServiceTask();
+    final ProcessInstanceEngineDto instance2 = deployAndStartSimpleServiceTaskProcess();
 
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final ScheduledExecutorService importExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -418,7 +418,7 @@ public class ProcessImportIT extends AbstractImportIT {
     );
     importAllEngineEntitiesFromScratch();
 
-    ProcessInstanceEngineDto serviceTask = deployAndStartSimpleServiceTask();
+    ProcessInstanceEngineDto serviceTask = deployAndStartSimpleServiceTaskProcess();
     String definitionId = serviceTask.getDefinitionId();
     importAllEngineEntitiesFromLastIndex();
 
@@ -507,7 +507,7 @@ public class ProcessImportIT extends AbstractImportIT {
     errorResponseMock.mock(requestMatcher, Times.once(), engineMockServer);
 
     // when
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // then
@@ -527,7 +527,7 @@ public class ProcessImportIT extends AbstractImportIT {
     authorizationError.mock(requestMatcher, Times.once(), engineMockServer);
 
     // when
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // then the second request will have succeeded
@@ -548,7 +548,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()));
 
     // when
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // then the second request will have succeeded
@@ -882,7 +882,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
   private void startTwoProcessInstancesWithSameEndTime() {
     OffsetDateTime endTime = OffsetDateTime.now();
-    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTask();
+    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto secondProcInst =
       engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
     Map<String, OffsetDateTime> procInstEndDateUpdates = new HashMap<>();
@@ -906,7 +906,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
-    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
       firstProcInst.getDefinitionId(),
       variables

@@ -152,7 +152,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     // given
     final String engineVariableName = "aVariable";
     final ProcessInstanceEngineDto processInstance =
-      deployAndStartSimpleServiceTaskWithVariables(Map.of(engineVariableName, "aString"));
+      deployAndStartSimpleServiceProcessTaskWithVariables(Map.of(engineVariableName, "aString"));
     final ExternalProcessVariableRequestDto externalVariable1 = ingestionClient.createPrimitiveExternalVariable()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessInstanceId(processInstance.getId());

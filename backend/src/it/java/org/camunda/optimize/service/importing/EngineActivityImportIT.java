@@ -157,7 +157,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
   @Test
   public void flowNodesWithoutProcessDefinitionKeyCanBeImported() {
     // given
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricFlowNodes();
 
     // when
@@ -175,7 +175,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
   public void runningActivitiesAreNotSkippedDuringImport() {
     // given
     deployAndStartUserTaskProcess();
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -282,7 +282,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
   @Test
   public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
     // given
-    deployAndStartSimpleServiceTask();
+    deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -295,7 +295,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
-    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
       firstProcInst.getDefinitionId(),
       variables

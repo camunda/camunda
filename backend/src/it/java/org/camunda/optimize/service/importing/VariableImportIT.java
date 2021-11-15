@@ -183,7 +183,7 @@ public class VariableImportIT extends AbstractImportIT {
     final ObjectVariableDto objectVariableDto = createMapJsonObjectVariableDto(person);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", objectVariableDto);
-    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
     final List<Tuple> expectedFlattenedVars = List.of(
       Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
       Tuple.tuple("objectVar.age", LONG.getId(), "28"),
@@ -288,7 +288,7 @@ public class VariableImportIT extends AbstractImportIT {
     final ObjectVariableDto objectVariableDto = createListJsonObjectVariableDto(List.of(pet1, pet2));
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectListVar", objectVariableDto);
-    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -314,7 +314,7 @@ public class VariableImportIT extends AbstractImportIT {
       createJsonObjectVariableDto(variableValue, "java.lang.String");
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectStringVar", objectVariableDto);
-    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -347,7 +347,7 @@ public class VariableImportIT extends AbstractImportIT {
     );
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", objectVariableDto);
-    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -374,7 +374,7 @@ public class VariableImportIT extends AbstractImportIT {
     final ObjectVariableDto objectVariableDto = createMapJsonObjectVariableDto(null);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("var", objectVariableDto);
-    deployAndStartSimpleServiceTaskWithVariables(variables);
+    deployAndStartSimpleServiceProcessTaskWithVariables(variables);
 
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
@@ -715,7 +715,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
-    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
+    ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
       firstProcInst.getDefinitionId(),
       variables
