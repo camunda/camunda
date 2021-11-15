@@ -37,11 +37,11 @@ public final class ZeebeObjectMapper implements JsonMapper {
 
   public ZeebeObjectMapper() {
     this(new ObjectMapper());
-    this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
   
   public ZeebeObjectMapper(ObjectMapper objectMapper){
     this.objectMapper = objectMapper;
+    this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 
   @Override
