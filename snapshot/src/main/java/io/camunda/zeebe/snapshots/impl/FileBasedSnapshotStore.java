@@ -19,6 +19,7 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorThread;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.FileNotFoundException;
@@ -366,11 +367,30 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   private void addPendingSnapshot(final PersistableSnapshot pendingSnapshot) {
-    actor.submit(() -> pendingSnapshots.add(pendingSnapshot));
+    final Runnable action = () -> pendingSnapshots.add(pendingSnapshot);
+
+    if (!isCurrentActor()) {
+      actor.submit(action);
+    } else {
+      action.run();
+    }
   }
 
   void removePendingSnapshot(final PersistableSnapshot pendingSnapshot) {
     pendingSnapshots.remove(pendingSnapshot);
+  }
+
+  private boolean isCurrentActor() {
+    final var currentActorThread = ActorThread.current();
+
+    if (currentActorThread != null) {
+      final var task = currentActorThread.getCurrentTask();
+      if (task != null) {
+        return task.getActor() == this;
+      }
+    }
+
+    return false;
   }
 
   private void observeSnapshotSize(final FileBasedSnapshot persistedSnapshot) {
