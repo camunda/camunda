@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {Button, Icon, Labeled, Tooltip, Typeahead} from 'components';
@@ -28,6 +28,8 @@ export default function FilterInstance({
   config,
   applyTo,
 }) {
+  const [isNew, setIsNew] = useState(true);
+
   const getInputComponentForVariable = (type) => {
     if (!type) {
       return () => null;
@@ -45,6 +47,21 @@ export default function FilterInstance({
     }
   };
 
+  const InputComponent = getInputComponentForVariable(filter.type);
+
+  const isValid = InputComponent.isValid?.(filter.data);
+  const isMoreThanOneFilter = filters.length > 1;
+  const filterIdx = filters.indexOf(filter);
+
+  const collapsed = !expanded && isMoreThanOneFilter && isValid;
+
+  useEffect(() => {
+    const isLastFilter = !filters[filterIdx + 1];
+    if (!isLastFilter || collapsed) {
+      setIsNew(false);
+    }
+  }, [collapsed, filters, expanded, filterIdx]);
+
   const selectVariable = (value) => {
     const nameAndType = value.split('_');
     const type = nameAndType.pop();
@@ -58,23 +75,25 @@ export default function FilterInstance({
     });
   };
 
-  const InputComponent = getInputComponentForVariable(filter.type);
-
   return (
-    <section className={classnames('FilterInstance', {collapsed: !expanded && filter.name})}>
-      {filter.name && (
+    <section className={classnames('FilterInstance', {collapsed})}>
+      {!isNew && filters.length > 1 && (
         <div
           tabIndex="0"
-          className="sectionTitle"
-          onClick={toggleExpanded}
+          className={classnames('sectionTitle', {clickable: isValid})}
+          onClick={isValid && toggleExpanded}
           onKeyDown={(evt) => {
-            if ((evt.key === ' ' || evt.key === 'Enter') && evt.target === evt.currentTarget) {
+            if (
+              (evt.key === ' ' || evt.key === 'Enter') &&
+              evt.target === evt.currentTarget &&
+              isValid
+            ) {
               toggleExpanded();
             }
           }}
         >
           <span className="highlighted">{filter.name}</span> {t('common.filter.list.operators.is')}…
-          {expanded && filters.length > 1 && (
+          {!collapsed && (
             <Tooltip content={t('common.delete')}>
               <Button
                 icon
@@ -88,9 +107,11 @@ export default function FilterInstance({
               </Button>
             </Tooltip>
           )}
-          <span className={classnames('sectionToggle', {expanded})}>
-            <Icon type="down" />
-          </span>
+          {isValid && (
+            <span className={classnames('sectionToggle', {expanded})}>
+              <Icon type="down" />
+            </span>
+          )}
         </div>
       )}
       <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>

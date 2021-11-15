@@ -5,9 +5,12 @@
 
   .sectionTitle {
     padding-bottom: 5px;
-    cursor: pointer;
     position: relative;
     font-size: 12px;
+
+    &.clickable {
+      cursor: pointer;
+    }
 
     .sectionToggle {
       color: var(--grey-darken-23);

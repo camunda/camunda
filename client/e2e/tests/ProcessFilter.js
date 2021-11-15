@@ -78,8 +78,6 @@ test('variable filter modal dependent on variable type', async (t) => {
 
   await t.click(Filter.removeVariableBtn);
 
-  await t.click(Filter.variableHeader('dateVar'));
-
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
 });
 
