@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.exporter;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.time.Duration;
+import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.Test;
 
 public class ElasticsearchExporterFaultToleranceIT
@@ -31,10 +35,14 @@ public class ElasticsearchExporterFaultToleranceIT
     elastic.start();
 
     // then
-    RecordingExporter.messageRecords()
-        .withCorrelationKey("123")
-        .withName("message")
-        .forEach(r -> TestUtil.waitUntil(() -> wasExported(r)));
+    final var records =
+        RecordingExporter.messageRecords()
+            .withCorrelationKey("123")
+            .withName("message")
+            .collect(Collectors.toList()); // collect here because we iterate multiple times
+    Awaitility.await()
+        .timeout(Duration.ofMinutes(1))
+        .untilAsserted(() -> assertThat(records).allMatch(this::wasExported));
     assertIndexSettings();
   }
 
