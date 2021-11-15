@@ -29,6 +29,7 @@ const SEMANTIC_COLORS = {
   grey: '#dedede',
   outlineError: '#ffafaf',
   transparent: 'transparent',
+  shimmer: '#82b1ff',
 } as const;
 const DARK_COLORS = {
   ...SEMANTIC_COLORS,
@@ -378,6 +379,9 @@ const theme = Object.freeze({
           color: rgba(SEMANTIC_COLORS.white, 0.9),
           backgroundColor: DARK_COLORS.ui03,
         },
+      },
+      operationsProgressBar: {
+        shimmerColor: SEMANTIC_COLORS.shimmer,
       },
       filtersPanel: {
         modalIcon: {
@@ -1308,6 +1312,9 @@ const theme = Object.freeze({
           color: LIGHT_COLORS.ui06,
           backgroundColor: LIGHT_COLORS.ui04,
         },
+      },
+      operationsProgressBar: {
+        shimmerColor: SEMANTIC_COLORS.shimmer,
       },
       filtersPanel: {
         modalIcon: {

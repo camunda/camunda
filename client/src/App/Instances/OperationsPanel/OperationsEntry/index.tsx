@@ -9,11 +9,11 @@ import {LinkButton} from 'modules/components/LinkButton';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {isOperationRunning} from '../service';
-import ProgressBar from './ProgressBar';
+import {ProgressBar} from './ProgressBar';
 import {useHistory} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {useLoadingProgress} from './useLoadingProgress';
 
 const TYPE_LABELS: Readonly<Record<OperationEntityType, string>> = {
   ADD_VARIABLE: 'Edit',
@@ -38,6 +38,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   } = operation;
   const history = useHistory();
 
+  const {fakeProgressPercentage, isComplete} = useLoadingProgress({
+    totalCount: operationsTotalCount,
+    finishedCount: operationsFinishedCount,
+  });
+
   function handleInstancesClick(operationId: OperationEntity['id']) {
     panelStatesStore.expandFiltersPanel();
 
@@ -53,10 +58,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   }
 
   return (
-    <Styled.Entry
-      isRunning={isOperationRunning(operation)}
-      data-testid="operations-entry"
-    >
+    <Styled.Entry isRunning={!isComplete} data-testid="operations-entry">
       <Styled.EntryStatus>
         <div>
           <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
@@ -77,11 +79,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           )}
         </Styled.OperationIcon>
       </Styled.EntryStatus>
-      {!endDate && (
-        <ProgressBar
-          totalCount={operationsTotalCount}
-          finishedCount={operationsFinishedCount}
-        />
+      {!isComplete && (
+        <ProgressBar progressPercentage={fakeProgressPercentage} />
       )}
       <Styled.EntryDetails>
         {'DELETE_PROCESS_INSTANCE' !== type && (
@@ -89,7 +88,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
             {`${pluralSuffix(instancesCount, 'Instance')}`}
           </LinkButton>
         )}
-        {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
+        {endDate !== null && isComplete && (
+          <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>
+        )}
       </Styled.EntryDetails>
     </Styled.Entry>
   );

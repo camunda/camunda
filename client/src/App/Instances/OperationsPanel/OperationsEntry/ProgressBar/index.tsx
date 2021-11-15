@@ -4,25 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import * as Styled from './styled';
 
-function getBarWidth(totalCount: any, finishedCount: any) {
-  if (totalCount === 0) {
-    return 0;
-  }
-  return Math.floor((100 / totalCount) * finishedCount);
-}
-
 type Props = {
-  totalCount: number;
-  finishedCount: number;
+  progressPercentage: number;
 };
 
-const ProgressBar = ({totalCount, finishedCount}: Props) => {
-  const barWidth = getBarWidth(totalCount, finishedCount);
-
+const ProgressBar: React.FC<Props> = ({progressPercentage}) => {
+  const barWidth = Math.min(Math.max(0, progressPercentage), 100);
   return (
     <Styled.Container>
       <Styled.Background />
@@ -31,4 +20,4 @@ const ProgressBar = ({totalCount, finishedCount}: Props) => {
   );
 };
 
-export default ProgressBar;
+export {ProgressBar};

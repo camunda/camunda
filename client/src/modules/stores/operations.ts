@@ -197,7 +197,7 @@ class Operations extends NetworkReconnectionHandler {
   startPolling = async () => {
     this.intervalId = setInterval(() => {
       this.handlePolling();
-    }, 5000);
+    }, 1000);
   };
 
   stopPolling = () => {

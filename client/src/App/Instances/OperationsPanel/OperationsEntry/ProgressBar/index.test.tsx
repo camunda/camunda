@@ -4,35 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {render, screen} from '@testing-library/react';
-import ProgressBar from './index';
+import {ProgressBar} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('ProgressBar', () => {
-  it('should render 0% progress (count: 0)', () => {
-    render(<ProgressBar totalCount={0} finishedCount={0} />, {
+  it('should render less than 0% progress', async () => {
+    render(<ProgressBar progressPercentage={-100} />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '0%');
+  });
+
+  it('should render 0% progress', async () => {
+    render(<ProgressBar progressPercentage={0} />, {
       wrapper: ThemeProvider,
     });
     expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '0%');
   });
 
-  it('should render 0% progress (count: 5)', () => {
-    render(<ProgressBar totalCount={5} finishedCount={0} />, {
-      wrapper: ThemeProvider,
-    });
-    expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '0%');
-  });
-
-  it('should render 33% progress', () => {
-    render(<ProgressBar totalCount={9} finishedCount={3} />, {
+  it('should render 33% progress', async () => {
+    render(<ProgressBar progressPercentage={33} />, {
       wrapper: ThemeProvider,
     });
     expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '33%');
   });
 
-  it('should render 100% progress', () => {
-    render(<ProgressBar totalCount={5} finishedCount={5} />, {
+  it('should render 100% progress', async () => {
+    render(<ProgressBar progressPercentage={100} />, {
+      wrapper: ThemeProvider,
+    });
+    expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '100%');
+  });
+
+  it('should not render more than 100% progress', async () => {
+    render(<ProgressBar progressPercentage={200} />, {
       wrapper: ThemeProvider,
     });
     expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '100%');

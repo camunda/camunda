@@ -4,9 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {useState, useLayoutEffect} from 'react';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {render, screen} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -25,6 +31,24 @@ function createWrapper(history = createMemoryHistory()) {
 
   return Wrapper;
 }
+
+const FinishingOperationsEntry: React.FC = () => {
+  const [finishedCount, setFinishedCount] = useState(0);
+
+  useLayoutEffect(() => {
+    setFinishedCount(5);
+  }, []);
+
+  return (
+    <OperationsEntry
+      operation={{
+        ...OPERATIONS.EDIT,
+        operationsTotalCount: 5,
+        operationsFinishedCount: finishedCount,
+      }}
+    />
+  );
+};
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -143,5 +167,64 @@ describe('OperationsEntry', () => {
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+  });
+
+  it('should fake the first 10% progress', async () => {
+    render(
+      <OperationsEntry
+        operation={{
+          ...OPERATIONS.EDIT,
+          operationsTotalCount: 10,
+          operationsFinishedCount: 0,
+        }}
+      />,
+      {wrapper: createWrapper()}
+    );
+
+    expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '0%');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '10%')
+    );
+  });
+
+  it('should render 50% progress and fake progress', async () => {
+    jest.useFakeTimers();
+    render(
+      <OperationsEntry
+        operation={{
+          ...OPERATIONS.EDIT,
+          operationsTotalCount: 10,
+          operationsFinishedCount: 5,
+        }}
+      />,
+      {wrapper: createWrapper()}
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '50%')
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('progress-bar')).toHaveStyleRule('width', '55%')
+    );
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should render 100% progress and hide progress bar', async () => {
+    jest.useFakeTimers();
+    render(<FinishingOperationsEntry />, {wrapper: createWrapper()});
+
+    await waitFor(() =>
+      expect(screen.getByTestId('progress-bar')).toHaveStyleRule(
+        'width',
+        '100%'
+      )
+    );
+    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('progress-bar'));
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });
