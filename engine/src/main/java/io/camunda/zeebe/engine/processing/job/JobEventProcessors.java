@@ -65,8 +65,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(zeebeState, jobMetrics))
-        .onCommand(
-            ValueType.JOB, JobIntent.RECUR_AFTER_BACKOFF, new JobActivateProcessor(zeebeState))
+        .onCommand(ValueType.JOB, JobIntent.RECUR_AFTER_BACKOFF, new JobRecurProcessor(zeebeState))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
