@@ -22,7 +22,6 @@ import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -67,7 +66,6 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   }
 
   @Test
-  @Disabled("TODO reenable after daylight savings stop having an impact")
   public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -135,7 +133,6 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
 
   @MethodSource("getSortingParamsAndExpectedResults")
   @ParameterizedTest
-  @Disabled("TODO reenable after daylight savings stop having an impact")
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -144,10 +141,10 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     OffsetDateTime oneWeekAgo = now.minusWeeks(1L);
     OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
 
-    long completedInstanceOneWeekDuration = oneWeekAgo.toInstant().toEpochMilli() - twoWeeksAgo.toInstant()
-      .toEpochMilli();
-    long completedInstanceOneDayDuration = twoDaysAgo.toInstant().toEpochMilli() - threeDaysAgo.toInstant()
-      .toEpochMilli();
+    long completedInstanceOneWeekDuration = oneWeekAgo.toInstant().toEpochMilli() -
+      twoWeeksAgo.toInstant().toEpochMilli();
+    long completedInstanceOneDayDuration = twoDaysAgo.toInstant().toEpochMilli() -
+      threeDaysAgo.toInstant().toEpochMilli();
     long runningInstanceTwoDaysDuration = now.toInstant().toEpochMilli() - twoDaysAgo.toInstant().toEpochMilli();
     long runningInstanceTwoWeeksDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
 
