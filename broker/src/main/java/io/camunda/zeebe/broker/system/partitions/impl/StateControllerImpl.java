@@ -170,6 +170,9 @@ public class StateControllerImpl implements StateController {
       exportedPosition = 0;
 
       if (latestSnapshot.isPresent()) {
+        // re-use index and term from the latest snapshot
+        // to ensure that the records from there are not
+        // compacted until they get exported
         final PersistedSnapshot persistedSnapshot = latestSnapshot.get();
         index = persistedSnapshot.getIndex();
         term = persistedSnapshot.getTerm();
