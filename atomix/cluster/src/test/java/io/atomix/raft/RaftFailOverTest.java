@@ -411,6 +411,30 @@ public class RaftFailOverTest {
     assertThat(entries.get(0).index()).isEqualTo(66);
   }
 
+  @Test
+  public void shouldNotReplicateSnapshotWhenIndexIsZero() throws Exception {
+    // given
+    final var follower = raftRule.shutdownFollower();
+
+    raftRule.appendEntries(100);
+    raftRule.doSnapshot(0);
+
+    // expect
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
+    assertThat(leaderSnapshot.getIndex()).isEqualTo(0);
+
+    // when
+    raftRule.joinCluster(follower);
+
+    // then
+    final var memberLogs = raftRule.getMemberLogs();
+    assertMemberLogs(memberLogs);
+
+    // snapshot is not replicated to follower
+    final var followerSnapshotStore = raftRule.getPersistedSnapshotStore(follower);
+    assertThat(followerSnapshotStore.getLatestSnapshot()).isNotPresent();
+  }
+
   private void assertMemberLogs(final Map<String, List<IndexedRaftLogEntry>> memberLog) {
     final var members = memberLog.keySet();
     final var iterator = members.iterator();
