@@ -24,11 +24,11 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Report.filterOption('Variable'));
 
   await t.click(Filter.typeahead);
-  await t.typeText(Filter.typeaheadInput, 'dc', {replace: true});
+  await t.typeText(Filter.variableTypeahead, 'dc', {replace: true});
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter.png');
 
-  await t.typeText(Filter.typeaheadInput, 'boolVar', {replace: true});
+  await t.typeText(Filter.variableTypeahead, 'boolVar', {replace: true});
   await t.click(Filter.typeaheadOption('boolVar'));
   await t.click(Filter.firstMultiSelectValue);
 
@@ -37,7 +37,7 @@ test('variable filter modal dependent on variable type', async (t) => {
     'process/filter/variable-filter-boolean.png'
   );
 
-  await t.typeText(Filter.typeaheadInput, 'stringVar', {replace: true});
+  await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
   await t.click(Filter.typeaheadOption('stringVar'));
 
   await t.expect(Filter.stringValues.textContent).contains('aStringValue');
@@ -51,7 +51,7 @@ test('variable filter modal dependent on variable type', async (t) => {
     .typeText(Filter.variableFilterValueInput, 'anotherSubstring')
     .pressKey('tab');
 
-  await t.typeText(Filter.typeaheadInput, 'integerVar', {replace: true});
+  await t.typeText(Filter.variableTypeahead, 'integerVar', {replace: true});
   await t.click(Filter.typeaheadOption('integerVar'));
 
   await t
@@ -63,7 +63,9 @@ test('variable filter modal dependent on variable type', async (t) => {
     'process/filter/variable-filter-numeric.png'
   );
 
-  await t.typeText(Filter.typeaheadInput, 'dateVar', {replace: true});
+  await t.click(Filter.variableOrButton);
+
+  await t.typeText(Filter.variableTypeahead, 'dateVar', {replace: true});
   await t.click(Filter.typeaheadOption('dateVar'));
   await t.click(Filter.dateFilterTypeSelect);
   await t.click(Filter.dateFilterTypeOption('Between'));
@@ -71,6 +73,12 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.pickerDate('22')).wait(200);
   await t.click(Filter.dateFilterEndInput);
+
+  await t.click(Filter.variableHeader('integerVar'));
+
+  await t.click(Filter.removeVariableBtn);
+
+  await t.click(Filter.variableHeader('dateVar'));
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
 });
@@ -85,7 +93,7 @@ test('filter for custom string variable values', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Variable'));
 
-  await t.typeText(Filter.typeaheadInput, 'stringVar', {replace: true});
+  await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
   await t.click(Filter.typeaheadOption('stringVar'));
 
   await t.expect(Filter.stringValues.textContent).contains('aStringValue');
