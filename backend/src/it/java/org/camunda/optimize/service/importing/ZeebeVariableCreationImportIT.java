@@ -356,7 +356,11 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   }
 
   private Map<String, Object> generateVariables() {
-    return Map.of("var1", "someValue", "var2", false, "var3", 123, "var4", 123.3, "var5", "");
+    return Map.of("var1", "someValue",
+                  "var2", false,
+                  "var3", 123,
+                  "var4", 123.3,
+                  "var5", "");
   }
 
   private ProcessInstanceEvent deployProcessAndStartProcessInstance() {

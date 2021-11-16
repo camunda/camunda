@@ -158,6 +158,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
     SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+    configuration.setLogScale(true);
     configuration.setYLabel("fooYLabel");
     reportData.setConfiguration(configuration);
     ProcessPartDto processPartDto = new ProcessPartDto();
@@ -183,6 +184,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionRequestDto newReport = (SingleProcessReportDefinitionRequestDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey()).isEqualTo("procdef");
     assertThat(newReport.getData().getDefinitionVersions()).containsExactly("123");
+    assertThat(newReport.getData().getConfiguration().getLogScale()).isTrue();
     assertThat(newReport.getData().getConfiguration().getYLabel()).isEqualTo("fooYLabel");
     assertThat(newReport.getData().getConfiguration().getProcessPart()).isNotEmpty();
     assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart()).isEqualTo("start123");

@@ -92,6 +92,8 @@ public class SingleReportConfigurationDto implements Combinable {
   private MeasureVisualizationsDto measureVisualizations = new MeasureVisualizationsDto();
   @Builder.Default
   private Boolean stackedBar = false;
+  @Builder.Default
+  private Boolean logScale = false;
 
   @JsonIgnore
   public String createCommandKey() {

@@ -26,7 +26,7 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.6.0")
       .toVersion("3.7.0")
-      .addUpgradeSteps(migrateReportFilters())
+      .addUpgradeSteps(migrateReportFiltersAndConfig())
       .addUpgradeStep(migrateDashboards())
       .addUpgradeStep(migrateExternalProcessVariableIndex())
       .build();
@@ -52,25 +52,31 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
     return new UpdateIndexStep(new DashboardIndex(), dashboardMigrationScript);
   }
 
-  private static List<UpgradeStep> migrateReportFilters() {
+  private static List<UpgradeStep> migrateReportFiltersAndConfig() {
     // @formatter:off
-    final String reportFilterMigrationScript =
-      "if (ctx._source.data != null) {" +
-        "def filters = ctx._source.data.filter;" +
-        "if (filters != null) {" +
-          "for (def filter : filters) {" +
-            "if (\"startDate\".equals(filter.type)) {" +
-              "filter.type = \"instanceStartDate\";" +
-            "}" +
-            "if (\"endDate\".equals(filter.type)) {" +
-              "filter.type = \"instanceEndDate\";" +
-            "}" +
-          "}" +
-        "}" +
+    final String reportMigrationScript =
+      "if (ctx._source.data != null) {\n" +
+        // migrate report filters
+        "def filters = ctx._source.data.filter;\n" +
+        "if (filters != null) {\n" +
+          "for (def filter : filters) {\n" +
+            "if (\"startDate\".equals(filter.type)) {\n" +
+              "filter.type = \"instanceStartDate\";\n" +
+            "}\n" +
+            "if (\"endDate\".equals(filter.type)) {\n" +
+              "filter.type = \"instanceEndDate\";\n" +
+            "}\n" +
+          "}\n" +
+        "}\n" +
+        // add default logScale value
+        "def config = ctx._source.data.configuration;\n" +
+        "if (config != null) {\n" +
+          "config.logScale = false;\n" +
+        "}\n" +
       "}";
     // @formatter:on
     return Stream.of(new SingleProcessReportIndex(), new SingleDecisionReportIndex())
-      .map(index -> new UpdateIndexStep(index, reportFilterMigrationScript))
+      .map(index -> new UpdateIndexStep(index, reportMigrationScript))
       .collect(Collectors.toList());
   }
 
