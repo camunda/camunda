@@ -50,7 +50,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.12</version.docker-java-api>
-    <version.elasticsearch>7.15.1</version.elasticsearch>
+    <version.elasticsearch>7.15.2</version.elasticsearch>
     <version.error-prone>2.10.0</version.error-prone>
     <version.grpc>1.42.0</version.grpc>
     <version.gson>2.8.9</version.gson>
@@ -62,7 +62,7 @@
     <version.httpcomponents>4.4.14</version.httpcomponents>
     <version.jackson>2.13.0</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
-    <version.jna>5.9.0</version.jna>
+    <version.jna>5.10.0</version.jna>
     <version.junit>5.8.1</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.opentest4j>1.2.0</version.opentest4j>
@@ -73,12 +73,12 @@
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.0</version.msgpack>
     <version.netty-tcnative>2.0.45.Final</version.netty-tcnative>
-    <version.netty>4.1.69.Final</version.netty>
+    <version.netty>4.1.70.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.12.0</version.prometheus>
     <version.protobuf>3.19.1</version.protobuf>
     <version.protobuf-common>2.6.0</version.protobuf-common>
-    <version.micrometer>1.7.5</version.micrometer>
+    <version.micrometer>1.8.0</version.micrometer>
     <version.rocksdbjni>6.25.3</version.rocksdbjni>
     <version.sbe>1.24.0</version.sbe>
     <version.scala-parser>2.1.0</version.scala-parser>
@@ -91,10 +91,10 @@
     <version.asm>9.2</version.asm>
     <version.testcontainers>1.16.2</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>3.0.0</version.zeebe-test-container>
+    <version.zeebe-test-container>3.1.0</version.zeebe-test-container>
     <version.feel-scala>1.13.3</version.feel-scala>
     <version.rest-assured>4.4.0</version.rest-assured>
-    <version.spring>5.3.12</version.spring>
+    <version.spring>5.3.13</version.spring>
     <version.spring-boot>2.5.6</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
@@ -104,7 +104,7 @@
     <version.jqwik>1.5.6</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.11.22</version.byte-buddy>
+    <version.byte-buddy>1.12.1</version.byte-buddy>
     <version.revapi>0.26.0</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.8.9-ea-1</version.immutables>
@@ -132,10 +132,10 @@
     <plugin.version.revapi>0.14.5</plugin.version.revapi>
     <plugin.version.scala>4.5.4</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
-    <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
+    <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
     <plugin.version.spotbugs>4.4.2.2</plugin.version.spotbugs>
-    <plugin.version.spotless>2.17.3</plugin.version.spotless>
+    <plugin.version.spotless>2.17.4</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
 
@@ -803,7 +803,13 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${plugin.version.compiler}</version>
           <configuration>
+            <parameters>true</parameters>
             <release>${version.java}</release>
+            <compilerArgs>
+              <!-- ensure we generate a class file for package-info.java files to avoid recompiling every time -->
+              <arg>-Xpkginfo:always</arg>
+            </compilerArgs>
+            <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
         </plugin>
 
@@ -1100,6 +1106,8 @@
           <version>${plugin.version.scala}</version>
           <configuration>
             <scalaVersion>${version.scala}</scalaVersion>
+            <source>${version.java}</source>
+            <target>${version.java}</target>
           </configuration>
           <executions>
             <execution>
@@ -1182,6 +1190,7 @@
           <artifactId>protobuf-maven-plugin</artifactId>
           <version>${plugin.version.protobuf-maven-plugin}</version>
           <configuration>
+            <checkStaleness>true</checkStaleness>
             <protocArtifact>com.google.protobuf:protoc:${version.protobuf}:exe:${os.detected.classifier}</protocArtifact>
             <pluginId>grpc-java</pluginId>
             <pluginArtifact>io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}</pluginArtifact>
@@ -1339,9 +1348,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <parameters>true</parameters>
-        </configuration>
       </plugin>
 
       <plugin>

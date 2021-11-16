@@ -22,6 +22,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 
@@ -80,5 +82,23 @@ class UserTaskBuilderTest {
         .extracting(
             ZeebeAssignmentDefinition::getAssignee, ZeebeAssignmentDefinition::getCandidateGroups)
         .containsExactly(tuple("user1", "role1"));
+  }
+
+  @Test
+  void testUserTaskFormIdNotNull() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .zeebeUserTaskForm("{}")
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTaskForm> zeebeUserTaskForms =
+        instance.getModelElementsByType(ZeebeUserTaskForm.class);
+
+    assertThat(zeebeUserTaskForms).hasSize(1);
+    final ZeebeUserTaskForm zeebeUserTaskForm = zeebeUserTaskForms.iterator().next();
+    assertThat(zeebeUserTaskForm.getId()).isNotEmpty();
   }
 }

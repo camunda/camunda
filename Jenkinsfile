@@ -165,13 +165,33 @@ pipeline {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
+                        }
+                    }
+                }
+
+                stage('Test (Random)') {
+                    environment {
+                        SUREFIRE_REPORT_NAME_SUFFIX = 'random-testrun'
+                        MAVEN_PARALLELISM = 2
+                        SUREFIRE_FORK_COUNT = 6
+                        JUNIT_THREAD_COUNT = 6
+                    }
+
+                    steps {
+                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/random-test-java.sh')
                         }
                     }
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -189,7 +209,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -244,8 +264,8 @@ pipeline {
                             environment {
                                 SUREFIRE_REPORT_NAME_SUFFIX = 'it-testrun'
                                 MAVEN_PARALLELISM = 2
-                                SUREFIRE_FORK_COUNT = 6
-                                JUNIT_THREAD_COUNT = 6
+                                SUREFIRE_FORK_COUNT = 12
+                                JUNIT_THREAD_COUNT = 12
                             }
 
                             steps {
@@ -256,7 +276,7 @@ pipeline {
 
                             post {
                                 always {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
+                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                                     stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
                                 }
 

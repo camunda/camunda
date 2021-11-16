@@ -10,7 +10,13 @@ package io.camunda.zeebe.test.exporter;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
-/** A mock implementation of {@link Configuration} providing easy control over all properties. */
+/**
+ * A mock implementation of {@link Configuration} providing easy control over all properties.
+ *
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockConfiguration<T> implements Configuration {
 
   private String id;

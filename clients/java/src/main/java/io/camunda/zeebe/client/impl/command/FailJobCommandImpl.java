@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandSte
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.FailJobResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.response.FailJobResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -73,7 +74,9 @@ public final class FailJobCommandImpl implements FailJobCommandStep1, FailJobCom
 
     final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =
         new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
+            FailJobResponseImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;

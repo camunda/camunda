@@ -30,6 +30,12 @@
             "matcher": "java-package",
             "match": "io.camunda.zeebe.model.bpmn.builder"
           }
+        },
+        {
+          "justification": "No longer inherits from BaseElement",
+          "code": "java.class.noLongerInheritsFromClass",
+          "old": "class io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeUserTaskFormImpl",
+          "superClass": "io.camunda.zeebe.model.bpmn.impl.instance.BaseElementImpl"
         }
       ]
     }

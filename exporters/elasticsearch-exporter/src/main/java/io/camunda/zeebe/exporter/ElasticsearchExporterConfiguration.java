@@ -124,6 +124,26 @@ public class ElasticsearchExporterConfiguration {
     public boolean processInstanceCreation = false;
     public boolean processMessageSubscription = false;
 
+    // index settings
+    private Integer numberOfShards = null;
+    private Integer numberOfReplicas = null;
+
+    public Integer getNumberOfShards() {
+      return numberOfShards;
+    }
+
+    public void setNumberOfShards(Integer numberOfShards) {
+      this.numberOfShards = numberOfShards;
+    }
+
+    public Integer getNumberOfReplicas() {
+      return numberOfReplicas;
+    }
+
+    public void setNumberOfReplicas(Integer numberOfReplicas) {
+      this.numberOfReplicas = numberOfReplicas;
+    }
+
     @Override
     public String toString() {
       return "IndexConfiguration{"

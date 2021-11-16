@@ -203,27 +203,75 @@ public class ElasticsearchClient {
     template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
     template.put("composed_of", Collections.singletonList(configuration.index.prefix));
 
-    // update alias in template in case it was changed in configuration
-    final Object templateProperties =
-        template.computeIfAbsent("template", key -> new HashMap<String, Object>());
-    if (templateProperties instanceof Map) {
-      final Map templatePropertyMap = (Map) templateProperties;
-      templatePropertyMap.put(
-          "aliases", Collections.singletonMap(aliasName, Collections.emptyMap()));
+    // update aliases in template in case it was changed in configuration
+    final Map<String, Object> templateProperties =
+        getOrCreateTemplatePropertyMap(template, templateName);
+    templateProperties.put("aliases", Collections.singletonMap(aliasName, Collections.emptyMap()));
+
+    // update number of shards/replicas in template in case it was changed in configuration
+    final Map<String, Object> settingsProperties =
+        getOrCreateSettingsPropertyMap(templateProperties, templateName, "template");
+    updateSettings(settingsProperties);
+
+    return putIndexTemplate(templateName, template);
+  }
+
+  private Map<String, Object> getOrCreateTemplatePropertyMap(
+      Map<String, Object> properties, String templateName) {
+    final String field = "template";
+    return getOrCreateProperties(properties, field, templateName, field);
+  }
+
+  private Map<String, Object> getOrCreateSettingsPropertyMap(
+      Map<String, Object> properties, String templateName, String context) {
+    final String field = "settings";
+    return getOrCreateProperties(
+        properties, field, templateName, String.format("%s.%s", context, field));
+  }
+
+  private Map<String, Object> getOrCreateProperties(
+      Map<String, Object> from, String field, String templateName, String context) {
+    final Object properties = from.computeIfAbsent(field, key -> new HashMap<String, Object>());
+    return convertToMap(properties, context, templateName);
+  }
+
+  private void updateSettings(Map<String, Object> settingsProperties) {
+    // update number of shards in template in case it was changed in configuration
+    final Integer numberOfShards = configuration.index.getNumberOfShards();
+    if (numberOfShards != null) {
+      settingsProperties.put("number_of_shards", numberOfShards);
+    }
+
+    // update number of replicas in template in case it was changed in configuration
+    final Integer numberOfReplicas = configuration.index.getNumberOfReplicas();
+    if (numberOfReplicas != null) {
+      settingsProperties.put("number_of_replicas", numberOfReplicas);
+    }
+  }
+
+  private Map<String, Object> convertToMap(
+      final Object obj, final String context, final String templateName) {
+    if (obj instanceof Map) {
+      return (Map<String, Object>) obj;
     } else {
       throw new IllegalStateException(
           String.format(
-              "Expected the 'template' field of the index template '%s' to be a map, but was '%s'",
-              templateName, templateProperties.getClass()));
+              "Expected the '%s' field of the template '%s' to be a map, but was '%s'",
+              context, templateName, obj.getClass()));
     }
-
-    return putIndexTemplate(templateName, template);
   }
 
   /** @return true if request was acknowledged */
   public boolean putComponentTemplate(
       final String templateName, final String aliasName, final String filename) {
     final Map<String, Object> template = getTemplateFromClasspath(filename);
+
+    final Map<String, Object> templateProperties =
+        getOrCreateTemplatePropertyMap(template, templateName);
+    final Map<String, Object> settingProperties =
+        getOrCreateSettingsPropertyMap(templateProperties, templateName, "template");
+    updateSettings(settingProperties);
+
     return putComponentTemplate(templateName, template);
   }
 

@@ -18,7 +18,9 @@ package io.camunda.zeebe.client.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import java.time.Duration;
@@ -59,5 +61,17 @@ public final class CancelProcessInstanceTest extends ClientTest {
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
+  }
+
+  @Test
+  public void shouldNotHaveNullResponse() {
+    // given
+    final CancelProcessInstanceCommandStep1 command = client.newCancelInstanceCommand(12);
+
+    // when
+    final CancelProcessInstanceResponse response = command.send().join();
+
+    // then
+    assertThat(response).isNotNull();
   }
 }

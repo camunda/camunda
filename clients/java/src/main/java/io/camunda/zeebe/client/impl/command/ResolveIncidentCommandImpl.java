@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.response.ResolveIncidentResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
@@ -61,7 +62,9 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
             ResolveIncidentResponse, GatewayOuterClass.ResolveIncidentResponse>
         future =
             new RetriableClientFutureImpl<>(
-                retryPredicate, streamObserver -> send(request, streamObserver));
+                ResolveIncidentResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;

@@ -923,7 +923,6 @@ public final class MessageCorrelationTest {
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSubsequence(
             tuple(RecordType.COMMAND_REJECTION, ProcessMessageSubscriptionIntent.CORRELATE),
-            tuple(RecordType.COMMAND, MessageSubscriptionIntent.REJECT),
             tuple(RecordType.EVENT, MessageSubscriptionIntent.REJECTED),
             tuple(RecordType.COMMAND, ProcessMessageSubscriptionIntent.CORRELATE));
 

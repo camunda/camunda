@@ -102,6 +102,20 @@ public class ElasticsearchExporter implements Exporter {
           "The bulk memory limit is set to more than {} bytes. It is recommended to set the limit between 5 to 15 MB.",
           RECOMMENDED_MAX_BULK_MEMORY_LIMIT);
     }
+
+    final Integer numberOfShards = configuration.index.getNumberOfShards();
+    if (numberOfShards != null && numberOfShards < 1) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch numberOfShards must be >= 1. Current value: %d", numberOfShards));
+    }
+
+    final Integer numberOfReplicas = configuration.index.getNumberOfReplicas();
+    if (numberOfReplicas != null && numberOfReplicas < 0) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
+    }
   }
 
   protected ElasticsearchClient createClient() {

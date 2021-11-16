@@ -10,6 +10,11 @@ package io.camunda.zeebe.test.exporter.record;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.broker.exporter.ExporterObjectMapper;
 
+/**
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
+ */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class ExporterMappedObject {
 
   protected static final ExporterObjectMapper OBJECT_MAPPER = new ExporterObjectMapper();

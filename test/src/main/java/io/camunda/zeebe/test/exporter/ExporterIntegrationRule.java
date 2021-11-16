@@ -29,8 +29,10 @@ import io.camunda.zeebe.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.netty.util.NetUtil;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +44,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 /**
  * JUnit test rule to facilitate running integration tests for exporters.
@@ -115,7 +119,11 @@ import org.junit.rules.ExternalResource;
  *
  * NOTE: calls to the various configure methods are additive, so it is possible to configure more
  * than one exporter, as long as the IDs are different.
+ *
+ * @deprecated since 1.3.0. See issue <a
+ *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
  */
+@Deprecated(since = "1.3.0", forRemoval = true)
 public class ExporterIntegrationRule extends ExternalResource {
 
   public static final BpmnModelInstance SAMPLE_PROCESS =
@@ -131,7 +139,14 @@ public class ExporterIntegrationRule extends ExternalResource {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private final RecordingExporterTestWatcher testWatcher = new RecordingExporterTestWatcher();
   private ClientRule clientRule;
+
+  @Override
+  public Statement apply(final Statement base, final Description description) {
+    final var statement = testWatcher.apply(base, description);
+    return super.apply(statement, description);
+  }
 
   @Override
   protected void before() throws Throwable {
@@ -239,6 +254,7 @@ public class ExporterIntegrationRule extends ExternalResource {
       throw new IllegalStateException("No exporter configured!");
     }
 
+    RecordingExporter.setMaximumWaitTime(Duration.ofSeconds(10).toMillis());
     brokerRule.startBroker();
     clientRule = new ClientRule(this::newClientProperties);
     clientRule.createClient();
