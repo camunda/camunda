@@ -384,20 +384,20 @@ public final class FileBasedSnapshotStore extends Actor
     }
   }
 
-  private void purgePendingSnapshots(final SnapshotId cutoffIndex) {
+  private void purgePendingSnapshots(final SnapshotId cutoffSnapshot) {
     LOGGER.trace(
         "Search for orphaned snapshots below oldest valid snapshot with index {} in {}",
-        cutoffIndex.getSnapshotIdAsString(),
+        cutoffSnapshot.getSnapshotIdAsString(),
         pendingDirectory);
 
     pendingSnapshots.stream()
-        .filter(pendingSnapshot -> pendingSnapshot.snapshotId().compareTo(cutoffIndex) < 0)
+        .filter(pendingSnapshot -> pendingSnapshot.snapshotId().compareTo(cutoffSnapshot) < 0)
         .forEach(PersistableSnapshot::abort);
 
     // If there are orphaned directories if a previous abort failed, delete them explicitly
     try (final var pendingSnapshotsDirectories = Files.newDirectoryStream(pendingDirectory)) {
       for (final var pendingSnapshot : pendingSnapshotsDirectories) {
-        purgePendingSnapshot(cutoffIndex, pendingSnapshot);
+        purgePendingSnapshot(cutoffSnapshot, pendingSnapshot);
       }
     } catch (final IOException e) {
       LOGGER.warn(
@@ -434,11 +434,14 @@ public final class FileBasedSnapshotStore extends Actor
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
     if (isCurrentSnapshotNewer(metadata)) {
+      final var currentPersistedSnapshotMetadata = currentPersistedSnapshot.getMetadata();
+
       LOGGER.debug(
           "Snapshot is older than the latest snapshot {}. Snapshot {} won't be committed.",
-          currentPersistedSnapshot.getMetadata(),
+          currentPersistedSnapshotMetadata,
           metadata);
-      purgePendingSnapshots(metadata);
+
+      purgePendingSnapshots(currentPersistedSnapshotMetadata);
       return currentPersistedSnapshot;
     }
 
