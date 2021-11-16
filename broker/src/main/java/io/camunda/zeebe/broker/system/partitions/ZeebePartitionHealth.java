@@ -36,21 +36,6 @@ class ZeebePartitionHealth implements HealthMonitorable {
     name = "ZeebePartition-" + partitionId;
   }
 
-  @Override
-  public HealthReport getHealthReport() {
-    return healthReport;
-  }
-
-  @Override
-  public void addFailureListener(final FailureListener failureListener) {
-    failureListeners.add(failureListener);
-  }
-
-  @Override
-  public void removeFailureListener(final FailureListener failureListener) {
-    failureListeners.remove(failureListener);
-  }
-
   private void updateHealthStatus() {
     final var previousStatus = healthReport;
     if (previousStatus.getStatus() == HealthStatus.DEAD) {
@@ -96,7 +81,23 @@ class ZeebePartitionHealth implements HealthMonitorable {
     healthReport = HealthReport.dead(this).withIssue(error);
   }
 
+  @Override
   public String getName() {
     return name;
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return healthReport;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    failureListeners.add(failureListener);
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    failureListeners.remove(failureListener);
   }
 }

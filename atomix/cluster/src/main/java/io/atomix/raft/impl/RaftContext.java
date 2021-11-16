@@ -624,23 +624,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
   }
 
-  @Override
-  public HealthReport getHealthReport() {
-    return health;
-  }
-
-  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
-  @Override
-  public void addFailureListener(final FailureListener listener) {
-    failureListeners.add(listener);
-  }
-
-  /** Remove a failure listener */
-  @Override
-  public void removeFailureListener(final FailureListener listener) {
-    failureListeners.remove(listener);
-  }
-
   private void notifyRoleChangeListeners() {
     try {
       roleChangeListeners.forEach(l -> l.onNewRole(role.role(), getTerm()));
@@ -897,8 +880,26 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @return The server name.
    */
+  @Override
   public String getName() {
     return name;
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return health;
+  }
+
+  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
+  @Override
+  public void addFailureListener(final FailureListener listener) {
+    failureListeners.add(listener);
+  }
+
+  /** Remove a failure listener */
+  @Override
+  public void removeFailureListener(final FailureListener listener) {
+    failureListeners.remove(listener);
   }
 
   /**
