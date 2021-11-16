@@ -325,6 +325,8 @@ public final class StateControllerImplTest {
     exporterPosition.set(4L);
     takeSnapshot(snapshotPosition);
 
+    final var latestSnapshot = store.getLatestSnapshot().get();
+
     exporterPosition.set(-1L);
 
     // when
@@ -332,8 +334,8 @@ public final class StateControllerImplTest {
 
     // then
     final var snapshot = transientSnapshot.snapshotId();
-    assertThat(snapshot.getIndex()).isEqualTo(4);
-    assertThat(snapshot.getTerm()).isEqualTo(1);
+    assertThat(snapshot.getIndex()).isEqualTo(latestSnapshot.getIndex());
+    assertThat(snapshot.getTerm()).isEqualTo(latestSnapshot.getTerm());
     assertThat(snapshot.getProcessedPosition()).isEqualTo(snapshotPosition);
     assertThat(snapshot.getExportedPosition()).isEqualTo(0);
   }
