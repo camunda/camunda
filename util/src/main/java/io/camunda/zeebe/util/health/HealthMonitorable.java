@@ -27,7 +27,7 @@ public interface HealthMonitorable {
    *
    * @return health status
    */
-  HealthStatus getHealthStatus();
+  HealthReport getHealthReport();
 
   /**
    * Register a failure observer.

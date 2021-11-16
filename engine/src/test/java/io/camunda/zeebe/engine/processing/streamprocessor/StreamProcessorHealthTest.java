@@ -76,7 +76,7 @@ public class StreamProcessorHealthTest {
                     mock(TypedRecordProcessor.class)));
 
     // then
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
   }
 
   @Test
@@ -101,7 +101,7 @@ public class StreamProcessorHealthTest {
   public void shouldMarkUnhealthyWhenProcessingOnWriteEventFails() {
     // given
     streamProcessor = getErrorProneStreamProcessor();
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
 
     // when
     shouldProcessingThrowException.set(false);
@@ -110,7 +110,7 @@ public class StreamProcessorHealthTest {
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> streamProcessor.getHealthReport().isUnhealthy());
   }
 
   @Test
@@ -138,17 +138,17 @@ public class StreamProcessorHealthTest {
     // given
     shouldFlushThrowException.set(true);
     streamProcessor = getErrorProneStreamProcessor();
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
 
     streamProcessorRule.writeCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> streamProcessor.getHealthReport().isUnhealthy());
 
     // when
     shouldFlushThrowException.set(false);
 
     // then
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    waitUntil(() -> streamProcessor.getHealthReport().isHealthy());
   }
 
   private StreamProcessor getErrorProneStreamProcessor() {
@@ -195,7 +195,7 @@ public class StreamProcessorHealthTest {
 
     public boolean hasHealthStatus(final HealthStatus healthStatus) {
       return actor
-          .call(() -> streamProcessor.getHealthStatus() == healthStatus)
+          .call(() -> streamProcessor.getHealthReport().getStatus() == healthStatus)
           .join(5, TimeUnit.SECONDS);
     }
   }

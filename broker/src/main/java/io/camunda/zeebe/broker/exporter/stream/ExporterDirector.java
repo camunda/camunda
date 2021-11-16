@@ -26,7 +26,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
@@ -70,7 +70,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
   private ExportersState state;
-  private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
+  private volatile HealthReport healthReport = HealthReport.healthy(this);
 
   private boolean inExportingPhase;
   private boolean isPaused;
@@ -235,16 +235,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.fail();
 
     if (failure instanceof UnrecoverableException) {
-      healthStatus = HealthStatus.DEAD;
+      healthReport = HealthReport.dead(this).withIssue(failure);
 
       for (final var listener : listeners) {
-        listener.onUnrecoverableFailure();
+        listener.onUnrecoverableFailure(healthReport);
       }
     } else {
-      healthStatus = HealthStatus.UNHEALTHY;
-
+      healthReport = HealthReport.unhealthy(this).withIssue(failure);
       for (final var listener : listeners) {
-        listener.onFailure();
+        listener.onFailure(healthReport);
       }
     }
   }
@@ -435,8 +434,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return healthStatus;
+  public HealthReport getHealthReport() {
+    return healthReport;
   }
 
   @Override

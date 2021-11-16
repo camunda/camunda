@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,7 +22,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   private final String name;
   private final Set<FailureListener> failureListeners = new HashSet<>();
-  private HealthStatus healthStatus = HealthStatus.UNHEALTHY;
+  private HealthReport healthReport = HealthReport.unhealthy(this).withMessage("Initial state");
   /*
   Multiple factors determine ZeebePartition's health :
   * - servicesInstalled: indicates if role transition was successful and all services are installed
@@ -36,8 +37,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return healthStatus;
+  public HealthReport getHealthReport() {
+    return healthReport;
   }
 
   @Override
@@ -51,28 +52,29 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   private void updateHealthStatus() {
-    final var previousStatus = healthStatus;
-    if (previousStatus == HealthStatus.DEAD) {
+    final var previousStatus = healthReport;
+    if (previousStatus.getStatus() == HealthStatus.DEAD) {
       return;
     }
 
-    final boolean healthy = diskSpaceAvailable && servicesInstalled;
-    if (healthy) {
-      healthStatus = HealthStatus.HEALTHY;
+    if (!diskSpaceAvailable) {
+      healthReport = HealthReport.unhealthy(this).withMessage("Not enough disk space available");
+    } else if (!servicesInstalled) {
+      healthReport = HealthReport.unhealthy(this).withMessage("Services not installed");
     } else {
-      healthStatus = HealthStatus.UNHEALTHY;
+      healthReport = HealthReport.healthy(this);
     }
 
-    if (previousStatus != healthStatus) {
-      switch (healthStatus) {
+    if (previousStatus != healthReport) {
+      switch (healthReport.getStatus()) {
         case HEALTHY:
           failureListeners.forEach(FailureListener::onRecovered);
           break;
         case UNHEALTHY:
-          failureListeners.forEach(FailureListener::onFailure);
+          failureListeners.forEach((l) -> l.onFailure(healthReport));
           break;
         case DEAD:
-          failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+          failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
           break;
         default:
           break;
@@ -90,8 +92,8 @@ class ZeebePartitionHealth implements HealthMonitorable {
     updateHealthStatus();
   }
 
-  void onUnrecoverableFailure() {
-    healthStatus = HealthStatus.DEAD;
+  void onUnrecoverableFailure(final Throwable error) {
+    healthReport = HealthReport.dead(this).withIssue(error);
   }
 
   public String getName() {

@@ -25,7 +25,7 @@ import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -203,8 +203,10 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return actor.isClosed() ? HealthStatus.UNHEALTHY : HealthStatus.HEALTHY;
+  public HealthReport getHealthReport() {
+    return actor.isClosed()
+        ? HealthReport.unhealthy(this).withMessage("actor is closed")
+        : HealthReport.healthy(this);
   }
 
   @Override
@@ -220,7 +222,8 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private void onFailure(final Throwable error) {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
     actor.fail();
-    failureListeners.forEach(FailureListener::onFailure);
+    final var report = HealthReport.unhealthy(this).withIssue(error);
+    failureListeners.forEach((l) -> l.onFailure(report));
   }
 
   void runOnFailure(final Throwable error) {

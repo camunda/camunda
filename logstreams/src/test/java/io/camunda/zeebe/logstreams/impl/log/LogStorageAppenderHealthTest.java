@@ -74,7 +74,7 @@ public final class LogStorageAppenderHealthTest {
     schedulerRule.submitActor(appender).join();
 
     // then
-    waitUntil(() -> appender.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> appender.getHealthReport().isUnhealthy());
   }
 
   @Test
@@ -88,7 +88,7 @@ public final class LogStorageAppenderHealthTest {
     schedulerRule.submitActor(appender).join();
 
     // then
-    waitUntil(() -> appender.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> appender.getHealthReport().isUnhealthy());
   }
 
   @Test
@@ -108,7 +108,7 @@ public final class LogStorageAppenderHealthTest {
     // then
     latch.await();
     assertThat(latch.getCount()).isZero();
-    assertThat(appender.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(appender.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   private class ControllableLogStorage extends Actor implements LogStorage {

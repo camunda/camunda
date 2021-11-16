@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 
 /** Informs its delegate of partition health changes */
@@ -23,7 +24,7 @@ public final class PartitionHealthBroadcaster implements FailureListener {
   }
 
   @Override
-  public void onFailure() {
+  public void onFailure(final HealthReport report) {
     delegate.onHealthChanged(partitionId, HealthStatus.UNHEALTHY);
   }
 
@@ -33,7 +34,7 @@ public final class PartitionHealthBroadcaster implements FailureListener {
   }
 
   @Override
-  public void onUnrecoverableFailure() {
+  public void onUnrecoverableFailure(final HealthReport report) {
     delegate.onHealthChanged(partitionId, HealthStatus.DEAD);
   }
 

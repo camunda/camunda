@@ -53,6 +53,7 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -408,7 +409,7 @@ public class RaftTest extends ConcurrentTestCase {
     assertThat(firstLatch.await(2, TimeUnit.SECONDS)).isTrue();
     assertThat(secondLatch.await(1, TimeUnit.SECONDS)).isTrue();
 
-    assertEquals(Role.INACTIVE, server.getRole());
+    assertThat(server.getRole()).isEqualTo(Role.INACTIVE);
   }
 
   @Test
@@ -667,7 +668,7 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onFailure() {
+    public void onFailure(final HealthReport report) {
       latch.countDown();
     }
 
@@ -675,6 +676,6 @@ public class RaftTest extends ConcurrentTestCase {
     public void onRecovered() {}
 
     @Override
-    public void onUnrecoverableFailure() {}
+    public void onUnrecoverableFailure(final HealthReport report) {}
   }
 }

@@ -215,7 +215,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
     if (!isBrokerReady()) {
       return HealthStatus.UNHEALTHY;
     }
-    return healthMonitor.getHealthStatus();
+    return healthMonitor.getHealthReport().getStatus();
   }
 
   public void setBrokerStarted() {
