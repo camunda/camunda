@@ -158,6 +158,22 @@ public class CriticalComponentsHealthMonitorTest {
     assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.DEAD);
   }
 
+  @Test
+  public void shouldTrackRootIssue() {
+    // given
+    final var issue = HealthIssue.of(new IllegalStateException());
+    final ControllableComponent component = new ControllableComponent();
+    monitor.registerComponent("component", component);
+    waitUntilAllDone();
+
+    // when
+    component.setDead(issue);
+    waitUntilAllDone();
+
+    // then
+    assertThat(monitor.getHealthReport().getIssue().getCause().getIssue()).isEqualTo(issue);
+  }
+
   private void waitUntilAllDone() {
     actorControl.call(() -> null).join();
   }
@@ -196,8 +212,12 @@ public class CriticalComponentsHealthMonitorTest {
     }
 
     void setDead() {
+      setDead(HealthIssue.of("manually set to status dead"));
+    }
+
+    void setDead(final HealthIssue issue) {
       if (healthReport.getStatus() != HealthStatus.DEAD) {
-        healthReport = HealthReport.dead(this).withMessage("manually set to status dead");
+        healthReport = HealthReport.dead(this).withIssue(issue);
         failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
       }
     }
