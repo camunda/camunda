@@ -190,25 +190,19 @@ public class ClusteredSnapshotTest {
     restartCluster();
     publishMessages();
 
+    final var leaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final var leaderAdminService = clusteringRule.getBroker(leaderId).getBrokerAdminService();
+    final var expectedProcessedPosition =
+        leaderAdminService.getPartitionStatus().get(1).getProcessedPosition();
+
+    // expect
     awaitUntilAsserted(
         (broker) -> {
           triggerSnapshotRoutine();
-          clusteringRule.getBrokers().stream()
-              .filter(b -> !b.equals(broker))
-              .forEach(
-                  (b) -> {
-                    final SnapshotId snapshot = clusteringRule.getSnapshot(b).get();
-                    final long expectedProcessedPosition = snapshot.getProcessedPosition();
-                    assertThat(broker)
-                        .havingSnapshot()
-                        .withProcessedPosition(expectedProcessedPosition);
-                  });
-        });
-
-    // expect - each broker has created a snapshot with exported position = Long.MAX_VALUE
-    awaitUntilAsserted(
-        (broker) -> {
-          assertThat(broker).havingSnapshot().withExportedPosition(Long.MAX_VALUE);
+          assertThat(broker)
+              .havingSnapshot()
+              .withProcessedPosition(expectedProcessedPosition)
+              .withExportedPosition(Long.MAX_VALUE);
         });
 
     final Map<Integer, SnapshotId> snapshotsByBroker =
