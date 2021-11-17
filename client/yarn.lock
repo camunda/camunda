@@ -3247,10 +3247,10 @@
     "@types/scheduler" "*"
     csstype "^3.0.2"
 
-"@types/react@17.0.34":
-  version "17.0.34"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.34.tgz#797b66d359b692e3f19991b6b07e4b0c706c0102"
-  integrity sha512-46FEGrMjc2+8XhHXILr+3+/sTe3OfzSPU9YGKILLrUYbQ1CLQC9Daqo1KzENGXAWwrFwiY0l4ZbF20gRvgpWTg==
+"@types/react@17.0.35":
+  version "17.0.35"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-17.0.35.tgz#217164cf830267d56cd1aec09dcf25a541eedd4c"
+  integrity sha512-r3C8/TJuri/SLZiiwwxQoLAoavaczARfT9up9b4Jr65+ErAUX3MIkU0oMOQnrpfgHme8zIqZLX7O5nnjm5Wayw==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
@@ -15750,10 +15750,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@1.17.0:
-  version "1.17.0"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.17.0.tgz#aff87b50217463a8954fd110539fa44ec3cfe4e9"
-  integrity sha512-kf/y3XxuAHjQ46WbaPyZPaHOlf6c0LiEK86UI6vovnLdHknzcQoVaFSouKrCy2yt1/e4RHrFqmKBSHP8Frnhfg==
+testcafe@1.17.1:
+  version "1.17.1"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.17.1.tgz#1f29ecaaba4a4eaf3b4b662f6f21f8b5614a6615"
+  integrity sha512-G+IqL28PE9wzNKcLjLCjX3z3/KXpzNs0FNC63Y7dXcXx23qlx+yz+Abyh91CIzeiwtXDZX+xMXDYYLtPQLfhlQ==
   dependencies:
     "@babel/core" "^7.12.1"
     "@babel/plugin-proposal-async-generator-functions" "^7.12.1"
