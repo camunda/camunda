@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -27,6 +28,7 @@ import java.util.Set;
  * intentionally not publicly instantiable to reduce the risk of configuration errors.
  */
 public final class FixedPartitionDistributor implements PartitionDistributor {
+  private static final Random RANDOM = new Random();
   private final Map<PartitionId, Set<FixedDistributionMember>> distribution;
 
   FixedPartitionDistributor(final Map<PartitionId, Set<FixedDistributionMember>> distribution) {
@@ -79,15 +81,32 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
     }
 
     for (final var member : configuredMembers) {
+      final var priority = member.getPriority();
+
       members.add(member.getId());
-      priorities.put(member.getId(), member.getPriority());
-      targetPriority = Math.max(targetPriority, member.getPriority());
+      priorities.put(member.getId(), priority);
+      if (priority >= targetPriority) {
+        targetPriority = priority;
+      }
+    }
+
+    MemberId primary = null;
+    // if every member has a different priority we can use the member with the highest priority as
+    // the primary
+    // TODO: We can probably relax this to only check that the `targetPriority` is unique.
+    if (priorities.size() == members.size()) {
+      primary = members.get(targetPriority);
     }
 
     ensureMembersArePartOfCluster(clusterMembers, partitionId, members);
     ensurePartitionIsFullyReplicated(replicationFactor, partitionId, members);
 
-    return new PartitionMetadata(partitionId, members, priorities, targetPriority);
+    return new PartitionMetadata(partitionId, members, priorities, targetPriority, primary);
+  }
+
+  private FixedDistributionMember randomMember(final Set<FixedDistributionMember> members) {
+    final var randomIndex = RANDOM.nextInt(members.size());
+    return members.stream().skip(randomIndex).findFirst().orElseThrow();
   }
 
   private void ensureMembersArePartOfCluster(

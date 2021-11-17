@@ -76,9 +76,17 @@ final class FixedPartitionDistributorTest {
     final var expectedDistribution =
         Set.of(
             new PartitionMetadata(
-                partition(1), List.of(node(0), node(1)), Map.of(node(0), 1, node(1), 2), 2),
+                partition(1),
+                List.of(node(0), node(1)),
+                Map.of(node(0), 1, node(1), 2),
+                2,
+                node(1)),
             new PartitionMetadata(
-                partition(2), List.of(node(0), node(1)), Map.of(node(0), 2, node(1), 1), 2));
+                partition(2),
+                List.of(node(0), node(1)),
+                Map.of(node(0), 2, node(1), 1),
+                2,
+                node(0)));
     final var distributor =
         new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
             .assignMember(1, 0, 1)
@@ -104,8 +112,8 @@ final class FixedPartitionDistributorTest {
     // given
     final var expectedDistribution =
         Set.of(
-            new PartitionMetadata(partition(1), List.of(node(0)), Map.of(node(0), 2), 2),
-            new PartitionMetadata(partition(2), List.of(node(0)), Map.of(node(0), 2), 2));
+            new PartitionMetadata(partition(1), List.of(node(0)), Map.of(node(0), 2), 2, node(0)),
+            new PartitionMetadata(partition(2), List.of(node(0)), Map.of(node(0), 2), 2, node(0)));
     final var distributor =
         new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
             .assignMember(1, 0, 2)

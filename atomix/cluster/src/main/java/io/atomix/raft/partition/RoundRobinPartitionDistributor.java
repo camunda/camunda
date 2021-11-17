@@ -70,7 +70,7 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
               partitionId, membersForPartition, primary, sorted.size(), replicationFactor);
       metadata.add(
           new PartitionMetadata(
-              partitionId, membersForPartition, priorities, priorities.get(primary)));
+              partitionId, membersForPartition, priorities, priorities.get(primary), primary));
     }
     return metadata;
   }
