@@ -6,7 +6,8 @@
 
 import React from 'react';
 import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
-import {init} from 'translation';
+import {initTranslation} from 'translation';
+import {initTracking} from './modules/tracking';
 
 import {
   PrivateRoute,
@@ -28,17 +29,24 @@ import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 import {Prompt} from 'prompt';
+import PageViewTracker from 'tracking/PageViewTracker';
 
 import {Provider as Theme} from 'theme';
 import {withErrorHandling, UserProvider, DocsProvider} from 'HOC';
 
 class App extends React.Component {
   state = {
-    translationLoaded: false,
+    initializationDone: false,
   };
 
   async componentDidMount() {
-    this.props.mightFail(init(), () => this.setState({translationLoaded: true}));
+    this.props.mightFail(
+      (async () => {
+        await initTranslation();
+        await initTracking();
+      })(),
+      () => this.setState({initializationDone: true})
+    );
   }
 
   renderEntity = (props) => {
@@ -79,7 +87,7 @@ class App extends React.Component {
       );
     }
 
-    if (!this.state.translationLoaded) {
+    if (!this.state.initializationDone) {
       return <LoadingIndicator />;
     }
 
@@ -112,6 +120,7 @@ class App extends React.Component {
           </WithLicense>
           <SaveGuard />
           <Prompt />
+          <PageViewTracker />
         </Router>
         <Notifications />
       </Theme>

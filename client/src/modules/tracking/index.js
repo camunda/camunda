@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {initTranslation, t, getLanguage} from './translation';
+export {initTracking, trackPageView} from './tracking';
