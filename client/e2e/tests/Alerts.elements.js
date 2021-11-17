@@ -19,3 +19,4 @@ export const editButton = Selector('[title="Edit Alert"]');
 export const cancelButton = Selector('.Modal__actions button');
 export const deleteButton = Selector('[title="Delete Alert"]');
 export const modal = Selector('.Modal__content-container');
+export const webhookDropdown = Selector('.typeaheadInput').nth(1);
