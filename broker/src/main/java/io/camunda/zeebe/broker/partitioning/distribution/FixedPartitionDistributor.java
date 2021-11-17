@@ -11,13 +11,13 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.PartitionDistributor;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A {@link PartitionDistributor} implementation which takes in a provided, fixed mapping which
@@ -28,7 +28,6 @@ import java.util.Set;
  * intentionally not publicly instantiable to reduce the risk of configuration errors.
  */
 public final class FixedPartitionDistributor implements PartitionDistributor {
-  private static final Random RANDOM = new Random();
   private final Map<PartitionId, Set<FixedDistributionMember>> distribution;
 
   FixedPartitionDistributor(final Map<PartitionId, Set<FixedDistributionMember>> distribution) {
@@ -68,10 +67,7 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
       final Set<MemberId> clusterMembers,
       final int replicationFactor,
       final PartitionId partitionId) {
-    final var members = new ArrayList<MemberId>();
-    final var priorities = new HashMap<MemberId, Integer>();
     final var configuredMembers = distribution.get(partitionId);
-    int targetPriority = 0;
 
     if (configuredMembers == null) {
       throw new IllegalStateException(
@@ -80,22 +76,23 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
               partitionId.id()));
     }
 
-    for (final var member : configuredMembers) {
-      final var priority = member.getPriority();
+    final var priorities =
+        configuredMembers.stream()
+            .collect(
+                Collectors.toMap(
+                    FixedDistributionMember::getId, FixedDistributionMember::getPriority));
+    final int targetPriority = Collections.max(priorities.values());
 
-      members.add(member.getId());
-      priorities.put(member.getId(), priority);
-      if (priority >= targetPriority) {
-        targetPriority = priority;
-      }
-    }
+    final var members = priorities.keySet();
+    final var primaries =
+        priorities.entrySet().stream()
+            .filter(entry -> entry.getValue() == targetPriority)
+            .map(Entry::getKey)
+            .collect(Collectors.toList());
 
     MemberId primary = null;
-    // if every member has a different priority we can use the member with the highest priority as
-    // the primary
-    // TODO: We can probably relax this to only check that the `targetPriority` is unique.
-    if (priorities.size() == members.size()) {
-      primary = members.get(targetPriority);
+    if (primaries.size() == 1) {
+      primary = primaries.get(0);
     }
 
     ensureMembersArePartOfCluster(clusterMembers, partitionId, members);
@@ -104,15 +101,10 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
     return new PartitionMetadata(partitionId, members, priorities, targetPriority, primary);
   }
 
-  private FixedDistributionMember randomMember(final Set<FixedDistributionMember> members) {
-    final var randomIndex = RANDOM.nextInt(members.size());
-    return members.stream().skip(randomIndex).findFirst().orElseThrow();
-  }
-
   private void ensureMembersArePartOfCluster(
       final Set<MemberId> clusterMembers,
       final PartitionId partitionId,
-      final ArrayList<MemberId> members) {
+      final Set<MemberId> members) {
     if (!clusterMembers.containsAll(members)) {
       final var unknownMembers = new HashSet<>(members);
       unknownMembers.removeAll(clusterMembers);
@@ -126,9 +118,7 @@ public final class FixedPartitionDistributor implements PartitionDistributor {
   }
 
   private void ensurePartitionIsFullyReplicated(
-      final int replicationFactor,
-      final PartitionId partitionId,
-      final ArrayList<MemberId> members) {
+      final int replicationFactor, final PartitionId partitionId, final Set<MemberId> members) {
     if (members.size() != replicationFactor) {
       throw new IllegalStateException(
           String.format(

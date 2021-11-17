@@ -222,6 +222,23 @@ public class RaftPartition implements Partition, HealthMonitorable {
     return server.stepDown();
   }
 
+  public CompletableFuture<Void> stepDownIfNotPrimary() {
+    if (shouldStepDown()) {
+      return stepDown();
+    } else {
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private boolean shouldStepDown() {
+    final var primary = partitionMetadata.getPrimary();
+    final var partitionConfig = config.getPartitionConfig();
+    return server != null
+        && partitionConfig.isPriorityElectionEnabled()
+        && primary.isPresent()
+        && primary.get() != server.getMemberId();
+  }
+
   public CompletableFuture<Void> goInactive() {
     return server.goInactive();
   }

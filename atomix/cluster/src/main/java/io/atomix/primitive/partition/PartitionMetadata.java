@@ -18,10 +18,10 @@ package io.atomix.primitive.partition;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Contains metadata about a partition. The metadata can be used to query for members of the
@@ -29,14 +29,14 @@ import java.util.Optional;
  */
 public class PartitionMetadata {
   private final PartitionId id;
-  private final List<MemberId> members;
+  private final Set<MemberId> members;
   private final Map<MemberId, Integer> priority;
   private final int targetPriority;
   private final MemberId primary;
 
   public PartitionMetadata(
       final PartitionId id,
-      final List<MemberId> members,
+      final Set<MemberId> members,
       final Map<MemberId, Integer> priority,
       final int targetPriority,
       final MemberId primary) {
