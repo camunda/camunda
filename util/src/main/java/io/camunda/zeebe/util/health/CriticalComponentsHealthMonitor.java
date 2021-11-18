@@ -195,7 +195,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
         return;
       }
 
-      log.warn("{} failed, marking it as unhealthy", componentName);
+      log.warn("{} failed, marking it as unhealthy: {}", componentName, healthReport);
       componentHealth.put(componentName, report);
       calculateHealth();
     }
@@ -215,7 +215,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
         return;
       }
 
-      log.error("{} failed, marking it as dead", componentName);
+      log.error("{} failed, marking it as dead: {}", componentName, report);
       componentHealth.put(componentName, report);
       calculateHealth();
     }
