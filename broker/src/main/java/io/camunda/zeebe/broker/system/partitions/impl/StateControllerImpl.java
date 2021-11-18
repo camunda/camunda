@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 
@@ -141,26 +143,46 @@ public class StateControllerImpl implements StateController {
       return;
     }
 
-    final long exportedPosition = exporterPositionSupplier.applyAsLong(db);
-    final long snapshotPosition =
-        determineSnapshotPosition(lowerBoundSnapshotPosition, exportedPosition);
-    final var optionalIndexed = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
-    if (optionalIndexed.isEmpty()) {
-      future.completeExceptionally(
-          new IllegalStateException(
-              String.format(
-                  "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position %d (processedPosition = %d, exportedPosition=%d), but found no matching indexed entry which contains this position.",
-                  snapshotPosition, lowerBoundSnapshotPosition, exportedPosition)));
-      return;
+    long index = 0;
+    long term = 0;
+    long exportedPosition = exporterPositionSupplier.applyAsLong(db);
+
+    if (exportedPosition != -1) {
+
+      final long snapshotPosition =
+          determineSnapshotPosition(lowerBoundSnapshotPosition, exportedPosition);
+      final var optionalIndexed = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
+
+      if (optionalIndexed.isEmpty()) {
+        future.completeExceptionally(
+            new IllegalStateException(
+                String.format(
+                    "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position %d (processedPosition = %d, exportedPosition=%d), but found no matching indexed entry which contains this position.",
+                    snapshotPosition, lowerBoundSnapshotPosition, exportedPosition)));
+        return;
+      }
+
+      final var snapshotIndexedEntry = optionalIndexed.get();
+      index = snapshotIndexedEntry.index();
+      term = snapshotIndexedEntry.term();
+    } else {
+      final Optional<PersistedSnapshot> latestSnapshot =
+          constructableSnapshotStore.getLatestSnapshot();
+      exportedPosition = 0;
+
+      if (latestSnapshot.isPresent()) {
+        // re-use index and term from the latest snapshot
+        // to ensure that the records from there are not
+        // compacted until they get exported
+        final PersistedSnapshot persistedSnapshot = latestSnapshot.get();
+        index = persistedSnapshot.getIndex();
+        term = persistedSnapshot.getTerm();
+      } // otherwise index/term remains 0
     }
 
-    final var snapshotIndexedEntry = optionalIndexed.get();
     final var transientSnapshot =
         constructableSnapshotStore.newTransientSnapshot(
-            snapshotIndexedEntry.index(),
-            snapshotIndexedEntry.term(),
-            lowerBoundSnapshotPosition,
-            exportedPosition);
+            index, term, lowerBoundSnapshotPosition, exportedPosition);
 
     if (transientSnapshot.isLeft()) {
       future.completeExceptionally(transientSnapshot.getLeft());
