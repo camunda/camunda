@@ -37,7 +37,9 @@ public class CriticalComponentsHealthMonitorTest {
 
           @Override
           protected void onActorStarting() {
-            monitor = new CriticalComponentsHealthMonitor(actor, LoggerFactory.getLogger("test"));
+            monitor =
+                new CriticalComponentsHealthMonitor(
+                    "TestMonitor", actor, LoggerFactory.getLogger("test"));
             actorControl = actor;
           }
 
@@ -57,13 +59,13 @@ public class CriticalComponentsHealthMonitorTest {
 
     // when
     waitUntilAllDone();
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
 
-    component.setHealthStatus(HealthStatus.UNHEALTHY);
+    component.setUnhealthy();
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
   }
 
   @Test
@@ -72,16 +74,16 @@ public class CriticalComponentsHealthMonitorTest {
     final ControllableComponent component = new ControllableComponent();
     monitor.registerComponent("test", component);
     waitUntilAllDone();
-    component.setHealthStatus(HealthStatus.UNHEALTHY);
+    component.setUnhealthy();
     waitUntilAllDone();
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
     // when
-    component.setHealthStatus(HealthStatus.HEALTHY);
+    component.setHealthy();
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
@@ -94,29 +96,29 @@ public class CriticalComponentsHealthMonitorTest {
     monitor.registerComponent("test2", component2);
 
     waitUntilAllDone();
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
 
     // when
-    component2.setHealthStatus(HealthStatus.UNHEALTHY);
+    component2.setUnhealthy();
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
     // when
-    component2.setHealthStatus(HealthStatus.HEALTHY);
-    component1.setHealthStatus(HealthStatus.UNHEALTHY);
+    component2.setHealthy();
+    component1.setUnhealthy();
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
     // when
-    component1.setHealthStatus(HealthStatus.HEALTHY);
+    component1.setHealthy();
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
@@ -124,16 +126,16 @@ public class CriticalComponentsHealthMonitorTest {
     // given
     final ControllableComponent component = new ControllableComponent();
     monitor.registerComponent("test", component);
-    waitUntil(() -> monitor.getHealthStatus() == HealthStatus.HEALTHY);
+    waitUntil(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
 
     // when
     monitor.removeComponent("test");
     waitUntilAllDone();
-    component.setHealthStatus(HealthStatus.UNHEALTHY);
+    component.setUnhealthy();
     waitUntilAllDone();
 
     // then
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
   @Test
@@ -147,15 +149,31 @@ public class CriticalComponentsHealthMonitorTest {
     waitUntilAllDone();
 
     // when/then
-    component1.setHealthStatus(HealthStatus.UNHEALTHY);
-    component2.setHealthStatus(HealthStatus.DEAD);
+    component1.setUnhealthy();
+    component2.setDead();
     waitUntilAllDone();
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.DEAD);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.DEAD);
 
     // when/then
-    component1.setHealthStatus(HealthStatus.HEALTHY);
+    component1.setHealthy();
     waitUntilAllDone();
-    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.DEAD);
+    assertThat(monitor.getHealthReport().getStatus()).isEqualTo(HealthStatus.DEAD);
+  }
+
+  @Test
+  public void shouldTrackRootIssue() {
+    // given
+    final var issue = HealthIssue.of(new IllegalStateException());
+    final ControllableComponent component = new ControllableComponent();
+    monitor.registerComponent("component", component);
+    waitUntilAllDone();
+
+    // when
+    component.setDead(issue);
+    waitUntilAllDone();
+
+    // then
+    assertThat(monitor.getHealthReport().getIssue().getCause().getIssue()).isEqualTo(issue);
   }
 
   private void waitUntilAllDone() {
@@ -164,30 +182,11 @@ public class CriticalComponentsHealthMonitorTest {
 
   private static class ControllableComponent implements HealthMonitorable {
     private final Set<FailureListener> failureListeners = new HashSet<>();
-    private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
+    private volatile HealthReport healthReport = HealthReport.healthy(this);
 
     @Override
-    public HealthStatus getHealthStatus() {
-      return healthStatus;
-    }
-
-    void setHealthStatus(final HealthStatus healthStatus) {
-      if (this.healthStatus != healthStatus) {
-        switch (healthStatus) {
-          case HEALTHY:
-            failureListeners.forEach(FailureListener::onRecovered);
-            break;
-          case UNHEALTHY:
-            failureListeners.forEach(FailureListener::onFailure);
-            break;
-          case DEAD:
-            failureListeners.forEach(FailureListener::onUnrecoverableFailure);
-            break;
-          default:
-            break;
-        }
-      }
-      this.healthStatus = healthStatus;
+    public HealthReport getHealthReport() {
+      return healthReport;
     }
 
     @Override
@@ -198,6 +197,31 @@ public class CriticalComponentsHealthMonitorTest {
     @Override
     public void removeFailureListener(final FailureListener failureListener) {
       failureListeners.remove(failureListener);
+    }
+
+    void setHealthy() {
+      if (healthReport.getStatus() != HealthStatus.HEALTHY) {
+        failureListeners.forEach(FailureListener::onRecovered);
+        healthReport = HealthReport.healthy(this);
+      }
+    }
+
+    void setUnhealthy() {
+      if (healthReport.getStatus() != HealthStatus.UNHEALTHY) {
+        healthReport = HealthReport.unhealthy(this).withMessage("manually set to status unhealthy");
+        failureListeners.forEach((l) -> l.onFailure(healthReport));
+      }
+    }
+
+    void setDead() {
+      setDead(HealthIssue.of("manually set to status dead"));
+    }
+
+    void setDead(final HealthIssue issue) {
+      if (healthReport.getStatus() != HealthStatus.DEAD) {
+        healthReport = HealthReport.dead(this).withIssue(issue);
+        failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
+      }
     }
   }
 }

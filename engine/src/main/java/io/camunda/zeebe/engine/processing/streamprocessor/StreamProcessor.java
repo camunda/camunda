@@ -22,7 +22,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
@@ -327,9 +327,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     }
 
     if (throwable instanceof UnrecoverableException) {
-      failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+      final var report = HealthReport.dead(this).withIssue(throwable);
+      failureListeners.forEach((l) -> l.onUnrecoverableFailure(report));
     } else {
-      failureListeners.forEach(FailureListener::onFailure);
+      final var report = HealthReport.unhealthy(this).withIssue(throwable);
+      failureListeners.forEach((l) -> l.onFailure(report));
     }
   }
 
@@ -372,22 +374,22 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
+  public HealthReport getHealthReport() {
     if (actor.isClosed()) {
-      return HealthStatus.UNHEALTHY;
+      return HealthReport.unhealthy(this).withMessage("actor is closed");
     }
 
     if (processingStateMachine == null || !processingStateMachine.isMakingProgress()) {
-      return HealthStatus.UNHEALTHY;
+      return HealthReport.unhealthy(this).withMessage("not making progress");
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
-      return HealthStatus.UNHEALTHY;
+      return HealthReport.unhealthy(this).withMessage("actor appears blocked");
     } else if (phase == Phase.FAILED) {
-      return HealthStatus.UNHEALTHY;
+      return HealthReport.unhealthy(this).withMessage("in failed phase");
     } else {
-      return HealthStatus.HEALTHY;
+      return HealthReport.healthy(this);
     }
   }
 

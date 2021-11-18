@@ -28,7 +28,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,20 +71,6 @@ public class RaftPartition implements Partition, HealthMonitorable {
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
     deferredRoleChangeListeners.remove(listener);
     server.removeRoleChangeListener(listener);
-  }
-
-  @Override
-  public HealthStatus getHealthStatus() {
-    return server.getHealthStatus();
-  }
-
-  @Override
-  public void addFailureListener(final FailureListener failureListener) {
-    server.addFailureListener(failureListener);
-  }
-
-  public void removeFailureListener(final FailureListener failureListener) {
-    server.removeFailureListener(failureListener);
   }
 
   /**
@@ -149,6 +135,26 @@ public class RaftPartition implements Partition, HealthMonitorable {
    */
   public String name() {
     return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.id());
+  }
+
+  @Override
+  public String getName() {
+    return name();
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return server.getHealthReport();
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    server.addFailureListener(failureListener);
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    server.removeFailureListener(failureListener);
   }
 
   /** Closes the partition. */

@@ -68,7 +68,7 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
@@ -125,7 +125,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
-  private volatile HealthStatus health = HealthStatus.HEALTHY;
+
+  @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
+  private volatile HealthReport health = HealthReport.healthy(this);
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -242,11 +244,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private void notifyFailureListeners(final Throwable error) {
     try {
       if (error instanceof UnrecoverableException) {
-        health = HealthStatus.DEAD;
-        failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+        health = HealthReport.dead(this).withIssue(error);
+        failureListeners.forEach((l) -> l.onUnrecoverableFailure(health));
       } else {
-        health = HealthStatus.UNHEALTHY;
-        failureListeners.forEach(FailureListener::onFailure);
+        health = HealthReport.unhealthy(this).withIssue(error);
+        failureListeners.forEach((l) -> l.onFailure(health));
       }
     } catch (final Exception e) {
       log.error("Could not notify failure listeners", e);
@@ -603,7 +605,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
 
     if (!this.role.role().active() && role.active()) {
-      health = HealthStatus.HEALTHY;
+      health = HealthReport.healthy(this);
       failureListeners.forEach(FailureListener::onRecovered);
     }
 
@@ -622,23 +624,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         notifyRoleChangeListeners();
       }
     }
-  }
-
-  @Override
-  public HealthStatus getHealthStatus() {
-    return health;
-  }
-
-  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
-  @Override
-  public void addFailureListener(final FailureListener listener) {
-    failureListeners.add(listener);
-  }
-
-  /** Remove a failure listener */
-  @Override
-  public void removeFailureListener(final FailureListener listener) {
-    failureListeners.remove(listener);
   }
 
   private void notifyRoleChangeListeners() {
@@ -897,8 +882,26 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @return The server name.
    */
+  @Override
   public String getName() {
     return name;
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return health;
+  }
+
+  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
+  @Override
+  public void addFailureListener(final FailureListener listener) {
+    failureListeners.add(listener);
+  }
+
+  /** Remove a failure listener */
+  @Override
+  public void removeFailureListener(final FailureListener listener) {
+    failureListeners.remove(listener);
   }
 
   /**

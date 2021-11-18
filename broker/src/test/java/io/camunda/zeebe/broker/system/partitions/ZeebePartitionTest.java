@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -129,9 +131,11 @@ public class ZeebePartitionTest {
   @Test
   public void shouldCallOnFailureOnAddFailureListenerAndUnhealthy() {
     // given
-    when(healthMonitor.getHealthStatus()).thenReturn(HealthStatus.UNHEALTHY);
+    final var report = mock(HealthReport.class);
+    when(report.getStatus()).thenReturn(HealthStatus.UNHEALTHY);
+    when(healthMonitor.getHealthReport()).thenReturn(report);
     final FailureListener failureListener = mock(FailureListener.class);
-    doNothing().when(failureListener).onFailure();
+    doNothing().when(failureListener).onFailure(any());
     schedulerRule.submitActor(partition);
 
     // when
@@ -139,17 +143,19 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    verify(failureListener, only()).onFailure();
+    verify(failureListener, only()).onFailure(any());
   }
 
   @Test
   public void shouldCallOnRecoveredOnAddFailureListenerAndHealthy() {
     // given
+    final var report = mock(HealthReport.class);
+    when(report.getStatus()).thenReturn(HealthStatus.HEALTHY);
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onRecovered();
 
     // make partition healthy
-    when(healthMonitor.getHealthStatus()).thenReturn(HealthStatus.HEALTHY);
+    when(healthMonitor.getHealthReport()).thenReturn(report);
     schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
 

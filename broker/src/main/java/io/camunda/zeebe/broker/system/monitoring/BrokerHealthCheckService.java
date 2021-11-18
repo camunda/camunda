@@ -106,7 +106,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   public BrokerHealthCheckService(final BrokerInfo localBroker) {
     actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
     nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
-    healthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
+    healthMonitor = new CriticalComponentsHealthMonitor("Broker-" + nodeId, actor, LOG);
   }
 
   public void registerPartitionManager(final PartitionManager partitionManager) {
@@ -215,7 +215,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
     if (!isBrokerReady()) {
       return HealthStatus.UNHEALTHY;
     }
-    return healthMonitor.getHealthStatus();
+    return healthMonitor.getHealthReport().getStatus();
   }
 
   public void setBrokerStarted() {
