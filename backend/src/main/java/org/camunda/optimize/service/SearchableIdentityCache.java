@@ -170,6 +170,38 @@ public class SearchableIdentityCache implements AutoCloseable {
     return result;
   }
 
+  public List<UserDto> getUsersByEmail(final List<String> emails) {
+    List<UserDto> users = new ArrayList<>();
+    doWithReadLock(() -> {
+      try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
+        final IndexSearcher searcher = new IndexSearcher(indexReader);
+        final BooleanQuery.Builder searchBuilder = new BooleanQuery.Builder();
+        final BooleanQuery.Builder entryFilter = new BooleanQuery.Builder();
+        final List<BytesRef> emailByteRefs = emails.stream()
+          .map(BytesRef::new)
+          .collect(Collectors.toList());
+        entryFilter.add(
+          new TermInSetQuery(UserDto.Fields.email, emailByteRefs),
+          BooleanClause.Occur.MUST
+        );
+        entryFilter.add(
+          new TermQuery(new Term(IdentityDto.Fields.type, IdentityType.USER.name())),
+          BooleanClause.Occur.MUST
+        );
+        searchBuilder.add(entryFilter.build(), BooleanClause.Occur.SHOULD);
+        final TopDocs topDocs = searcher.search(searchBuilder.build(), emails.size());
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+          final Document document = searcher.doc(scoreDoc.doc);
+          final UserDto userDto = mapDocumentToUserDto(document);
+          users.add(userDto);
+        }
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed searching for users by email.", e);
+      }
+    });
+    return users;
+  }
+
   public IdentitySearchResultResponseDto searchIdentities(final String terms) {
     return searchIdentities(terms, 10);
   }
@@ -210,11 +242,40 @@ public class SearchableIdentityCache implements AutoCloseable {
     );
   }
 
-  public IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
-                                                               final Query additionalFilterQuery,
-                                                               final IdentityType[] identityTypes,
-                                                               final int resultLimit,
-                                                               final IdentitySearchResultResponseDto searchAfter) {
+  public long getSize() {
+    return entryCount.get();
+  }
+
+  @VisibleForTesting
+  public long getCacheSizeInBytes() {
+    AtomicLong size = new AtomicLong();
+    doWithReadLock(() -> {
+      try {
+        size.set(
+          Arrays.stream(memoryDirectory.listAll())
+            .map(file -> {
+              try {
+                return memoryDirectory.fileLength(file);
+              } catch (IOException e) {
+                log.error("Failed reading file from in memory directory.", e);
+                return 0L;
+              }
+            })
+            .reduce(Long::sum)
+            .orElse(0L)
+        );
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed getting size of lucene directory.", e);
+      }
+    });
+    return size.get();
+  }
+
+  private IdentitySearchResultResponseDto searchIdentitiesAfter(final String terms,
+                                                                final Query additionalFilterQuery,
+                                                                final IdentityType[] identityTypes,
+                                                                final int resultLimit,
+                                                                final IdentitySearchResultResponseDto searchAfter) {
     final IdentitySearchResultResponseDto result = new IdentitySearchResultResponseDto();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
@@ -245,35 +306,6 @@ public class SearchableIdentityCache implements AutoCloseable {
       }
     });
     return result;
-  }
-
-  public long getSize() {
-    return entryCount.get();
-  }
-
-  @VisibleForTesting
-  public long getCacheSizeInBytes() {
-    AtomicLong size = new AtomicLong();
-    doWithReadLock(() -> {
-      try {
-        size.set(
-          Arrays.stream(memoryDirectory.listAll())
-            .map(file -> {
-              try {
-                return memoryDirectory.fileLength(file);
-              } catch (IOException e) {
-                log.error("Failed reading file from in memory directory.", e);
-                return 0L;
-              }
-            })
-            .reduce(Long::sum)
-            .orElse(0L)
-        );
-      } catch (IOException e) {
-        throw new OptimizeRuntimeException("Failed getting size of lucene directory.", e);
-      }
-    });
-    return size.get();
   }
 
   private Sort createNameSorting() {
@@ -334,8 +366,8 @@ public class SearchableIdentityCache implements AutoCloseable {
   }
 
   @SneakyThrows
-  private long writeIdentityDto(final IndexWriter indexWriter, final IdentityWithMetadataResponseDto identity) {
-    return indexWriter.updateDocument(
+  private void writeIdentityDto(final IndexWriter indexWriter, final IdentityWithMetadataResponseDto identity) {
+    indexWriter.updateDocument(
       new Term(IdentityDto.Fields.id, identity.getId()), mapIdentityDtoToDocument(identity)
     );
   }

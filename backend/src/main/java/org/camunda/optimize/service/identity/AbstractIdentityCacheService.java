@@ -190,6 +190,10 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
       .collect(toList());
   }
 
+  public List<UserDto> getUsersByEmail(final List<String> emails) {
+    return activeIdentityCache.getUsersByEmail(emails);
+  }
+
   public Optional<GroupDto> getGroupIdentityById(final String id) {
     return activeIdentityCache.getGroupIdentityById(id);
   }

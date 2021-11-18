@@ -24,4 +24,5 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");
   }
+
 }

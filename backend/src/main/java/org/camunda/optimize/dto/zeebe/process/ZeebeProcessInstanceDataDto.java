@@ -28,4 +28,5 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   public String toJson() {
     throw new UnsupportedOperationException("Operation not supported");
   }
+
 }
