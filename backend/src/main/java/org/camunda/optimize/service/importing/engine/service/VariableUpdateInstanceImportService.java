@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.DateFormatterUtil.getDateStringInOptimizeDateFormat;
 import static org.camunda.optimize.service.util.DateFormatterUtil.isValidOptimizeDateFormat;
-import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypePersistable;
 import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypeSupported;
 
 @Slf4j
@@ -42,7 +41,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private final EngineContext engineContext;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
-  private final ObjectVariableFlatteningService objectVariableFlatteningService;
+  private final ObjectVariableService objectVariableService;
 
   public VariableUpdateInstanceImportService(final ConfigurationService configurationService,
                                              final VariableImportAdapterProvider variableImportAdapterProvider,
@@ -50,7 +49,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
                                              final CamundaEventImportService camundaEventService,
                                              final EngineContext engineContext,
                                              final ProcessDefinitionResolverService processDefinitionResolverService,
-                                             final ObjectVariableFlatteningService objectVariableFlatteningService) {
+                                             final ObjectVariableService objectVariableService) {
     this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -61,7 +60,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
-    this.objectVariableFlatteningService = objectVariableFlatteningService;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -97,20 +96,18 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
     pluginVariableList.removeIf(variable -> !isValidVariable(variable));
-    pluginVariableList = objectVariableFlatteningService.flattenObjectVariables(pluginVariableList);
+    pluginVariableList = objectVariableService.convertObjectVariablesForImport(pluginVariableList);
     return convertPluginListToImportList(pluginVariableList);
   }
 
   private List<ProcessVariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
     List<ProcessVariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
     for (PluginVariableDto dto : pluginVariableList) {
-      if (isProcessVariableTypePersistable(dto.getType())) {
-        normalizeDateVariableFormats(dto);
-        if (dto instanceof ProcessVariableDto) {
-          variableImportList.add((ProcessVariableDto) dto);
-        } else {
-          variableImportList.add(convertPluginVariableToImportVariable(dto));
-        }
+      normalizeDateVariableFormats(dto);
+      if (dto instanceof ProcessVariableDto) {
+        variableImportList.add((ProcessVariableDto) dto);
+      } else {
+        variableImportList.add(convertPluginVariableToImportVariable(dto));
       }
     }
     return variableImportList;

@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypePersistable;
+import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypeSupported;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @Component
@@ -156,7 +156,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
   private Map<String, List<OptimizeDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {
     Map<String, List<OptimizeDto>> processInstanceIdToVariables = new HashMap<>();
     for (ProcessVariableDto variable : variableUpdates) {
-      if (isVariableFromCaseDefinition(variable) || !isProcessVariableTypePersistable(variable.getType())) {
+      if (isVariableFromCaseDefinition(variable) || !isProcessVariableTypeSupported(variable.getType())) {
         log.warn(
           "Variable [{}] is either a case definition variable or the type [{}] is not supported!",
           variable, variable.getType()

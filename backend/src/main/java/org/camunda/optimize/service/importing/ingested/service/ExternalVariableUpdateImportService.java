@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ExternalVariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
-import org.camunda.optimize.service.importing.engine.service.ObjectVariableFlatteningService;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -28,7 +28,6 @@ import java.util.function.Function;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto.toPluginVariableDtos;
-import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypePersistable;
 
 @Slf4j
 public class ExternalVariableUpdateImportService implements ImportService<ExternalProcessVariableDto> {
@@ -38,17 +37,17 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ProcessVariableUpdateWriter variableWriter;
   private final ConfigurationService configurationService;
-  private final ObjectVariableFlatteningService objectVariableFlatteningService;
+  private final ObjectVariableService objectVariableService;
 
   public ExternalVariableUpdateImportService(final ConfigurationService configurationService,
                                              final ProcessVariableUpdateWriter variableWriter,
-                                             final ObjectVariableFlatteningService objectVariableFlatteningService) {
+                                             final ObjectVariableService objectVariableService) {
     this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.variableWriter = variableWriter;
     this.configurationService = configurationService;
-    this.objectVariableFlatteningService = objectVariableFlatteningService;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -80,9 +79,8 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
     final List<ExternalProcessVariableDto> deduplicatedVariables =
       resolveDuplicateVariableUpdatesPerProcessInstance(externalEntities);
     List<PluginVariableDto> pluginVariableList = toPluginVariableDtos(deduplicatedVariables);
-    pluginVariableList = objectVariableFlatteningService.flattenObjectVariables(pluginVariableList);
+    pluginVariableList = objectVariableService.convertObjectVariablesForImport(pluginVariableList);
     return pluginVariableList.stream()
-      .filter(dto -> isProcessVariableTypePersistable(dto.getType()))
       .map(this::convertPluginVariableToImportVariable)
       .collect(toList());
   }

@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.sisyphsu.dateparser.DateParserUtils;
 import com.github.wnameless.json.base.JacksonJsonCore;
 import com.github.wnameless.json.flattener.FlattenMode;
@@ -32,33 +34,34 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 @Component
 @Slf4j
-public class ObjectVariableFlatteningService {
+public class ObjectVariableService {
 
-  private static final int VALUE_MAX_LENGTH = 4000;
   private static final String LIST_SIZE_VARIABLE_SUFFIX = "_listSize";
   private static final DateTimeFormatter OPTIMIZE_DATE_TIME_FORMATTER =
     DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   private final ObjectMapper objectMapper;
 
-  public ObjectVariableFlatteningService() {
+  public ObjectVariableService() {
     this.objectMapper = new ObjectMapper();
     objectMapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
     objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
+    objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
   }
 
-  public List<PluginVariableDto> flattenObjectVariables(final List<PluginVariableDto> variables) {
+  public List<PluginVariableDto> convertObjectVariablesForImport(final List<PluginVariableDto> variables) {
     List<PluginVariableDto> resultList = new ArrayList<>();
     for (PluginVariableDto pluginVariableDto : variables) {
-      if (VARIABLE_TYPE_OBJECT.equalsIgnoreCase(pluginVariableDto.getType())) {
+      if (isNonNullObjectVariable(pluginVariableDto)) {
         final Optional<String> serializationDataFormat =
           Optional.ofNullable(String.valueOf(pluginVariableDto.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
         if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
-          flattenJsonObjectVariable(pluginVariableDto, resultList);
+          flattenJsonObjectVariableAndAddToResult(pluginVariableDto, resultList);
+          formatJsonObjectVariableAndAddToResult(pluginVariableDto, resultList);
         } else {
           log.warn("Object variable '{}' will not be imported due to unsupported serializationDataFormat: {}. " +
                      "Object variables must have serializationDataFormat application/json.",
-                   pluginVariableDto.getName(), serializationDataFormat
+                   pluginVariableDto.getName(), serializationDataFormat.orElse("no format specified")
           );
         }
       } else {
@@ -68,7 +71,23 @@ public class ObjectVariableFlatteningService {
     return resultList;
   }
 
-  private void flattenJsonObjectVariable(final PluginVariableDto variable, final List<PluginVariableDto> resultList) {
+  private void formatJsonObjectVariableAndAddToResult(final PluginVariableDto variable,
+                                                      final List<PluginVariableDto> resultList) {
+    try {
+      final Object jsonObject = objectMapper.readValue(variable.getValue(), Object.class);
+      if (jsonObject instanceof String || jsonObject instanceof Number || jsonObject instanceof Boolean) {
+        // nothing to do as a "flattened" string/number/bool variable is the same as the raw object variable
+        return;
+      }
+      variable.setValue(objectMapper.writeValueAsString(jsonObject));
+      resultList.add(variable);
+    } catch (JsonProcessingException e) {
+      log.error("Error while formatting json object variable with name '{}'.", variable.getName(), e);
+    }
+  }
+
+  private void flattenJsonObjectVariableAndAddToResult(final PluginVariableDto variable,
+                                                       final List<PluginVariableDto> resultList) {
     try {
       new JsonFlattener(new JacksonJsonCore(objectMapper), variable.getValue())
         .withFlattenMode(FlattenMode.KEEP_ARRAYS)
@@ -98,7 +117,7 @@ public class ObjectVariableFlatteningService {
     PluginVariableDto newVariable = createNewVariable(origin);
 
     if (JsonFlattener.ROOT.equals(name)) {
-      // the name "root" is used by the flattener if the JSON is a string or array (no object)
+      // the name "root" is used by the flattener if the JSON is a string/number or array (no object)
       newVariable.setName(origin.getName());
     } else {
       newVariable.setName(String.join(".", origin.getName(), name));
@@ -116,7 +135,7 @@ public class ObjectVariableFlatteningService {
         newVariable.setValue(OPTIMIZE_DATE_TIME_FORMATTER.format(optDate.get()));
       } else {
         newVariable.setType(VariableType.STRING.getId());
-        newVariable.setValue(parseString(newVariable.getName(), stringValue));
+        newVariable.setValue(stringValue);
       }
     } else if (value instanceof Boolean) {
       newVariable.setType(VariableType.BOOLEAN.getId());
@@ -141,8 +160,13 @@ public class ObjectVariableFlatteningService {
       return Optional.empty();
     }
 
-    // the ID needs to be unique for each new variable instance but consistent so that version updates get overridden
-    newVariable.setId(origin.getId() + "_" + newVariable.getName());
+    if (JsonFlattener.ROOT.equals(name) && !(value instanceof JsonifyArrayList)) {
+      // if variable is just a string or number, keep original name and ID
+      newVariable.setId(origin.getId());
+    } else {
+      // the ID needs to be unique for each new variable instance but consistent so that version updates get overridden
+      newVariable.setId(origin.getId() + "_" + newVariable.getName());
+    }
 
     return Optional.of(newVariable);
   }
@@ -166,14 +190,8 @@ public class ObjectVariableFlatteningService {
     }
   }
 
-  private String parseString(final String variableName, final String value) {
-    if (value.length() > VALUE_MAX_LENGTH) {
-      log.warn("String value of variable {} will be truncated to {} characters (original size: {}).",
-               variableName, VALUE_MAX_LENGTH, value.length()
-      );
-      return value.substring(0, VALUE_MAX_LENGTH);
-    }
-    return value;
+  private boolean isNonNullObjectVariable(final PluginVariableDto pluginVariableDto) {
+    return pluginVariableDto.getValue() != null && VARIABLE_TYPE_OBJECT.equalsIgnoreCase(pluginVariableDto.getType());
   }
 
 }

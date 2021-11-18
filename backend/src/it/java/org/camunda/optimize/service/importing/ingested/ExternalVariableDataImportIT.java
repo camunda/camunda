@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.ingested;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -25,6 +26,7 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 
 public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
@@ -245,14 +247,14 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
 
   @SneakyThrows
   @Test
-  public void objectVariablesAreFlattened() {
+  public void objectVariablesAreFlattenedAndImported() {
     // given
     final Map<String, Object> person = new HashMap<>();
     person.put("name", "Pond");
     person.put("age", 28);
     person.put("likes", List.of("optimize", "garlic"));
-    final ExternalProcessVariableRequestDto externalVariable =
-      ingestionClient.createObjectExternalVariable(new ObjectMapper().writeValueAsString(person));
+    final ExternalProcessVariableRequestDto externalVariable = ingestionClient.createObjectExternalVariable(
+      new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(person));
     ingestionClient.ingestVariables(List.of(externalVariable));
 
     // when
@@ -270,6 +272,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactlyInAnyOrder(
+        Tuple.tuple("objectVarName", OBJECT.getId(), externalVariable.getValue()),
         Tuple.tuple("objectVarName.name", STRING.getId(), "Pond"),
         Tuple.tuple("objectVarName.age", LONG.getId(), "28"),
         Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), "2")
@@ -280,19 +283,20 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
   @Test
   public void objectVariablesAreUpdated() {
     // given
+    final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
     final Map<String, Object> person = new HashMap<>();
     person.put("name", "Pond");
     person.put("age", 28);
     person.put("likes", List.of("optimize", "garlic"));
     ExternalProcessVariableRequestDto externalVariable =
-      ingestionClient.createObjectExternalVariable(new ObjectMapper().writeValueAsString(person));
+      ingestionClient.createObjectExternalVariable(objectMapper.writeValueAsString(person));
     ingestionClient.ingestVariables(List.of(externalVariable));
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // variable properties are updated
     person.put("age", 29);
     person.put("likes", List.of("optimize", "garlic", "tofu"));
-    externalVariable = ingestionClient.createObjectExternalVariable(new ObjectMapper().writeValueAsString(person));
+    externalVariable = ingestionClient.createObjectExternalVariable(objectMapper.writeValueAsString(person));
     ingestionClient.ingestVariables(List.of(externalVariable));
 
     // when
@@ -311,7 +315,8 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         SimpleProcessVariableDto::getVersion
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVarName.name", STRING.getId(), "Pond", 1000L), // external variable version is always 1000
+        Tuple.tuple("objectVarName", OBJECT.getId(), externalVariable.getValue(), 1000L),
+        Tuple.tuple("objectVarName.name", STRING.getId(), "Pond", 1000L),
         Tuple.tuple("objectVarName.age", LONG.getId(), "29", 1000L),
         Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), "3", 1000L)
       );

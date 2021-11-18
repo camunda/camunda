@@ -12,7 +12,7 @@ import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.service.ObjectVariableFlatteningService;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -28,7 +28,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
   private final ProcessVariableUpdateWriter variableWriter;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
-  final ObjectVariableFlatteningService objectVariableFlatteningService;
+  final ObjectVariableService objectVariableService;
 
   public VariableUpdateEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
@@ -37,13 +37,13 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
                                                    final ProcessVariableUpdateWriter variableWriter,
                                                    final VariableImportAdapterProvider variableImportAdapterProvider,
                                                    final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                   final ObjectVariableFlatteningService objectVariableFlatteningService) {
+                                                   final ObjectVariableService objectVariableService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.variableWriter = variableWriter;
     this.variableImportAdapterProvider = variableImportAdapterProvider;
     this.processDefinitionResolverService = processDefinitionResolverService;
-    this.objectVariableFlatteningService = objectVariableFlatteningService;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -63,7 +63,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         engineContext,
         processDefinitionResolverService,
-        objectVariableFlatteningService
+        objectVariableService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

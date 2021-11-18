@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.ingested.mediator.factory;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
-import org.camunda.optimize.service.importing.engine.service.ObjectVariableFlatteningService;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.importing.ingested.fetcher.ExternalVariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.importing.ingested.mediator.ExternalVariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.importing.ingested.service.ExternalVariableUpdateImportService;
@@ -22,16 +22,16 @@ import java.util.List;
 @Component
 public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngestedImportMediatorFactory {
   private final ProcessVariableUpdateWriter variableWriter;
-  private final ObjectVariableFlatteningService objectVariableFlatteningService;
+  private final ObjectVariableService objectVariableService;
 
   public ExternalVariableUpdateImportMediatorFactory(final BeanFactory beanFactory,
                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final ProcessVariableUpdateWriter variableWriter,
-                                                     final ObjectVariableFlatteningService objectVariableFlatteningService) {
+                                                     final ObjectVariableService objectVariableService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.variableWriter = variableWriter;
-    this.objectVariableFlatteningService = objectVariableFlatteningService;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -43,7 +43,7 @@ public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngeste
     return new ExternalVariableUpdateEngineImportMediator(
       importIndexHandlerRegistry.getExternalVariableUpdateImportIndexHandler(),
       beanFactory.getBean(ExternalVariableUpdateInstanceFetcher.class),
-      new ExternalVariableUpdateImportService(configurationService, variableWriter, objectVariableFlatteningService),
+      new ExternalVariableUpdateImportService(configurationService, variableWriter, objectVariableService),
       configurationService,
       new BackoffCalculator(configurationService)
     );

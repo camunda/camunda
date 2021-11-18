@@ -135,11 +135,10 @@ public class ReportConstants {
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
   public static final String OBJECT_TYPE = "Object";
-  public static final String OBJECT_TYPE_LOWERCASE = "object";
 
   public static final String GROUP_NONE_KEY = "____none";
 
-  public static final List<VariableType> ALL_PERSISTABLE_PROCESS_VARIABLE_TYPES = List.of(
+  public static final List<VariableType> ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES = List.of(
     VariableType.STRING,
     VariableType.SHORT,
     VariableType.LONG,

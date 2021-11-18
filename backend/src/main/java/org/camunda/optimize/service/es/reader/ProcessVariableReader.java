@@ -140,7 +140,13 @@ public class ProcessVariableReader {
       .setPathToAggregation(VARIABLES, VAR_NAME_AND_TYPE_COMPOSITE_AGG)
       .setCompositeBucketConsumer(bucket -> variableNames.add(extractVariableName(bucket)))
       .consumeAllPages();
+    filterVariableNameResults(variableNames);
     return variableNames;
+  }
+
+  private void filterVariableNameResults(final List<ProcessVariableNameResponseDto> variableNames) {
+    // Exclude object variables from this result as they are only visible in raw data reports
+    variableNames.removeIf(varName -> VariableType.OBJECT.equals(varName.getType()));
   }
 
   private ProcessVariableNameResponseDto extractVariableName(final ParsedComposite.ParsedBucket bucket) {

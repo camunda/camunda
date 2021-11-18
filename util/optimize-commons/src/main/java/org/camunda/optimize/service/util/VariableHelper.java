@@ -25,16 +25,6 @@ public class VariableHelper {
     return ReportConstants.ALL_SUPPORTED_PROCESS_VARIABLE_TYPES.contains(variableType);
   }
 
-  public static boolean isProcessVariableTypePersistable(final String variableTypeString) {
-    return isProcessVariableTypePersistable(
-      Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)
-    );
-  }
-
-  public static boolean isProcessVariableTypePersistable(final VariableType variableType) {
-    return ReportConstants.ALL_PERSISTABLE_PROCESS_VARIABLE_TYPES.contains(variableType);
-  }
-
   public static boolean isDecisionVariableTypeSupported(final String variableTypeString) {
     return isProcessVariableTypeSupported(
       Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)

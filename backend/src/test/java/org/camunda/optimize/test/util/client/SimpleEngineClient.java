@@ -61,7 +61,7 @@ import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
-import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
@@ -1821,7 +1821,7 @@ public class SimpleEngineClient {
         fields.put("value", typedVariable.getValue());
         fields.put("type", typedVariable.getType());
         variables.put(nameToValue.getKey(), fields);
-      } else if (value instanceof ObjectVariableDto) {
+      } else if (value instanceof VariableDto) {
         variables.put(nameToValue.getKey(), value);
       } else {
         Map<String, Object> fields = new HashMap<>();

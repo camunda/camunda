@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROPERTY_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IGNORE_ABOVE_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
@@ -35,6 +36,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
   public static final int VERSION = 8;
+  public static final int INGNORE_ABOVE_CHAR_LIMIT = 7000;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -302,6 +304,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .startObject(VARIABLE_VALUE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+        .field(IGNORE_ABOVE_SETTING, INGNORE_ABOVE_CHAR_LIMIT)
       .startObject(FIELDS);
     addValueMultifields(builder)
       .endObject()
