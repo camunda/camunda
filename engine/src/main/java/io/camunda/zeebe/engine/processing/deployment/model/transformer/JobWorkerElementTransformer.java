@@ -19,7 +19,6 @@ import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -28,10 +27,6 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
     implements ModelElementTransformer<T> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-
-  private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
-
-  private final MsgPackWriter msgPackWriter = new MsgPackWriter();
 
   private final Class<T> type;
 
