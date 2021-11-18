@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
@@ -46,7 +47,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
   private String logoAsBase64;
 
   public UIConfigurationResponseDto getUIConfiguration() {
-    UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
+    final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
     uiConfigurationDto.setHeader(getHeaderCustomization());
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
@@ -54,7 +55,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeCloudEnvironment(
-      Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE));
+      Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE)
+    );
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
@@ -62,6 +64,12 @@ public class UIConfigurationService implements ConfigurationReloadable {
     final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
     uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
+
+    final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
+    mixpanel.setEnabled(configurationService.getTracking().isEnabled());
+    mixpanel.setApiHost(configurationService.getTracking().getMixpanel().getApiHost());
+    mixpanel.setToken(configurationService.getTracking().getMixpanel().getToken());
+    mixpanel.setOrganizationId(configurationService.getTracking().getMixpanel().getProperties().getOrganizationId());
 
     return uiConfigurationDto;
   }

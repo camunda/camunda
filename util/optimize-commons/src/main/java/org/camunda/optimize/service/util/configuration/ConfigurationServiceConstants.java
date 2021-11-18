@@ -119,6 +119,8 @@ public class ConfigurationServiceConstants {
 
   public static final String CACHES_CONFIGURATION = "$.caches";
 
+  public static final String TRACKING_CONFIGURATION = "$.tracking";
+
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";
   //@formatter:on

@@ -7,19 +7,17 @@ package org.camunda.optimize.dto.optimize.query.ui_configuration;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
-@EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
 public class UIConfigurationResponseDto {
 
-  private HeaderCustomizationDto header;
+  private HeaderCustomizationDto header = new HeaderCustomizationDto();
   private boolean emailEnabled;
   private boolean sharingEnabled;
   private boolean tenantsAvailable;
@@ -35,4 +33,6 @@ public class UIConfigurationResponseDto {
 
   // true if settingsDto flags are confirmed by superuser. If false, settings reflect initial config flags only
   private boolean settingsManuallyConfirmed;
+
+  private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 }

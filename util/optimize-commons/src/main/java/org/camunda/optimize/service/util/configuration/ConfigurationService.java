@@ -25,6 +25,7 @@ import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheC
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
+import org.camunda.optimize.service.util.configuration.tracking.TrackingConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 
@@ -48,6 +49,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TRACKING_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -197,6 +199,8 @@ public class ConfigurationService {
   private ExternalVariableConfiguration externalVariableConfiguration;
 
   private GlobalCacheConfiguration caches;
+
+  private TrackingConfiguration tracking;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -1113,6 +1117,13 @@ public class ConfigurationService {
       caches = configJsonContext.read(CACHES_CONFIGURATION, GlobalCacheConfiguration.class);
     }
     return caches;
+  }
+
+  public TrackingConfiguration getTracking() {
+    if (tracking == null) {
+      tracking = configJsonContext.read(TRACKING_CONFIGURATION, TrackingConfiguration.class);
+    }
+    return tracking;
   }
 
 }

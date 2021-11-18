@@ -547,6 +547,16 @@ telemetry:
   # Telemetry endpoint to send data to (production environment)
   telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'
 
+tracking:
+  # This section is about a new tracking setup that covers frontend interaction as well as generic backend metrics
+  enabled: ${CAMUNDA_OPTIMIZE_TRACKING_ENABLED:false}
+  # The current implementation is based on mixpanel only
+  mixpanel:
+    apiHost: ${CAMUNDA_OPTIMIZE_TRACKING_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
+    token: ${CAMUNDA_OPTIMIZE_TRACKING_MIXPANEL_TOKEN:null}
+    properties:
+      organizationId: ${CAMUNDA_OPTIMIZE_TRACKING_ORGANIZATION_ID:null}
+
 # Configuration of application internal in-memory caches
 caches:
   # This cache is used to hold the list of available tenants.

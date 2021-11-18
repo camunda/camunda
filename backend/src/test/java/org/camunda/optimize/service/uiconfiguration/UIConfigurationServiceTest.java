@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.uiconfiguration;
 
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
@@ -18,12 +17,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 
-import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,13 +32,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class UIConfigurationServiceTest {
 
-  @Mock
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
   @Mock
   private OptimizeVersionService versionService;
   @Mock
   private TenantService tenantService;
-  @Mock
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private SettingsService settingService;
   @Mock
   private Environment environment;
@@ -74,9 +74,8 @@ public class UIConfigurationServiceTest {
     headerCustomization.setBackgroundColor("#FFFFFF");
     UIConfiguration uiConfiguration = new UIConfiguration();
     uiConfiguration.setHeader(headerCustomization);
-    when(settingService.getSettings()).thenReturn(
-      new SettingsResponseDto(true, "omran", OffsetDateTime.now()));
     when(configurationService.getUiConfiguration()).thenReturn(uiConfiguration);
+    when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
   }
 
 }
