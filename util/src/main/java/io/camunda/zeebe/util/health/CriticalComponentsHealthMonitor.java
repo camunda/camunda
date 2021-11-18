@@ -26,6 +26,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private final ActorControl actor;
   private final Logger log;
 
+  @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport healthReport =
       HealthReport.unhealthy(this).withMessage("Components are not yet initialized");
 

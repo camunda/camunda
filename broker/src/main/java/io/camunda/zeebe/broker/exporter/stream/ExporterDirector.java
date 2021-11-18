@@ -70,6 +70,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
   private ExportersState state;
+
+  @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport healthReport = HealthReport.healthy(this);
 
   private boolean inExportingPhase;

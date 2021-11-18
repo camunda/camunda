@@ -58,7 +58,10 @@ public final class AsyncSnapshotDirector extends Actor
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
   private boolean persistingSnapshot;
+
+  @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport healthReport = HealthReport.healthy(this);
+
   private long commitPosition;
   private final int partitionId;
 

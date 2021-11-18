@@ -125,6 +125,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
+
+  @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport health = HealthReport.healthy(this);
 
   private long lastHeartbeat;
