@@ -78,7 +78,9 @@ public final class ZeebePartition extends Actor
     actorName =
         buildActorName(
             transitionContext.getNodeId(), "ZeebePartition", transitionContext.getPartitionId());
-    transitionContext.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
+    transitionContext.setComponentHealthMonitor(
+        new CriticalComponentsHealthMonitor(
+            "Partition-" + transitionContext.getPartitionId(), actor, LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId());
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();

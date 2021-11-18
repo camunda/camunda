@@ -30,7 +30,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private volatile HealthReport healthReport =
       HealthReport.unhealthy(this).withMessage("Components are not yet initialized");
 
-  public CriticalComponentsHealthMonitor(final ActorControl actor, final Logger log) {
+  private final String name;
+
+  public CriticalComponentsHealthMonitor(
+      final String name, final ActorControl actor, final Logger log) {
+    this.name = name;
     this.actor = actor;
     this.log = log;
   }
@@ -68,6 +72,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           component.addFailureListener(monitoredComponent);
           calculateHealth();
         });
+  }
+
+  @Override
+  public String getName() {
+    return name;
   }
 
   @Override

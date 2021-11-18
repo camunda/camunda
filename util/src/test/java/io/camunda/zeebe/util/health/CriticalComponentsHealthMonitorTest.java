@@ -37,7 +37,9 @@ public class CriticalComponentsHealthMonitorTest {
 
           @Override
           protected void onActorStarting() {
-            monitor = new CriticalComponentsHealthMonitor(actor, LoggerFactory.getLogger("test"));
+            monitor =
+                new CriticalComponentsHealthMonitor(
+                    "TestMonitor", actor, LoggerFactory.getLogger("test"));
             actorControl = actor;
           }
 
