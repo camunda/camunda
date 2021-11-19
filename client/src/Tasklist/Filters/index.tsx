@@ -15,6 +15,7 @@ import {OPTIONS} from './constants';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
 import {useTasks} from '../useTasks';
+import {tracking} from 'modules/tracking';
 
 interface FormValues {
   filter: string;
@@ -29,6 +30,11 @@ const Filters: React.FC = () => {
       <Form<FormValues>
         onSubmit={(values) => {
           const searchParams = new URLSearchParams(history.location.search);
+
+          tracking.track({
+            eventName: 'tasks-filtered',
+            filter: values.filter,
+          });
 
           searchParams.set('filter', values.filter);
 

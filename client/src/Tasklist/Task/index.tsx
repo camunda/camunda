@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useParams, useLocation, useHistory} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/client';
 import {GetTask, useTask} from 'modules/queries/get-task';
@@ -35,6 +35,7 @@ import {
   MAX_TASKS_DISPLAYED,
 } from 'modules/constants/tasks';
 import {getSortValues} from './getSortValues';
+import {tracking} from 'modules/tracking';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -82,7 +83,16 @@ const Task: React.FC = () => {
     },
   );
   const notifications = useNotifications();
-  const {formKey, processDefinitionId} = data?.task ?? {};
+  const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
+
+  useEffect(() => {
+    if (taskId) {
+      tracking.track({
+        eventName: 'task-opened',
+        taskId,
+      });
+    }
+  }, [taskId]);
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
@@ -93,6 +103,12 @@ const Task: React.FC = () => {
           id,
           variables,
         },
+      });
+
+      tracking.track({
+        eventName: 'task-completed',
+        taskId: id,
+        isCamundaForm: formKey ? isCamundaForms(formKey) : false,
       });
 
       notifications.displayNotification('success', {

@@ -45,6 +45,7 @@ import {
   MAX_TASKS_DISPLAYED,
 } from 'modules/constants/tasks';
 import {getSortValues} from '../getSortValues';
+import {tracking} from 'modules/tracking';
 
 const Details: React.FC = () => {
   const {id} = useParams<{id: string}>();
@@ -130,8 +131,10 @@ const Details: React.FC = () => {
     try {
       if (assignee !== null) {
         await unclaimTask();
+        tracking.track({eventName: 'task-unclaimed', taskId: id});
       } else {
         await claimTask();
+        tracking.track({eventName: 'task-claimed', taskId: id});
       }
     } catch (error) {
       const errorMessage = (error as Error).message ?? '';

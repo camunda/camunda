@@ -10,6 +10,8 @@ export declare global {
       isEnterprise?: boolean;
       contextPath?: string;
       canLogout?: boolean;
+      organizationId?: null | string;
+      clusterId?: null | string;
     };
   }
 }

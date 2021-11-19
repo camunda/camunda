@@ -21,13 +21,23 @@ import {
   NoTaskSelectedMessage,
 } from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
+import {tracking} from 'modules/tracking';
 
 const Tasklist: React.FC = () => {
   return (
     <>
       <Header />
       <Container>
-        <TasksPanel title="Tasks" hasTransparentBackground>
+        <TasksPanel
+          title="Tasks"
+          hasTransparentBackground
+          onCollapse={() => {
+            tracking.track({eventName: 'panel-closed'});
+          }}
+          onExpand={() => {
+            tracking.track({eventName: 'panel-opened'});
+          }}
+        >
           <Filters />
           <Tasks />
         </TasksPanel>

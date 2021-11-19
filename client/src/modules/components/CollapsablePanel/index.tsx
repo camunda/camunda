@@ -20,13 +20,15 @@ interface Props extends React.ComponentProps<typeof Panel> {
   title: string;
   className?: string;
   isInitiallyCollapsed?: boolean;
+  onCollapse?: () => void;
+  onExpand?: () => void;
 }
 
 const CollapsablePanel: React.FC<Props> = ({
   isInitiallyCollapsed,
   ...props
 }) => {
-  const {title, children, className} = props;
+  const {title, children, className, onCollapse, onExpand} = props;
   const [isCollapsed, setIsCollapsed] = useState(isInitiallyCollapsed ?? false);
 
   return (
@@ -34,7 +36,10 @@ const CollapsablePanel: React.FC<Props> = ({
       {isCollapsed ? (
         <CollapsedPanel
           data-testid="collapsed-panel"
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => {
+            setIsCollapsed(!isCollapsed);
+            onExpand?.();
+          }}
         >
           <Title>{title}</Title>
         </CollapsedPanel>
@@ -45,7 +50,10 @@ const CollapsablePanel: React.FC<Props> = ({
             Icon={
               <CollapseButton
                 data-testid="collapse-button"
-                onClick={() => setIsCollapsed(!isCollapsed)}
+                onClick={() => {
+                  setIsCollapsed(!isCollapsed);
+                  onCollapse?.();
+                }}
               >
                 <LeftIcon />
               </CollapseButton>

@@ -57,6 +57,7 @@ import {useTaskVariables} from 'modules/queries/get-task-variables';
 import {LoadingTextarea} from './LoadingTextarea';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
@@ -127,6 +128,12 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
           value: values[name],
         }));
         const newVariables = get(values, 'newVariables') || [];
+
+        if (newVariables.length > 0 || Object.keys(dirtyFields).length > 0) {
+          tracking.track({
+            eventName: 'variable-edited',
+          });
+        }
 
         await onSubmit([
           ...existingVariables.map((variable) => ({
