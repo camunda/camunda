@@ -70,7 +70,12 @@ final class RaftPartitionGroupFactory {
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity())
             .withPriorityElection(experimentalCfg.isEnablePriorityElection())
-            .withPartitionDistributor(partitionDistributor);
+            .withPartitionDistributor(partitionDistributor)
+            .withElectionTimeout(clusterCfg.getElectionTimeout())
+            .withHeartbeatInterval(clusterCfg.getHeartbeatInterval())
+            .withRequestTimeout(experimentalCfg.getRaft().getRequestTimeout())
+            .withMaxQuorumResponseTimeout(experimentalCfg.getRaft().getMaxQuorumResponseTimeout())
+            .withMinStepDownFailureCount(experimentalCfg.getRaft().getMinStepDownFailureCount());
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 
