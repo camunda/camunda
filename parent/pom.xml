@@ -134,7 +134,7 @@
     <plugin.version.shade>3.2.4</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
-    <plugin.version.spotbugs>4.4.2.2</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.5.0.0</plugin.version.spotbugs>
     <plugin.version.spotless>2.17.4</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
