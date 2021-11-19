@@ -36,6 +36,7 @@ public class ProcessVariableValuesQueryDto {
       .numResults(requestDto.getNumResults())
       .processVariableSources(Collections.singletonList(
         ProcessVariableSourceDto.builder()
+          .processInstanceId(requestDto.getProcessInstanceId())
           .processDefinitionKey(requestDto.getProcessDefinitionKey())
           .processDefinitionVersions(requestDto.getProcessDefinitionVersions())
           .tenantIds(requestDto.getTenantIds())
