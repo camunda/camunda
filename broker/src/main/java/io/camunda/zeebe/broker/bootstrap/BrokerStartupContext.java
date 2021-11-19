@@ -73,9 +73,9 @@ public interface BrokerStartupContext {
 
   void setCommandApiServerTransport(AtomixServerTransport commandApiServerTransport);
 
-  ManagedMessagingService getCommandApiMessagingService();
+  ManagedMessagingService getApiMessagingService();
 
-  void setCommandApiMessagingService(ManagedMessagingService commandApiMessagingService);
+  void setApiMessagingService(ManagedMessagingService commandApiMessagingService);
 
   SubscriptionApiCommandMessageHandlerService getSubscriptionApiService();
 

@@ -174,13 +174,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public ManagedMessagingService getCommandApiMessagingService() {
+  public ManagedMessagingService getApiMessagingService() {
     return commandApiMessagingService;
   }
 
   @Override
-  public void setCommandApiMessagingService(
-      final ManagedMessagingService commandApiMessagingService) {
+  public void setApiMessagingService(final ManagedMessagingService commandApiMessagingService) {
     this.commandApiMessagingService = commandApiMessagingService;
   }
 

@@ -14,7 +14,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -29,8 +28,6 @@ import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -94,18 +91,6 @@ class CommandApiServiceStepTest {
       commandApiCfg.setAdvertisedPort(port);
     }
 
-    @AfterEach
-    void tearDown() {
-      /* we need to stop the messaging service. This is the one component that is actually started
-       * and it binds to a port. The other components are constructed, but never started (they are
-       * passed to the actor scheduler mock, but this does not start the actor)
-       */
-      final var messagingGService = testBrokerStartupContext.getCommandApiMessagingService();
-      if (messagingGService != null) {
-        messagingGService.stop().join();
-      }
-    }
-
     @Test
     void shouldCompleteFuture() {
       // when
@@ -114,18 +99,6 @@ class CommandApiServiceStepTest {
       // then
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
       assertThat(startupFuture.join()).isNotNull();
-    }
-
-    @Test
-    void shouldStartAndInstallMessagingService() {
-      // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
-
-      // then
-      final var messagingService = testBrokerStartupContext.getCommandApiMessagingService();
-      assertThat(messagingService).isNotNull();
-      assertThat(messagingService.isRunning()).isTrue();
     }
 
     @Test
@@ -190,7 +163,6 @@ class CommandApiServiceStepTest {
 
     private CommandApiServiceImpl mockCommandApiService;
     private AtomixServerTransport mockAtomixServerTransport;
-    private ManagedMessagingService mockManagedMessagingService;
 
     private ActorFuture<BrokerStartupContext> shutdownFuture;
 
@@ -204,10 +176,6 @@ class CommandApiServiceStepTest {
       when(mockAtomixServerTransport.closeAsync())
           .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
-      mockManagedMessagingService = mock(ManagedMessagingService.class);
-      when(mockManagedMessagingService.stop()).thenReturn(CompletableFuture.completedFuture(null));
-
-      testBrokerStartupContext.setCommandApiMessagingService(mockManagedMessagingService);
       testBrokerStartupContext.setCommandApiServerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
       testBrokerStartupContext.addPartitionListener(mockCommandApiService);
@@ -263,18 +231,6 @@ class CommandApiServiceStepTest {
       verify(mockAtomixServerTransport).closeAsync();
       final var serverTransport = testBrokerStartupContext.getCommandApiServerTransport();
       assertThat(serverTransport).isNull();
-    }
-
-    @Test
-    void shouldStopAndUninstallMessagingService() {
-      // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
-
-      // then
-      verify(mockManagedMessagingService).stop();
-      final var messagingService = testBrokerStartupContext.getCommandApiMessagingService();
-      assertThat(messagingService).isNull();
     }
 
     @Test

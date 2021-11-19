@@ -7,22 +7,14 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.atomix.cluster.messaging.MessagingConfig;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.utils.net.Address;
-import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.sched.ConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.util.List;
-import org.slf4j.Logger;
 
 final class CommandApiServiceStep extends AbstractBrokerStartupStep {
-
-  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   @Override
   public String getName() {
@@ -34,49 +26,7 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
-    final var brokerCfg = brokerStartupContext.getBrokerConfiguration();
-    final var socketCfg = brokerCfg.getNetwork().getCommandApi();
-    final var securityCfg = brokerCfg.getNetwork().getSecurity();
-
-    final var messagingConfig = new MessagingConfig();
-    messagingConfig.setInterfaces(List.of(socketCfg.getHost()));
-    messagingConfig.setPort(socketCfg.getPort());
-
-    if (securityCfg.isEnabled()) {
-      messagingConfig
-          .setTlsEnabled(true)
-          .setCertificateChain(securityCfg.getCertificateChainPath())
-          .setPrivateKey(securityCfg.getPrivateKeyPath());
-    }
-
-    final var messagingService =
-        new NettyMessagingService(
-            brokerCfg.getCluster().getClusterName(),
-            Address.from(socketCfg.getAdvertisedHost(), socketCfg.getAdvertisedPort()),
-            messagingConfig);
-
-    messagingService
-        .start()
-        .whenComplete(
-            (createdMessagingService, error) -> {
-              /* the next block doesn't use "createdMessagingService" because it is only a
-               * MessagingService, but we need a ManagedMessagingService. At the time of this
-               * writing createdMessagingService == messagingService, so we use this instead.
-               */
-              forwardExceptions(
-                  () ->
-                      concurrencyControl.run(
-                          () ->
-                              forwardExceptions(
-                                  () ->
-                                      completeStartup(
-                                          brokerStartupContext,
-                                          startupFuture,
-                                          messagingService,
-                                          error),
-                                  startupFuture)),
-                  startupFuture);
-            });
+    concurrencyControl.run(() -> startServerTransport(brokerStartupContext, startupFuture));
   }
 
   @Override
@@ -103,24 +53,6 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
             shutdownFuture));
   }
 
-  private void completeStartup(
-      final BrokerStartupContext brokerStartupContext,
-      final ActorFuture<BrokerStartupContext> startupFuture,
-      final NettyMessagingService messagingService,
-      final Throwable error) {
-    if (error != null) {
-      startupFuture.completeExceptionally(error);
-    } else {
-      brokerStartupContext.setCommandApiMessagingService(messagingService);
-      LOG.debug(
-          "Bound command API to {}, using advertised address {} ",
-          messagingService.bindingAddresses(),
-          messagingService.address());
-
-      startServerTransport(brokerStartupContext, startupFuture);
-    }
-  }
-
   private void startServerTransport(
       final BrokerStartupContext brokerStartupContext,
       final ActorFuture<BrokerStartupContext> startupFuture) {
@@ -128,7 +60,7 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
     final var concurrencyControl = brokerStartupContext.getConcurrencyControl();
     final var brokerInfo = brokerStartupContext.getBrokerInfo();
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
-    final var messagingService = brokerStartupContext.getCommandApiMessagingService();
+    final var messagingService = brokerStartupContext.getApiMessagingService();
 
     final var atomixServerTransport =
         new AtomixServerTransport(brokerInfo.getNodeId(), messagingService);
@@ -186,7 +118,6 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
     final var serverTransport = brokerShutdownContext.getCommandApiServerTransport();
 
     if (serverTransport == null) {
-      stopMessagingService(brokerShutdownContext, concurrencyControl, shutdownFuture);
       return;
     }
 
@@ -195,36 +126,8 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
         proceed(
             () -> {
               brokerShutdownContext.setCommandApiServerTransport(null);
-              stopMessagingService(brokerShutdownContext, concurrencyControl, shutdownFuture);
+              shutdownFuture.complete(brokerShutdownContext);
             },
             shutdownFuture));
-  }
-
-  private void stopMessagingService(
-      final BrokerStartupContext brokerShutdownContext,
-      final ConcurrencyControl concurrencyControl,
-      final ActorFuture<BrokerStartupContext> shutdownFuture) {
-
-    final var messagingService = brokerShutdownContext.getCommandApiMessagingService();
-
-    if (messagingService == null) {
-      shutdownFuture.complete(brokerShutdownContext);
-      return;
-    }
-
-    messagingService
-        .stop()
-        .whenComplete(
-            (of, error) -> {
-              if (error != null) {
-                shutdownFuture.completeExceptionally(error);
-              } else {
-                concurrencyControl.run(
-                    () -> {
-                      brokerShutdownContext.setCommandApiMessagingService(null);
-                      shutdownFuture.complete(brokerShutdownContext);
-                    });
-              }
-            });
   }
 }
