@@ -76,9 +76,13 @@ final class FixedPartitionDistributorTest {
     final var expectedDistribution =
         Set.of(
             new PartitionMetadata(
-                partition(1), List.of(node(0), node(1)), Map.of(node(0), 1, node(1), 2), 2),
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 1, node(1), 2), 2, node(1)),
             new PartitionMetadata(
-                partition(2), List.of(node(0), node(1)), Map.of(node(0), 2, node(1), 1), 2));
+                partition(2),
+                Set.of(node(0), node(1)),
+                Map.of(node(0), 2, node(1), 1),
+                2,
+                node(0)));
     final var distributor =
         new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
             .assignMember(1, 0, 1)
@@ -104,8 +108,8 @@ final class FixedPartitionDistributorTest {
     // given
     final var expectedDistribution =
         Set.of(
-            new PartitionMetadata(partition(1), List.of(node(0)), Map.of(node(0), 2), 2),
-            new PartitionMetadata(partition(2), List.of(node(0)), Map.of(node(0), 2), 2));
+            new PartitionMetadata(partition(1), Set.of(node(0)), Map.of(node(0), 2), 2, node(0)),
+            new PartitionMetadata(partition(2), Set.of(node(0)), Map.of(node(0), 2), 2, node(0)));
     final var distributor =
         new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
             .assignMember(1, 0, 2)
@@ -117,6 +121,33 @@ final class FixedPartitionDistributorTest {
     // when
     final var distribution =
         distributor.distributePartitions(clusterMembers, sortedPartitionIds, 1);
+
+    // then
+    assertThat(distribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(expectedDistribution);
+  }
+
+  @Test
+  void shouldNotAssignPrimaryIfMoreThanOnePotentialPrimary() {
+    // given
+    final var expectedDistribution =
+        Set.of(
+            // expect a partition without assigned primary
+            new PartitionMetadata(
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2), 2, null));
+    final var distributor =
+        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
+            // two members with the same priority
+            .assignMember(1, 0, 2)
+            .assignMember(1, 1, 2)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1));
+    final var sortedPartitionIds = List.of(partition(1));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
 
     // then
     assertThat(distribution)

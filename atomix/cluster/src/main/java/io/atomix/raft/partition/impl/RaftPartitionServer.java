@@ -329,6 +329,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     return server.getTerm();
   }
 
+  public MemberId getMemberId() {
+    return localMemberId;
+  }
+
   private RaftStorage createRaftStorage() {
     final RaftStorageConfig storageConfig = config.getStorageConfig();
     return RaftStorage.builder()

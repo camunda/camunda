@@ -18,29 +18,33 @@ package io.atomix.primitive.partition;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
- * A partition or shard is a group of controller nodes that are work together to maintain state. A
- * ONOS cluster is typically made of of one or partitions over which the the data is partitioned.
+ * Contains metadata about a partition. The metadata can be used to query for members of the
+ * partition and to get member priorities.
  */
 public class PartitionMetadata {
   private final PartitionId id;
-  private final List<MemberId> members;
+  private final Set<MemberId> members;
   private final Map<MemberId, Integer> priority;
   private final int targetPriority;
+  private final MemberId primary;
 
   public PartitionMetadata(
       final PartitionId id,
-      final List<MemberId> members,
+      final Set<MemberId> members,
       final Map<MemberId, Integer> priority,
-      final int targetPriority) {
+      final int targetPriority,
+      final MemberId primary) {
     this.id = id;
     this.members = members;
     this.priority = priority;
     this.targetPriority = targetPriority;
+    this.primary = primary;
   }
 
   /**
@@ -65,11 +69,19 @@ public class PartitionMetadata {
    * Return the priority of the node if the node is a member of the replication group for this
    * partition. Otherwise return -1.
    *
-   * @param member
    * @return the priority of the member
    */
   public int getPriority(final MemberId member) {
     return priority.getOrDefault(member, -1);
+  }
+
+  /**
+   * Returns the primary member of the partition or null if there is no primary
+   *
+   * @return member id or null
+   */
+  public Optional<MemberId> getPrimary() {
+    return Optional.ofNullable(primary);
   }
 
   public int getTargetPriority() {
@@ -95,6 +107,8 @@ public class PartitionMetadata {
     return "PartitionMetadata{"
         + "id="
         + id
+        + ", primary="
+        + primary
         + ", members="
         + members
         + ", priority="
