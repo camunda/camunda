@@ -158,6 +158,12 @@ data:
       reportingIntervalInHours: 24
       # Telemetry endpoint to send data to integration environment
       telemetryEndpoint: 'https://api.int.telemetry.camunda.cloud/pings'
+    tracking:
+      enabled: true
+      mixpanel:
+        token: '9fa7e6a44e46c212210e439b1bbed222'
+        properties:
+          organizationId: 'optimize-staging'
 
 ######################## CAM BPM ########################
   configure-and-run.sh: |
