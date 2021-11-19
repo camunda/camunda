@@ -128,6 +128,33 @@ final class FixedPartitionDistributorTest {
         .containsExactlyInAnyOrderElementsOf(expectedDistribution);
   }
 
+  @Test
+  void shouldNotAssignPrimaryIfMoreThanOnePotentialPrimary() {
+    // given
+    final var expectedDistribution =
+        Set.of(
+            // expect a partition without assigned primary
+            new PartitionMetadata(
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2), 2, null));
+    final var distributor =
+        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
+            // two members with the same priority
+            .assignMember(1, 0, 2)
+            .assignMember(1, 1, 2)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1));
+    final var sortedPartitionIds = List.of(partition(1));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(distribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(expectedDistribution);
+  }
+
   private PartitionId partition(final int id) {
     return PartitionId.from(PARTITION_GROUP_NAME, id);
   }
