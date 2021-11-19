@@ -222,6 +222,15 @@ public class RaftPartition implements Partition, HealthMonitorable {
     return server.stepDown();
   }
 
+  /**
+   * Tries to step down if the following conditions are met:
+   *
+   * <ul>
+   *   <li>priority election is enabled
+   *   <li>the partition distributor determined a primary node
+   *   <li>this node is not the primary
+   * </ul>
+   */
   public CompletableFuture<Void> stepDownIfNotPrimary() {
     if (shouldStepDown()) {
       return stepDown();
