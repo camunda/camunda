@@ -4,20 +4,54 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {EditButton, CloseIcon, CheckIcon, EditButtonsContainer} from './styled';
+import {
+  Warning,
+  EditButton,
+  CloseIcon,
+  CheckIcon,
+  EditButtonsContainer,
+  ModalIcon,
+} from './styled';
+import {useForm, useFormState} from 'react-final-form';
+import {getError} from './getError';
+import {Warning as WarningIcon} from 'modules/components/Warning';
+import {useFieldError} from 'modules/hooks/useFieldError';
 
 type Props = {
-  onExitClick: () => void;
-  onSaveClick: () => void;
+  onModalButtonClick?: () => void;
 };
 
-const EditButtons: React.FC<Props> = ({onExitClick, onSaveClick}) => {
+const EditButtons: React.FC<Props> = ({onModalButtonClick}) => {
+  const form = useForm();
+  const {values, initialValues, validating, hasValidationErrors} =
+    useFormState();
+
+  const nameError = useFieldError('name');
+  const valueError = useFieldError('value');
+  const errorMessage = getError(
+    initialValues.name === '' ? nameError : undefined,
+    valueError
+  );
+
   return (
     <EditButtonsContainer>
+      <Warning>
+        {errorMessage !== undefined && <WarningIcon title={errorMessage} />}
+      </Warning>
+
+      <EditButton
+        type="button"
+        title="Open JSON editor modal"
+        onClick={onModalButtonClick}
+        size="large"
+        iconButtonTheme="default"
+        icon={<ModalIcon />}
+      />
+
       <EditButton
         type="button"
         title="Exit edit mode"
-        onClick={onExitClick}
+        onClick={() => form.reset({})}
         size="large"
         iconButtonTheme="default"
         icon={<CloseIcon />}
@@ -26,13 +60,13 @@ const EditButtons: React.FC<Props> = ({onExitClick, onSaveClick}) => {
       <EditButton
         type="button"
         title="Save variable"
-        // disabled={
-        //   initialValues.value === values.value ||
-        //   validating ||
-        //   hasValidationErrors ||
-        //   errorMessage !== undefined
-        // }
-        onClick={onSaveClick}
+        disabled={
+          initialValues.value === values.value ||
+          validating ||
+          hasValidationErrors ||
+          errorMessage !== undefined
+        }
+        onClick={() => form.submit()}
         size="large"
         iconButtonTheme="default"
         icon={<CheckIcon />}

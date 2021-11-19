@@ -45,7 +45,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
   );
 };
 
-describe.skip('VariablePanel', () => {
+describe('VariablePanel', () => {
   beforeEach(() => {
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>

@@ -45,7 +45,7 @@ const TR = styled.tr<TRProps>`
       }
       > td:last-child {
         width: 10%;
-        min-width: 80px;
+        min-width: 130px;
       }
 
       ${hasActiveOperation

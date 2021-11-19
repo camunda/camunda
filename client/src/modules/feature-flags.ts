@@ -5,6 +5,5 @@
  */
 
 const IS_NEXT_INCIDENTS = false;
-const IS_NEW_VARIABLES_FORM = false;
 
-export {IS_NEXT_INCIDENTS, IS_NEW_VARIABLES_FORM};
+export {IS_NEXT_INCIDENTS};

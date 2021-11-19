@@ -135,7 +135,7 @@ const THead = styled.thead<THeadProps>`
           }
           > th:last-child {
             width: 10%;
-            min-width: 80px;
+            min-width: 130px;
             flex-grow: 1;
           }
         }

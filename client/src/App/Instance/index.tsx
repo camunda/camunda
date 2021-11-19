@@ -12,8 +12,7 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
-import {VariablePanel as VariablePanelNew} from './BottomPanel/VariablePanel';
-import {VariablePanel as VariablePanelLegacy} from './BottomPanel/VariablePanel/index.legacy';
+import {VariablePanel} from './BottomPanel/VariablePanel';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
@@ -27,11 +26,6 @@ import {useNotifications} from 'modules/notifications';
 import {Breadcrumb} from './Breadcrumb';
 
 import * as Styled from './styled';
-import {IS_NEW_VARIABLES_FORM} from 'modules/feature-flags';
-
-const VariablePanel = IS_NEW_VARIABLES_FORM
-  ? VariablePanelNew
-  : VariablePanelLegacy;
 
 const Instance = observer(() => {
   const {processInstanceId} = useInstancePageParams();

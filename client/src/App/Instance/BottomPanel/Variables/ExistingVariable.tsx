@@ -9,13 +9,13 @@ import {
   VariableName,
   EditInputTD,
   EditTextarea,
-  // EditButtonsTD,
+  EditButtonsTD,
 } from './styled';
 import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
 import {validateValueComplete} from './validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {useRef, useState} from 'react';
-// import {EditButtons} from './EditButtons';
+import {EditButtons} from './EditButtons';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 
 type Props = {
@@ -75,9 +75,9 @@ const ExistingVariable: React.FC<Props> = ({
           }}
         </Field>
       </EditInputTD>
-      {/* <EditButtonsTD>
+      <EditButtonsTD>
         <EditButtons onModalButtonClick={() => setIsModalVisible(true)} />
-      </EditButtonsTD> */}
+      </EditButtonsTD>
       <JSONEditorModal
         title={`Edit Variable "${variableName}"`}
         value={formState.values?.value}
