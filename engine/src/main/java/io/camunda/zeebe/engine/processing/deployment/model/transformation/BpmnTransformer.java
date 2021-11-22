@@ -86,7 +86,7 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
-    step2Visitor.registerHandler(new UserTaskTransformer());
+    step2Visitor.registerHandler(new UserTaskTransformer(expressionLanguage));
 
     step3Visitor = new TransformationVisitor();
     step3Visitor.registerHandler(new ContextProcessTransformer());
