@@ -791,7 +791,7 @@ public final class ClusteringRule extends ExternalResource {
    * messages until a segment is full, thus triggering log compaction.
    */
   public void runUntilSegmentsFilled(
-      final Collection<Broker> brokers, final int segmentCount, Runnable runnable) {
+      final Collection<Broker> brokers, final int segmentCount, final Runnable runnable) {
     while (brokers.stream().map(this::getSegmentsCount).allMatch(count -> count <= segmentCount)) {
       runnable.run();
     }

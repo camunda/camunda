@@ -14,25 +14,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
-import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.TestConcurrencyControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class CommandApiServiceStepTest {
+class ApiMessagingServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final BrokerInfo TEST_BROKER_INFO = new BrokerInfo(0, "localhost");
@@ -45,10 +45,8 @@ class CommandApiServiceStepTest {
   }
 
   private final ActorScheduler mockActorSchedulingService = mock(ActorScheduler.class);
-
   private BrokerStartupContextImpl testBrokerStartupContext;
-
-  private final CommandApiServiceStep sut = new CommandApiServiceStep();
+  private final ApiMessagingServiceStep sut = new ApiMessagingServiceStep();
 
   @BeforeEach
   void setUp() {
@@ -73,12 +71,11 @@ class CommandApiServiceStepTest {
     final var actual = sut.getName();
 
     // then
-    assertThat(actual).isSameAs("Command API");
+    assertThat(actual).isSameAs("API Messaging Service");
   }
 
   @Nested
   class StartupBehavior {
-
     private ActorFuture<BrokerStartupContext> startupFuture;
 
     @BeforeEach
@@ -89,6 +86,14 @@ class CommandApiServiceStepTest {
       final var commandApiCfg = TEST_BROKER_CONFIG.getNetwork().getCommandApi();
       commandApiCfg.setPort(port);
       commandApiCfg.setAdvertisedPort(port);
+    }
+
+    @AfterEach
+    void tearDown() {
+      final var messagingService = testBrokerStartupContext.getApiMessagingService();
+      if (messagingService != null) {
+        messagingService.stop().join();
+      }
     }
 
     @Test
@@ -102,135 +107,58 @@ class CommandApiServiceStepTest {
     }
 
     @Test
-    void shouldStartAndInstallServerTransport() {
+    void shouldStartAndInstallMessagingService() {
       // when
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
       await().until(startupFuture::isDone);
 
       // then
-      final var serverTransport = testBrokerStartupContext.getCommandApiServerTransport();
-
-      assertThat(serverTransport).isNotNull();
-      verify(mockActorSchedulingService).submitActor(serverTransport);
-    }
-
-    @Test
-    void shouldStartAndInstallCommandApiService() {
-      // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
-
-      // then
-      final var commandApiService = testBrokerStartupContext.getCommandApiService();
-
-      assertThat(commandApiService).isNotNull();
-      verify(mockActorSchedulingService).submitActor(commandApiService);
-    }
-
-    @Test
-    void shouldAddCommandApiServiceAsPartitionListener() {
-      // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
-
-      // then
-      final var commandApiService = testBrokerStartupContext.getCommandApiService();
-
-      assertThat(commandApiService).isNotNull();
-      assertThat(testBrokerStartupContext.getPartitionListeners()).contains(commandApiService);
-    }
-
-    @Test
-    void shouldAddCommandApiServiceAsDiskSpaceUsageListener() {
-      // given
-      final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
-      testBrokerStartupContext.setDiskSpaceUsageMonitor(mockDiskSpaceUsageMonitor);
-
-      // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
-
-      // then
-      final var commandApiService = testBrokerStartupContext.getCommandApiService();
-
-      assertThat(commandApiService).isNotNull();
-      verify(mockDiskSpaceUsageMonitor).addDiskUsageListener(commandApiService);
+      final var messagingService = testBrokerStartupContext.getApiMessagingService();
+      assertThat(messagingService).isNotNull();
+      assertThat(messagingService.isRunning()).isTrue();
     }
   }
 
   @Nested
   class ShutdownBehavior {
-
-    private CommandApiServiceImpl mockCommandApiService;
-    private AtomixServerTransport mockAtomixServerTransport;
-
+    private ManagedMessagingService mockManagedMessagingService;
     private ActorFuture<BrokerStartupContext> shutdownFuture;
 
     @BeforeEach
     void setUp() {
-      mockCommandApiService = mock(CommandApiServiceImpl.class);
-      when(mockCommandApiService.closeAsync())
-          .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-      mockAtomixServerTransport = mock(AtomixServerTransport.class);
-      when(mockAtomixServerTransport.closeAsync())
-          .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-      testBrokerStartupContext.setCommandApiServerTransport(mockAtomixServerTransport);
-      testBrokerStartupContext.setCommandApiService(mockCommandApiService);
-      testBrokerStartupContext.addPartitionListener(mockCommandApiService);
-      testBrokerStartupContext.addDiskSpaceUsageListener(mockCommandApiService);
-
+      mockManagedMessagingService = mock(ManagedMessagingService.class);
+      when(mockManagedMessagingService.stop()).thenReturn(CompletableFuture.completedFuture(null));
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
+      testBrokerStartupContext.setApiMessagingService(mockManagedMessagingService);
     }
 
     @Test
-    void shouldRemoveCommandApiFromDiskSpaceUsageListenerList() {
+    void shouldStopAndUninstallMessagingService() {
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+      await().until(shutdownFuture::isDone);
+
+      // then
+      verify(mockManagedMessagingService).stop();
+      final var messagingService = testBrokerStartupContext.getApiMessagingService();
+      assertThat(messagingService).isNull();
+    }
+
+    @Test
+    void shouldCompleteFutureExceptionally() {
       // given
-      final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
-      testBrokerStartupContext.setDiskSpaceUsageMonitor(mockDiskSpaceUsageMonitor);
+      final var failingMessagingService = mock(ManagedMessagingService.class);
+      final var exception = new Exception();
+      when(failingMessagingService.stop()).thenReturn(CompletableFuture.failedFuture(exception));
+      testBrokerStartupContext.setApiMessagingService(failingMessagingService);
 
       // when
       sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
 
       // then
-      verify(mockDiskSpaceUsageMonitor).removeDiskUsageListener(mockCommandApiService);
-    }
-
-    @Test
-    void shouldRemoveCommandApiFromPartitionListenerList() {
-      // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
-
-      // then
-      assertThat(testBrokerStartupContext.getPartitionListeners())
-          .doesNotContain(mockCommandApiService);
-    }
-
-    @Test
-    void shouldStopAndUninstallCommandApiService() {
-      // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
-
-      // then
-      verify(mockCommandApiService).closeAsync();
-      final var commandApiService = testBrokerStartupContext.getCommandApiService();
-      assertThat(commandApiService).isNull();
-    }
-
-    @Test
-    void shouldStopAndUninstallServerTransport() {
-      // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
-
-      // then
-      verify(mockAtomixServerTransport).closeAsync();
-      final var serverTransport = testBrokerStartupContext.getCommandApiServerTransport();
-      assertThat(serverTransport).isNull();
+      await().until(shutdownFuture::isCompletedExceptionally);
+      assertThat(shutdownFuture.getException()).isEqualTo(exception);
+      assertThat(testBrokerStartupContext.getApiMessagingService()).isNotNull();
     }
 
     @Test
