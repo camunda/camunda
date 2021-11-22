@@ -5,7 +5,6 @@
  */
 
 import styled from 'styled-components';
-import {rgba} from 'polished';
 import {ReactComponent} from 'modules/icons/logo.svg';
 import {LoadingOverlay as BaseLoadingOverlay} from 'modules/components/LoadingOverlay';
 
@@ -19,7 +18,6 @@ const Button = styled.button`
   background-color: ${({theme}) =>
     theme.colors.button.large.default.backgroundColor};
   border: 1px solid ${({theme}) => theme.colors.button.large.default.border};
-  box-shadow: ${({theme}) => theme.shadows.button.large};
   border-radius: 3px;
   text-align: center;
 
@@ -66,7 +64,7 @@ const Error = styled.span`
   font-size: 15px;
   text-align: left;
   font-weight: 500;
-  line-height: 15px;
+  height: 15px;
 `;
 
 const Logo = styled(ReactComponent)`
@@ -78,55 +76,30 @@ const Title = styled.h1`
   font-weight: normal;
 `;
 
-const Input = styled.input`
-  font-family: IBM Plex Sans;
-  font-size: 15px;
-  width: 322px;
-  height: 22px;
-  border-radius: 3px;
-  background-color: ${({theme}) => theme.colors.ui04};
-  border: 1px solid ${({theme}) => theme.colors.ui05};
-  padding: 12px 8px;
-  color: ${({theme}) => theme.colors.ui09};
-
-  &::placeholder {
-    font-style: italic;
-    color: ${({theme}) => rgba(theme.colors.ui06, 0.9)};
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
-    transition: box-shadow 0.05s ease-out;
-  }
-`;
-
-interface FormContainerProps {
-  hasError: boolean;
-}
-const FormContainer = styled.div<FormContainerProps>`
+const FormContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
 
   & > ${Logo} {
-    margin-top: 200px;
+    margin-top: 128px;
   }
 
   & > ${Title} {
     margin-top: 12px;
-    margin-bottom: ${({hasError}) => (hasError ? 53 : 78)}px;
+    margin-bottom: 53px;
+    font-size: 28px;
   }
 
   & > ${Error} {
     margin-bottom: 10px;
   }
 
-  & > ${Input}:first-of-type {
+  & > div:first-of-type {
     margin-bottom: 16px;
   }
 
-  & > ${Input}:last-of-type {
+  & > div:last-of-type {
     margin-bottom: 32px;
   }
 `;
@@ -135,10 +108,10 @@ const LoadingOverlay = styled(BaseLoadingOverlay)`
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1;
 `;
 
 export {
-  Input,
   Logo,
   Title,
   Error,

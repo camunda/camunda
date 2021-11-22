@@ -10,7 +10,6 @@ import React from 'react';
 import noop from 'lodash/noop';
 import {
   Container,
-  Input,
   FormContainer,
   CopyrightNotice,
   Logo,
@@ -19,6 +18,7 @@ import {
   Error as StyledError,
   LoadingOverlay,
 } from './styled';
+import {Input} from './Input';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
 export default {
@@ -29,11 +29,11 @@ const Default: React.FC = () => {
   return (
     <Container>
       <form>
-        <FormContainer hasError={false}>
+        <FormContainer>
           <Logo />
           <Title>Tasklist</Title>
-          <Input placeholder="Username" type="text" required />
-          <Input placeholder="Password" type="password" required />
+          <Input label="Username" type="text" required />
+          <Input label="Password" type="password" required />
           <Button type="submit">Login</Button>
         </FormContainer>
       </form>
@@ -46,19 +46,19 @@ const Error: React.FC = () => {
   return (
     <Container>
       <form>
-        <FormContainer hasError={true}>
+        <FormContainer>
           <Logo />
           <Title>Tasklist</Title>
           <StyledError>Username and Password do not match.</StyledError>
           <Input
-            placeholder="Username"
+            label="Username"
             type="text"
             value="demo"
             onChange={noop}
             required
           />
           <Input
-            placeholder="Password"
+            label="Password"
             type="password"
             value="demo"
             onChange={noop}
@@ -77,18 +77,18 @@ const Submitting: React.FC = () => {
     <Container>
       <form>
         <LoadingOverlay />
-        <FormContainer hasError={false}>
+        <FormContainer>
           <Logo />
           <Title>Tasklist</Title>
           <Input
-            placeholder="Username"
+            label="Username"
             type="text"
             value="demo"
             onChange={noop}
             required
           />
           <Input
-            placeholder="Password"
+            label="Password"
             type="password"
             value="demo"
             onChange={noop}

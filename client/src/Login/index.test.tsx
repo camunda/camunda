@@ -49,8 +49,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(historyMock),
     });
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() => expect(historyMock.location.pathname).toBe('/'));
@@ -83,8 +83,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(historyMock),
     });
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() => expect(historyMock.location.pathname).toBe('/1'));
@@ -102,8 +102,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
@@ -122,8 +122,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
@@ -134,8 +134,8 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res) => res.networkError('A network error')),
     );
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
@@ -153,8 +153,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
@@ -187,19 +187,19 @@ describe('<Login />', () => {
 
     expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
 
-    userEvent.type(screen.getByPlaceholderText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText('Username'), 'demo');
 
     expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
 
-    userEvent.type(screen.getByPlaceholderText('Password'), 'demo');
+    userEvent.type(screen.getByLabelText('Password'), 'demo');
 
     expect(screen.getByRole('button', {name: 'Login'})).toBeEnabled();
 
-    userEvent.clear(screen.getByPlaceholderText('Username'));
+    userEvent.clear(screen.getByLabelText('Username'));
 
     expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
 
-    userEvent.clear(screen.getByPlaceholderText('Password'));
+    userEvent.clear(screen.getByLabelText('Password'));
 
     expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
   });

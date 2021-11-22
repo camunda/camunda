@@ -22,6 +22,8 @@ const palette = {
   ui08: '#5b5e63',
   ui09: '#393a41',
   black: '#000',
+  focusInner: '#2b7bff',
+  focusOuter: '#8cb7ff',
 } as const;
 
 const theme = {
@@ -113,6 +115,16 @@ const theme = {
     label01: 'rgba(69, 70, 78, 0.9)', //charcoal-grey-90
     link: {
       active: '#eaf3ff',
+    },
+    login: {
+      input: {
+        backgroundColor: palette.ui04,
+        borderColor: palette.ui03,
+        color: palette.ui07,
+        labelColor: palette.ui06,
+        focusInner: palette.focusInner,
+        focusOuter: palette.focusOuter,
+      },
     },
   },
   shadows: {

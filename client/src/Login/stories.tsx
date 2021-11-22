@@ -8,6 +8,7 @@
 
 import React from 'react';
 import * as Styled from './styled';
+import {Input as InputComponent} from './Input';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
 export default {
@@ -43,7 +44,7 @@ const Title: React.FC = () => {
 };
 
 const Input: React.FC = () => {
-  return <Styled.Input placeholder="Username" type="text" />;
+  return <InputComponent label="Username" type="text" />;
 };
 
 export {Button, DisabledButton, CopyrightNotice, Logo, Error, Title, Input};

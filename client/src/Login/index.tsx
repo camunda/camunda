@@ -13,7 +13,6 @@ import {login} from 'modules/stores/login';
 import {Pages} from 'modules/constants/pages';
 import {
   Container,
-  Input,
   FormContainer,
   CopyrightNotice,
   Logo,
@@ -22,6 +21,7 @@ import {
   Error,
   LoadingOverlay,
 } from './styled';
+import {Input} from './Input';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
 interface FormValues {
@@ -73,7 +73,7 @@ const Login: React.FC = () => {
               {submitting && (
                 <LoadingOverlay data-testid="login-loading-overlay" />
               )}
-              <FormContainer hasError={submitError !== undefined}>
+              <FormContainer>
                 <Logo />
                 <Title>Tasklist</Title>
                 {submitError !== undefined && <Error>{submitError}</Error>}
@@ -81,8 +81,8 @@ const Login: React.FC = () => {
                   {({input}) => (
                     <Input
                       {...input}
-                      placeholder="Username"
                       id={input.name}
+                      label="Username"
                       required
                     />
                   )}
@@ -91,8 +91,8 @@ const Login: React.FC = () => {
                   {({input}) => (
                     <Input
                       {...input}
-                      placeholder="Password"
                       id={input.name}
+                      label="Password"
                       required
                     />
                   )}

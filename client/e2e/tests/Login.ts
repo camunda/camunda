@@ -21,20 +21,20 @@ fixture('Login').page(config.endpoint);
 
 test('redirect to the main page on login', async (t) => {
   await t
-    .expect(screen.getByPlaceholderText('Password').getAttribute('type'))
+    .expect(screen.getByLabelText('Password').getAttribute('type'))
     .eql('password');
 
   await t
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
   await t.expect(await getPathname()).eql('/');
 });
 
 test('persistency of a session', async (t) => {
   await t
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
 
   await reloadPage();
@@ -44,8 +44,8 @@ test('persistency of a session', async (t) => {
 
 test('logout redirect', async (t) => {
   await t
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
 
   await t.click(screen.getByRole('button', {name: 'Demo User'}));
@@ -59,22 +59,22 @@ test('block form submission with empty fields', async (t) => {
   await t.expect(await getPathname()).eql('/login');
 
   await t
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
   await t.expect(await getPathname()).eql('/login');
 
   await t
-    .selectText(screen.getByPlaceholderText('Username'))
+    .selectText(screen.getByLabelText('Username'))
     .pressKey('delete')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
   await t.expect(await getPathname()).eql('/login');
 });
 
 test('show error message on login failure', async (t) => {
   await t
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'wrong-password')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'wrong-password')
     .click(screen.getByRole('button', {name: 'Login'}));
 
   await t
@@ -89,8 +89,8 @@ test('redirect to the correct URL after login', async (t) => {
 
   await t
     .navigateTo(selectedTaskURL)
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedTaskURL)
@@ -99,8 +99,8 @@ test('redirect to the correct URL after login', async (t) => {
 
   await t
     .navigateTo(selectedFilterUrl)
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedFilterUrl)
@@ -109,8 +109,8 @@ test('redirect to the correct URL after login', async (t) => {
 
   await t
     .navigateTo(selectedTaskAndFilterURL)
-    .typeText(screen.getByPlaceholderText('Username'), 'demo')
-    .typeText(screen.getByPlaceholderText('Password'), 'demo')
+    .typeText(screen.getByLabelText('Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedTaskAndFilterURL)
