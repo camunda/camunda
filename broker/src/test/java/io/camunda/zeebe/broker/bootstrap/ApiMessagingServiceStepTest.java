@@ -145,6 +145,23 @@ class ApiMessagingServiceStepTest {
     }
 
     @Test
+    void shouldCompleteFutureExceptionally() {
+      // given
+      final var failingMessagingService = mock(ManagedMessagingService.class);
+      final var exception = new Exception();
+      when(failingMessagingService.stop()).thenReturn(CompletableFuture.failedFuture(exception));
+      testBrokerStartupContext.setApiMessagingService(failingMessagingService);
+
+      // when
+      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+
+      // then
+      await().until(shutdownFuture::isCompletedExceptionally);
+      assertThat(shutdownFuture.getException()).isEqualTo(exception);
+      assertThat(testBrokerStartupContext.getApiMessagingService()).isNotNull();
+    }
+
+    @Test
     void shouldCompleteFuture() {
       // when
       sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
