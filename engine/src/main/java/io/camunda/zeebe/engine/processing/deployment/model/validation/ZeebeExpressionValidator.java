@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -104,16 +107,32 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   }
 
   public static boolean isListOfCsv(final Expression staticExp) {
-    final String value = staticExp.getExpression();
+    return parseListOfCsv(staticExp.getExpression()).isRight();
+  }
+
+  /**
+   * Parses a static value as a list of CSV, trimming any whitespace.
+   *
+   * @param value the static value to parse
+   * @return either a failure or a list of values (trimmed)
+   */
+  public static Either<Failure, List<String>> parseListOfCsv(final String value) {
     if (value.isEmpty()) {
-      return true;
+      return Either.right(List.of());
     }
-    final var values = value.split(",");
-    if (values.length < StringUtils.countMatches(value, ",") + 1) {
-      // one of the values was an empty string, e.g. 'a,,c'
-      return false;
+
+    final List<String> values =
+        Arrays.stream(value.split(","))
+            .filter(Predicate.not(String::isBlank))
+            .map(String::trim)
+            .collect(Collectors.toList());
+    if (values.size() < StringUtils.countMatches(value, ",") + 1) {
+      // one of the values was a blank string, e.g. 'a, ,c'
+      return Either.left(
+          new Failure("Expected to parse list of CSV, but " + value + " is not CSV"));
     }
-    return Arrays.stream(values).noneMatch(String::isBlank);
+
+    return Either.right(values);
   }
 
   public static class Builder<T extends ModelElementInstance> {
