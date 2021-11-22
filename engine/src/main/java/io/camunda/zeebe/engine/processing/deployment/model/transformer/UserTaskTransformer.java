@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
@@ -20,25 +18,16 @@ import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class UserTaskTransformer implements ModelElementTransformer<UserTask> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-
-  private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
-
-  private final MsgPackWriter msgPackWriter = new MsgPackWriter();
 
   @Override
   public Class<UserTask> getType() {
@@ -74,34 +63,8 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     addZeebeUserTaskFormKeyHeader(element, taskHeaders);
 
     if (!taskHeaders.isEmpty()) {
-      final DirectBuffer encodedHeaders = encode(taskHeaders);
-      jobWorkerProperties.setEncodedHeaders(encodedHeaders);
+      jobWorkerProperties.setTaskHeaders(taskHeaders);
     }
-  }
-
-  private DirectBuffer encode(final Map<String, String> taskHeaders) {
-    final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
-
-    final ExpandableArrayBuffer expandableBuffer =
-        new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * taskHeaders.size());
-
-    msgPackWriter.wrap(expandableBuffer, 0);
-    msgPackWriter.writeMapHeader(taskHeaders.size());
-
-    taskHeaders.forEach(
-        (k, v) -> {
-          if (isValidHeader(k, v)) {
-            final DirectBuffer key = wrapString(k);
-            msgPackWriter.writeString(key);
-
-            final DirectBuffer value = wrapString(v);
-            msgPackWriter.writeString(value);
-          }
-        });
-
-    buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
-
-    return buffer;
   }
 
   private void addZeebeUserTaskFormKeyHeader(
