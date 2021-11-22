@@ -113,7 +113,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
       // one of the values was an empty string, e.g. 'a,,c'
       return false;
     }
-    return Arrays.stream(values).noneMatch(String::isEmpty);
+    return Arrays.stream(values).noneMatch(String::isBlank);
   }
 
   public static class Builder<T extends ModelElementInstance> {
