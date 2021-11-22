@@ -4,7 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const IS_NEXT_INCIDENTS = false;
-const IS_NEW_VARIABLES_FORM = false;
+import React from 'react';
+import {Backdrop, Spinner} from './styled';
 
-export {IS_NEXT_INCIDENTS, IS_NEW_VARIABLES_FORM};
+const VariableBackdrop: React.FC = () => {
+  return (
+    <Backdrop data-testid="variable-backdrop">
+      <Spinner />
+    </Backdrop>
+  );
+};
+
+export {VariableBackdrop};
