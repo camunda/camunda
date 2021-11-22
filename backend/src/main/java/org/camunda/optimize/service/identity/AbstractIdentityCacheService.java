@@ -260,7 +260,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new CronTrigger(getCacheConfiguration().getCronTrigger());
+    return new CronTrigger(this.cronExpression.toString());
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {
