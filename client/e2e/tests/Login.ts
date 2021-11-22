@@ -22,7 +22,7 @@ test('Log in with invalid user account', async (t) => {
     .eql('password');
 
   await t
-    .typeText(screen.queryByRole('textbox', {name: 'Username'}), 'demo')
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.queryByLabelText('Password'), 'wrong-password')
     .click(screen.queryByRole('button', {name: 'Log in'}));
   await t
@@ -33,7 +33,7 @@ test('Log in with invalid user account', async (t) => {
 
 test('Log in with valid user account', async (t) => {
   await t
-    .typeText(screen.queryByRole('textbox', {name: 'Username'}), 'demo')
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.queryByLabelText('Password'), 'demo')
     .click(screen.queryByRole('button', {name: 'Log in'}));
 
@@ -42,7 +42,7 @@ test('Log in with valid user account', async (t) => {
 
 test('Log out', async (t) => {
   await t
-    .typeText(screen.queryByRole('textbox', {name: 'Username'}), 'demo')
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.queryByLabelText('Password'), 'demo')
     .click(screen.queryByRole('button', {name: 'Log in'}));
 
@@ -59,12 +59,7 @@ test('Redirect to initial page after login', async (t) => {
   await t.expect(await getPathname()).eql('/login');
 
   await t
-    .typeText(
-      screen.queryByRole('textbox', {
-        name: 'Username',
-      }),
-      'demo'
-    )
+    .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.queryByLabelText('Password'), 'demo')
     .click(screen.queryByRole('button', {name: 'Log in'}));
 

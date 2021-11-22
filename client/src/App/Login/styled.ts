@@ -7,8 +7,8 @@
 import styled, {css} from 'styled-components';
 
 import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
-import {Input} from 'modules/components/Input';
 import BasicCopyright from 'modules/components/Copyright';
+import {Input} from './Input';
 
 const Container = styled.div`
   display: flex;
@@ -70,20 +70,11 @@ const FormError = styled.div`
   }}
 `;
 
-const LoginInput = styled(Input)`
-  height: 48px;
-  padding-left: 8px;
-  padding-right: 10px;
-  padding-top: 12.6px;
-  padding-bottom: 16.4px;
-  font-size: 15px;
-`;
-
-const UsernameInput = styled(LoginInput)`
+const Username = styled(Input)`
   margin-bottom: 16px;
 `;
 
-const PasswordInput = styled(LoginInput)`
+const Password = styled(Input)`
   margin-bottom: 32px;
 `;
 
@@ -100,7 +91,7 @@ export {
   LoginTitle,
   LoginForm,
   FormError,
-  UsernameInput,
-  PasswordInput,
+  Username,
+  Password,
   Copyright,
 };

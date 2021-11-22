@@ -23,8 +23,8 @@ import {
   LoginTitle,
   LoginForm,
   FormError,
-  UsernameInput,
-  PasswordInput,
+  Username,
+  Password,
   Copyright,
 } from './styled';
 import {Routes} from 'modules/routes';
@@ -100,29 +100,29 @@ function Login() {
               {submitError && <FormError>{submitError}</FormError>}
               <Field<FormValues['username']> name="username" component="input">
                 {({input}) => (
-                  <UsernameInput
+                  <Username
                     name={input.name}
                     id={input.name}
                     value={input.value}
                     onChange={input.onChange}
                     type="text"
-                    placeholder="Username"
                     aria-label="User Name"
                     required
+                    label="Username"
                   />
                 )}
               </Field>
               <Field<FormValues['password']> name="password" component="input">
                 {({input}) => (
-                  <PasswordInput
+                  <Password
                     name={input.name}
                     id={input.name}
                     value={input.value}
                     onChange={input.onChange}
                     type="password"
-                    placeholder="Password"
                     aria-label="Password"
                     required
+                    label="Password"
                   />
                 )}
               </Field>

@@ -12,12 +12,7 @@ const demoUser = Role(
   `${config.endpoint}`,
   async (t) => {
     await t
-      .typeText(
-        screen.queryByRole('textbox', {
-          name: 'Username',
-        }),
-        'demo'
-      )
+      .typeText(screen.queryByLabelText('Username'), 'demo')
       .typeText(screen.queryByLabelText('Password'), 'demo')
       .click(screen.queryByRole('button', {name: 'Log in'}));
   },

@@ -400,6 +400,13 @@ const theme = Object.freeze({
         loginTitle: {
           color: SEMANTIC_COLORS.white,
         },
+        input: {
+          backgroundColor: DARK_COLORS.ui02,
+          borderColor: DARK_COLORS.button02,
+          color: SEMANTIC_COLORS.white,
+          labelColor: SEMANTIC_COLORS.white,
+          focusInner: DARK_COLORS.focusInner,
+        },
       },
       modules: {
         badge: {
@@ -1332,6 +1339,13 @@ const theme = Object.freeze({
         },
         loginTitle: {
           color: LIGHT_COLORS.ui06,
+        },
+        input: {
+          backgroundColor: LIGHT_COLORS.ui04,
+          borderColor: LIGHT_COLORS.ui03,
+          color: DARK_COLORS.ui04,
+          labelColor: LIGHT_COLORS.ui06,
+          focusInner: DARK_COLORS.focusInner,
         },
       },
       modules: {

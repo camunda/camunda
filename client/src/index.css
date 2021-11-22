@@ -5,7 +5,7 @@
 }
 
 @font-face {
-  font-family: 'IBMPlexSans';
+  font-family: 'IBM Plex Sans';
   src: local('IBMPlexSans-Italic'), url('./fonts/IBMPlexSans-Italic.woff2');
   font-style: italic;
 }
