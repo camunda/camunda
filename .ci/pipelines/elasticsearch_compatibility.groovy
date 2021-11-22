@@ -39,6 +39,8 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
       name: ci-optimize-cambpm-config
+  - name: docker-storage
+    emptyDir: {}
   initContainers:
     - name: init-sysctl
       image: busybox
@@ -56,6 +58,8 @@ spec:
         value: 6
       - name: TZ
         value: Europe/Berlin
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
     resources:
       limits:
         cpu: 6
@@ -63,6 +67,33 @@ spec:
       requests:
         cpu: 6
         memory: 20Gi
+  - name: docker
+    image: docker:20.10.5-dind
+    args:
+      - --storage-driver
+      - overlay2
+      - --ipv6
+      - --fixed-cidr-v6
+      - "2001:db8:1::/64"
+    env:
+      # The new dind versions expect secure access using cert
+      # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+      # (see https://hub.docker.com/_/docker?tab=description&page=1)
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+    securityContext:
+      privileged: true
+    volumeMounts:
+      - mountPath: /var/lib/docker
+        name: docker-storage
+    tty: true
+    resources:
+      limits:
+        cpu: 12
+        memory: 16Gi
+      requests:
+        cpu: 12
+        memory: 16Gi
 """
 }
 
