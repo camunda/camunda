@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -77,7 +78,9 @@ public final class ZeebePartition extends Actor
     actorName =
         buildActorName(
             transitionContext.getNodeId(), "ZeebePartition", transitionContext.getPartitionId());
-    transitionContext.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
+    transitionContext.setComponentHealthMonitor(
+        new CriticalComponentsHealthMonitor(
+            "Partition-" + transitionContext.getPartitionId(), actor, LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId());
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
@@ -109,7 +112,7 @@ public final class ZeebePartition extends Actor
             (newStartupContext, error) -> {
               if (error != null) {
                 LOG.error(error.getMessage(), error);
-                handleUnrecoverableFailure();
+                handleUnrecoverableFailure(error);
                 close();
                 return;
               }
@@ -300,11 +303,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onFailure() {
+  public void onFailure(final HealthReport report) {
     actor.run(
         () -> {
           healthMetrics.setUnhealthy();
-          failureListeners.forEach(FailureListener::onFailure);
+          failureListeners.forEach((l) -> l.onFailure(report));
         });
   }
 
@@ -320,8 +323,9 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onUnrecoverableFailure() {
-    actor.run(this::handleUnrecoverableFailure);
+  public void onUnrecoverableFailure(final HealthReport report) {
+    // TODO: Can't use null here
+    actor.run(() -> handleUnrecoverableFailure(null));
   }
 
   private void onInstallFailure(final Throwable error) {
@@ -332,7 +336,7 @@ public final class ZeebePartition extends Actor
           context.getCurrentRole(),
           context.getCurrentTerm(),
           error);
-      handleUnrecoverableFailure();
+      handleUnrecoverableFailure(error);
     } else {
       handleRecoverableFailure();
     }
@@ -363,12 +367,13 @@ public final class ZeebePartition extends Actor
     }
   }
 
-  private void handleUnrecoverableFailure() {
+  private void handleUnrecoverableFailure(final Throwable error) {
+    final var report = HealthReport.dead(this).withIssue(error);
     healthMetrics.setDead();
-    zeebePartitionHealth.onUnrecoverableFailure();
+    zeebePartitionHealth.onUnrecoverableFailure(error);
     transitionToInactive();
     context.getRaftPartition().goInactive();
-    failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+    failureListeners.forEach((l) -> l.onUnrecoverableFailure(report));
     context.notifyListenersOfBecomingInactive();
   }
 
@@ -377,8 +382,8 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return context.getComponentHealthMonitor().getHealthStatus();
+  public HealthReport getHealthReport() {
+    return context.getComponentHealthMonitor().getHealthReport();
   }
 
   @Override
@@ -386,10 +391,10 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           failureListeners.add(failureListener);
-          if (getHealthStatus() == HealthStatus.HEALTHY) {
+          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
             failureListener.onRecovered();
           } else {
-            failureListener.onFailure();
+            failureListener.onFailure(getHealthReport());
           }
         });
   }

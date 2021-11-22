@@ -41,6 +41,10 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_ASSIGNEE = "assignee";
   public static final String ATTRIBUTE_CANDIDATE_GROUPS = "candidateGroups";
 
+  public static final String ATTRIBUTE_DECISION_ID = "decisionId";
+
+  public static final String ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -59,6 +63,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_LOOP_CHARACTERISTICS = "loopCharacteristics";
 
   public static final String ELEMENT_CALLED_ELEMENT = "calledElement";
+
+  public static final String ELEMENT_CALLED_DECISION = "calledDecision";
 
   /** Form key format used for camunda-forms format */
   public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";

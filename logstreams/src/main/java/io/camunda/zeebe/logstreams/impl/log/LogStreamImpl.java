@@ -21,7 +21,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -55,7 +55,7 @@ public final class LogStreamImpl extends Actor
   private LogStorageAppender appender;
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
-  private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
+  private HealthReport healthReport = HealthReport.healthy(this);
 
   LogStreamImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -136,7 +136,7 @@ public final class LogStreamImpl extends Actor
   @Override
   protected void handleFailure(final Exception failure) {
     if (failure instanceof UnrecoverableException) {
-      onUnrecoverableFailure();
+      onUnrecoverableFailure(HealthReport.dead(this).withIssue(failure));
     }
 
     super.handleFailure(failure);
@@ -270,7 +270,7 @@ public final class LogStreamImpl extends Actor
       lastPosition = getLastPosition();
     } catch (final UnrecoverableException error) {
       LOG.error("Unexpected error when opening appender", error);
-      onUnrecoverableFailure();
+      onUnrecoverableFailure(HealthReport.dead(this).withIssue(error));
       appenderFuture.completeExceptionally(error);
       return;
     }
@@ -323,7 +323,7 @@ public final class LogStreamImpl extends Actor
   private void onOpenAppenderFailed(final Throwable error) {
     LOG.error("Unexpected error when opening appender", error);
     appenderFuture.completeExceptionally(error);
-    onFailure();
+    onFailure(HealthReport.unhealthy(this).withIssue(error));
   }
 
   private long getLastPosition() {
@@ -334,8 +334,8 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return healthStatus;
+  public HealthReport getHealthReport() {
+    return healthReport;
   }
 
   @Override
@@ -349,11 +349,11 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
-  public void onFailure() {
+  public void onFailure(final HealthReport report) {
     actor.run(
         () -> {
-          healthStatus = HealthStatus.UNHEALTHY;
-          failureListeners.forEach(FailureListener::onFailure);
+          healthReport = HealthReport.unhealthy(this).withIssue(report);
+          failureListeners.forEach((l) -> l.onFailure(healthReport));
           closeAsync();
         });
   }
@@ -362,17 +362,17 @@ public final class LogStreamImpl extends Actor
   public void onRecovered() {
     actor.run(
         () -> {
-          healthStatus = HealthStatus.HEALTHY;
+          healthReport = HealthReport.healthy(this);
           failureListeners.forEach(FailureListener::onRecovered);
         });
   }
 
   @Override
-  public void onUnrecoverableFailure() {
+  public void onUnrecoverableFailure(final HealthReport report) {
     actor.run(
         () -> {
-          healthStatus = HealthStatus.DEAD;
-          failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+          healthReport = HealthReport.dead(this).withIssue(report);
+          failureListeners.forEach(l -> l.onUnrecoverableFailure(healthReport));
           closeAsync();
         });
   }

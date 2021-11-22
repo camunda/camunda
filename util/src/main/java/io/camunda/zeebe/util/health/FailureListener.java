@@ -11,7 +11,7 @@ package io.camunda.zeebe.util.health;
 public interface FailureListener {
 
   /** Invoked when the health status becomes unhealthy. */
-  void onFailure();
+  void onFailure(HealthReport report);
 
   /**
    * Invoked when health status becomes healthy after being unhealthy for some time. A component can
@@ -24,5 +24,5 @@ public interface FailureListener {
    * Invoked when the health status becomes dead and the system can't become healthy again without
    * external intervention.
    */
-  void onUnrecoverableFailure();
+  void onUnrecoverableFailure(HealthReport report);
 }

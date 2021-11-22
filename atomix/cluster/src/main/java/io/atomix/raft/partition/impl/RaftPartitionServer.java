@@ -46,7 +46,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -221,8 +221,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return server.getContext().getHealthStatus();
+  public HealthReport getHealthReport() {
+    return server.getContext().getHealthReport();
   }
 
   @Override
@@ -327,6 +327,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   public long getTerm() {
     return server.getTerm();
+  }
+
+  public MemberId getMemberId() {
+    return localMemberId;
   }
 
   private RaftStorage createRaftStorage() {

@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 
 /** @author Sebastian Menski */
 public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusinessRuleTaskBuilder<B>>
@@ -38,6 +39,43 @@ public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusiness
    */
   public B implementation(final String implementation) {
     element.setImplementation(implementation);
+    return myself;
+  }
+
+  /**
+   * Sets a static id of the decision that is called.
+   *
+   * @param decisionId the id of the decision
+   * @return the builder object
+   */
+  public B zeebeCalledDecisionId(final String decisionId) {
+    final ZeebeCalledDecision calledDecision =
+        getCreateSingleExtensionElement(ZeebeCalledDecision.class);
+    calledDecision.setDecisionId(decisionId);
+    return myself;
+  }
+
+  /**
+   * Sets a dynamic id of the decision that is called. The id is retrieved from the given
+   * expression.
+   *
+   * @param decisionIdExpression the expression for the id of the decision
+   * @return the builder object
+   */
+  public B zeebeCalledDecisionIdExpression(final String decisionIdExpression) {
+    return zeebeCalledDecisionId(asZeebeExpression(decisionIdExpression));
+  }
+
+  /**
+   * Sets the name of the result variable.
+   *
+   * @param resultVariable the name of the result variable
+   * @return the builder object
+   */
+  public B zeebeResultVariable(final String resultVariable) {
+    final ZeebeCalledDecision calledDecision =
+        getCreateSingleExtensionElement(ZeebeCalledDecision.class);
+    calledDecision.setResultVariable(resultVariable);
     return myself;
   }
 }

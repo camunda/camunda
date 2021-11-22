@@ -18,7 +18,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -58,7 +58,10 @@ public final class AsyncSnapshotDirector extends Actor
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
   private boolean persistingSnapshot;
-  private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
+
+  @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
+  private volatile HealthReport healthReport = HealthReport.healthy(this);
+
   private long commitPosition;
   private final int partitionId;
 
@@ -122,10 +125,10 @@ public final class AsyncSnapshotDirector extends Actor
         failure);
 
     resetStateOnFailure();
-    healthStatus = HealthStatus.UNHEALTHY;
+    healthReport = HealthReport.unhealthy(this).withIssue(failure);
 
     for (final var listener : listeners) {
-      listener.onFailure();
+      listener.onFailure(healthReport);
     }
   }
 
@@ -191,8 +194,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return healthStatus;
+  public HealthReport getHealthReport() {
+    return healthReport;
   }
 
   @Override
@@ -274,8 +277,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void onRecovered() {
-    if (healthStatus != HealthStatus.HEALTHY) {
-      healthStatus = HealthStatus.HEALTHY;
+    if (!healthReport.isHealthy()) {
+      healthReport = HealthReport.healthy(this);
       listeners.forEach(FailureListener::onRecovered);
     }
   }

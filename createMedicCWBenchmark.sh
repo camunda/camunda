@@ -41,3 +41,7 @@ nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
 
 git commit -am "test(benchmark): rm $nameOfOldestBenchmark"
 git push origin medic-cw-benchmarks
+
+# print out the name of the new benchmark so it can be easily copied
+nameOfNewestBenchmark=$(ls | grep medic-cw- | sort | tail -n 1)
+echo "Finished creating new medic benchmark: $nameOfNewestBenchmark"

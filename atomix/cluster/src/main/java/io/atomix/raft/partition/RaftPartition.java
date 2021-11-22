@@ -28,7 +28,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,20 +71,6 @@ public class RaftPartition implements Partition, HealthMonitorable {
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
     deferredRoleChangeListeners.remove(listener);
     server.removeRoleChangeListener(listener);
-  }
-
-  @Override
-  public HealthStatus getHealthStatus() {
-    return server.getHealthStatus();
-  }
-
-  @Override
-  public void addFailureListener(final FailureListener failureListener) {
-    server.addFailureListener(failureListener);
-  }
-
-  public void removeFailureListener(final FailureListener failureListener) {
-    server.removeFailureListener(failureListener);
   }
 
   /**
@@ -151,6 +137,26 @@ public class RaftPartition implements Partition, HealthMonitorable {
     return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.id());
   }
 
+  @Override
+  public String getName() {
+    return name();
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return server.getHealthReport();
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    server.addFailureListener(failureListener);
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    server.removeFailureListener(failureListener);
+  }
+
   /** Closes the partition. */
   CompletableFuture<Void> close() {
     return closeServer()
@@ -214,6 +220,32 @@ public class RaftPartition implements Partition, HealthMonitorable {
 
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
+  }
+
+  /**
+   * Tries to step down if the following conditions are met:
+   *
+   * <ul>
+   *   <li>priority election is enabled
+   *   <li>the partition distributor determined a primary node
+   *   <li>this node is not the primary
+   * </ul>
+   */
+  public CompletableFuture<Void> stepDownIfNotPrimary() {
+    if (shouldStepDown()) {
+      return stepDown();
+    } else {
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private boolean shouldStepDown() {
+    final var primary = partitionMetadata.getPrimary();
+    final var partitionConfig = config.getPartitionConfig();
+    return server != null
+        && partitionConfig.isPriorityElectionEnabled()
+        && primary.isPresent()
+        && primary.get() != server.getMemberId();
   }
 
   public CompletableFuture<Void> goInactive() {

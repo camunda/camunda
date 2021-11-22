@@ -68,6 +68,13 @@ public final class Protocol {
   /** Task header key used for user tasks to contain form key from BPMN XML */
   public static final String USER_TASK_FORM_KEY_HEADER_NAME = "io.camunda.zeebe:formKey";
 
+  /** Task header key used for assignee */
+  public static final String USER_TASK_ASSIGNEE_HEADER_NAME = "io.camunda.zeebe:assignee";
+
+  /** Task header key used for candidate groups */
+  public static final String USER_TASK_CANDIDATE_GROUPS_HEADER_NAME =
+      "io.camunda.zeebe:candidateGroups";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
