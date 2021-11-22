@@ -3,7 +3,10 @@ package testcontainers
 import (
 	"context"
 	"io"
+	"log"
+	"os"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/docker/docker/pkg/archive"
@@ -12,6 +15,9 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+// Logger is the default log instance
+var Logger = log.New(os.Stderr, "", log.LstdFlags)
 
 // DeprecatedContainer shows methods that were supported before, but are now deprecated
 // Deprecated: Use Container
@@ -45,11 +51,13 @@ type Container interface {
 	StartLogProducer(context.Context) error
 	StopLogProducer() error
 	Name(context.Context) (string, error)                        // get container name
+	State(context.Context) (*types.ContainerState, error)        //returns container's running state
 	Networks(context.Context) ([]string, error)                  // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
 	ContainerIP(context.Context) (string, error) // get container ip
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
+	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
 }
 
 // ImageBuildInfo defines what is needed to build an image
@@ -90,6 +98,7 @@ type ContainerRequest struct {
 	Privileged      bool                // for starting privileged container
 	Networks        []string            // for specifying network names
 	NetworkAliases  map[string][]string // for specifying network aliases
+	User            string              // for specifying uid:gid
 	SkipReaper      bool                // indicates whether we skip setting up a reaper for this
 	ReaperImage     string              // alternative reaper image
 	AutoRemove      bool                // if set to true, the container will be removed from the host when stopped
