@@ -46,7 +46,7 @@ export const selectionFilter = Selector('.SelectionFilter .Popover .Button');
 export const switchElement = (text) => Selector('.Switch').withText(text);
 export const dashboardContainer = Selector('.Dashboard');
 export const templateModalNameField = Selector('.Modal .FormGroup .Input');
-export const templateModalProcessField = Selector('.Modal .Typeahead');
+export const templateModalProcessField = Selector('.Modal .MultiSelect');
 export const templateOption = (text) =>
   Selector('.Modal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReport');

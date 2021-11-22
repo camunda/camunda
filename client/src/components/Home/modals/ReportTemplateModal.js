@@ -84,7 +84,7 @@ export default function ReportTemplateModal({onClose}) {
         data: {
           ...(template || {}),
           configuration: {...(template?.configuration || {}), xml},
-          definitions: definitions[0].key ? definitions : [],
+          definitions: definitions[0]?.key ? definitions : [],
         },
       })}
     />

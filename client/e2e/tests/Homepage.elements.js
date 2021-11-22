@@ -44,7 +44,7 @@ export const copyModal = Selector('.CopyModal');
 export const processTypeahead = Selector('.Modal .Typeahead');
 export const firstTypeaheadOption = Selector('.Modal .DropdownOption');
 export const templateModalNameField = Selector('.Modal .FormGroup .Input');
-export const templateModalProcessField = Selector('.Modal .Typeahead');
+export const templateModalProcessField = Selector('.Modal .MultiSelect');
 export const templateOption = (text) =>
   Selector('.Modal .templateContainer .Button').withText(text);
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');

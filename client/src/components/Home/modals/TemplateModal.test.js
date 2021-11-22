@@ -49,7 +49,7 @@ it('should fetch and show the bpmn diagram when a definition is selected', () =>
 
   node
     .find(DefinitionSelection)
-    .simulate('change', {key: 'processDefinition', versions: ['1'], tenantIds: [null]});
+    .simulate('change', [{key: 'processDefinition', versions: ['1'], tenantIds: [null]}]);
 
   runLastEffect();
 
@@ -61,13 +61,16 @@ it('should fetch and show the bpmn diagram when a definition is selected', () =>
 it('should include the selected parameters in the link state when creating a report', () => {
   const node = shallow(<TemplateModal {...props} />);
 
-  node.find(DefinitionSelection).simulate('change', {
-    key: 'processDefinition',
-    versions: ['1'],
-    tenantIds: [null],
-    name: 'Process Definition Name',
-    identifier: 'definition',
-  });
+  node.find(DefinitionSelection).simulate('change', [
+    {
+      key: 'processDefinition',
+      versions: ['1'],
+      tenantIds: [null],
+      name: 'Process Definition Name',
+      displayName: 'Process Definition Name',
+      identifier: 'definition',
+    },
+  ]);
 
   runLastEffect();
 
@@ -81,12 +84,15 @@ it('should call the templateToState prop to determine link state', () => {
   const spy = jest.fn().mockReturnValue({data: 'stateData'});
   const node = shallow(<TemplateModal {...props} templateToState={spy} />);
 
-  node.find(DefinitionSelection).simulate('change', {
-    key: 'processDefinition',
-    versions: ['1'],
-    tenantIds: [null],
-    name: 'Process Definition Name',
-  });
+  node.find(DefinitionSelection).simulate('change', [
+    {
+      key: 'processDefinition',
+      versions: ['1'],
+      tenantIds: [null],
+      name: 'Process Definition Name',
+      displayName: 'Process Definition Name',
+    },
+  ]);
 
   runLastEffect();
 

@@ -26,19 +26,22 @@ export function TemplateModal({
   templateToState = (data) => data,
 }) {
   const [name, setName] = useState(t(entity + '.new'));
-  const [definition, setDefinition] = useState({
-    definitionKey: '',
-    versions: [],
-    tenants: [],
-    identifier: 'definition',
-  });
   const [xml, setXml] = useState();
   const [template, setTemplate] = useState();
-
-  const {definitionKey, definitionName, versions, tenants, identifier} = definition;
+  const [selectedDefinitions, setSelectedDefinitions] = useState([]);
 
   useEffect(() => {
-    const {definitionKey, versions, tenants} = definition;
+    const {
+      key: definitionKey,
+      versions,
+      tenantIds: tenants,
+    } = selectedDefinitions[0] || {
+      key: '',
+      versions: [],
+      tenantIds: [],
+      identifier: 'definition',
+    };
+
     if (definitionKey && versions?.length && tenants?.length) {
       mightFail(
         loadProcessDefinitionXml(definitionKey, versions[0], tenants[0]),
@@ -48,9 +51,9 @@ export function TemplateModal({
     } else {
       setXml();
     }
-  }, [definition, mightFail]);
+  }, [selectedDefinitions, mightFail]);
 
-  const validSelection = name && ((xml && definitionKey) || !template);
+  const validSelection = name && ((xml && selectedDefinitions.length > 0) || !template);
 
   return (
     <Modal
@@ -90,18 +93,8 @@ export function TemplateModal({
             <DefinitionSelection
               type="process"
               expanded
-              definitionKey={definitionKey}
-              versions={versions}
-              tenants={tenants}
-              onChange={({key, versions, tenantIds, name, identifier}) =>
-                setDefinition({
-                  definitionKey: key,
-                  versions,
-                  tenants: tenantIds,
-                  definitionName: name,
-                  identifier,
-                })
-              }
+              selectedDefinitions={selectedDefinitions}
+              onChange={setSelectedDefinitions}
             />
           </div>
           <div className="diagramArea">
@@ -122,16 +115,7 @@ export function TemplateModal({
             state: templateToState({
               name,
               template,
-              definitions: [
-                {
-                  key: definitionKey,
-                  name: definitionName,
-                  displayName: definitionName,
-                  versions,
-                  tenantIds: tenants,
-                  identifier,
-                },
-              ],
+              definitions: selectedDefinitions,
               xml,
             }),
           }}

@@ -15,6 +15,7 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 import debouncePromise from 'debouncePromise';
 
+import MultiDefinitionSelection from './MultiDefinitionSelection';
 import TenantPopover from './TenantPopover';
 import VersionPopover from './VersionPopover';
 import {loadDefinitions, loadVersions, loadTenants} from './service';
@@ -22,6 +23,14 @@ import {loadDefinitions, loadVersions, loadTenants} from './service';
 import './DefinitionSelection.scss';
 
 const debounceRequest = debouncePromise();
+
+const defaultSelection = (props = {}) => ({
+  key: props.definitionKey || '',
+  versions: props.versions || [],
+  tenantIds: props.tenants || [],
+  name: '',
+  identifier: 'definition',
+});
 
 export class DefinitionSelection extends React.Component {
   constructor(props) {
@@ -33,13 +42,7 @@ export class DefinitionSelection extends React.Component {
       availableTenants: null,
       isLoadingVersions: false,
       isLoadingTenants: false,
-      selection: {
-        key: props.definitionKey,
-        versions: props.versions || [],
-        tenantIds: props.tenants || [],
-        name: '',
-        identifier: 'definition',
-      },
+      selection: defaultSelection(props),
       selectedSpecificVersions: this.isSpecificVersion(props.versions) ? props.versions : [],
     };
   }
@@ -97,13 +100,16 @@ export class DefinitionSelection extends React.Component {
       const {type, location, mightFail} = this.props;
       const collectionId = getCollection(location.pathname);
 
-      mightFail(loadTenants(type, collectionId, key, versions), resolve, showError);
+      mightFail(
+        loadTenants(type, [{key, versions}], collectionId),
+        (tenantInfo) => resolve(tenantInfo[0].tenants),
+        showError
+      );
     });
   };
 
   changeDefinition = async (key) => {
     const {key: definitionKey} = this.state.selection;
-    const {onChange} = this.props;
 
     if (definitionKey === key) {
       return;
@@ -137,11 +143,10 @@ export class DefinitionSelection extends React.Component {
       isLoadingTenants: false,
     });
 
-    onChange(newSelection);
+    this.onChange(newSelection);
   };
 
   changeVersions = async (versions) => {
-    const {onChange} = this.props;
     const {selection} = this.state;
     const {key: definitionKey, tenantIds: tenants} = selection;
 
@@ -172,7 +177,7 @@ export class DefinitionSelection extends React.Component {
 
     this.setState({availableTenants, selection: newSelection, isLoadingTenants: false});
 
-    onChange(newSelection);
+    this.onChange(newSelection);
   };
 
   changeTenants = (tenantSelection) => {
@@ -182,8 +187,11 @@ export class DefinitionSelection extends React.Component {
     };
 
     this.setState({selection: newSelection});
-    this.props.onChange(newSelection);
+    this.onChange(newSelection);
   };
+
+  onChange = (newSelection) =>
+    this.props.onChange(this.props.selectedDefinitions ? [newSelection] : newSelection);
 
   hasDefinition = () => this.state.selection.key;
   hasTenants = () => {
@@ -249,6 +257,10 @@ export class DefinitionSelection extends React.Component {
     }
   };
 
+  resetSelection = (props) => {
+    this.setState({selection: defaultSelection(props)});
+  };
+
   render() {
     const {
       availableDefinitions,
@@ -257,7 +269,7 @@ export class DefinitionSelection extends React.Component {
       isLoadingVersions,
       isLoadingTenants,
     } = this.state;
-    const {expanded, type, disableDefinition} = this.props;
+    const {expanded, type, disableDefinition, selectedDefinitions, onChange} = this.props;
     const collectionId = getCollection(this.props.location.pathname);
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = selection.key;
@@ -289,20 +301,30 @@ export class DefinitionSelection extends React.Component {
           <div className="selectionPanel">
             <div className="dropdowns">
               <Labeled className="entry" label={processSelectLabel}>
-                <Typeahead
-                  className="name"
-                  initialValue={def ? def.key : null}
-                  disabled={noDefinitions || disableDefinition}
-                  placeholder={t('common.select')}
-                  onChange={this.changeDefinition}
-                  noValuesMessage={t('common.definitionSelection.noDefinition')}
-                >
-                  {availableDefinitions.map(({name, key}) => (
-                    <Typeahead.Option key={key} value={key}>
-                      {name || key}
-                    </Typeahead.Option>
-                  ))}
-                </Typeahead>
+                {selectedDefinitions ? (
+                  <MultiDefinitionSelection
+                    selectedDefinitions={selectedDefinitions}
+                    availableDefinitions={availableDefinitions}
+                    changeDefinition={this.changeDefinition}
+                    resetSelection={this.resetSelection}
+                    onChange={onChange}
+                  />
+                ) : (
+                  <Typeahead
+                    className="name"
+                    initialValue={def ? def.key : null}
+                    disabled={noDefinitions || disableDefinition}
+                    placeholder={t('common.select')}
+                    onChange={this.changeDefinition}
+                    noValuesMessage={t('common.definitionSelection.noDefinition')}
+                  >
+                    {availableDefinitions.map(({name, key}) => (
+                      <Typeahead.Option key={key} value={key}>
+                        {name || key}
+                      </Typeahead.Option>
+                    ))}
+                  </Typeahead>
+                )}
               </Labeled>
               <div className="version entry">
                 <Labeled label={t('common.definitionSelection.version.label')} />
@@ -325,11 +347,15 @@ export class DefinitionSelection extends React.Component {
               </div>
             </div>
             <div className="info">
-              {displayVersionWarning && (
-                <Message>{t('common.definitionSelection.versionWarning')}</Message>
-              )}
+              {displayVersionWarning &&
+                (!selectedDefinitions || selectedDefinitions.length === 1) && (
+                  <Message>{t('common.definitionSelection.versionWarning')}</Message>
+                )}
               {collectionId && noDefinitions && (
                 <Message>{t('common.definitionSelection.noSourcesWarning')}</Message>
+              )}
+              {selectedDefinitions?.length >= 10 && (
+                <Message error>{t('common.definitionSelection.limitReached')}</Message>
               )}
               {this.props.infoMessage && <Message>{this.props.infoMessage}</Message>}
             </div>
