@@ -297,9 +297,9 @@ final class QueryApiRequestHandlerTest {
         .isEqualTo("OneProcessToFindThem");
   }
 
-  @DisplayName("should return INTERNAL_ERROR on exception thrown while handling the request")
+  @DisplayName("should return MALFORMED_REQUEST on exception thrown while reading the request")
   @Test
-  void internalError() {
+  void malformedRequest() {
     // given
     final QueryApiRequestHandler sut = createQueryApiRequestHandler(true);
 
@@ -313,9 +313,7 @@ final class QueryApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(
             ErrorResponse::getErrorCode, error -> BufferUtil.bufferAsString(error.getErrorData()))
-        .containsExactly(
-            ErrorCode.INTERNAL_ERROR,
-            "Failed to handle query due to internal error; see the broker logs for more");
+        .contains(ErrorCode.MALFORMED_REQUEST);
   }
 
   private QueryApiRequestHandler createQueryApiRequestHandler(final boolean enabled) {
