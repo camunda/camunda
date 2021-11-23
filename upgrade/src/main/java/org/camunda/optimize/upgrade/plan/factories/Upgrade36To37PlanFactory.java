@@ -24,7 +24,7 @@ public class Upgrade36To37PlanFactory implements UpgradePlanFactory {
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return UpgradePlanBuilder.createUpgradePlan()
-      .fromVersion("3.6.0")
+      .fromVersion("3.6")
       .toVersion("3.7.0")
       .addUpgradeSteps(migrateReportFiltersAndConfig())
       .addUpgradeStep(migrateDashboards())

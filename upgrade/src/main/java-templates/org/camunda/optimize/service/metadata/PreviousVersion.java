@@ -7,9 +7,12 @@ package org.camunda.optimize.service.metadata;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
+import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 
 public final class PreviousVersion {
   public static final String RAW_PREVIOUS_VERSION = "${project.previousVersion}";
   public static final String PREVIOUS_VERSION = stripToPlainVersion(RAW_PREVIOUS_VERSION);
+  public static final String PREVIOUS_VERSION_MAJOR_MINOR = getMajorAndMinor(PREVIOUS_VERSION);
 }

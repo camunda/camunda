@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
 
+import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
 @AllArgsConstructor
@@ -25,13 +26,21 @@ public class UpgradeValidationService {
   public void validateSchemaVersions(@NonNull final String schemaVersion,
                                      @NonNull final String fromVersion,
                                      @NonNull final String toVersion) {
-    if (!Objects.equals(fromVersion, schemaVersion) && !Objects.equals(toVersion, schemaVersion)) {
-      throw new UpgradeRuntimeException(
-        String.format(
-          "Schema version saved in Metadata [%s] must be one of [%s, %s]",
-          schemaVersion, fromVersion, toVersion
-        )
-      );
+    try {
+      if (!(
+        Objects.equals(fromVersion, schemaVersion)
+          || Objects.equals(fromVersion, getMajorAndMinor(schemaVersion))
+          || Objects.equals(toVersion, schemaVersion))
+      ) {
+        throw new UpgradeRuntimeException(
+          String.format(
+            "Schema version saved in Metadata [%s] must be one of [%s, %s]",
+            schemaVersion, fromVersion, toVersion
+          )
+        );
+      }
+    } catch (final Exception e) {
+      throw new UpgradeRuntimeException(e.getMessage(), e);
     }
   }
 
