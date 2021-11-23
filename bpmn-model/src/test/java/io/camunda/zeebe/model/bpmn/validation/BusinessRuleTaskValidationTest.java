@@ -15,10 +15,14 @@
  */
 package io.camunda.zeebe.model.bpmn.validation;
 
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.BusinessRuleTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
@@ -61,6 +65,48 @@ public class BusinessRuleTaskValidationTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeCalledDecision.class, "Attribute 'resultVariable' must be present and not empty"));
+  }
+
+  @Test
+  void emptyJobType() {
+    // when
+    final BpmnModelInstance process = process(task -> task.zeebeJobType(""));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(ZeebeTaskDefinition.class, "Attribute 'type' must be present and not empty"));
+  }
+
+  @Test
+  void noCalledDecisionAndTaskDefinitionExtension() {
+    // when
+    final BpmnModelInstance process = process(task -> {});
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        ExpectedValidationResult.expect(
+            BusinessRuleTask.class,
+            "Must have either one 'zeebe:calledDecision' or one 'zeebe:taskDefinition' extension element"));
+  }
+
+  @Test
+  void bothCalledDecisionAndTaskDefinitionExtension() {
+    // when
+    final BpmnModelInstance process =
+        process(
+            task ->
+                task.zeebeCalledDecisionId("decisionId")
+                    .zeebeResultVariable("result")
+                    .zeebeJobType("jobType"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        ExpectedValidationResult.expect(
+            BusinessRuleTask.class,
+            "Must have either one 'zeebe:calledDecision' or one 'zeebe:taskDefinition' extension element"));
   }
 
   private BpmnModelInstance process(final Consumer<BusinessRuleTaskBuilder> taskBuilder) {
