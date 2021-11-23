@@ -130,14 +130,6 @@ pipeline {
         stage('Verify') {
             when { not { expression { params.SKIP_VERIFY } } }
             parallel {
-                stage('Analyse') {
-                    steps {
-                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                            runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
-                        }
-                    }
-                }
-
                 stage('Test (Go)') {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
@@ -154,7 +146,7 @@ pipeline {
                     }
                 }
 
-                stage('Test (Java)') {
+                stage('Test') {
                     environment {
                         SUREFIRE_REPORT_NAME_SUFFIX = 'java-testrun'
                         MAVEN_PARALLELISM = 2
@@ -162,9 +154,20 @@ pipeline {
                         JUNIT_THREAD_COUNT = 6
                     }
 
-                    steps {
-                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                            runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                    stages {
+                        stage('Test (Java)') {
+                            steps {
+                                timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                                    runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                                }
+                            }
+                        }
+                        stage('Analyse') {
+                            steps {
+                                timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
+                                    runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
+                                }
+                            }
                         }
                     }
 
