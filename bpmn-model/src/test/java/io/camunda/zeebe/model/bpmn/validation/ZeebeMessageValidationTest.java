@@ -60,7 +60,9 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .message(m -> m.name("foo").zeebeCorrelationKeyExpression(""))
             .done(),
         singletonList(
-            expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
+            expect(
+                ZeebeSubscription.class,
+                "Attribute 'correlationKey' must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -88,7 +90,9 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .message(m -> m.name("foo").zeebeCorrelationKeyExpression(""))
             .done(),
         singletonList(
-            expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
+            expect(
+                ZeebeSubscription.class,
+                "Attribute 'correlationKey' must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")

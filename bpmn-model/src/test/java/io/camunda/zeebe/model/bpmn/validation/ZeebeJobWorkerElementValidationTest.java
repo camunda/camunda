@@ -94,7 +94,8 @@ public class ZeebeJobWorkerElementValidationTest {
         processWithJobWorkerElement(elementBuilder, element -> element.zeebeJobType(""));
 
     ProcessValidationUtil.assertThatProcessHasViolations(
-        process, expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"));
+        process,
+        expect(ZeebeTaskDefinition.class, "Attribute 'type' must be present and not empty"));
   }
 
   private BpmnModelInstance processWithJobWorkerElement(
