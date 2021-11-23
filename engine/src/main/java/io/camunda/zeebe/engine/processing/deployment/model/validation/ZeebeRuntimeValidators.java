@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -114,6 +115,11 @@ public final class ZeebeRuntimeValidators {
                             "be a list of comma-separated values, e.g. 'a,b,c'"))
             .build(expressionLanguage),
         // ----------------------------------------
-        new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor));
+        new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeCalledDecision.class)
+            .hasValidExpression(
+                ZeebeCalledDecision::getDecisionId, ExpressionVerification::isMandatory)
+            .build(expressionLanguage));
   }
 }
