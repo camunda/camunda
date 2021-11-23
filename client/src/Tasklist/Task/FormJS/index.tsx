@@ -96,7 +96,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
     loading: areVariablesLoading,
     updateSelectedVariables,
   } = useSelectedVariables(task.id, extractVariablesFromFormSchema(schema));
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(true);
   const canCompleteTask =
     userData?.currentUser.username === assignee &&
     taskState === 'CREATED' &&
@@ -149,10 +149,6 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
             },
           );
 
-          if (canCompleteTask) {
-            form.validate();
-          }
-
           formRef.current = form;
         } catch {
           removeFormReference();
@@ -178,9 +174,6 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   useLayoutEffect(() => {
     formRef.current?.setProperty('readOnly', !canCompleteTask);
     formRef.current?.reset();
-    if (canCompleteTask) {
-      formRef.current?.validate();
-    }
   }, [canCompleteTask]);
 
   useEffect(() => {

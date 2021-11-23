@@ -29,7 +29,7 @@ const Wrapper: React.FC = ({children}) => (
   </ApolloProvider>
 );
 
-function areArraysEqual(firstArray: any[], secondArray: any[]) {
+function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
   return (
     firstArray.length === secondArray.length &&
     firstArray
@@ -209,27 +209,9 @@ describe('<FormJS />', () => {
           ]),
         );
       }),
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(ctx.data(mockGetSelectedVariables('1').result.data));
-        }
-
-        return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid variables',
-            },
-          ]),
-        );
-      }),
     );
 
-    const {rerender} = render(
+    render(
       <FormJS
         key="0"
         id="form-0"
@@ -242,27 +224,28 @@ describe('<FormJS />', () => {
       },
     );
 
-    expect(await screen.findByText('Field is required.')).toBeInTheDocument();
+    expect(await screen.findByLabelText(/is cool\?/i)).toHaveValue('');
+    expect(screen.getByLabelText(/my variable/i)).toHaveValue('');
+    expect(screen.queryByText(/field is required\./i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    ).toBeEnabled();
 
-    rerender(
-      <FormJS
-        key="1"
-        id="form-0"
-        processDefinitionId="process"
-        task={claimedTaskWithForm('1')}
-        onSubmit={() => Promise.resolve()}
-      />,
+    userEvent.type(screen.getByLabelText(/is cool\?/i), 'value');
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
     );
 
-    userEvent.clear(await screen.findByDisplayValue('0001'));
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /complete task/i,
-        }),
-      ).toBeDisabled(),
-    );
+    expect(await screen.findByText(/field is required\./i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    ).toBeDisabled();
   });
 
   it('should submit prefilled form', async () => {
@@ -300,13 +283,7 @@ describe('<FormJS />', () => {
       },
     );
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /complete task/i,
-        }),
-      ).toBeEnabled(),
-    );
+    expect(await screen.findByLabelText(/my variable/i)).toBeInTheDocument();
 
     userEvent.click(
       screen.getByRole('button', {
