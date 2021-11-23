@@ -74,7 +74,7 @@ public class AuthenticationTest extends TasklistIntegrationTest implements Authe
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThatCookiesAreSet(response);
-    assertThatClientConfigContains("\"canLogout\": true");
+    assertThatClientConfigContains("\"canLogout\":true");
   }
 
   @Test

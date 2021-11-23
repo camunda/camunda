@@ -120,7 +120,7 @@ public class AuthenticationTest implements AuthenticationTestable {
     final ResponseEntity<String> response = get(ROOT, cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThatClientConfigContains("\"canLogout\": false");
+    assertThatClientConfigContains("\"canLogout\":false");
   }
 
   private void assertThatClientConfigContains(final String text) {
