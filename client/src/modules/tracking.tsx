@@ -41,13 +41,14 @@ function getStage(host: string): 'dev' | 'int' | 'prod' | 'unkown' {
 }
 
 class Tracking {
-  mixpanel: null | Mixpanel = null;
+  #mixpanel: null | Mixpanel = null;
+
   constructor() {
     if (window.clientConfig?.organizationId) {
       import('mixpanel-browser').then((mixpanel) => {
         mixpanel.init(MIXPANEL_PUBLIC_TOKEN);
 
-        this.mixpanel = mixpanel;
+        this.#mixpanel = mixpanel;
       });
     }
   }
@@ -56,7 +57,7 @@ class Tracking {
     const {eventName, ...properties} = events;
 
     try {
-      this.mixpanel?.track(`${EVENT_PREFIX}${eventName}`, {
+      this.#mixpanel?.track(`${EVENT_PREFIX}${eventName}`, {
         ...properties,
         organizationId: window.clientConfig?.organizationId,
         clusterId: window.clientConfig?.clusterId,
