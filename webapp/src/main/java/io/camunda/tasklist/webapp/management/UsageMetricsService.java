@@ -5,17 +5,20 @@
  */
 package io.camunda.tasklist.webapp.management;
 
+import io.camunda.tasklist.webapp.es.MetricReaderWriter;
+import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricQueryDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Component
 @RestControllerEndpoint(id = "usage-metrics")
 public class UsageMetricsService {
+
+  @Autowired private MetricReaderWriter metricReaderWriter;
 
   /**
    * Retrieve list of unique assigned users in a given period
@@ -28,13 +31,8 @@ public class UsageMetricsService {
   @GetMapping(
       value = "/assignees",
       produces = {MediaType.APPLICATION_JSON_VALUE})
-  public ResponseEntity<String> retrieveUniqueAssignedUsers(UsageMetricQueryDTO query) {
-    return new ResponseEntity<>(
-        "{\"startTime\" : "
-            + query.getStartTime().getTime()
-            + ", \"endTime\" : "
-            + query.getEndTime().getTime()
-            + "}",
-        HttpStatus.OK);
+  public UsageMetricDTO retrieveUniqueAssignedUsers(UsageMetricQueryDTO query) {
+    return metricReaderWriter.retrieveDistinctAssigneesBetweenDates(
+        query.getStartTime(), query.getEndTime());
   }
 }

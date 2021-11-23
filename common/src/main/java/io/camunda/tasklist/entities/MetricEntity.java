@@ -5,19 +5,19 @@
  */
 package io.camunda.tasklist.entities;
 
-import java.util.Date;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class MetricEntity extends TasklistEntity {
   private String event;
   private String value;
-  private Date eventTime;
+  private OffsetDateTime eventTime;
 
   public MetricEntity() {
     super();
   }
 
-  public MetricEntity(String event, String value, Date eventTime) {
+  public MetricEntity(String event, String value, OffsetDateTime eventTime) {
     this.event = event;
     this.value = value;
     this.eventTime = eventTime;
@@ -27,24 +27,27 @@ public class MetricEntity extends TasklistEntity {
     return event;
   }
 
-  public void setEvent(String event) {
+  public MetricEntity setEvent(String event) {
     this.event = event;
+    return this;
   }
 
   public String getValue() {
     return value;
   }
 
-  public void setValue(String value) {
+  public MetricEntity setValue(String value) {
     this.value = value;
+    return this;
   }
 
-  public Date getEventTime() {
+  public OffsetDateTime getEventTime() {
     return eventTime;
   }
 
-  public void setEventTime(Date eventTime) {
+  public MetricEntity setEventTime(OffsetDateTime eventTime) {
     this.eventTime = eventTime;
+    return this;
   }
 
   @Override

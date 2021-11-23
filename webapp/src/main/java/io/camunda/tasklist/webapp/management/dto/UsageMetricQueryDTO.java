@@ -5,37 +5,37 @@
  */
 package io.camunda.tasklist.webapp.management.dto;
 
+import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Objects;
 import org.springframework.format.annotation.DateTimeFormat;
 
 public class UsageMetricQueryDTO {
   private static final int DEFAULT_PAGE_SIZE = Integer.MAX_VALUE;
 
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-  private Date startTime;
+  @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ")
+  private OffsetDateTime startTime;
 
-  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-  private Date endTime;
+  @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ")
+  private OffsetDateTime endTime;
 
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
   private String[] searchBefore;
 
-  public Date getStartTime() {
+  public OffsetDateTime getStartTime() {
     return startTime;
   }
 
-  public void setStartTime(Date startTime) {
+  public void setStartTime(OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
-  public Date getEndTime() {
+  public OffsetDateTime getEndTime() {
     return endTime;
   }
 
-  public void setEndTime(Date endTime) {
+  public void setEndTime(OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 
