@@ -23,6 +23,7 @@ import {getRequestFilters, getSorting} from 'modules/utils/filter';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {createOperation} from 'modules/utils/instance';
 import {hasActiveOperations} from './utils/hasActiveOperations';
+import {tracking} from 'modules/tracking';
 
 type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 
@@ -241,6 +242,12 @@ class Instances extends NetworkReconnectionHandler {
 
       if (response.ok) {
         const {processInstances, totalCount} = await response.json();
+
+        tracking.track({
+          eventName: 'instances-loaded',
+          filters: Object.keys(payload.query),
+          ...payload.sorting,
+        });
 
         this.setInstances({
           filteredInstancesCount: totalCount,

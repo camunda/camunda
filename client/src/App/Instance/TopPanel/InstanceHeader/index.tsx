@@ -19,6 +19,7 @@ import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 import {Restricted} from 'modules/components/Restricted';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
 
 const InstanceHeader = observer(() => {
   const {instance} = currentInstanceStore.state;
@@ -68,6 +69,13 @@ const InstanceHeader = observer(() => {
                     Locations.instance(parentInstanceId, location)
                   }
                   title={`View parent instance ${parentInstanceId}`}
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'instance-parent-details',
+                      instanceId: parentInstanceId,
+                    });
+                  }}
                 >
                   {parentInstanceId}
                 </Link>
@@ -87,7 +95,13 @@ const InstanceHeader = observer(() => {
                       completed: true,
                     })
                   }
-                  onClick={panelStatesStore.expandFiltersPanel}
+                  onClick={() => {
+                    panelStatesStore.expandFiltersPanel();
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'instance-called-instances',
+                    });
+                  }}
                   title={`View all called instances`}
                 >
                   View All

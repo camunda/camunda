@@ -19,6 +19,7 @@ import {statisticsStore} from 'modules/stores/statistics';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
 
 const MetricPanel = observer(() => {
   const {running, active, withIncidents, status} = statisticsStore.state;
@@ -43,7 +44,13 @@ const MetricPanel = observer(() => {
     <Panel data-testid="metric-panel">
       <Title
         data-testid="total-instances-link"
-        onClick={panelStatesStore.expandFiltersPanel}
+        onClick={() => {
+          panelStatesStore.expandFiltersPanel();
+          tracking.track({
+            eventName: 'navigation',
+            link: 'dashboard-running-instances',
+          });
+        }}
         to={(location) =>
           Locations.filters(
             location,
@@ -80,7 +87,13 @@ const MetricPanel = observer(() => {
       <LabelContainer>
         <Label
           data-testid="incident-instances-link"
-          onClick={panelStatesStore.expandFiltersPanel}
+          onClick={() => {
+            panelStatesStore.expandFiltersPanel();
+            tracking.track({
+              eventName: 'navigation',
+              link: 'dashboard-instances-with-incidents',
+            });
+          }}
           to={(location) =>
             Locations.filters(location, {
               incidents: true,
@@ -91,7 +104,13 @@ const MetricPanel = observer(() => {
         </Label>
         <Label
           data-testid="active-instances-link"
-          onClick={panelStatesStore.expandFiltersPanel}
+          onClick={() => {
+            panelStatesStore.expandFiltersPanel();
+            tracking.track({
+              eventName: 'navigation',
+              link: 'dashboard-active-instances',
+            });
+          }}
           to={(location) =>
             Locations.filters(location, {
               active: true,

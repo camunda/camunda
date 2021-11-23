@@ -12,6 +12,7 @@ import {NavElement} from './NavElement';
 import {Menu, Separator} from './styled';
 import {Locations} from 'modules/routes';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
+import {tracking} from 'modules/tracking';
 
 const Header: React.FC = observer(() => {
   const [forceRedirect, setForceRedirect] = useState(false);
@@ -30,17 +31,35 @@ const Header: React.FC = observer(() => {
             title="View Dashboard"
             label="Operate"
             icon={<CmLogo />}
+            onClick={() => {
+              tracking.track({
+                eventName: 'navigation',
+                link: 'header-logo',
+              });
+            }}
           />
           <Separator />
           <NavElement
             to={Locations.dashboard}
             title="View Dashboard"
             label="Dashboard"
+            onClick={() => {
+              tracking.track({
+                eventName: 'navigation',
+                link: 'header-dashboard',
+              });
+            }}
           />
           <NavElement
             to={Locations.filters}
             title="View Instances"
             label="Instances"
+            onClick={() => {
+              tracking.track({
+                eventName: 'navigation',
+                link: 'header-instances',
+              });
+            }}
           />
         </Menu>
       </nav>

@@ -9,6 +9,7 @@ import {operationsStore} from 'modules/stores/operations';
 import {getRequestFilters} from 'modules/utils/filter';
 import {instancesStore} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
+import {tracking} from 'modules/tracking';
 
 export default function useOperationApply() {
   const {selectedInstanceIds, excludedInstanceIds, reset} =
@@ -49,7 +50,13 @@ export default function useOperationApply() {
           ids,
           excludeIds: excludedInstanceIds,
         },
-        onSuccess,
+        onSuccess() {
+          onSuccess();
+          tracking.track({
+            eventName: 'batch-operation',
+            operationType,
+          });
+        },
         onError: (operationType: OperationEntityType) => {
           instancesStore.unmarkInstancesWithActiveOperations({
             instanceIds: ids,

@@ -5,6 +5,7 @@
  */
 
 import {makeAutoObservable} from 'mobx';
+import {tracking} from 'modules/tracking';
 
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
@@ -37,6 +38,11 @@ class CurrentTheme {
       this.state.selectedTheme === THEME_NAME.LIGHT
         ? THEME_NAME.DARK
         : THEME_NAME.LIGHT;
+
+    tracking.track({
+      eventName: 'theme-toggle',
+      toggledTo: nextTheme,
+    });
 
     this.state.selectedTheme = nextTheme;
     storeStateLocally({

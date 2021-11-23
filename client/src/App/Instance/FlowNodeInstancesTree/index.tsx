@@ -19,6 +19,7 @@ import {Bar} from './Bar';
 import {Foldable} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
@@ -107,6 +108,9 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               ref={rowRef}
               data-testid={flowNodeInstance.id}
               onSelection={() => {
+                tracking.track({
+                  eventName: 'instance-history-log-selection-toggle',
+                });
                 const isProcessInstance =
                   flowNodeInstance.id ===
                   currentInstanceStore.state.instance?.id;

@@ -9,6 +9,8 @@ export declare global {
     clientConfig?: {
       isEnterprise?: boolean;
       contextPath?: string;
+      organizationId?: null | string;
+      clusterId?: null | string;
     };
   }
 

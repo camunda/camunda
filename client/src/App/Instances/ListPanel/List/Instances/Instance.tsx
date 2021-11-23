@@ -18,6 +18,7 @@ import {useNotifications} from 'modules/notifications';
 import Table from 'modules/components/Table';
 import React from 'react';
 import {Restricted} from 'modules/components/Restricted';
+import {tracking} from 'modules/tracking';
 
 const {TD} = Table;
 
@@ -63,6 +64,13 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
         <Link
           to={(location) => Locations.instance(instance.id, location)}
           title={`View instance ${instance.id}`}
+          onClick={() => {
+            tracking.track({
+              eventName: 'navigation',
+              link: 'instances-instance-details',
+              instanceId: instance.id,
+            });
+          }}
         >
           {instance.id}
         </Link>
@@ -75,6 +83,13 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
           <Link
             to={(location) => Locations.instance(parentInstanceId, location)}
             title={`View parent instance ${parentInstanceId}`}
+            onClick={() => {
+              tracking.track({
+                eventName: 'navigation',
+                link: 'instances-parent-instance-details',
+                instanceId: parentInstanceId,
+              });
+            }}
           >
             {parentInstanceId}
           </Link>

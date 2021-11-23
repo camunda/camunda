@@ -18,6 +18,7 @@ import {applyBatchOperation, applyOperation} from 'modules/api/instances';
 import {sortOperations} from './utils/sortOperations';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {tracking} from 'modules/tracking';
 
 type Query = Parameters<typeof applyBatchOperation>['1'];
 type OperationPayload = Parameters<typeof applyOperation>['1'];
@@ -145,6 +146,10 @@ class Operations extends NetworkReconnectionHandler {
 
       if (response.ok) {
         this.prependOperations(await response.json());
+        tracking.track({
+          eventName: 'single-operation',
+          operationType: payload.operationType,
+        });
         onSuccess?.();
       } else {
         onError?.(payload.operationType);

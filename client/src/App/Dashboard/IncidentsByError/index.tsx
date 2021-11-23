@@ -22,6 +22,7 @@ import {observer} from 'mobx-react';
 import {Locations} from 'modules/routes';
 import truncate from 'lodash/truncate';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
 
 function truncateErrorMessage(errorMessage: string) {
   return truncate(errorMessage, {
@@ -62,7 +63,16 @@ const IncidentsByError = observer(() => {
                     incidents: true,
                   })
                 }
-                onClick={panelStatesStore.expandFiltersPanel}
+                onClick={() => {
+                  panelStatesStore.expandFiltersPanel();
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'dashboard-incidents-by-error-single-process',
+                    errorMessage: truncateErrorMessage(errorMessage),
+                    process: item.bpmnProcessId,
+                    version: item.version,
+                  });
+                }}
                 title={title}
                 $boxSize="small"
               >
@@ -94,7 +104,14 @@ const IncidentsByError = observer(() => {
             incidents: true,
           })
         }
-        onClick={panelStatesStore.expandFiltersPanel}
+        onClick={() => {
+          panelStatesStore.expandFiltersPanel();
+          tracking.track({
+            eventName: 'navigation',
+            link: 'dashboard-incidents-by-error-all-processess',
+            errorMessage: truncateErrorMessage(errorMessage),
+          });
+        }}
         title={title}
       >
         <Styled.LiInstancesBar

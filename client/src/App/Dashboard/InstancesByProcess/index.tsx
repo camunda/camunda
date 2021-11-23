@@ -23,6 +23,7 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
 
 const InstancesByProcess = observer(() => {
   useEffect(() => {
@@ -54,7 +55,15 @@ const InstancesByProcess = observer(() => {
                       : {}),
                   })
                 }
-                onClick={panelStatesStore.expandFiltersPanel}
+                onClick={() => {
+                  panelStatesStore.expandFiltersPanel();
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'dashboard-instances-by-process-single-version',
+                    version: item.version,
+                    process: item.bpmnProcessId,
+                  });
+                }}
                 title={concatTitle(
                   item.name || processName,
                   totalInstancesCount,
@@ -103,7 +112,14 @@ const InstancesByProcess = observer(() => {
               : {}),
           })
         }
-        onClick={panelStatesStore.expandFiltersPanel}
+        onClick={() => {
+          panelStatesStore.expandFiltersPanel();
+          tracking.track({
+            eventName: 'navigation',
+            link: 'dashboard-instances-by-process-all-versions',
+            process: item.bpmnProcessId,
+          });
+        }}
         title={concatGroupTitle(
           name,
           totalInstancesCount,

@@ -9,6 +9,7 @@ import {observer} from 'mobx-react';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {Locations} from 'modules/routes';
 import {Container, Link, Separator, CurrentInstance} from './styled';
+import {tracking} from 'modules/tracking';
 
 const Breadcrumb: React.FC = observer(() => {
   if (
@@ -27,6 +28,13 @@ const Breadcrumb: React.FC = observer(() => {
             <Link
               to={(location) => Locations.instance(instanceId, location)}
               title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
+              onClick={() => {
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'instance-breadcrumb',
+                  instanceId,
+                });
+              }}
             >
               {`${processDefinitionName}`}
             </Link>

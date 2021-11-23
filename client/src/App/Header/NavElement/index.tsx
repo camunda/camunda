@@ -13,11 +13,24 @@ type NavElementProps = {
   icon?: React.ReactNode;
   title: string;
   label: string;
+  onClick?: () => void;
 };
 
-const NavElement: React.FC<NavElementProps> = ({title, to, icon, label}) => (
+const NavElement: React.FC<NavElementProps> = ({
+  title,
+  to,
+  icon,
+  label,
+  onClick,
+}) => (
   <Container>
-    <Link exact activeClassName="active" title={title} to={to}>
+    <Link
+      exact
+      activeClassName="active"
+      title={title}
+      to={to}
+      onClick={onClick}
+    >
       {icon}
       <Label>{label}</Label>
     </Link>
