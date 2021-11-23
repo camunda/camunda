@@ -116,7 +116,7 @@ public final class RecordVersionTest {
         .command()
         .put("resources", List.of(Map.of("resourceName", "process.bpmn", "resource", resource)))
         .done()
-        .send();
+        .sendAndAwait();
   }
 
   private long createProcessInstance(final String processId) {

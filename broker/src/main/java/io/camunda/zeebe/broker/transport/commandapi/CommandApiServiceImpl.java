@@ -63,6 +63,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   protected void onActorStarting() {
     scheduler.submitActor(queryHandler);
+    scheduler.submitActor(commandHandler);
   }
 
   @Override
@@ -71,7 +72,13 @@ public final class CommandApiServiceImpl extends Actor
       removeLeaderHandlers(leadPartition);
     }
     leadPartitions.clear();
-
+    actor.runOnCompletion(
+        commandHandler.closeAsync(),
+        (ok, error) -> {
+          if (error != null) {
+            Loggers.TRANSPORT_LOGGER.error("Error closing command api request handler", error);
+          }
+        });
     actor.runOnCompletion(
         queryHandler.closeAsync(),
         (ok, error) -> {
