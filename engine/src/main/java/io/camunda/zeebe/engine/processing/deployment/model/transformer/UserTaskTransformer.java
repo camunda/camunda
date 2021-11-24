@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProp
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -28,6 +30,12 @@ import org.slf4j.Logger;
 public final class UserTaskTransformer implements ModelElementTransformer<UserTask> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
+
+  private final ExpressionLanguage expressionLanguage;
+
+  public UserTaskTransformer(final ExpressionLanguage expressionLanguage) {
+    this.expressionLanguage = expressionLanguage;
+  }
 
   @Override
   public Class<UserTask> getType() {
@@ -45,13 +53,40 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     userTask.setJobWorkerProperties(jobWorkerProperties);
 
     transformTaskDefinition(jobWorkerProperties);
-
+    transformAssignmentDefinition(element, jobWorkerProperties);
     transformTaskHeaders(element, jobWorkerProperties);
   }
 
   private void transformTaskDefinition(final JobWorkerProperties jobWorkerProperties) {
     jobWorkerProperties.setType(new StaticExpression(Protocol.USER_TASK_JOB_TYPE));
     jobWorkerProperties.setRetries(new StaticExpression("1"));
+  }
+
+  private void transformAssignmentDefinition(
+      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+    final var assignmentDefinition =
+        element.getSingleExtensionElement(ZeebeAssignmentDefinition.class);
+    if (assignmentDefinition == null) {
+      return;
+    }
+    final var assignee = assignmentDefinition.getAssignee();
+    if (assignee != null && !assignee.isBlank()) {
+      jobWorkerProperties.setAssignee(expressionLanguage.parseExpression(assignee));
+    }
+    final var candidateGroups = assignmentDefinition.getCandidateGroups();
+    if (candidateGroups != null && !candidateGroups.isBlank()) {
+      final var candidateGroupsExpression = expressionLanguage.parseExpression(candidateGroups);
+      if (candidateGroupsExpression.isStatic()) {
+        // static candidateGroups must be in CSV format, but this is already checked by validator
+        jobWorkerProperties.setCandidateGroups(
+            ExpressionTransformer.parseListOfCsv(candidateGroups)
+                .map(ExpressionTransformer::asListLiteralExpression)
+                .map(expressionLanguage::parseExpression)
+                .get());
+      } else {
+        jobWorkerProperties.setCandidateGroups(candidateGroupsExpression);
+      }
+    }
   }
 
   private void transformTaskHeaders(

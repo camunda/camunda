@@ -18,6 +18,8 @@ public class JobWorkerProperties {
 
   private Expression type;
   private Expression retries;
+  private Expression assignee;
+  private Expression candidateGroups;
   private Map<String, String> taskHeaders = Map.of();
 
   public Expression getType() {
@@ -34,6 +36,22 @@ public class JobWorkerProperties {
 
   public void setRetries(final Expression retries) {
     this.retries = retries;
+  }
+
+  public Expression getAssignee() {
+    return assignee;
+  }
+
+  public void setAssignee(final Expression assignee) {
+    this.assignee = assignee;
+  }
+
+  public Expression getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public void setCandidateGroups(final Expression candidateGroups) {
+    this.candidateGroups = candidateGroups;
   }
 
   public Map<String, String> getTaskHeaders() {

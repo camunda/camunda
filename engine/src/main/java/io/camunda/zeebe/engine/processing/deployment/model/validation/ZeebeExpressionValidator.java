@@ -9,14 +9,13 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -104,16 +103,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   }
 
   public static boolean isListOfCsv(final Expression staticExp) {
-    final String value = staticExp.getExpression();
-    if (value.isEmpty()) {
-      return true;
-    }
-    final var values = value.split(",");
-    if (values.length < StringUtils.countMatches(value, ",") + 1) {
-      // one of the values was an empty string, e.g. 'a,,c'
-      return false;
-    }
-    return Arrays.stream(values).noneMatch(String::isEmpty);
+    return ExpressionTransformer.parseListOfCsv(staticExp.getExpression()).isRight();
   }
 
   public static class Builder<T extends ModelElementInstance> {
