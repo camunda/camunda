@@ -193,12 +193,12 @@ public class VariableImportIT extends AbstractImportIT {
     final List<Tuple> expectedVariables = List.of(
       Tuple.tuple("objectVar", OBJECT.getId(), objectVariableDto.getValue()),
       Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
-      Tuple.tuple("objectVar.age", LONG.getId(), "28"),
-      Tuple.tuple("objectVar.IQ", LONG.getId(), "99999999999999"),
+      Tuple.tuple("objectVar.age", DOUBLE.getId(), "28.0"),
+      Tuple.tuple("objectVar.IQ", DOUBLE.getId(), "9.9999999999999E13"),
       Tuple.tuple("objectVar.birthday", DATE.getId(), "1992-11-17T00:00:00.000+0100"),
       Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), "99.9"),
       Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), "false"),
-      Tuple.tuple("objectVar.hands", LONG.getId(), "2"),
+      Tuple.tuple("objectVar.hands", DOUBLE.getId(), "2.0"),
       Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), "true"),
       Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), "false"),
       Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "2") // additional _listSize variable for lists
@@ -276,7 +276,7 @@ public class VariableImportIT extends AbstractImportIT {
     // given an instance with an object variable
     final Map<String, Object> objectVar = new HashMap<>();
     objectVar.put("name", "Pond");
-    objectVar.put("age", "28");
+    objectVar.put("age", 28);
     objectVar.put("likes", List.of("optimize", "garlic"));
     VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
     final Map<String, Object> variables = new HashMap<>();
@@ -286,7 +286,7 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // and the variable is updated while the instance is running
-    objectVar.put("age", "29");
+    objectVar.put("age", 29);
     objectVar.put("likes", List.of("optimize", "garlic", "tofu"));
     objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
     engineIntegrationExtension.updateVariableInstanceForProcessInstance(
@@ -311,7 +311,7 @@ public class VariableImportIT extends AbstractImportIT {
       .containsExactlyInAnyOrder(
         Tuple.tuple("objectVar", OBJECT.getId(), objectVariableDto.getValue(), 2L),
         Tuple.tuple("objectVar.name", STRING.getId(), "Pond", 2L),
-        Tuple.tuple("objectVar.age", STRING.getId(), "29", 2L),
+        Tuple.tuple("objectVar.age", DOUBLE.getId(), "29.0", 2L),
         Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "3", 2L)
       );
   }
@@ -846,7 +846,7 @@ public class VariableImportIT extends AbstractImportIT {
   private static Stream<Arguments> primitiveObjectVariableScenarios() {
     return Stream.of(
       Arguments.of("\"someString\"", "java.lang.String", STRING, "someString"),
-      Arguments.of("5", "java.lang.Integer", LONG, "5"),
+      Arguments.of("5", "java.lang.Integer", DOUBLE, "5.0"),
       Arguments.of("true", "java.lang.Boolean", BOOLEAN, "true")
     );
   }

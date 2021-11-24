@@ -144,14 +144,14 @@ public class ObjectVariableService {
       newVariable.setType(VariableType.DOUBLE.getId());
       newVariable.setValue(value.toString());
     } else if (value instanceof Long) {
-      newVariable.setType(VariableType.LONG.getId());
-      newVariable.setValue(value.toString());
+      newVariable.setType(VariableType.DOUBLE.getId());
+      newVariable.setValue(String.valueOf(((Long) value).doubleValue()));
     } else if (value instanceof Integer) {
-      newVariable.setType(VariableType.LONG.getId());
-      newVariable.setValue(((Integer) value).toString());
+      newVariable.setType(VariableType.DOUBLE.getId());
+      newVariable.setValue(String.valueOf(((Integer) value).doubleValue()));
     } else if (value instanceof Short) {
-      newVariable.setType(VariableType.LONG.getId());
-      newVariable.setValue(((Short) value).toString());
+      newVariable.setType(VariableType.DOUBLE.getId());
+      newVariable.setValue(String.valueOf(((Short) value).doubleValue()));
     } else {
       log.warn(
         "Variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",

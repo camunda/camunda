@@ -25,6 +25,7 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
@@ -274,7 +275,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
       .containsExactlyInAnyOrder(
         Tuple.tuple("objectVarName", OBJECT.getId(), externalVariable.getValue()),
         Tuple.tuple("objectVarName.name", STRING.getId(), "Pond"),
-        Tuple.tuple("objectVarName.age", LONG.getId(), "28"),
+        Tuple.tuple("objectVarName.age", DOUBLE.getId(), "28.0"),
         Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), "2")
       );
   }
@@ -317,7 +318,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
       .containsExactlyInAnyOrder(
         Tuple.tuple("objectVarName", OBJECT.getId(), externalVariable.getValue(), 1000L),
         Tuple.tuple("objectVarName.name", STRING.getId(), "Pond", 1000L),
-        Tuple.tuple("objectVarName.age", LONG.getId(), "29", 1000L),
+        Tuple.tuple("objectVarName.age", DOUBLE.getId(), "29.0", 1000L),
         Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), "3", 1000L)
       );
   }

@@ -28,7 +28,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
   private final ProcessVariableUpdateWriter variableWriter;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
-  final ObjectVariableService objectVariableService;
+  private final ObjectVariableService objectVariableService;
 
   public VariableUpdateEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,

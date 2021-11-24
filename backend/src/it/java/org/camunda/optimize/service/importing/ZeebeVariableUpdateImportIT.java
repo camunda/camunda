@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -19,6 +20,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -26,6 +28,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -365,6 +371,48 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
       )
       .containsExactlyInAnyOrder(
         Tuple.tuple("var1", "secondUpdate", STRING_TYPE));
+  }
+
+  @SneakyThrows
+  @Test
+  public void zeebeVariableImport_updateObjectVariable() {
+    // given
+    final Map<String, Object> objectVar = new HashMap<>();
+    objectVar.put("name", "Pond");
+    objectVar.put("age", 28);
+    objectVar.put("likes", List.of("optimize", "garlic"));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVar);
+    final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(variables);
+    waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
+    importAllZeebeEntitiesFromScratch();
+
+    objectVar.put("age", 29);
+    objectVar.put("likes", List.of("optimize", "garlic", "tofu"));
+    zeebeExtension.addVariablesToScope(
+      processInstanceKey,
+      variables,
+      true
+    );
+    waitUntilMinimumVariableDocumentsWithUpdatedIntentExportedCount(1);
+
+    // when
+    importAllZeebeEntitiesFromLastIndex();
+
+    // then
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+    assertThat(instance.getVariables())
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple("objectVar", OBJECT.getId(), variablesClient.createMapJsonObjectVariableDto(objectVar).getValue()),
+        Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
+        Tuple.tuple("objectVar.age", DOUBLE.getId(), "29.0"),
+        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "3")
+      );
   }
 
   private Map<String, Object> generateVariables() {
