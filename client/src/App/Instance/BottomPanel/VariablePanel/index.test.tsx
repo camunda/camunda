@@ -167,8 +167,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('test')).toBeInTheDocument();
   });
 
-  // TODO: #1850
-  it.skip('should add new variable', async () => {
+  it('should add new variable', async () => {
     jest.useFakeTimers();
 
     render(<VariablePanel />, {wrapper: Wrapper});
@@ -179,8 +178,8 @@ describe('VariablePanel', () => {
     userEvent.click(screen.getByTitle(/add variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/name/i), 'foo');
-    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
+    userEvent.type(screen.getByTestId('add-variable-name'), 'foo');
+    userEvent.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
@@ -281,8 +280,7 @@ describe('VariablePanel', () => {
     jest.useRealTimers();
   });
 
-  // TODO: #1850
-  it.skip('should remove pending variable if scope id changes', async () => {
+  it('should remove pending variable if scope id changes', async () => {
     mockServer.use(
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -304,8 +302,8 @@ describe('VariablePanel', () => {
     userEvent.click(screen.getByTitle(/add variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/name/i), 'foo');
-    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
+    userEvent.type(screen.getByTestId('add-variable-name'), 'foo');
+    userEvent.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -343,8 +341,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
   });
 
-  // TODO: #1850
-  it.skip('should display validation error if backend validation fails while adding variable', async () => {
+  it('should display validation error if backend validation fails while adding variable', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(screen.getByTitle(/add variable/i)).toBeEnabled()
@@ -353,8 +350,8 @@ describe('VariablePanel', () => {
     userEvent.click(screen.getByTitle(/add variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/name/i), 'foo');
-    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
+    userEvent.type(screen.getByTestId('add-variable-name'), 'foo');
+    userEvent.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -377,19 +374,21 @@ describe('VariablePanel', () => {
       headline: 'Variable could not be saved',
     });
 
-    expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
+    expect(screen.getByText('Variable should be unique')).toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/name/i), '2');
+    userEvent.type(screen.getByTestId('add-variable-name'), '2');
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Variable should be unique')
+    );
+
+    userEvent.type(screen.getByTestId('add-variable-name'), '{backspace}');
+
     expect(
-      screen.queryByTitle('Variable should be unique')
-    ).not.toBeInTheDocument();
-
-    userEvent.type(screen.getByLabelText(/name/i), '{backspace}');
-    expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
+      await screen.findByText('Variable should be unique')
+    ).toBeInTheDocument();
   });
 
-  // TODO: #1850
-  it.skip('should display error notification if add variable operation could not be created', async () => {
+  it('should display error notification if add variable operation could not be created', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(screen.getByTitle(/add variable/i)).toBeEnabled()
@@ -398,8 +397,8 @@ describe('VariablePanel', () => {
     userEvent.click(screen.getByTitle(/add variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/name/i), 'foo');
-    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
+    userEvent.type(screen.getByTestId('add-variable-name'), 'foo');
+    userEvent.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -424,8 +423,7 @@ describe('VariablePanel', () => {
     });
   });
 
-  // TODO: #1850
-  it.skip('should display error notification if add variable operation fails', async () => {
+  it('should display error notification if add variable operation fails', async () => {
     jest.useFakeTimers();
 
     render(<VariablePanel />, {wrapper: Wrapper});
@@ -436,8 +434,8 @@ describe('VariablePanel', () => {
     userEvent.click(screen.getByTitle(/add variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText(/name/i), 'foo');
-    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
+    userEvent.type(screen.getByTestId('add-variable-name'), 'foo');
+    userEvent.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
@@ -522,8 +520,7 @@ describe('VariablePanel', () => {
     jest.useRealTimers();
   });
 
-  // TODO: #1850
-  it.skip('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
+  it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
     jest.useFakeTimers();
 
     render(<VariablePanel />, {wrapper: Wrapper});
@@ -533,9 +530,8 @@ describe('VariablePanel', () => {
 
     userEvent.click(screen.getByTitle(/add variable/i));
 
-    userEvent.type(screen.getByLabelText(/name/i), 'foo');
-
-    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
+    userEvent.type(screen.getByTestId('add-variable-name'), 'foo');
+    userEvent.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>

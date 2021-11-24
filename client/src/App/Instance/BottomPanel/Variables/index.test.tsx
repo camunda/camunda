@@ -243,8 +243,7 @@ describe('Variables', () => {
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
-    // TODO: #1850
-    it.skip('should not allow empty value', async () => {
+    it('should not allow empty value', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -265,22 +264,22 @@ describe('Variables', () => {
       userEvent.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(screen.getByLabelText(/name/i), 'test');
+
+      userEvent.type(screen.getByTestId('add-variable-name'), 'test');
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      userEvent.type(screen.getByLabelText(/value/i), '    ');
+      userEvent.type(screen.getByTestId('add-variable-value'), '    ');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
         screen.queryByTitle('Value has to be JSON')
       ).not.toBeInTheDocument();
       expect(
-        await screen.findByTitle('Value has to be JSON')
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
     });
 
-    // TODO: #1850
-    it.skip('should not allow empty characters in variable name', async () => {
+    it('should not allow empty characters in variable name', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -302,48 +301,48 @@ describe('Variables', () => {
       userEvent.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(screen.getByLabelText(/value/i), '123', {});
+      userEvent.type(screen.getByTestId('add-variable-value'), '123', {});
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
-        screen.queryByTitle('Name has to be filled')
+        screen.queryByText('Name has to be filled')
       ).not.toBeInTheDocument();
       expect(
-        await screen.findByTitle('Name has to be filled')
+        await screen.findByText('Name has to be filled')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText(/value/i));
-      userEvent.type(screen.getByLabelText(/value/i), 'test');
-
+      userEvent.clear(screen.getByTestId('add-variable-value'));
+      userEvent.type(screen.getByTestId('add-variable-value'), 'test');
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
+
+      expect(screen.getByText('Name has to be filled')).toBeInTheDocument();
       expect(
-        screen.queryByTitle('Name has to be filled and Value has to be JSON')
+        screen.queryByText('Value has to be JSON')
       ).not.toBeInTheDocument();
       expect(
-        await screen.findByTitle(
-          'Name has to be filled and Value has to be JSON'
-        )
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByLabelText(/name/i), '   ');
+      userEvent.type(screen.getByTestId('add-variable-name'), '   ');
 
-      expect(
-        screen.getByTitle('Name is invalid and Value has to be JSON')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
+      expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
 
-      userEvent.type(screen.getByLabelText(/name/i), ' test');
+      userEvent.type(screen.getByTestId('add-variable-name'), ' test');
 
-      expect(
-        screen.getByTitle('Name is invalid and Value has to be JSON')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
+      expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText(/value/i));
-      userEvent.type(screen.getByLabelText(/value/i), '"valid value"');
+      userEvent.clear(screen.getByTestId('add-variable-value'));
+      userEvent.type(screen.getByTestId('add-variable-value'), '"valid value"');
 
-      expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Value has to be JSON')
+      );
+
+      expect(screen.getByText('Name is invalid')).toBeInTheDocument();
     });
 
-    // TODO: #1850
-    it.skip('should not allow to add duplicate variables', async () => {
+    it('should not allow to add duplicate variables', async () => {
       jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -366,36 +365,51 @@ describe('Variables', () => {
       userEvent.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(screen.getByLabelText(/name/i), mockVariables[0].name);
+      userEvent.type(
+        screen.getByTestId('add-variable-name'),
+        mockVariables[0].name
+      );
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
-        screen.queryByTitle('Name should be unique and Value has to be JSON')
+        screen.queryByText('Name should be unique')
       ).not.toBeInTheDocument();
       expect(
-        await screen.findByTitle(
-          'Name should be unique and Value has to be JSON'
-        )
+        screen.queryByText('Value has to be JSON')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText('Name should be unique')
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText(/value/i));
-      userEvent.type(screen.getByLabelText(/value/i), '123');
+      userEvent.clear(screen.getByTestId('add-variable-value'));
+      userEvent.type(screen.getByTestId('add-variable-value'), '123');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      expect(screen.getByTitle('Name should be unique')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText(/name/i));
-      userEvent.type(screen.getByLabelText(/name/i), 'someOtherName');
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Value has to be JSON')
+      );
+      expect(screen.getByText('Name should be unique')).toBeInTheDocument();
+
+      userEvent.clear(screen.getByTestId('add-variable-name'));
+      userEvent.type(screen.getByTestId('add-variable-name'), 'someOtherName');
 
       await waitFor(() =>
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
+
+      expect(
+        screen.queryByText('Name should be unique')
+      ).not.toBeInTheDocument();
+
       jest.clearAllTimers();
       jest.useRealTimers();
     });
 
-    // TODO: #1850
-    it.skip('should not allow to add variable with invalid name', async () => {
+    it('should not allow to add variable with invalid name', async () => {
       jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -418,19 +432,19 @@ describe('Variables', () => {
       userEvent.click(screen.getByTitle(/add variable/i));
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      userEvent.type(screen.getByLabelText(/name/i), '"invalid"');
-      userEvent.type(screen.getByLabelText(/value/i), '123');
+      userEvent.type(screen.getByTestId('add-variable-name'), '"invalid"');
+      userEvent.type(screen.getByTestId('add-variable-value'), '123');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
+      expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
 
       jest.runOnlyPendingTimers();
 
-      expect(await screen.findByTitle('Name is invalid')).toBeInTheDocument();
+      expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText(/name/i));
-      userEvent.type(screen.getByLabelText(/name/i), 'someOtherName');
+      userEvent.clear(screen.getByTestId('add-variable-name'));
+      userEvent.type(screen.getByTestId('add-variable-name'), 'someOtherName');
 
       jest.runOnlyPendingTimers();
 
@@ -438,7 +452,7 @@ describe('Variables', () => {
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
 
-      expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
+      expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
 
       jest.clearAllTimers();
       jest.useRealTimers();
@@ -568,7 +582,9 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('add-variable-value')
+      ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -614,7 +630,9 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('add-variable-value')
+      ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -649,7 +667,9 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId('add-variable-value')
+      ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -659,8 +679,11 @@ describe('Variables', () => {
 
       const invalidJSONObject = "{invalidKey: 'value'}";
 
-      userEvent.clear(screen.getByLabelText(/value/i));
-      userEvent.type(screen.getByLabelText(/value/i), invalidJSONObject);
+      userEvent.clear(screen.getByTestId('add-variable-value'));
+      userEvent.type(
+        screen.getByTestId('add-variable-value'),
+        invalidJSONObject
+      );
 
       expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
 
@@ -673,8 +696,8 @@ describe('Variables', () => {
         await screen.findByTitle('Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText(/value/i));
-      userEvent.type(screen.getByLabelText(/value/i), '123');
+      userEvent.clear(screen.getByTestId('add-variable-value'));
+      userEvent.type(screen.getByTestId('add-variable-value'), '123');
 
       expect(screen.getByTitle(/save variable/i)).toBeEnabled();
 
@@ -1016,8 +1039,7 @@ describe('Variables', () => {
     });
   });
 
-  // TODO: #1850
-  it.skip('should have JSON editor when adding a new Variable', async () => {
+  it('should have JSON editor when adding a new Variable', async () => {
     currentInstanceStore.setCurrentInstance(instanceMock);
 
     mockServer.use(

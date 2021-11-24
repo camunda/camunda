@@ -5,11 +5,12 @@
  */
 
 import {config} from '../config';
-import {setup} from './Variables.setup';
+import {setup, cmNameField, cmValueField} from './Variables.setup';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
+import {IS_NEW_VARIABLES_FORM} from '../../src/modules/feature-flags';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
@@ -50,9 +51,19 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
 
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .notOk();
+  }
+
   // add a new variable called test, see that save button is disabled, and no sipnner is displayed.
+  const nameField = IS_NEW_VARIABLES_FORM
+    ? within(cmNameField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /name/i});
+
   await t
-    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'test')
+    .typeText(nameField, 'test')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -64,9 +75,19 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
 
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .ok();
+  }
+
   // add a valid value to the newly added variable, see that save button is enabled and no spinner is displayed.
+  const valueField = IS_NEW_VARIABLES_FORM
+    ? within(cmValueField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /value/i});
+
   await t
-    .typeText(screen.queryByRole('textbox', {name: /value/i}), '123')
+    .typeText(valueField, '123')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -77,12 +98,18 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .notOk()
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
+
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .notOk();
+  }
 
   // delete the value of the variable and add some invalid value instead. see that save button is disabled and no spinner is displayed.
   await t
-    .selectText(screen.queryByRole('textbox', {name: /value/i}))
+    .selectText(valueField)
     .pressKey('delete')
-    .typeText(screen.queryByRole('textbox', {name: /value/i}), 'someTestValue')
+    .typeText(valueField, 'someTestValue')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -93,15 +120,18 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .notOk()
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
+
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .ok();
+  }
 
   // delete the value of the variable and add some valid string value instead. see that save button is enabled and no spinner is displayed.
   await t
-    .selectText(screen.queryByRole('textbox', {name: /value/i}))
+    .selectText(valueField)
     .pressKey('delete')
-    .typeText(
-      screen.queryByRole('textbox', {name: /value/i}),
-      '"someTestValue"'
-    )
+    .typeText(valueField, '"someTestValue"')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -112,15 +142,18 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .notOk()
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
+
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .notOk();
+  }
 
   // delete the value of the variable and add some valid json value instead. see that save button is enabled and no spinner is displayed.
   await t
-    .selectText(screen.queryByRole('textbox', {name: /value/i}))
+    .selectText(valueField)
     .pressKey('delete')
-    .typeText(
-      screen.queryByRole('textbox', {name: /value/i}),
-      '{"name": "value","found":true}'
-    )
+    .typeText(valueField, '{"name": "value","found":true}')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -132,9 +165,15 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
 
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .notOk();
+  }
+
   // delete the key of the newly added variable and see that save button is disabled and no spinner is displayed.
   await t
-    .selectText(screen.queryByRole('textbox', {name: /name/i}))
+    .selectText(nameField)
     .pressKey('delete')
     .expect(
       screen
@@ -146,6 +185,14 @@ test('Validations for add/edit variable works correctly', async (t) => {
     .notOk()
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk();
+
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .expect(within(cmNameField).queryByText('Name has to be filled').exists)
+      .ok()
+      .expect(within(cmValueField).queryByText('Value has to be JSON').exists)
+      .notOk();
+  }
 
   await t.click(screen.queryByRole('button', {name: 'Exit edit mode'}));
 });
@@ -241,8 +288,12 @@ test('Add variables', async (t) => {
     .ok();
 
   // add a key to the newly added variable and see that save variable button is disabled and no spinner is displayed.
+  const nameField = IS_NEW_VARIABLES_FORM
+    ? within(cmNameField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /name/i});
+
   await t
-    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'secondTestKey')
+    .typeText(nameField, 'secondTestKey')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -255,11 +306,12 @@ test('Add variables', async (t) => {
     .notOk();
 
   // add a value to the newly added variable and see that save variable button is enabled and no spinner is displayed.
+  const valueField = IS_NEW_VARIABLES_FORM
+    ? within(cmValueField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /value/i});
+
   await t
-    .typeText(
-      screen.queryByRole('textbox', {name: /value/i}),
-      '"secondTestValue"'
-    )
+    .typeText(valueField, '"secondTestValue"')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
@@ -345,19 +397,19 @@ test('Should not change add variable state when enter is pressed', async (t) => 
     })
   );
 
-  await t
-    .expect(screen.getByRole('textbox', {name: /name/i}).exists)
-    .ok()
-    .expect(screen.getByRole('textbox', {name: /value/i}).exists)
-    .ok();
+  const nameField = IS_NEW_VARIABLES_FORM
+    ? within(cmNameField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /name/i});
+
+  const valueField = IS_NEW_VARIABLES_FORM
+    ? within(cmValueField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /value/i});
+
+  await t.expect(nameField.exists).ok().expect(valueField.exists).ok();
 
   await t.pressKey('enter');
 
-  await t
-    .expect(screen.getByRole('textbox', {name: /name/i}).exists)
-    .ok()
-    .expect(screen.getByRole('textbox', {name: /value/i}).exists)
-    .ok();
+  await t.expect(nameField.exists).ok().expect(valueField.exists).ok();
 });
 
 test('Remove fields when instance is canceled', async (t) => {
@@ -374,11 +426,19 @@ test('Remove fields when instance is canceled', async (t) => {
     )
     .notOk();
 
+  let nameField = IS_NEW_VARIABLES_FORM
+    ? within(cmNameField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /name/i});
+
+  let valueField = IS_NEW_VARIABLES_FORM
+    ? within(cmValueField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: /value/i});
+
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .expect(screen.queryByRole('textbox', {name: /name/i}).exists)
+    .expect(nameField.exists)
     .ok()
-    .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
+    .expect(valueField.exists)
     .ok();
 
   await t
@@ -387,12 +447,20 @@ test('Remove fields when instance is canceled', async (t) => {
     .expect(screen.queryByTestId('operation-spinner').exists)
     .ok();
 
+  nameField = IS_NEW_VARIABLES_FORM
+    ? screen.queryByTestId('add-variable-name')
+    : screen.queryByRole('textbox', {name: /name/i});
+
+  valueField = IS_NEW_VARIABLES_FORM
+    ? screen.queryByTestId('add-variable-value')
+    : screen.queryByRole('textbox', {name: /value/i});
+
   await t
     .expect(screen.queryByTestId('operation-spinner').exists)
     .notOk()
-    .expect(screen.queryByRole('textbox', {name: /variable/i}).exists)
+    .expect(nameField.exists)
     .notOk()
-    .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
+    .expect(valueField.exists)
     .notOk();
 });
 

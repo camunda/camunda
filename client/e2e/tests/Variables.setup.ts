@@ -5,8 +5,12 @@
  */
 
 import {deploy, createSingleInstance} from '../setup-utils';
+import {screen} from '@testing-library/testcafe';
 
-export async function setup() {
+const cmNameField = screen.getByTestId('add-variable-name').shadowRoot();
+const cmValueField = screen.getByTestId('add-variable-value').shadowRoot();
+
+const setup = async () => {
   await deploy(['./e2e/tests/resources/onlyIncidentsProcess_v_1.bpmn']);
   const instance = await createSingleInstance('onlyIncidentsProcess', 1, {
     testData: 'something',
@@ -28,4 +32,6 @@ export async function setup() {
     variables
   );
   return {instance, instanceWithManyVariables};
-}
+};
+
+export {setup, cmNameField, cmValueField};

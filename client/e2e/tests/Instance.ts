@@ -10,6 +10,7 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {DATE_REGEX} from './constants';
+import {IS_NEW_VARIABLES_FORM} from '../../src/modules/feature-flags';
 
 fixture('Instance')
   .page(config.endpoint)
@@ -227,20 +228,49 @@ test('Instance with an incident - resolve incidents', async (t) => {
     .notOk();
 
   // add variable isCool
-  await t
-    .click(screen.queryByRole('button', {name: 'Add variable'}))
-    .typeText(screen.queryByRole('textbox', {name: /name/i}), 'isCool', {
-      paste: true,
-    })
-    .typeText(screen.queryByRole('textbox', {name: /value/i}), 'true', {
-      paste: true,
-    })
-    .expect(
-      screen
-        .queryByRole('button', {name: 'Save variable'})
-        .hasAttribute('disabled')
-    )
-    .notOk();
+  if (IS_NEW_VARIABLES_FORM) {
+    await t
+      .click(screen.queryByRole('button', {name: 'Add variable'}))
+      .typeText(
+        within(
+          screen.getByTestId('add-variable-name').shadowRoot()
+        ).queryByRole('textbox'),
+        'isCool',
+        {
+          paste: true,
+        }
+      )
+      .typeText(
+        within(
+          screen.queryByTestId('add-variable-value').shadowRoot()
+        ).queryByRole('textbox'),
+        'true',
+        {
+          paste: true,
+        }
+      )
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .notOk();
+  } else {
+    await t
+      .click(screen.queryByRole('button', {name: 'Add variable'}))
+      .typeText(screen.queryByRole('textbox', {name: /name/i}), 'isCool', {
+        paste: true,
+      })
+      .typeText(screen.queryByRole('textbox', {name: /value/i}), 'true', {
+        paste: true,
+      })
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .notOk();
+  }
 
   await t
     .click(screen.queryByRole('button', {name: 'Save variable'}))
