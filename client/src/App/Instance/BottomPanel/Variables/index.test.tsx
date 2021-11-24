@@ -574,7 +574,7 @@ describe('Variables', () => {
         screen.getByTestId(variablesStore.state.items[0].name)
       );
       expect(
-        withinFirstVariable.queryByLabelText(/value/i)
+        withinFirstVariable.queryByTestId('edit-variable-value')
       ).not.toBeInTheDocument();
       expect(
         withinFirstVariable.queryByTitle(/exit edit mode/i)
@@ -585,7 +585,9 @@ describe('Variables', () => {
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
-      expect(withinFirstVariable.getByLabelText(/value/i)).toBeInTheDocument();
+      expect(
+        withinFirstVariable.getByTestId('edit-variable-value')
+      ).toBeInTheDocument();
       expect(
         withinFirstVariable.getByTitle(/exit edit mode/i)
       ).toBeInTheDocument();
@@ -749,7 +751,10 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('variable-backdrop'));
 
       expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
-      expect(screen.getByText('"full-value"')).toBeInTheDocument();
+      expect(screen.getByTestId('edit-variable-value')).toHaveProperty(
+        'value',
+        '"full-value"'
+      );
       expect(
         within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i)
       ).toBeEnabled();

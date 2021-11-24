@@ -5,13 +5,12 @@
  */
 
 import {
+  ValueField,
   TD,
   VariableName,
   EditInputTD,
-  EditTextarea,
   EditButtonsTD,
 } from './styled';
-import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
 import {validateValueComplete} from './validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {useRef, useState} from 'react';
@@ -21,14 +20,9 @@ import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 type Props = {
   variableName: string;
   variableValue: string;
-  onHeightChange: (itemRef: React.RefObject<HTMLTableDataCellElement>) => void;
 };
 
-const ExistingVariable: React.FC<Props> = ({
-  variableName,
-  variableValue,
-  onHeightChange,
-}) => {
+const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
   const formState = useFormState();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const form = useForm();
@@ -52,27 +46,24 @@ const ExistingVariable: React.FC<Props> = ({
           name="value"
           initialValue={variableValue}
           validate={validateValueComplete}
+          parse={(value) => value}
         >
-          {({input}) => {
-            return (
-              <InjectAriaInvalid name={input.name}>
-                <EditTextarea
-                  {...input}
-                  autoFocus
-                  hasAutoSize
-                  minRows={1}
-                  maxRows={4}
-                  placeholder="Value"
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                    input.onChange(e);
-                  }}
-                  onHeightChange={() => {
-                    onHeightChange(editInputTDRef);
-                  }}
-                />
-              </InjectAriaInvalid>
-            );
-          }}
+          {({input}) => (
+            <ValueField
+              {...input}
+              type="text"
+              placeholder="Value"
+              data-testid="edit-variable-value"
+              fieldSuffix={{
+                type: 'icon',
+                icon: 'window',
+                press: () => {
+                  setIsModalVisible(true);
+                },
+              }}
+              shouldDebounceError={false}
+            />
+          )}
         </Field>
       </EditInputTD>
       <EditButtonsTD>

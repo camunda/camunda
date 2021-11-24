@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const VALIDATION_DELAY = 750;
+const VALIDATION_DELAY = 1000;
 const ERRORS = {
   EMPTY_NAME: 'Name has to be filled',
   INVALID_NAME: 'Name is invalid',

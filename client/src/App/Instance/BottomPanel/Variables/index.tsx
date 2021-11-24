@@ -40,31 +40,6 @@ const Variables: React.FC = observer(() => {
   const {processInstanceId} = useInstancePageParams();
   const notifications = useNotifications();
 
-  const isTextareaOutOfBounds = (
-    itemRef: React.RefObject<HTMLTableDataCellElement>
-  ) => {
-    const inputTD = itemRef.current;
-
-    const theadHeight = 45;
-
-    if (inputTD && variablesContentRef?.current) {
-      const container = variablesContentRef.current.children[0];
-      // distance from top edge of container to bottom edge of td
-      const tdPosition =
-        inputTD.offsetTop -
-        theadHeight -
-        container.scrollTop +
-        inputTD.offsetHeight;
-
-      return tdPosition > container.clientHeight;
-    }
-  };
-
-  const scrollToItem = (itemRef: React.RefObject<HTMLTableDataCellElement>) => {
-    if (isTextareaOutOfBounds(itemRef)) {
-      itemRef.current?.scrollIntoView();
-    }
-  };
   const form = useForm();
 
   useEffect(() => {
@@ -169,7 +144,6 @@ const Variables: React.FC = observer(() => {
                             <ExistingVariable
                               variableName={variableName}
                               variableValue={variableValue}
-                              onHeightChange={scrollToItem}
                             />
                           ) : (
                             <>

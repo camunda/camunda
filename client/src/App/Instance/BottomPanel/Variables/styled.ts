@@ -9,8 +9,6 @@ import styled, {css, ThemedInterpolationFunction} from 'styled-components';
 import Panel from 'modules/components/Panel';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
 import IconButton from 'modules/components/IconButton';
-import {Input as BasicInput} from 'modules/components/Input';
-import BasicTextarea from 'modules/components/Textarea';
 import Modal from 'modules/components/Modal';
 
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
@@ -20,7 +18,7 @@ import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
 import DefaultButton from 'modules/components/Button';
-import {errorBorders} from 'modules/theme/interactions';
+import {TextField} from 'modules/components/TextField';
 
 const Spinner = styled(OperationSpinner)`
   margin-top: 4px;
@@ -154,16 +152,6 @@ const VariableName = styled.div`
   white-space: nowrap;
 `;
 
-const inputMargin = css`
-  padding: 3px 13px 3px 6px;
-`;
-
-const TextInput = styled(BasicInput)`
-  font-size: 14px;
-  ${inputMargin};
-  ${errorBorders}
-`;
-
 type DisplayTextProps = {hasBackdrop?: boolean};
 
 const DisplayText = styled.div<DisplayTextProps>`
@@ -182,25 +170,6 @@ const DisplayText = styled.div<DisplayTextProps>`
       `}
     `;
   }}
-`;
-
-const textAreaStyles = css`
-  line-height: normal;
-  resize: vertical;
-  font-size: 14px;
-  min-height: 26px;
-  max-height: 78px;
-  ${inputMargin};
-`;
-
-const AddTextarea = styled(BasicTextarea)`
-  ${textAreaStyles};
-  ${errorBorders};
-`;
-
-const EditTextarea = styled(BasicTextarea)`
-  ${textAreaStyles};
-  ${errorBorders}
 `;
 
 const EditButtonsTD = styled(TD)`
@@ -339,6 +308,17 @@ const Header = styled.div`
     `;
   }}
 `;
+
+const ValueField = styled(TextField)`
+  display: block;
+  line-height: normal;
+  resize: vertical;
+  font-size: 14px;
+  min-height: 26px;
+  max-height: 78px;
+  padding: 3px 13px 3px 6px;
+`;
+
 export {
   Spinner,
   Variables,
@@ -349,10 +329,7 @@ export {
   TH,
   THead,
   VariableName,
-  TextInput,
   DisplayText,
-  AddTextarea,
-  EditTextarea,
   EditButtonsTD,
   EditInputTD,
   DisplayTextTD,
@@ -367,4 +344,5 @@ export {
   Footer,
   EditButtonsContainer,
   Header,
+  ValueField,
 };
