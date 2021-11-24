@@ -24,7 +24,7 @@ import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class BusinessRuleTaskValidation implements ModelElementValidator<BusinessRuleTask> {
+public final class BusinessRuleTaskValidation implements ModelElementValidator<BusinessRuleTask> {
 
   @Override
   public Class<BusinessRuleTask> getElementType() {
@@ -49,15 +49,14 @@ public class BusinessRuleTaskValidation implements ModelElementValidator<Busines
 
     if (extensionElements == null) {
       return false;
-
-    } else {
-      final Collection<ZeebeCalledDecision> calledDecisionExtensions =
-          extensionElements.getChildElementsByType(ZeebeCalledDecision.class);
-      final Collection<ZeebeTaskDefinition> taskDefinitionExtensions =
-          extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
-
-      return calledDecisionExtensions.size() == 1 && taskDefinitionExtensions.isEmpty()
-          || calledDecisionExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
     }
+
+    final Collection<ZeebeCalledDecision> calledDecisionExtensions =
+        extensionElements.getChildElementsByType(ZeebeCalledDecision.class);
+    final Collection<ZeebeTaskDefinition> taskDefinitionExtensions =
+        extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
+
+    return calledDecisionExtensions.size() == 1 && taskDefinitionExtensions.isEmpty()
+        || calledDecisionExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
   }
 }

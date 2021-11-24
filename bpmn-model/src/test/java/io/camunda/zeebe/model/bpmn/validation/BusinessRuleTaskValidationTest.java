@@ -26,7 +26,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
-public class BusinessRuleTaskValidationTest {
+class BusinessRuleTaskValidationTest {
 
   @Test
   void emptyDecisionId() {
