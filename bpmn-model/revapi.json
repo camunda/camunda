@@ -36,6 +36,14 @@
           "code": "java.class.noLongerInheritsFromClass",
           "old": "class io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeUserTaskFormImpl",
           "superClass": "io.camunda.zeebe.model.bpmn.impl.instance.BaseElementImpl"
+        },
+        {
+          "justification": "Validators are used only internally; they should not used or referenced from outside of the module",
+          "code": "java.class.removed",
+          "old": {
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.model.bpmn.validation.zeebe"
+          }
         }
       ]
     }

@@ -35,7 +35,8 @@ public class ZeebeUserTaskValidationTest extends AbstractZeebeValidationTest {
             .zeebeFormKey("")
             .endEvent()
             .done(),
-        singletonList(expect(ZeebeFormDefinition.class, "Form key must be present and not empty"))
+        singletonList(
+            expect(ZeebeFormDefinition.class, "Attribute 'formKey' must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")
