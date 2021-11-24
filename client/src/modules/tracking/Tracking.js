@@ -25,10 +25,13 @@ export default function Tracking() {
   useEffect(() => {
     (async () => {
       const {enabled, token, apiHost, organizationId} = await getMixpanelConfig();
+      if (!enabled) {
+        return;
+      }
 
       mixpanel.init(token, {
         api_host: apiHost,
-        batch_requests: false,
+        batch_requests: true,
       });
 
       mixpanel.register({
