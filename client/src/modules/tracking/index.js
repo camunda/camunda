@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {initTracking, trackPageView} from './tracking';
+export {default as Tracking} from './Tracking';
