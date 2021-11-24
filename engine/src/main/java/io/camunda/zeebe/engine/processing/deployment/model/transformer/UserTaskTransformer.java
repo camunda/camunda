@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
-import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
@@ -80,20 +79,14 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       if (candidateGroupsExpression.isStatic()) {
         // static candidateGroups must be in CSV format, but this is already checked by validator
         jobWorkerProperties.setCandidateGroups(
-            ZeebeExpressionValidator.parseListOfCsv(candidateGroups)
-                .map(UserTaskTransformer::asListLiteralExpression)
+            ExpressionTransformer.parseListOfCsv(candidateGroups)
+                .map(ExpressionTransformer::asListLiteralExpression)
                 .map(expressionLanguage::parseExpression)
                 .get());
       } else {
         jobWorkerProperties.setCandidateGroups(candidateGroupsExpression);
       }
     }
-  }
-
-  private static String asListLiteralExpression(final List<String> values) {
-    return values.stream()
-        .map(value -> String.format("\"%s\"", value))
-        .collect(Collectors.joining(",", "=[", "]"));
   }
 
   private void transformTaskHeaders(
