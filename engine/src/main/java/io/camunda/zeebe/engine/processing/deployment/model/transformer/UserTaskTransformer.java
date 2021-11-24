@@ -91,11 +91,9 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   }
 
   private static String asListLiteralExpression(final List<String> values) {
-    return String.format(
-        "=[%s]",
-        values.stream()
-            .map(value -> String.format("\"%s\"", value))
-            .collect(Collectors.joining(",")));
+    return values.stream()
+        .map(value -> String.format("\"%s\"", value))
+        .collect(Collectors.joining(",", "=[", "]"));
   }
 
   private void transformTaskHeaders(
