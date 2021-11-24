@@ -83,10 +83,10 @@ env:
 # RESOURCES
 resources:
   limits:
-    cpu: 1
+    cpu: 5
     memory: 4Gi
   requests:
-    cpu: 500m
+    cpu: 2
     memory: 2Gi
 
 # PVC
