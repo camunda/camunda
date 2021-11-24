@@ -10,10 +10,10 @@ import {useEffect, useState} from 'react';
 const useFieldError = (name: string) => {
   const {
     input: {value},
-    meta: {active, dirtySinceLastSubmit},
+    meta: {active, dirtySinceLastSubmit, validating},
   } = useField(name);
 
-  const {validating, errors, submitErrors} = useFormState();
+  const {errors, submitErrors} = useFormState();
   const error = errors?.[name];
   const submitError = dirtySinceLastSubmit ? undefined : submitErrors?.[name];
 

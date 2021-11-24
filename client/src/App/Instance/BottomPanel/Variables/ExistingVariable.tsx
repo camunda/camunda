@@ -76,7 +76,7 @@ const ExistingVariable: React.FC<Props> = ({
         </Field>
       </EditInputTD>
       <EditButtonsTD>
-        <EditButtons onModalButtonClick={() => setIsModalVisible(true)} />
+        <EditButtons />
       </EditButtonsTD>
       <JSONEditorModal
         title={`Edit Variable "${variableName}"`}

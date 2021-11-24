@@ -5,9 +5,8 @@
  */
 
 import React, {useState} from 'react';
-import {TextInput, AddTextarea} from '../styled';
 import {Field, useForm, useFormState} from 'react-final-form';
-import {Container, Name, Value, EditButtonsContainer} from './styled';
+import {Container, NameField, ValueField, EditButtonsContainer} from './styled';
 import {EditButtons} from '../EditButtons';
 import {
   validateNameCharacters,
@@ -15,7 +14,6 @@ import {
   validateValueComplete,
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 
 const NewVariable: React.FC = () => {
@@ -25,46 +23,46 @@ const NewVariable: React.FC = () => {
 
   return (
     <Container data-testid="add-key-row">
-      <Name>
-        <Field
-          name="name"
-          validate={mergeValidators(
-            validateNameCharacters,
-            validateNameComplete
-          )}
-          allowNull={false}
-        >
-          {({input}) => (
-            <InjectAriaInvalid name={input.name}>
-              <TextInput
-                {...input}
-                autoFocus
-                type="text"
-                placeholder="Name"
-                onChange={input.onChange}
-              />
-            </InjectAriaInvalid>
-          )}
-        </Field>
-      </Name>
-      <Value>
-        <Field name="value" validate={validateValueComplete}>
-          {({input}) => (
-            <InjectAriaInvalid name={input.name}>
-              <AddTextarea
-                {...input}
-                placeholder="Value"
-                hasAutoSize
-                minRows={1}
-                maxRows={4}
-                onChange={input.onChange}
-              />
-            </InjectAriaInvalid>
-          )}
-        </Field>
-      </Value>
+      <Field
+        name="name"
+        validate={mergeValidators(validateNameCharacters, validateNameComplete)}
+        allowNull={false}
+        parse={(value) => value}
+      >
+        {({input, meta}) => (
+          <NameField
+            {...input}
+            type="text"
+            placeholder="Name"
+            data-testid="add-variable-name"
+            shouldDebounceError={!meta.dirty && formState.dirty}
+          />
+        )}
+      </Field>
+      <Field
+        name="value"
+        validate={validateValueComplete}
+        parse={(value) => value}
+      >
+        {({input, meta}) => (
+          <ValueField
+            {...input}
+            type="text"
+            placeholder="Value"
+            data-testid="add-variable-value"
+            fieldSuffix={{
+              type: 'icon',
+              icon: 'window',
+              press: () => {
+                setIsModalVisible(true);
+              },
+            }}
+            shouldDebounceError={!meta.dirty && formState.dirty}
+          />
+        )}
+      </Field>
       <EditButtonsContainer>
-        <EditButtons onModalButtonClick={() => setIsModalVisible(true)} />
+        <EditButtons />
       </EditButtonsContainer>
       <JSONEditorModal
         title={

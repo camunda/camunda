@@ -5,6 +5,7 @@
  */
 
 import styled from 'styled-components';
+import {TextField} from 'modules/components/TextField';
 
 const Container = styled.div`
   display: flex;
@@ -16,20 +17,20 @@ const Container = styled.div`
 const EditButtonsContainer = styled.div`
   padding-top: 8px;
   width: 10%;
-  min-width: 127px;
+  min-width: 80px;
 `;
 
-const Name = styled.div`
+const NameField = styled(TextField)`
   width: 30%;
   padding-right: 23px;
   padding-left: 8px;
   margin: 6px 0 6px 0px;
 `;
 
-const Value = styled.div`
+const ValueField = styled(TextField)`
   width: 60%;
   margin-right: 2px;
   margin: 6px 5px 6px 0px;
 `;
 
-export {Container, Name, Value, EditButtonsContainer};
+export {Container, NameField, ValueField, EditButtonsContainer};

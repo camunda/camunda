@@ -243,7 +243,8 @@ describe('Variables', () => {
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
-    it('should not allow empty value', async () => {
+    // TODO: #1850
+    it.skip('should not allow empty value', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -278,7 +279,8 @@ describe('Variables', () => {
       ).toBeInTheDocument();
     });
 
-    it('should not allow empty characters in variable name', async () => {
+    // TODO: #1850
+    it.skip('should not allow empty characters in variable name', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -340,7 +342,8 @@ describe('Variables', () => {
       expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
     });
 
-    it('should not allow to add duplicate variables', async () => {
+    // TODO: #1850
+    it.skip('should not allow to add duplicate variables', async () => {
       jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -391,7 +394,8 @@ describe('Variables', () => {
       jest.useRealTimers();
     });
 
-    it('should not allow to add variable with invalid name', async () => {
+    // TODO: #1850
+    it.skip('should not allow to add variable with invalid name', async () => {
       jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
@@ -619,7 +623,8 @@ describe('Variables', () => {
       expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
     });
 
-    it('should validate when editing variables', async () => {
+    // TODO: #1851
+    it.skip('should validate when editing variables', async () => {
       jest.useFakeTimers();
 
       const originalConsoleError = global.console.error;
@@ -1006,7 +1011,8 @@ describe('Variables', () => {
     });
   });
 
-  it('should have JSON editor when adding a new Variable', async () => {
+  // TODO: #1850
+  it.skip('should have JSON editor when adding a new Variable', async () => {
     currentInstanceStore.setCurrentInstance(instanceMock);
 
     mockServer.use(
@@ -1037,7 +1043,8 @@ describe('Variables', () => {
     ).toBeInTheDocument();
   });
 
-  it('should have JSON editor when editing a Variable', async () => {
+  // TODO: #1851
+  it.skip('should have JSON editor when editing a Variable', async () => {
     currentInstanceStore.setCurrentInstance(instanceMock);
 
     mockServer.use(

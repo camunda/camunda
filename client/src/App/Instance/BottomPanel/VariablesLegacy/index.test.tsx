@@ -392,7 +392,6 @@ describe('Variables', () => {
     });
 
     it('should not allow to add variable with invalid name', async () => {
-      jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -419,25 +418,16 @@ describe('Variables', () => {
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
-
-      jest.runOnlyPendingTimers();
-
-      expect(await screen.findByTitle('Name is invalid')).toBeInTheDocument();
+      expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
 
       userEvent.clear(screen.getByLabelText(/name/i));
       userEvent.type(screen.getByLabelText(/name/i), 'someOtherName');
-
-      jest.runOnlyPendingTimers();
 
       await waitFor(() =>
         expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
 
       expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
     });
 
     it('clicking edit variables while add mode is open, should not display a validation error', async () => {

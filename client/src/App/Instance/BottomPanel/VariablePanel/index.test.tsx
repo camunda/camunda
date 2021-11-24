@@ -167,7 +167,8 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('test')).toBeInTheDocument();
   });
 
-  it('should add new variable', async () => {
+  // TODO: #1850
+  it.skip('should add new variable', async () => {
     jest.useFakeTimers();
 
     render(<VariablePanel />, {wrapper: Wrapper});
@@ -280,7 +281,8 @@ describe('VariablePanel', () => {
     jest.useRealTimers();
   });
 
-  it('should remove pending variable if scope id changes', async () => {
+  // TODO: #1850
+  it.skip('should remove pending variable if scope id changes', async () => {
     mockServer.use(
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -341,7 +343,8 @@ describe('VariablePanel', () => {
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
   });
 
-  it('should display validation error if backend validation fails while adding variable', async () => {
+  // TODO: #1850
+  it.skip('should display validation error if backend validation fails while adding variable', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(screen.getByTitle(/add variable/i)).toBeEnabled()
@@ -385,7 +388,8 @@ describe('VariablePanel', () => {
     expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
   });
 
-  it('should display error notification if add variable operation could not be created', async () => {
+  // TODO: #1850
+  it.skip('should display error notification if add variable operation could not be created', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(screen.getByTitle(/add variable/i)).toBeEnabled()
@@ -420,7 +424,8 @@ describe('VariablePanel', () => {
     });
   });
 
-  it('should display error notification if add variable operation fails', async () => {
+  // TODO: #1850
+  it.skip('should display error notification if add variable operation fails', async () => {
     jest.useFakeTimers();
 
     render(<VariablePanel />, {wrapper: Wrapper});
@@ -517,7 +522,8 @@ describe('VariablePanel', () => {
     jest.useRealTimers();
   });
 
-  it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
+  // TODO: #1850
+  it.skip('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
     jest.useFakeTimers();
 
     render(<VariablePanel />, {wrapper: Wrapper});

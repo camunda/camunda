@@ -16,7 +16,6 @@ import Modal from 'modules/components/Modal';
 import {ReactComponent as DefaultEdit} from 'modules/components/Icon/edit.svg';
 import {ReactComponent as DefaultClose} from 'modules/components/Icon/close.svg';
 import {ReactComponent as DefaultCheck} from 'modules/components/Icon/check.svg';
-import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
 import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
@@ -272,10 +271,6 @@ const EditIcon = styled(DefaultEdit)`
   ${iconStyle}
 `;
 
-const ModalIcon = styled(DefaultModal)`
-  ${iconStyle}
-`;
-
 const ModalBody = styled(Modal.Body)`
   padding: 0;
   position: relative;
@@ -329,13 +324,6 @@ const TH = styled.th`
   font-weight: 500;
 `;
 
-const Warning = styled.div`
-  display: flex;
-  margin-right: 11px;
-  width: 16px;
-  height: 16px;
-`;
-
 const EditButtonsContainer = styled.div`
   display: flex;
 `;
@@ -372,13 +360,11 @@ export {
   CloseIcon,
   CheckIcon,
   EditIcon,
-  ModalIcon,
   ModalBody,
   EmptyPanel,
   Button,
   Plus,
   Footer,
-  Warning,
   EditButtonsContainer,
   Header,
 };
