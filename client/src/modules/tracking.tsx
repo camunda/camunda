@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Mixpanel} from 'mixpanel-browser';
+import mixpanel, {Mixpanel} from 'mixpanel-browser';
 import {Task} from 'modules/types';
 
 const MIXPANEL_PUBLIC_TOKEN = '1104cabe553c23b7e67d56b1976437aa';
@@ -40,18 +40,12 @@ function getStage(host: string): 'dev' | 'int' | 'prod' | 'unkown' {
   }
 }
 
+mixpanel.init(MIXPANEL_PUBLIC_TOKEN);
+
 class Tracking {
-  #mixpanel: null | Mixpanel = null;
-
-  constructor() {
-    if (window.clientConfig?.organizationId) {
-      import('mixpanel-browser').then((mixpanel) => {
-        mixpanel.init(MIXPANEL_PUBLIC_TOKEN);
-
-        this.#mixpanel = mixpanel;
-      });
-    }
-  }
+  #mixpanel: null | Mixpanel = window.clientConfig?.organizationId
+    ? mixpanel
+    : null;
 
   track(events: Events) {
     const {eventName, ...properties} = events;
