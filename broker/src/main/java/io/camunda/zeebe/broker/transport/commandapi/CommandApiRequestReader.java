@@ -47,7 +47,9 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
 
   @Override
   public void reset() {
-    event.reset();
+    if (event != null) {
+      event.reset();
+    }
     eventMetadata.reset();
   }
 
