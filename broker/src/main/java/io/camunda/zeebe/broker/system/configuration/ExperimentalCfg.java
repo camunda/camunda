@@ -20,7 +20,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
-  public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = false;
+  public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
 
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
