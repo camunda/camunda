@@ -17,7 +17,6 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +32,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
       partitionsRequestMap;
   private final AtomicLong requestCount;
-  private final DirectBuffer reusableRequestBuffer;
   private final MessagingService messagingService;
   private final String actorName;
 
@@ -41,7 +39,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     this.messagingService = messagingService;
     partitionsRequestMap = new Int2ObjectHashMap<>();
     requestCount = new AtomicLong(0);
-    reusableRequestBuffer = new UnsafeBuffer(0, 0);
     actorName = buildActorName(nodeId, "ServerTransport");
   }
 
@@ -122,9 +119,13 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           }
 
           try {
-            reusableRequestBuffer.wrap(requestBytes);
             requestHandler.onRequest(
-                this, partitionId, requestId, reusableRequestBuffer, 0, requestBytes.length);
+                this,
+                partitionId,
+                requestId,
+                new UnsafeBuffer(requestBytes),
+                0,
+                requestBytes.length);
             if (LOG.isTraceEnabled()) {
               LOG.trace(
                   "Handled request {} for topic {}",
