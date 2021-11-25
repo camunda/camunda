@@ -16,11 +16,6 @@
   <dependencies>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
       <artifactId>dmn-engine</artifactId>
     </dependency>
