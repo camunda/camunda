@@ -11,6 +11,10 @@ import io.camunda.zeebe.broker.transport.ApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.transport.ServerOutput;
 import org.agrona.MutableDirectBuffer;
 
+/**
+ * This is a no-op response writer. The reason for this is that the command API does not write a
+ * response directly, instead it relies on the engine to eventually write the response.
+ */
 public class CommandApiResponseWriter implements ResponseWriter {
 
   @Override
