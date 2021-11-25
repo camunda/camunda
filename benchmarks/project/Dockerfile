@@ -2,7 +2,7 @@ FROM maven:3-openjdk-17 as builder
 WORKDIR /usr/src/app
 COPY src/ src/
 COPY pom.xml pom.xml
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -DskipChecks
 
 FROM azul/zulu-openjdk-alpine:17-jre-headless as starter
 USER nobody
