@@ -77,6 +77,10 @@ public abstract class ApiRequestHandler<R extends RequestReader<?>, W extends Re
       final DirectBuffer buffer,
       final int offset,
       final int length) {
+    requestReader.reset();
+    responseWriter.reset();
+    errorResponseWriter.reset();
+
     try {
       requestReader.wrap(buffer, offset, length);
     } catch (final Exception e) {
@@ -101,10 +105,6 @@ public abstract class ApiRequestHandler<R extends RequestReader<?>, W extends Re
           .internalError(
               "Failed to handle request due to internal error; see the broker logs for more")
           .tryWriteResponse(serverOutput, partitionId, requestId);
-    } finally {
-      requestReader.reset();
-      responseWriter.reset();
-      errorResponseWriter.reset();
     }
   }
 
