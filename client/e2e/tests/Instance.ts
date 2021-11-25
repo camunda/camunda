@@ -187,16 +187,18 @@ test('Instance with an incident - resolve incidents', async (t) => {
   const withinVariablesList = within(screen.queryByTestId('variables-list'));
 
   // edit goUp variable
+  const valueField = IS_NEW_VARIABLES_FORM
+    ? within(
+        withinVariablesList.getByTestId('edit-variable-value').shadowRoot()
+      ).queryByRole('textbox')
+    : withinVariablesList.queryByRole('textbox', {name: /value/i});
+
   await t
     .click(withinVariablesList.queryByRole('button', {name: 'Enter edit mode'}))
-    .typeText(
-      withinVariablesList.queryByRole('textbox', {name: /value/i}),
-      '20',
-      {
-        paste: true,
-        replace: true,
-      }
-    )
+    .typeText(valueField, '20', {
+      paste: true,
+      replace: true,
+    })
     .click(withinVariablesList.queryByRole('button', {name: 'Save variable'}))
     .expect(withinVariablesList.queryByTestId('edit-variable-spinner').exists)
     .ok()

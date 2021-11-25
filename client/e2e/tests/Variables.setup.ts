@@ -10,6 +10,8 @@ import {screen} from '@testing-library/testcafe';
 const cmNameField = screen.getByTestId('add-variable-name').shadowRoot();
 const cmValueField = screen.getByTestId('add-variable-value').shadowRoot();
 
+const cmEditValueField = screen.getByTestId('edit-variable-value').shadowRoot();
+
 const setup = async () => {
   await deploy(['./e2e/tests/resources/onlyIncidentsProcess_v_1.bpmn']);
   const instance = await createSingleInstance('onlyIncidentsProcess', 1, {
@@ -34,4 +36,4 @@ const setup = async () => {
   return {instance, instanceWithManyVariables};
 };
 
-export {setup, cmNameField, cmValueField};
+export {setup, cmNameField, cmValueField, cmEditValueField};

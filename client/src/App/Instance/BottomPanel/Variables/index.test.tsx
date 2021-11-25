@@ -643,8 +643,7 @@ describe('Variables', () => {
       expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
     });
 
-    // TODO: #1851
-    it.skip('should validate when editing variables', async () => {
+    it('should validate when editing variables', async () => {
       jest.useFakeTimers();
 
       const originalConsoleError = global.console.error;
@@ -668,7 +667,7 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(
-        screen.queryByTestId('add-variable-value')
+        screen.queryByTestId('edit-variable-value')
       ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
@@ -679,26 +678,29 @@ describe('Variables', () => {
 
       const invalidJSONObject = "{invalidKey: 'value'}";
 
-      userEvent.clear(screen.getByTestId('add-variable-value'));
+      userEvent.clear(screen.getByTestId('edit-variable-value'));
       userEvent.type(
-        screen.getByTestId('add-variable-value'),
+        screen.getByTestId('edit-variable-value'),
         invalidJSONObject
       );
 
       expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
 
       expect(
-        screen.queryByTitle('Value has to be JSON')
+        screen.queryByText('Value has to be JSON')
       ).not.toBeInTheDocument();
 
       jest.runOnlyPendingTimers();
       expect(
-        await screen.findByTitle('Value has to be JSON')
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('add-variable-value'));
-      userEvent.type(screen.getByTestId('add-variable-value'), '123');
+      userEvent.clear(screen.getByTestId('edit-variable-value'));
+      userEvent.type(screen.getByTestId('edit-variable-value'), '123');
 
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Value has to be JSON')
+      );
       expect(screen.getByTitle(/save variable/i)).toBeEnabled();
 
       global.console.error = originalConsoleError;
@@ -774,8 +776,8 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('variable-backdrop'));
 
       expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
-      expect(screen.getByTestId('edit-variable-value')).toHaveProperty(
-        'value',
+
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue(
         '"full-value"'
       );
       expect(
@@ -1070,8 +1072,7 @@ describe('Variables', () => {
     ).toBeInTheDocument();
   });
 
-  // TODO: #1851
-  it.skip('should have JSON editor when editing a Variable', async () => {
+  it('should have JSON editor when editing a Variable', async () => {
     currentInstanceStore.setCurrentInstance(instanceMock);
 
     mockServer.use(

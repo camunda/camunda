@@ -5,7 +5,12 @@
  */
 
 import {config} from '../config';
-import {setup, cmNameField, cmValueField} from './Variables.setup';
+import {
+  setup,
+  cmNameField,
+  cmValueField,
+  cmEditValueField,
+} from './Variables.setup';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
@@ -23,7 +28,7 @@ fixture('Add/Edit Variables')
     await t.maximizeWindow();
   });
 
-test('Validations for add/edit variable works correctly', async (t) => {
+test('Validations for add variable works correctly', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
@@ -197,6 +202,143 @@ test('Validations for add/edit variable works correctly', async (t) => {
   await t.click(screen.queryByRole('button', {name: 'Exit edit mode'}));
 });
 
+(IS_NEW_VARIABLES_FORM ? test : test.skip)(
+  'Validations for edit variable works correctly',
+  async (t) => {
+    const {
+      initialData: {instance},
+    } = t.fixtureCtx;
+    await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+
+    await t
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Add variable'})
+          .hasAttribute('disabled')
+      )
+      .notOk();
+
+    // open single instance page, after clicking the edit variable button see that save variable button is disabled.
+    await t
+      .click(screen.queryByTestId('edit-variable-button'))
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .ok()
+      .expect(screen.queryByTestId('edit-variable-spinner').exists)
+      .notOk()
+      .expect(screen.queryByTestId('operation-spinner').exists)
+      .notOk()
+      .expect(
+        within(cmEditValueField).queryByText('Value has to be JSON').exists
+      )
+      .notOk();
+
+    const valueField = within(cmEditValueField).queryByRole('textbox');
+
+    // clear value field, see that save button is disabled, and no sipnner is displayed.
+    await t
+      .selectText(valueField)
+      .pressKey('delete')
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .ok()
+      .expect(screen.queryByTestId('edit-variable-spinner').exists)
+      .notOk()
+      .expect(screen.queryByTestId('operation-spinner').exists)
+      .notOk()
+      .expect(
+        within(cmEditValueField).queryByText('Value has to be JSON').exists
+      )
+      .ok();
+
+    // type a valid value, see that save button is enabled and no spinner is displayed.
+    await t
+      .typeText(valueField, '123')
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .notOk()
+      .expect(screen.queryByTestId('edit-variable-spinner').exists)
+      .notOk()
+      .expect(screen.queryByTestId('operation-spinner').exists)
+      .notOk()
+      .expect(
+        within(cmEditValueField).queryByText('Value has to be JSON').exists
+      )
+      .notOk();
+
+    // delete the value of the variable and add some invalid value instead. see that save button is disabled and no spinner is displayed.
+    await t
+      .selectText(valueField)
+      .pressKey('delete')
+      .typeText(valueField, 'someTestValue')
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .ok()
+      .expect(screen.queryByTestId('edit-variable-spinner').exists)
+      .notOk()
+      .expect(screen.queryByTestId('operation-spinner').exists)
+      .notOk()
+      .expect(
+        within(cmEditValueField).queryByText('Value has to be JSON').exists
+      )
+      .ok();
+
+    // delete the value of the variable and add some valid string value instead. see that save button is enabled and no spinner is displayed.
+    await t
+      .selectText(valueField)
+      .pressKey('delete')
+      .typeText(valueField, '"someTestValue"')
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .notOk()
+      .expect(screen.queryByTestId('edit-variable-spinner').exists)
+      .notOk()
+      .expect(screen.queryByTestId('operation-spinner').exists)
+      .notOk()
+      .expect(
+        within(cmEditValueField).queryByText('Value has to be JSON').exists
+      )
+      .notOk();
+
+    // delete the value of the variable and add some valid json value instead. see that save button is enabled and no spinner is displayed.
+    await t
+      .selectText(valueField)
+      .pressKey('delete')
+      .typeText(valueField, '{"name": "value","found":true}')
+      .expect(
+        screen
+          .queryByRole('button', {name: 'Save variable'})
+          .hasAttribute('disabled')
+      )
+      .notOk()
+      .expect(screen.queryByTestId('edit-variable-spinner').exists)
+      .notOk()
+      .expect(screen.queryByTestId('operation-spinner').exists)
+      .notOk()
+      .expect(
+        within(cmEditValueField).queryByText('Value has to be JSON').exists
+      )
+      .notOk();
+
+    await t.click(screen.queryByRole('button', {name: 'Exit edit mode'}));
+  }
+);
+
 test('Edit variables', async (t) => {
   const {
     initialData: {instance},
@@ -223,13 +365,14 @@ test('Edit variables', async (t) => {
     .ok();
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
+  const valueField = IS_NEW_VARIABLES_FORM
+    ? within(cmEditValueField).queryByRole('textbox')
+    : screen.queryByRole('textbox', {name: 'Value'});
+
   await t
-    .selectText(screen.queryByRole('textbox', {name: 'Value'}))
+    .selectText(valueField)
     .pressKey('delete')
-    .typeText(
-      screen.queryByRole('textbox', {name: 'Value'}),
-      '"editedTestValue"'
-    )
+    .typeText(valueField, '"editedTestValue"')
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})
