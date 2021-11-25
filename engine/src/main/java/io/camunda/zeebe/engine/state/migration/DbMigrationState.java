@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.instance.TemporaryVariables;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
@@ -23,8 +22,8 @@ import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
 
@@ -166,17 +165,18 @@ public class DbMigrationState implements MutableMigrationState {
       final MutableEventScopeInstanceState eventScopeInstanceState) {
     temporaryVariableColumnFamily.forEach(
         (key, value) -> {
-          // Event scope key can be a static value. Together with the
-          final long eventScopeKey = -1L;
+          // Event key can be a static value. Together with the key this will always be a unique
+          // value
+          final long eventKey = -1L;
           // Element id will not be used, therefore a dummy id will be generated.
           final String elementId = "migrated-variable-" + key.getValue();
-          final DirectBuffer elementIdBuffer = new UnsafeBuffer(elementId.getBytes());
+          final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
           // We always use triggerStartEvent() here. This is because this method creates an event
           // trigger with the passed parameters without doing any checks beforehand. This is
           // sufficient for this migration.
           eventScopeInstanceState.triggerStartEvent(
-              key.getValue(), eventScopeKey, elementIdBuffer, value.get());
+              key.getValue(), eventKey, elementIdBuffer, value.get());
 
           temporaryVariableColumnFamily.delete(key);
         });

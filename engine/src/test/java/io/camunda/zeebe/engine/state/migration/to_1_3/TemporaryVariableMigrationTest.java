@@ -18,17 +18,21 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.migration.TemporaryVariableMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 public class TemporaryVariableMigrationTest {
+
+  private static final long EVENT_SCOPE_KEY = 100L;
+  private static final DirectBuffer VARIABLES = BufferUtil.wrapString("variable");
 
   final TemporaryVariableMigration sutMigration = new TemporaryVariableMigration();
 
@@ -91,8 +95,7 @@ public class TemporaryVariableMigrationTest {
       // given database with legacy records
       legacyTemporaryVariablesState =
           new LegacyDbTemporaryVariablesState(zeebeDb, transactionContext);
-      final DirectBuffer variables = new UnsafeBuffer("variables".getBytes());
-      legacyTemporaryVariablesState.put(variables);
+      legacyTemporaryVariablesState.put(EVENT_SCOPE_KEY, VARIABLES);
     }
 
     @Test
@@ -118,6 +121,12 @@ public class TemporaryVariableMigrationTest {
       // then
       assertThat(actual).describedAs("Migration should run").isFalse();
       assertThat(legacyTemporaryVariablesState.isEmpty()).isTrue();
+      final EventTrigger eventTrigger =
+          zeebeState.getEventScopeInstanceState().peekEventTrigger(EVENT_SCOPE_KEY);
+      assertThat(eventTrigger.getVariables()).isEqualTo(VARIABLES);
+      assertThat(eventTrigger.getEventKey()).isEqualTo(-1L);
+      assertThat(eventTrigger.getElementId())
+          .isEqualTo(BufferUtil.wrapString(String.format("migrated-variable-%d", EVENT_SCOPE_KEY)));
     }
   }
 }

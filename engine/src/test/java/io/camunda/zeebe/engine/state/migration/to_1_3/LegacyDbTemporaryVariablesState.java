@@ -12,7 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.instance.TemporaryVariables;
+import io.camunda.zeebe.engine.state.migration.TemporaryVariables;
 import org.agrona.DirectBuffer;
 
 public class LegacyDbTemporaryVariablesState {
@@ -33,9 +33,10 @@ public class LegacyDbTemporaryVariablesState {
             temporaryVariables);
   }
 
-  public void put(final DirectBuffer variables) {
+  public void put(final long key, final DirectBuffer variables) {
     temporaryVariables.reset();
     temporaryVariables.set(variables);
+    temporaryVariablesKeyInstance.wrapLong(key);
 
     temporaryVariableColumnFamily.put(temporaryVariablesKeyInstance, temporaryVariables);
   }
