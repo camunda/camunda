@@ -112,6 +112,7 @@ final class CommandApiRequestHandler
       return Either.right(responseWriter);
     } catch (final Exception ex) {
       LOG.error("Unexpected error on writing {} command", intent, ex);
+      errorWriter.internalError("Failed writing response", ex);
       return Either.left(errorWriter);
     } finally {
       if (!written) {
