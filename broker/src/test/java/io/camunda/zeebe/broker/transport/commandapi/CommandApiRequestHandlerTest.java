@@ -50,6 +50,24 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
+  public void shouldRejectCommandWithInvalidTemplate() {
+    // given
+    final var request = new ExecuteQueryRequest();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.INVALID_MESSAGE_TEMPLATE);
+  }
+
+  @Test
   public void shouldRejectCommandIfNotLeader() {
     // given
     final var request = new ExecuteCommandRequest();

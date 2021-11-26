@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMPLATE_ID;
+
 import io.camunda.zeebe.broker.transport.ApiRequestHandler.RequestReader;
+import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -60,7 +63,20 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    commandRequestDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
+    messageHeaderDecoder.wrap(buffer, offset);
+
+    final int templateId = messageHeaderDecoder.templateId();
+    if (TEMPLATE_ID != templateId) {
+      throw new RequestReaderException.InvalidTemplateException(
+          messageHeaderDecoder.templateId(), templateId);
+    }
+
+    commandRequestDecoder.wrap(
+        buffer,
+        offset + MessageHeaderDecoder.ENCODED_LENGTH,
+        messageHeaderDecoder.blockLength(),
+        messageHeaderDecoder.version());
+
     final int eventOffset =
         commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
     final int eventLength = commandRequestDecoder.valueLength();

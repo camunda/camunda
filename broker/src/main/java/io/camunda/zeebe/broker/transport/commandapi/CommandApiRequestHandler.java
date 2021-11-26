@@ -43,14 +43,8 @@ final class CommandApiRequestHandler
       final CommandApiRequestReader requestReader,
       final CommandApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    final var templateId = requestReader.getMessageDecoder().sbeTemplateId();
-
-    if (templateId == ExecuteCommandRequestDecoder.TEMPLATE_ID) {
-      return handleExecuteCommandRequest(
-          partitionId, requestId, requestReader, responseWriter, errorWriter);
-    } else {
-      return Either.left(errorWriter);
-    }
+    return handleExecuteCommandRequest(
+        partitionId, requestId, requestReader, responseWriter, errorWriter);
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handleExecuteCommandRequest(

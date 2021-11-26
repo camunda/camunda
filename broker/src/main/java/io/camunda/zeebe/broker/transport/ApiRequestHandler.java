@@ -83,6 +83,11 @@ public abstract class ApiRequestHandler<R extends RequestReader<?>, W extends Re
 
     try {
       requestReader.wrap(buffer, offset, length);
+    } catch (final RequestReaderException.InvalidTemplateException e) {
+      errorResponseWriter
+          .invalidMessageTemplate(e.actualTemplate, e.expectedTemplate)
+          .tryWriteResponseOrLogFailure(serverOutput, partitionId, requestId);
+      return;
     } catch (final Exception e) {
       LOG.error("Failed to deserialize message", e);
       errorResponseWriter
@@ -143,5 +148,14 @@ public abstract class ApiRequestHandler<R extends RequestReader<?>, W extends Re
      *     get access to the request data.
      */
     T getMessageDecoder();
+
+    /**
+     * @param buffer the buffer to read from
+     * @param offset the offset at which to start reading
+     * @param length the length of the values to read
+     * @throws RequestReaderException if reading the request failed
+     */
+    @Override
+    void wrap(DirectBuffer buffer, int offset, int length);
   }
 }
