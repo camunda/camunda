@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValueAssert;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -174,6 +175,100 @@ public class UserTaskIncidentTest {
         .variables()
         .ofScope(incidentCreated.getValue().getElementInstanceKey())
         .withDocument(Maps.of(entry("MISSING_VAR", "no longer missing")))
+        .update();
+
+    // ... resolve incident
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCandidateGroupsExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeCandidateGroupsExpression("MISSING_VAR")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCandidateGroupsExpressionOfInvalidType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithUserTask(u -> u.zeebeCandidateGroupsExpression("\"not a list\"")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '\"not a list\"' to be 'ARRAY', but was 'STRING'.");
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterCandidateGroupsExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(t -> t.zeebeCandidateGroupsExpression("MISSING_VAR")))
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... update state to resolve issue
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("MISSING_VAR", List.of("a string value", "and another"))))
         .update();
 
     // ... resolve incident
