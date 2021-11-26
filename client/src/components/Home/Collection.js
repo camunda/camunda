@@ -15,7 +15,6 @@ import {withErrorHandling, withUser} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter, BulkDeleter, Tooltip} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
-import {isOptimizeCloudEnvironment} from 'config';
 
 import {loadCollectionEntities, importEntity, removeEntities, checkConflicts} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
@@ -45,14 +44,12 @@ export class Collection extends React.Component {
     entities: null,
     sorting: null,
     isLoading: true,
-    isOptimizeCloud: true,
   };
 
   fileInput = React.createRef();
 
-  async componentDidMount() {
+  componentDidMount() {
     this.loadCollection();
-    this.setState({isOptimizeCloud: await isOptimizeCloudEnvironment()});
   }
 
   componentDidUpdate(prevProps) {
@@ -118,7 +115,6 @@ export class Collection extends React.Component {
       copying,
       entities,
       sorting,
-      isOptimizeCloud,
       isLoading,
     } = this.state;
 
@@ -166,11 +162,9 @@ export class Collection extends React.Component {
             <li className={classnames({active: homeTab})}>
               <Link to=".">{t('home.collectionTitleWithAmpersand')}</Link>
             </li>
-            {!isOptimizeCloud && (
-              <li className={classnames({active: alertTab})}>
-                <Link to="alerts">{t('alert.label-plural')}</Link>
-              </li>
-            )}
+            <li className={classnames({active: alertTab})}>
+              <Link to="alerts">{t('alert.label-plural')}</Link>
+            </li>
             <li className={classnames({active: userTab})}>
               <Link to="users">{t('common.user.label-plural')}</Link>
             </li>
