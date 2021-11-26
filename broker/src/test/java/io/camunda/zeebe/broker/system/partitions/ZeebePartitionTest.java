@@ -228,6 +228,7 @@ public class ZeebePartitionTest {
 
     // when
     schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.FOLLOWER, 1);
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
@@ -252,9 +253,11 @@ public class ZeebePartitionTest {
               return CompletableActorFuture.completed(null);
             });
     when(raft.getRole()).thenReturn(Role.LEADER);
+    when(raft.term()).thenReturn(1L);
 
     // when
     schedulerRule.submitActor(partition);
+    partition.onNewRole(raft.getRole(), raft.term());
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
