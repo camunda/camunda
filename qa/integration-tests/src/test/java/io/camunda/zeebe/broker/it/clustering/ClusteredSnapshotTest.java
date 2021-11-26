@@ -78,7 +78,7 @@ public class ClusteredSnapshotTest {
   }
 
   @Test
-  public void shouldTakeSnapshotsOnAllNodes() {
+  public void shouldTakeSnapshotsOnPartitionLeader() {
     // given
     ControllableExporter.updatePosition(true);
 
@@ -215,7 +215,10 @@ public class ClusteredSnapshotTest {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              Assertions.assertThat(clusteringRule.getBrokers()).allSatisfy(consumer);
+              // assert only the partition leader
+              final var leader = clusteringRule.getLeaderForPartition(1);
+              final Broker broker = clusteringRule.getBroker(leader.getNodeId());
+              Assertions.assertThat(broker).satisfies(consumer);
             });
   }
 
