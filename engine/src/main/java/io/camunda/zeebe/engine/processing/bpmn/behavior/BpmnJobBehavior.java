@@ -116,7 +116,7 @@ public final class BpmnJobBehavior {
       final JobProperties props) {
 
     final var taskHeaders = jobWorkerElement.getJobWorkerProperties().getTaskHeaders();
-    final var encodedHeaders = encodeHeaders(taskHeaders, props.getAssignee());
+    final var encodedHeaders = encodeHeaders(taskHeaders, props);
 
     jobRecord
         .setType(props.getType())
@@ -133,10 +133,16 @@ public final class BpmnJobBehavior {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
   }
 
-  private DirectBuffer encodeHeaders(final Map<String, String> taskHeaders, final String assignee) {
+  private DirectBuffer encodeHeaders(
+      final Map<String, String> taskHeaders, final JobProperties props) {
     final var headers = new HashMap<>(taskHeaders);
+    final String assignee = props.getAssignee();
+    final String candidateGroups = props.getCandidateGroups();
     if (assignee != null) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
+    }
+    if (candidateGroups != null) {
+      headers.put(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, candidateGroups);
     }
     return headerEncoder.encode(headers);
   }
