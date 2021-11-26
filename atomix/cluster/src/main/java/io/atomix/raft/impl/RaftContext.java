@@ -127,6 +127,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private PersistedSnapshot currentSnapshot;
   private volatile HealthStatus health = HealthStatus.HEALTHY;
 
+  private boolean ongoingTransition = false;
+
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
   private final int partitionId;
@@ -291,12 +293,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Adds a role change listener.
+   * Adds a role change listener. If there isn't currently a transition ongoing the listener is
+   * called immediately after adding the listener.
    *
    * @param listener The role change listener.
    */
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
-    roleChangeListeners.add(listener);
+    threadContext.execute(
+        () -> {
+          roleChangeListeners.add(listener);
+
+          // When a transition is currently ongoing, then the given
+          // listener will be called when the transition completes.
+          if (!ongoingTransition) {
+            // Otherwise, the listener will called directly for the last
+            // completed transition.
+            listener.onNewRole(getRole(), getTerm());
+          }
+        });
   }
 
   /**
@@ -587,6 +601,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     log.info("Transitioning to {}", role);
 
+    startTransition();
+
     // Close the old state.
     try {
       this.role.stop().get();
@@ -616,10 +632,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             () -> {
               if (this.role == leaderRole) { // ensure no other role change happened in between
                 notifyRoleChangeListeners();
+                // Transitioning to leader completes
+                // once the initial entry gets committed
+                completeTransition();
               }
             });
       } else {
         notifyRoleChangeListeners();
+        completeTransition();
       }
     }
   }
@@ -639,6 +659,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   @Override
   public void removeFailureListener(final FailureListener listener) {
     failureListeners.remove(listener);
+  }
+
+  private void startTransition() {
+    ongoingTransition = true;
+  }
+
+  private void completeTransition() {
+    ongoingTransition = false;
   }
 
   private void notifyRoleChangeListeners() {

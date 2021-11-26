@@ -70,7 +70,6 @@ public class ZeebePartitionTransitionIntegrationTest {
 
     // then
     final InOrder inOrder = Mockito.inOrder(transition);
-    inOrder.verify(transition).toInactive();
     inOrder.verify(transition).toLeader(1);
     inOrder.verify(transition).toFollower(1);
     inOrder.verify(transition).toInactive();
