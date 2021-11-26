@@ -4,11 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useState, useEffect} from 'react';
-
-import {reportConfig, createReportUpdate} from 'services';
+import {createReportUpdate, reportConfig} from 'services';
 import {Select} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
 
 import './View.scss';
 
@@ -16,13 +13,6 @@ export default function View({type, report, onChange, variables}) {
   const reportType = type;
   const views = reportConfig[type].view;
   const selectedOption = report.view ? views.find(({matcher}) => matcher(report)) : null;
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
-    })();
-  }, []);
 
   return (
     <Select
@@ -48,10 +38,7 @@ export default function View({type, report, onChange, variables}) {
       disabled={report.definitions.length === 0 || !report.definitions[0].key}
     >
       {views
-        .filter(
-          ({visible, key}) =>
-            visible(report) && key !== 'none' && (isOptimizeCloud ? key !== 'incident' : true)
-        )
+        .filter(({visible, key}) => visible(report) && key !== 'none')
         .map(({key, enabled, label}) => {
           if (key === 'variable') {
             return (
