@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -84,18 +85,29 @@ public final class BpmnJobBehavior {
     final var type = element.getJobWorkerProperties().getType();
     final var retries = element.getJobWorkerProperties().getRetries();
     final var assignee = element.getJobWorkerProperties().getAssignee();
+    final var candidateGroups = element.getJobWorkerProperties().getCandidateGroups();
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> expressionBehavior.evaluateStringExpression(type, scopeKey).map(p::type))
         .flatMap(p -> expressionBehavior.evaluateLongExpression(retries, scopeKey).map(p::retries))
-        .flatMap(p -> evaluateAssigneeExpression(assignee, scopeKey).map(p::assignee));
+        .flatMap(p -> evalAssigneeExp(assignee, scopeKey).map(p::assignee))
+        .flatMap(p -> evalCandidateGroupsExp(candidateGroups, scopeKey).map(p::candidateGroups));
   }
 
-  private Either<Failure, String> evaluateAssigneeExpression(
-      final Expression assignee, final long scopeKey) {
+  private Either<Failure, String> evalAssigneeExp(final Expression assignee, final long scopeKey) {
     if (assignee == null) {
       return Either.right(null);
     }
     return expressionBehavior.evaluateStringExpression(assignee, scopeKey);
+  }
+
+  private Either<Failure, String> evalCandidateGroupsExp(
+      final Expression candidateGroups, final long scopeKey) {
+    if (candidateGroups == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior
+        .evaluateArrayOfStringsExpression(candidateGroups, scopeKey)
+        .map(ExpressionTransformer::asListLiteral);
   }
 
   private void writeJobCreatedEvent(
@@ -152,6 +164,7 @@ public final class BpmnJobBehavior {
     private String type;
     private Long retries;
     private String assignee;
+    private String candidateGroups;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -178,6 +191,15 @@ public final class BpmnJobBehavior {
 
     public String getAssignee() {
       return assignee;
+    }
+
+    public JobProperties candidateGroups(final String candidateGroups) {
+      this.candidateGroups = candidateGroups;
+      return this;
+    }
+
+    public String getCandidateGroups() {
+      return candidateGroups;
     }
   }
 

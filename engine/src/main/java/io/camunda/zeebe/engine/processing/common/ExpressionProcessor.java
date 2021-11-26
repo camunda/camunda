@@ -15,6 +15,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
@@ -22,6 +23,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -222,6 +224,28 @@ public final class ExpressionProcessor {
     return evaluationResult
         .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
         .map(EvaluationResult::getList);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as a list of strings.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as a list of regular strings, or a failure if the
+   *     evaluation fails
+   */
+  public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
+      final Expression expression, final long scopeKey) {
+    return evaluateArrayExpression(expression, scopeKey)
+        .map(
+            list ->
+                list.stream()
+                    .map(MsgPackConverter::convertToJson)
+                    // convertToJson turns each string into a string literal, so we need to remove
+                    // the quotes or find a better way to read the strings from the buffer
+                    .map(stringLiteral -> stringLiteral.replace("\"", ""))
+                    .collect(Collectors.toList()));
   }
 
   /**
