@@ -36,7 +36,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
   public static final int VERSION = 8;
-  public static final int INGNORE_ABOVE_CHAR_LIMIT = 7000;
+  private static final int IGNORE_ABOVE_CHAR_LIMIT = 7000;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -304,7 +304,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .startObject(VARIABLE_VALUE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-        .field(IGNORE_ABOVE_SETTING, INGNORE_ABOVE_CHAR_LIMIT)
+        .field(IGNORE_ABOVE_SETTING, IGNORE_ABOVE_CHAR_LIMIT)
       .startObject(FIELDS);
     addValueMultifields(builder)
       .endObject()

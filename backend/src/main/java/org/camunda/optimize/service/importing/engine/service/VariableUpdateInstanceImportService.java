@@ -163,7 +163,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       engineEntity.getProcessInstanceId(),
       engineEntity.getSequenceCounter(),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
   }
 

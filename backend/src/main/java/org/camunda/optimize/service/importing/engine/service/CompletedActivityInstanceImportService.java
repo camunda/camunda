@@ -102,7 +102,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
         definition.getId(),
         definition.getKey(),
         definition.getVersion(),
-        engineEntity.getTenantId(),
+        engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)),
         engineContext.getEngineAlias(),
         engineEntity.getProcessInstanceId(),
         engineEntity.getStartTime(),

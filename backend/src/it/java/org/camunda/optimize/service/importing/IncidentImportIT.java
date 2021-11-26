@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -141,6 +142,26 @@ public class IncidentImportIT extends AbstractImportIT {
           assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.DELETED);
         });
       });
+  }
+
+  @Test
+  public void incidentsWithDefaultTenantAreImported() {
+    // given
+    final String defaultTenantName = "jellyfish";
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setDefaultTenant(new DefaultTenant(defaultTenantName, defaultTenantName));
+    incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .extracting(ProcessInstanceDto::getIncidents)
+      .satisfies(incidents -> assertThat(incidents)
+        .singleElement()
+        .satisfies(incident -> assertThat(incident.getTenantId()).isEqualTo(defaultTenantName)));
   }
 
   @Test

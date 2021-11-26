@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -67,6 +68,26 @@ public class EngineActivityImportIT extends AbstractImportIT {
           assertThat(flowNodeInstanceDto.getTenantId()).isEqualTo(processInstanceDto.getTenantId());
         })
       );
+  }
+
+  @Test
+  public void defaultTenantIsUsedOnActivityImport() {
+    // given
+    final String defaultTenant = "lobster";
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setDefaultTenant(new DefaultTenant(defaultTenant, defaultTenant));
+    deployAndStartUserTaskProcess();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances)
+      .singleElement()
+      .extracting(ProcessInstanceDto::getFlowNodeInstances)
+      .satisfies(flowNodes -> assertThat(flowNodes)
+        .allSatisfy(flowNode -> assertThat(flowNode.getTenantId()).isEqualTo(defaultTenant)));
   }
 
   @Test

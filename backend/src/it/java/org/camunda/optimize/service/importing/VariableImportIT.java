@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -79,11 +80,6 @@ import static org.mockserver.model.StringBody.subString;
 
 public class VariableImportIT extends AbstractImportIT {
 
-  @RegisterExtension
-  protected final LogCapturer variableImportServiceLogCapturer = LogCapturer.create()
-    .forLevel(Level.INFO)
-    .captureForType(VariableUpdateInstanceImportService.class);
-
   @BeforeEach
   public void setup() {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
@@ -120,6 +116,23 @@ public class VariableImportIT extends AbstractImportIT {
     // then
     assertThat(variablesResponseDtos).hasSize(variables.size());
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
+  }
+
+  @Test
+  public void variableImportUsesDefaultTenant() throws JsonProcessingException {
+    // given
+    final String defaultTenant = "crab";
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setDefaultTenant(new DefaultTenant(defaultTenant, defaultTenant));
+    Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
+    ProcessInstanceEngineDto instanceDto =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleServiceTaskProcess(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    assertThat(getStoredVariableUpdateInstances())
+      .hasSize(variables.size())
+      .allSatisfy(variableUpdate -> assertThat(variableUpdate.getTenantId()).isEqualTo(defaultTenant));
   }
 
   @Test

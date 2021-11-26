@@ -7,8 +7,8 @@ package org.camunda.optimize.dto.engine;
 
 import lombok.Data;
 
-
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Data
 public class HistoricActivityInstanceEngineDto implements EngineDto {
@@ -33,5 +33,9 @@ public class HistoricActivityInstanceEngineDto implements EngineDto {
   protected Boolean completeScope;
   protected String tenantId;
   protected Long sequenceCounter;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 
 }

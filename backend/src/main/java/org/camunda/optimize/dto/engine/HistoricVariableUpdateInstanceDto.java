@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @Data
 public class HistoricVariableUpdateInstanceDto implements EngineDto {
@@ -27,4 +28,9 @@ public class HistoricVariableUpdateInstanceDto implements EngineDto {
   private String processInstanceId;
 
   private String tenantId;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
+
 }
