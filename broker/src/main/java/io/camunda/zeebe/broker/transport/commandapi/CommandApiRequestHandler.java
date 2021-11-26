@@ -53,7 +53,7 @@ final class CommandApiRequestHandler
     }
   }
 
-  public Either<ErrorResponseWriter, CommandApiResponseWriter> handleExecuteCommandRequest(
+  private Either<ErrorResponseWriter, CommandApiResponseWriter> handleExecuteCommandRequest(
       final int partitionId,
       final long requestId,
       final CommandApiRequestReader reader,

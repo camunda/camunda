@@ -15,18 +15,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,11 +57,16 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     // when
-    final var response = handleRequest(request);
+    final var responseFuture = handleRequest(request);
 
     // then
-    assertThat(response).matches(Either::isLeft);
-    assertThat(response.getLeft().getErrorCode()).isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
   }
 
   @Test
@@ -64,11 +75,16 @@ public class CommandApiRequestHandlerTest {
     final var request = new ExecuteCommandRequest();
 
     // when
-    final var response = handleRequest(request);
+    final var responseFuture = handleRequest(request);
 
     // then
-    assertThat(response).matches(Either::isLeft);
-    assertThat(response.getLeft().getErrorCode()).isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
   }
 
   @Test
@@ -78,11 +94,16 @@ public class CommandApiRequestHandlerTest {
     request.setValueType(ValueType.ERROR);
 
     // when
-    final var response = handleRequest(request);
+    final var responseFuture = handleRequest(request);
 
     // then
-    assertThat(response).matches(Either::isLeft);
-    assertThat(response.getLeft().getErrorCode()).isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
   }
 
   @Test
@@ -98,11 +119,15 @@ public class CommandApiRequestHandlerTest {
     request.serializeValue();
 
     // when
-    final var response = handleRequest(request);
+    final var responseFuture = handleRequest(request);
 
     // then
-    assertThat(response).matches(Either::isLeft);
-    assertThat(response.getLeft().getErrorCode()).isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMinutes(1))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorCode)
+        .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
   }
 
   @Test
@@ -119,22 +144,44 @@ public class CommandApiRequestHandlerTest {
     request.serializeValue();
 
     // when
-    final var response = handleRequest(request);
+    handleRequest(request);
 
     // then
-    assertThat(response).matches(Either::isRight);
     verify(logWriter).tryWrite();
     verify(logWriter).reset();
   }
 
-  private Either<ErrorResponseWriter, CommandApiResponseWriter> handleRequest(
+  private CompletableFuture<Either<ErrorResponse, ExecuteCommandResponse>> handleRequest(
       final BufferWriter request) {
-    final var reader = new CommandApiRequestReader();
-    final var writer = new CommandApiResponseWriter();
-    final var errorWriter = new ErrorResponseWriter();
+    final var future = new CompletableFuture<Either<ErrorResponse, ExecuteCommandResponse>>();
+    final ServerOutput serverOutput = createServerOutput(future);
     final var requestBuffer = new UnsafeBuffer(new byte[request.getLength()]);
     request.write(requestBuffer, 0);
-    reader.wrap(requestBuffer, 0, requestBuffer.capacity());
-    return handler.handleExecuteCommandRequest(0, 0, reader, writer, errorWriter);
+    handler.onRequest(serverOutput, 0, 0, requestBuffer, 0, request.getLength());
+    scheduler.workUntilDone();
+    return future;
+  }
+
+  private ServerOutput createServerOutput(
+      final CompletableFuture<Either<ErrorResponse, ExecuteCommandResponse>> future) {
+    return serverResponse -> {
+      final var buffer = new ExpandableArrayBuffer();
+      serverResponse.write(buffer, 0);
+
+      final var error = new ErrorResponse();
+      if (error.tryWrap(buffer)) {
+        error.wrap(buffer, 0, serverResponse.getLength());
+        future.complete(Either.left(error));
+        return;
+      }
+
+      final var response = new ExecuteCommandResponse();
+      try {
+        response.wrap(buffer, 0, serverResponse.getLength());
+        future.complete(Either.right(response));
+      } catch (final Exception e) {
+        future.completeExceptionally(e);
+      }
+    };
   }
 }
