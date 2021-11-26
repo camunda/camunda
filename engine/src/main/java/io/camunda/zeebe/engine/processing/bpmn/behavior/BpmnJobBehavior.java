@@ -9,12 +9,12 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,10 +23,11 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
+import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -66,44 +67,48 @@ public final class BpmnJobBehavior {
   }
 
   public Either<Failure, ?> createNewJob(
-      final BpmnElementContext context, final ExecutableJobWorkerElement jobWorkerElement) {
+      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
 
-    return evaluateJobExpressions(context, jobWorkerElement.getJobWorkerProperties())
+    return evaluateJobExpressions(context, element)
         .map(
-            jobTypeAndRetries -> {
-              final var jobType = jobTypeAndRetries.getLeft();
-              final var retries = jobTypeAndRetries.getRight().intValue();
-
-              writeJobCreatedEvent(context, jobWorkerElement, jobType, retries);
-              jobMetrics.jobCreated(jobType);
+            jobProperties -> {
+              writeJobCreatedEvent(context, element, jobProperties);
+              jobMetrics.jobCreated(jobProperties.getType());
               return null;
             });
   }
 
-  private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
-      final BpmnElementContext context, final JobWorkerProperties jobWorkerProperties) {
+  private Either<Failure, JobProperties> evaluateJobExpressions(
+      final BpmnElementContext context, final ExecutableJobWorkerElement element) {
     final var scopeKey = context.getElementInstanceKey();
+    final var type = element.getJobWorkerProperties().getType();
+    final var retries = element.getJobWorkerProperties().getRetries();
+    final var assignee = element.getJobWorkerProperties().getAssignee();
+    return Either.<Failure, JobProperties>right(new JobProperties())
+        .flatMap(p -> expressionBehavior.evaluateStringExpression(type, scopeKey).map(p::type))
+        .flatMap(p -> expressionBehavior.evaluateLongExpression(retries, scopeKey).map(p::retries))
+        .flatMap(p -> evaluateAssigneeExpression(assignee, scopeKey).map(p::assignee));
+  }
 
-    return expressionBehavior
-        .evaluateStringExpression(jobWorkerProperties.getType(), scopeKey)
-        .flatMap(
-            jobType ->
-                expressionBehavior
-                    .evaluateLongExpression(jobWorkerProperties.getRetries(), scopeKey)
-                    .map(retries -> new Tuple<>(jobType, retries)));
+  private Either<Failure, String> evaluateAssigneeExpression(
+      final Expression assignee, final long scopeKey) {
+    if (assignee == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior.evaluateStringExpression(assignee, scopeKey);
   }
 
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement jobWorkerElement,
-      final String jobType,
-      final int retries) {
+      final JobProperties props) {
 
-    final var encodedHeaders = encodeHeaders(jobWorkerElement);
+    final var taskHeaders = jobWorkerElement.getJobWorkerProperties().getTaskHeaders();
+    final var encodedHeaders = encodeHeaders(taskHeaders, props.getAssignee());
 
     jobRecord
-        .setType(jobType)
-        .setRetries(retries)
+        .setType(props.getType())
+        .setRetries(props.getRetries().intValue())
         .setCustomHeaders(encodedHeaders)
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
@@ -116,8 +121,11 @@ public final class BpmnJobBehavior {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
   }
 
-  private DirectBuffer encodeHeaders(final ExecutableJobWorkerElement element) {
-    final var headers = element.getJobWorkerProperties().getTaskHeaders();
+  private DirectBuffer encodeHeaders(final Map<String, String> taskHeaders, final String assignee) {
+    final var headers = new HashMap<>(taskHeaders);
+    if (assignee != null) {
+      headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
+    }
     return headerEncoder.encode(headers);
   }
 
@@ -137,6 +145,39 @@ public final class BpmnJobBehavior {
     if (state == State.ACTIVATABLE || state == State.ACTIVATED || state == State.FAILED) {
       final JobRecord job = jobState.getJob(jobKey);
       commandWriter.appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+    }
+  }
+
+  private static final class JobProperties {
+    private String type;
+    private Long retries;
+    private String assignee;
+
+    public JobProperties type(final String type) {
+      this.type = type;
+      return this;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public JobProperties retries(final Long retries) {
+      this.retries = retries;
+      return this;
+    }
+
+    public Long getRetries() {
+      return retries;
+    }
+
+    public JobProperties assignee(final String assignee) {
+      this.assignee = assignee;
+      return this;
+    }
+
+    public String getAssignee() {
+      return assignee;
     }
   }
 
