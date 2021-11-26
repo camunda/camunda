@@ -31,15 +31,34 @@
     }
 
     .formArea {
-      margin-bottom: 40px;
+      min-height: 100px;
+      margin-bottom: 15px;
     }
 
     .diagramArea {
       flex: 1 0 auto;
       display: flex;
-
+      flex-direction: column;
+      flex-basis: 0;
       border-radius: 3px;
       border: solid 1px var(--silver-darken-87);
+      overflow-y: scroll;
+
+      .diagramContainer {
+        border-bottom: 1px solid var(--silver-darken-87);
+        display: flex;
+        flex-grow: 0;
+        flex-shrink: 0;
+        flex-direction: column;
+        padding: 15px;
+        min-height: 0;
+
+        .title {
+          font-size: 14px;
+          font-weight: 600;
+          padding-bottom: 5px;
+        }
+      }
     }
   }
 

@@ -4,12 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {Link} from 'react-router-dom';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
 
-import {Button, Modal, DefinitionSelection, BPMNDiagram} from 'components';
+import {Button, Modal, DefinitionSelection, BPMNDiagram, DiagramScrollLock} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -26,34 +26,42 @@ export function TemplateModal({
   templateToState = (data) => data,
 }) {
   const [name, setName] = useState(t(entity + '.new'));
-  const [xml, setXml] = useState();
+  const [xmlData, setXmlData] = useState([]);
   const [template, setTemplate] = useState();
   const [selectedDefinitions, setSelectedDefinitions] = useState([]);
+  const diagramArea = useRef();
 
   useEffect(() => {
-    const {
-      key: definitionKey,
-      versions,
-      tenantIds: tenants,
-    } = selectedDefinitions[0] || {
-      key: '',
-      versions: [],
-      tenantIds: [],
-      identifier: 'definition',
-    };
-
-    if (definitionKey && versions?.length && tenants?.length) {
-      mightFail(
-        loadProcessDefinitionXml(definitionKey, versions[0], tenants[0]),
-        setXml,
-        showError
-      );
-    } else {
-      setXml();
+    if (selectedDefinitions.length === 0) {
+      return setXmlData([]);
     }
+
+    (async () => {
+      const newXmlData = await Promise.all(
+        selectedDefinitions.map(({key, name, versions, tenantIds: tenants}) => {
+          return (
+            xmlData.find(
+              (definition) => definition.key === key && deepEqual(versions, definition.versions)
+            ) ||
+            new Promise((resolve, reject) => {
+              mightFail(
+                loadProcessDefinitionXml(key, versions[0], tenants[0]),
+                (xml) => resolve({key, name, versions, xml}),
+                (error) => reject(showError(error))
+              );
+            })
+          );
+        })
+      );
+
+      setXmlData(newXmlData);
+    })();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDefinitions, mightFail]);
 
-  const validSelection = name && ((xml && selectedDefinitions.length > 0) || !template);
+  const validSelection =
+    name && ((xmlData.length > 0 && selectedDefinitions.length > 0) || !template);
 
   return (
     <Modal
@@ -97,8 +105,22 @@ export function TemplateModal({
               onChange={setSelectedDefinitions}
             />
           </div>
-          <div className="diagramArea">
-            <BPMNDiagram xml={xml} emptyText={t('templates.noXmlHint')} />
+
+          <div className="diagramArea" ref={diagramArea}>
+            {xmlData.map(({xml, key, name}, idx) => (
+              <div
+                key={xmlData.length + idx}
+                style={{
+                  height:
+                    getDiagramHeight(xmlData.length, diagramArea.current?.offsetHeight) + 'px',
+                }}
+                className="diagramContainer"
+              >
+                <div className="title">{name || key}</div>
+                <BPMNDiagram xml={xml} emptyText={t('templates.noXmlHint')} />
+                <DiagramScrollLock />
+              </div>
+            ))}
           </div>
           {!template && <div className="noProcessHint">{t('templates.noProcessHint')}</div>}
         </div>
@@ -116,7 +138,7 @@ export function TemplateModal({
               name,
               template,
               definitions: selectedDefinitions,
-              xml,
+              xml: xmlData[0]?.xml,
             }),
           }}
         >
@@ -125,6 +147,18 @@ export function TemplateModal({
       </Modal.Actions>
     </Modal>
   );
+}
+
+function getDiagramHeight(count, fullHeight) {
+  if (count === 1) {
+    return fullHeight;
+  }
+
+  if (count === 2) {
+    return 0.5 * fullHeight;
+  }
+
+  return 0.425 * fullHeight;
 }
 
 export default withErrorHandling(TemplateModal);

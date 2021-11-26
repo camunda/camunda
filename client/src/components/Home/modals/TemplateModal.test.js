@@ -44,21 +44,33 @@ it('should show a definition selection, and a list of templates', () => {
   expect(node.find('.templateContainer').find(Button).length).toBeGreaterThan(1);
 });
 
-it('should fetch and show the bpmn diagram when a definition is selected', () => {
+it('should fetch and show the bpmn diagrams when definitions are selected', async () => {
   const node = shallow(<TemplateModal {...props} />);
 
-  node
-    .find(DefinitionSelection)
-    .simulate('change', [{key: 'processDefinition', versions: ['1'], tenantIds: [null]}]);
+  const def1 = {key: 'def1', versions: ['1'], tenantIds: [null]};
+  const def2 = {key: 'def2', versions: ['2'], tenantIds: [null]};
+
+  node.find(DefinitionSelection).simulate('change', [def1]);
 
   runLastEffect();
+  await flushPromises();
 
-  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('processDefinition', '1', null);
-  expect(node.find(BPMNDiagram)).toExist();
-  expect(node.find(BPMNDiagram).prop('xml')).toBe('processXML');
+  expect(node.find(BPMNDiagram).length).toBe(1);
+  expect(node.find(BPMNDiagram).at(0).prop('xml')).toBe('processXML');
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('def1', '1', null);
+  loadProcessDefinitionXml.mockClear();
+
+  node.find(DefinitionSelection).simulate('change', [def1, def2]);
+
+  runLastEffect();
+  await flushPromises();
+
+  expect(node.find(BPMNDiagram).length).toBe(2);
+  expect(loadProcessDefinitionXml).not.toHaveBeenCalledWith('def1', '1', null);
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('def2', '2', null);
 });
 
-it('should include the selected parameters in the link state when creating a report', () => {
+it('should include the selected parameters in the link state when creating a report', async () => {
   const node = shallow(<TemplateModal {...props} />);
 
   node.find(DefinitionSelection).simulate('change', [
@@ -73,6 +85,7 @@ it('should include the selected parameters in the link state when creating a rep
   ]);
 
   runLastEffect();
+  await flushPromises();
 
   node.find('.templateContainer').find(Button).at(1).simulate('click');
 
@@ -80,7 +93,7 @@ it('should include the selected parameters in the link state when creating a rep
   expect(node.find('.Button.primary').prop('to')).toMatchSnapshot();
 });
 
-it('should call the templateToState prop to determine link state', () => {
+it('should call the templateToState prop to determine link state', async () => {
   const spy = jest.fn().mockReturnValue({data: 'stateData'});
   const node = shallow(<TemplateModal {...props} templateToState={spy} />);
 
@@ -95,6 +108,7 @@ it('should call the templateToState prop to determine link state', () => {
   ]);
 
   runLastEffect();
+  await flushPromises();
 
   expect(spy).toHaveBeenCalledWith({
     name: 'New Report',
