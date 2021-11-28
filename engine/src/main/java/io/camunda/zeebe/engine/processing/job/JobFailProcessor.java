@@ -34,7 +34,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
   private final JobState jobState;
-  private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
+  private final DefaultJobCommandPreconditionGuard defaultProcessor;
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
   private final JobBackoffChecker jobBackoffChecker;
@@ -48,7 +48,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     defaultProcessor =
-        new DefaultJobCommandPreconditionGuard<>("fail", jobState, this::acceptCommand);
+        new DefaultJobCommandPreconditionGuard("fail", jobState, this::acceptCommand);
     this.jobMetrics = jobMetrics;
   }
 

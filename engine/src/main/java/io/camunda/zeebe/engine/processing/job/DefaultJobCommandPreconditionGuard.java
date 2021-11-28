@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * Default implementation to process JobCommands to reduce duplication in CommandProcessor
  * implementations.
  */
-final class DefaultJobCommandPreconditionGuard<J extends JobRecord> {
+final class DefaultJobCommandPreconditionGuard {
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to %s job with key '%d', but no such job was found";
@@ -29,22 +29,23 @@ final class DefaultJobCommandPreconditionGuard<J extends JobRecord> {
 
   private final String intent;
   private final JobState state;
-  private final JobAcceptFunction<J> acceptCommand;
+  private final JobAcceptFunction acceptCommand;
 
   public DefaultJobCommandPreconditionGuard(
-      final String intent, final JobState state, final JobAcceptFunction<J> acceptCommand) {
+      final String intent, final JobState state, final JobAcceptFunction acceptCommand) {
     this.intent = intent;
     this.state = state;
     this.acceptCommand = acceptCommand;
   }
 
-  public boolean onCommand(final TypedRecord<J> command, final CommandControl<J> commandControl) {
+  public boolean onCommand(
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     return onCommand(command, commandControl, sideEffectProducer -> {});
   }
 
   public boolean onCommand(
-      final TypedRecord<J> command,
-      final CommandControl<J> commandControl,
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
       final Consumer<SideEffectProducer> sideEffect) {
     final long jobKey = command.getKey();
     final State jobState = state.getState(jobKey);

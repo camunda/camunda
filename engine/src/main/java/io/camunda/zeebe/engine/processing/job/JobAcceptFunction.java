@@ -14,10 +14,10 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.function.Consumer;
 
 @FunctionalInterface
-public interface JobAcceptFunction<J extends JobRecord> {
+public interface JobAcceptFunction {
 
   void accept(
-      final TypedRecord<J> record,
-      final CommandControl<J> commandControl,
+      final TypedRecord<JobRecord> record,
+      final CommandControl<JobRecord> commandControl,
       final Consumer<SideEffectProducer> sideEffect);
 }

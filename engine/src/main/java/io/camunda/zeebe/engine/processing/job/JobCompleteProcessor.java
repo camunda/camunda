@@ -26,7 +26,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
-  private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
+  private final DefaultJobCommandPreconditionGuard defaultProcessor;
   private final JobMetrics jobMetrics;
   private final EventHandle eventHandle;
 
@@ -35,7 +35,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
-        new DefaultJobCommandPreconditionGuard<>(
+        new DefaultJobCommandPreconditionGuard(
             "complete",
             jobState,
             (record, commandControl, sideEffect) -> acceptCommand(record, commandControl));
