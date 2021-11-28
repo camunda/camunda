@@ -387,6 +387,23 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldRetryJobAfterRecurAfterBackoff() {
+    // given
+    final long jobKey = 1L;
+    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(0);
+
+    // when
+    jobState.create(jobKey, jobRecord);
+    jobState.activate(jobKey, jobRecord);
+    jobState.fail(jobKey, jobRecord);
+
+    // then
+    assertThat(jobState.exists(jobKey)).isTrue();
+    assertJobState(jobKey, State.ACTIVATABLE);
+    refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime());
+  }
+
+  @Test
   public void shouldFailJobWithNoRetriesLeft() {
     // given
     final long key = 1L;
