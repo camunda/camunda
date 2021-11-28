@@ -45,10 +45,10 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
   long getRetryBackOff();
 
   /**
-   * @return the timestamp when this job record was received. This method is used by backoff to
-   *     determine the date when the job is needed to be recurred after backoff.
+   * @return the timestamp when this job record should be recurred. This method is used by backoff
+   *     to determine the date when the job is needed to be recurred after backoff.
    */
-  long getReceivedTime();
+  long getRecurringTime();
 
   /**
    * @return the unix timestamp until when the job is exclusively assigned to this worker (time unit

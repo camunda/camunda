@@ -131,7 +131,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void recurAfterBackoff(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
-    backoffKey.wrapLong(record.getRetryBackOff() + record.getReceivedTime());
+    backoffKey.wrapLong(record.getRecurringTime());
     backoffColumnFamily.delete(backoffJobKey);
   }
 
@@ -188,7 +188,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void fail(final long key, final JobRecord updatedValue) {
     if (updatedValue.getRetries() > 0) {
       if (updatedValue.getRetryBackOff() > 0) {
-        backoffKey.wrapLong(updatedValue.getRetryBackOff() + updatedValue.getReceivedTime());
+        backoffKey.wrapLong(updatedValue.getRecurringTime());
         backoffColumnFamily.put(backoffJobKey, DbNil.INSTANCE);
         updateJob(key, updatedValue, State.FAILED);
       } else {

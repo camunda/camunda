@@ -41,7 +41,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
-  private final LongProperty receivedTimeProp = new LongProperty("receivedTime", -1);
+  private final LongProperty recurringTimeProp = new LongProperty("recurringTime", -1);
 
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
@@ -65,7 +65,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(workerProp)
         .declareProperty(retriesProp)
         .declareProperty(retryBackoffProp)
-        .declareProperty(receivedTimeProp)
+        .declareProperty(recurringTimeProp)
         .declareProperty(typeProp)
         .declareProperty(customHeadersProp)
         .declareProperty(variableProp)
@@ -84,7 +84,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
     retryBackoffProp.setValue(record.getRetryBackOff());
-    receivedTimeProp.setValue(record.getReceivedTime());
+    recurringTimeProp.setValue(record.getRecurringTime());
     typeProp.setValue(record.getTypeBuffer());
     final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
     customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
@@ -144,8 +144,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public long getReceivedTime() {
-    return receivedTimeProp.getValue();
+  public long getRecurringTime() {
+    return recurringTimeProp.getValue();
   }
 
   @Override
@@ -241,8 +241,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  public JobRecord setReceivedTime(final long receivedTime) {
-    receivedTimeProp.setValue(receivedTime);
+  public JobRecord setRecurringTime(final long recurringTime) {
+    recurringTimeProp.setValue(recurringTime);
     return this;
   }
 
