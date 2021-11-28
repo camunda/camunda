@@ -13,11 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
-public class JobActivatedApplier implements TypedEventApplier<JobIntent, JobRecord> {
+public class JobRecurredApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;
 
-  JobActivatedApplier(final MutableZeebeState zeebeState) {
+  JobRecurredApplier(final MutableZeebeState zeebeState) {
     jobState = zeebeState.getJobState();
   }
 
