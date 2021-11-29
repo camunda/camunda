@@ -5,6 +5,7 @@
  */
 
 import {Mixpanel} from 'mixpanel-browser';
+import {getStage} from './getStage';
 
 const MIXPANEL_PUBLIC_TOKEN = '1104cabe553c23b7e67d56b1976437aa';
 const EVENT_PREFIX = 'operate:';
@@ -75,19 +76,6 @@ type Events =
   | {eventName: 'instance-toggle-end-time'}
   | {eventName: 'instance-history-log-selection-toggle'}
   | {eventName: 'instance-diagram-selection-toggle'};
-
-function getStage(host: string): 'dev' | 'int' | 'prod' | 'unkown' {
-  switch (host) {
-    case 'dev.ultrawombat.com':
-      return 'dev';
-    case 'ultrawombat.com':
-      return 'int';
-    case 'camunda.io':
-      return 'prod';
-    default:
-      return 'unkown';
-  }
-}
 
 class Tracking {
   #mixpanel: null | Mixpanel = null;
