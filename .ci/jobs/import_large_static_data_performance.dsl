@@ -27,7 +27,7 @@ pipelineJob('import-performance-static-dataset') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 1 * * *')
+          spec('H 1 * * 1-5')
         }
       }
     }

@@ -25,7 +25,7 @@ pipelineJob('e2e_tests') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 23 * * *')
+          spec('H 23 * * 1-5')
         }
       }
     }

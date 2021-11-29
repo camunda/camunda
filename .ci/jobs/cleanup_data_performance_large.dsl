@@ -28,7 +28,7 @@ pipelineJob('cleanup-data-performance') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 5 * * *')
+          spec('H 5 * * 1-5')
         }
       }
     }

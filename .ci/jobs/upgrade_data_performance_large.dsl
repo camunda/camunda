@@ -29,7 +29,7 @@ pipelineJob('upgrade-performance-static-dataset') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 4 * * *')
+          spec('H 4 * * 1-5')
         }
       }
     }

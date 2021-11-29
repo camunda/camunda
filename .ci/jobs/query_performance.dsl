@@ -27,7 +27,7 @@ pipelineJob('query-performance-tests') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 2 * * *')
+          spec('H 2 * * 1-5')
         }
       }
     }
