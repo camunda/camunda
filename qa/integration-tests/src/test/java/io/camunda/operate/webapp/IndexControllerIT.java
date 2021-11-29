@@ -12,6 +12,7 @@ import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 import io.camunda.operate.Application;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.security.UserService;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
+@Ignore("Will be addressed in later issues")
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
