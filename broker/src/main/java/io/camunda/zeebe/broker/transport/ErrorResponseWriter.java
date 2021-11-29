@@ -56,8 +56,7 @@ public final class ErrorResponseWriter implements BufferWriter {
     this.output = output;
   }
 
-  public <T> ErrorResponseWriter unsupportedMessage(
-      final String actualType, final T... expectedTypes) {
+  public <T> ErrorResponseWriter unsupportedMessage(final T actualType, final T... expectedTypes) {
     return errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
         .errorMessage(
             String.format(UNSUPPORTED_MESSAGE_FORMAT, Arrays.toString(expectedTypes), actualType));
