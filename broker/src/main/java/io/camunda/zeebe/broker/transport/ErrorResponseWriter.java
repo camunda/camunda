@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.broker.transport;
 
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;

@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
+import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -62,6 +63,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   protected void onActorStarting() {
     scheduler.submitActor(queryHandler);
+    scheduler.submitActor(commandHandler);
   }
 
   @Override
@@ -70,7 +72,13 @@ public final class CommandApiServiceImpl extends Actor
       removeLeaderHandlers(leadPartition);
     }
     leadPartitions.clear();
-
+    actor.runOnCompletion(
+        commandHandler.closeAsync(),
+        (ok, error) -> {
+          if (error != null) {
+            Loggers.TRANSPORT_LOGGER.error("Error closing command api request handler", error);
+          }
+        });
     actor.runOnCompletion(
         queryHandler.closeAsync(),
         (ok, error) -> {
