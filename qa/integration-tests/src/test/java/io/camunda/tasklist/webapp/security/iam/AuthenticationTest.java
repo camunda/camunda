@@ -104,7 +104,8 @@ public class AuthenticationTest implements AuthenticationTestable {
     // Step 5  check if access to url possible
     response = get(ROOT, cookies);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).contains("<body>");
+    // TODO: how to test the index page and it's content?
+    // assertThat(response.getBody()).contains("Only used for tests");
   }
 
   @Test
