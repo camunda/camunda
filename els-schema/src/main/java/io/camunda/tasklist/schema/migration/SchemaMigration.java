@@ -14,6 +14,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationFailedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -50,7 +52,20 @@ public class SchemaMigration implements CommandLineRunner {
     final SpringApplication springApplication = new SpringApplication(SchemaMigration.class);
     springApplication.setWebApplicationType(WebApplicationType.NONE);
     springApplication.setAddCommandLineProperties(true);
+    springApplication.addListeners(new ApplicationErrorListener());
     final ConfigurableApplicationContext ctx = springApplication.run(args);
     SpringApplication.exit(ctx);
+  }
+
+  public static class ApplicationErrorListener
+      implements ApplicationListener<ApplicationFailedEvent> {
+
+    @Override
+    public void onApplicationEvent(ApplicationFailedEvent event) {
+      if (event.getException() != null) {
+        event.getApplicationContext().close();
+        System.exit(-1);
+      }
+    }
   }
 }
