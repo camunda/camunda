@@ -1,3 +1,21 @@
 #!/bin/sh
 [ -n "$CI" ] && exit 0
 yarn --cwd client lint-staged && yarn --cwd client coverage
+# backend hooks
+mvn checkstyle:check
+if [ $? -eq 1 ]; then
+  echo "Found errors in checkstyle."
+  exit 1
+fi
+mvn com.coveo:fmt-maven-plugin:check
+if [ $? -eq 1 ]; then
+  echo "Found errors in formatting. Reformat ..."
+  mvn com.coveo:fmt-maven-plugin:format
+  exit 1
+fi
+mvn license:check -Dlicense.header=license/license-header
+if [ $? -eq 1 ]; then
+  echo "Found files without license. Add license(s)"
+  mvn license:format -Dlicense.header=license/license-header
+  exit 1
+fi
