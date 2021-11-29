@@ -509,6 +509,35 @@ class SegmentedJournalTest {
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 
+  // Regression test for https://github.com/camunda-cloud/zeebe/issues/7962
+  @Test
+  void shouldNotFailOnDeleteAndOpeningReaderConcurrently() throws InterruptedException {
+    // given
+    final var latch = new CountDownLatch(2);
+    final var journal = openJournal(2);
+    for (int i = 0; i < 10; i++) {
+      journal.append(data);
+    }
+    final long indexToCompact = journal.append(data).index();
+
+    // when
+    new Thread(
+            () -> {
+              journal.deleteUntil(indexToCompact);
+              latch.countDown();
+            })
+        .start();
+    new Thread(
+            () -> {
+              journal.openReader();
+              latch.countDown();
+            })
+        .start();
+
+    // then
+    assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+  }
+
   @Test
   void shouldDeleteSegmentFileWhenReaderIsClosed() {
     // given
