@@ -13,20 +13,11 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 
-import com.auth0.AuthenticationController;
-import com.auth0.IdentityVerificationException;
-import com.auth0.Tokens;
-import io.camunda.tasklist.property.TasklistProperties;
 import java.io.IOException;
-import java.time.Duration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import net.jodah.failsafe.Failsafe;
-import net.jodah.failsafe.RetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
@@ -41,15 +32,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Profile(SSO_AUTH_PROFILE)
 public class SSOController {
 
-  public static final String ACCESS_TOKENS = "access_tokens";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
 
-  @Autowired protected TasklistProperties tasklistProperties;
-
-  @Autowired private BeanFactory beanFactory;
-
-  @Autowired private AuthenticationController authenticationController;
+  @Autowired private Auth0Service auth0Service;
 
   /**
    * login the user - the user authentication will be delegated to auth0
@@ -60,20 +45,9 @@ public class SSOController {
       value = LOGIN_RESOURCE,
       method = {RequestMethod.GET, RequestMethod.POST})
   public String login(final HttpServletRequest req, final HttpServletResponse res) {
-    final String authorizeUrl = getAuthorizeUrl(req, res);
+    final String authorizeUrl = auth0Service.getAuthorizeUrl(req, res);
     LOGGER.debug("Redirect Login to {}", authorizeUrl);
     return "redirect:" + authorizeUrl;
-  }
-
-  private String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
-    return authenticationController
-        .buildAuthorizeUrl(req, res, getRedirectURI(req, SSO_CALLBACK))
-        .withAudience(
-            String.format(
-                "https://%s/userinfo",
-                tasklistProperties.getAuth0().getBackendDomain())) // get user profile
-        .withScope("openid profile email") // which info we request
-        .build();
   }
 
   /**
@@ -89,42 +63,13 @@ public class SSOController {
         req.getQueryString(),
         req.getSession().getId());
     try {
-      final String operationName = "Retrieve tokens";
-      final RetryPolicy<Tokens> retryPolicy =
-          new RetryPolicy<Tokens>()
-              .handle(IdentityVerificationException.class)
-              .withDelay(Duration.ofMillis(500))
-              .withMaxAttempts(10)
-              .onRetry(e -> LOGGER.debug("Retrying #{} {}", e.getAttemptCount(), operationName))
-              .onAbort(e -> LOGGER.error("Abort {} by {}", operationName, e.getFailure()))
-              .onRetriesExceeded(
-                  e ->
-                      LOGGER.error(
-                          "Retries {} exceeded for {}", e.getAttemptCount(), operationName));
-      final Tokens tokens = Failsafe.with(retryPolicy).get(() -> retrieveToken(req, res));
-      authenticate(tokens);
-      saveTokens(req, tokens);
+      auth0Service.authenticate(req, res);
       redirectToPage(req, res);
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
     } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
       clearContextAndRedirectToNoPermission(req, res, t);
     }
-  }
-
-  private Tokens retrieveToken(final HttpServletRequest request, final HttpServletResponse response)
-      throws IdentityVerificationException {
-    Tokens tokens = (Tokens) request.getSession().getAttribute(ACCESS_TOKENS);
-    if (tokens == null) {
-      tokens = authenticationController.handle(request, response);
-    }
-    return tokens;
-  }
-
-  private void authenticate(final Tokens tokens) {
-    final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
-    authentication.authenticate(tokens);
-    SecurityContextHolder.getContext().setAuthentication(authentication);
   }
 
   private void redirectToPage(final HttpServletRequest req, final HttpServletResponse res)
@@ -136,13 +81,6 @@ public class SSOController {
       res.sendRedirect(ROOT);
     }
   }
-
-  private void saveTokens(final HttpServletRequest req, final Tokens tokens) {
-    final HttpSession httpSession = req.getSession();
-    httpSession.setMaxInactiveInterval(tokens.getExpiresIn().intValue());
-    httpSession.setAttribute(ACCESS_TOKENS, tokens);
-  }
-
   /** Is called when there was an in authentication or authorization */
   @RequestMapping(value = NO_PERMISSION)
   @ResponseBody
@@ -155,7 +93,7 @@ public class SSOController {
   public void logout(HttpServletRequest req, HttpServletResponse res) throws IOException {
     LOGGER.debug("logout user");
     cleanup(req);
-    logoutFromAuth0(res, getRedirectURI(req, ROOT));
+    logoutFromAuth0(res, auth0Service.getRedirectURI(req, ROOT));
   }
 
   protected void clearContextAndRedirectToNoPermission(
@@ -169,7 +107,7 @@ public class SSOController {
       HttpServletRequest req, HttpServletResponse res) throws IOException {
     LOGGER.error("User is authenticated but there are no permissions. Show noPermission message");
     cleanup(req);
-    logoutFromAuth0(res, getRedirectURI(req, NO_PERMISSION));
+    logoutFromAuth0(res, auth0Service.getRedirectURI(req, NO_PERMISSION));
   }
 
   protected void cleanup(HttpServletRequest req) {
@@ -177,28 +115,7 @@ public class SSOController {
     SecurityContextHolder.clearContext();
   }
 
-  public String getLogoutUrlFor(String returnTo) {
-    return String.format(
-        "https://%s/v2/logout?client_id=%s&returnTo=%s",
-        tasklistProperties.getAuth0().getDomain(),
-        tasklistProperties.getAuth0().getClientId(),
-        returnTo);
-  }
-
   protected void logoutFromAuth0(HttpServletResponse res, String returnTo) throws IOException {
-    res.sendRedirect(getLogoutUrlFor(returnTo));
-  }
-
-  protected String getRedirectURI(final HttpServletRequest req, final String redirectTo) {
-    String redirectUri = req.getScheme() + "://" + req.getServerName();
-    if ((req.getScheme().equals("http") && req.getServerPort() != 80)
-        || (req.getScheme().equals("https") && req.getServerPort() != 443)) {
-      redirectUri += ":" + req.getServerPort();
-    }
-    final String clusterId = req.getContextPath().replace("/", "");
-    final String result =
-        redirectUri + /* req.getContextPath()+ */ redirectTo + "?uuid=" + clusterId;
-    LOGGER.debug("RedirectURI: {}", result);
-    return result;
+    res.sendRedirect(auth0Service.getLogoutUrlFor(returnTo));
   }
 }
