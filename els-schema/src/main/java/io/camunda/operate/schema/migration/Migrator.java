@@ -102,6 +102,7 @@ public class Migrator{
         failed = true;
       }
     }
+    migrationExecutor.shutdown();
     if (failed) {
       throw new MigrationException("Migration failed. See logging messages above.");
     }
