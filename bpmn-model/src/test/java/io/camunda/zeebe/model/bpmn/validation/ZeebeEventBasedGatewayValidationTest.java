@@ -85,7 +85,9 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             .done(),
         Arrays.asList(
             expect(Message.class, "Name must be present and not empty"),
-            expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
+            expect(
+                ZeebeSubscription.class,
+                "Attribute 'correlationKey' must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")

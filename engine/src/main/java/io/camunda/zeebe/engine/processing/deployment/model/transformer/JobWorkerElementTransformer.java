@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.Loggers;
@@ -21,23 +19,14 @@ import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class JobWorkerElementTransformer<T extends FlowElement>
     implements ModelElementTransformer<T> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-
-  private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
-
-  private final MsgPackWriter msgPackWriter = new MsgPackWriter();
 
   private final Class<T> type;
 
@@ -88,10 +77,10 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
     final ZeebeTaskHeaders taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
 
     if (taskHeaders != null) {
-      final List<ZeebeHeader> validHeaders =
+      final Map<String, String> validHeaders =
           taskHeaders.getHeaders().stream()
               .filter(this::isValidHeader)
-              .collect(Collectors.toList());
+              .collect(Collectors.toMap(ZeebeHeader::getKey, ZeebeHeader::getValue));
 
       if (validHeaders.size() < taskHeaders.getHeaders().size()) {
         LOG.warn(
@@ -100,35 +89,9 @@ public final class JobWorkerElementTransformer<T extends FlowElement>
       }
 
       if (!validHeaders.isEmpty()) {
-        final DirectBuffer encodedHeaders = encode(validHeaders);
-        jobWorkerProperties.setEncodedHeaders(encodedHeaders);
+        jobWorkerProperties.setTaskHeaders(validHeaders);
       }
     }
-  }
-
-  private DirectBuffer encode(final List<ZeebeHeader> taskHeaders) {
-    final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
-
-    final ExpandableArrayBuffer expandableBuffer =
-        new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * taskHeaders.size());
-
-    msgPackWriter.wrap(expandableBuffer, 0);
-    msgPackWriter.writeMapHeader(taskHeaders.size());
-
-    taskHeaders.forEach(
-        h -> {
-          if (isValidHeader(h)) {
-            final DirectBuffer key = wrapString(h.getKey());
-            msgPackWriter.writeString(key);
-
-            final DirectBuffer value = wrapString(h.getValue());
-            msgPackWriter.writeString(value);
-          }
-        });
-
-    buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
-
-    return buffer;
   }
 
   private boolean isValidHeader(final ZeebeHeader header) {

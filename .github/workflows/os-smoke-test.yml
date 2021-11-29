@@ -23,6 +23,38 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Clear broken cache parts (windows)
+        if: matrix.os == 'windows-latest'
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: C:\Users\runneradmin\.m2\repository\org\agrona\agrona
+      - name: Clear broken cache parts (windows)
+        if: matrix.os == 'windows-latest'
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: C:\Users\runneradmin\.m2\repository\uk\co\real-logic\sbe-tool
+      - name: Clear broken cache parts (ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: /home/runner/.m2/repository/org/agrona/agrona
+      - name: Clear broken cache parts (ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: /home/runner/.m2/repository/uk/co/real-logic/sbe-tool
+      - name: Clear broken cache parts (macos)
+        if: matrix.os == 'macos-latest'
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: /Users/runner/.m2/repository/org/agrona/agrona
+      - name: Clear broken cache parts (macos)
+        if: matrix.os == 'macos-latest'
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: /Users/runner/.m2/repository/uk/co/real-logic/sbe-tool
+
       - name: Build with Maven
         run: mvn -B -pl qa/integration-tests -am install -DskipTests -DskipChecks
       - name: Run smoke test

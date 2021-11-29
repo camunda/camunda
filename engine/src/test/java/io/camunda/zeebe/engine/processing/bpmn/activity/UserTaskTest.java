@@ -255,6 +255,51 @@ public final class UserTaskTest {
   }
 
   @Test
+  public void shouldCreateJobWithAssigneeHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssignee("alice"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "alice");
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedAssigneeExpressionHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssigneeExpression("user"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("user", "alice"))
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "alice");
+  }
+
+  @Test
   public void shouldCompleteUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();

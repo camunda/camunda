@@ -29,14 +29,18 @@ class ZeebeExpressionValidatorTest {
     @MethodSource("csv")
     void shouldAcceptCsv(final String value) {
       final var expression = new StaticExpression(value);
-      assertThat(ZeebeExpressionValidator.isListOfCsv(expression)).isTrue();
+      assertThat(ZeebeExpressionValidator.isListOfCsv(expression))
+          .describedAs("\"%s\" is CSV", value)
+          .isTrue();
     }
 
     @ParameterizedTest
     @MethodSource("notCsv")
     void shouldRejectNotCsv(final String value) {
       final var expression = new StaticExpression(value);
-      assertThat(ZeebeExpressionValidator.isListOfCsv(expression)).isFalse();
+      assertThat(ZeebeExpressionValidator.isListOfCsv(expression))
+          .describedAs("\"%s\" is not CSV", value)
+          .isFalse();
     }
 
     Stream<Arguments> csv() {
@@ -48,7 +52,14 @@ class ZeebeExpressionValidatorTest {
           Arguments.of("\"abcd\",\"efgh\",\"ijkl\""),
           Arguments.of("1"),
           Arguments.of("1,2"),
-          Arguments.of("1,a,3"));
+          Arguments.of("1,a,3"),
+          Arguments.of(" a"),
+          Arguments.of("a "),
+          Arguments.of(" a "),
+          Arguments.of(" a,b "),
+          Arguments.of(" a ,b "),
+          Arguments.of(" a, b "),
+          Arguments.of(" a , b "));
     }
 
     Stream<Arguments> notCsv() {
@@ -57,7 +68,11 @@ class ZeebeExpressionValidatorTest {
           Arguments.of("a,"),
           Arguments.of(",b"),
           Arguments.of(",b,"),
-          Arguments.of("a,,c"));
+          Arguments.of("a,,c"),
+          Arguments.of("a, ,c"),
+          Arguments.of(" ,"),
+          Arguments.of(", "),
+          Arguments.of(" , "));
     }
   }
 }

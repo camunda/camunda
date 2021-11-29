@@ -8,8 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import org.agrona.DirectBuffer;
+import java.util.Map;
 
 /**
  * The properties of an element that is based on a job and should be processed by a job worker. For
@@ -19,7 +18,9 @@ public class JobWorkerProperties {
 
   private Expression type;
   private Expression retries;
-  private DirectBuffer encodedHeaders = JobRecord.NO_HEADERS;
+  private Expression assignee;
+  private Expression candidateGroups;
+  private Map<String, String> taskHeaders = Map.of();
 
   public Expression getType() {
     return type;
@@ -37,11 +38,27 @@ public class JobWorkerProperties {
     this.retries = retries;
   }
 
-  public DirectBuffer getEncodedHeaders() {
-    return encodedHeaders;
+  public Expression getAssignee() {
+    return assignee;
   }
 
-  public void setEncodedHeaders(final DirectBuffer encodedHeaders) {
-    this.encodedHeaders = encodedHeaders;
+  public void setAssignee(final Expression assignee) {
+    this.assignee = assignee;
+  }
+
+  public Expression getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public void setCandidateGroups(final Expression candidateGroups) {
+    this.candidateGroups = candidateGroups;
+  }
+
+  public Map<String, String> getTaskHeaders() {
+    return taskHeaders;
+  }
+
+  public void setTaskHeaders(final Map<String, String> taskHeaders) {
+    this.taskHeaders = taskHeaders;
   }
 }

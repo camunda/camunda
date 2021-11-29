@@ -16,14 +16,16 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,10 +41,7 @@ public final class ZeebeDesignTimeValidators {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
     validators.add(new BoundaryEventValidator());
-    validators.add(
-        ExtensionElementsValidator.verifyThat(BusinessRuleTask.class)
-            .hasSingleExtensionElement(
-                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
+    validators.add(new BusinessRuleTaskValidation());
     validators.add(
         ExtensionElementsValidator.verifyThat(CallActivity.class)
             .hasSingleExtensionElement(
@@ -81,13 +80,31 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new StartEventValidator());
     validators.add(new SubProcessValidator());
     validators.add(new TimerEventDefinitionValidator());
-
-    validators.add(new ZeebeCalledElementValidator());
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeCalledElement.class)
+            .hasNonEmptyAttribute(
+                ZeebeCalledElement::getProcessId, ZeebeConstants.ATTRIBUTE_PROCESS_ID));
     validators.add(new ZeebeLoopCharacteristicsValidator());
-    validators.add(new ZeebeTaskDefinitionValidator());
-    validators.add(new ZeebeSubscriptionValidator());
-    validators.add(new ZeebeFormDefinitionValidator());
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeTaskDefinition.class)
+            .hasNonEmptyAttribute(ZeebeTaskDefinition::getType, ZeebeConstants.ATTRIBUTE_TYPE)
+            .hasNonEmptyAttribute(
+                ZeebeTaskDefinition::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeSubscription.class)
+            .hasNonEmptyAttribute(
+                ZeebeSubscription::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeFormDefinition.class)
+            .hasNonEmptyAttribute(
+                ZeebeFormDefinition::getFormKey, ZeebeConstants.ATTRIBUTE_FORM_KEY));
     validators.add(new ZeebeUserTaskFormValidator());
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeCalledDecision.class)
+            .hasNonEmptyAttribute(
+                ZeebeCalledDecision::getDecisionId, ZeebeConstants.ATTRIBUTE_DECISION_ID)
+            .hasNonEmptyAttribute(
+                ZeebeCalledDecision::getResultVariable, ZeebeConstants.ATTRIBUTE_RESULT_VARIABLE));
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

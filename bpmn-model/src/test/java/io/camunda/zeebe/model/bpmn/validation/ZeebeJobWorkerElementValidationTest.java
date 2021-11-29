@@ -94,7 +94,8 @@ public class ZeebeJobWorkerElementValidationTest {
         processWithJobWorkerElement(elementBuilder, element -> element.zeebeJobType(""));
 
     ProcessValidationUtil.assertThatProcessHasViolations(
-        process, expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"));
+        process,
+        expect(ZeebeTaskDefinition.class, "Attribute 'type' must be present and not empty"));
   }
 
   private BpmnModelInstance processWithJobWorkerElement(
@@ -110,7 +111,6 @@ public class ZeebeJobWorkerElementValidationTest {
   private static Stream<JobWorkerElementBuilder> jobWorkerElementBuilderProvider() {
     return Stream.of(
         JobWorkerElementBuilder.of("serviceTask", AbstractFlowNodeBuilder::serviceTask),
-        JobWorkerElementBuilder.of("businessRuleTask", AbstractFlowNodeBuilder::businessRuleTask),
         JobWorkerElementBuilder.of("scriptTask", AbstractFlowNodeBuilder::scriptTask),
         JobWorkerElementBuilder.of("sendTask", AbstractFlowNodeBuilder::sendTask),
         JobWorkerElementBuilder.of(
