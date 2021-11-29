@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -83,6 +84,7 @@ class PartitionManagerStepTest {
               Collections.emptyList());
       testBrokerStartupContext.setLeaderManagementRequestHandler(
           mock(LeaderManagementRequestHandler.class, RETURNS_DEEP_STUBS));
+      testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setClusterServices(
           mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS));

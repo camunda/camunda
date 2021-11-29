@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -68,6 +69,10 @@ public interface BrokerStartupContext {
   CommandApiServiceImpl getCommandApiService();
 
   void setCommandApiService(CommandApiServiceImpl commandApiService);
+
+  AdminApiRequestHandler getAdminApiService();
+
+  void setAdminApiService(AdminApiRequestHandler adminApiService);
 
   AtomixServerTransport getCommandApiServerTransport();
 
