@@ -5,14 +5,19 @@
  */
 package io.camunda.tasklist.metric;
 
+import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.entities.MetricEntity;
+import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.schema.indices.MetricIndex;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.es.MetricReaderWriter;
 import io.camunda.tasklist.webapp.es.dao.UsageMetricDAO;
+import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
+import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -22,6 +27,7 @@ import java.util.Map;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +39,32 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
 
   public static final String ASSIGNEE_ENDPOINT =
       "/actuator/usage-metrics/assignees?startTime={startTime}&endTime={endTime}";
-  public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
-  public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern(DATE_FORMAT);
+  public static final DateTimeFormatter FORMATTER =
+      DateTimeFormatter.ofPattern(DATE_FORMAT_DEFAULT);
 
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private UsageMetricDAO dao;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private MetricIndex index;
+  @Autowired private TaskMutationResolver taskMutationResolver;
+  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
+  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
+  private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
+
+  private static UserDTO buildAllAccessUserWith(
+      String username, String firstname, String lastname) {
+    return new UserDTO()
+        .setUsername(username)
+        .setFirstname(firstname)
+        .setLastname(lastname)
+        .setPermissions(List.of(Permission.WRITE));
+  }
+
+  @Before
+  public void before() {
+    super.before();
+    taskMutationResolver.setZeebeClient(super.getClient());
+  }
 
   @Test
   public void validateActuatorEndpointRegistered() {
@@ -120,6 +145,60 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody().getTotal()).isEqualTo(10_001);
+  }
+
+  @Test
+  public void providesCompletedTasks() throws IOException, InterruptedException {
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    // given users: joe, jane and demo
+    // and
+    tester
+        .createAndDeploySimpleProcess(TaskIT.BPMN_PROCESS_ID, TaskIT.ELEMENT_ID)
+        .waitUntil()
+        .processIsDeployed();
+
+    tester
+        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
+        .waitUntil()
+        .taskIsCreated(TaskIT.ELEMENT_ID);
+    setCurrentUser(joe);
+    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+
+    tester
+        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
+        .waitUntil()
+        .taskIsCreated(TaskIT.ELEMENT_ID);
+    setCurrentUser(jane);
+    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+
+    tester
+        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
+        .waitUntil()
+        .taskIsCreated(TaskIT.ELEMENT_ID);
+    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+
+    tester
+        .startProcessInstance(TaskIT.BPMN_PROCESS_ID)
+        .waitUntil()
+        .taskIsCreated(TaskIT.ELEMENT_ID);
+    setCurrentUser(demo);
+    tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
+
+    tester.waitFor(2000);
+    flushData();
+    // when
+    final Map<String, String> parameters = new HashMap<>();
+    parameters.put("startTime", now.minusMinutes(5L).format(FORMATTER));
+    parameters.put("endTime", now.plusMinutes(15L).format(FORMATTER));
+    final ResponseEntity<UsageMetricDTO> response =
+        testRestTemplate.getForEntity(ASSIGNEE_ENDPOINT, UsageMetricDTO.class, parameters);
+
+    // then
+    final UsageMetricDTO expectedDto = new UsageMetricDTO(List.of("jane", "demo", "joe"));
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isEqualTo(expectedDto);
   }
 
   private void flushData() throws IOException, InterruptedException {

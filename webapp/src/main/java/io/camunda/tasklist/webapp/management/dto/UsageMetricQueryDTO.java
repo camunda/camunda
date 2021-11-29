@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.webapp.management.dto;
 
+import io.camunda.tasklist.property.ElasticsearchProperties;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
@@ -13,10 +14,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 public class UsageMetricQueryDTO {
   private static final int DEFAULT_PAGE_SIZE = Integer.MAX_VALUE;
 
-  @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ")
+  @DateTimeFormat(pattern = ElasticsearchProperties.DATE_FORMAT_DEFAULT)
   private OffsetDateTime startTime;
 
-  @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ")
+  @DateTimeFormat(pattern = ElasticsearchProperties.DATE_FORMAT_DEFAULT)
   private OffsetDateTime endTime;
 
   private int pageSize = DEFAULT_PAGE_SIZE;

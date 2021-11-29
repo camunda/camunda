@@ -21,6 +21,7 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TaskValidationException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.es.TaskReaderWriter;
+import io.camunda.tasklist.webapp.es.contract.UsageMetricsContract;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
@@ -52,6 +53,8 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @Autowired private Metrics metrics;
 
+  @Autowired private UsageMetricsContract metricsContract;
+
   @PreAuthorize("hasPermission('write')")
   public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
     final Map<String, Object> variablesMap =
@@ -82,7 +85,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskSearchHit);
     variableService.persistTaskVariables(taskId, variables);
     final TaskDTO task = TaskDTO.createFrom(completedTask, objectMapper);
-    updateCompletedMetric(task);
+    updateCompletedMetric(completedTask);
     return task;
   }
 
@@ -122,8 +125,12 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     metrics.recordCounts(COUNTER_NAME_CLAIMED_TASKS, 1, getTaskMetricLabels(task));
   }
 
-  private void updateCompletedMetric(final TaskDTO task) {
-    metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
+  private void updateCompletedMetric(final TaskEntity task) {
+    metrics.recordCounts(
+        COUNTER_NAME_COMPLETED_TASKS,
+        1,
+        getTaskMetricLabels(TaskDTO.createFrom(task, objectMapper)));
+    metricsContract.registerTaskCompleteEvent(task);
   }
 
   private String[] getTaskMetricLabels(final TaskDTO task) {
