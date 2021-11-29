@@ -85,26 +85,46 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       return Optional.empty();
     }
 
-    final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
-    final long snapshotPosition =
-        determineSnapshotPosition(lowerBoundSnapshotPosition, exportedPosition);
-    final var optionalIndexed = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
-    if (optionalIndexed.isEmpty()) {
-      LOG.warn(
-          "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {} (processedPosition = {}, exportedPosition={}), but found no matching indexed entry which contains this position.",
-          snapshotPosition,
-          lowerBoundSnapshotPosition,
-          exportedPosition);
-      return Optional.empty();
-    }
+    long index = 0;
+    long term = 0;
+    long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
 
-    final var snapshotIndexedEntry = optionalIndexed.get();
-    final Optional<TransientSnapshot> transientSnapshot =
-        constructableSnapshotStore.newTransientSnapshot(
-            snapshotIndexedEntry.index(),
-            snapshotIndexedEntry.term(),
+    if (exportedPosition != -1) {
+
+      final long snapshotPosition =
+          determineSnapshotPosition(lowerBoundSnapshotPosition, exportedPosition);
+      final var optionalIndexed = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
+
+      if (optionalIndexed.isEmpty()) {
+        LOG.warn(
+            "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {} (processedPosition = {}, exportedPosition={}), but found no matching indexed entry which contains this position.",
+            snapshotPosition,
             lowerBoundSnapshotPosition,
             exportedPosition);
+        return Optional.empty();
+      }
+
+      final var snapshotIndexedEntry = optionalIndexed.get();
+      index = snapshotIndexedEntry.index();
+      term = snapshotIndexedEntry.term();
+    } else {
+      final Optional<PersistedSnapshot> latestSnapshot =
+          constructableSnapshotStore.getLatestSnapshot();
+      exportedPosition = 0;
+
+      if (latestSnapshot.isPresent()) {
+        // re-use index and term from the latest snapshot
+        // to ensure that the records from there are not
+        // compacted until they get exported
+        final PersistedSnapshot persistedSnapshot = latestSnapshot.get();
+        index = persistedSnapshot.getIndex();
+        term = persistedSnapshot.getTerm();
+      } // otherwise index/term remains 0
+    }
+
+    final var transientSnapshot =
+        constructableSnapshotStore.newTransientSnapshot(
+            index, term, lowerBoundSnapshotPosition, exportedPosition);
 
     transientSnapshot.ifPresent(this::takeSnapshot);
 
