@@ -16,7 +16,7 @@ spec:
         privileged: true
   containers:
     - name: maven
-      image: markhobson/maven-chrome:jdk-11
+      image: maven:3.8.3-jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -42,15 +42,13 @@ spec:
           value: 4
         - name: OLD_ZEEBE_TESTS_THREADS
           value: 2
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 8
-          memory: 1Gi
+          memory: 8Gi
         requests:
           cpu: 8
-          memory: 1Gi
+          memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
       env:
