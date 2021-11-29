@@ -474,7 +474,7 @@
       # As a result, it tries to distributed the leaders uniformly across the brokers. Note that it is only a best-effort strategy.
       # It is not guaranteed to be a strictly uniform distribution.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
-      # enablePriorityElection = false;
+      # enablePriorityElection = true;
 
       # This setting allows you to configure how partitions are distributed amongst the node of the
       # clusters. It currently supports to partitioning schemes: ROUND_ROBIN, and FIXED.

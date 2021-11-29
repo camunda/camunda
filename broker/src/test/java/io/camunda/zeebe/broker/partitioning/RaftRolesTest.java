@@ -263,6 +263,7 @@ public final class RaftRolesTest {
         RaftPartitionGroup.builder("normal")
             .withNumPartitions(partitionCount)
             .withPartitionSize(memberIds.size())
+            .withPriorityElection(false)
             .withMembers(memberIds)
             .withDataDirectory(
                 new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId))

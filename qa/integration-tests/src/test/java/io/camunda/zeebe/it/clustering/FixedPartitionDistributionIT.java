@@ -90,6 +90,7 @@ final class FixedPartitionDistributionIT {
         ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
     broker
         .withEnv("ZEEBE_BROKER_EXPERIMENTAL_PARTITIONING_SCHEME", "FIXED")
+        .withEnv("ZEEBE_BROKER_EXPERIMENTAL_ENABLE_PRIORITY_ELECTION", "false")
         .withEnv("ZEEBE_BROKER_EXPERIMENTAL_PARTITIONING_FIXED_0_PARTITIONID", "1")
         .withEnv("ZEEBE_BROKER_EXPERIMENTAL_PARTITIONING_FIXED_0_NODES_0_NODEID", "1")
         .withEnv("ZEEBE_BROKER_EXPERIMENTAL_PARTITIONING_FIXED_0_NODES_1_NODEID", "2")
