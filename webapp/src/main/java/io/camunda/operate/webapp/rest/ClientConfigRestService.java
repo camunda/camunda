@@ -5,10 +5,10 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import javax.servlet.ServletContext;
-import io.camunda.operate.property.OperateProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,20 +18,23 @@ public class ClientConfigRestService {
   public static final String CLIENT_CONFIG_RESOURCE = "/client-config.js";
 
   @Autowired
-  private OperateProperties operateProperties;
+  private ClientConfig clientConfig;
 
-  @Autowired
-  private ServletContext context;
+  private String clientConfigAsJS;
 
-  private String indexPage;
+  @PostConstruct
+  public void init(){
+    try {
+      clientConfigAsJS = String.format("window.clientConfig = %s;",
+          new ObjectMapper().writeValueAsString(clientConfig));
+    } catch (JsonProcessingException e) {
+      clientConfigAsJS = "window.clientConfig = {};";
+    }
+  }
 
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
-    return String.format(
-        "window.clientConfig = { \"isEnterprise\": %s, \"contextPath\": \"%s\" };",
-        operateProperties.isEnterprise(),
-        context.getContextPath()
-    );
+      return clientConfigAsJS;
   }
 
 }

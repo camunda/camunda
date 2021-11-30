@@ -83,6 +83,9 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private AlertingProperties alert = new AlertingProperties();
 
+  @NestedConfigurationProperty
+  private CloudProperties cloud = new CloudProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -239,6 +242,15 @@ public class OperateProperties {
 
   public OperateProperties setAlert(final AlertingProperties alert) {
     this.alert = alert;
+    return this;
+  }
+
+  public CloudProperties getCloud() {
+    return cloud;
+  }
+
+  public OperateProperties setCloud(final CloudProperties cloud) {
+    this.cloud = cloud;
     return this;
   }
 

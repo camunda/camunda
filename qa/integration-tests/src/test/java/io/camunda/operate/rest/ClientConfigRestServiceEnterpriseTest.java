@@ -14,6 +14,7 @@ import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,8 +22,17 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class, ClientConfigRestService.class, JacksonConfig.class, OperateProperties.class},
-    properties = OperateProperties.PREFIX + ".enterprise=true"
+    classes = {
+        TestApplicationWithNoBeans.class,
+        ClientConfig.class,
+        ClientConfigRestService.class,
+        JacksonConfig.class,
+        OperateProperties.class},
+    properties = {
+        OperateProperties.PREFIX + ".enterprise=true",
+        OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
+        //CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
+    }
 )
 public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTest {
 
@@ -36,7 +46,13 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
         .andReturn();
 
     // then
-    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo("window.clientConfig = { \"isEnterprise\": true, \"contextPath\": \"\" };");
+    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo(
+        "window.clientConfig = {"
+            + "\"isEnterprise\":true,"
+            + "\"contextPath\":\"\","
+            + "\"organizationId\":\"organizationId\","
+            + "\"clusterId\":null"
+            + "};");
   }
 
 }
