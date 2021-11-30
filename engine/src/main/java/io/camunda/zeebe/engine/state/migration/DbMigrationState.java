@@ -15,12 +15,15 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class DbMigrationState implements MutableMigrationState {
 
@@ -47,6 +50,8 @@ public class DbMigrationState implements MutableMigrationState {
       processSubscriptionSentTimeCompositeKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
       processSubscriptionSentTimeColumnFamily;
+
+  private final ColumnFamily<DbLong, TemporaryVariables> temporaryVariableColumnFamily;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -82,6 +87,15 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             processSubscriptionSentTimeCompositeKey,
             DbNil.INSTANCE);
+
+    final DbLong temporaryVariablesKeyInstance = new DbLong();
+    final TemporaryVariables temporaryVariablesValue = new TemporaryVariables();
+    temporaryVariableColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TEMPORARY_VARIABLE_STORE,
+            transactionContext,
+            temporaryVariablesKeyInstance,
+            temporaryVariablesValue);
   }
 
   @Override
@@ -143,6 +157,28 @@ public class DbMigrationState implements MutableMigrationState {
           }
 
           processSubscriptionSentTimeColumnFamily.delete(key);
+        });
+  }
+
+  @Override
+  public void migrateTemporaryVariables(
+      final MutableEventScopeInstanceState eventScopeInstanceState) {
+    temporaryVariableColumnFamily.forEach(
+        (key, value) -> {
+          // Event key can be a static value. Together with the key this will always be a unique
+          // value
+          final long eventKey = -1L;
+          // Element id will not be used, therefore a dummy id will be generated.
+          final String elementId = "migrated-variable-" + key.getValue();
+          final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
+
+          // We always use triggerStartEvent() here. This is because this method creates an event
+          // trigger with the passed parameters without doing any checks beforehand. This is
+          // sufficient for this migration.
+          eventScopeInstanceState.triggerStartEvent(
+              key.getValue(), eventKey, elementIdBuffer, value.get());
+
+          temporaryVariableColumnFamily.delete(key);
         });
   }
 }

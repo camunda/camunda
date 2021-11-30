@@ -24,7 +24,8 @@ public class DbMigratorImpl implements DbMigrator {
   private static final List<MigrationTask> MIGRATION_TASKS =
       List.of(
           new ProcessMessageSubscriptionSentTimeMigration(),
-          new MessageSubscriptionSentTimeMigration());
+          new MessageSubscriptionSentTimeMigration(),
+          new TemporaryVariableMigration());
   // Be mindful of https://github.com/camunda-cloud/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
@@ -66,6 +67,16 @@ public class DbMigratorImpl implements DbMigrator {
     }
   }
 
+  @Override
+  public void abort() {
+    final var message =
+        currentMigration == null
+            ? "Received abort signal (no migration running)"
+            : "Aborting " + currentMigration.getIdentifier() + " migration as requested";
+    LOGGER.info(message);
+    abortRequested = true;
+  }
+
   private void logPreview(final List<MigrationTask> migrationTasks) {
     LOGGER.info(
         "Starting processing of migration tasks (use LogLevel.DEBUG for more details) ... ");
@@ -88,16 +99,6 @@ public class DbMigratorImpl implements DbMigrator {
             + migrationTasks.stream()
                 .map(MigrationTask::getIdentifier)
                 .collect(Collectors.joining(", ")));
-  }
-
-  @Override
-  public void abort() {
-    final var message =
-        currentMigration == null
-            ? "Received abort signal (no migration running)"
-            : "Aborting " + currentMigration.getIdentifier() + " migration as requested";
-    LOGGER.info(message);
-    abortRequested = true;
   }
 
   private boolean handleMigrationTask(
