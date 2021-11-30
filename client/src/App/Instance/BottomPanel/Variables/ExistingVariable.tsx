@@ -60,8 +60,10 @@ const ExistingVariable: React.FC<Props> = ({variableName, variableValue}) => {
                 press: () => {
                   setIsModalVisible(true);
                 },
+                tooltip: 'Open JSON editor modal',
               }}
               shouldDebounceError={false}
+              autoFocus={true}
             />
           )}
         </Field>

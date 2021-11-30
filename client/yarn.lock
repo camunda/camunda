@@ -1331,17 +1331,17 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@camunda-cloud/common-ui-react@0.0.18-beta21":
-  version "0.0.18-beta21"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.18-beta21.tgz#9b8b9f8859ff361a1777abbe48dcf7835d495a93"
-  integrity sha512-M7qxzVrPx6/kHPvQ5Qa7+RAYjc9wl4sIY7zkb7WXyKnErEBmkxUwgK1S0PmUsXyfhmisiVhN7NsnFntwU9u7+A==
+"@camunda-cloud/common-ui-react@0.0.18-beta22":
+  version "0.0.18-beta22"
+  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.18-beta22.tgz#8d8b4a95921ac524a0cbeecb8e038f6447da58f3"
+  integrity sha512-v3BZ9s/VKr4t6y+i3OVbEt50nCcSk20FrluAtEdb8wTpGxMgDmBWoKpUAqGyL/XugSyy6OoOzlBkB7HFWSun9g==
   dependencies:
-    "@camunda-cloud/common-ui" "0.0.18-beta21"
+    "@camunda-cloud/common-ui" "0.0.18-beta22"
 
-"@camunda-cloud/common-ui@0.0.18-beta21":
-  version "0.0.18-beta21"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.18-beta21.tgz#9300fea5b7bfa5fc1ec6699823e11f27f6c44bef"
-  integrity sha512-/LiJE6y+32FIJU/RrsgHXuEV13Oc4+psCuHfeC+tzdxKD3K7JWzWTIrTWwfIU9YnABZR8LfH0hsiA1XvY3iL5A==
+"@camunda-cloud/common-ui@0.0.18-beta22":
+  version "0.0.18-beta22"
+  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.18-beta22.tgz#24b51a079c77a7f5d2cd9b2d34ee29b6332165b6"
+  integrity sha512-nMbThZeXCv/hYQCZqgZdTFzVpim4O7qKwTmXlFEx7bRldXT1Czp90RviCuiSP/yoMLUnUFZwDUBVKG+vvKPxYw==
 
 "@cnakazawa/watch@^1.0.3":
   version "1.0.4"

@@ -16,12 +16,14 @@ type Props = Omit<
   name: string;
   onChange: React.ComponentProps<typeof CmTextfield>['onCmInput'];
   shouldDebounceError: boolean;
+  autoFocus?: boolean;
 };
 
 const TextField: React.FC<Props> = ({
   name,
   onChange,
   shouldDebounceError,
+  autoFocus,
   ...props
 }) => {
   const fieldRef = useRef<HTMLCmTextfieldElement | null>(null);
@@ -51,6 +53,12 @@ const TextField: React.FC<Props> = ({
       validator();
     }, 500);
   };
+
+  useEffect(() => {
+    if (autoFocus) {
+      fieldRef.current?.forceFocus();
+    }
+  }, [autoFocus]);
 
   useEffect(() => {
     if (shouldDebounceError) {

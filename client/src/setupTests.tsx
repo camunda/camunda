@@ -54,6 +54,7 @@ const MockTextField = React.forwardRef<any, Props>(
 
     useImperativeHandle(ref, () => ({
       renderValidity,
+      forceFocus: () => {},
     }));
 
     return (

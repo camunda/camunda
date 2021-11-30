@@ -36,6 +36,7 @@ const NewVariable: React.FC = () => {
             placeholder="Name"
             data-testid="add-variable-name"
             shouldDebounceError={!meta.dirty && formState.dirty}
+            autoFocus={true}
           />
         )}
       </Field>
@@ -56,6 +57,7 @@ const NewVariable: React.FC = () => {
               press: () => {
                 setIsModalVisible(true);
               },
+              tooltip: 'Open JSON editor modal',
             }}
             shouldDebounceError={!meta.dirty && formState.dirty}
           />
