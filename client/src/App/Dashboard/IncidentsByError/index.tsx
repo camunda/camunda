@@ -108,7 +108,7 @@ const IncidentsByError = observer(() => {
           panelStatesStore.expandFiltersPanel();
           tracking.track({
             eventName: 'navigation',
-            link: 'dashboard-incidents-by-error-all-processess',
+            link: 'dashboard-incidents-by-error-all-processes',
             errorMessage: truncateErrorMessage(errorMessage),
           });
         }}

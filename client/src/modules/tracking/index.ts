@@ -34,7 +34,7 @@ type Events =
     }
   | {
       eventName: 'navigation';
-      link: 'dashboard-incidents-by-error-all-processess';
+      link: 'dashboard-incidents-by-error-all-processes';
       errorMessage: string;
     }
   | {
