@@ -18,6 +18,7 @@ export default function VersionPopover({
   selectedSpecificVersions = [],
   onChange,
   disabled,
+  tooltip,
 }) {
   const specific = usesSpecificVersions(selected);
 
@@ -31,7 +32,12 @@ export default function VersionPopover({
   }
 
   return (
-    <Popover className="VersionPopover" title={title} disabled={disabled || !versions}>
+    <Popover
+      className="VersionPopover"
+      tooltip={tooltip}
+      title={title}
+      disabled={disabled || !versions}
+    >
       <Form compact>
         <Form.Group>
           <LabeledInput

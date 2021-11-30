@@ -60,7 +60,25 @@
   },
   "templates": {
     "noProcessHint": "Leeres Dashboard erstellen",
-    "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen"
+    "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen",
+    "blankSlate": {
+      "selectProcess": "Wählen Sie bis zu 10 Prozessdefinitionen aus",
+      "selectTemplate": "Wählen Sie eine Vorlage aus",
+      "review": "Überprüfen Sie Ihr Dashboardentwurf und entfernen Sie unerwünschte Berichte",
+      "refine": "Verfeinern Sie Ihr Dashboard und Ihre Berichte"
+    },
+    "disabledMessage": {
+      "noProcess": "Wählen Sie eine Prozessdefinition aus, um eine Vorlage auswählen zu können.",
+      "multipleProcess": "Diese Vorlage eignet sich am besten für mehrere Prozesse.",
+      "singleProcess": "Diese Vorlagen eignen sich am besten für einen einzelnen Prozess.",
+      "editReport": "Um diesen Wert zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
+    },
+    "templateGroups": {
+      "blankGroup": "Leere Vorlage",
+      "templatesGroup": "Vorlagen",
+      "singleProcessGroup": "Einzel-Prozess-Vorlagen",
+      "multiProcessGroup": "Multi-Prozess-Vorlagen"
+    }
   },
   "home": {
     "createBtn": {

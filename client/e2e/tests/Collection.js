@@ -6,7 +6,7 @@
 
 import {cleanEntities} from '../setup';
 import config from '../config';
-import {login, save, getUser} from '../utils';
+import {login, save, getUser, createNewDashboard} from '../utils';
 
 import * as Homepage from './Homepage.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
@@ -42,15 +42,14 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.createNewMenu.textContent).notContains('New Collection');
   await t.expect(e.createNewMenu.textContent).contains('New Dashboard');
   await t.expect(e.createNewMenu.textContent).contains('New Report');
+  await t.click(e.createNewMenu);
 
-  await t.click(e.option('New Dashboard'));
-  await t.click(Homepage.modalConfirmbutton);
-
+  await createNewDashboard(t);
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
   await t.expect(e.dashboardItem.visible).ok();
-  await t.expect(e.dashboardItem.textContent).contains('New Dashboard');
+  await t.expect(e.dashboardItem.textContent).contains('Blank Dashboard');
 });
 
 test('renaming a collection', async (t) => {
@@ -92,10 +91,7 @@ test('user permissions', async (t) => {
 
   await t.click(e.entitiesTab);
 
-  await t.click(e.createNewMenu);
-  await t.click(e.option('New Dashboard'));
-  await t.click(Homepage.modalConfirmbutton);
-
+  await createNewDashboard(t);
   await save(t);
   await t.click(e.collectionBreadcrumb);
 

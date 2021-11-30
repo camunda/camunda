@@ -427,3 +427,9 @@ it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions 
     },
   ]);
 });
+
+it('should pass versionTooltip to the version popover', async () => {
+  const node = await shallow(<DefinitionSelection {...props} versionTooltip={'test tooltip'} />);
+
+  expect(node.find(VersionPopover).prop('tooltip')).toBe('test tooltip');
+});

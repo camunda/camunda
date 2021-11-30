@@ -215,7 +215,11 @@ export class DefinitionSelection extends React.Component {
 
   createTitle = () => {
     const {key: definitionKey, versions} = this.state.selection;
-    const {type} = this.props;
+    const {type, selectedDefinitions} = this.props;
+
+    if (selectedDefinitions?.length > 1) {
+      return;
+    }
 
     if (definitionKey && versions && this.getAvailableTenants()) {
       const availableTenants = this.getAvailableTenants();
@@ -269,7 +273,8 @@ export class DefinitionSelection extends React.Component {
       isLoadingVersions,
       isLoadingTenants,
     } = this.state;
-    const {expanded, type, disableDefinition, selectedDefinitions, onChange} = this.props;
+    const {expanded, type, disableDefinition, selectedDefinitions, onChange, versionTooltip} =
+      this.props;
     const collectionId = getCollection(this.props.location.pathname);
     const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
     const selectedKey = selection.key;
@@ -329,6 +334,7 @@ export class DefinitionSelection extends React.Component {
               <div className="version entry">
                 <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover
+                  tooltip={versionTooltip}
                   disabled={isLoadingVersions || !this.hasDefinition()}
                   versions={this.getAvailableVersions()}
                   selected={this.getSelectedVersions()}

@@ -6,7 +6,7 @@
 
 import {cleanEntities} from '../setup';
 import config from '../config';
-import {login, save, addReportToDashboard} from '../utils';
+import {login, save, addReportToDashboard, createNewReport, createNewDashboard} from '../utils';
 
 import * as e from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
@@ -16,14 +16,9 @@ import * as Collection from './Collection.elements.js';
 fixture('Homepage').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
 
 test('navigate to report view and edit pages', async (t) => {
-  await t.click(e.createNewMenu).hover(e.newReportOption);
-  await t.click(e.submenuOption('Process Report'));
-
-  await t.click(e.templateModalProcessField);
-  await t.click(e.firstTypeaheadOption);
-  await t.click(e.confirmButton);
-
+  await createNewReport(t);
   await save(t);
+
   await t.click(e.homepageLink);
 
   await t.click(e.reportItem);
@@ -40,10 +35,9 @@ test('navigate to report view and edit pages', async (t) => {
 });
 
 test('navigate to dashboard view and edit pages', async (t) => {
-  await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-  await t.click(e.modalConfirmbutton);
-
+  await createNewDashboard(t);
   await save(t);
+
   await t.click(e.homepageLink);
 
   await t.click(e.dashboardItem);
@@ -90,8 +84,7 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.reportItem.visible).ok();
   await t.expect(e.reportItem.textContent).contains('Monthly Sales From Marketing');
 
-  await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-  await t.click(e.modalConfirmbutton);
+  await createNewDashboard(t);
 
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
 
@@ -130,9 +123,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(Collection.entitiesTab);
 
-  await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-  await t.click(e.modalConfirmbutton);
-
+  await createNewDashboard(t);
   await save(t);
 
   await t.click(e.breadcrumb('Marketing'));
@@ -178,9 +169,7 @@ test('complex Homepage actions', async (t) => {
   await save(t);
   await t.click(e.breadcrumb('Sales'));
 
-  await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-
-  await t.click(e.modalConfirmbutton);
+  await createNewDashboard(t);
 
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
   await addReportToDashboard(t, 'Incoming Leads');

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {runLastEffect} from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {DefinitionSelection, Button, BPMNDiagram} from 'components';
@@ -23,12 +23,25 @@ const props = {
   onClose: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   entity: 'report',
-  templates: [
-    {name: 'blank'},
+  templateGroups: [
     {
-      name: 'heatmap',
-      img: <img alt="" />,
-      config: {view: {entity: 'flowNode', properties: ['frequency']}},
+      name: 'blankGroup',
+      templates: [{name: 'blank'}],
+    },
+    {
+      name: 'templatesGroup',
+      templates: [
+        {
+          name: 'heatmap',
+          disabled: (selectedDefinitions) => selectedDefinitions.length !== 1,
+          img: <img alt="" />,
+          config: {view: {entity: 'flowNode', properties: ['frequency']}},
+        },
+        {
+          name: 'chart',
+          config: {},
+        },
+      ],
     },
   ],
 };
@@ -52,8 +65,9 @@ it('should fetch and show the bpmn diagrams when definitions are selected', asyn
 
   node.find(DefinitionSelection).simulate('change', [def1]);
 
-  runLastEffect();
+  runAllEffects();
   await flushPromises();
+  runAllEffects();
 
   expect(node.find(BPMNDiagram).length).toBe(1);
   expect(node.find(BPMNDiagram).at(0).prop('xml')).toBe('processXML');
@@ -62,7 +76,7 @@ it('should fetch and show the bpmn diagrams when definitions are selected', asyn
 
   node.find(DefinitionSelection).simulate('change', [def1, def2]);
 
-  runLastEffect();
+  runAllEffects();
   await flushPromises();
 
   expect(node.find(BPMNDiagram).length).toBe(2);
@@ -84,7 +98,7 @@ it('should include the selected parameters in the link state when creating a rep
     },
   ]);
 
-  runLastEffect();
+  runAllEffects();
   await flushPromises();
 
   node.find('.templateContainer').find(Button).at(1).simulate('click');
@@ -107,7 +121,7 @@ it('should call the templateToState prop to determine link state', async () => {
     },
   ]);
 
-  runLastEffect();
+  runAllEffects();
   await flushPromises();
 
   expect(spy).toHaveBeenCalledWith({
@@ -121,7 +135,7 @@ it('should call the templateToState prop to determine link state', async () => {
         versions: ['1'],
       },
     ],
-    template: undefined,
+    template: props.templateGroups[1].templates[0].config,
     xml: 'processXML',
   });
   expect(node.find('.confirm.Button').prop('to').state).toEqual({data: 'stateData'});
@@ -132,10 +146,36 @@ it('should show templates with subTitles', () => {
     <TemplateModal
       {...props}
       entity="dashboard"
-      templates={[{name: 'processPerformance', hasSubtitle: true}]}
+      templateGroups={[
+        {name: 'singleProcessGroup', templates: [{name: 'processPerformance', hasSubtitle: true}]},
+        {
+          name: 'multiProcessGroup',
+          templates: [{name: 'humanPerformance', hasSubtitle: true}],
+        },
+      ]}
     />
   );
 
   expect(node.find('.templateContainer').find(Button)).toHaveClassName('hasSubtitle');
   expect(node.find('.subTitle')).toExist();
+});
+
+it('should update the selected template if it is disabled for the selected definitions', async () => {
+  const testDef = {key: 'def', versions: ['1'], tenantIds: [null]};
+  const node = shallow(<TemplateModal {...props} />);
+
+  expect(node.find('.active')).not.toExist();
+
+  node.find(DefinitionSelection).simulate('change', [testDef]);
+  runAllEffects();
+  await flushPromises();
+
+  expect(node.find('.active')).toIncludeText('Heatmap');
+
+  node.find(DefinitionSelection).simulate('change', [testDef, testDef]);
+  runAllEffects();
+  await flushPromises();
+
+  expect(node.find('.active')).not.toIncludeText('Heatmap');
+  expect(node.find('.active')).toIncludeText('Bar Chart');
 });
