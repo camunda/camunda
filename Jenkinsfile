@@ -48,23 +48,43 @@ pipeline {
   }
 
   stages {
-    stage('Backend build') {
+    stage('Prepare') {
+      steps {
+        container('maven') {
+          sh '.ci/scripts/ensure-naming-for-process.sh'
+        }
+      }
+    }
+    stage('Frontend - Build') {
+      steps {
+        container('node') {
+          sh '''
+            apk add --no-cache git
+            cd ./client
+            yarn install --frozen-lockfile
+            yarn lint
+            yarn build
+          '''
+        }
+      }
+    }
+    stage('Backend - Build') {
       steps {
         container('maven') {
           // MaxRAMFraction = LIMITS_CPU because there are only maven build threads
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             sh '''
-              JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
-              mvn clean deploy -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
-                   -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-            '''
+            JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
+            mvn clean deploy -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+                -DaltStagingDirectory=$(pwd)/staging -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          '''
           }
         }
       }
     }
-    stage('Tests') {
+    stage('Unit tests') {
       parallel {
-        stage('Backend') {
+        stage('Backend - Tests') {
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -72,7 +92,7 @@ pipeline {
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
                   mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU --fail-at-end
-                '''
+                  '''
               }
             }
           }
@@ -83,7 +103,7 @@ pipeline {
             }
           }
         }
-        stage('Backend (old Zeebe)') {
+        stage('Backend - Tests (old Zeebe)') {
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -91,7 +111,7 @@ pipeline {
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
                   mvn verify -f qa/integration-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests,old-zeebe -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
-                '''
+                  '''
               }
             }
           }
@@ -101,16 +121,31 @@ pipeline {
             }
           }
         }
-        stage('E2E'){
+        stage('Frontend - Tests') {
           steps {
-            container('e2e') {
+            container('node') {
+              sh '''
+                cd ./client
+                yarn test:ci
+              '''
+            }
+          }
+          post {
+            always {
+              junit testResults: 'client/jest-test-results.xml', keepLongStdio: true, allowEmptyResults: true
+            }
+          }
+        }
+        stage('End to end - Tests'){
+          steps {
+            container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                 sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
                 sh ('sleep 30')
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
                   mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test
-                '''
+                  '''
                 sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
               }
             }
@@ -134,9 +169,9 @@ pipeline {
     }
     stage('Deploy') {
       parallel {
-        stage('Nexus Snapshot') {
+        stage('Deploy - Nexus Snapshot') {
           when {
-            branch 'master'
+              branch 'master'
           }
           steps {
             lock('operate-snapshot-upload') {
@@ -152,10 +187,10 @@ pipeline {
             }
           }
         }
-        stage('Docker Image') {
+        stage('Deploy - Docker Image') {
           when {
             not {
-              expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
+                expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
             }
           }
           environment {
@@ -177,9 +212,9 @@ pipeline {
             }
           }
         }
-        stage('Docker Image SNAPSHOT') {
+        stage('Deploy - Docker Image SNAPSHOT') {
           when {
-            branch 'master'
+              branch 'master'
           }
           environment {
             IMAGE_NAME = 'camunda/operate'
@@ -207,8 +242,8 @@ pipeline {
       steps {
         build job: '/deploy-branch-to-k8s',
           parameters: [
-            string(name: 'BRANCH', value: getBranchSlug()),
-            string(name: 'OPERATE_BRANCH', value: env.BRANCH_NAME),
+              string(name: 'BRANCH', value: getBranchSlug()),
+              string(name: 'OPERATE_BRANCH', value: env.BRANCH_NAME),
           ]
       }
     }

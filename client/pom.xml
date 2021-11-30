@@ -49,7 +49,7 @@
           </execution>
 
           <execution>
-            <id>yarn install --frozen-lockfile</id>
+            <id>yarn install</id>
             <goals>
               <goal>yarn</goal>
             </goals>

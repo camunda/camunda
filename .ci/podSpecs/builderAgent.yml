@@ -16,7 +16,7 @@ spec:
         privileged: true
   containers:
     - name: maven
-      image: maven:3.8.3-jdk-11
+      image: markhobson/maven-chrome:jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -42,13 +42,15 @@ spec:
           value: 4
         - name: OLD_ZEEBE_TESTS_THREADS
           value: 2
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 8
-          memory: 8Gi
+          memory: 1Gi
         requests:
           cpu: 8
-          memory: 8Gi
+          memory: 1Gi
     - name: node
       image: node:16.13.0-alpine
       command: ["cat"]
