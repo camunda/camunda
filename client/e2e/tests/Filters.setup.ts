@@ -5,8 +5,25 @@
  */
 
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {within, screen} from '@testing-library/testcafe';
 
-export async function setup() {
+const cmParentInstanceIdField = within(
+  screen.queryByTestId('parentInstanceId').shadowRoot()
+).queryByRole('textbox');
+const cmErrorMessageField = within(
+  screen.queryByTestId('errorMessage').shadowRoot()
+).queryByRole('textbox');
+const cmStartDateField = within(
+  screen.queryByTestId('startDate').shadowRoot()
+).queryByRole('textbox');
+const cmEndDateField = within(
+  screen.queryByTestId('endDate').shadowRoot()
+).queryByRole('textbox');
+const cmOperationIdField = within(
+  screen.queryByTestId('operationId').shadowRoot()
+).queryByRole('textbox');
+
+const setup = async () => {
   await deploy([
     './e2e/tests/resources/Filters/processWithMultipleVersions_v_1.bpmn',
   ]);
@@ -47,4 +64,13 @@ export async function setup() {
     instanceToCancelForOperations,
     callActivityProcessInstance,
   };
-}
+};
+
+export {
+  setup,
+  cmParentInstanceIdField,
+  cmErrorMessageField,
+  cmOperationIdField,
+  cmStartDateField,
+  cmEndDateField,
+};

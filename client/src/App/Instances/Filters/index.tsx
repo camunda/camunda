@@ -50,6 +50,7 @@ import {
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {TextField} from 'modules/components/TextField';
 
 const Filters: React.FC = () => {
   const history = useHistory();
@@ -131,19 +132,26 @@ const Filters: React.FC = () => {
                   )}
                 >
                   {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input {...input} placeholder="Parent Instance Id" />
-                    </InjectAriaInvalid>
+                    <TextField
+                      {...input}
+                      type="text"
+                      data-testid="parentInstanceId"
+                      label="Parent Instance Id"
+                      shouldDebounceError={false}
+                    />
                   )}
                 </Field>
-                <Error name="parentInstanceId" />
               </Row>
               <Row>
                 <Field name="errorMessage">
                   {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input {...input} placeholder="Error Message" />
-                    </InjectAriaInvalid>
+                    <TextField
+                      {...input}
+                      type="text"
+                      data-testid="errorMessage"
+                      label="Error Message"
+                      shouldDebounceError={false}
+                    />
                   )}
                 </Field>
               </Row>
@@ -156,15 +164,16 @@ const Filters: React.FC = () => {
                   )}
                 >
                   {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input
-                        {...input}
-                        placeholder="Start Date YYYY-MM-DD hh:mm:ss"
-                      />
-                    </InjectAriaInvalid>
+                    <TextField
+                      {...input}
+                      type="text"
+                      data-testid="startDate"
+                      label="Start Date"
+                      placeholder="YYYY-MM-DD hh:mm:ss"
+                      shouldDebounceError={false}
+                    />
                   )}
                 </Field>
-                <Error name="startDate" />
               </Row>
               <Row>
                 <Field
@@ -175,15 +184,16 @@ const Filters: React.FC = () => {
                   )}
                 >
                   {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input
-                        {...input}
-                        placeholder="End Date YYYY-MM-DD hh:mm:ss"
-                      />
-                    </InjectAriaInvalid>
+                    <TextField
+                      {...input}
+                      type="text"
+                      data-testid="endDate"
+                      label="End Date"
+                      placeholder="YYYY-MM-DD hh:mm:ss"
+                      shouldDebounceError={false}
+                    />
                   )}
                 </Field>
-                <Error name="endDate" />
               </Row>
               <Row>
                 <FlowNodeField />
@@ -265,12 +275,15 @@ const Filters: React.FC = () => {
                   )}
                 >
                   {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input {...input} placeholder="Operation Id" />
-                    </InjectAriaInvalid>
+                    <TextField
+                      {...input}
+                      type="text"
+                      data-testid="operationId"
+                      label="Operation Id"
+                      shouldDebounceError={false}
+                    />
                   )}
                 </Field>
-                <Error name="operationId" />
               </Row>
               <Row>
                 <CheckboxGroup

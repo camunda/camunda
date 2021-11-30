@@ -13,19 +13,28 @@ const useFieldError = (name: string) => {
     meta: {active, dirtySinceLastSubmit, validating},
   } = useField(name);
 
-  const {errors, submitErrors} = useFormState();
+  const {errors, submitErrors, validating: formValidating} = useFormState();
+
   const error = errors?.[name];
   const submitError = dirtySinceLastSubmit ? undefined : submitErrors?.[name];
 
   const [computedError, setComputedError] = useState<string | undefined>();
 
   useEffect(() => {
-    if (validating && !active) {
+    if ((formValidating || validating) && !active) {
       return;
     }
 
     setComputedError(error ?? submitError);
-  }, [validating, active, error, submitError, setComputedError, value]);
+  }, [
+    formValidating,
+    validating,
+    active,
+    error,
+    submitError,
+    setComputedError,
+    value,
+  ]);
 
   return computedError;
 };

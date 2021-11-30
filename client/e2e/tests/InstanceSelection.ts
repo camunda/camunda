@@ -9,6 +9,7 @@ import {setup} from './InstanceSelection.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
+import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 
 fixture('Select Instances')
   .page(config.endpoint)
@@ -84,13 +85,16 @@ test('Selection of instances are removed on filter selection', async (t) => {
   // instances are not selected after applying error message filter
   const errorMessage =
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
-  await t.typeText(
-    screen.queryByRole('textbox', {name: /error message/i}),
-    errorMessage,
-    {
-      paste: true,
-    }
-  );
+
+  const errorMessageField = IS_NEW_FILTERS_FORM
+    ? within(screen.queryByTestId('errorMessage').shadowRoot()).queryByRole(
+        'textbox'
+      )
+    : screen.queryByRole('textbox', {name: /error message/i});
+
+  await t.typeText(errorMessageField, errorMessage, {
+    paste: true,
+  });
 
   await t
     .expect(

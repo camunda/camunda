@@ -7,6 +7,11 @@
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
 import {createOperation} from './api';
 import {wait} from './utils/wait';
+import {within, screen} from '@testing-library/testcafe';
+
+const cmOperationIdField = within(
+  screen.queryByTestId('operationId').shadowRoot()
+).queryByRole('textbox');
 
 async function setup() {
   await deploy([
@@ -33,4 +38,4 @@ async function setup() {
   return {singleOperationInstance, batchOperationInstances};
 }
 
-export {setup};
+export {setup, cmOperationIdField};

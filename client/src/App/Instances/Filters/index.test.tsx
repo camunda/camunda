@@ -7,7 +7,13 @@
 import {Router, Route} from 'react-router-dom';
 import {History, createMemoryHistory} from 'history';
 import userEvent from '@testing-library/user-event';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
@@ -218,18 +224,14 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Instance Id(s) separated by space or comma')
     ).toHaveValue('');
-    expect(screen.getByLabelText('Parent Instance Id')).toHaveValue('');
-    expect(screen.getByLabelText('Error Message')).toHaveValue('');
-    expect(screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss')).toHaveValue(
-      ''
-    );
-    expect(screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss')).toHaveValue(
-      ''
-    );
+    expect(screen.getByTestId('parentInstanceId')).toHaveValue('');
+    expect(screen.getByTestId('errorMessage')).toHaveValue('');
+    expect(screen.getByTestId('startDate')).toHaveValue('');
+    expect(screen.getByTestId('endDate')).toHaveValue('');
     expect(screen.getByLabelText('Flow Node')).toHaveValue('');
     expect(screen.getByLabelText('Variable')).toHaveValue('');
     expect(screen.getByLabelText('Value')).toHaveValue('');
-    expect(screen.getByLabelText('Operation Id')).toHaveValue('');
+    expect(screen.getByTestId('operationId')).toHaveValue('');
     expect(screen.getByLabelText('Active')).not.toBeChecked();
     expect(screen.getByLabelText('Incidents')).not.toBeChecked();
     expect(screen.getByLabelText('Completed')).not.toBeChecked();
@@ -243,22 +245,17 @@ describe('Filters', () => {
       MOCK_VALUES.ids
     );
     userEvent.paste(
-      screen.getByLabelText('Parent Instance Id'),
+      screen.getByTestId('parentInstanceId'),
       MOCK_VALUES.parentInstanceId
     );
 
     userEvent.paste(
-      screen.getByLabelText('Error Message'),
+      screen.getByTestId('errorMessage'),
       MOCK_VALUES.errorMessage
     );
-    userEvent.paste(
-      screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-      MOCK_VALUES.startDate
-    );
-    userEvent.paste(
-      screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
-      MOCK_VALUES.endDate
-    );
+    userEvent.paste(screen.getByTestId('startDate'), MOCK_VALUES.startDate);
+    userEvent.paste(screen.getByTestId('endDate'), MOCK_VALUES.endDate);
+
     userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
       MOCK_VALUES.flowNodeId,
     ]);
@@ -267,10 +264,7 @@ describe('Filters', () => {
       MOCK_VALUES.variableName
     );
     userEvent.paste(screen.getByLabelText('Value'), MOCK_VALUES.variableValue);
-    userEvent.paste(
-      screen.getByLabelText('Operation Id'),
-      MOCK_VALUES.operationId
-    );
+    userEvent.paste(screen.getByTestId('operationId'), MOCK_VALUES.operationId);
     userEvent.click(screen.getByLabelText('Active'));
     userEvent.click(screen.getByLabelText('Incidents'));
     userEvent.click(screen.getByLabelText('Completed'));
@@ -372,45 +366,45 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByLabelText('Parent Instance Id'), 'a');
+      userEvent.type(screen.getByTestId('parentInstanceId'), 'a');
 
       expect(
-        screen.getByTitle('Id has to be 16 to 19 digit numbers')
+        await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByLabelText('Parent Instance Id'));
+      userEvent.clear(screen.getByTestId('parentInstanceId'));
+
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Id has to be 16 to 19 digit numbers')
+      );
+
+      userEvent.type(screen.getByTestId('parentInstanceId'), '1');
 
       expect(
-        screen.queryByTitle('Id has to be 16 to 19 digit numbers')
-      ).not.toBeInTheDocument();
-
-      userEvent.type(screen.getByLabelText('Parent Instance Id'), '1');
-
-      expect(
-        await screen.findByTitle('Id has to be 16 to 19 digit numbers')
+        await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText('Parent Instance Id'));
+      userEvent.clear(screen.getByTestId('parentInstanceId'));
 
-      expect(
-        screen.queryByTitle('Id has to be 16 to 19 digit numbers')
-      ).not.toBeInTheDocument();
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Id has to be 16 to 19 digit numbers')
+      );
 
       userEvent.type(
-        screen.getByLabelText('Parent Instance Id'),
+        screen.getByTestId('parentInstanceId'),
         '1111111111111111, 2222222222222222'
       );
 
       expect(
-        await screen.findByTitle('Id has to be 16 to 19 digit numbers')
+        await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByLabelText('Parent Instance Id'));
+      userEvent.clear(screen.getByTestId('parentInstanceId'));
 
-      expect(
-        screen.queryByTitle('Id has to be 16 to 19 digit numbers')
-      ).not.toBeInTheDocument();
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Id has to be 16 to 19 digit numbers')
+      );
     });
 
     it('should validate start date', async () => {
@@ -423,30 +417,24 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(
-        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-        'a'
-      );
+      userEvent.type(screen.getByTestId('startDate'), 'a');
 
       expect(
-        screen.getByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'));
+      userEvent.clear(screen.getByTestId('startDate'));
 
-      expect(
-        screen.queryByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).not.toBeInTheDocument();
-
-      userEvent.type(
-        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-        '2021-05'
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       );
 
+      userEvent.type(screen.getByTestId('startDate'), '2021-05');
+
       expect(
-        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
     });
 
@@ -461,30 +449,24 @@ describe('Filters', () => {
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(
-        screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
-        'a'
-      );
+      userEvent.type(screen.getByTestId('endDate'), 'a');
 
       expect(
-        screen.getByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'));
+      userEvent.clear(screen.getByTestId('endDate'));
 
-      expect(
-        screen.queryByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).not.toBeInTheDocument();
-
-      userEvent.type(
-        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-        '2021-05'
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       );
 
+      userEvent.type(screen.getByTestId('endDate'), '2021-05');
+
       expect(
-        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
     });
 
@@ -570,22 +552,24 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByLabelText('Operation Id'), 'g');
+      userEvent.type(screen.getByTestId('operationId'), 'g');
 
-      expect(screen.getByTitle('Id has to be a UUID')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Id has to be a UUID')
+      ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByLabelText('Operation Id'));
+      userEvent.clear(screen.getByTestId('operationId'));
 
       expect(
         screen.queryByTitle('Id has to be a UUID')
       ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByLabelText('Operation Id'), 'a');
+      userEvent.type(screen.getByTestId('operationId'), 'a');
 
       expect(
-        await screen.findByTitle('Id has to be a UUID')
+        await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
     });
   });
@@ -619,10 +603,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(screen.getByLabelText('Operation Id'), 'a');
+      userEvent.type(screen.getByTestId('operationId'), 'a');
 
       expect(
-        await screen.findByTitle('Id has to be a UUID')
+        await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
 
       userEvent.type(
@@ -630,7 +614,7 @@ describe('Filters', () => {
         '1'
       );
 
-      expect(screen.getByTitle('Id has to be a UUID')).toBeInTheDocument();
+      expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
 
       expect(
         await screen.findByTitle(
@@ -638,7 +622,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      expect(screen.getByTitle('Id has to be a UUID')).toBeInTheDocument();
+      expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
     });
 
     it('validation for Operation ID field should not affect other fields validation errors', async () => {
@@ -661,7 +645,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByLabelText('Operation Id'), 'a');
+      userEvent.type(screen.getByTestId('operationId'), 'abc');
 
       expect(
         screen.getByTitle(
@@ -670,7 +654,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByTitle('Id has to be a UUID')
+        await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
 
       expect(
@@ -700,10 +684,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(
-        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-        '2021'
-      );
+      userEvent.type(screen.getByTestId('startDate'), '2021');
 
       expect(
         screen.getByTitle(
@@ -712,7 +693,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
       expect(
@@ -742,10 +723,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(
-        screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
-        'a'
-      );
+      userEvent.type(screen.getByTestId('endDate'), 'a');
 
       expect(
         screen.getByTitle(
@@ -754,7 +732,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       ).toBeInTheDocument();
 
       expect(
@@ -971,19 +949,13 @@ describe('Filters', () => {
         wrapper: getWrapper(),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-        '2021'
-      );
+      userEvent.type(screen.getByTestId('startDate'), '2021');
 
-      userEvent.type(
-        screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
-        '2021'
-      );
+      userEvent.type(screen.getByTestId('endDate'), '2021');
 
       await waitFor(() =>
         expect(
-          screen.queryAllByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+          screen.queryAllByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
         ).toHaveLength(2)
       );
     });

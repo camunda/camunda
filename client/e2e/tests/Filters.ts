@@ -5,13 +5,21 @@
  */
 
 import {config} from '../config';
-import {setup} from './Filters.setup';
+import {
+  setup,
+  cmParentInstanceIdField,
+  cmErrorMessageField,
+  cmOperationIdField,
+  cmStartDateField,
+  cmEndDateField,
+} from './Filters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
+import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 
 fixture('Filters')
   .page(config.endpoint)
@@ -149,8 +157,12 @@ test('Parent Instance Id filter', async (t) => {
 
   await t.click(screen.queryByRole('checkbox', {name: 'Completed'}));
 
+  const parentInstanceIdField = IS_NEW_FILTERS_FORM
+    ? cmParentInstanceIdField
+    : screen.queryByRole('textbox', {name: 'Parent Instance Id'});
+
   await t.typeText(
-    screen.queryByRole('textbox', {name: 'Parent Instance Id'}),
+    parentInstanceIdField,
     callActivityProcessInstance.processInstanceKey,
     {paste: true}
   );
@@ -181,13 +193,7 @@ test('Parent Instance Id filter', async (t) => {
     .gt(1);
 
   // filter has been reset
-  await t
-    .expect(
-      await screen.queryByRole('textbox', {
-        name: 'Parent Instance Id',
-      }).value
-    )
-    .eql('');
+  await t.expect(parentInstanceIdField.value).eql('');
 });
 
 test('Error Message filter', async (t) => {
@@ -199,13 +205,14 @@ test('Error Message filter', async (t) => {
 
   const errorMessage =
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
-  await t.typeText(
-    screen.queryByRole('textbox', {name: /error message/i}),
-    errorMessage,
-    {
-      paste: true,
-    }
-  );
+
+  const errorMessageField = IS_NEW_FILTERS_FORM
+    ? cmErrorMessageField
+    : screen.queryByRole('textbox', {name: /error message/i});
+
+  await t.typeText(errorMessageField, errorMessage, {
+    paste: true,
+  });
 
   // wait for filter to be applied, see results are narrowed down.
   await t
@@ -237,9 +244,7 @@ test('Error Message filter', async (t) => {
     .eql(instanceCount);
 
   // filter has been reset
-  await t
-    .expect(screen.queryByRole('textbox', {name: /error message/i}).value)
-    .eql('');
+  await t.expect(errorMessageField.value).eql('');
 
   // changes reflected in the url
   await t
@@ -308,9 +313,13 @@ test('End Date filter', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
+  const endDateField = IS_NEW_FILTERS_FORM
+    ? cmEndDateField
+    : screen.queryByRole('textbox', {name: /end date/i});
+
   await t
     .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-    .typeText(screen.queryByRole('textbox', {name: /end date/i}), endDate, {
+    .typeText(endDateField, endDate, {
       paste: true,
     });
 
@@ -345,9 +354,7 @@ test('End Date filter', async (t) => {
     .eql(instanceCount);
 
   // filter has been reset
-  await t
-    .expect(screen.queryByRole('textbox', {name: /end date/i}).value)
-    .eql('');
+  await t.expect(endDateField.value).eql('');
 
   // changes reflected in the url
   await t
@@ -474,15 +481,15 @@ test('Operation ID filter', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
+  const operationIdField = IS_NEW_FILTERS_FORM
+    ? cmOperationIdField
+    : screen.queryByRole('textbox', {name: /operation id/i});
+
   await t
     .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-    .typeText(
-      screen.queryByRole('textbox', {name: /operation id/i}),
-      operationId,
-      {
-        paste: true,
-      }
-    );
+    .typeText(operationIdField, operationId, {
+      paste: true,
+    });
 
   // wait for filter to be applied
   await t
@@ -515,9 +522,7 @@ test('Operation ID filter', async (t) => {
     .eql(instanceCount);
 
   // filter has been reset
-  await t
-    .expect(screen.queryByRole('textbox', {name: /operation id/i}).value)
-    .eql('');
+  await t.expect(operationIdField.value).eql('');
 
   await t
     .expect(await getPathname())
@@ -1054,6 +1059,26 @@ test('Should set filters from url', async (t) => {
     })}`
   );
 
+  const parentInstanceIdField = IS_NEW_FILTERS_FORM
+    ? cmParentInstanceIdField
+    : screen.queryByRole('textbox', {name: 'Parent Instance Id'});
+
+  const errorMessageField = IS_NEW_FILTERS_FORM
+    ? cmErrorMessageField
+    : screen.queryByRole('textbox', {name: /error message/i});
+
+  const startDateField = IS_NEW_FILTERS_FORM
+    ? cmStartDateField
+    : screen.queryByRole('textbox', {name: /start date/i});
+
+  const endDateField = IS_NEW_FILTERS_FORM
+    ? cmEndDateField
+    : screen.queryByRole('textbox', {name: /end date/i});
+
+  const operationIdField = IS_NEW_FILTERS_FORM
+    ? cmOperationIdField
+    : screen.queryByRole('textbox', {name: /operation id/i});
+
   await t
     .expect(
       screen.queryByRole('combobox', {
@@ -1069,13 +1094,13 @@ test('Should set filters from url', async (t) => {
       }).value
     )
     .eql('2251799813685255')
-    .expect(screen.queryByRole('textbox', {name: 'Parent Instance Id'}).value)
+    .expect(parentInstanceIdField.value)
     .eql('2251799813685731')
-    .expect(screen.queryByRole('textbox', {name: /error message/i}).value)
+    .expect(errorMessageField.value)
     .eql('some error message')
-    .expect(screen.queryByRole('textbox', {name: /start date/i}).value)
+    .expect(startDateField.value)
     .eql('2020-09-10 18:41:44')
-    .expect(screen.queryByRole('textbox', {name: /end date/i}).value)
+    .expect(endDateField.value)
     .eql('2020-12-12 12:12:12')
     .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
     .eql('alwaysFails')
@@ -1083,7 +1108,7 @@ test('Should set filters from url', async (t) => {
     .eql('test')
     .expect(screen.queryByRole('textbox', {name: /value/i}).value)
     .eql('123')
-    .expect(screen.queryByRole('textbox', {name: /operation id/i}).value)
+    .expect(operationIdField.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6')
     .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
     .ok()
@@ -1130,13 +1155,13 @@ test('Should set filters from url', async (t) => {
       }).value
     )
     .eql('2251799813685255')
-    .expect(screen.queryByRole('textbox', {name: 'Parent Instance Id'}).value)
+    .expect(parentInstanceIdField.value)
     .eql('2251799813685731')
-    .expect(screen.queryByRole('textbox', {name: /error message/i}).value)
+    .expect(errorMessageField.value)
     .eql('some error message')
-    .expect(screen.queryByRole('textbox', {name: /start date/i}).value)
+    .expect(startDateField.value)
     .eql('2020-09-10 18:41:44')
-    .expect(screen.queryByRole('textbox', {name: /end date/i}).value)
+    .expect(endDateField.value)
     .eql('2020-12-12 12:12:12')
     .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
     .eql('alwaysFails')
@@ -1144,7 +1169,7 @@ test('Should set filters from url', async (t) => {
     .eql('test')
     .expect(screen.queryByRole('textbox', {name: /value/i}).value)
     .eql('123')
-    .expect(screen.queryByRole('textbox', {name: /operation id/i}).value)
+    .expect(operationIdField.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6')
     .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
     .ok()

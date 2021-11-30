@@ -7,8 +7,9 @@
 import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
 import {config} from '../config';
-import {setup} from './Operations.setup';
+import {setup, cmOperationIdField} from './Operations.setup';
 import {DATE_REGEX} from './constants';
+import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 
 fixture('Operations')
   .page(config.endpoint)
@@ -110,14 +111,14 @@ test('Retry and Cancel single instance ', async (t) => {
     )
     .eql(1);
 
-  // expect operation id filter to be set
-  await t
-    .expect(
-      screen.queryByRole('textbox', {
+  const operationIdField = IS_NEW_FILTERS_FORM
+    ? cmOperationIdField
+    : screen.queryByRole('textbox', {
         name: 'Operation Id',
-      }).value
-    )
-    .eql(operationId);
+      });
+
+  // expect operation id filter to be set
+  await t.expect(operationIdField.value).eql(operationId);
 
   const instanceRow = within(
     within(screen.queryByTestId('instances-list')).getAllByRole('row').nth(0)
@@ -211,6 +212,12 @@ test('Retry and cancel multiple instances ', async (t) => {
     .expect(within(instancesList).getAllByRole('row').count)
     .gt(instances.length);
 
+  const operationIdField = IS_NEW_FILTERS_FORM
+    ? cmOperationIdField
+    : screen.queryByRole('textbox', {
+        name: 'Operation Id',
+      });
+
   // select all instances from operation
   await t
     .click(
@@ -220,11 +227,7 @@ test('Retry and cancel multiple instances ', async (t) => {
     )
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length)
-    .expect(
-      screen.queryByRole('textbox', {
-        name: 'Operation Id',
-      }).value
-    )
+    .expect(operationIdField.value)
     .eql(
       await within(instancesListItems.nth(0)).queryByTestId('operation-id')
         .innerText

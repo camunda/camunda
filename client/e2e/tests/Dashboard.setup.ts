@@ -5,8 +5,13 @@
  */
 
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
+import {within, screen} from '@testing-library/testcafe';
 
-export async function setup() {
+const cmErrorMessageField = within(
+  screen.queryByTestId('errorMessage').shadowRoot()
+).queryByRole('textbox');
+
+const setup = async () => {
   await deploy([
     './e2e/tests/resources/withoutInstancesProcess_v_1.bpmn',
     './e2e/tests/resources/withoutIncidentsProcess_v_1.bpmn',
@@ -32,4 +37,6 @@ export async function setup() {
   await deploy(['./e2e/tests/resources/processWithAnIncident.bpmn']);
 
   await createSingleInstance('processWithAnIncident', 1);
-}
+};
+
+export {setup, cmErrorMessageField};

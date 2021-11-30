@@ -5,10 +5,11 @@
  */
 
 import {config} from '../config';
-import {setup} from './Dashboard.setup';
+import {setup, cmErrorMessageField} from './Dashboard.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
+import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 
 fixture('Dashboard')
   .page(config.endpoint)
@@ -159,9 +160,11 @@ test('Select instances by error message', async (t) => {
     )
     .eql(incidentCount);
 
-  await t
-    .expect(screen.queryByRole('textbox', {name: 'Error Message'}).value)
-    .eql(incidentMessage);
+  const errorMessageField = IS_NEW_FILTERS_FORM
+    ? cmErrorMessageField
+    : screen.queryByRole('textbox', {name: 'Error Message'});
+
+  await t.expect(errorMessageField.value).eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).notOk();
 });
@@ -203,9 +206,11 @@ test('Select instances by error message (expanded)', async (t) => {
     )
     .eql(incidentCount);
 
-  await t
-    .expect(screen.queryByRole('textbox', {name: 'Error Message'}).value)
-    .eql(incidentMessage);
+  const errorMessageField = IS_NEW_FILTERS_FORM
+    ? cmErrorMessageField
+    : screen.queryByRole('textbox', {name: 'Error Message'});
+
+  await t.expect(errorMessageField.value).eql(incidentMessage);
 
   await t.expect(screen.queryByTestId('diagram').exists).ok();
 });
