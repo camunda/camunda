@@ -7,10 +7,9 @@
 import styled, {css} from 'styled-components';
 
 const TH = styled.th`
-  font-style: italic;
   font-weight: normal;
   text-align: left;
-  padding-left: 15px;
+  padding-left: 20px;
   height: 31px;
 `;
 
@@ -38,14 +37,16 @@ const TR = styled.tr<TRProps>`
       > td:first-child {
         width: 30%;
         max-width: 0;
+        padding-right: 23px;
       }
       > td:nth-child(2) {
         width: 60%;
-        padding-right: 0;
+        padding-left: 0;
       }
       > td:last-child {
         width: 10%;
-        min-width: 130px;
+        min-width: 94px;
+        padding-top: 8px;
       }
 
       ${hasActiveOperation

@@ -82,13 +82,8 @@ const TD = styled.td`
     return css`
       color: ${colors.color};
 
-      padding: 6px 23px 6px 0;
       &:not(:nth-child(2)) {
         white-space: nowrap;
-      }
-
-      &:first-child {
-        vertical-align: top;
       }
     `;
   }}
@@ -114,8 +109,7 @@ const THead = styled.thead<THeadProps>`
 
           border-top: none;
           position: absolute;
-          top: 45px;
-          border-bottom: 1px solid ${colors.borderColor};
+          top: 37px;
           background: ${colors.backgroundColor};
 
           > th {
@@ -128,11 +122,11 @@ const THead = styled.thead<THeadProps>`
           }
           > th:nth-child(2) {
             width: 60%;
-            padding-left: 7px;
+            padding-left: 9px;
           }
           > th:last-child {
             width: 10%;
-            min-width: 130px;
+            min-width: 94px;
             flex-grow: 1;
           }
         }
@@ -142,14 +136,14 @@ const THead = styled.thead<THeadProps>`
 `;
 
 const VariableName = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   height: 100%;
-  padding-left: 14px;
-  padding-top: 4px;
+  padding-left: 20px;
   line-height: 18px;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+  padding: 9px 0 10px 19px;
 `;
 
 type DisplayTextProps = {hasBackdrop?: boolean};
@@ -159,11 +153,10 @@ const DisplayText = styled.div<DisplayTextProps>`
     return css`
       line-height: normal;
       word-break: break-word;
-      padding: 4px 0 4px 7px;
       max-height: 78px;
       overflow-y: auto;
       overflow-wrap: break-word;
-
+      margin: 4px 0px 4px 11px;
       ${hasBackdrop &&
       css`
         position: relative;
@@ -173,7 +166,7 @@ const DisplayText = styled.div<DisplayTextProps>`
 `;
 
 const EditButtonsTD = styled(TD)`
-  padding-right: 14px;
+  padding-right: 16px;
   display: flex;
   justify-content: flex-end;
 `;
@@ -195,7 +188,7 @@ const EditButton = styled(IconButton)`
     const colors = theme.colors.variables.editButton;
 
     return css`
-      margin-left: 5px;
+      margin-left: 8px;
       z-index: 0;
 
       svg {
@@ -263,7 +256,7 @@ const Button = styled(DefaultButton)`
   align-items: center;
   height: 22px;
   width: 119px;
-  margin-left: 16px;
+  margin-left: 20px;
 `;
 
 const Plus = styled(DefaultPlus)`
@@ -273,10 +266,13 @@ const Plus = styled(DefaultPlus)`
 
 type FooterProps = {
   scrollBarWidth: number;
+  hasPendingVariable: boolean;
 };
 
 const Footer = styled(Panel.Footer)<FooterProps>`
-  ${({scrollBarWidth}) => {
+  ${({theme, scrollBarWidth, hasPendingVariable}) => {
+    const colors = theme.colors.variablesPanel.footer;
+
     return css`
       position: absolute;
       bottom: 0;
@@ -285,6 +281,11 @@ const Footer = styled(Panel.Footer)<FooterProps>`
       max-height: initial;
       padding-right: ${scrollBarWidth}px;
       min-width: ${scrollBarWidth + 400}px;
+      box-shadow: ${theme.shadows.variablesPanel.footer}
+        ${hasPendingVariable &&
+        css`
+          background-color: ${colors.backgroundColor};
+        `};
     `;
   }}
 `;
@@ -299,24 +300,20 @@ const EditButtonsContainer = styled.div`
 
 const Header = styled.div`
   ${({theme}) => {
+    const colors = theme.colors.variablesPanel.header;
+
     return css`
-      margin-top: 15px;
-      margin-left: 14.5px;
-      font-size: 15px;
+      margin-top: 8px;
+      margin-left: 20px;
+      font-size: 16px;
       font-weight: 500;
-      color: ${theme.colors.ui06};
+      color: ${colors.color};
     `;
   }}
 `;
 
 const ValueField = styled(TextField)`
   display: block;
-  line-height: normal;
-  resize: vertical;
-  font-size: 14px;
-  min-height: 26px;
-  max-height: 78px;
-  padding: 3px 13px 3px 6px;
 `;
 
 export {

@@ -22,15 +22,15 @@ const EditButtonsContainer = styled.div`
 
 const NameField = styled(TextField)`
   width: 30%;
-  padding-right: 23px;
-  padding-left: 8px;
-  margin: 6px 0 6px 0px;
+  padding-right: 29px;
+  padding-left: 9px;
+  margin: 4px 0px;
 `;
 
 const ValueField = styled(TextField)`
   width: 60%;
   margin-right: 2px;
-  margin: 6px 5px 6px 0px;
+  margin: 4px 15px 4px 0px;
 `;
 
 export {Container, NameField, ValueField, EditButtonsContainer};

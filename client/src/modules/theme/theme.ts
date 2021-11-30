@@ -158,7 +158,16 @@ const theme = Object.freeze({
         color: SEMANTIC_COLORS.white,
       },
       variablesPanel: {
-        color: rgba(SEMANTIC_COLORS.white, 0.8),
+        color: SEMANTIC_COLORS.white,
+        header: {
+          color: SEMANTIC_COLORS.white,
+        },
+        pendingVariable: {
+          color: SEMANTIC_COLORS.white,
+        },
+        footer: {
+          backgroundColor: DARK_COLORS.ui05,
+        },
       },
       variables: {
         skeleton: {
@@ -172,7 +181,7 @@ const theme = Object.freeze({
           color: SEMANTIC_COLORS.grey,
         },
         td: {
-          color: rgba(SEMANTIC_COLORS.white, 0.9),
+          color: SEMANTIC_COLORS.white,
         },
         tHead: {
           borderColor: DARK_COLORS.ui04,
@@ -189,7 +198,7 @@ const theme = Object.freeze({
         variablesTable: {
           tr: {
             borderColor: DARK_COLORS.ui04,
-            backgroundColor: rgba(DARK_COLORS.ui05, 0.4),
+            backgroundColor: DARK_COLORS.ui05,
           },
         },
         backdrop: {
@@ -995,6 +1004,9 @@ const theme = Object.freeze({
           0.1
         )}`,
       },
+      variablesPanel: {
+        footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+      },
       modules: {
         button: {
           default: `0 2px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.35)}`,
@@ -1098,7 +1110,16 @@ const theme = Object.freeze({
         color: LIGHT_COLORS.ui06,
       },
       variablesPanel: {
-        color: rgba(LIGHT_COLORS.ui06, 0.8),
+        color: DARK_COLORS.ui04,
+        header: {
+          color: DARK_COLORS.ui04,
+        },
+        pendingVariable: {
+          color: DARK_COLORS.ui04,
+        },
+        footer: {
+          backgroundColor: LIGHT_COLORS.button05,
+        },
       },
       variables: {
         skeleton: {
@@ -1112,7 +1133,7 @@ const theme = Object.freeze({
           color: LIGHT_COLORS.ui06,
         },
         td: {
-          color: rgba(LIGHT_COLORS.ui06, 0.9),
+          color: DARK_COLORS.ui04,
         },
         tHead: {
           borderColor: LIGHT_COLORS.ui05,
@@ -1129,7 +1150,7 @@ const theme = Object.freeze({
         variablesTable: {
           tr: {
             borderColor: LIGHT_COLORS.ui05,
-            backgroundColor: '#e7e9ed',
+            backgroundColor: LIGHT_COLORS.button05,
           },
         },
         backdrop: {
@@ -1933,6 +1954,9 @@ const theme = Object.freeze({
           SEMANTIC_COLORS.black,
           0.1
         )}`,
+      },
+      variablesPanel: {
+        footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
       },
       modules: {
         button: {

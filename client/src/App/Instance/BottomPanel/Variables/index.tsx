@@ -230,6 +230,7 @@ const Variables: React.FC = observer(() => {
               (scrollableContentRef?.current?.offsetWidth ?? 0) -
               (scrollableContentRef?.current?.scrollWidth ?? 0)
             }
+            hasPendingVariable={pendingItem !== null}
           >
             {currentInstanceStore.isRunning && (
               <>

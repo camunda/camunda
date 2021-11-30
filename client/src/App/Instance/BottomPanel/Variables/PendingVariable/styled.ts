@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 const DisplayText = styled.div`
   line-height: 18px;
@@ -13,20 +13,28 @@ const DisplayText = styled.div`
   max-height: 76px;
   overflow-y: auto;
   overflow-wrap: break-word;
+  padding-left: 9px;
 `;
 
 const Container = styled.div`
-  display: flex;
-  padding-right: 14px;
-  align-items: center;
-  width: 100%;
-  min-width: 400px;
+  ${({theme}) => {
+    const colors = theme.colors.variablesPanel.pendingVariable;
+
+    return css`
+      display: flex;
+      padding-right: 16px;
+      align-items: center;
+      width: 100%;
+      min-width: 400px;
+      color: ${colors.color};
+    `;
+  }}
 `;
 
 const Name = styled.div`
-  font-weight: 600;
+  font-weight: 500;
   height: 100%;
-  padding: 4px 23px 4px 14px;
+  padding: 4px 0 4px 20px;
   margin: 3px 0;
   line-height: 18px;
   display: block;
