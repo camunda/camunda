@@ -77,7 +77,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   @Override
   public ActorFuture<Void> unsubscribe(final int partitionId, final RequestType requestType) {
-    return actor.call(() -> removePartition(partitionId));
+    return actor.call(() -> removeRequestHandlers(partitionId, requestType));
   }
 
   private void removePartition(final int partitionId) {
