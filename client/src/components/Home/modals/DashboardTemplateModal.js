@@ -715,22 +715,6 @@ export default function DashboardTemplateModal({onClose}) {
         },
       ],
     });
-  } else {
-    templateGroups = templateGroups.map((templateGroup) => {
-      return {
-        ...templateGroup,
-        templates: templateGroup.templates.map((template) => {
-          return {
-            ...template,
-            config: template.config?.filter(
-              ({report: {data}}) =>
-                !data.filter?.some((filter) => filter.type.toLowerCase().includes('incident')) &&
-                data.view?.entity !== 'incident'
-            ),
-          };
-        }),
-      };
-    });
   }
 
   if (!isOptimizeCloudLoaded) {
