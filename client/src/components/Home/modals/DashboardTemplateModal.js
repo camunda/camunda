@@ -563,7 +563,8 @@ export default function DashboardTemplateModal({onClose}) {
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'none', value: null},
-                  visualization: 'number',
+                  distributedBy: {type: 'process', value: null},
+                  visualization: 'bar',
                   filter: [
                     {
                       appliedTo: ['all'],
@@ -603,6 +604,7 @@ export default function DashboardTemplateModal({onClose}) {
                 data: {
                   view: {entity: 'processInstance', properties: ['frequency']},
                   groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
                   visualization: 'bar',
                   configuration: {
                     stackedBar: true,
@@ -618,6 +620,7 @@ export default function DashboardTemplateModal({onClose}) {
                 data: {
                   view: {entity: 'userTask', properties: ['duration']},
                   groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
                   visualization: 'bar',
                   filter: [
                     {
@@ -643,6 +646,7 @@ export default function DashboardTemplateModal({onClose}) {
                 data: {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
                   visualization: 'line',
                 },
               },
@@ -655,6 +659,7 @@ export default function DashboardTemplateModal({onClose}) {
                 data: {
                   view: {entity: 'userTask', properties: ['frequency']},
                   groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
                   visualization: 'bar',
                   configuration: {
                     aggregationTypes: ['sum'],
