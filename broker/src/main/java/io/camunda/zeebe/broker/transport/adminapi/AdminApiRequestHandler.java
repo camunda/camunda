@@ -34,7 +34,7 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
       final ApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
     if (requestReader.getMessageDecoder().type() == AdminRequestType.STEP_DOWN_IF_NOT_PRIMARY) {
-      return stepDownIfNotLeader(responseWriter, partitionId, errorWriter);
+      return stepDownIfNotPrimary(responseWriter, partitionId, errorWriter);
     }
     return unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
   }
@@ -45,7 +45,7 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
     return Either.left(errorWriter);
   }
 
-  private Either<ErrorResponseWriter, ApiResponseWriter> stepDownIfNotLeader(
+  private Either<ErrorResponseWriter, ApiResponseWriter> stepDownIfNotPrimary(
       final ApiResponseWriter responseWriter,
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
