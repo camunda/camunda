@@ -446,6 +446,11 @@ export:
     limit: 1000
     delimiter: ","
 
+  json:
+    # Secret token to be provided on the JSON REST Export API when exporting data.
+    # If set `null` an error will be thrown and JSON Exports will be blocked
+    accessToken: ${OPTIMIZE_JSON_EXPORT_ACCESS_TOKEN:null}
+
 sharing:
   # decides if the sharing feature of Optimize can be used in the UI.
   enabled: true

@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
+import java.util.Optional;
 
 @Getter
 @Setter(AccessLevel.PROTECTED)
@@ -31,7 +32,7 @@ public class ReportEvaluationInfo {
     new AdditionalProcessReportEvaluationFilterDto();
   private ZoneId timezone = ZoneId.systemDefault();
   private PaginationDto pagination;
-  private boolean isExport;
+  private boolean isCsvExport;
   private boolean isSharedReport;
 
   public void postFetchSavedReport(final ReportReader reportReader) {
@@ -39,6 +40,11 @@ public class ReportEvaluationInfo {
       report = reportReader.getReport(reportId)
         .orElseThrow(() -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
     }
+  }
+
+  public Optional<PaginationDto> getPagination()
+  {
+    return Optional.ofNullable(pagination);
   }
 
   public static ReportEvaluationInfoBuilder builder(final ReportDefinitionDto<?> report) {
@@ -78,8 +84,8 @@ public class ReportEvaluationInfo {
       return this;
     }
 
-    public ReportEvaluationInfoBuilder isExport(final boolean isExport) {
-      this.reportEvaluationInfo.setExport(isExport);
+    public ReportEvaluationInfoBuilder isCsvExport(final boolean isExport) {
+      this.reportEvaluationInfo.setCsvExport(isExport);
       return this;
     }
 

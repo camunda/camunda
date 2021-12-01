@@ -48,6 +48,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.JSON_EXPORT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TRACKING_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
@@ -200,6 +201,8 @@ public class ConfigurationService {
 
   private GlobalCacheConfiguration caches;
 
+  private JsonExportConfiguration jsonExportConfiguration;
+
   private TrackingConfiguration tracking;
 
   /**
@@ -270,7 +273,7 @@ public class ConfigurationService {
     if (elasticsearchConnectionNodes == null) {
       // @formatter:off
       TypeRef<List<ElasticsearchConnectionNodeConfiguration>> typeRef =
-        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {};
+        new TypeRef<>() {};
       // @formatter:on
       elasticsearchConnectionNodes = configJsonContext.read(
         ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef
@@ -1060,6 +1063,16 @@ public class ConfigurationService {
       );
     }
     return eventBasedProcessConfiguration;
+  }
+
+  public JsonExportConfiguration getJsonExportConfiguration() {
+    if (jsonExportConfiguration == null) {
+      jsonExportConfiguration = configJsonContext.read(
+        JSON_EXPORT_CONFIGURATION,
+        JsonExportConfiguration.class
+      );
+    }
+    return jsonExportConfiguration;
   }
 
   @JsonIgnore

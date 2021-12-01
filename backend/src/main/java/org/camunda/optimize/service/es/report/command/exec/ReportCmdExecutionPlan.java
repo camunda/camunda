@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
@@ -19,8 +21,10 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -77,7 +81,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
     try {
-      response = esClient.search(searchRequest);
+      response = executeElasticSearchCommand(executionContext, searchRequest);
       unfilteredInstanceCountResponse = esClient.count(unfilteredInstanceCountRequest);
       executionContext.setUnfilteredInstanceCount(unfilteredInstanceCountResponse.getCount());
     } catch (IOException e) {
@@ -115,13 +119,44 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     return retrieveQueryResult(response, executionContext);
   }
 
+  private SearchResponse executeElasticSearchCommand(final ExecutionContext<D> executionContext,
+                                                     final SearchRequest searchRequest) throws IOException {
+    SearchResponse response;
+    SearchScrollRequest scrollRequest = null;
+    PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
+    if(paginationInfo instanceof PaginationScrollableDto) {
+      PaginationScrollableDto scrollableDto = (PaginationScrollableDto) paginationInfo;
+      String scrollId = scrollableDto.getScrollId();
+      Integer timeout = scrollableDto.getScrollTimeout();
+      if(scrollId != null && !scrollId.isEmpty()) {
+        scrollRequest = new SearchScrollRequest(scrollId);
+        scrollRequest.scroll(TimeValue.timeValueSeconds(timeout));
+      }
+      else {
+        searchRequest.scroll(TimeValue.timeValueSeconds(timeout));
+      }
+      response = (scrollRequest != null ? esClient.scroll(scrollRequest) : esClient.search(searchRequest));
+    }
+    else {
+      response = esClient.search(searchRequest);
+    }
+    return response;
+  }
+
   private SearchRequest createBaseQuerySearchRequest(final ExecutionContext<D> executionContext) {
     final BoolQueryBuilder baseQuery = setupBaseQuery(executionContext);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
       .trackTotalHits(true)
-      .fetchSource(false)
-      .size(0);
+      .fetchSource(false);
+    // The null checks below are essential, otherwise over 4000 tests will fail because of null pointer exceptions
+   executionContext.getPagination().ifPresent(
+      pagination -> {
+      Optional.ofNullable(pagination.getOffset()).ifPresent(
+        searchSourceBuilder::from);
+      Optional.ofNullable(pagination.getLimit()).ifPresent(
+        searchSourceBuilder::size);
+    });
     addAggregation(searchSourceBuilder, executionContext);
 
     SearchRequest searchRequest = new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);
@@ -141,7 +176,12 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     final CommandEvaluationResult<T> reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits().value);
     reportResult.setInstanceCountWithoutFilters(executionContext.getUnfilteredInstanceCount());
-    Optional.ofNullable(executionContext.getPagination()).ifPresent(reportResult::setPagination);
+    executionContext.getPagination().ifPresent(
+      plainPagination -> {
+        PaginationScrollableDto scrollablePagination = PaginationScrollableDto.fromPaginationDto(plainPagination);
+        scrollablePagination.setScrollId(response.getScrollId());
+        reportResult.setPagination(scrollablePagination);
+      });
     return reportResult;
   }
 

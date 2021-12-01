@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.reader.ProcessVariableReader;
@@ -111,18 +112,20 @@ public class ProcessViewRawData extends ProcessViewPart {
     final SearchSourceBuilder search = searchRequest.source()
       .fetchSource(true)
       .fetchSource(null, new String[]{FLOW_NODE_INSTANCES});
-    if (context.isExport()) {
-      search.size(
-        context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
-          MAX_RESPONSE_SIZE_LIMIT : context.getPagination().getLimit());
+    if (context.isCsvExport()) {
+      context.getPagination()
+        .ifPresent(pag -> search.size(pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
+                                        MAX_RESPONSE_SIZE_LIMIT : pag.getLimit()));
       searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
     } else {
-      if (context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
-        context.getPagination().setLimit(MAX_RESPONSE_SIZE_LIMIT);
-      }
-      search
-        .size(context.getPagination().getLimit())
-        .from(context.getPagination().getOffset());
+        context.getPagination().ifPresent(pag -> {
+          if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
+            pag.setLimit(MAX_RESPONSE_SIZE_LIMIT);
+          }
+          search
+            .size(pag.getLimit())
+            .from(pag.getOffset());
+        });
     }
     Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
@@ -167,7 +170,7 @@ public class ProcessViewRawData extends ProcessViewPart {
     };
 
     final List<ProcessInstanceDto> rawDataProcessInstanceDtos;
-    if (context.isExport()) {
+    if (context.isCsvExport()) {
       rawDataProcessInstanceDtos =
         ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
           response,
@@ -175,7 +178,7 @@ public class ProcessViewRawData extends ProcessViewPart {
           mappingFunction,
           esClient,
           configurationService.getEsScrollTimeoutInSeconds(),
-          context.getPagination().getLimit()
+          context.getPagination().orElse(new PaginationDto()).getLimit()
         );
     } else {
       rawDataProcessInstanceDtos = ElasticsearchReaderUtil.mapHits(

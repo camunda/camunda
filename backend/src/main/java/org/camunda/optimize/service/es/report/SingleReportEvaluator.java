@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.decision.raw.RawDecisionInstanceDataGroupByNoneCmd;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_SCROLL_TIMEOUT;
 import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECORD_LIMIT;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
@@ -99,7 +101,7 @@ public class SingleReportEvaluator {
     if (isRawDataReport(command)) {
       addDefaultMissingPaginationValues(reportEvaluationContext);
     } else {
-      Optional.ofNullable(reportEvaluationContext.getPagination())
+      reportEvaluationContext.getPagination()
         .ifPresent(pagination -> {
           if (pagination.getLimit() != null || pagination.getOffset() != null) {
             throw new OptimizeValidationException("Pagination can only be applied to raw data reports");
@@ -112,20 +114,37 @@ public class SingleReportEvaluator {
     final ReportEvaluationContext<T> reportEvaluationContext) {
     final int offset;
     final int limit;
-    if (reportEvaluationContext.isExport()) {
+    final String scrollId;
+    final Integer scrollTimeout;
+    PaginationDto completePagination;
+    if (reportEvaluationContext.isCsvExport()) {
       offset = 0;
       limit = Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT);
     } else {
-      offset = Optional.ofNullable(reportEvaluationContext.getPagination())
+      offset = reportEvaluationContext.getPagination()
         .filter(pag -> pag.getOffset() != null)
         .map(PaginationDto::getOffset)
         .orElse(PAGINATION_DEFAULT_OFFSET);
-      limit = Optional.ofNullable(reportEvaluationContext.getPagination())
+      limit = reportEvaluationContext.getPagination()
         .filter(pag -> pag.getLimit() != null)
         .map(PaginationDto::getLimit)
         .orElse(PAGINATION_DEFAULT_LIMIT);
     }
-    final PaginationDto completePagination = new PaginationDto();
+    PaginationDto pagData = reportEvaluationContext.getPagination().orElse(new PaginationDto());
+    if (pagData instanceof PaginationScrollableDto) {
+      PaginationScrollableDto paginationFromRequest = (PaginationScrollableDto) pagData;
+      scrollId = paginationFromRequest.getScrollId(); // Could be null, but it's ok
+      scrollTimeout = Optional.of(paginationFromRequest)
+        .filter(pag -> pag.getScrollTimeout() != null)
+        .map(PaginationScrollableDto::getScrollTimeout)
+        .orElse(PAGINATION_DEFAULT_SCROLL_TIMEOUT);
+      completePagination = new PaginationScrollableDto();
+      ((PaginationScrollableDto)completePagination).setScrollTimeout(scrollTimeout);
+      ((PaginationScrollableDto)completePagination).setScrollId(scrollId);
+    } else {
+      // Just a normal Pagination Dto or no pagination Dto available
+      completePagination = new PaginationDto();
+    }
     completePagination.setOffset(offset);
     completePagination.setLimit(limit);
     reportEvaluationContext.setPagination(completePagination);

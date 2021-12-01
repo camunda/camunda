@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 
 import java.time.ZoneId;
 import java.util.List;
@@ -27,4 +28,5 @@ public abstract class ReportEvaluationResult {
 
   public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone);
 
+  public abstract PaginatedDataExportDto getResult();
 }

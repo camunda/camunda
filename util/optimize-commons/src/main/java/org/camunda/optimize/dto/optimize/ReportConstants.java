@@ -170,4 +170,5 @@ public class ReportConstants {
   // pagination
   public static final int PAGINATION_DEFAULT_LIMIT = 20;
   public static final int PAGINATION_DEFAULT_OFFSET = 0;
+  public static final int PAGINATION_DEFAULT_SCROLL_TIMEOUT = 60;
 }

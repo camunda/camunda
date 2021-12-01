@@ -71,5 +71,4 @@ public class RawDataCommandResult<T extends RawDataInstanceDto> extends CommandE
     return ResultType.RAW;
   }
 
-
 }
