@@ -8,11 +8,10 @@
 package io.camunda.zeebe.broker.transport.adminapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -48,7 +47,7 @@ public class AdminApiRequestHandlerTest {
     when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
     when(partitionGroup.name()).thenReturn("test");
     when(raftPartition.stepDownIfNotPrimary()).thenReturn(CompletableFuture.completedFuture(null));
-    when(partitionGroup.getPartition(any(PartitionId.class))).thenReturn(raftPartition);
+    when(partitionGroup.getPartition(anyInt())).thenReturn(raftPartition);
     when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
     handler = new AdminApiRequestHandler(transport);
     scheduler.submitActor(handler);

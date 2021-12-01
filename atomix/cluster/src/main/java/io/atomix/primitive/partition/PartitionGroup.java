@@ -37,6 +37,14 @@ public interface PartitionGroup extends Configured<PartitionGroupConfig> {
   String name();
 
   /**
+   * Returns a partition by ID. Assumes that the partition ID belongs to this group.
+   *
+   * @param partitionId the partition identifier
+   * @return the partition or {@code null} if no partition with the given identifier exists
+   */
+  Partition getPartition(int partitionId);
+
+  /**
    * Returns a partition by ID.
    *
    * @param partitionId the partition identifier

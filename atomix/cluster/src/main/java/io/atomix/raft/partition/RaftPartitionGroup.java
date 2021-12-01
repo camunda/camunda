@@ -113,6 +113,11 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   @Override
+  public RaftPartition getPartition(final int partitionId) {
+    return getPartition(PartitionId.from(name, partitionId));
+  }
+
+  @Override
   public RaftPartition getPartition(final PartitionId partitionId) {
     return partitions.get(partitionId);
   }

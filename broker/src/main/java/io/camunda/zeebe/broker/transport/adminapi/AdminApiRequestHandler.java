@@ -53,8 +53,7 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
       errorWriter.partitionLeaderMismatch(partitionId);
       return Either.left(errorWriter);
     }
-    final var fullPartitionId = new PartitionId(partitionGroup.name(), partitionId);
-    final var partition = partitionGroup.getPartition(fullPartitionId);
+    final var partition = partitionGroup.getPartition(partitionId);
     partition.stepDownIfNotPrimary().join();
 
     return Either.right(responseWriter);
