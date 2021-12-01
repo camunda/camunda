@@ -54,7 +54,7 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
       return Either.left(errorWriter);
     }
     final var partition = partitionGroup.getPartition(partitionId);
-    partition.stepDownIfNotPrimary().join();
+    partition.stepDownIfNotPrimary();
 
     return Either.right(responseWriter);
   }
