@@ -27,6 +27,7 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * requests.
    *
    * @param partitionId the partition, from which we should unsubscribe
+   * @param requestType
    */
-  ActorFuture<Void> unsubscribe(int partitionId);
+  ActorFuture<Void> unsubscribe(int partitionId, RequestType requestType);
 }

@@ -151,7 +151,8 @@ public final class CommandApiServiceImpl extends Actor
 
   private void removeForPartitionId(final int partitionId) {
     limiter.removePartition(partitionId);
-    serverTransport.unsubscribe(partitionId);
+    serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
+    serverTransport.unsubscribe(partitionId, RequestType.QUERY);
   }
 
   @Override
