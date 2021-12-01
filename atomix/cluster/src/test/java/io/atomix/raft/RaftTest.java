@@ -345,15 +345,22 @@ public class RaftTest extends ConcurrentTestCase {
   public void testRoleChangeNotificationAfterInitialEntryOnLeader() throws Throwable {
     // given
     final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).get();
+    final RaftServer previousLeader = getLeader(servers).get();
+    final long previousLeaderTerm = previousLeader.getTerm();
+
     final CountDownLatch transitionCompleted = new CountDownLatch(1);
+
     servers.forEach(
         server ->
             server.addRoleChangeListener(
-                (role, term) ->
-                    assertLastReadInitialEntry(role, term, server, transitionCompleted)));
+                (role, term) -> {
+                  if (term > previousLeaderTerm) {
+                    assertLastReadInitialEntry(role, term, server, transitionCompleted);
+                  }
+                }));
+
     // when
-    leader.stepDown();
+    previousLeader.stepDown();
 
     // then
     assertTrue(transitionCompleted.await(1000, TimeUnit.SECONDS));
@@ -469,7 +476,7 @@ public class RaftTest extends ConcurrentTestCase {
         s ->
             s.addRoleChangeListener(
                 (role, term) -> {
-                  if (role == Role.LEADER) {
+                  if (role == Role.LEADER && !s.equals(leader)) {
                     newLeaderId.set(s.getContext().getCluster().getLocalMember().memberId());
                     newLeaderElected.countDown();
                   }
@@ -576,6 +583,32 @@ public class RaftTest extends ConcurrentTestCase {
     // then
     // no response for previous poll requests, so send them again
     verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
+  }
+
+  @Test
+  public void shouldNotifyListenerWhenNoTransitionIsOngoing() throws Throwable {
+    // given
+    final var listenerLatch = new CountDownLatch(1);
+    final AtomicReference<Role> roleWithinListener = new AtomicReference<>(null);
+    final AtomicLong termWithinListener = new AtomicLong(-1L);
+
+    final var server = createServers(1).get(0);
+
+    // expect
+    assertThat(server.isLeader()).isTrue();
+
+    // when
+    server.addRoleChangeListener(
+        (role, term) -> {
+          roleWithinListener.set(role);
+          termWithinListener.set(term);
+          listenerLatch.countDown();
+        });
+
+    // then
+    assertThat(listenerLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    assertThat(roleWithinListener.get()).isEqualTo(server.getRole());
+    assertThat(termWithinListener.get()).isEqualTo(server.getTerm());
   }
 
   private void appendEntries(final RaftServer leader, final int count) {
