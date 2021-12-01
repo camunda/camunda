@@ -81,7 +81,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         jobWorkerProperties.setCandidateGroups(
             ExpressionTransformer.parseListOfCsv(candidateGroups)
                 .map(ExpressionTransformer::asListLiteral)
-                .map(ExpressionTransformer::asFeelExpression)
+                .map(ExpressionTransformer::asFeelExpressionString)
                 .map(expressionLanguage::parseExpression)
                 .get());
       } else {

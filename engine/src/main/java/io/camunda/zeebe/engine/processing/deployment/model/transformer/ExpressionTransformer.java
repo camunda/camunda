@@ -68,7 +68,17 @@ public final class ExpressionTransformer {
     return String.format("\"%s\"", value);
   }
 
-  public static String asFeelExpression(final String expression) {
+  /**
+   * Transforms an expression string into a FEEL expression string.
+   *
+   * <p>Zeebe considers strings starting with `=` as FEEL expressions, and other strings as static
+   * values. For example, `author` is considered a static value `author`, while `= author` is
+   * considered a FEEL expression that evaluates to the value of the variable `author`.
+   *
+   * @param expression The actual expression string to convert into a FEEL expression
+   * @return The provided expression string prefixed by the `=` character
+   */
+  public static String asFeelExpressionString(final String expression) {
     return String.format("=%s", expression);
   }
 }
