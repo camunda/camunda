@@ -23,10 +23,10 @@ import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.grpc.protobuf.StatusProto;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 
 /**
@@ -45,7 +45,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
 
   // jobType -> state
   private final Map<String, InFlightLongPollingActivateJobsRequestsState> jobTypeState =
-      new HashMap<>();
+      new ConcurrentHashMap<>();
   private final Duration longPollingTimeout;
   private final long probeTimeoutMillis;
   private final int failedAttemptThreshold;
@@ -128,7 +128,20 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private void onNotification(final String jobType) {
     LOG.trace("Received jobs available notification for type {}.", jobType);
 
-    actor.run(() -> resetFailedAttemptsAndHandlePendingRequests(jobType));
+    // instead of calling #getJobTypeState(), do only a
+    // get to avoid the creation of a state instance.
+    final var state = jobTypeState.get(jobType);
+
+    if (state != null && state.shouldNotifyAndStartNotification()) {
+      LOG.trace("Handle jobs available notification for type {}.", jobType);
+      actor.run(
+          () -> {
+            resetFailedAttemptsAndHandlePendingRequests(jobType);
+            state.completeNotification();
+          });
+    } else {
+      LOG.trace("Ignore jobs available notification for type {}.", jobType);
+    }
   }
 
   private void onCompleted(
