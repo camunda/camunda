@@ -10,27 +10,24 @@ package io.camunda.zeebe.broker.transport.adminapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.AdminRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.record.AdminRequestType;
 import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -56,7 +53,6 @@ public class AdminApiRequestHandlerTest {
     handler = new AdminApiRequestHandler(transport);
     scheduler.submitActor(handler);
     handler.injectPartitionManager(partitionManager);
-    handler.onBecomingLeader(0, 0, mock(LogStream.class), mock(QueryService.class));
     scheduler.workUntilDone();
   }
 
@@ -93,31 +89,12 @@ public class AdminApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldSubscribeOnBecomingLeader() {
-    // when
-    handler.onBecomingLeader(1, 1, mock(LogStream.class), mock(QueryService.class));
-    scheduler.workUntilDone();
-
-    // then
-    verify(transport).subscribe(1, RequestType.ADMIN, handler);
-  }
-
-  @Test
-  public void shouldUnsubscribeOnBecomingFollower() {
-    // when
-    handler.onBecomingFollower(0, 0);
-    scheduler.workUntilDone();
-
-    // then
-    verify(transport).unsubscribe(0);
-  }
-
-  @Test
   public void shouldRejectRequestWhenPartitionsAreNotStarted() {
     // given
     final var partitionManager = mock(PartitionManagerImpl.class);
-    when(partitionManager.getPartitionGroup())
-        .thenReturn(null); // no partition group available, emulates partitions are not started
+    final var partitionGroup = mock(RaftPartitionGroup.class);
+    when(partitionGroup.getPartitionIds()).thenReturn(List.of());
+    when(partitionManager.getPartitionGroup()).thenReturn(partitionGroup);
     handler.injectPartitionManager(partitionManager);
 
     final var request = new AdminRequest();
@@ -133,7 +110,7 @@ public class AdminApiRequestHandlerTest {
         .matches(Either::isLeft)
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
-        .isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+        .isEqualTo(ErrorCode.INTERNAL_ERROR); // no partitions -> no handler subscribed
   }
 
   private CompletableFuture<Either<ErrorResponse, AdminResponse>> handleRequest(

@@ -32,7 +32,6 @@ public class AdminApiServiceStep extends AbstractBrokerStartupStep {
         proceed(
             () -> {
               if (brokerStartupContext.getAdminApiService() == null) {
-                brokerStartupContext.addPartitionListener(handler);
                 brokerStartupContext.setAdminApiService(handler);
               }
               startupFuture.complete(brokerStartupContext);

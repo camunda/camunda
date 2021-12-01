@@ -9,20 +9,15 @@ package io.camunda.zeebe.broker.transport.adminapi;
 
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartitionGroup;
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.transport.ApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.record.AdminRequestType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 
-public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, ApiResponseWriter>
-    implements PartitionListener {
+public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
   private RaftPartitionGroup partitionGroup;
   private final AtomixServerTransport transport;
 
@@ -65,26 +60,10 @@ public class AdminApiRequestHandler extends ApiRequestHandler<ApiRequestReader, 
     return Either.right(responseWriter);
   }
 
-  @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return transport.unsubscribe(partitionId);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId,
-      final long term,
-      final LogStream logStream,
-      final QueryService queryService) {
-    return transport.subscribe(partitionId, RequestType.ADMIN, this);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    return transport.unsubscribe(partitionId);
-  }
-
   public void injectPartitionManager(final PartitionManagerImpl partitionManager) {
     partitionGroup = (RaftPartitionGroup) partitionManager.getPartitionGroup();
+    partitionGroup.getPartitionIds().stream()
+        .map(PartitionId::id)
+        .forEach(partitionId -> transport.subscribe(partitionId, RequestType.ADMIN, this));
   }
 }

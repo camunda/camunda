@@ -229,7 +229,7 @@ public class AtomixTransportTest {
         .join();
 
     // when
-    serverTransport.unsubscribe(0).join();
+    serverTransport.unsubscribe(0, RequestType.COMMAND).join();
 
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
