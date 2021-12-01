@@ -119,7 +119,7 @@
 
   <sbe:message name="AdminRequest" id="40">
     <field name="partitionId" id="1" type="uint16"/>
-    <field name="type" id="4" type="AdminRequestType"/>
+    <field name="type" id="2" type="AdminRequestType"/>
   </sbe:message>
 
   <sbe:message name="AdminResponse" id="41">
