@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,7 +61,7 @@ public final class JobStateTest {
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1);
   }
 
   @Test
@@ -387,7 +388,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldRetryJobAfterRecurAfterBackoff() {
+  public void shouldImmediatelyRetryJobAfterFailedIfRetryBackoffIsZeroAndHasRetries() {
     // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(0);
@@ -401,6 +402,27 @@ public final class JobStateTest {
     assertThat(jobState.exists(jobKey)).isTrue();
     assertJobState(jobKey, State.ACTIVATABLE);
     refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime());
+  }
+
+  @Test
+  public void shouldRetryJobAfterRecurredAndHasRetries() {
+    // given
+    final long jobKey = 1L;
+    final long retryBackoff = Duration.ofDays(1).toMillis();
+    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(retryBackoff);
+
+    // when
+    jobState.create(jobKey, jobRecord);
+    jobState.activate(jobKey, jobRecord);
+    jobState.fail(jobKey, jobRecord);
+    assertThat(jobState.exists(jobKey)).isTrue();
+    assertJobState(jobKey, State.FAILED);
+    assertListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1 + retryBackoff);
+    jobState.recurAfterBackoff(jobKey, jobRecord);
+
+    // then
+    assertJobState(jobKey, State.ACTIVATABLE);
+    refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1 + retryBackoff);
   }
 
   @Test
