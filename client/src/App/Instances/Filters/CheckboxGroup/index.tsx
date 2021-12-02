@@ -7,20 +7,22 @@
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
 
-import Checkbox from 'modules/components/Checkbox';
-import {Container, Group} from './styled';
+import {Group} from './styled';
+import {CmCheckbox} from '@camunda-cloud/common-ui-react';
 
 type GroupItem = {
   label: string;
   name: string;
+  icon: React.ComponentProps<typeof CmCheckbox>['icon'];
 };
 
 type Props = {
+  dataTestId: string;
   groupLabel: string;
   items: GroupItem[];
 };
 
-const CheckboxGroup: React.FC<Props> = ({groupLabel, items}) => {
+const CheckboxGroup: React.FC<Props> = ({dataTestId, groupLabel, items}) => {
   const form = useForm();
   const fieldValues = items.map(({name}) =>
     Boolean(form.getState().values[name])
@@ -29,13 +31,14 @@ const CheckboxGroup: React.FC<Props> = ({groupLabel, items}) => {
   const isIndeterminate = fieldValues.some((value) => value);
 
   return (
-    <Container>
-      <Checkbox
+    <>
+      <CmCheckbox
         label={groupLabel}
         id={groupLabel}
-        isChecked={isChecked}
-        isIndeterminate={isIndeterminate && !isChecked}
-        onChange={() => {
+        data-testid={dataTestId}
+        checked={isChecked}
+        indeterminate={isIndeterminate && !isChecked}
+        onCmInput={() => {
           form.batch(() => {
             items.forEach(({name}) => {
               form.change(name, !isChecked);
@@ -44,20 +47,22 @@ const CheckboxGroup: React.FC<Props> = ({groupLabel, items}) => {
         }}
       />
       <Group>
-        {items.map(({label, name}) => (
+        {items.map(({label, name, icon}) => (
           <Field name={name} component="input" type="checkbox" key={name}>
             {({input}) => (
-              <Checkbox
-                id={input.name}
-                isChecked={input.checked}
-                onChange={input.onChange}
+              <CmCheckbox
+                {...input}
                 label={label}
+                checked={input.checked}
+                icon={icon}
+                onCmInput={input.onChange}
+                data-testid={`filter-${name}`}
               />
             )}
           </Field>
         ))}
       </Group>
-    </Container>
+    </>
   );
 };
 

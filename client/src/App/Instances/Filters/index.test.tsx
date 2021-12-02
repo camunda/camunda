@@ -182,10 +182,10 @@ describe('Filters', () => {
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.operationId)
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Active')).toBeChecked();
-    expect(screen.getByLabelText('Incidents')).toBeChecked();
-    expect(screen.getByLabelText('Completed')).toBeChecked();
-    expect(screen.getByLabelText('Canceled')).toBeChecked();
+    expect(screen.getByTestId(/active/)).toBeChecked();
+    expect(screen.getByTestId(/incidents/)).toBeChecked();
+    expect(screen.getByTestId(/completed/)).toBeChecked();
+    expect(screen.getByTestId(/canceled/)).toBeChecked();
   });
 
   it('should set modified values to the URL', async () => {
@@ -224,18 +224,18 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Instance Id(s) separated by space or comma')
     ).toHaveValue('');
-    expect(screen.getByTestId('parentInstanceId')).toHaveValue('');
-    expect(screen.getByTestId('errorMessage')).toHaveValue('');
-    expect(screen.getByTestId('startDate')).toHaveValue('');
-    expect(screen.getByTestId('endDate')).toHaveValue('');
+    expect(screen.getByTestId('filter-parent-instance-id')).toHaveValue('');
+    expect(screen.getByTestId('filter-error-message')).toHaveValue('');
+    expect(screen.getByTestId('filter-start-date')).toHaveValue('');
+    expect(screen.getByTestId('filter-end-date')).toHaveValue('');
     expect(screen.getByLabelText('Flow Node')).toHaveValue('');
     expect(screen.getByLabelText('Variable')).toHaveValue('');
     expect(screen.getByLabelText('Value')).toHaveValue('');
-    expect(screen.getByTestId('operationId')).toHaveValue('');
-    expect(screen.getByLabelText('Active')).not.toBeChecked();
-    expect(screen.getByLabelText('Incidents')).not.toBeChecked();
-    expect(screen.getByLabelText('Completed')).not.toBeChecked();
-    expect(screen.getByLabelText('Canceled')).not.toBeChecked();
+    expect(screen.getByTestId('filter-operation-id')).toHaveValue('');
+    expect(screen.getByTestId(/active/)).not.toBeChecked();
+    expect(screen.getByTestId(/incidents/)).not.toBeChecked();
+    expect(screen.getByTestId(/completed/)).not.toBeChecked();
+    expect(screen.getByTestId(/canceled/)).not.toBeChecked();
 
     userEvent.selectOptions(screen.getByLabelText('Process'), [
       'Big variable process',
@@ -245,16 +245,19 @@ describe('Filters', () => {
       MOCK_VALUES.ids
     );
     userEvent.paste(
-      screen.getByTestId('parentInstanceId'),
+      screen.getByTestId('filter-parent-instance-id'),
       MOCK_VALUES.parentInstanceId
     );
 
     userEvent.paste(
-      screen.getByTestId('errorMessage'),
+      screen.getByTestId('filter-error-message'),
       MOCK_VALUES.errorMessage
     );
-    userEvent.paste(screen.getByTestId('startDate'), MOCK_VALUES.startDate);
-    userEvent.paste(screen.getByTestId('endDate'), MOCK_VALUES.endDate);
+    userEvent.paste(
+      screen.getByTestId('filter-start-date'),
+      MOCK_VALUES.startDate
+    );
+    userEvent.paste(screen.getByTestId('filter-end-date'), MOCK_VALUES.endDate);
 
     userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
       MOCK_VALUES.flowNodeId,
@@ -264,11 +267,14 @@ describe('Filters', () => {
       MOCK_VALUES.variableName
     );
     userEvent.paste(screen.getByLabelText('Value'), MOCK_VALUES.variableValue);
-    userEvent.paste(screen.getByTestId('operationId'), MOCK_VALUES.operationId);
-    userEvent.click(screen.getByLabelText('Active'));
-    userEvent.click(screen.getByLabelText('Incidents'));
-    userEvent.click(screen.getByLabelText('Completed'));
-    userEvent.click(screen.getByLabelText('Canceled'));
+    userEvent.paste(
+      screen.getByTestId('filter-operation-id'),
+      MOCK_VALUES.operationId
+    );
+    userEvent.click(screen.getByTestId(/active/));
+    userEvent.click(screen.getByTestId(/incidents/));
+    userEvent.click(screen.getByTestId(/completed/));
+    userEvent.click(screen.getByTestId(/canceled/));
 
     await waitFor(() =>
       expect(
@@ -366,33 +372,33 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByTestId('parentInstanceId'), 'a');
+      userEvent.type(screen.getByTestId('filter-parent-instance-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByTestId('parentInstanceId'));
+      userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
 
       await waitForElementToBeRemoved(() =>
         screen.getByText('Id has to be 16 to 19 digit numbers')
       );
 
-      userEvent.type(screen.getByTestId('parentInstanceId'), '1');
+      userEvent.type(screen.getByTestId('filter-parent-instance-id'), '1');
 
       expect(
         await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('parentInstanceId'));
+      userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
 
       await waitForElementToBeRemoved(() =>
         screen.getByText('Id has to be 16 to 19 digit numbers')
       );
 
       userEvent.type(
-        screen.getByTestId('parentInstanceId'),
+        screen.getByTestId('filter-parent-instance-id'),
         '1111111111111111, 2222222222222222'
       );
 
@@ -400,7 +406,7 @@ describe('Filters', () => {
         await screen.findByText('Id has to be 16 to 19 digit numbers')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByTestId('parentInstanceId'));
+      userEvent.clear(screen.getByTestId('filter-parent-instance-id'));
 
       await waitForElementToBeRemoved(() =>
         screen.getByText('Id has to be 16 to 19 digit numbers')
@@ -417,7 +423,7 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByTestId('startDate'), 'a');
+      userEvent.type(screen.getByTestId('filter-start-date'), 'a');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -425,13 +431,13 @@ describe('Filters', () => {
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByTestId('startDate'));
+      userEvent.clear(screen.getByTestId('filter-start-date'));
 
       await waitForElementToBeRemoved(() =>
         screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       );
 
-      userEvent.type(screen.getByTestId('startDate'), '2021-05');
+      userEvent.type(screen.getByTestId('filter-start-date'), '2021-05');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -449,7 +455,7 @@ describe('Filters', () => {
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByTestId('endDate'), 'a');
+      userEvent.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -457,13 +463,13 @@ describe('Filters', () => {
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByTestId('endDate'));
+      userEvent.clear(screen.getByTestId('filter-end-date'));
 
       await waitForElementToBeRemoved(() =>
         screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
       );
 
-      userEvent.type(screen.getByTestId('endDate'), '2021-05');
+      userEvent.type(screen.getByTestId('filter-end-date'), '2021-05');
 
       expect(
         await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
@@ -552,7 +558,7 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByTestId('operationId'), 'g');
+      userEvent.type(screen.getByTestId('filter-operation-id'), 'g');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -560,13 +566,13 @@ describe('Filters', () => {
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByTestId('operationId'));
+      userEvent.clear(screen.getByTestId('filter-operation-id'));
 
       expect(
         screen.queryByTitle('Id has to be a UUID')
       ).not.toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('operationId'), 'a');
+      userEvent.type(screen.getByTestId('filter-operation-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -584,7 +590,7 @@ describe('Filters', () => {
 
     expect(screen.getByTitle(/reset filters/i)).toBeDisabled();
 
-    userEvent.click(screen.getByLabelText('Incidents'));
+    userEvent.click(screen.getByTestId(/incidents/));
 
     await waitFor(() =>
       expect(MOCK_HISTORY.location.search).toBe('?active=true')
@@ -603,7 +609,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(screen.getByTestId('operationId'), 'a');
+      userEvent.type(screen.getByTestId('filter-operation-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
@@ -645,7 +651,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('operationId'), 'abc');
+      userEvent.type(screen.getByTestId('filter-operation-id'), 'abc');
 
       expect(
         screen.getByTitle(
@@ -684,7 +690,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('startDate'), '2021');
+      userEvent.type(screen.getByTestId('filter-start-date'), '2021');
 
       expect(
         screen.getByTitle(
@@ -723,7 +729,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByTestId('endDate'), 'a');
+      userEvent.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
         screen.getByTitle(
@@ -895,7 +901,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Active'));
+      userEvent.click(screen.getByTestId(/active/));
 
       expect(
         screen.getByTitle(
@@ -903,7 +909,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Incidents'));
+      userEvent.click(screen.getByTestId(/incidents/));
 
       expect(
         screen.getByTitle(
@@ -911,7 +917,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Completed'));
+      userEvent.click(screen.getByTestId(/completed/));
 
       expect(
         screen.getByTitle(
@@ -919,7 +925,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Canceled'));
+      userEvent.click(screen.getByTestId(/canceled/));
 
       expect(
         screen.getByTitle(
@@ -927,7 +933,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Running Instances'));
+      userEvent.click(screen.getByTestId('filter-running-instances'));
 
       expect(
         screen.getByTitle(
@@ -935,7 +941,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.click(screen.getByLabelText('Finished Instances'));
+      userEvent.click(screen.getByTestId('filter-finished-instances'));
 
       expect(
         screen.getByTitle(
@@ -949,9 +955,9 @@ describe('Filters', () => {
         wrapper: getWrapper(),
       });
 
-      userEvent.type(screen.getByTestId('startDate'), '2021');
+      userEvent.type(screen.getByTestId('filter-start-date'), '2021');
 
-      userEvent.type(screen.getByTestId('endDate'), '2021');
+      userEvent.type(screen.getByTestId('filter-end-date'), '2021');
 
       await waitFor(() =>
         expect(

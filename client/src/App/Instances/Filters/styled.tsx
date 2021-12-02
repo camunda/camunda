@@ -9,6 +9,7 @@ import Panel from 'modules/components/Panel';
 import {Input} from 'modules/components/Input';
 import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
 import IconButton from 'modules/components/IconButton';
+import {CmText} from '@camunda-cloud/common-ui-react';
 
 const FiltersForm = styled.form`
   width: 100%;
@@ -99,6 +100,15 @@ const ModalIcon = styled(DefaultModal)`
   }}
 `;
 
+const StatesHeader = styled(CmText)`
+  display: block;
+  margin-bottom: 8px;
+`;
+
+const InstanceStates = styled.div`
+  padding-left: 20px;
+`;
+
 export {
   FiltersForm,
   Row,
@@ -107,4 +117,6 @@ export {
   Fields,
   JSONEditorButton,
   ModalIcon,
+  StatesHeader,
+  InstanceStates,
 };

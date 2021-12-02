@@ -5,8 +5,13 @@
  */
 
 import {deploy, createInstances} from '../setup-utils';
+import {within, screen} from '@testing-library/testcafe';
 
-export async function setup() {
+const cmFinishedInstancesCheckbox = within(
+  screen.queryByTestId('filter-finished-instances').shadowRoot()
+).queryByRole('checkbox');
+
+const setup = async () => {
   await deploy([
     './e2e/tests/resources/withoutIncidentsProcess_v_1.bpmn',
     './e2e/tests/resources/processWithAnIncident.bpmn',
@@ -16,4 +21,6 @@ export async function setup() {
   await createInstances('withoutIncidentsProcess', 1, 10);
   await createInstances('orderProcess', 1, 10);
   await createInstances('processWithAnIncident', 1, 5);
-}
+};
+
+export {setup, cmFinishedInstancesCheckbox};

@@ -8,8 +8,9 @@ import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from '@testing-library/react';
-import React, {useImperativeHandle, useState} from 'react';
-import {CmTextfield} from '@camunda-cloud/common-ui-react';
+import React from 'react';
+import {Textfield as MockTextfield} from 'modules/mocks/common-ui/Textfield';
+import {Checkbox as MockCheckbox} from 'modules/mocks/common-ui/Checkbox';
 
 class MockJSONEditor {
   updateText() {}
@@ -17,57 +18,6 @@ class MockJSONEditor {
   set() {}
   get() {}
 }
-
-type Props = {
-  validation: React.ComponentProps<typeof CmTextfield>['validation'];
-  validationStyle: React.ComponentProps<typeof CmTextfield>['validationStyle'];
-  onCmInput: React.ChangeEventHandler<HTMLInputElement>;
-  fieldSuffix: React.ComponentProps<typeof CmTextfield>['fieldSuffix'];
-  shouldDebounceError: boolean;
-};
-
-const MockTextField = React.forwardRef<any, Props>(
-  (
-    {
-      children,
-      validation,
-      fieldSuffix,
-      validationStyle,
-      onCmInput,
-      shouldDebounceError,
-      ...props
-    },
-    ref
-  ) => {
-    const [errorMessage, setErrorMessage] = useState<string | undefined>(
-      undefined
-    );
-
-    const renderValidity = async () => {
-      if (validation?.type === 'custom') {
-        const result = await validation.validator('');
-        return result.isValid
-          ? setErrorMessage(undefined)
-          : setErrorMessage(result.message);
-      }
-    };
-
-    useImperativeHandle(ref, () => ({
-      renderValidity,
-      forceFocus: () => {},
-    }));
-
-    return (
-      <>
-        <input {...props} onChange={onCmInput} ref={ref} />
-        <div>{errorMessage}</div>
-        {fieldSuffix?.type === 'icon' && (
-          <div title="open json editor modal" onClick={fieldSuffix.press}></div>
-        )}
-      </>
-    );
-  }
-);
 
 jest.mock('jsoneditor', () => MockJSONEditor);
 jest.mock('jsoneditor/dist/jsoneditor.css', () => undefined);
@@ -84,7 +34,8 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
         return null;
       }
     ),
-    CmTextfield: MockTextField,
+    CmTextfield: MockTextfield,
+    CmCheckbox: MockCheckbox,
   };
 });
 

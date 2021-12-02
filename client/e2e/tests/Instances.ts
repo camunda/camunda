@@ -5,7 +5,15 @@
  */
 
 import {config} from '../config';
-import {setup} from './Instances.setup';
+import {
+  setup,
+  cmRunningInstancesCheckbox,
+  cmActiveCheckbox,
+  cmIncidentsCheckbox,
+  cmFinishedInstancesCheckbox,
+  cmCompletedCheckbox,
+  cmCanceledCheckbox,
+} from './Instances.setup';
 import {deploy} from '../setup-utils';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
@@ -13,6 +21,7 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
+import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 
 fixture('Instances')
   .page(config.endpoint)
@@ -37,21 +46,39 @@ test('Instances Page Initial Load', async (t) => {
     })
   );
 
-  await t
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
 
   await t
     .expect(screen.queryByText('There is no Process selected').exists)

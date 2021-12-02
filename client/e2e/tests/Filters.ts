@@ -7,6 +7,12 @@
 import {config} from '../config';
 import {
   setup,
+  cmRunningInstancesCheckbox,
+  cmActiveCheckbox,
+  cmIncidentsCheckbox,
+  cmFinishedInstancesCheckbox,
+  cmCompletedCheckbox,
+  cmCanceledCheckbox,
   cmParentInstanceIdField,
   cmErrorMessageField,
   cmOperationIdField,
@@ -56,21 +62,39 @@ test('Navigating in header should affect filters and url correctly', async (t) =
       })
     );
 
-  await t
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
 });
 
 test('Instance IDs filter', async (t) => {
@@ -155,7 +179,11 @@ test('Parent Instance Id filter', async (t) => {
     initialData: {callActivityProcessInstance},
   } = t.fixtureCtx;
 
-  await t.click(screen.queryByRole('checkbox', {name: 'Completed'}));
+  const completedCheckbox = IS_NEW_FILTERS_FORM
+    ? cmCompletedCheckbox
+    : screen.queryByRole('checkbox', {name: 'Completed'});
+
+  await t.click(completedCheckbox);
 
   const parentInstanceIdField = IS_NEW_FILTERS_FORM
     ? cmParentInstanceIdField
@@ -292,7 +320,11 @@ test('End Date filter', async (t) => {
     )
     .ok();
 
-  await t.click(screen.queryByRole('checkbox', {name: 'Finished Instances'}));
+  const finishedInstancesCheckbox = IS_NEW_FILTERS_FORM
+    ? cmFinishedInstancesCheckbox
+    : screen.queryByRole('checkbox', {name: 'Finished Instances'});
+
+  await t.click(finishedInstancesCheckbox);
 
   // wait for filter to be applied
   await t
@@ -317,11 +349,9 @@ test('End Date filter', async (t) => {
     ? cmEndDateField
     : screen.queryByRole('textbox', {name: /end date/i});
 
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-    .typeText(endDateField, endDate, {
-      paste: true,
-    });
+  await t.click(finishedInstancesCheckbox).typeText(endDateField, endDate, {
+    paste: true,
+  });
 
   // wait for filter to be applied, see results are narrowed down.
   await t
@@ -485,8 +515,12 @@ test('Operation ID filter', async (t) => {
     ? cmOperationIdField
     : screen.queryByRole('textbox', {name: /operation id/i});
 
+  const finishedInstancesCheckbox = IS_NEW_FILTERS_FORM
+    ? cmFinishedInstancesCheckbox
+    : screen.queryByRole('checkbox', {name: 'Finished Instances'});
+
   await t
-    .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
+    .click(finishedInstancesCheckbox)
     .typeText(operationIdField, operationId, {
       paste: true,
     });
@@ -537,41 +571,79 @@ test('Operation ID filter', async (t) => {
 });
 
 test('Checkboxes', async (t) => {
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Running Instances'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .notOk()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmRunningInstancesCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Running Instances'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .notOk()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
 
   await t.expect(await getPathname()).eql('/instances');
 
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Active'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .notOk()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmActiveCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Active'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .notOk()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
 
   await t
     .expect(await getPathname())
@@ -583,109 +655,41 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Incidents'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
-
-  await t
-    .expect(await getPathname())
-    .eql('/instances')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-      })
-    );
-
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .ok();
-
-  await t
-    .expect(await getPathname())
-    .eql('/instances')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-        completed: 'true',
-        canceled: 'true',
-      })
-    );
-
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Completed'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .ok();
-
-  await t
-    .expect(await getPathname())
-    .eql('/instances')
-    .expect(await getSearch())
-    .eql(
-      convertToQueryString({
-        active: 'true',
-        incidents: 'true',
-        canceled: 'true',
-      })
-    );
-
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Canceled'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmIncidentsCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Incidents'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
 
   await t
     .expect(await getPathname())
@@ -698,22 +702,41 @@ test('Checkboxes', async (t) => {
       })
     );
 
-  await t
-    .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .ok();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmFinishedInstancesCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .ok();
+  }
 
   await t
     .expect(await getPathname())
@@ -728,22 +751,184 @@ test('Checkboxes', async (t) => {
       })
     );
 
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmCompletedCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Completed'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .ok();
+  }
+
   await t
-    .click(screen.queryByRole('button', {name: /reset filters/i}))
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .notOk();
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        canceled: 'true',
+      })
+    );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmCanceledCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Canceled'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
+
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+      })
+    );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .click(cmFinishedInstancesCheckbox)
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .click(screen.queryByRole('checkbox', {name: 'Finished Instances'}))
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .ok();
+  }
+
+  await t
+    .expect(await getPathname())
+    .eql('/instances')
+    .expect(await getSearch())
+    .eql(
+      convertToQueryString({
+        active: 'true',
+        incidents: 'true',
+        completed: 'true',
+        canceled: 'true',
+      })
+    );
+  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .notOk();
+  }
 
   await t
     .expect(await getPathname())
@@ -1109,21 +1294,41 @@ test('Should set filters from url', async (t) => {
     .expect(screen.queryByRole('textbox', {name: /value/i}).value)
     .eql('123')
     .expect(operationIdField.value)
-    .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6')
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .ok();
+    .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .ok();
+  }
 
   // should navigate to dashboard and back, and see filters are still there
 
@@ -1170,19 +1375,39 @@ test('Should set filters from url', async (t) => {
     .expect(screen.queryByRole('textbox', {name: /value/i}).value)
     .eql('123')
     .expect(operationIdField.value)
-    .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6')
-    .expect(screen.queryByRole('checkbox', {name: 'Running Instances'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok()
-    .expect(
-      screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
-    )
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
-    .ok();
+    .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmRunningInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmFinishedInstancesCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCompletedCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmCanceledCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Running Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok()
+      .expect(
+        screen.queryByRole('checkbox', {name: 'Finished Instances'}).checked
+      )
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Completed'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Canceled'}).checked)
+      .ok();
+  }
 });

@@ -7,20 +7,48 @@
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
 import {within, screen} from '@testing-library/testcafe';
 
+const cmRunningInstancesCheckbox = within(
+  screen.queryByTestId('filter-running-instances').shadowRoot()
+).queryByRole('checkbox');
+
+const cmActiveCheckbox = within(
+  screen.queryByTestId('filter-active').shadowRoot()
+).queryByRole('checkbox');
+
+const cmIncidentsCheckbox = within(
+  screen.queryByTestId('filter-incidents').shadowRoot()
+).queryByRole('checkbox');
+
+const cmFinishedInstancesCheckbox = within(
+  screen.queryByTestId('filter-finished-instances').shadowRoot()
+).queryByRole('checkbox');
+
+const cmCompletedCheckbox = within(
+  screen.queryByTestId('filter-completed').shadowRoot()
+).queryByRole('checkbox');
+
+const cmCanceledCheckbox = within(
+  screen.queryByTestId('filter-canceled').shadowRoot()
+).queryByRole('checkbox');
+
 const cmParentInstanceIdField = within(
-  screen.queryByTestId('parentInstanceId').shadowRoot()
+  screen.queryByTestId('filter-parent-instance-id').shadowRoot()
 ).queryByRole('textbox');
+
 const cmErrorMessageField = within(
-  screen.queryByTestId('errorMessage').shadowRoot()
+  screen.queryByTestId('filter-error-message').shadowRoot()
 ).queryByRole('textbox');
+
 const cmStartDateField = within(
-  screen.queryByTestId('startDate').shadowRoot()
+  screen.queryByTestId('filter-start-date').shadowRoot()
 ).queryByRole('textbox');
+
 const cmEndDateField = within(
-  screen.queryByTestId('endDate').shadowRoot()
+  screen.queryByTestId('filter-end-date').shadowRoot()
 ).queryByRole('textbox');
+
 const cmOperationIdField = within(
-  screen.queryByTestId('operationId').shadowRoot()
+  screen.queryByTestId('filter-operation-id').shadowRoot()
 ).queryByRole('textbox');
 
 const setup = async () => {
@@ -68,6 +96,12 @@ const setup = async () => {
 
 export {
   setup,
+  cmRunningInstancesCheckbox,
+  cmActiveCheckbox,
+  cmIncidentsCheckbox,
+  cmFinishedInstancesCheckbox,
+  cmCompletedCheckbox,
+  cmCanceledCheckbox,
   cmParentInstanceIdField,
   cmErrorMessageField,
   cmOperationIdField,

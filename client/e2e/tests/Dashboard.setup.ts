@@ -7,8 +7,16 @@
 import {deploy, createInstances, createSingleInstance} from '../setup-utils';
 import {within, screen} from '@testing-library/testcafe';
 
+const cmActiveCheckbox = within(
+  screen.queryByTestId('filter-active').shadowRoot()
+).queryByRole('checkbox');
+
+const cmIncidentsCheckbox = within(
+  screen.queryByTestId('filter-incidents').shadowRoot()
+).queryByRole('checkbox');
+
 const cmErrorMessageField = within(
-  screen.queryByTestId('errorMessage').shadowRoot()
+  screen.queryByTestId('filter-error-message').shadowRoot()
 ).queryByRole('textbox');
 
 const setup = async () => {
@@ -39,4 +47,4 @@ const setup = async () => {
   await createSingleInstance('processWithAnIncident', 1);
 };
 
-export {setup, cmErrorMessageField};
+export {setup, cmActiveCheckbox, cmIncidentsCheckbox, cmErrorMessageField};

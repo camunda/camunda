@@ -10,7 +10,7 @@ import {wait} from './utils/wait';
 import {within, screen} from '@testing-library/testcafe';
 
 const cmOperationIdField = within(
-  screen.queryByTestId('operationId').shadowRoot()
+  screen.queryByTestId('filter-operation-id').shadowRoot()
 ).queryByRole('textbox');
 
 async function setup() {

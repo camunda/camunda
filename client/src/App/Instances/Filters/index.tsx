@@ -16,6 +16,8 @@ import {
   Fields,
   JSONEditorButton,
   ModalIcon,
+  StatesHeader,
+  InstanceStates,
 } from './styled';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
@@ -135,7 +137,7 @@ const Filters: React.FC = () => {
                     <TextField
                       {...input}
                       type="text"
-                      data-testid="parentInstanceId"
+                      data-testid="filter-parent-instance-id"
                       label="Parent Instance Id"
                       shouldDebounceError={false}
                     />
@@ -148,7 +150,7 @@ const Filters: React.FC = () => {
                     <TextField
                       {...input}
                       type="text"
-                      data-testid="errorMessage"
+                      data-testid="filter-error-message"
                       label="Error Message"
                       shouldDebounceError={false}
                     />
@@ -167,7 +169,7 @@ const Filters: React.FC = () => {
                     <TextField
                       {...input}
                       type="text"
-                      data-testid="startDate"
+                      data-testid="filter-start-date"
                       label="Start Date"
                       placeholder="YYYY-MM-DD hh:mm:ss"
                       shouldDebounceError={false}
@@ -187,7 +189,7 @@ const Filters: React.FC = () => {
                     <TextField
                       {...input}
                       type="text"
-                      data-testid="endDate"
+                      data-testid="filter-end-date"
                       label="End Date"
                       placeholder="YYYY-MM-DD hh:mm:ss"
                       shouldDebounceError={false}
@@ -278,43 +280,50 @@ const Filters: React.FC = () => {
                     <TextField
                       {...input}
                       type="text"
-                      data-testid="operationId"
+                      data-testid="filter-operation-id"
                       label="Operation Id"
                       shouldDebounceError={false}
                     />
                   )}
                 </Field>
               </Row>
-              <Row>
+              <InstanceStates>
+                <StatesHeader appearance="emphasis">
+                  Instance States
+                </StatesHeader>
                 <CheckboxGroup
                   groupLabel="Running Instances"
+                  dataTestId="filter-running-instances"
                   items={[
                     {
                       label: 'Active',
                       name: 'active',
+                      icon: {icon: 'state:ok', color: 'success'},
                     },
                     {
                       label: 'Incidents',
                       name: 'incidents',
+                      icon: {icon: 'state:incident', color: 'danger'},
                     },
                   ]}
                 />
-              </Row>
-              <Row>
                 <CheckboxGroup
                   groupLabel="Finished Instances"
+                  dataTestId="filter-finished-instances"
                   items={[
                     {
                       label: 'Completed',
                       name: 'completed',
+                      icon: {icon: 'state:completed', color: 'medium'},
                     },
                     {
                       label: 'Canceled',
                       name: 'canceled',
+                      icon: {icon: 'stop', color: 'dark'},
                     },
                   ]}
                 />
-              </Row>
+              </InstanceStates>
             </Fields>
             <ResetButtonContainer>
               <Button

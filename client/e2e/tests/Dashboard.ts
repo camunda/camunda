@@ -5,7 +5,12 @@
  */
 
 import {config} from '../config';
-import {setup, cmErrorMessageField} from './Dashboard.setup';
+import {
+  setup,
+  cmActiveCheckbox,
+  cmIncidentsCheckbox,
+  cmErrorMessageField,
+} from './Dashboard.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
@@ -64,12 +69,21 @@ test('Navigation to Instances View', async (t) => {
     .getAllByTestId('incident-instances-badge')
     .nth(0).textContent;
 
-  await t
-    .click(screen.queryByTestId('active-instances-link'))
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .notOk();
+  await t.click(screen.queryByTestId('active-instances-link'));
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .notOk();
+  } else {
+    await t
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .notOk();
+  }
 
   await t
     .expect(
@@ -85,12 +99,21 @@ test('Navigation to Instances View', async (t) => {
       .nth(0)
   );
 
-  await t
-    .click(screen.queryByTestId('incident-instances-link'))
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok();
+  await t.click(screen.queryByTestId('incident-instances-link'));
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok();
+  }
 
   await t
     .expect(
@@ -119,11 +142,19 @@ test('Select instances by process', async (t) => {
 
   await t.click(screen.queryByTestId('incident-byProcess-0'));
 
-  await t
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .ok()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .ok()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .ok()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok();
+  }
 
   await t
     .expect(
@@ -148,11 +179,19 @@ test('Select instances by error message', async (t) => {
 
   await t.click(screen.queryByTestId('incident-byError-0'));
 
-  await t
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok();
+  }
 
   await t
     .expect(
@@ -194,11 +233,19 @@ test('Select instances by error message (expanded)', async (t) => {
       .nth(0)
   );
 
-  await t
-    .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
-    .notOk()
-    .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
-    .ok();
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(cmActiveCheckbox.hasClass('checked'))
+      .notOk()
+      .expect(cmIncidentsCheckbox.hasClass('checked'))
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('checkbox', {name: 'Active'}).checked)
+      .notOk()
+      .expect(screen.queryByRole('checkbox', {name: 'Incidents'}).checked)
+      .ok();
+  }
 
   await t
     .expect(
