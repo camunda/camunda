@@ -101,13 +101,13 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
     failedJob.setRetryBackoff(retryBackOff);
-    final long receivedTime = command.getTimestamp();
-    failedJob.setRecurringTime(receivedTime + retryBackOff);
     commandControl.accept(JobIntent.FAILED, failedJob);
     jobMetrics.jobFailed(failedJob.getType());
     if (retries > 0 && retryBackOff > 0) {
       sideEffect.accept(
           () -> {
+            final long receivedTime = command.getTimestamp();
+            failedJob.setRecurringTime(receivedTime + retryBackOff);
             jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
             return true;
           });
