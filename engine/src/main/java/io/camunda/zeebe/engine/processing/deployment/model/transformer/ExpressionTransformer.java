@@ -52,15 +52,33 @@ public final class ExpressionTransformer {
   }
 
   /**
-   * Serializes a list of strings to a list-literal FEEL-expression, e.g. {@code List.of("a","b") =>
-   * "=[\"a\",\"b\"]"}.
+   * Serializes a list of strings to a list-literal, e.g. {@code List.of("a","b") =>
+   * "[\"a\",\"b\"]"}.
    *
    * @param values the list of string values to transform
-   * @return a string representation of the list literal FEEL-expression
+   * @return a string representation of the list literal
    */
-  public static String asListLiteralExpression(final List<String> values) {
+  public static String asListLiteral(final List<String> values) {
     return values.stream()
-        .map(value -> String.format("\"%s\"", value))
-        .collect(Collectors.joining(",", "=[", "]"));
+        .map(ExpressionTransformer::asStringLiteral)
+        .collect(Collectors.joining(",", "[", "]"));
+  }
+
+  private static String asStringLiteral(final String value) {
+    return String.format("\"%s\"", value);
+  }
+
+  /**
+   * Transforms an expression string into a FEEL expression string.
+   *
+   * <p>Zeebe considers strings starting with `=` as FEEL expressions, and other strings as static
+   * values. For example, `author` is considered a static value `author`, while `= author` is
+   * considered a FEEL expression that evaluates to the value of the variable `author`.
+   *
+   * @param expression The actual expression string to convert into a FEEL expression
+   * @return The provided expression string prefixed by the `=` character
+   */
+  public static String asFeelExpressionString(final String expression) {
+    return String.format("=%s", expression);
   }
 }

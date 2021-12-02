@@ -27,4 +27,12 @@ public final class EitherAssert<L, R>
 
     return myself;
   }
+
+  public EitherAssert<L, R> isLeft() {
+    if (actual.isRight()) {
+      failWithMessage("Expected <%s> to be left, but was right <%s>", actual, actual.get());
+    }
+
+    return myself;
+  }
 }
