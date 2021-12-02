@@ -93,13 +93,14 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, numberOfInstances)
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto data = response.readEntity(PaginatedDataExportDto.class);
 
     // then
     assertThat(data.getNumberOfRecordsInResponse()).isEqualTo(numberOfInstances);
     assertThat((long)data.getNumberOfRecordsInResponse()).isEqualTo(data.getTotalNumberOfRecords());
-    assertThat(data.getScrollId()).isNotBlank();
+    assertThat(data.getSearchRequestId()).isNotBlank();
     assertThat(response.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
   }
@@ -117,6 +118,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, limit)
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage1 =
       responsePage1.readEntity(PaginatedDataExportDto.class);
@@ -124,8 +126,9 @@ public class JsonExportRestServiceIT extends AbstractIT {
     Response responsePage2 = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage1.getScrollId())
+      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage1.getSearchRequestId())
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage2 =
       responsePage2.readEntity(PaginatedDataExportDto.class);
@@ -133,8 +136,9 @@ public class JsonExportRestServiceIT extends AbstractIT {
     Response responsePage3 = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage2.getScrollId())
+      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage2.getSearchRequestId())
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage3 =
       responsePage3.readEntity(PaginatedDataExportDto.class);
@@ -150,9 +154,9 @@ public class JsonExportRestServiceIT extends AbstractIT {
     assertThat(dataPage3.getNumberOfRecordsInResponse())
       .isLessThan(limit);
 
-    assertThat(dataPage1.getScrollId()).isNotBlank();
-    assertThat(dataPage2.getScrollId()).isNotBlank();
-    assertThat(dataPage3.getScrollId()).isNotBlank();
+    assertThat(dataPage1.getSearchRequestId()).isNotBlank();
+    assertThat(dataPage2.getSearchRequestId()).isNotBlank();
+    assertThat(dataPage3.getSearchRequestId()).isNotBlank();
     assertThat(responsePage1.getStatus())
       .isEqualTo(responsePage2.getStatus())
       .isEqualTo(responsePage3.getStatus())
@@ -191,6 +195,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
 
     // then
@@ -204,6 +209,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .buildJsonExportRequest("IWishIExisted_ButIDont")
+      .withoutAuthentication()
       .execute();
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -222,6 +228,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, numberOfInstances)
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, "NoSoupForYou!")
+      .withoutAuthentication()
       .buildJsonExportRequest(reportId)
       .execute();
 
@@ -245,27 +252,29 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, limit)
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage1 =
       responsePage1.readEntity(PaginatedDataExportDto.class);
 
     ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-    clearScrollRequest.addScrollId(dataPage1.getScrollId());
+    clearScrollRequest.addScrollId(dataPage1.getSearchRequestId());
     ClearScrollResponse clearScrollResponse = embeddedOptimizeExtension.getOptimizeElasticClient().clearScroll(clearScrollRequest);
     boolean succeeded = clearScrollResponse.isSucceeded();
 
     Response responsePage2 = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage1.getScrollId())
+      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage1.getSearchRequestId())
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
 
     // then
     assert(succeeded);
     assertThat(responsePage1.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(dataPage1.getScrollId()).isNotBlank();
+    assertThat(dataPage1.getSearchRequestId()).isNotBlank();
     assertThat(responsePage2.getStatus())
       .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
@@ -283,6 +292,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, numberOfInstances * 3)
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto data = response.readEntity(PaginatedDataExportDto.class);
 
@@ -290,8 +300,9 @@ public class JsonExportRestServiceIT extends AbstractIT {
     Response responsePage2 = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, data.getScrollId())
+      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, data.getSearchRequestId())
       .buildJsonExportRequest(reportId)
+      .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage2 =
       responsePage2.readEntity(PaginatedDataExportDto.class);
@@ -299,7 +310,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
     // then
     assertThat(data.getNumberOfRecordsInResponse()).isEqualTo(numberOfInstances);
     assertThat((long)data.getNumberOfRecordsInResponse()).isEqualTo(data.getTotalNumberOfRecords());
-    assertThat(data.getScrollId()).isNotBlank();
+    assertThat(data.getSearchRequestId()).isNotBlank();
     assertThat(response.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(dataPage2.getTotalNumberOfRecords()).isEqualTo(numberOfInstances);

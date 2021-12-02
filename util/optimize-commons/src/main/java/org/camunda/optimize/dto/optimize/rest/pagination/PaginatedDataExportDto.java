@@ -16,7 +16,7 @@ import java.util.Collection;
 @AllArgsConstructor
 @Data
 public class PaginatedDataExportDto {
-  private String scrollId;
+  private String searchRequestId;
   private Integer numberOfRecordsInResponse;
   private long totalNumberOfRecords;
   private Object data;

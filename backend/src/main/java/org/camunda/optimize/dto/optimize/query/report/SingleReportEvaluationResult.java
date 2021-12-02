@@ -51,9 +51,9 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
       result.setData(commandResult.getResult());
       result.setTotalNumberOfRecords(commandResult.getInstanceCount());
       if (commandResult.getPagination() instanceof PaginationScrollableDto){
-        result.setScrollId(((PaginationScrollableDto)commandResult.getPagination()).getScrollId());
+        result.setSearchRequestId(((PaginationScrollableDto)commandResult.getPagination()).getScrollId());
       } else {
-        result.setScrollId(null);
+        result.setSearchRequestId(null);
       }
       return result;
     }

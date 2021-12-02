@@ -39,7 +39,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKE
 @Path(JsonExportRestService.EXPORT_REPORT_PATH)
 @Component
 public class JsonExportRestService {
-  public static final String EXPORT_REPORT_PATH = "public/export/report";
+  public static final String EXPORT_REPORT_PATH = "/public/export/report";
   public static final String REPORT_DATA_SUB_PATH ="/{reportId}/result/json";
   public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
