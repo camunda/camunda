@@ -66,10 +66,10 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
-    mixpanel.setEnabled(configurationService.getTracking().isEnabled());
-    mixpanel.setApiHost(configurationService.getTracking().getMixpanel().getApiHost());
-    mixpanel.setToken(configurationService.getTracking().getMixpanel().getToken());
-    mixpanel.setOrganizationId(configurationService.getTracking().getMixpanel().getProperties().getOrganizationId());
+    mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
+    mixpanel.setApiHost(configurationService.getAnalytics().getMixpanel().getApiHost());
+    mixpanel.setToken(configurationService.getAnalytics().getMixpanel().getToken());
+    mixpanel.setOrganizationId(configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId());
 
     return uiConfigurationDto;
   }

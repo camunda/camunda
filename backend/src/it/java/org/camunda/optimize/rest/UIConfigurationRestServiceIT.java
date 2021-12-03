@@ -233,16 +233,17 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getTracking() {
+  public void getMixpanelConfiguration() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getTracking().setEnabled(true);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().setEnabled(true);
     final String testToken = "testToken";
     final String apiHost = "apiHost";
     final String organizationId = "orgId";
-    embeddedOptimizeExtension.getConfigurationService().getTracking().getMixpanel().setApiHost(apiHost);
-    embeddedOptimizeExtension.getConfigurationService().getTracking().getMixpanel().setToken(testToken);
-    embeddedOptimizeExtension.getConfigurationService().getTracking().getMixpanel().getProperties().setOrganizationId(
-      organizationId);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setApiHost(apiHost);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setToken(testToken);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+      .setOrganizationId(organizationId);
+
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 

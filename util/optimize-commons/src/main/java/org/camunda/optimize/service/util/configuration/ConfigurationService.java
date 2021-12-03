@@ -25,7 +25,7 @@ import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheC
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
-import org.camunda.optimize.service.util.configuration.tracking.TrackingConfiguration;
+import org.camunda.optimize.service.util.configuration.tracking.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 
@@ -40,6 +40,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
@@ -50,7 +51,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.JSON_EXPORT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TRACKING_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -203,7 +203,7 @@ public class ConfigurationService {
 
   private JsonExportConfiguration jsonExportConfiguration;
 
-  private TrackingConfiguration tracking;
+  private AnalyticsConfiguration analytics;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -1132,11 +1132,11 @@ public class ConfigurationService {
     return caches;
   }
 
-  public TrackingConfiguration getTracking() {
-    if (tracking == null) {
-      tracking = configJsonContext.read(TRACKING_CONFIGURATION, TrackingConfiguration.class);
+  public AnalyticsConfiguration getAnalytics() {
+    if (analytics == null) {
+      analytics = configJsonContext.read(ANALYTICS_CONFIGURATION, AnalyticsConfiguration.class);
     }
-    return tracking;
+    return analytics;
   }
 
 }

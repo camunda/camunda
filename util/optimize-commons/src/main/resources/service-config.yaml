@@ -546,21 +546,25 @@ eventBasedProcess:
 telemetry:
   # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
   # Telemetry can later be enabled/disabled in the UI by superusers
-  initializeTelemetry: false
+  initializeTelemetry: ${CAMUNDA_OPTIMIZE_TELEMETRY_ENABLED:false}
   # Interval for telemetry reporting, defaults to every 24 hours.
   reportingIntervalInHours: 24
   # Telemetry endpoint to send data to (production environment)
   telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'
 
-tracking:
-  # This section is about a new tracking setup that covers frontend interaction as well as generic backend metrics
+analytics:
+  # Enable/Disable user interaction tracking
   enabled: ${CAMUNDA_OPTIMIZE_TRACKING_ENABLED:false}
-  # The current implementation is based on mixpanel only
   mixpanel:
-    apiHost: ${CAMUNDA_OPTIMIZE_TRACKING_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
-    token: ${CAMUNDA_OPTIMIZE_TRACKING_MIXPANEL_TOKEN:null}
+    apiHost: ${CAMUNDA_OPTIMIZE_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
+    importPath: '/import'
+    token: ${CAMUNDA_OPTIMIZE_MIXPANEL_TOKEN:}
+    project-id: ${CAMUNDA_OPTIMIZE_MIXPANEL_PROJECT_ID:}
+    service-account:
+      username: ${CAMUNDA_OPTIMIZE_MIXPANEL_SERVICE_USERNAME:}
+      secret: ${CAMUNDA_OPTIMIZE_MIXPANEL_SERVICE_SECRET:}
     properties:
-      organizationId: ${CAMUNDA_OPTIMIZE_TRACKING_ORGANIZATION_ID:null}
+      organizationId: ${CAMUNDA_OPTIMIZE_MIXPANEL_ORGANIZATION:}
 
 # Configuration of application internal in-memory caches
 caches:

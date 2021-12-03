@@ -27,16 +27,18 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TelemetryScheduler extends AbstractScheduledService implements ConfigurationReloadable {
 
-  private final TelemetrySendingService telemetrySendingService;
-  private final TelemetryDataService telemetryDataService;
   private final ConfigurationService configurationService;
   private final SettingsService settingsService;
+  private final TelemetryReportingService telemetryService;
 
   @PostConstruct
   public void init() {
     log.info("Initializing TelemetryScheduler");
     getTelemetryConfiguration().validate();
-    startTelemetryScheduling();
+    final boolean wasScheduled = startTelemetryScheduling();
+    if (wasScheduled) {
+      this.taskScheduler.submit(this::run);
+    }
   }
 
   @Override
@@ -44,10 +46,8 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
     log.info("Checking whether telemetry data can be sent.");
     if (settingsService.getSettings().isMetadataTelemetryEnabled()) {
       try {
-        telemetrySendingService.sendTelemetryData(
-          telemetryDataService.getTelemetryData(),
-          getTelemetryConfiguration().getTelemetryEndpoint()
-        );
+        telemetryService.sendTelemetryData();
+        log.info("Telemetry data was sent.");
       } catch (OptimizeRuntimeException e) {
         log.error("Failed to send telemetry.", e);
       }
@@ -66,9 +66,9 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
     return new PeriodicTrigger(getTelemetryConfiguration().getReportingIntervalInHours(), TimeUnit.HOURS);
   }
 
-  public synchronized void startTelemetryScheduling() {
+  public synchronized boolean startTelemetryScheduling() {
     log.info("Starting telemetry scheduling");
-    startScheduling();
+    return startScheduling();
   }
 
   @PreDestroy

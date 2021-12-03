@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -26,6 +27,8 @@ import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -257,6 +260,17 @@ public class ReportReader {
 
   public List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(String simpleReportId) {
     return getCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
+  }
+
+  public long getReportCount(final ReportType reportType) {
+    final CountRequest countRequest = new CountRequest(
+      ReportType.PROCESS.equals(reportType) ? SINGLE_PROCESS_REPORT_INDEX_NAME : SINGLE_DECISION_REPORT_INDEX_NAME
+    );
+    try {
+      return esClient.count(countRequest).getCount();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve report counts!", e);
+    }
   }
 
   private List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReports(List<String> simpleReportIds) {

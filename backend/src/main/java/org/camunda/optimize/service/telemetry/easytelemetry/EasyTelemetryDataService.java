@@ -3,10 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.telemetry;
+package org.camunda.optimize.service.telemetry.easytelemetry;
 
-import com.google.common.collect.ImmutableSet;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
@@ -21,8 +20,10 @@ import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -38,20 +39,17 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
 
-@RequiredArgsConstructor
 @Component
+@Conditional(CamundaPlatformCondition.class)
+@AllArgsConstructor
 @Slf4j
-public class TelemetryDataService {
+public class EasyTelemetryDataService {
 
   public static final String INFORMATION_UNAVAILABLE_STRING = "Unknown";
-  public static final String OPTIMIZE_FEATURE = "optimize";
+  public static final String OPTIMIZE_FEATURE = TelemetryDataConstants.OPTIMIZE_PRODUCT;
   public static final String CAMUNDA_BPM_FEATURE = "camundaBPM";
   public static final String CAWEMO_FEATURE = "cawemo";
-  public static final Set<String> FEATURE_NAMES = ImmutableSet.of(
-    OPTIMIZE_FEATURE,
-    CAMUNDA_BPM_FEATURE,
-    CAWEMO_FEATURE
-  );
+  public static final Set<String> FEATURE_NAMES = Set.of(OPTIMIZE_FEATURE, CAMUNDA_BPM_FEATURE, CAWEMO_FEATURE);
 
   private final ElasticsearchMetadataService elasticsearchMetadataService;
   private final EngineContextFactory engineContextFactory;

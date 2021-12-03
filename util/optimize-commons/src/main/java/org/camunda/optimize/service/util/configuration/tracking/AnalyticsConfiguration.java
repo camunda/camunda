@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.util.configuration.tracking;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -15,15 +14,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class TrackingConfiguration {
+public class AnalyticsConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
   @JsonProperty("mixpanel")
-  private MixpanelConfiguration mixpanel = new MixpanelConfiguration();
-
-  @JsonIgnore
-  public String getMixpanelToken() {
-    return mixpanel.getToken();
-  }
-
+  private MixpanelConfiguration mixpanel;
 }

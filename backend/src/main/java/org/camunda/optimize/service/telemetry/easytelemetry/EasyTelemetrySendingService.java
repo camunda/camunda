@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.telemetry;
+package org.camunda.optimize.service.telemetry.easytelemetry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -17,24 +17,38 @@ import org.apache.http.impl.client.HttpClients;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
-@AllArgsConstructor
 @Component
+@Conditional(CamundaPlatformCondition.class)
 @Slf4j
-public class TelemetrySendingService {
+public class EasyTelemetrySendingService {
 
   private final CloseableHttpClient httpClient;
   private final ObjectMapper objectMapper;
 
-  public TelemetrySendingService() {
-    httpClient = HttpClients.createDefault();
-    objectMapper = new ObjectMapper();
+  @Autowired
+  public EasyTelemetrySendingService(final ObjectMapper objectMapper) {
+    this(HttpClients.createDefault(), objectMapper);
+  }
+
+  public EasyTelemetrySendingService(final CloseableHttpClient httpClient, final ObjectMapper objectMapper) {
+    this.httpClient = httpClient;
+    this.objectMapper = objectMapper;
+  }
+
+  @PreDestroy
+  public void destroy() throws IOException {
+    httpClient.close();
   }
 
   public void sendTelemetryData(final TelemetryDataDto telemetryData,
@@ -50,12 +64,13 @@ public class TelemetrySendingService {
       request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       request.setEntity(telemetryAsString);
 
-      final CloseableHttpResponse response = httpClient.execute(request);
-      final Response.Status statusCode = Response.Status.fromStatusCode(
-        response.getStatusLine().getStatusCode()
-      );
-      if (!Response.Status.ACCEPTED.equals(statusCode)) {
-        throw new OptimizeRuntimeException("Unexpected response when sending telemetry data: " + statusCode);
+      try (final CloseableHttpResponse response = httpClient.execute(request)) {
+        final Response.Status statusCode = Response.Status.fromStatusCode(
+          response.getStatusLine().getStatusCode()
+        );
+        if (!Response.Status.ACCEPTED.equals(statusCode)) {
+          throw new OptimizeRuntimeException("Unexpected response when sending telemetry data: " + statusCode);
+        }
       }
     } catch (IllegalArgumentException e) {
       throw new OptimizeValidationException("Telemetry endpoint not configured correctly");

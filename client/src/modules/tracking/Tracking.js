@@ -35,9 +35,9 @@ export default function Tracking() {
       });
 
       mixpanel.register({
-        Product: 'optimize',
-        Organization: organizationId,
-        Development: process.env.NODE_ENV === 'development',
+        product: 'optimize',
+        organization: organizationId,
+        development: process.env.NODE_ENV === 'development',
       });
       setEnabled(enabled);
     })();
