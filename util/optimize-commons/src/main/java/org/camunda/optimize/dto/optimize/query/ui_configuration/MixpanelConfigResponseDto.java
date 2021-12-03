@@ -17,4 +17,5 @@ public class MixpanelConfigResponseDto {
   private String apiHost;
   private String token;
   private String organizationId;
+  private String osanoScriptUrl;
 }

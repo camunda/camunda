@@ -23,7 +23,7 @@ import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventName;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEventProperties;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.tracking.MixpanelConfiguration;
+import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

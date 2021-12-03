@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration.tracking;
+package org.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
@@ -19,4 +19,6 @@ public class AnalyticsConfiguration {
   private boolean enabled;
   @JsonProperty("mixpanel")
   private MixpanelConfiguration mixpanel;
+  @JsonProperty("osano")
+  private OsanoConfiguration osano;
 }

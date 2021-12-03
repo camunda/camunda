@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration.tracking;
+package org.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,11 +22,11 @@ public class MixpanelConfiguration {
   private String importPath;
   @JsonProperty("token")
   private String token;
-  @JsonProperty("project-id")
+  @JsonProperty("projectId")
   private String projectId;
   @JsonProperty("properties")
   private TrackingProperties properties;
-  @JsonProperty("service-account")
+  @JsonProperty("serviceAccount")
   private ServiceAccount serviceAccount;
 
   @JsonIgnore

@@ -554,17 +554,19 @@ telemetry:
 
 analytics:
   # Enable/Disable user interaction tracking
-  enabled: ${CAMUNDA_OPTIMIZE_TRACKING_ENABLED:false}
+  enabled: ${CAMUNDA_OPTIMIZE_ANALYTICS_ENABLED:false}
+  osano:
+    scriptUrl: ${CAMUNDA_OPTIMIZE_ANALYTICS_OSANO_SCRIPT_URL:}
   mixpanel:
-    apiHost: ${CAMUNDA_OPTIMIZE_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
+    apiHost: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_API_HOST:https://api-eu.mixpanel.com}
     importPath: '/import'
-    token: ${CAMUNDA_OPTIMIZE_MIXPANEL_TOKEN:}
-    project-id: ${CAMUNDA_OPTIMIZE_MIXPANEL_PROJECT_ID:}
-    service-account:
-      username: ${CAMUNDA_OPTIMIZE_MIXPANEL_SERVICE_USERNAME:}
-      secret: ${CAMUNDA_OPTIMIZE_MIXPANEL_SERVICE_SECRET:}
+    token: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_TOKEN:}
+    projectId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_PROJECT_ID:}
+    serviceAccount:
+      username: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_USERNAME:}
+      secret: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_SECRET:}
     properties:
-      organizationId: ${CAMUNDA_OPTIMIZE_MIXPANEL_ORGANIZATION:}
+      organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:}
 
 # Configuration of application internal in-memory caches
 caches:

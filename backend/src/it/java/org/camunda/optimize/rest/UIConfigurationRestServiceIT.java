@@ -239,10 +239,12 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final String testToken = "testToken";
     final String apiHost = "apiHost";
     final String organizationId = "orgId";
+    final String scriptUrl = "test";
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setApiHost(apiHost);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setToken(testToken);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
       .setOrganizationId(organizationId);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getOsano().setScriptUrl(scriptUrl);
 
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
@@ -252,6 +254,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(response.getMixpanel().getApiHost()).isEqualTo(apiHost);
     assertThat(response.getMixpanel().getToken()).isEqualTo(testToken);
     assertThat(response.getMixpanel().getOrganizationId()).isEqualTo(organizationId);
+    assertThat(response.getMixpanel().getOsanoScriptUrl()).isEqualTo(scriptUrl);
   }
 
   private void setWebappsEndpoint(final String webappsEndpoint) {

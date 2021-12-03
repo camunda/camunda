@@ -10,6 +10,8 @@ import mixpanel from 'mixpanel-browser';
 
 import {getMixpanelConfig} from 'config';
 
+import './Tracking.scss';
+
 export default function Tracking() {
   const location = useLocation();
   const [enabled, setEnabled] = useState(false);
@@ -24,24 +26,40 @@ export default function Tracking() {
 
   useEffect(() => {
     (async () => {
-      const {enabled, token, apiHost, organizationId} = await getMixpanelConfig();
-      if (!enabled) {
+      const {enabled, token, apiHost, organizationId, osanoScriptUrl} = await getMixpanelConfig();
+      if (!enabled || !osanoScriptUrl) {
         return;
       }
 
-      mixpanel.init(token, {
-        api_host: apiHost,
-        batch_requests: true,
-      });
+      function initMixpanel() {
+        mixpanel.init(token, {
+          api_host: apiHost,
+          batch_requests: true,
+        });
 
-      mixpanel.register({
-        product: 'optimize',
-        organization: organizationId,
-        development: process.env.NODE_ENV === 'development',
-      });
-      setEnabled(enabled);
+        mixpanel.register({
+          product: 'optimize',
+          organization: organizationId,
+          development: process.env.NODE_ENV === 'development',
+        });
+      }
+
+      const osanoScriptElement = document.createElement('script');
+      osanoScriptElement.src = osanoScriptUrl;
+      document.head.appendChild(osanoScriptElement);
+
+      osanoScriptElement.onload = function () {
+        if (analyticsEnabled()) {
+          initMixpanel();
+          setEnabled(enabled);
+        }
+      };
     })();
   }, []);
 
   return null;
+}
+
+function analyticsEnabled() {
+  return window.Osano?.cm?.analytics;
 }

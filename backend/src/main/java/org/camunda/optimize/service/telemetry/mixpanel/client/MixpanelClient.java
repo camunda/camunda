@@ -19,7 +19,7 @@ import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.tracking.MixpanelConfiguration;
+import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;

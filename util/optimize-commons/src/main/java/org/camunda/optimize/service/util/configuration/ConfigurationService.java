@@ -25,7 +25,7 @@ import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheC
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
-import org.camunda.optimize.service.util.configuration.tracking.AnalyticsConfiguration;
+import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.telemetry.mixpanel;
 import lombok.NonNull;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
-import org.camunda.optimize.service.util.configuration.tracking.MixpanelConfiguration;
+import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -70,6 +70,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     mixpanel.setApiHost(configurationService.getAnalytics().getMixpanel().getApiHost());
     mixpanel.setToken(configurationService.getAnalytics().getMixpanel().getToken());
     mixpanel.setOrganizationId(configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId());
+    mixpanel.setOsanoScriptUrl(configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
 
     return uiConfigurationDto;
   }
