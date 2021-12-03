@@ -1611,6 +1611,7 @@ public class SimpleEngineClient {
     put.addHeader("Content-Type", "application/json");
     String commaSeparatedTaskIds = externalTasks.stream()
       .map(ExternalTaskEngineDto::getId)
+      .map(id -> "\"" + id + "\"")
       .collect(Collectors.joining(","));
     // @formatter:off
     put.setEntity(new StringEntity(

@@ -8,6 +8,7 @@ package org.camunda.bpm.platform.servlet;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngines;
 import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
+import org.camunda.bpm.engine.impl.persistence.StrongUuidGenerator;
 import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +64,7 @@ public class DeployServlet extends HttpServlet {
     configuration.getProcessEnginePlugins().add(new SpinProcessEnginePlugin());
     configuration.setRestrictUserOperationLogToAuthenticatedUsers(false);
     configuration.setDefaultSerializationFormat(MediaType.APPLICATION_JSON);
+    configuration.setIdGenerator(new StrongUuidGenerator());
 
     // For the details of what this config parameter does:
     // https://docs.camunda.org/manual/latest/reference/deployment-descriptors/tags/process-engine/#queryMaxResultsLimit
