@@ -76,7 +76,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
     ImportValueType importValueType = importBatch.getImportValueType();
 
-    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), "0.26", importBatch.getImportValueType(), importBatch.getPartitionId());
+    logger.debug("Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}", zeebeRecords.size(), getZeebeVersion(), importBatch.getImportValueType(), importBatch.getPartitionId());
 
     switch (importValueType) {
     case PROCESS_INSTANCE:

@@ -53,7 +53,7 @@ public class ResultChecker {
       } catch (IOException e) {
         //
       }
-      sleepFor(2000L);
+      sleepFor(5000L);
       return assertDocsCountWithRetry(newCount, expectedCount, cardinalityCounter);
     } else {
       logger.info("Not enough. Will fail");
@@ -62,7 +62,7 @@ public class ResultChecker {
   }
 
   private void assertProcessCount() {
-    final int expectedCount = dataGeneratorProperties.getProcessCount() + 1;
+    final int expectedCount = dataGeneratorProperties.getProcessCount() + 3;
     final Supplier<Integer> processCounter = () -> {
       try {
         return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.PROCESS_INDEX_NAME), "value.bpmnProcessId");
@@ -76,7 +76,7 @@ public class ResultChecker {
   }
 
   private void assertProcessInstanceCount() {
-    final int expectedCount = dataGeneratorProperties.getProcessInstanceCount();
+    final int expectedCount = dataGeneratorProperties.getProcessInstanceCount() + dataGeneratorProperties.getCallActivityProcessInstanceCount() * 3 + 1;
     final Supplier<Integer> processCounter = () -> {
       try {
         return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.PROCESS_INSTANCE_INDEX_NAME), "value.processInstanceKey");

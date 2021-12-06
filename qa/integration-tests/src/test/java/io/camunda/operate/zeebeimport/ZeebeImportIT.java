@@ -252,7 +252,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //load only incidents
-    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, processInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsActiveCheck, processInstanceKey);
 
     assertListViewResponse();
     //if nothing is returned in list view - there is no way to access the process instance, no need to check other queries

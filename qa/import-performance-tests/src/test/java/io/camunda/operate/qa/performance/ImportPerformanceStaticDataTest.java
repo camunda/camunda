@@ -6,6 +6,7 @@
 package io.camunda.operate.qa.performance;
 
 import io.camunda.operate.webapp.security.OperateProfileService;
+import io.camunda.operate.zeebeimport.CountImportListener;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -19,6 +20,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebe.ZeebeESConstants;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Before;
@@ -27,8 +29,11 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,10 +50,13 @@ public class ImportPerformanceStaticDataTest {
   @Before
   public void setup() {
     logger.info("Operate will be started");
-    applicationContext = new SpringApplicationBuilder(Application.class)
-      .addCommandLineProperties(true)
-      .profiles(OperateProfileService.AUTH_PROFILE)
-      .run();
+    final SpringApplication application = new SpringApplicationBuilder(Application.class)
+        .addCommandLineProperties(true)
+        .profiles(OperateProfileService.AUTH_PROFILE).application();
+    application.setDefaultProperties(Map.of("camunda.operate.importer.threadsCount", 5,
+        "camunda.operate.importer.queueSize", 7,
+        "camunda.operate.importer.readerThreadsCount", 5));
+    applicationContext = application.run();
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }
 
@@ -58,21 +66,40 @@ public class ImportPerformanceStaticDataTest {
   }
 
   @Test
-  public void testAImport() throws InterruptedException, IOException {
+  public void testAImport() throws IOException {
     final ZeebeImporter zeebeImporter = applicationContext.getBean(ZeebeImporter.class);
 
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting data import...");
 
-    zeebeImporter.start();
+    zeebeImporter.scheduleReaders();
 
-    final Object importFinishedLock = zeebeImporter.getImportFinished();
-    synchronized (importFinishedLock) {
-      importFinishedLock.wait();
+    sleepFor(240_000L);
+
+    waitImportFinish();
+
+    logger.info("Data import completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
+
+    try {
+      assertData();
+    } catch (AssertionError as) {
+      //wait more
+      logger.info("Assertion failed: " + as.getMessage() + " Wait more.");
+      waitImportFinish();
       logger.info("Data import completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
       assertData();
     }
 
+  }
+
+  private void waitImportFinish() {
+    final CountImportListener countImportListener = applicationContext.getBean(CountImportListener.class);
+    int countImported = 0;
+    while (countImportListener.getImportedCount() > countImported) {
+      countImported = countImportListener.getImportedCount();
+      logger.debug(countImported + " records imported");
+      sleepFor(60_000L);
+    }
   }
 
   @Test

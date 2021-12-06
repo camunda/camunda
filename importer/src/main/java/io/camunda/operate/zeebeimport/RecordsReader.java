@@ -5,21 +5,32 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import java.io.IOException;
+import static io.camunda.operate.Metrics.GAUGE_IMPORT_QUEUE_SIZE;
+import static io.camunda.operate.Metrics.TAG_KEY_PARTITION;
+import static io.camunda.operate.Metrics.TAG_KEY_TYPE;
+import static io.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
+import io.camunda.operate.Metrics;
+import io.camunda.operate.entities.meta.ImportPositionEntity;
+import io.camunda.operate.exceptions.NoSuchIndexException;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.ImportPositionIndex;
+import io.camunda.operate.zeebe.ImportValueType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import io.camunda.operate.Metrics;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
-import io.camunda.operate.exceptions.NoSuchIndexException;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.zeebe.ImportValueType;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -35,15 +46,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 
 /**
@@ -53,7 +60,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
  */
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class RecordsReader {
+public class RecordsReader implements Runnable {
 
   private static final Logger logger = LoggerFactory.getLogger(RecordsReader.class);
 
@@ -79,14 +86,13 @@ public class RecordsReader {
    */
   private Callable<Boolean> active;
 
-  /**
-   * Time, when the reader must be activated again after backoff.
-   */
-  private OffsetDateTime activateDateTime = OffsetDateTime.now().minusMinutes(1L);
-
   @Autowired
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
+
+  @Autowired
+  @Qualifier("recordsReaderThreadPoolExecutor")
+  private ThreadPoolTaskScheduler readersExecutor;
 
   @Autowired
   private ImportPositionHolder importPositionHolder;
@@ -104,26 +110,59 @@ public class RecordsReader {
   @Autowired
   private Metrics metrics;
 
+  @Autowired(required = false)
+  private List<ImportListener> importListeners;
+
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
-    this.importJobs = new LinkedBlockingQueue<>(queueSize);
+    this.importJobs = new LinkedBlockingQueue(queueSize);
   }
 
-  public int readAndScheduleNextBatch() throws IOException {
+  @Override
+  public void run() {
+    readAndScheduleNextBatch();
+  }
+
+  public void readAndScheduleNextBatch() {
+    readAndScheduleNextBatch(true);
+  }
+
+  public void readAndScheduleNextBatch(boolean autoContinue) {
+    final int readerBackoff = operateProperties.getImporter().getReaderBackoff();
     try {
+      metrics.registerGaugeQueueSize(GAUGE_IMPORT_QUEUE_SIZE, importJobs, TAG_KEY_PARTITION,
+          String.valueOf(partitionId), TAG_KEY_TYPE, importValueType.name());
       ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
       ImportBatch importBatch = readNextBatch(latestPosition.getPosition(), null);
+      Integer nextRunDelay = null;
       if (importBatch.getHits().size() == 0) {
-        doBackoff();
+        nextRunDelay = readerBackoff;
       } else {
         scheduleImport(latestPosition, importBatch);
       }
-      return importBatch.getHits().size();
+      if (autoContinue) {
+        rescheduleReader(nextRunDelay);
+      }
     } catch (NoSuchIndexException ex) {
       //if no index found, we back off current reader
-      doBackoff();
-      return 0;
+      if (autoContinue) {
+        rescheduleReader(readerBackoff);
+      }
+    } catch (Exception ex) {
+      logger.error(ex.getMessage(), ex);
+      if (autoContinue) {
+        rescheduleReader(null);
+      }
+    }
+  }
+
+  private void rescheduleReader(Integer readerDelay) {
+    if (readerDelay != null) {
+      readersExecutor.schedule(this,
+          Date.from(OffsetDateTime.now().plus(readerDelay, ChronoUnit.MILLIS).toInstant()));
+    } else {
+      readersExecutor.submit(this);
     }
   }
 
@@ -131,7 +170,15 @@ public class RecordsReader {
     //create new instance of import job
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, latestPosition);
     scheduleImport(importJob);
+    importBatch.setScheduledTime(OffsetDateTime.now());
+    notifyImportListenersAsScheduled(importBatch);
     importJob.recordLatestScheduledPosition();
+  }
+
+  private void notifyImportListenersAsScheduled(ImportBatch importBatch) {
+    if (importListeners != null) {
+      importListeners.forEach(listener -> listener.scheduled(importBatch));
+    }
   }
 
   public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
@@ -193,20 +240,6 @@ public class RecordsReader {
 
   private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
     return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
-  }
-
-  public boolean isActive() {
-    return activateDateTime.isBefore(OffsetDateTime.now());
-  }
-
-  /**
-   * Backoff for this specific reader.
-   */
-  public void doBackoff() {
-    int readerBackoff = operateProperties.getImporter().getReaderBackoff();
-    if (readerBackoff > 0) {
-      this.activateDateTime = OffsetDateTime.now().plus(readerBackoff, ChronoUnit.MILLIS);
-    }
   }
 
   public void scheduleImport(ImportJob importJob) {

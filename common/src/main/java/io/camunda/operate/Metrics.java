@@ -5,18 +5,25 @@
  */
 package io.camunda.operate;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.LongTaskTimer;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.List;
+import java.util.Queue;
+import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 
 @Component
 public class Metrics {
 
   private static final Logger logger = LoggerFactory.getLogger(Metrics.class);
+
+  private Timer importBatchTimer;
 
   // Namespace (prefix) for operate metrics
   public static final String OPERATE_NAMESPACE = "operate.";
@@ -25,6 +32,7 @@ public class Metrics {
   public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE + "query";
   public static final String TIMER_NAME_IMPORT_QUERY = OPERATE_NAMESPACE + "import.query";
   public static final String TIMER_NAME_IMPORT_INDEX_QUERY = OPERATE_NAMESPACE + "import.index.query";
+  public static final String TIMER_NAME_IMPORT_PROCESS_BATCH = OPERATE_NAMESPACE + "import.process.batch";
   public static final String TIMER_NAME_ARCHIVER_QUERY = OPERATE_NAMESPACE + "archiver.query";
   public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY = OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";
@@ -33,6 +41,9 @@ public class Metrics {
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
+  //Gauges:
+  public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
+
   // Tags
   // -----
   //  Keys:
@@ -60,6 +71,17 @@ public class Metrics {
    */
   public void recordCounts(String name, long count, String ... tags) {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
+  }
+
+  public <T> void registerGauge(String name, T stateObject, ToDoubleFunction<T> valueFunction,
+      String... tags) {
+    Gauge.builder(OPERATE_NAMESPACE + name, stateObject, valueFunction)
+        .tags(tags)
+        .register(registry);
+  }
+
+  public <E> void registerGaugeQueueSize(String name, Queue<E> queue, String... tags) {
+    registerGauge(name, queue, q -> q.size(), tags);
   }
 
   public Timer getTimer(String name) {

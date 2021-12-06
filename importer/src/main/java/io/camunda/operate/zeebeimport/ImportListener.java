@@ -7,7 +7,8 @@ package io.camunda.operate.zeebeimport;
 
 public interface ImportListener {
 
+  default void scheduled(ImportBatch importBatch) {}
   void finished(ImportBatch importBatch);
-  void failed(ImportBatch importBatch);
+  default void failed(ImportBatch importBatch) {}
 
 }

@@ -5,13 +5,10 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.property.OperateProperties;
 import java.io.IOException;
 import java.util.Collection;
-
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
-import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,29 +17,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 @Configuration
 @DependsOn("schemaStartup")
-public class ZeebeImporter extends Thread {
+public class ZeebeImporter {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeImporter.class);
-
-  private boolean shutdown = false;
-
-  /**
-   * Lock object, that can be used to be informed about finished import.
-   */
-  private final Object importFinished = new Object();
 
   @Autowired
   private OperateProperties operateProperties;
 
   @Autowired
-  @Qualifier("importThreadPoolExecutor")
-  private ThreadPoolTaskExecutor importExecutor;
+  @Qualifier("recordsReaderThreadPoolExecutor")
+  private ThreadPoolTaskScheduler readersExecutor;
 
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
@@ -50,44 +40,29 @@ public class ZeebeImporter extends Thread {
   @PostConstruct
   public void startImportingData() {
     if (operateProperties.getImporter().isStartLoadingDataOnStartup()) {
-      start();
+      scheduleReaders();
     }
   }
 
-  @Override
-  public void run() {
+  public void scheduleReaders() {
     logger.info("INIT: Start importing data...");
-    while (!shutdown) {
-      synchronized (importFinished) {
-        try {
-          int countRecords = performOneRoundOfImport();
-          if (countRecords == 0) {
-            importFinished.notifyAll();
-            doBackoff();
-          }
-        } catch (Exception ex) {
-          //retry
-          logger.error("Error occurred while importing Zeebe data. Will be retried.", ex);
-          doBackoff();
-        }
-      }
-    }
+    recordsReaderHolder.getAllRecordsReaders().stream().forEach(
+        recordsReader -> readersExecutor.submit(recordsReader)
+    );
   }
 
-  public int performOneRoundOfImportFor(Collection<RecordsReader> readers) throws IOException {
-    int countRecords = 0;
+  public void performOneRoundOfImportFor(Collection<RecordsReader> readers) throws IOException {
     for (RecordsReader recordsReader: readers) {
-      countRecords += importOneBatch(recordsReader);
+      importOneBatch(recordsReader, false);
     }
-    return countRecords;
   }
 
-  public int performOneRoundOfImport() throws IOException {
-    return performOneRoundOfImportFor(recordsReaderHolder.getActiveRecordsReaders());
+  public void performOneRoundOfImport() throws IOException {
+    performOneRoundOfImportFor(recordsReaderHolder.getAllRecordsReaders());
   }
 
-  public int importOneBatch(RecordsReader recordsReader) throws IOException {
-    return recordsReader.readAndScheduleNextBatch();
+  public void importOneBatch(RecordsReader recordsReader, boolean autoContinue) {
+    recordsReader.readAndScheduleNextBatch(autoContinue);
   }
 
   @Bean("importThreadPoolExecutor")
@@ -100,21 +75,13 @@ public class ZeebeImporter extends Thread {
     return executor;
   }
 
-  public Object getImportFinished() {
-    return importFinished;
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    logger.info("Shutdown ZeebeImporter");
-    shutdown = true;
-    synchronized (importFinished) {
-      importFinished.notifyAll();
-    }
-  }
-
-  private void doBackoff() {
-    sleepFor(2000);
+  @Bean("recordsReaderThreadPoolExecutor")
+  public ThreadPoolTaskScheduler getRecordsReaderTaskExecutor() {
+    ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
+    executor.setPoolSize(operateProperties.getImporter().getReaderThreadsCount());
+    executor.setThreadNamePrefix("records_reader_");
+    executor.initialize();
+    return executor;
   }
 
 }

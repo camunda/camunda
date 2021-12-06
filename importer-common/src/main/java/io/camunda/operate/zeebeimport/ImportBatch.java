@@ -6,6 +6,7 @@
 package io.camunda.operate.zeebeimport;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.ZeebeESConstants;
@@ -32,6 +33,8 @@ public class ImportBatch {
   private String lastRecordIndexName;
 
   private int finishedWiCount = 0;
+
+  private OffsetDateTime scheduledTime;
 
   public ImportBatch(int partitionId, ImportValueType importValueType, List<SearchHit> hits, String lastRecordIndexName) {
     this.partitionId = partitionId;
@@ -100,6 +103,15 @@ public class ImportBatch {
 
   public String getAliasName() {
     return importValueType.getAliasTemplate();
+  }
+
+  public OffsetDateTime getScheduledTime() {
+    return scheduledTime;
+  }
+
+  public ImportBatch setScheduledTime(final OffsetDateTime scheduledTime) {
+    this.scheduledTime = scheduledTime;
+    return this;
   }
 
   @Override

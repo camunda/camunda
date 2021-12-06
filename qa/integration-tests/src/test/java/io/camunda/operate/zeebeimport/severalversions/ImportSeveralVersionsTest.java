@@ -5,17 +5,16 @@
  */
 package io.camunda.operate.zeebeimport.severalversions;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
-import java.io.IOException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -23,12 +22,13 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
+import io.camunda.operate.util.TestImportListener;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import java.io.IOException;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -48,6 +48,9 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
   @Autowired
   private ZeebeImporter zeebeImporter;
+
+  @Autowired
+  private TestImportListener countImportListener;
 
   @Autowired
   private ProcessIndex processIndex;
@@ -97,17 +100,16 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
   private void startImportAndWaitTillItFinishes() {
 
-    zeebeImporter.start();
+    zeebeImporter.scheduleReaders();
 
-    final Object importFinishedLock = zeebeImporter.getImportFinished();
-    synchronized (importFinishedLock) {
-      try {
-        importFinishedLock.wait();
-        logger.info("All import jobs are scheduled");
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    int countImported = 0;
+    sleepFor(20000L);
+    while (countImportListener.getImportedCount() > countImported) {
+      countImported += countImportListener.getImportedCount();
+      sleepFor(10000L);
     }
+
+    logger.info("All import jobs are scheduled");
   }
 
   private void assertOperateData() {

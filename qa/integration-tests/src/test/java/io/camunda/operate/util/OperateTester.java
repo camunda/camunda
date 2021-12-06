@@ -386,15 +386,6 @@ public class OperateTester {
     return 0;//return futures.size()
   }
 
-  public int importOneType(ImportValueType importValueType) throws IOException {
-    List<RecordsReader> readers = elasticsearchTestRule.getRecordsReaders(importValueType);
-    int count = 0;
-    for (RecordsReader reader: readers) {
-      count += zeebeImporter.importOneBatch(reader);
-    }
-    return count;
-  }
-
   public OperateTester then() {
     return this;
   }

@@ -6,6 +6,7 @@
 package io.camunda.operate.metric;
 
 import static io.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -52,7 +53,8 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     // When
     tester
       .deployProcess("demoProcess_v_1.bpmn").waitUntil().processIsDeployed()
-      .startProcessInstance("demoProcess","{\"a\": \"b\"}").waitUntil().processInstanceIsFinished();
+      .startProcessInstance("demoProcess","{\"a\": \"b\"}")
+        .waitUntil().processInstanceIsStarted();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
         containsString("operate_events_processed_total"),

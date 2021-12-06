@@ -94,10 +94,10 @@ spec:
               resource: limits.cpu
       resources:
         limits:
-          cpu: 4
+          cpu: 8
           memory: 8Gi
         requests:
-          cpu: 4
+          cpu: 8
           memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2

@@ -19,7 +19,11 @@ public class DataGeneratorProperties {
 
   private int processInstanceCount = 10000;
 
+  private int callActivityProcessInstanceCount = 100;
+
   private int incidentCount = 100;
+
+  private int resolvedIncidentCount = 100;
 
   private String zeebeGatewayAddress = "localhost:26500";
 
@@ -49,12 +53,31 @@ public class DataGeneratorProperties {
     this.processInstanceCount = processInstanceCount;
   }
 
+  public int getCallActivityProcessInstanceCount() {
+    return callActivityProcessInstanceCount;
+  }
+
+  public DataGeneratorProperties setCallActivityProcessInstanceCount(
+      final int callActivityProcessInstanceCount) {
+    this.callActivityProcessInstanceCount = callActivityProcessInstanceCount;
+    return this;
+  }
+
   public int getIncidentCount() {
     return incidentCount;
   }
 
   public void setIncidentCount(int incidentCount) {
     this.incidentCount = incidentCount;
+  }
+
+  public int getResolvedIncidentCount() {
+    return resolvedIncidentCount;
+  }
+
+  public DataGeneratorProperties setResolvedIncidentCount(final int resolvedIncidentCount) {
+    this.resolvedIncidentCount = resolvedIncidentCount;
+    return this;
   }
 
   public String getZeebeGatewayAddress() {

@@ -5,25 +5,20 @@
  */
 package io.camunda.operate.util;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.es.ElasticsearchConnector;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
@@ -39,6 +34,16 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -55,11 +60,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
@@ -111,7 +111,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
-  TestImportListener testImportListener;
+  private TestImportListener testImportListener;
 
   @Autowired
   ElasticsearchConnector esConnector;
@@ -189,15 +189,15 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void processAllRecordsAndWait(Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
+    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, null, arguments);
+    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), predicate, null, arguments);
   }
 
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, supplier, arguments);
+    processRecordsAndWaitFor(recordsReaderHolder.getAllRecordsReaders(), predicate, supplier, arguments);
   }
 
   public void processRecordsWithTypeAndWait(ImportValueType importValueType,Predicate<Object[]> predicate, Object... arguments) {
@@ -211,38 +211,35 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds,
       Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    long shouldImportCount = 0;
     int waitingRound = 0, maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       testImportListener.resetCounters();
-      shouldImportCount = 0;
       try {
         if (supplier != null) {
           supplier.get();
         }
         refreshIndexesInElasticsearch();
-        shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
+        zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
-      long imported = testImportListener.getImported();
       int waitForImports = 0;
       // Wait for imports max 30 sec (60 * 500 ms)
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
+      while (testImportListener.getImportedCount() < testImportListener.getScheduledCount()
+          && waitForImports < 60) {
         waitForImports++;
         try {
           sleepFor(500);
-          shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
+          zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
-          shouldImportCount = 0;
           logger.error(e.getMessage(), e);
         }
-        imported = testImportListener.getImported();
-        logger.debug(" {} of {} imports processed", imported, shouldImportCount);
+        logger.debug(" {} of {} imports processed", testImportListener.getImportedCount(),
+            testImportListener.getScheduledCount());
       }
       refreshOperateESIndices();
       found = predicate.test(arguments);

@@ -58,12 +58,6 @@ public class RecordsReaderHolder {
     return recordsReaders;
   }
 
-  public Set<RecordsReader> getActiveRecordsReaders() {
-    return getAllRecordsReaders().stream()
-        .filter(r -> r.isActive())
-        .collect(Collectors.toSet());
-  }
-
   public RecordsReader getRecordsReader(int partitionId, ImportValueType importValueType) {
     for (RecordsReader recordsReader: recordsReaders) {
       if (recordsReader.getPartitionId() == partitionId && recordsReader.getImportValueType().equals(importValueType)) {

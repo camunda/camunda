@@ -46,6 +46,8 @@ import org.springframework.stereotype.Component;
 public class DataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
+  public static final String PARENT_PROCESS_ID = "parentProcess";
+  public static final String CHILD_PROCESS_ID = "childProcess";
 
   @Autowired
   private DataGeneratorProperties dataGeneratorProperties;
@@ -70,7 +72,6 @@ public class DataGenerator {
     completeAllTasks("task1");
     createIncidents("task2");
 
-
     //wait for task "endTask" of long-running process and complete it
     ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
     logger.info("Task endTask completed.");
@@ -85,8 +86,10 @@ public class DataGenerator {
   }
 
   private void completeAllTasks(String jobType) {
-    completeTasks(jobType, dataGeneratorProperties.getProcessInstanceCount());
-    logger.info("{} jobs task1 completed", dataGeneratorProperties.getProcessInstanceCount());
+    completeTasks(jobType, dataGeneratorProperties.getProcessInstanceCount()
+        + dataGeneratorProperties.getCallActivityProcessInstanceCount());
+    logger.info("{} jobs task1 completed", dataGeneratorProperties.getProcessInstanceCount()
+        + dataGeneratorProperties.getCallActivityProcessInstanceCount());
   }
 
   private void completeTasks(String jobType, int count) {
@@ -98,11 +101,9 @@ public class DataGenerator {
     final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
     ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
 
-    List<InstancesStarter> instancesStarters = sendStartProcessInstanceCommands(requestFutures);
+    sendStartProcessInstanceCommands(requestFutures);
 
     stopWaitingForResponses(responseChecker);
-
-    instancesStarters.forEach(InstancesStarter::close);
 
   }
 
@@ -114,7 +115,9 @@ public class DataGenerator {
 
   private void stopWaitingForResponses(ResponseChecker responseChecker) {
     //wait till all instances started
-    while (responseChecker.getResponseCount() < dataGeneratorProperties.getProcessInstanceCount()) {
+    final int allProcessInstancesCount = dataGeneratorProperties.getProcessInstanceCount() + dataGeneratorProperties
+        .getCallActivityProcessInstanceCount();
+    while (responseChecker.getResponseCount() < allProcessInstancesCount) {
       sleepFor(2000);
     }
     responseChecker.close();
@@ -127,9 +130,11 @@ public class DataGenerator {
 
     List<InstancesStarter> instancesStarters = new ArrayList<>();
     final int threadCount = dataGeneratorTaskExecutor.getMaxPoolSize();
-    final AtomicInteger counter = new AtomicInteger(0);
+    final AtomicInteger simpleProcessCounter = new AtomicInteger(0);
+    final AtomicInteger callActivityProcessCounter = new AtomicInteger(0);
     for (int i = 0; i < threadCount; i++) {
-      InstancesStarter instancesStarter = new InstancesStarter(requestFutures, counter);
+      InstancesStarter instancesStarter = new InstancesStarter(requestFutures, simpleProcessCounter,
+          callActivityProcessCounter);
       dataGeneratorTaskExecutor.submit(instancesStarter);
       instancesStarters.add(instancesStarter);
     }
@@ -160,9 +165,14 @@ public class DataGenerator {
       ZeebeTestUtil.deployProcess(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
       bpmnProcessIds.add(bpmnProcessId);
     }
+
+    //deploy call activity processes
+    ZeebeTestUtil.deployProcess(zeebeClient, createCallActivity1Model(), PARENT_PROCESS_ID + ".bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, createCallActivity2Model(), CHILD_PROCESS_ID + ".bpmn");
+
     //deploy process with multi-instance subprocess
     ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
-    logger.info("{} processes deployed", dataGeneratorProperties.getProcessCount());
+    logger.info("{} processes deployed", dataGeneratorProperties.getProcessCount() + 3);
   }
 
   private String getBpmnProcessId(int i) {
@@ -172,14 +182,35 @@ public class DataGenerator {
   private BpmnModelInstance createModel(String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
     .startEvent("start")
-      .serviceTask("task1").zeebeJobType("task1")
-        .zeebeInput("=var1", "varIn")
-        .zeebeOutput("=varOut", "var2")
+        .subProcess()
+          .embeddedSubProcess()
+            .startEvent()
+            .serviceTask("task1").zeebeJobType("task1")
+              .zeebeInput("=var1", "varIn")
+              .zeebeOutput("=varOut", "var2")
+            .endEvent()
+          .subProcessDone()
       .serviceTask("task2").zeebeJobType("task2")
       .serviceTask("task3").zeebeJobType("task3")
       .serviceTask("task4").zeebeJobType("task4")
       .serviceTask("task5").zeebeJobType("task5")
     .endEvent()
+    .done();
+  }
+
+  private BpmnModelInstance createCallActivity1Model() {
+    return Bpmn.createExecutableProcess(PARENT_PROCESS_ID)
+    .startEvent("start")
+      .callActivity("callActivity1")
+      .zeebeProcessId("childProcess")
+    .done();
+  }
+
+  private BpmnModelInstance createCallActivity2Model() {
+    return Bpmn.createExecutableProcess(CHILD_PROCESS_ID)
+    .startEvent("start")
+      .callActivity("callActivity2")
+      .zeebeProcessId(getRandomBpmnProcessId())
     .done();
   }
 
@@ -228,23 +259,25 @@ public class DataGenerator {
 
     private boolean shuttingDown = false;
 
-    private AtomicInteger count;
+    private AtomicInteger countSimpleProcess;
+    private AtomicInteger countCallActivityProcess;
 
-    public InstancesStarter(BlockingQueue<Future> futures, AtomicInteger count) {
+    public InstancesStarter(BlockingQueue<Future> futures, AtomicInteger countSimpleProcess, AtomicInteger countCallActivityProcess) {
       this.futures = futures;
-      this.count = count;
+      this.countSimpleProcess = countSimpleProcess;
+      this.countCallActivityProcess = countCallActivityProcess;
     }
 
     @Override
     public void run() {
       zeebeClient = resolveZeebeClient();
       int localCount = 0;
-      while (count.getAndIncrement() <= dataGeneratorProperties.getProcessInstanceCount()  && ! shuttingDown) {
+      while (countSimpleProcess.getAndIncrement() < dataGeneratorProperties.getProcessInstanceCount()  && ! shuttingDown) {
         try {
           String vars;
-          if (count.get() == 1) {
+          if (countSimpleProcess.get() == 1) {
             vars = createALotOfVarsPayload();
-          } else if (count.get() <= 100) {
+          } else if (countSimpleProcess.get() <= 100) {
             //third part of all process instances will get big variables
             vars = createBigVarsWithSuffix(ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD);
           } else {
@@ -256,7 +289,20 @@ public class DataGenerator {
         }
         localCount++;
         if (localCount % 1000 == 0) {
-          logger.info("{} start process instance requests were sent", localCount);
+          logger.info("{} start simple process instance requests were sent", localCount);
+        }
+      }
+      localCount = 0;
+      while (countCallActivityProcess.getAndIncrement() < dataGeneratorProperties.getCallActivityProcessInstanceCount()  && ! shuttingDown) {
+        try {
+          String vars = "{\"var1\": \"value1\"}";
+          futures.put(ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, PARENT_PROCESS_ID, vars));
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+        localCount++;
+        if (localCount % 1000 == 0) {
+          logger.info("{} start call activity process instance requests were sent", localCount);
         }
       }
     }
