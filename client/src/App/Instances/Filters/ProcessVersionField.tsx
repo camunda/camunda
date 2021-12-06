@@ -9,48 +9,52 @@ import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {processesStore} from 'modules/stores/processes';
-import Select from 'modules/components/Select';
+import {CmSelect} from '@camunda-cloud/common-ui-react';
 
 const ProcessVersionField: React.FC = observer(() => {
   const {versionsByProcess} = processesStore;
   const selectedProcess = useField('process').input.value;
+
   const versions = versionsByProcess[selectedProcess];
-  const options =
+  const mappedVersions =
     versions?.map(({version}) => ({
-      value: version,
+      value: version.toString(),
       label: `Version ${version}`,
     })) ?? [];
+
+  const options = [
+    {
+      options: [{label: 'All', value: 'all'}, ...mappedVersions],
+    },
+  ];
+
   const form = useForm();
 
   return (
-    <Field
-      name="version"
-      initialValue={versions?.[versions.length - 1].version}
-    >
-      {({input}) => (
-        <Select
-          {...input}
-          onChange={(event) => {
-            if (event.target.value !== '') {
-              input.onChange(event);
-              form.change('flowNodeId', undefined);
+    <Field name="version">
+      {({input}) => {
+        return (
+          <CmSelect
+            label="Version"
+            data-testid="filter-process-version"
+            onCmInput={(event) => {
+              if (event.detail.selectedOptions[0] !== '') {
+                input.onChange(event.detail.selectedOptions[0]);
+
+                form.change('flowNodeId', undefined);
+              }
+            }}
+            placeholder="Process Version"
+            disabled={versions === undefined || versions.length === 0}
+            options={options}
+            selectedOptions={
+              versions?.length > 0 && input.value
+                ? [input.value.toString()]
+                : ['all']
             }
-          }}
-          placeholder="Process Version"
-          disabled={versions === undefined || versions.length === 0}
-          options={
-            options.length === 1
-              ? options
-              : [
-                  ...options,
-                  {
-                    value: 'all',
-                    label: 'All versions',
-                  },
-                ]
-          }
-        />
-      )}
+          />
+        );
+      }}
     </Field>
   );
 });

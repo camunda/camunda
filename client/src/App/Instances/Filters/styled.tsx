@@ -100,6 +100,11 @@ const ModalIcon = styled(DefaultModal)`
   }}
 `;
 
+const ProcessHeader = styled(CmText)`
+  display: block;
+  padding: 24px 0 8px 20px;
+`;
+
 const StatesHeader = styled(CmText)`
   display: block;
   margin-bottom: 8px;
@@ -117,6 +122,7 @@ export {
   Fields,
   JSONEditorButton,
   ModalIcon,
+  ProcessHeader,
   StatesHeader,
   InstanceStates,
 };

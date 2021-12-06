@@ -18,6 +18,7 @@ import {
   ModalIcon,
   StatesHeader,
   InstanceStates,
+  ProcessHeader,
 } from './styled';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
@@ -98,11 +99,15 @@ const Filters: React.FC = () => {
                   'canceled',
                 ]}
               />
+              <ProcessHeader appearance="emphasis">Process</ProcessHeader>
               <Row>
                 <ProcessField />
               </Row>
               <Row>
                 <ProcessVersionField />
+              </Row>
+              <Row>
+                <FlowNodeField />
               </Row>
               <Row>
                 <Field
@@ -197,9 +202,7 @@ const Filters: React.FC = () => {
                   )}
                 </Field>
               </Row>
-              <Row>
-                <FlowNodeField />
-              </Row>
+
               <VariableRow>
                 <Field
                   name="variableName"

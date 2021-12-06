@@ -22,6 +22,7 @@ import {getSearch} from './utils/getSearch';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
+import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 
 fixture('Instances')
   .page(config.endpoint)
@@ -35,6 +36,10 @@ fixture('Instances')
         name: /view instances/i,
       })
     );
+
+    if (IS_NEW_FILTERS_FORM) {
+      await setFlyoutTestAttribute('processName');
+    }
   });
 
 test('Instances Page Initial Load', async (t) => {
@@ -136,27 +141,49 @@ test('Select flow node in diagram', async (t) => {
     {paste: true}
   );
 
-  const processCombobox = screen.queryByRole('combobox', {
-    name: 'Process',
-  });
+  const processCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-process-name')
+    : screen.queryByRole('combobox', {
+        name: 'Process',
+      });
 
   // Select "Order Process"
   await t
     .click(processCombobox)
     .click(
-      within(processCombobox).queryByRole('option', {
-        name: 'Order process',
-      })
+      IS_NEW_FILTERS_FORM
+        ? within(
+            screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+          ).queryByText('Order process')
+        : within(processCombobox).queryByRole('option', {
+            name: 'Order process',
+          })
     )
     .expect(screen.queryByTestId('diagram').exists)
     .ok();
 
   // Select "Ship Articles" flow node
   const shipArticlesTaskId = 'shipArticles';
+
+  await t.click(
+    within(screen.queryByTestId('diagram')).queryByText('Ship Articles')
+  );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(
+          screen.queryByTestId('filter-flow-node').shadowRoot()
+        ).queryByText('Ship Articles').exists
+      )
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
+      .eql(shipArticlesTaskId);
+  }
+
   await t
-    .click(within(screen.queryByTestId('diagram')).queryByText('Ship Articles'))
-    .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
-    .eql(shipArticlesTaskId)
     .expect(
       screen.queryByText('There are no Instances matching this filter set')
         .exists
@@ -178,10 +205,25 @@ test('Select flow node in diagram', async (t) => {
 
   // Select "Check Payment" flow node
   const checkPaymentTaskId = 'checkPayment';
+  await t.click(
+    within(screen.queryByTestId('diagram')).queryByText('Check payment')
+  );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(
+          screen.queryByTestId('filter-flow-node').shadowRoot()
+        ).queryByText('Check payment').exists
+      )
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
+      .eql(checkPaymentTaskId);
+  }
+
   await t
-    .click(within(screen.queryByTestId('diagram')).queryByText('Check payment'))
-    .expect(screen.queryByRole('combobox', {name: 'Flow Node'}).value)
-    .eql(checkPaymentTaskId)
     .expect(
       within(screen.queryByTestId('instances-list')).getAllByRole('row').count
     )
@@ -208,15 +250,24 @@ test('Wait for process creation', async (t) => {
 
   await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();
   await t.expect(screen.queryByTestId('diagram-spinner').exists).ok();
-  await t
-    .expect(
-      screen
-        .queryByRole('combobox', {
-          name: 'Process',
-        })
-        .hasAttribute('disabled')
-    )
-    .ok();
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        screen.queryByTestId('filter-process-name').getAttribute('disabled')
+      )
+      .eql('true');
+  } else {
+    await t
+      .expect(
+        screen
+          .queryByRole('combobox', {
+            name: 'Process',
+          })
+          .hasAttribute('disabled')
+      )
+      .ok();
+  }
 
   await deploy(['./e2e/tests/resources/newProcess.bpmn']);
 
@@ -230,13 +281,35 @@ test('Wait for process creation', async (t) => {
     )
     .ok();
 
-  await t
-    .expect(
-      screen.getByRole('combobox', {name: 'Process'}).hasAttribute('disabled')
-    )
-    .notOk();
-
-  await t
-    .expect(screen.getByRole('combobox', {name: 'Process'}).value)
-    .eql('testProcess');
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        screen.getByTestId('filter-process-name').getAttribute('disabled')
+      )
+      .eql('false');
+    await t
+      .expect(
+        within(
+          screen.getByTestId('filter-process-name').shadowRoot()
+        ).getByText('Test Process').exists
+      )
+      .ok();
+  } else {
+    await t
+      .expect(
+        screen
+          .getByRole('combobox', {
+            name: 'Process',
+          })
+          .hasAttribute('disabled')
+      )
+      .notOk();
+    await t
+      .expect(
+        screen.getByRole('combobox', {
+          name: 'Process',
+        }).value
+      )
+      .eql('testProcess');
+  }
 });

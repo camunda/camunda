@@ -9,19 +9,33 @@ import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
 
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
-import Select from 'modules/components/Select';
+import {CmSelect} from '@camunda-cloud/common-ui-react';
 
 const FlowNodeField: React.FC = observer(() => {
   const {flowNodeFilterOptions} = instancesDiagramStore;
+  const options = [
+    {
+      options: [{label: '--', value: ''}, ...flowNodeFilterOptions],
+    },
+  ];
 
   return (
     <Field name="flowNodeId">
       {({input}) => (
-        <Select
-          {...input}
-          placeholder="Flow Node"
-          options={flowNodeFilterOptions}
+        <CmSelect
+          placeholder="--"
+          label="Flow Node"
+          data-testid="filter-flow-node"
+          options={options}
           disabled={flowNodeFilterOptions.length === 0}
+          selectedOptions={
+            flowNodeFilterOptions.length > 0 && input.value
+              ? [input.value]
+              : ['']
+          }
+          onCmInput={(event) => {
+            input.onChange(event.detail.selectedOptions[0]);
+          }}
         />
       )}
     </Field>

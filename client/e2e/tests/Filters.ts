@@ -26,6 +26,7 @@ import {screen, within} from '@testing-library/testcafe';
 import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
+import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 
 fixture('Filters')
   .page(config.endpoint)
@@ -42,6 +43,12 @@ fixture('Filters')
           name: /view instances/i,
         })
       );
+
+    if (IS_NEW_FILTERS_FORM) {
+      await setFlyoutTestAttribute('processName');
+      await setFlyoutTestAttribute('processVersion');
+      await setFlyoutTestAttribute('flowNode');
+    }
   });
 
 test('Navigating in header should affect filters and url correctly', async (t) => {
@@ -943,20 +950,46 @@ test('Checkboxes', async (t) => {
 });
 
 test('Process Filter', async (t) => {
-  const processCombobox = screen.queryByRole('combobox', {
-    name: 'Process',
-  });
+  const processCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-process-name')
+    : screen.queryByRole('combobox', {
+        name: 'Process',
+      });
+
+  const processVersionCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-process-version')
+    : screen.queryByRole('combobox', {
+        name: 'Process Version',
+      });
+
+  const flowNodeCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-flow-node')
+    : screen.queryByRole('combobox', {
+        name: /flow node/i,
+      });
 
   // select a process with multiple versions, see that latest version is selected by default, a diagram is displayed and selected instances are removed
-  await t
-    .click(processCombobox)
-    .click(
-      within(processCombobox).queryByRole('option', {
-        name: 'Process With Multiple Versions',
-      })
-    )
-    .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-    .eql('2');
+  await t.click(processCombobox).click(
+    IS_NEW_FILTERS_FORM
+      ? within(
+          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+        ).queryByText('Process With Multiple Versions')
+      : within(processCombobox).queryByRole('option', {
+          name: 'Process With Multiple Versions',
+        })
+  );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(
+          screen.queryByTestId('filter-process-version').shadowRoot()
+        ).queryByText('Version 2').exists
+      )
+      .ok();
+  } else {
+    await t.expect(processVersionCombobox.value).eql('2');
+  }
 
   await t
     .expect(await getPathname())
@@ -974,15 +1007,31 @@ test('Process Filter', async (t) => {
   await t.expect(screen.queryByTestId('diagram').exists).ok();
 
   // select all versions, see that diagram disappeared and selected instances are removed
+  await t.click(processVersionCombobox);
+
+  await t.click(
+    IS_NEW_FILTERS_FORM
+      ? within(
+          screen.queryByTestId('cm-flyout-process-version').shadowRoot()
+        ).queryByText('All')
+      : screen.queryByRole('option', {name: 'All versions'})
+  );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(
+          screen.queryByTestId('filter-process-version').shadowRoot()
+        ).queryByText('All').exists
+      )
+      .ok();
+  } else {
+    await t
+      .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
+      .eql('all');
+  }
+
   await t
-    .click(
-      screen.queryByRole('combobox', {
-        name: 'Process Version',
-      })
-    )
-    .click(screen.queryByRole('option', {name: 'All versions'}))
-    .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-    .eql('all')
     .expect(screen.queryByTestId('diagram').exists)
     .notOk()
     .expect(
@@ -1016,18 +1065,34 @@ test('Process Filter', async (t) => {
   await t
     .click(processCombobox)
     .click(
-      within(processCombobox).queryByRole('option', {
-        name: 'Process With Multiple Versions',
-      })
+      IS_NEW_FILTERS_FORM
+        ? within(
+            screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+          ).queryByText('Process With Multiple Versions')
+        : within(processCombobox).queryByRole('option', {
+            name: 'Process With Multiple Versions',
+          })
     )
-    .click(screen.queryByRole('combobox', {name: /flow node/i}))
+    .click(flowNodeCombobox)
     .click(
-      screen.queryByRole('option', {
-        name: 'StartEvent_1',
-      })
-    )
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('StartEvent_1');
+      IS_NEW_FILTERS_FORM
+        ? within(
+            screen.queryByTestId('cm-flyout-flow-node').shadowRoot()
+          ).queryByText('StartEvent_1')
+        : screen.queryByRole('option', {
+            name: 'StartEvent_1',
+          })
+    );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(flowNodeCombobox.shadowRoot()).queryByText('StartEvent_1').exists
+      )
+      .ok();
+  } else {
+    await t.expect(flowNodeCombobox.value).eql('StartEvent_1');
+  }
 
   await t
     .expect(await getPathname())
@@ -1044,15 +1109,23 @@ test('Process Filter', async (t) => {
     );
 
   // change process and see flow node filter has been reset
-  await t
-    .click(processCombobox)
-    .click(
-      within(processCombobox).queryByRole('option', {
-        name: 'Order process',
-      })
-    )
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('');
+  await t.click(processCombobox).click(
+    IS_NEW_FILTERS_FORM
+      ? within(
+          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+        ).queryByText('Order process')
+      : within(processCombobox).queryByRole('option', {
+          name: 'Order process',
+        })
+  );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
+      .ok();
+  } else {
+    await t.expect(flowNodeCombobox.value).eql('');
+  }
 
   await t
     .expect(await getPathname())
@@ -1069,9 +1142,23 @@ test('Process Filter', async (t) => {
 });
 
 test('Process Filter - Interaction with diagram', async (t) => {
-  const processCombobox = screen.queryByRole('combobox', {
-    name: 'Process',
-  });
+  const processCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-process-name')
+    : screen.queryByRole('combobox', {
+        name: 'Process',
+      });
+
+  const processVersionCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-process-version')
+    : screen.queryByRole('combobox', {
+        name: 'Process Version',
+      });
+
+  const flowNodeCombobox = IS_NEW_FILTERS_FORM
+    ? screen.queryByTestId('filter-flow-node')
+    : screen.queryByRole('combobox', {
+        name: /flow node/i,
+      });
 
   await t
     .expect(screen.queryByText('There is no Process selected').exists)
@@ -1081,23 +1168,33 @@ test('Process Filter - Interaction with diagram', async (t) => {
         'To see a Diagram, select a Process in the Filters panel'
       ).exists
     )
-    .ok()
-    .expect(
-      screen
-        .queryByRole('combobox', {name: /flow node/i})
-        .hasAttribute('disabled')
-    )
-    .ok()
-    .expect(
-      screen
-        .queryByRole('combobox', {name: 'Process Version'})
-        .hasAttribute('disabled')
-    )
-    .ok()
-    .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-    .eql('')
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('')
+    .ok();
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(processVersionCombobox.getAttribute('disabled'))
+      .eql('true')
+      .expect(flowNodeCombobox.getAttribute('disabled'))
+      .eql('true')
+      .expect(
+        within(processVersionCombobox.shadowRoot()).queryByText('All').exists
+      )
+      .ok()
+      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
+      .ok();
+  } else {
+    await t
+      .expect(processVersionCombobox.hasAttribute('disabled'))
+      .ok()
+      .expect(flowNodeCombobox.hasAttribute('disabled'))
+      .ok()
+      .expect(processVersionCombobox.value)
+      .eql('')
+      .expect(flowNodeCombobox.value)
+      .eql('');
+  }
+
+  await t
     .expect(await getPathname())
     .eql('/instances')
     .expect(await getSearch())
@@ -1110,9 +1207,13 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
   // select a process that has only one version
   await t.click(processCombobox).click(
-    within(processCombobox).queryByRole('option', {
-      name: 'Order process',
-    })
+    IS_NEW_FILTERS_FORM
+      ? within(
+          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+        ).queryByText('Order process')
+      : within(processCombobox).queryByRole('option', {
+          name: 'Order process',
+        })
   );
 
   await t
@@ -1125,17 +1226,30 @@ test('Process Filter - Interaction with diagram', async (t) => {
         'To see a Diagram, select a Process in the Filters panel'
       ).exists
     )
-    .notOk()
-    .expect(
-      screen
-        .queryByRole('combobox', {name: /flow node/i})
-        .hasAttribute('disabled')
-    )
-    .notOk()
-    .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-    .eql('1')
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('')
+    .notOk();
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(processCombobox.getAttribute('disabled'))
+      .eql('false')
+      .expect(
+        within(processVersionCombobox.shadowRoot()).queryByText('Version 1')
+          .exists
+      )
+      .ok()
+      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
+      .ok();
+  } else {
+    await t
+      .expect(flowNodeCombobox.hasAttribute('disabled'))
+      .notOk()
+      .expect(processVersionCombobox.value)
+      .eql('1')
+      .expect(flowNodeCombobox.value)
+      .eql('');
+  }
+
+  await t
     .expect(await getPathname())
     .eql('/instances')
     .expect(await getSearch())
@@ -1157,9 +1271,19 @@ test('Process Filter - Interaction with diagram', async (t) => {
       screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
-    .ok()
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('shipArticles');
+    .ok();
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+
+      .expect(
+        within(flowNodeCombobox.shadowRoot()).queryByText('Ship Articles')
+          .exists
+      )
+      .ok();
+  } else {
+    await t.expect(flowNodeCombobox.value).eql('shipArticles');
+  }
 
   await t
     .expect(await getPathname())
@@ -1184,9 +1308,18 @@ test('Process Filter - Interaction with diagram', async (t) => {
       screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
-    .notOk()
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('checkPayment');
+    .notOk();
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(flowNodeCombobox.shadowRoot()).queryByText('Check payment')
+          .exists
+      )
+      .ok();
+  } else {
+    await t.expect(flowNodeCombobox.value).eql('checkPayment');
+  }
 
   await t
     .expect(await getPathname())
@@ -1218,9 +1351,15 @@ test('Process Filter - Interaction with diagram', async (t) => {
         process: 'orderProcess',
         version: '1',
       })
-    )
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('');
+    );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(within(flowNodeCombobox.shadowRoot()).queryByText('--').exists)
+      .ok();
+  } else {
+    await t.expect(flowNodeCombobox.value).eql('');
+  }
 });
 
 test('Should set filters from url', async (t) => {
@@ -1264,15 +1403,41 @@ test('Should set filters from url', async (t) => {
     ? cmOperationIdField
     : screen.queryByRole('textbox', {name: /operation id/i});
 
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(
+          screen.queryByTestId('filter-process-name').shadowRoot()
+        ).queryByText('Process With Multiple Versions').exists
+      )
+      .ok()
+      .expect(
+        within(
+          screen.queryByTestId('filter-process-version').shadowRoot()
+        ).queryByText('Version 2').exists
+      )
+      .ok()
+      .expect(
+        within(
+          screen.queryByTestId('filter-flow-node').shadowRoot()
+        ).queryByText('Always fails').exists
+      )
+      .ok();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('combobox', {
+          name: 'Process',
+        }).value
+      )
+      .eql('processWithMultipleVersions')
+      .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
+      .eql('2')
+      .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
+      .eql('alwaysFails');
+  }
+
   await t
-    .expect(
-      screen.queryByRole('combobox', {
-        name: 'Process',
-      }).value
-    )
-    .eql('processWithMultipleVersions')
-    .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-    .eql('2')
     .expect(
       screen.queryByRole('textbox', {
         name: 'Instance Id(s) separated by space or comma',
@@ -1287,8 +1452,7 @@ test('Should set filters from url', async (t) => {
     .eql('2020-09-10 18:41:44')
     .expect(endDateField.value)
     .eql('2020-12-12 12:12:12')
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('alwaysFails')
+
     .expect(screen.queryByRole('textbox', {name: /variable/i}).value)
     .eql('test')
     .expect(screen.queryByRole('textbox', {name: /value/i}).value)
@@ -1345,15 +1509,41 @@ test('Should set filters from url', async (t) => {
     })
   );
 
+  if (IS_NEW_FILTERS_FORM) {
+    await t
+      .expect(
+        within(
+          screen.queryByTestId('filter-process-name').shadowRoot()
+        ).queryByText('Process With Multiple Versions').exists
+      )
+      .ok()
+      .expect(
+        within(
+          screen.queryByTestId('filter-process-version').shadowRoot()
+        ).queryByText('Version 2').exists
+      )
+      .ok()
+      .expect(
+        within(
+          screen.queryByTestId('filter-flow-node').shadowRoot()
+        ).queryByText('Always fails').exists
+      )
+      .ok();
+  } else {
+    await t
+      .expect(
+        screen.queryByRole('combobox', {
+          name: 'Process',
+        }).value
+      )
+      .eql('processWithMultipleVersions')
+      .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
+      .eql('2')
+      .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
+      .eql('alwaysFails');
+  }
+
   await t
-    .expect(
-      screen.queryByRole('combobox', {
-        name: 'Process',
-      }).value
-    )
-    .eql('processWithMultipleVersions')
-    .expect(screen.queryByRole('combobox', {name: 'Process Version'}).value)
-    .eql('2')
     .expect(
       screen.queryByRole('textbox', {
         name: 'Instance Id(s) separated by space or comma',
@@ -1368,8 +1558,6 @@ test('Should set filters from url', async (t) => {
     .eql('2020-09-10 18:41:44')
     .expect(endDateField.value)
     .eql('2020-12-12 12:12:12')
-    .expect(screen.queryByRole('combobox', {name: /flow node/i}).value)
-    .eql('alwaysFails')
     .expect(screen.queryByRole('textbox', {name: /variable/i}).value)
     .eql('test')
     .expect(screen.queryByRole('textbox', {name: /value/i}).value)

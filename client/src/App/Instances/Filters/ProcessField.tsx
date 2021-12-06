@@ -9,29 +9,38 @@ import {Field, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 
 import {processesStore} from 'modules/stores/processes';
-import Select from 'modules/components/Select';
+import {CmSelect} from '@camunda-cloud/common-ui-react';
 
 const ProcessField: React.FC = observer(() => {
   const {processes, versionsByProcess} = processesStore;
   const form = useForm();
 
+  const options = [
+    {
+      options: [{label: 'All', value: ''}, ...processes],
+    },
+  ];
+
   return (
     <Field name="process">
       {({input}) => (
-        <Select
-          {...input}
+        <CmSelect
+          label="Name"
+          data-testid="filter-process-name"
           disabled={processes.length === 0}
-          onChange={(event) => {
-            const versions = versionsByProcess[event.target.value];
+          onCmInput={(event) => {
+            const versions = versionsByProcess[event.detail.selectedOptions[0]];
             const initialVersionSelection =
               versions?.[versions.length - 1].version;
 
-            input.onChange(event);
+            input.onChange(event.detail.selectedOptions[0]);
             form.change('version', initialVersionSelection);
             form.change('flowNodeId', undefined);
           }}
-          placeholder="Process"
-          options={processes}
+          options={options}
+          selectedOptions={
+            processes.length > 0 && input.value ? [input.value] : ['']
+          }
         />
       )}
     </Field>

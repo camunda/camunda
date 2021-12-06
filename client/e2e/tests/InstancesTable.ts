@@ -9,6 +9,8 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './InstancesTable.setup';
+import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
+import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 
 fixture('InstancesTable')
   .page(config.endpoint)
@@ -25,6 +27,10 @@ fixture('InstancesTable')
           name: /view instances/i,
         })
       );
+
+    if (IS_NEW_FILTERS_FORM) {
+      await setFlyoutTestAttribute('processName');
+    }
   });
 
 test('Sorting', async (t) => {
@@ -148,14 +154,20 @@ test('Scrolling', async (t) => {
       return instanceId2 - instanceId1;
     });
 
-  const processCombobox = screen.queryByRole('combobox', {
-    name: 'Process',
-  });
+  const processCombobox = IS_NEW_FILTERS_FORM
+    ? screen.getByTestId('filter-process-name')
+    : screen.queryByRole('combobox', {
+        name: 'Process',
+      });
 
   await t.click(processCombobox).click(
-    within(processCombobox).queryByRole('option', {
-      name: 'Process For Infinite Scroll',
-    })
+    IS_NEW_FILTERS_FORM
+      ? within(
+          screen.queryByTestId('cm-flyout-process-name').shadowRoot()
+        ).queryByText('Process For Infinite Scroll')
+      : within(processCombobox).queryByRole('option', {
+          name: 'Process For Infinite Scroll',
+        })
   );
 
   await t.click(screen.queryByRole('button', {name: /Sort by id/}));

@@ -108,14 +108,16 @@ describe('Filters', () => {
       wrapper: getWrapper(MOCK_HISTORY),
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+    );
 
-    userEvent.selectOptions(screen.getByLabelText('Process'), [
+    userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
       'Big variable process',
     ]);
 
-    expect(screen.getByLabelText('Process Version')).toBeEnabled();
-    expect(screen.getByDisplayValue('Version 1')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-process-version')).toBeEnabled();
+    expect(screen.getByText('Version 1')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(MOCK_HISTORY.location.search).toBe(
@@ -153,15 +155,15 @@ describe('Filters', () => {
       ),
     });
 
-    expect(
-      await screen.findByDisplayValue('Big variable process')
-    ).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+    expect(await screen.findByText('Big variable process')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+    );
 
-    expect(await screen.findByDisplayValue('Version 1')).toBeInTheDocument();
-    expect(
-      await screen.findByDisplayValue(MOCK_PARAMS.flowNodeId)
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Version 1')).toBeInTheDocument();
+
+    expect(await screen.findByText(MOCK_PARAMS.flowNodeId)).toBeInTheDocument();
+
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
 
     expect(
@@ -214,13 +216,15 @@ describe('Filters', () => {
       wrapper: getWrapper(MOCK_HISTORY),
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
     await waitFor(() =>
-      expect(screen.getByLabelText('Flow Node')).toBeEnabled()
+      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
     );
 
-    expect(screen.getByLabelText('Process')).toHaveValue('');
-    expect(screen.getByLabelText('Process Version')).toHaveValue('');
+    expect(screen.getByTestId('filter-process-name')).toHaveValue('');
+    expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
     expect(
       screen.getByLabelText('Instance Id(s) separated by space or comma')
     ).toHaveValue('');
@@ -228,7 +232,7 @@ describe('Filters', () => {
     expect(screen.getByTestId('filter-error-message')).toHaveValue('');
     expect(screen.getByTestId('filter-start-date')).toHaveValue('');
     expect(screen.getByTestId('filter-end-date')).toHaveValue('');
-    expect(screen.getByLabelText('Flow Node')).toHaveValue('');
+    expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
     expect(screen.getByLabelText('Variable')).toHaveValue('');
     expect(screen.getByLabelText('Value')).toHaveValue('');
     expect(screen.getByTestId('filter-operation-id')).toHaveValue('');
@@ -237,7 +241,7 @@ describe('Filters', () => {
     expect(screen.getByTestId(/completed/)).not.toBeChecked();
     expect(screen.getByTestId(/canceled/)).not.toBeChecked();
 
-    userEvent.selectOptions(screen.getByLabelText('Process'), [
+    userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
       'Big variable process',
     ]);
     userEvent.paste(
@@ -259,7 +263,7 @@ describe('Filters', () => {
     );
     userEvent.paste(screen.getByTestId('filter-end-date'), MOCK_VALUES.endDate);
 
-    userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
+    userEvent.selectOptions(screen.getByTestId('filter-flow-node'), [
       MOCK_VALUES.flowNodeId,
     ]);
     userEvent.paste(
@@ -848,11 +852,11 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.selectOptions(screen.getByLabelText('Process'), [
+      userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
         'complexProcess',
       ]);
 
-      expect(screen.getByLabelText('Process Version')).toBeEnabled();
+      expect(screen.getByTestId('filter-process-version')).toBeEnabled();
 
       expect(
         screen.getByTitle(
@@ -860,7 +864,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.selectOptions(screen.getByLabelText('Process Version'), [
+      userEvent.selectOptions(screen.getByTestId('filter-process-version'), [
         'Version 2',
       ]);
 
@@ -870,7 +874,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
+      userEvent.selectOptions(screen.getByTestId('filter-flow-node'), [
         'ServiceTask_0kt6c5i',
       ]);
 
