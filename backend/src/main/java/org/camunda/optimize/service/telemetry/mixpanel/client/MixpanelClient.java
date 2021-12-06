@@ -20,6 +20,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.tracking.MixpanelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,7 @@ public class MixpanelClient {
   private final ObjectMapper objectMapper;
   private final CloseableHttpClient httpClient;
 
+  @Autowired
   public MixpanelClient(final ConfigurationService configurationService, final ObjectMapper objectMapper) {
     this(configurationService, objectMapper, HttpClients.createDefault());
   }
