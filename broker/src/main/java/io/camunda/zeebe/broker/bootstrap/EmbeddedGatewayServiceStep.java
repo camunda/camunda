@@ -37,6 +37,10 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
 
     brokerStartupContext.setEmbeddedGatewayService(embeddedGatewayService);
 
+    final var springBridge = brokerStartupContext.getSpringBrokerBridge();
+    final var gateway = embeddedGatewayService.get();
+    springBridge.registerBrokerClient(gateway::getBrokerClient);
+
     startupFuture.complete(brokerStartupContext);
   }
 
