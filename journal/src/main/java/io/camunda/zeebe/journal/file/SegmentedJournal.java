@@ -149,22 +149,27 @@ public final class SegmentedJournal implements Journal {
         return;
       }
 
-      log.debug(
-          "{} - Deleting log up from {} up to {} (removing {} segments)",
-          name,
-          getFirstIndex(),
-          compactSegments.get(compactSegments.lastKey()).index(),
-          compactSegments.size());
-      for (final JournalSegment segment : compactSegments.values()) {
-        log.trace("{} - Deleting segment: {}", name, segment);
-        segment.delete();
-        journalMetrics.decSegmentCount();
+      final var stamp = rwlock.writeLock();
+      try {
+        log.debug(
+            "{} - Deleting log up from {} up to {} (removing {} segments)",
+            name,
+            getFirstIndex(),
+            compactSegments.get(compactSegments.lastKey()).index(),
+            compactSegments.size());
+        for (final JournalSegment segment : compactSegments.values()) {
+          log.trace("{} - Deleting segment: {}", name, segment);
+          segment.delete();
+          journalMetrics.decSegmentCount();
+        }
+
+        // removes them from the segment map
+        compactSegments.clear();
+
+        journalIndex.deleteUntil(index);
+      } finally {
+        rwlock.unlockWrite(stamp);
       }
-
-      // removes them from the segment map
-      compactSegments.clear();
-
-      journalIndex.deleteUntil(index);
     }
   }
 

@@ -100,8 +100,8 @@ public final class Broker implements AutoCloseable {
     try {
       brokerContext = brokerStartupActor.start().join();
 
-      startFuture.complete(this);
       healthCheckService.setBrokerStarted();
+      startFuture.complete(this);
     } catch (final Exception bootStrapException) {
       final BrokerCfg brokerCfg = getConfig();
       LOG.error(

@@ -80,7 +80,8 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         // static candidateGroups must be in CSV format, but this is already checked by validator
         jobWorkerProperties.setCandidateGroups(
             ExpressionTransformer.parseListOfCsv(candidateGroups)
-                .map(ExpressionTransformer::asListLiteralExpression)
+                .map(ExpressionTransformer::asListLiteral)
+                .map(ExpressionTransformer::asFeelExpressionString)
                 .map(expressionLanguage::parseExpression)
                 .get());
       } else {

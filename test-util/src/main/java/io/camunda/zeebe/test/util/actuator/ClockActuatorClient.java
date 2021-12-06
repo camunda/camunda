@@ -41,17 +41,17 @@ public final class ClockActuatorClient {
   }
 
   public void resetZeebeTime() throws IOException, InterruptedException {
-    sendRequest("DELETE", "/actuator/clock", null);
+    sendRequest("DELETE", "actuator/clock", null);
   }
 
   public Instant pinZeebeTime(final Instant pinAt) throws IOException, InterruptedException {
-    sendRequest("POST", "/actuator/clock/pin", new PinRequestDto(pinAt));
+    sendRequest("POST", "actuator/clock/pin", new PinRequestDto(pinAt));
     return pinAt;
   }
 
   public Duration offsetZeebeTime(final Duration offsetBy)
       throws IOException, InterruptedException {
-    sendRequest("POST", "/actuator/clock/add", new OffsetRequestDto(offsetBy));
+    sendRequest("POST", "actuator/clock/add", new OffsetRequestDto(offsetBy));
     return offsetBy;
   }
 

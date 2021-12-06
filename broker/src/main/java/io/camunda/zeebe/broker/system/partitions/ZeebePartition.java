@@ -123,7 +123,7 @@ public final class ZeebePartition extends Actor
 
               context = transitionContext.getPartitionContext();
 
-              registerListenersAndTriggerRoleChange();
+              registerListeners();
             });
   }
 
@@ -294,10 +294,9 @@ public final class ZeebePartition extends Actor
     return inactiveTransitionFuture;
   }
 
-  private void registerListenersAndTriggerRoleChange() {
+  private void registerListeners() {
     context.getRaftPartition().addRoleChangeListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
-    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
     context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
   }
 

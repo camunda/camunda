@@ -66,9 +66,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     return actor.call(
         () -> {
           final var topicName = topicName(partitionId, requestType);
-          if (LOG.isTraceEnabled()) {
-            LOG.trace("Subscribe for topic {}", topicName);
-          }
+          LOG.trace("Subscribe for topic {}", topicName);
           partitionsRequestMap.computeIfAbsent(partitionId, id -> new Long2ObjectHashMap<>());
           messagingService.registerHandler(
               topicName,
@@ -78,27 +76,25 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   @Override
-  public ActorFuture<Void> unsubscribe(final int partitionId) {
-    return actor.call(() -> removePartition(partitionId));
+  public ActorFuture<Void> unsubscribe(final int partitionId, final RequestType requestType) {
+    return actor.call(() -> removeRequestHandlers(partitionId, requestType));
   }
 
   private void removePartition(final int partitionId) {
     // to unsubscribe from the partition, we can simply unsubscribe from all possible request types
     // for that partition id, even if we're not yet subscribed to some
     Arrays.stream(RequestType.values())
-        .forEach(
-            requestType -> {
-              final var topicName = topicName(partitionId, requestType);
-              if (LOG.isTraceEnabled()) {
-                LOG.trace("Unsubscribe from topic {}", topicName);
-              }
-              messagingService.unregisterHandler(topicName);
-            });
-
+        .forEach(requestType -> removeRequestHandlers(partitionId, requestType));
     final var requestMap = partitionsRequestMap.remove(partitionId);
     if (requestMap != null) {
       requestMap.clear();
     }
+  }
+
+  private void removeRequestHandlers(final int partitionId, RequestType requestType) {
+    final var topicName = topicName(partitionId, requestType);
+    LOG.trace("Unsubscribe from topic {}", topicName);
+    messagingService.unregisterHandler(topicName);
   }
 
   private CompletableFuture<byte[]> handleAtomixRequest(

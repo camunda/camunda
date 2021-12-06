@@ -20,6 +20,7 @@ public enum RequestType {
   // Supported request types
   COMMAND("command"),
   QUERY("query"),
+  ADMIN("admin"),
 
   // All other request types are considered unknown
   // This value exists mainly for testing purposes

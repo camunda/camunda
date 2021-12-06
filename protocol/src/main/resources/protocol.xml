@@ -73,6 +73,10 @@
       <type name="patchVersion" primitiveType="int32"/>
     </composite>
 
+    <enum name="AdminRequestType" encodingType="uint8">
+      <validValue name="STEP_DOWN_IF_NOT_PRIMARY">0</validValue>
+    </enum>
+
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -111,6 +115,14 @@
 
   <sbe:message name="ExecuteQueryResponse" id="31">
     <data name="bpmnProcessId" id="1" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="AdminRequest" id="40">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="type" id="2" type="AdminRequestType"/>
+  </sbe:message>
+
+  <sbe:message name="AdminResponse" id="41">
   </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
