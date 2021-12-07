@@ -163,7 +163,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   }
 
   @Override
-  protected void handleFailure(final Exception failure) {
+  protected void handleFailure(final Throwable failure) {
     onFailure(failure);
   }
 

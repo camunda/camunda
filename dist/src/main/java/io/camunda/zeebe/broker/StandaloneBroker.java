@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.shared.EnvironmentHelper;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.error.FatalErrorHandlers;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -53,6 +54,9 @@ public class StandaloneBroker
   }
 
   public static void main(final String[] args) {
+    Thread.setDefaultUncaughtExceptionHandler(
+        FatalErrorHandlers.uncaughtExceptionHandler(Loggers.SYSTEM_LOGGER));
+
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
     EnvironmentHelper.disableGatewayHealthIndicatorsAndProbes();
     SpringApplication.run(StandaloneBroker.class, args);

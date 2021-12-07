@@ -112,7 +112,7 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @Override
-  protected void handleFailure(final Exception failure) {
+  protected void handleFailure(final Throwable failure) {
     LOG.error(
         "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
         actorName,

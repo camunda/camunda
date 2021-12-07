@@ -18,6 +18,12 @@
   <artifactId>zeebe-atomix-utils</artifactId>
 
   <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
     <dependency>
       <artifactId>guava</artifactId>
       <groupId>com.google.guava</groupId>
