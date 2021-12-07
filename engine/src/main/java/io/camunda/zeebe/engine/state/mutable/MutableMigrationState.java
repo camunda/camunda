@@ -17,5 +17,7 @@ public interface MutableMigrationState {
       final MutableProcessMessageSubscriptionState persistentSate,
       final MutablePendingProcessMessageSubscriptionState transientState);
 
-  void migrateTemporaryVariables(final MutableEventScopeInstanceState eventScopeInstanceState);
+  void migrateTemporaryVariables(
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final MutableElementInstanceState elementInstanceState);
 }

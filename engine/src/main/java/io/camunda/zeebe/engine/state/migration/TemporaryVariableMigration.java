@@ -28,6 +28,7 @@ public class TemporaryVariableMigration implements MigrationTask {
   public void runMigration(final MutableZeebeState zeebeState) {
     zeebeState
         .getMigrationState()
-        .migrateTemporaryVariables(zeebeState.getEventScopeInstanceState());
+        .migrateTemporaryVariables(
+            zeebeState.getEventScopeInstanceState(), zeebeState.getElementInstanceState());
   }
 }
