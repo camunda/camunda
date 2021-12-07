@@ -63,7 +63,7 @@ public class CSVUtilsTest {
 	public void testRawProcessResultMapping_testQuoteEscapingInValue() {
 		// given
 		final Map<String, Object> variables = new HashMap<>();
-		variables.put("\"1\"", "test");
+		variables.put("\"1\"",  "test");
 		final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
 		final String expectedString =
 			"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"businessKey\",\"startDate\"," +

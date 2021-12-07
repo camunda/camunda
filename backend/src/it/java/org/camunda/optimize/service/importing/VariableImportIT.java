@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -24,7 +23,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDt
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
-import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -34,7 +32,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,7 +41,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
-import org.slf4j.event.Level;
 
 import java.nio.CharBuffer;
 import java.text.SimpleDateFormat;
@@ -57,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,7 +66,6 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJE
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
@@ -125,8 +121,7 @@ public class VariableImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getDefaultEngineConfiguration()
       .setDefaultTenant(new DefaultTenant(defaultTenant, defaultTenant));
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
-    ProcessInstanceEngineDto instanceDto =
-      engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleServiceTaskProcess(), variables);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleServiceTaskProcess(), variables);
     importAllEngineEntitiesFromScratch();
 
     // then
@@ -204,17 +199,19 @@ public class VariableImportIT extends AbstractImportIT {
     variables.put("objectVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
     final List<Tuple> expectedVariables = List.of(
-      Tuple.tuple("objectVar", OBJECT.getId(), objectVariableDto.getValue()),
-      Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
-      Tuple.tuple("objectVar.age", DOUBLE.getId(), "28.0"),
-      Tuple.tuple("objectVar.IQ", DOUBLE.getId(), "9.9999999999999E13"),
-      Tuple.tuple("objectVar.birthday", DATE.getId(), "1992-11-17T00:00:00.000+0100"),
-      Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), "99.9"),
-      Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), "false"),
-      Tuple.tuple("objectVar.hands", DOUBLE.getId(), "2.0"),
-      Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), "true"),
-      Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), "false"),
-      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "2") // additional _listSize variable for lists
+      Tuple.tuple("objectVar", OBJECT.getId(), singletonList(objectVariableDto.getValue())),
+      Tuple.tuple("objectVar.name", STRING.getId(), singletonList("Pond")),
+      Tuple.tuple("objectVar.age", DOUBLE.getId(), singletonList("28.0")),
+      Tuple.tuple("objectVar.IQ", DOUBLE.getId(), singletonList("9.9999999999999E13")),
+      Tuple.tuple("objectVar.birthday", DATE.getId(), singletonList("1992-11-17T00:00:00.000+0100")),
+      Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), singletonList("99.9")),
+      Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), singletonList("false")),
+      Tuple.tuple("objectVar.hands", DOUBLE.getId(), singletonList("2.0")),
+      Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), singletonList("true")),
+      Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), singletonList("false")),
+      Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
+      // additional _listSize variable for lists
+      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), singletonList("2"))
     );
 
     // when
@@ -224,7 +221,7 @@ public class VariableImportIT extends AbstractImportIT {
 
     // then
     assertThat(instanceVariables)
-      .hasSize(11)
+      .hasSize(12)
       .extracting(
         SimpleProcessVariableDto::getName,
         SimpleProcessVariableDto::getType,
@@ -232,7 +229,7 @@ public class VariableImportIT extends AbstractImportIT {
       )
       .containsExactlyInAnyOrderElementsOf(expectedVariables);
     assertThat(storedVariableUpdateInstances)
-      .hasSize(11)
+      .hasSize(12)
       .allSatisfy(var -> {
         assertThat(var.getProcessInstanceId()).isEqualTo(instanceDto.getId());
         assertThat(var.getTenantId()).isNull();
@@ -279,7 +276,8 @@ public class VariableImportIT extends AbstractImportIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactly(
-        OBJECT.getId(), new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(objectVar)
+        OBJECT.getId(),
+        singletonList(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(objectVar))
       );
   }
 
@@ -322,24 +320,20 @@ public class VariableImportIT extends AbstractImportIT {
         SimpleProcessVariableDto::getVersion
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVar", OBJECT.getId(), objectVariableDto.getValue(), 2L),
-        Tuple.tuple("objectVar.name", STRING.getId(), "Pond", 2L),
-        Tuple.tuple("objectVar.age", DOUBLE.getId(), "29.0", 2L),
-        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "3", 2L)
+        Tuple.tuple("objectVar", OBJECT.getId(), singletonList(objectVariableDto.getValue()), 2L),
+        Tuple.tuple("objectVar.name", STRING.getId(), singletonList("Pond"), 2L),
+        Tuple.tuple("objectVar.age", DOUBLE.getId(), singletonList("29.0"), 2L),
+        Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic", "tofu"), 2L),
+        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), singletonList("3"), 2L)
       );
   }
 
   @SneakyThrows
-  @Test
-  public void listVariablesAreFlattened() {
-    // given
-    final Map<String, Object> pet1 = new HashMap<>();
-    final Map<String, Object> pet2 = new HashMap<>();
-    pet1.put("name", "aDog");
-    pet1.put("type", "dog");
-    pet2.put("name", "aCat");
-    pet2.put("type", "cat");
-    final VariableDto objectVariableDto = createListJsonObjectVariableDto(List.of(pet1, pet2));
+  @ParameterizedTest
+  @MethodSource("objectListVariableScenarios")
+  public void objectListVariablesAreNotImportedButHaveSizeProperty(final List<Object> listVarValue) {
+    // given a variable that contains a list of objects
+    final VariableDto objectVariableDto = variablesClient.createListJsonObjectVariableDto(listVarValue);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectListVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
@@ -357,8 +351,38 @@ public class VariableImportIT extends AbstractImportIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectListVar", OBJECT.getId(), objectVariableDto.getValue()),
-        Tuple.tuple("objectListVar._listSize", LONG.getId(), "2")
+        Tuple.tuple("objectListVar", OBJECT.getId(), singletonList(objectVariableDto.getValue())),
+        Tuple.tuple("objectListVar._listSize", LONG.getId(), singletonList("2"))
+      );
+  }
+
+  @SneakyThrows
+  @ParameterizedTest
+  @MethodSource("primitiveListVariableScenarios")
+  public void primitiveListVariablesAreImportedAndHaveSizeProperty(final VariableType type,
+                                                                   final List<Object> variableValues,
+                                                                   final List<String> expectedVariableValues) {
+    // // given a variable that contains a list of primitives
+    final VariableDto objectVariableDto = variablesClient.createListJsonObjectVariableDto(variableValues);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("primitiveListVar", objectVariableDto);
+    final ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceProcessTaskWithVariables(variables);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables = getVariablesForProcessInstance(instanceDto);
+
+    // then
+    assertThat(instanceVariables)
+      .hasSize(2)
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      )
+      .containsExactlyInAnyOrder(
+        Tuple.tuple("primitiveListVar", type.getId(), expectedVariableValues),
+        Tuple.tuple("primitiveListVar._listSize", LONG.getId(), singletonList("2"))
       );
   }
 
@@ -367,7 +391,7 @@ public class VariableImportIT extends AbstractImportIT {
   @MethodSource("primitiveObjectVariableScenarios")
   public void objectVariablesThatArePrimitivesAreNotDuplicated(final String value, final String objectTypeName,
                                                                final VariableType expectedType,
-                                                               final String expectedValue) {
+                                                               final List<String> expectedValue) {
     // given
     final VariableDto objectVariableDto =
       variablesClient.createJsonObjectVariableDto(value, objectTypeName);
@@ -423,8 +447,8 @@ public class VariableImportIT extends AbstractImportIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVar", OBJECT.getId(), objectVariableDto.getValue()),
-        Tuple.tuple("objectVar.dateProperty", DATE.getId(), "2021-11-01T05:05:00.000+0100")
+        Tuple.tuple("objectVar", OBJECT.getId(), singletonList(objectVariableDto.getValue())),
+        Tuple.tuple("objectVar.dateProperty", DATE.getId(), singletonList("2021-11-01T05:05:00.000+0100"))
       );
   }
 
@@ -502,11 +526,11 @@ public class VariableImportIT extends AbstractImportIT {
       @SuppressWarnings(UNCHECKED_CAST)
       List<Map> retrievedVariables = (List<Map>) searchHit.getSourceAsMap().get(VARIABLES);
       assertThat(retrievedVariables).hasSize(variables.size());
-      retrievedVariables.forEach(var -> assertThat(var.get(VARIABLE_VALUE)).isNull());
+      retrievedVariables.forEach(var -> assertThat((List<String>) var.get(VARIABLE_VALUE)).isEmpty());
     }
     assertThat(storedVariableUpdateInstances)
       .hasSize(variables.size())
-      .allSatisfy(instance -> assertThat(instance.getValue()).isNull());
+      .allSatisfy(instance -> assertThat(instance.getValue()).isEmpty());
   }
 
   @SneakyThrows
@@ -532,7 +556,7 @@ public class VariableImportIT extends AbstractImportIT {
         VariableUpdateInstanceDto::getType,
         VariableUpdateInstanceDto::getValue
       )
-      .containsExactly("objectVar", OBJECT.getId(), null);
+      .containsExactly("objectVar", OBJECT.getId(), Collections.emptyList());
     assertThat(instanceVariables)
       .extracting(
         SimpleProcessVariableDto::getName,
@@ -540,7 +564,7 @@ public class VariableImportIT extends AbstractImportIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVar", OBJECT.getId(), null)
+        Tuple.tuple("objectVar", OBJECT.getId(), Collections.emptyList())
       );
   }
 
@@ -572,9 +596,9 @@ public class VariableImportIT extends AbstractImportIT {
       )
       .withFailMessage("Large object variable was not imported correctly")
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVar", objectVariableDto.getValue()),
-        Tuple.tuple("objectVar.property1", longString1),
-        Tuple.tuple("objectVar.property2", longString2)
+        Tuple.tuple("objectVar", singletonList(objectVariableDto.getValue())),
+        Tuple.tuple("objectVar.property1", singletonList(longString1)),
+        Tuple.tuple("objectVar.property2", singletonList(longString2))
       );
   }
 
@@ -774,17 +798,6 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
-  @SneakyThrows
-  private VariableDto createListJsonObjectVariableDto(final List<Object> variable) {
-    return variablesClient.createJsonObjectVariableDto(
-      new ObjectMapper()
-        .setDateFormat(new SimpleDateFormat(OPTIMIZE_DATE_FORMAT))
-        .enable(SerializationFeature.INDENT_OUTPUT)
-        .writeValueAsString(variable),
-      "java.util.ArrayList"
-    );
-  }
-
   private Map<String, Object> createPersonVariableWithAllTypes() {
     Map<String, Object> person = new HashMap<>();
     person.put("name", "Pond");
@@ -858,9 +871,34 @@ public class VariableImportIT extends AbstractImportIT {
 
   private static Stream<Arguments> primitiveObjectVariableScenarios() {
     return Stream.of(
-      Arguments.of("\"someString\"", "java.lang.String", STRING, "someString"),
-      Arguments.of("5", "java.lang.Integer", DOUBLE, "5.0"),
-      Arguments.of("true", "java.lang.Boolean", BOOLEAN, "true")
+      Arguments.of("\"someString\"", "java.lang.String", STRING, singletonList("someString")),
+      Arguments.of("5", "java.lang.Integer", DOUBLE, singletonList("5.0")),
+      Arguments.of("true", "java.lang.Boolean", BOOLEAN, singletonList("true"))
+    );
+  }
+
+  private static Stream<Arguments> primitiveListVariableScenarios() {
+    return Stream.of(
+      Arguments.of(
+        DATE,
+        List.of("2021-12-24T00:00:00.000+0100", "1992-12-24T00:00:00.000+0100"),
+        List.of("2021-12-24T00:00:00.000+0100", "1992-12-24T00:00:00.000+0100")
+      ),
+      Arguments.of(STRING, List.of("string1", "string2"), List.of("string1", "string2")),
+      Arguments.of(DOUBLE, List.of(5.0, 7.5), List.of("5.0", "7.5")),
+      Arguments.of(DOUBLE, List.of(50, 75), List.of("50.0", "75.0")),
+      Arguments.of(BOOLEAN, List.of(true, false), List.of("true", "false"))
+    );
+  }
+
+  private static Stream<Arguments> objectListVariableScenarios() {
+    return Stream.of(
+      Arguments.of(
+        List.of(List.of("string1", "string2"), List.of("string3", "string4"))
+      ),
+      Arguments.of(
+        List.of(Map.of("name", "aDog", "type", "dog"), Map.of("name", "aCat", "type", "cat"))
+      )
     );
   }
 

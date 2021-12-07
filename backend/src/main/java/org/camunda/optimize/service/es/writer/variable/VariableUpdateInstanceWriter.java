@@ -21,10 +21,12 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -39,8 +41,8 @@ public class VariableUpdateInstanceWriter {
 
   public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variableUpdates) {
     final List<VariableUpdateInstanceDto> variableUpdateInstances = variableUpdates.stream()
-      .map(this::convertToVariableUpdateInstance)
-      .collect(Collectors.toList());
+      .map(this::mapToVariableUpdateInstance)
+      .collect(toList());
 
     String importItemName = "variable instances";
     log.debug("Creating imports for {} [{}].", variableUpdates.size(), importItemName);
@@ -53,7 +55,7 @@ public class VariableUpdateInstanceWriter {
         .esClient(esClient)
         .request(request.get())
         .build())
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
@@ -73,12 +75,14 @@ public class VariableUpdateInstanceWriter {
     );
   }
 
-  private VariableUpdateInstanceDto convertToVariableUpdateInstance(final ProcessVariableDto processVariable) {
+  private VariableUpdateInstanceDto mapToVariableUpdateInstance(final ProcessVariableDto processVariable) {
     return VariableUpdateInstanceDto.builder()
       .instanceId(processVariable.getId())
       .name(processVariable.getName())
       .type(processVariable.getType())
-      .value(processVariable.getValue())
+      .value(processVariable.getValue() == null
+               ? Collections.emptyList()
+               : processVariable.getValue().stream().filter(Objects::nonNull).collect(toList()))
       .processInstanceId(processVariable.getProcessInstanceId())
       .tenantId(processVariable.getTenantId())
       .timestamp(processVariable.getTimestamp())

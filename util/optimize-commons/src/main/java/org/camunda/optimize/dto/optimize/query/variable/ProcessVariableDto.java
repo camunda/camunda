@@ -5,38 +5,32 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
-/**
- * This class is using the dto from the plugin system,
- * in order to enable to enrich the variable import.
- * <p>
- * Note: This class is still needed, because it implements
- * the optimize dto opposed to the plugin dto.
- */
-public class ProcessVariableDto extends PluginVariableDto implements OptimizeDto {
-  public ProcessVariableDto(final String id, final String name, final String type, final String value,
-                            final OffsetDateTime timestamp, final Map<String, Object> valueInfo,
-                            final String processDefinitionKey, final String processDefinitionId,
-                            final String processInstanceId, final Long version, final String engineAlias,
-                            final String tenantId) {
-    super(
-      id,
-      name,
-      type,
-      value,
-      timestamp,
-      valueInfo,
-      processDefinitionKey,
-      processDefinitionId,
-      processInstanceId,
-      version,
-      engineAlias,
-      tenantId
-    );
-  }
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+@Accessors(chain = true)
+public class ProcessVariableDto implements OptimizeDto {
+
+  private String id;
+  private String name;
+  private String type;
+  private List<String> value;
+  private OffsetDateTime timestamp;
+  private Map<String, Object> valueInfo;
+  private String processDefinitionKey;
+  private String processDefinitionId;
+  private String processInstanceId;
+  private Long version;
+  private String engineAlias;
+  private String tenantId;
 }

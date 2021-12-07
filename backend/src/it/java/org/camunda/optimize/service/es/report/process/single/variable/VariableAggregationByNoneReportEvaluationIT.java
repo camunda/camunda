@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -92,6 +93,25 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
       final Double resultAsDouble = ((Number) variables.get(variable)).doubleValue();
       assertThat(evaluationResponse.getFirstMeasureData()).isEqualTo(resultAsDouble);
     }
+  }
+
+  @Test
+  public void variableWithMultipleValues() {
+    // given
+    final VariableDto listVar = variablesClient.createListJsonObjectVariableDto(List.of(5, 10));
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(TEST_VARIABLE, listVar);
+    deployAndStartSimpleProcessWithVariables(variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(TEST_VARIABLE, VariableType.DOUBLE);
+    reportData.getConfiguration().setAggregationTypes(AVERAGE);
+    ReportResultResponseDto<Double> evaluationResponse = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(evaluationResponse.getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResponse.getFirstMeasureData()).isEqualTo(7.5);
   }
 
   @Test

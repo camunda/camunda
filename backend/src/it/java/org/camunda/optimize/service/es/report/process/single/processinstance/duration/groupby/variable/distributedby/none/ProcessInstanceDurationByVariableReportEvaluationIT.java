@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResult
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -68,8 +69,8 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
@@ -396,6 +397,43 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "bar2").get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
+  }
+
+  @Test
+  public void multipleVariableValuesInOneInstance() {
+    // given
+    final ProcessDefinitionEngineDto processDefinitionDto =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
+    final VariableDto listVar = variablesClient.createListJsonObjectVariableDto(List.of("value1", "value2"));
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("listVar", listVar);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("listVar")
+      .setVariableType(VariableType.STRING)
+      .build();
+
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getFirstMeasureData()).isNotNull();
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "value1"))
+      .isPresent()
+      .map(MapResultEntryDto::getValue)
+      .contains(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "value2"))
+      .isPresent()
+      .map(MapResultEntryDto::getValue)
+      .contains(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -1364,7 +1402,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultData).isEmpty();
 
     // when
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(startDate).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedInstanceStartDate()
+                           .start(startDate)
+                           .end(null)
+                           .add()
+                           .buildList());
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

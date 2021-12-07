@@ -726,7 +726,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         SimpleProcessVariableDto.builder()
           .id(VARIABLE_ID)
           .name(VARIABLE_ID)
-          .value(VARIABLE_VALUE)
+          .value(Collections.singletonList(VARIABLE_VALUE))
           .type(VARIABLE_VALUE.getClass().getSimpleName())
           .version(1L)
           .build()

@@ -12,6 +12,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,7 +25,7 @@ public class SimpleProcessVariableDto {
   private String id;
   private String name;
   private String type;
-  private String value;
+  private List<String> value;
   @EqualsAndHashCode.Include
   private long version;
 }

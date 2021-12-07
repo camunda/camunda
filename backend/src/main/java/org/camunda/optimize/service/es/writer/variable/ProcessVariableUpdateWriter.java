@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import java.security.InvalidParameterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -179,6 +180,12 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
         var.getValue(),
         var.getVersion()
       ))
+      .map(variable -> {
+        if (variable.getValue().stream().allMatch(Objects::isNull)) {
+          variable.setValue(Collections.emptyList());
+        }
+        return variable;
+      })
       .collect(Collectors.toList());
   }
 

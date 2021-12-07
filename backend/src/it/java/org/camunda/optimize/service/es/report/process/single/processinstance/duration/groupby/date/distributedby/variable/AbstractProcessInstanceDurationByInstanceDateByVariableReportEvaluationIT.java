@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
@@ -306,6 +307,34 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
         .withFailMessage("Failed bucket key assertion on variable " + entry.getKey())
         .containsOnlyOnce(getExpectedKeyForVariableType(variableType, entry.getValue()));
     }
+  }
+
+  @Test
+  public void worksWithVariablesWithMultipleValues() {
+    // given
+    final OffsetDateTime startDate = dateFreezer().freezeDateAndReturn();
+    final VariableDto listVar = variablesClient.createListJsonObjectVariableDto(List.of("value1", "value2"));
+    final ProcessInstanceEngineDto procInstance =
+      deployAndStartSimpleProcess(Collections.singletonMap("listVar", listVar));
+    adjustProcessInstanceDatesAndDuration(procInstance.getId(), startDate, 0, 1L);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "listVar");
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("value1", 1000.)
+        .distributedByContains("value2", 1000.)
+      .doAssert(evaluationResponse.getResult());
+    // @formatter:on
   }
 
   @Test

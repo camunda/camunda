@@ -505,11 +505,39 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  public void objectVariableValuesAreOmitted() {
+  public void allValuesOfListVariablesAreInResult() {
+    // given
+    final VariableDto listVariable = variablesClient.createListJsonObjectVariableDto(List.of(
+      "firstValue",
+      "secondValue"
+    ));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("listVariable", listVariable);
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(createReport(processInstance));
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    assertThat(result.getData())
+      .isNotNull()
+      .flatExtracting(RawDataProcessInstanceDto::getVariables)
+      .containsExactly(Map.of(
+        "listVariable", "firstValue, secondValue",
+        "listVariable._listSize", "2"
+      ));
+  }
+
+  @Test
+  public void objectVariable_placeholderForObjectAndPropertyVariablesAreIncluded() {
     // given
     final Map<String, Object> objectVar = new HashMap<>();
     objectVar.put("name", "Kermit");
     objectVar.put("age", "50");
+    objectVar.put("likes", List.of("MissPiggy", "Optimize"));
     final VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("objectVar", objectVariableDto);
@@ -528,6 +556,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .containsExactly(Map.of(
         "objectVar.name", "Kermit",
         "objectVar.age", "50",
+        "objectVar.likes", "MissPiggy, Optimize",
+        "objectVar.likes._listSize", "2",
         "objectVar", OBJECT_VARIABLE_VALUE_PLACEHOLDER
       ));
   }

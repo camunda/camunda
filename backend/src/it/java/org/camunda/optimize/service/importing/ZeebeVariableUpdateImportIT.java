@@ -19,6 +19,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,8 +143,8 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "someValue", STRING_TYPE),
-        Tuple.tuple("var1", "flowNodeInstanceScopeValue", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE),
+        Tuple.tuple("var1", Collections.singletonList("flowNodeInstanceScopeValue"), STRING_TYPE)
       );
   }
 
@@ -179,8 +180,8 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "processInstanceScopeUpdatedValue", STRING_TYPE),
-        Tuple.tuple("var1", "flowNodeInstanceScopeValue", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("processInstanceScopeUpdatedValue"), STRING_TYPE),
+        Tuple.tuple("var1", Collections.singletonList("flowNodeInstanceScopeValue"), STRING_TYPE)
       );
   }
 
@@ -219,8 +220,8 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "processInstanceScopeValue", STRING_TYPE),
-        Tuple.tuple("var1", "flowNodeInstanceScopeUpdatedValue", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("processInstanceScopeValue"), STRING_TYPE),
+        Tuple.tuple("var1", Collections.singletonList("flowNodeInstanceScopeUpdatedValue"), STRING_TYPE)
       );
   }
 
@@ -255,11 +256,11 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "false", BOOLEAN_TYPE),
-        Tuple.tuple("var2", "someValue", STRING_TYPE),
-        Tuple.tuple("var3", "", STRING_TYPE),
-        Tuple.tuple("var4", "true", BOOLEAN_TYPE),
-        Tuple.tuple("var5", "123.0", DOUBLE_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("false"), BOOLEAN_TYPE),
+        Tuple.tuple("var2", Collections.singletonList("someValue"), STRING_TYPE),
+        Tuple.tuple("var3", Collections.singletonList(""), STRING_TYPE),
+        Tuple.tuple("var4", Collections.singletonList("true"), BOOLEAN_TYPE),
+        Tuple.tuple("var5", Collections.singletonList("123.0"), DOUBLE_TYPE)
       );
   }
 
@@ -295,8 +296,8 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "processInstanceScopeValue", STRING_TYPE),
-        Tuple.tuple("var1", "updatedValue", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("processInstanceScopeValue"), STRING_TYPE),
+        Tuple.tuple("var1", Collections.singletonList("updatedValue"), STRING_TYPE)
       );
   }
 
@@ -332,7 +333,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "secondUpdate", STRING_TYPE));
+        Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
   }
 
   @Test
@@ -370,7 +371,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "secondUpdate", STRING_TYPE));
+        Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
   }
 
   @SneakyThrows
@@ -408,10 +409,15 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVar", OBJECT.getId(), variablesClient.createMapJsonObjectVariableDto(objectVar).getValue()),
-        Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
-        Tuple.tuple("objectVar.age", DOUBLE.getId(), "29.0"),
-        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "3")
+        Tuple.tuple(
+          "objectVar",
+          OBJECT.getId(),
+          Collections.singletonList(variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())
+        ),
+        Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
+        Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("29.0")),
+        Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic", "tofu")),
+        Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("3"))
       );
   }
 
@@ -472,11 +478,11 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "var1UpdatedValue", STRING_TYPE),
-        Tuple.tuple("var2", "true", BOOLEAN_TYPE),
-        Tuple.tuple("var3", "123.0", DOUBLE_TYPE),
-        Tuple.tuple("var4", "123", DOUBLE_TYPE),
-        Tuple.tuple("var5", "var5UpdatedValue", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("var1UpdatedValue"), STRING_TYPE),
+        Tuple.tuple("var2", Collections.singletonList("true"), BOOLEAN_TYPE),
+        Tuple.tuple("var3", Collections.singletonList("123.0"), DOUBLE_TYPE),
+        Tuple.tuple("var4", Collections.singletonList("123"), DOUBLE_TYPE),
+        Tuple.tuple("var5", Collections.singletonList("var5UpdatedValue"), STRING_TYPE)
       );
   }
 

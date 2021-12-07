@@ -15,22 +15,29 @@ import com.github.wnameless.json.flattener.FlattenMode;
 import com.github.wnameless.json.flattener.JsonFlattener;
 import com.github.wnameless.json.flattener.JsonifyArrayList;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_SERIALIZATION_DATA_FORMAT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_OBJECT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Component
 @Slf4j
@@ -49,45 +56,66 @@ public class ObjectVariableService {
     objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
   }
 
-  public List<PluginVariableDto> convertObjectVariablesForImport(final List<PluginVariableDto> variables) {
-    List<PluginVariableDto> resultList = new ArrayList<>();
-    for (PluginVariableDto pluginVariableDto : variables) {
-      if (isNonNullObjectVariable(pluginVariableDto)) {
+  public List<ProcessVariableDto> convertObjectVariablesForImport(final List<ProcessVariableUpdateDto> variables) {
+    List<ProcessVariableDto> resultList = new ArrayList<>();
+    for (ProcessVariableUpdateDto variableUpdateDto : variables) {
+      if (isNonNullObjectVariableWithOneValue(variableUpdateDto)) {
         final Optional<String> serializationDataFormat =
-          Optional.ofNullable(String.valueOf(pluginVariableDto.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
+          Optional.ofNullable(String.valueOf(variableUpdateDto.getValueInfo().get(VARIABLE_SERIALIZATION_DATA_FORMAT)));
         if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
-          flattenJsonObjectVariableAndAddToResult(pluginVariableDto, resultList);
-          formatJsonObjectVariableAndAddToResult(pluginVariableDto, resultList);
+          flattenJsonObjectVariableAndAddToResult(variableUpdateDto, resultList);
+          formatJsonObjectVariableAndAddToResult(variableUpdateDto, resultList);
         } else {
           log.warn("Object variable '{}' will not be imported due to unsupported serializationDataFormat: {}. " +
                      "Object variables must have serializationDataFormat application/json.",
-                   pluginVariableDto.getName(), serializationDataFormat.orElse("no format specified")
+                   variableUpdateDto.getName(), serializationDataFormat.orElse("no format specified")
           );
         }
       } else {
-        resultList.add(pluginVariableDto);
+        resultList.add(
+          createSkeletonVariableDto(variableUpdateDto)
+            .setId(variableUpdateDto.getId())
+            .setName(variableUpdateDto.getName())
+            .setType(variableUpdateDto.getType())
+            .setValue(Collections.singletonList(variableUpdateDto.getValue()))
+        );
       }
     }
     return resultList;
   }
 
-  private void formatJsonObjectVariableAndAddToResult(final PluginVariableDto variable,
-                                                      final List<PluginVariableDto> resultList) {
+  private void formatJsonObjectVariableAndAddToResult(final ProcessVariableUpdateDto variableUpdate,
+                                                      final List<ProcessVariableDto> resultList) {
     try {
-      final Object jsonObject = objectMapper.readValue(variable.getValue(), Object.class);
-      if (jsonObject instanceof String || jsonObject instanceof Number || jsonObject instanceof Boolean) {
+      final Object jsonObject = objectMapper.readValue(variableUpdate.getValue(), Object.class);
+      if (isPrimitiveOrListOfPrimitives(jsonObject)) {
         // nothing to do as a "flattened" string/number/bool variable is the same as the raw object variable
         return;
       }
-      variable.setValue(objectMapper.writeValueAsString(jsonObject));
-      resultList.add(variable);
+      resultList.add(
+        createSkeletonVariableDto(variableUpdate)
+          .setId(variableUpdate.getId())
+          .setName(variableUpdate.getName())
+          .setType(OBJECT.getId())
+          .setValue(Collections.singletonList(objectMapper.writeValueAsString(jsonObject)))
+      );
     } catch (JsonProcessingException e) {
-      log.error("Error while formatting json object variable with name '{}'.", variable.getName(), e);
+      log.error("Error while formatting json object variable with name '{}'.", variableUpdate.getName(), e);
     }
   }
 
-  private void flattenJsonObjectVariableAndAddToResult(final PluginVariableDto variable,
-                                                       final List<PluginVariableDto> resultList) {
+  private boolean isPrimitiveOrListOfPrimitives(final Object jsonObject) {
+    boolean isListOfPrimitives = false;
+    if (jsonObject instanceof ArrayList && !((ArrayList<?>) jsonObject).isEmpty()) {
+      @SuppressWarnings(UNCHECKED_CAST) final Object firstItem = ((ArrayList<Object>) jsonObject).get(0);
+      isListOfPrimitives = firstItem instanceof String || firstItem instanceof Number || firstItem instanceof Boolean;
+    }
+    return jsonObject instanceof String || jsonObject instanceof Number
+      || jsonObject instanceof Boolean || isListOfPrimitives;
+  }
+
+  private void flattenJsonObjectVariableAndAddToResult(final ProcessVariableUpdateDto variable,
+                                                       final List<ProcessVariableDto> resultList) {
     try {
       new JsonFlattener(new JacksonJsonCore(objectMapper), variable.getValue())
         .withFlattenMode(FlattenMode.KEEP_ARRAYS)
@@ -95,9 +123,7 @@ public class ObjectVariableService {
         .entrySet()
         .stream()
         .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .forEach(resultList::add);
+        .forEach(resultList::addAll);
     } catch (Exception exception) {
       log.error(
         "Error while flattening json object variable with name '{}'.",
@@ -107,79 +133,96 @@ public class ObjectVariableService {
     }
   }
 
-  private Optional<PluginVariableDto> mapToFlattenedVariable(final String name, final Object value,
-                                                             final PluginVariableDto origin) {
+  private List<ProcessVariableDto> mapToFlattenedVariable(final String name, final Object value,
+                                                          final ProcessVariableUpdateDto origin) {
     if (value == null) {
       log.info("Variable attribute '{}' of '{}' is null and won't be imported", name, origin.getName());
-      return Optional.empty();
+      return Collections.emptyList();
     }
 
-    PluginVariableDto newVariable = createNewVariable(origin);
-
-    if (JsonFlattener.ROOT.equals(name)) {
-      // the name "root" is used by the flattener if the JSON is a string/number or array (no object)
-      newVariable.setName(origin.getName());
-    } else {
-      newVariable.setName(String.join(".", origin.getName(), name));
-    }
+    List<ProcessVariableDto> resultList = new ArrayList<>();
+    ProcessVariableDto newVariable = createSkeletonVariableDto(origin);
+    addNameToSkeletonVariable(name, newVariable, origin);
 
     if (value instanceof JsonifyArrayList) {
       newVariable.setName(String.join(".", newVariable.getName(), LIST_SIZE_VARIABLE_SUFFIX));
       newVariable.setType(VariableType.LONG.getId());
-      newVariable.setValue(String.valueOf(((JsonifyArrayList<?>) value).size()));
+      newVariable.setValue(Collections.singletonList(String.valueOf(((JsonifyArrayList<?>) value).size())));
+      addVariableForListProperty(name, value, origin, resultList);
     } else if (value instanceof String) {
-      String stringValue = String.valueOf(value);
-      final Optional<OffsetDateTime> optDate = parsePossibleDate(stringValue);
-      if (optDate.isPresent()) {
-        newVariable.setType(VariableType.DATE.getId());
-        newVariable.setValue(OPTIMIZE_DATE_TIME_FORMATTER.format(optDate.get()));
-      } else {
-        newVariable.setType(VariableType.STRING.getId());
-        newVariable.setValue(stringValue);
-      }
+      parseStringOrDateVariable(value, Collections.singletonList(value), newVariable);
     } else if (value instanceof Boolean) {
-      newVariable.setType(VariableType.BOOLEAN.getId());
-      newVariable.setValue(String.valueOf(value));
-    } else if (value instanceof BigDecimal || value instanceof Double) {
-      newVariable.setType(VariableType.DOUBLE.getId());
-      newVariable.setValue(value.toString());
-    } else if (value instanceof Long) {
-      newVariable.setType(VariableType.DOUBLE.getId());
-      newVariable.setValue(String.valueOf(((Long) value).doubleValue()));
-    } else if (value instanceof Integer) {
-      newVariable.setType(VariableType.DOUBLE.getId());
-      newVariable.setValue(String.valueOf(((Integer) value).doubleValue()));
-    } else if (value instanceof Short) {
-      newVariable.setType(VariableType.DOUBLE.getId());
-      newVariable.setValue(String.valueOf(((Short) value).doubleValue()));
+      parseBooleanVariable(Collections.singletonList(value), newVariable);
+    } else if (value instanceof Number) {
+      parseNumberVariable(Collections.singletonList(value), newVariable);
     } else {
       log.warn(
         "Variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",
         name, origin.getName(), value.getClass().getSimpleName(), value
       );
-      return Optional.empty();
+      return Collections.emptyList();
     }
-
-    if (JsonFlattener.ROOT.equals(name) && !(value instanceof JsonifyArrayList)) {
-      // if variable is just a string or number, keep original name and ID
-      newVariable.setId(origin.getId());
-    } else {
-      // the ID needs to be unique for each new variable instance but consistent so that version updates get overridden
-      newVariable.setId(origin.getId() + "_" + newVariable.getName());
-    }
-
-    return Optional.of(newVariable);
+    addIdToSkeletonVariable(name, newVariable, origin);
+    resultList.add(newVariable);
+    return resultList;
   }
 
-  private PluginVariableDto createNewVariable(final PluginVariableDto origin) {
-    PluginVariableDto newVariable = new PluginVariableDto();
-    newVariable.setEngineAlias(origin.getEngineAlias());
-    newVariable.setProcessDefinitionId(origin.getProcessDefinitionId());
-    newVariable.setProcessDefinitionKey(origin.getProcessDefinitionKey());
-    newVariable.setProcessInstanceId(origin.getProcessInstanceId());
-    newVariable.setVersion(origin.getVersion());
-    newVariable.setTimestamp(origin.getTimestamp());
-    return newVariable;
+  private void addVariableForListProperty(final String name, final Object value, final ProcessVariableUpdateDto origin,
+                                          final List<ProcessVariableDto> resultList) {
+    @SuppressWarnings(UNCHECKED_CAST) final ArrayList<Object> originList = (ArrayList<Object>) value;
+    if (originList.isEmpty()) {
+      return;
+    }
+    final ProcessVariableDto newListVar = createSkeletonVariableDto(origin);
+    addNameToSkeletonVariable(name, newListVar, origin);
+    addIdToSkeletonVariable(name, newListVar, origin);
+
+    final Object firstItem = originList.get(0);
+    if (firstItem instanceof String) {
+      parseStringOrDateVariable(firstItem, originList, newListVar);
+    } else if (firstItem instanceof Boolean) {
+      parseBooleanVariable(originList, newListVar);
+    } else if (firstItem instanceof Number) {
+      parseNumberVariable(originList, newListVar);
+    } else {
+      log.warn(
+        "List variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",
+        name, origin.getName(), firstItem.getClass().getSimpleName(), value
+      );
+    }
+    resultList.add(newListVar);
+  }
+
+  private ProcessVariableDto createSkeletonVariableDto(final ProcessVariableUpdateDto origin) {
+    return new ProcessVariableDto()
+      .setEngineAlias(origin.getEngineAlias())
+      .setProcessDefinitionId(origin.getProcessDefinitionId())
+      .setProcessDefinitionKey(origin.getProcessDefinitionKey())
+      .setProcessInstanceId(origin.getProcessInstanceId())
+      .setVersion(origin.getVersion())
+      .setTimestamp(origin.getTimestamp())
+      .setTenantId(origin.getTenantId());
+  }
+
+  private void addNameToSkeletonVariable(final String propertyName, final ProcessVariableDto newVariable,
+                                         final ProcessVariableUpdateDto origin) {
+    if (JsonFlattener.ROOT.equals(propertyName)) {
+      // if variable is just a string, number, or list keep original name
+      newVariable.setName(origin.getName());
+    } else {
+      newVariable.setName(String.join(".", origin.getName(), propertyName));
+    }
+  }
+
+  private void addIdToSkeletonVariable(final String propertyName, final ProcessVariableDto newVariable,
+                                       final ProcessVariableUpdateDto origin) {
+    if (JsonFlattener.ROOT.equals(propertyName) && !(newVariable.getName().contains(LIST_SIZE_VARIABLE_SUFFIX))) {
+      // if variable is just a string, number, or list keep original ID
+      newVariable.setId(origin.getId());
+    } else {
+      // the ID  needs to be unique for each new variable instance but consistent so that version updates get overridden
+      newVariable.setId(origin.getId() + "_" + newVariable.getName());
+    }
   }
 
   private Optional<OffsetDateTime> parsePossibleDate(final String dateAsString) {
@@ -190,8 +233,38 @@ public class ObjectVariableService {
     }
   }
 
-  private boolean isNonNullObjectVariable(final PluginVariableDto pluginVariableDto) {
-    return pluginVariableDto.getValue() != null && VARIABLE_TYPE_OBJECT.equalsIgnoreCase(pluginVariableDto.getType());
+  private void parseStringOrDateVariable(final Object firstValue, final List<Object> valueList,
+                                         final ProcessVariableDto newVariable) {
+    final Optional<OffsetDateTime> optDate = parsePossibleDate(String.valueOf(firstValue));
+    if (optDate.isPresent()) {
+      newVariable.setType(VariableType.DATE.getId());
+      newVariable.setValue(valueList.stream()
+                             .map(item -> parsePossibleDate(String.valueOf(item)).orElse(null))
+                             .filter(Objects::nonNull)
+                             .map(OPTIMIZE_DATE_TIME_FORMATTER::format)
+                             .collect(toList()));
+    } else {
+      newVariable.setType(VariableType.STRING.getId());
+      newVariable.setValue(valueList.stream().map(String::valueOf).collect(toList()));
+    }
+  }
+
+  private void parseBooleanVariable(final List<Object> valueList,
+                                    final ProcessVariableDto newVariable) {
+    newVariable.setType(BOOLEAN.getId());
+    newVariable.setValue(valueList.stream().map(item -> ((Boolean) item).toString()).collect(toList()));
+  }
+
+  private void parseNumberVariable(final List<Object> valueList,
+                                   final ProcessVariableDto newVariable) {
+    newVariable.setType(DOUBLE.getId());
+    newVariable.setValue(valueList.stream()
+                           .map(item -> String.valueOf(((Number) item).doubleValue()))
+                           .collect(toList()));
+  }
+
+  private boolean isNonNullObjectVariableWithOneValue(final ProcessVariableUpdateDto originVariable) {
+    return originVariable.getValue() != null && VARIABLE_TYPE_OBJECT.equalsIgnoreCase(originVariable.getType());
   }
 
 }

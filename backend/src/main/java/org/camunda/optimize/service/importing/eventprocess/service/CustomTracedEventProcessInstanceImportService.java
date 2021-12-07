@@ -126,7 +126,11 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
               .equalsIgnoreCase(eventSourceConfig.getTraceVariable()))
             .distinct()
             .min(Comparator.comparing(VariableUpdateInstanceDto::getTimestamp)).get();
-          eventDto.setTraceId(firstUpdate.getValue());
+          // If there are multiple values in this variable, we always take the first
+          eventDto.setTraceId(firstUpdate.getValue().stream().sorted().findFirst().orElse(null));
+          if (firstUpdate.getValue().size() > 1) {
+            log.info("Variable {} has multiple values, setting traceID to first value in list.", firstUpdate.getName());
+          }
         })
         .collect(Collectors.toList());
     }
@@ -155,7 +159,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
 
   private Object getTypedVariable(final VariableUpdateInstanceDto variableUpdateInstanceDto) {
     String type = variableUpdateInstanceDto.getType();
-    String value = variableUpdateInstanceDto.getValue();
+    String value = variableUpdateInstanceDto.getValue().stream().sorted().findFirst().orElse(null);
     try {
       if (type.equalsIgnoreCase(VariableType.STRING.getId())) {
         return value;

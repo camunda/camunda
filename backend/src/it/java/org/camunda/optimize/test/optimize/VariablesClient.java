@@ -130,6 +130,14 @@ public class VariablesClient {
   }
 
   @SneakyThrows
+  public VariableDto createListJsonObjectVariableDto(final List<Object> variable) {
+    return createJsonObjectVariableDto(
+      objectMapper.writeValueAsString(variable),
+      "java.util.ArrayList"
+    );
+  }
+
+  @SneakyThrows
   public VariableDto createJsonObjectVariableDto(final String value,
                                                  final String objectTypeName) {
     VariableDto objectVariableDto = new VariableDto();

@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;

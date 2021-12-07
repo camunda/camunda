@@ -26,6 +26,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,8 +118,8 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "someValue", STRING_TYPE),
-        Tuple.tuple("var1", "false", BOOLEAN_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE),
+        Tuple.tuple("var1", Collections.singletonList("false"), BOOLEAN_TYPE)
       );
   }
 
@@ -147,7 +148,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getValue,
         SimpleProcessVariableDto::getType
       )
-      .containsExactly(Tuple.tuple("var1", "someValue", STRING_TYPE));
+      .containsExactly(Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE));
   }
 
   @Test
@@ -249,7 +250,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       SimpleProcessVariableDto::getName,
       SimpleProcessVariableDto::getValue,
       SimpleProcessVariableDto::getType
-    ).containsExactly(Tuple.tuple("supportedVariable", "someValue", STRING_TYPE));
+    ).containsExactly(Tuple.tuple("supportedVariable", Collections.singletonList("someValue"), STRING_TYPE));
   }
 
   @SneakyThrows
@@ -279,17 +280,23 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType,
         SimpleProcessVariableDto::getValue
       ).containsExactlyInAnyOrder(
-      Tuple.tuple("objectVar", OBJECT.getId(), variablesClient.createMapJsonObjectVariableDto(objectVar).getValue()),
-      Tuple.tuple("objectVar.name", STRING.getId(), "Pond"),
-      Tuple.tuple("objectVar.age", DOUBLE.getId(), "28.0"),
-      Tuple.tuple("objectVar.IQ", DOUBLE.getId(), "9.9999999999999E13"),
-      Tuple.tuple("objectVar.birthday", DATE.getId(), "1992-11-17T00:00:00.000+0100"),
-      Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), "99.9"),
-      Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), "false"),
-      Tuple.tuple("objectVar.hands", DOUBLE.getId(), "2.0"),
-      Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), "true"),
-      Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), "false"),
-      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), "2") // additional _listSize variable for lists
+      Tuple.tuple(
+        "objectVar",
+        OBJECT.getId(),
+        Collections.singletonList(variablesClient.createMapJsonObjectVariableDto(objectVar).getValue())
+      ),
+      Tuple.tuple("objectVar.name", STRING.getId(), Collections.singletonList("Pond")),
+      Tuple.tuple("objectVar.age", DOUBLE.getId(), Collections.singletonList("28.0")),
+      Tuple.tuple("objectVar.IQ", DOUBLE.getId(), Collections.singletonList("9.9999999999999E13")),
+      Tuple.tuple("objectVar.birthday", DATE.getId(), Collections.singletonList("1992-11-17T00:00:00.000+0100")),
+      Tuple.tuple("objectVar.muscleMassInPercent", DOUBLE.getId(), Collections.singletonList("99.9")),
+      Tuple.tuple("objectVar.deceased", BOOLEAN.getId(), Collections.singletonList("false")),
+      Tuple.tuple("objectVar.hands", DOUBLE.getId(), Collections.singletonList("2.0")),
+      Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), Collections.singletonList("true")),
+      Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), Collections.singletonList("false")),
+      Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
+      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2"))
+      // additional _listSize variable for lists
     );
   }
 
@@ -323,8 +330,8 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "someValue1", STRING_TYPE),
-        Tuple.tuple("var2", "someValue2", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("someValue1"), STRING_TYPE),
+        Tuple.tuple("var2", Collections.singletonList("someValue2"), STRING_TYPE)
       );
   }
 
@@ -392,11 +399,11 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "someValue", STRING_TYPE),
-        Tuple.tuple("var2", "false", BOOLEAN_TYPE),
-        Tuple.tuple("var3", "123", DOUBLE_TYPE),
-        Tuple.tuple("var4", "123.3", DOUBLE_TYPE),
-        Tuple.tuple("var5", "", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("someValue"), STRING_TYPE),
+        Tuple.tuple("var2", Collections.singletonList("false"), BOOLEAN_TYPE),
+        Tuple.tuple("var3", Collections.singletonList("123"), DOUBLE_TYPE),
+        Tuple.tuple("var4", Collections.singletonList("123.3"), DOUBLE_TYPE),
+        Tuple.tuple("var5", Collections.singletonList(""), STRING_TYPE)
       );
   }
 

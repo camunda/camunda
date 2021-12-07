@@ -221,7 +221,6 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
       .allSatisfy(DateFormatterUtil::isValidOptimizeDateFormat);
   }
 
-
   private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
     return variablesClient
       .getProcessVariableNames(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());

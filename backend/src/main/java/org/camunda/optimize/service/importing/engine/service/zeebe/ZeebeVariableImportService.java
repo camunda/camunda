@@ -12,10 +12,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -88,9 +89,9 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
 
   private ProcessInstanceDto updateProcessVariables(final ProcessInstanceDto instanceToAdd,
                                                     List<ZeebeVariableRecordDto> recordsForInstance) {
-    final List<PluginVariableDto> variables = resolveDuplicateUpdates(recordsForInstance)
+    final List<ProcessVariableUpdateDto> variables = resolveDuplicateUpdates(recordsForInstance)
       .stream()
-      .map(this::convertToPluginVariableDto)
+      .map(this::convertToProcessVariableDto)
       .filter(Optional::isPresent)
       .map(Optional::get)
       .collect(toList());
@@ -109,20 +110,20 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
         )).values());
   }
 
-  private SimpleProcessVariableDto convertToSimpleProcessVariableDto(final PluginVariableDto pluginVariableDto) {
+  private SimpleProcessVariableDto convertToSimpleProcessVariableDto(final ProcessVariableDto processVariableDto) {
     SimpleProcessVariableDto simpleProcessVariableDto = new SimpleProcessVariableDto();
-    simpleProcessVariableDto.setId(String.valueOf(pluginVariableDto.getId()));
-    simpleProcessVariableDto.setName(pluginVariableDto.getName());
-    simpleProcessVariableDto.setType(pluginVariableDto.getType());
-    simpleProcessVariableDto.setValue(pluginVariableDto.getValue());
-    simpleProcessVariableDto.setVersion(pluginVariableDto.getVersion());
+    simpleProcessVariableDto.setId(String.valueOf(processVariableDto.getId()));
+    simpleProcessVariableDto.setName(processVariableDto.getName());
+    simpleProcessVariableDto.setType(processVariableDto.getType());
+    simpleProcessVariableDto.setValue(processVariableDto.getValue());
+    simpleProcessVariableDto.setVersion(processVariableDto.getVersion());
     return simpleProcessVariableDto;
   }
 
-  private Optional<PluginVariableDto> convertToPluginVariableDto(final ZeebeVariableRecordDto variableRecordDto) {
+  private Optional<ProcessVariableUpdateDto> convertToProcessVariableDto(final ZeebeVariableRecordDto variableRecordDto) {
     final ZeebeVariableDataDto zeebeVariableDataDto = variableRecordDto.getValue();
     return getVariableTypeFromJsonNode(zeebeVariableDataDto, variableRecordDto.getKey()).map(type -> {
-      PluginVariableDto pluginVariableDto = new PluginVariableDto();
+      ProcessVariableUpdateDto pluginVariableDto = new ProcessVariableUpdateDto();
       pluginVariableDto.setId(String.valueOf(variableRecordDto.getKey()));
       pluginVariableDto.setName(zeebeVariableDataDto.getName());
       pluginVariableDto.setVersion(variableRecordDto.getPosition());

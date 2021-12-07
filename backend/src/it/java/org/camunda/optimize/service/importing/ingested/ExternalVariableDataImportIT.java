@@ -212,7 +212,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         assertThat(instance.getVariables())
           .singleElement()
           .extracting(SimpleProcessVariableDto.Fields.value)
-          .isEqualTo("secondValue");
+          .isEqualTo(Collections.singletonList("secondValue"));
       });
   }
 
@@ -242,7 +242,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         assertThat(instance.getVariables())
           .singleElement()
           .extracting(SimpleProcessVariableDto.Fields.value)
-          .isEqualTo("secondValue");
+          .isEqualTo(Collections.singletonList("secondValue"));
       });
   }
 
@@ -273,10 +273,11 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         SimpleProcessVariableDto::getValue
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVarName", OBJECT.getId(), externalVariable.getValue()),
-        Tuple.tuple("objectVarName.name", STRING.getId(), "Pond"),
-        Tuple.tuple("objectVarName.age", DOUBLE.getId(), "28.0"),
-        Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), "2")
+        Tuple.tuple("objectVarName", OBJECT.getId(), Collections.singletonList(externalVariable.getValue())),
+        Tuple.tuple("objectVarName.name", STRING.getId(), Collections.singletonList("Pond")),
+        Tuple.tuple("objectVarName.age", DOUBLE.getId(), Collections.singletonList("28.0")),
+        Tuple.tuple("objectVarName.likes", STRING.getId(), List.of("optimize", "garlic")),
+        Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), Collections.singletonList("2"))
       );
   }
 
@@ -316,10 +317,11 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
         SimpleProcessVariableDto::getVersion
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("objectVarName", OBJECT.getId(), externalVariable.getValue(), 1000L),
-        Tuple.tuple("objectVarName.name", STRING.getId(), "Pond", 1000L),
-        Tuple.tuple("objectVarName.age", DOUBLE.getId(), "29.0", 1000L),
-        Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), "3", 1000L)
+        Tuple.tuple("objectVarName", OBJECT.getId(), Collections.singletonList(externalVariable.getValue()), 1000L),
+        Tuple.tuple("objectVarName.name", STRING.getId(), Collections.singletonList("Pond"), 1000L),
+        Tuple.tuple("objectVarName.age", DOUBLE.getId(), Collections.singletonList("29.0"), 1000L),
+        Tuple.tuple("objectVarName.likes", STRING.getId(), List.of("optimize", "garlic", "tofu"), 1000L),
+        Tuple.tuple("objectVarName.likes._listSize", LONG.getId(), Collections.singletonList("3"), 1000L)
       );
   }
 }
