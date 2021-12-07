@@ -29,6 +29,9 @@ public class ClientConfig {
   @Value("${CAMUNDA_TASKLIST_CLOUD_STAGE:#{null}}")
   public String stage;
 
+  /** Temporary feature flag */
+  public boolean mixpanelActivated;
+
   @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private ServletContext context;
@@ -38,5 +41,6 @@ public class ClientConfig {
     isEnterprise = tasklistProperties.isEnterprise();
     contextPath = context.getContextPath();
     canLogout = profileService.currentProfileCanLogout();
+    mixpanelActivated = false;
   }
 }

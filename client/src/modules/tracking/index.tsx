@@ -31,9 +31,11 @@ type Events =
 mixpanel.init(MIXPANEL_PUBLIC_TOKEN);
 
 class Tracking {
-  #mixpanel: null | Mixpanel = window.clientConfig?.organizationId
-    ? mixpanel
-    : null;
+  #mixpanel: null | Mixpanel =
+    window.clientConfig?.mixpanelActivated &&
+    window.clientConfig?.organizationId
+      ? mixpanel
+      : null;
 
   track(events: Events) {
     const {eventName, ...properties} = events;

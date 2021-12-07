@@ -9,6 +9,7 @@ export declare global {
     clientConfig?: {
       isEnterprise?: boolean;
       contextPath?: string;
+      mixpanelActivated?: boolean;
       canLogout?: boolean;
       organizationId?: null | string;
       clusterId?: null | string;
