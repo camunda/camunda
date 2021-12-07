@@ -22,7 +22,7 @@ import {
   checkSourcesConflicts,
   removeSources,
 } from './service';
-import AddSourceModal from './modals/AddSourceModal';
+import SourcesModal from './modals/SourcesModal';
 import EditSourceModal from './modals/EditSourceModal';
 
 import './SourcesList.scss';
@@ -233,12 +233,13 @@ export default withErrorHandling(
               </Button>
             </Modal.Actions>
           </Modal>
-          <AddSourceModal
-            open={addingSource}
-            onClose={this.closeAddSourceModal}
-            onConfirm={this.addSource}
-            tenantsAvailable={tenantsAvailable}
-          />
+          {addingSource && (
+            <SourcesModal
+              onClose={this.closeAddSourceModal}
+              onConfirm={this.addSource}
+              confirmText={t('common.add')}
+            />
+          )}
           {editing && !conflict && (
             <EditSourceModal
               source={editing}

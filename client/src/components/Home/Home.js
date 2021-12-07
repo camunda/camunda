@@ -240,6 +240,7 @@ export class Home extends React.Component {
             confirmText={t('common.collection.modal.createBtn')}
             onClose={this.stopCreatingCollection}
             onConfirm={(name) => createEntity('collection', {name})}
+            showSourcesModal
           />
         )}
         {editingCollection && (

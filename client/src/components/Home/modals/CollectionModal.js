@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import {useState} from 'react';
 import {Redirect} from 'react-router-dom';
 
 import {Button, LabeledInput, Modal, Form} from 'components';
@@ -12,81 +12,109 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
-export default withErrorHandling(
-  class CollectionModal extends React.Component {
-    constructor(props) {
-      super(props);
+import {addSources} from '../service';
+import SourcesModal from './SourcesModal';
 
-      this.state = {
-        name: props.initialName,
-        loading: false,
-        redirect: null,
-      };
+import './CollectionModal.scss';
+
+export function CollectionModal({
+  onClose,
+  title,
+  confirmText,
+  initialName,
+  mightFail,
+  onConfirm,
+  showSourcesModal,
+}) {
+  const [name, setName] = useState(initialName);
+  const [loading, setLoading] = useState(false);
+  const [redirect, setRedirect] = useState(null);
+  const [displaySourcesModal, setDisplaySourcesModal] = useState(false);
+
+  const confirm = () => {
+    if (!name || loading) {
+      return;
     }
 
-    onConfirm = () => {
-      const {name, loading} = this.state;
-      if (!name || loading) {
-        return;
-      }
+    if (showSourcesModal) {
+      setDisplaySourcesModal(true);
+    } else {
+      performRequest();
+    }
+  };
 
-      this.setState({loading: true});
-      this.props.mightFail(
-        this.props.onConfirm(name),
-        (id) => {
-          this.setState({loading: false});
-          if (id) {
-            this.setState({redirect: id});
-          }
-        },
-        (error) => {
-          showError(error);
-          this.setState({loading: false});
+  const performRequest = (sources) => {
+    mightFail(
+      onConfirm(name),
+      (id) => {
+        if (id && sources) {
+          mightFail(
+            addSources(id, sources),
+            () => {
+              setLoading(false);
+              setRedirect(id);
+            },
+            showError
+          );
         }
-      );
-    };
-
-    render() {
-      const {redirect} = this.state;
-      if (redirect) {
-        return <Redirect to={`/collection/${redirect}/`} />;
+      },
+      (error) => {
+        showError(error);
+        setLoading(false);
       }
+    );
 
-      const {onClose, title, confirmText} = this.props;
-      return (
-        <Modal open onClose={onClose} onConfirm={this.onConfirm}>
-          <Modal.Header>{title}</Modal.Header>
-          <Modal.Content>
-            <Form>
-              <Form.Group>
-                <LabeledInput
-                  type="text"
-                  label={t('common.collection.modal.inputLabel')}
-                  style={{width: '100%'}}
-                  value={this.state.name}
-                  onChange={({target: {value}}) => this.setState({name: value})}
-                  disabled={this.state.loading}
-                  autoComplete="off"
-                />
-              </Form.Group>
-            </Form>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button main className="cancel" onClick={onClose} disabled={this.state.loading}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              main
-              primary
-              className="confirm"
-              disabled={!this.state.name || this.state.loading}
-              onClick={this.onConfirm}
-            >
-              {confirmText}
-            </Button>
-          </Modal.Actions>
-        </Modal>
-      );
-    }
+    setLoading(true);
+  };
+
+  if (redirect) {
+    return <Redirect to={`/collection/${redirect}/`} />;
   }
-);
+
+  return (
+    <>
+      <Modal
+        className="CollectionModal"
+        open={!displaySourcesModal}
+        onClose={onClose}
+        onConfirm={confirm}
+      >
+        <Modal.Header>{title}</Modal.Header>
+        <Modal.Content>
+          <Form>
+            {showSourcesModal && <div className="info">{t('common.collection.modal.info')}</div>}
+            <Form.Group>
+              <LabeledInput
+                type="text"
+                label={t('common.collection.modal.inputLabel')}
+                style={{width: '100%'}}
+                value={name}
+                onChange={({target: {value}}) => setName(value)}
+                disabled={loading}
+                autoComplete="off"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button main className="cancel" onClick={onClose} disabled={loading}>
+            {t('common.cancel')}
+          </Button>
+          <Button main primary className="confirm" disabled={!name || loading} onClick={confirm}>
+            {showSourcesModal ? t('common.collection.modal.addDataSources') : confirmText}
+          </Button>
+        </Modal.Actions>
+      </Modal>
+      {displaySourcesModal && (
+        <SourcesModal
+          onClose={onClose}
+          onConfirm={performRequest}
+          confirmText={confirmText}
+          preSelectAll
+        />
+      )}
+    </>
+  );
+}
+
+export default withErrorHandling(CollectionModal);

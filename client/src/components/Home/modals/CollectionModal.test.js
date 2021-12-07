@@ -7,23 +7,21 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import CollectionModalWtihErrorHandling from './CollectionModal';
 import {LabeledInput} from 'components';
 
-const CollectionModal = CollectionModalWtihErrorHandling.WrappedComponent;
+import {CollectionModal} from './CollectionModal';
+import SourcesModal from './SourcesModal';
 
 const props = {
   initialName: 'aCollectionName',
   onClose: jest.fn(),
-  onConfirm: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
 it('should provide name edit input', async () => {
   const node = await shallow(<CollectionModal {...props} />);
-  node.setState({name: 'test name'});
 
-  expect(node.find(LabeledInput)).toExist();
+  expect(node.find(LabeledInput).prop('value')).toBe(props.initialName);
 });
 
 it('have a cancel and save collection button', async () => {
@@ -34,27 +32,20 @@ it('have a cancel and save collection button', async () => {
 });
 
 it('should invoke onConfirm on save button click', async () => {
-  const node = await shallow(<CollectionModal {...props} />);
+  const spy = jest.fn();
+  const node = await shallow(<CollectionModal {...props} onConfirm={spy} />);
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith('aCollectionName');
+  expect(spy).toHaveBeenCalledWith('aCollectionName');
 });
 
 it('should disable save button if report name is empty', async () => {
   const node = await shallow(<CollectionModal {...props} />);
-  node.setState({name: ''});
+
+  node.find(LabeledInput).simulate('change', {target: {value: ''}});
 
   expect(node.find('.confirm')).toBeDisabled();
-});
-
-it('should update name on input change', async () => {
-  const node = await shallow(<CollectionModal {...props} />);
-  node.setState({name: 'test name'});
-
-  const input = 'asdf';
-  node.find(LabeledInput).simulate('change', {target: {value: input}});
-  expect(node.state().name).toBe(input);
 });
 
 it('should invoke onClose on cancel', async () => {
@@ -62,4 +53,15 @@ it('should invoke onClose on cancel', async () => {
 
   await node.find('.cancel').simulate('click');
   expect(props.onClose).toHaveBeenCalled();
+});
+
+it('should show sources modal after confirm collection creation', async () => {
+  const spy = jest.fn();
+  const node = await shallow(<CollectionModal {...props} onConfirm={spy} showSourcesModal />);
+
+  node.find('.confirm').simulate('click');
+  expect(spy).not.toHaveBeenCalledWith('aCollectionName');
+
+  node.find(SourcesModal).simulate('confirm');
+  expect(spy).toHaveBeenCalledWith('aCollectionName');
 });

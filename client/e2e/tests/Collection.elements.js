@@ -39,7 +39,6 @@ export const userItem = (text) => Selector('.ListItem').withText('User').withTex
 export const groupItem = Selector('.ListItem').withText('User Group');
 export const processItem = Selector('.ListItem').withText('Process');
 export const decisionItem = Selector('.ListItem').withText('Decision');
-export const tenantSource = Selector('.ButtonGroup .Button').withText('Tenant');
 export const roleOption = (text) => Selector('.Modal .LabeledInput .label.after').withText(text);
 export const userList = Selector('.UserList');
 export const sourcesList = Selector('.SourcesList');
@@ -48,3 +47,7 @@ export const addSourceModal = Selector('.AddSourceModal');
 export const logoutButton = Selector('header .UserMenu.Dropdown .DropdownOption');
 export const usernameDropdown = Selector('header .UserMenu.Dropdown');
 export const usersTypeahead = Selector('.MultiUserInput .Input');
+export const searchField = Selector('.searchInputContainer input');
+export const selectAllCheckbox = Selector('.Table thead input[type="checkbox"]');
+export const itemCheckbox = (idx) =>
+  Selector('.Table tbody tr').nth(idx).find('input[type="checkbox"]');

@@ -907,7 +907,10 @@
         "createBtn": "Create Collection",
         "editBtn": "Edit Collection",
         "inputLabel": "Collection Name",
-        "defaultName": "New Collection"
+        "defaultName": "New Collection",
+        "addDataSources": "Add Data Sources",
+        "info": "A collection allows you to limit access to data, add users and create alerts on number reports.",
+        "allTenants": "All tenants"
       },
       "addUserModal": {
         "searchPlaceholder": "Search for name, email or ID ..."

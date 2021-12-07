@@ -907,7 +907,10 @@
         "createBtn": "Sammlung erstellen",
         "editBtn": "Sammlung bearbeiten",
         "inputLabel": "Name der Sammlung",
-        "defaultName": "Neue Sammlung"
+        "defaultName": "Neue Sammlung",
+        "addDataSources": "Datenquellen hinzufügen",
+        "info": "Mit einer Sammlung können Sie den Zugriff auf Daten einschränken, Benutzer hinzufügen und Alarme auf Zahlenberichten erstellen.",
+        "allTenants": "Alle Mandanten"
       },
       "addUserModal": {
         "searchPlaceholder": "Suche nach Name, E-Mail oder ID ..."

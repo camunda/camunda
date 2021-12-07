@@ -111,43 +111,17 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Collection'));
   await t.typeText(e.modalNameInput, 'Marketing', {replace: true});
   await t.click(e.confirmButton);
-
-  await t.click(Collection.sourcesTab);
-
-  await t.click(Collection.addButton);
-  const collectionDefinitionName = 'Invoice Receipt with alternative correlation variable';
-  await t.typeText(Collection.typeaheadInput, collectionDefinitionName, {replace: true});
-  await t.click(Collection.typeaheadOption(collectionDefinitionName));
-  await t.click(Collection.checkbox('Select All'));
-  await t.click(Collection.confirmModalButton);
-
-  await t.click(Collection.entitiesTab);
+  await t.click(e.confirmButton);
 
   await createNewDashboard(t);
   await save(t);
-
-  await t.click(e.breadcrumb('Marketing'));
-  await t.click(Collection.sourcesTab);
-  await t.click(Collection.addButton);
-  await t.click(e.processTypeahead);
-  await t.click(e.firstTypeaheadOption);
-  await t.click(Collection.checkbox('Select All'));
-  await t.click(Collection.confirmModalButton);
 
   await t.click(e.homepageLink);
 
   await t.click(e.createNewMenu).click(e.option('New Collection'));
   await t.typeText(e.modalNameInput, 'Sales', {replace: true});
   await t.click(e.confirmButton);
-
-  await t.click(Collection.sourcesTab);
-  await t.click(Collection.addButton);
-  const definitionName = 'Hiring Demo 5 Tenants';
-  await t.typeText(Collection.typeaheadInput, definitionName, {replace: true});
-  await t.click(Collection.typeaheadOption(definitionName));
-  await t.click(Collection.checkbox('Select All'));
-  await t.click(Collection.confirmModalButton);
-  await t.click(Collection.entitiesTab);
+  await t.click(e.confirmButton);
 
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Process Report'));
