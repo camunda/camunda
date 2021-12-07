@@ -180,6 +180,7 @@ public class ZeebePartitionTest {
 
     // when
     schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.FOLLOWER, 0);
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
@@ -207,6 +208,7 @@ public class ZeebePartitionTest {
 
     // when
     schedulerRule.submitActor(partition);
+    partition.onNewRole(raft.getRole(), raft.term());
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 

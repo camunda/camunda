@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
@@ -115,7 +112,7 @@ public final class RaftRolesTest {
     followerLatch.await(10, TimeUnit.SECONDS);
 
     // single node becomes directly leader again
-    assertThat(roles, contains(Role.LEADER, Role.LEADER));
+    assertThat(roles).containsSequence(Role.INACTIVE, Role.LEADER, Role.LEADER);
   }
 
   @Test
@@ -212,12 +209,12 @@ public final class RaftRolesTest {
 
     // then
     CompletableFuture.allOf(nodeOneFuture, nodeTwoFuture, nodeThreeFuture).join();
-    assertTrue(latch.await(15, TimeUnit.SECONDS));
+    assertThat(latch.await(15, TimeUnit.SECONDS)).isTrue();
 
     // expect normal leaders are not the leaders this time
-    assertEquals(Role.FOLLOWER, nodeRoles.get(0).get(1));
-    assertEquals(Role.FOLLOWER, nodeRoles.get(1).get(2));
-    assertEquals(Role.FOLLOWER, nodeRoles.get(2).get(3));
+    assertThat(nodeRoles.get(0)).containsEntry(1, Role.FOLLOWER);
+    assertThat(nodeRoles.get(1)).containsEntry(2, Role.FOLLOWER);
+    assertThat(nodeRoles.get(2)).containsEntry(3, Role.FOLLOWER);
 
     final List<Role> leaderRoles =
         nodeRoles.stream()
@@ -231,8 +228,8 @@ public final class RaftRolesTest {
             .filter(r -> r == Role.FOLLOWER)
             .collect(Collectors.toList());
 
-    assertEquals(3, leaderRoles.size());
-    assertEquals(6, followerRoles.size());
+    assertThat(leaderRoles).hasSize(3);
+    assertThat(followerRoles).hasSize(6);
   }
 
   private CompletableFuture<Void> startSingleNodeSinglePartitionWithPartitionConsumer(
