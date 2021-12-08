@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.telemetry.mixpanel.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
@@ -14,7 +13,7 @@ import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
 import java.util.UUID;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 public class MixpanelEventProperties {
   // Mixpanel default properties, see https://developer.mixpanel.com/reference/import-events#high-level-requirements
   @JsonProperty("time")
@@ -29,10 +28,28 @@ public class MixpanelEventProperties {
   // Custom properties
   @JsonProperty("product")
   private String product = TelemetryDataConstants.OPTIMIZE_PRODUCT;
-  @JsonProperty("organization")
+  @JsonProperty("orgId")
   private String organizationId;
+  @JsonProperty("stage")
+  private String stage;
+  @JsonProperty("userId")
+  private String userId;
+  @JsonProperty("clusterId")
+  private String clusterId;
 
-  public MixpanelEventProperties(final String organizationId) {
+  public MixpanelEventProperties(final String stage, final String organizationId, final String clusterId) {
+    this.stage = stage;
     this.organizationId = organizationId;
+    this.clusterId = clusterId;
+  }
+
+  @JsonProperty("org_id")
+  public String getOrgGroupKey() {
+    return organizationId;
+  }
+
+  @JsonProperty("cluster_id")
+  public String getOrgClusterId() {
+    return clusterId;
   }
 }

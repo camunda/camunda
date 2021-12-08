@@ -18,4 +18,6 @@ public class MixpanelConfigResponseDto {
   private String token;
   private String organizationId;
   private String osanoScriptUrl;
+  private String stage;
+  private String clusterId;
 }

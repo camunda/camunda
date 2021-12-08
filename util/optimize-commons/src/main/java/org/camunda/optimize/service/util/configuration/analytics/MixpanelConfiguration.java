@@ -38,8 +38,12 @@ public class MixpanelConfiguration {
   @Data
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class TrackingProperties {
+    @JsonProperty("stage")
+    private String stage;
     @JsonProperty("organizationId")
     private String organizationId;
+    @JsonProperty("clusterId")
+    private String clusterId;
   }
 
   @AllArgsConstructor

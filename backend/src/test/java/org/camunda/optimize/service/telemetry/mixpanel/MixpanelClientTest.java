@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.telemetry.mixpanel;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.CharStreams;
 import io.github.netmikey.logunit.api.LogCapturer;
@@ -52,7 +53,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class MixpanelClientTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
   private final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
   @Mock
   private CloseableHttpClient httpClient;
@@ -80,8 +81,12 @@ public class MixpanelClientTest {
     when(mockResponse.getEntity()).thenReturn(new StringEntity("{}", ContentType.APPLICATION_JSON));
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
+    final String stage = "unit-test";
     final String organizationId = "orgId";
-    final MixpanelEventProperties mixpanelEventProperties = new MixpanelEventProperties(organizationId);
+    final String clusterId = "clusterId";
+    final MixpanelEventProperties mixpanelEventProperties = new MixpanelEventProperties(
+      stage, organizationId, clusterId
+    );
 
     // when
     mixpanelClient.importEvent(new MixpanelEvent(MixpanelEventName.HEARTBEAT, mixpanelEventProperties));
@@ -123,7 +128,7 @@ public class MixpanelClientTest {
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
     // when
-    final MixpanelEvent event = new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties("orgId"));
+    final MixpanelEvent event = new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties());
     assertThatThrownBy(() -> mixpanelClient.importEvent(event))
       //then
       .isInstanceOf(OptimizeRuntimeException.class)
@@ -146,7 +151,7 @@ public class MixpanelClientTest {
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
     // when
-    final MixpanelEvent event = new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties("orgId"));
+    final MixpanelEvent event = new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties());
     assertThatThrownBy(() -> mixpanelClient.importEvent(event))
       //then
       .isInstanceOf(OptimizeRuntimeException.class)
@@ -169,7 +174,7 @@ public class MixpanelClientTest {
     when(httpClient.execute(any())).thenReturn(mockResponse);
 
     // when
-    mixpanelClient.importEvent(new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties("orgId")));
+    mixpanelClient.importEvent(new MixpanelEvent(MixpanelEventName.HEARTBEAT, new MixpanelEventProperties()));
 
     // then
     logCapturer.assertContains("Could not parse response from Mixpanel.");

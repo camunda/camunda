@@ -19,8 +19,10 @@ public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
 
   public MixpanelHeartbeatProperties(final long processReportCount,
                                      final long decisionReportCount,
-                                     final String organizationId) {
-    super(organizationId);
+                                     final String stage,
+                                     final String organizationId,
+                                     final String clusterId) {
+    super(stage, organizationId, clusterId);
     this.processReportCount = processReportCount;
     this.decisionReportCount = decisionReportCount;
   }

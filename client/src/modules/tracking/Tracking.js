@@ -8,11 +8,12 @@ import {useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import mixpanel from 'mixpanel-browser';
 
-import {getMixpanelConfig} from 'config';
+import {getMixpanelConfig, getOptimizeVersion} from 'config';
+import {withUser} from 'HOC';
 
 import './Tracking.scss';
 
-export function Tracking() {
+export function Tracking({getUser}) {
   const location = useLocation();
   const [enabled, setEnabled] = useState(false);
 
@@ -26,7 +27,7 @@ export function Tracking() {
 
   useEffect(() => {
     (async () => {
-      const {enabled, token, apiHost, organizationId, osanoScriptUrl} =
+      const {enabled, token, apiHost, organizationId, osanoScriptUrl, stage, clusterId} =
         await getMixpanelConfig();
       if (!enabled || !osanoScriptUrl || !(await isOsanoAnalyticsEnabled(osanoScriptUrl))) {
         return;
@@ -35,17 +36,27 @@ export function Tracking() {
       mixpanel.init(token, {
         api_host: apiHost,
         batch_requests: true,
+        debug: process.env.NODE_ENV === 'development',
       });
 
+      const user = await getUser();
+      mixpanel.identify(user.id);
       mixpanel.register({
-        organization: organizationId,
+        userId: user.id,
+        orgId: organizationId,
+        stage: stage,
+        clusterId: clusterId,
         product: 'optimize',
+        version: await getOptimizeVersion(),
         development: process.env.NODE_ENV === 'development',
+        frontend: true,
+        // additional project group properties
+        org_id: organizationId,
+        cluster_id: clusterId,
       });
-
       setEnabled(enabled);
     })();
-  }, []);
+  }, [getUser]);
 
   return null;
 }
@@ -61,3 +72,5 @@ async function isOsanoAnalyticsEnabled(osanoScriptUrl) {
     };
   });
 }
+
+export default withUser(Tracking);

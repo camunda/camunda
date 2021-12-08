@@ -20,7 +20,11 @@ public class MixpanelDataServiceIT extends AbstractIT {
     // given
     final MixpanelConfiguration mixpanelConfiguration = getMixpanelConfiguration();
     final String organizationId = "orgId";
+    final String stage = "IT";
+    mixpanelConfiguration.getProperties().setStage(stage);
     mixpanelConfiguration.getProperties().setOrganizationId(organizationId);
+    final String clusterId = "IT-cluster";
+    mixpanelConfiguration.getProperties().setClusterId(clusterId);
 
     reportClient.createEmptySingleProcessReport();
     reportClient.createEmptySingleProcessReport();
@@ -37,6 +41,9 @@ public class MixpanelDataServiceIT extends AbstractIT {
     assertThat(mixpanelHeartbeatProperties.getDistinctId()).isEmpty();
     assertThat(mixpanelHeartbeatProperties.getInsertId()).isNotEmpty();
     assertThat(mixpanelHeartbeatProperties.getProduct()).isEqualTo("optimize");
+    assertThat(mixpanelHeartbeatProperties.getStage()).isEqualTo(stage);
+    assertThat(mixpanelHeartbeatProperties.getOrganizationId()).isEqualTo(organizationId);
+    assertThat(mixpanelHeartbeatProperties.getClusterId()).isEqualTo(clusterId);
     assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
   }

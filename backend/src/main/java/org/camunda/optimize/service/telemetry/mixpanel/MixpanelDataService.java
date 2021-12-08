@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -21,10 +22,17 @@ public class MixpanelDataService {
   private final ReportReader reportReader;
 
   public MixpanelHeartbeatProperties getMixpanelHeartbeatProperties() {
+    final MixpanelConfiguration.TrackingProperties mixpanelProperties = getMixpanelProperties();
     return new MixpanelHeartbeatProperties(
       reportReader.getReportCount(ReportType.PROCESS),
       reportReader.getReportCount(ReportType.DECISION),
-      configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId()
+      mixpanelProperties.getStage(),
+      mixpanelProperties.getOrganizationId(),
+      mixpanelProperties.getClusterId()
     );
+  }
+
+  private MixpanelConfiguration.TrackingProperties getMixpanelProperties() {
+    return configurationService.getAnalytics().getMixpanel().getProperties();
   }
 }

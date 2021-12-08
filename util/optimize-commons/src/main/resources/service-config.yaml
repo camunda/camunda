@@ -566,7 +566,9 @@ analytics:
       username: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_USERNAME:}
       secret: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_SECRET:}
     properties:
-      organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:}
+      stage: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_STAGE:dev}
+      organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
+      clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
 
 # Configuration of application internal in-memory caches
 caches:

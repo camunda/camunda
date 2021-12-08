@@ -240,10 +240,16 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final String apiHost = "apiHost";
     final String organizationId = "orgId";
     final String scriptUrl = "test";
+    final String stage = "IT";
+    final String clusterId = "IT-cluster";
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setApiHost(apiHost);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setToken(testToken);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
       .setOrganizationId(organizationId);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+      .setStage(stage);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+      .setClusterId(clusterId);
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().getOsano().setScriptUrl(scriptUrl);
 
     // when
@@ -255,6 +261,8 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(response.getMixpanel().getToken()).isEqualTo(testToken);
     assertThat(response.getMixpanel().getOrganizationId()).isEqualTo(organizationId);
     assertThat(response.getMixpanel().getOsanoScriptUrl()).isEqualTo(scriptUrl);
+    assertThat(response.getMixpanel().getStage()).isEqualTo(stage);
+    assertThat(response.getMixpanel().getClusterId()).isEqualTo(clusterId);
   }
 
   private void setWebappsEndpoint(final String webappsEndpoint) {

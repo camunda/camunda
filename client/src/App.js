@@ -90,8 +90,8 @@ class App extends React.Component {
           <WithLicense>
             <div className="Root-container">
               <ErrorBoundary>
-                <DocsProvider>
-                  <UserProvider>
+                <UserProvider>
+                  <DocsProvider>
                     <Switch>
                       <PrivateRoute exact path="/" component={Home} />
                       <PrivateRoute path="/analysis" component={Analysis} />
@@ -106,14 +106,14 @@ class App extends React.Component {
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>
-                  </UserProvider>
-                </DocsProvider>
+                  </DocsProvider>
+                  <Tracking />
+                </UserProvider>
               </ErrorBoundary>
             </div>
           </WithLicense>
           <SaveGuard />
           <Prompt />
-          <Tracking />
         </Router>
         <Notifications />
       </Theme>
