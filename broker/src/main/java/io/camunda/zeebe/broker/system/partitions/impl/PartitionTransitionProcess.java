@@ -32,6 +32,7 @@ final class PartitionTransitionProcess {
   private final long term;
   private final Role role;
   private boolean cancelRequested = false;
+  private boolean completed = false;
 
   PartitionTransitionProcess(
       final List<PartitionTransitionStep> pendingSteps,
@@ -64,6 +65,7 @@ final class PartitionTransitionProcess {
     if (cancelRequested) {
       LOG.info("Cancelling transition to {} on term {}", role, term);
       future.complete(null);
+      completed = true;
       return;
     }
 
@@ -91,7 +93,7 @@ final class PartitionTransitionProcess {
     if (pendingSteps.isEmpty()) {
       LOG.info("Transition to {} on term {} completed", role, term);
       future.complete(null);
-
+      completed = true;
       return;
     }
 
@@ -153,7 +155,9 @@ final class PartitionTransitionProcess {
   }
 
   void cancel() {
-    LOG.info("Received cancel signal for transition to {} on term {}", role, term);
+    if (!completed) {
+      LOG.info("Received cancel signal for transition to {} on term {}", role, term);
+    }
     cancelRequested = true;
   }
 }
