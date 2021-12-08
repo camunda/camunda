@@ -51,7 +51,8 @@ public class ClientConfigRestServiceEnterpriseTest extends OperateIntegrationTes
             + "\"isEnterprise\":true,"
             + "\"contextPath\":\"\","
             + "\"organizationId\":\"organizationId\","
-            + "\"clusterId\":null"
+            + "\"clusterId\":null,"
+            + "\"mixpanelActivated\":false"
             + "};");
   }
 
