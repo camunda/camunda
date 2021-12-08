@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.api.util;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -40,9 +39,9 @@ public final class StubbedGateway {
   }
 
   public void start() throws IOException {
-    if (activateJobsHandler instanceof LongPollingActivateJobsHandler) {
-      actorScheduler.submitActor((LongPollingActivateJobsHandler) activateJobsHandler);
-    }
+    //    if (activateJobsHandler instanceof LongPollingActivateJobsHandler) {
+    //      actorScheduler.submitActor((LongPollingActivateJobsHandler) activateJobsHandler);
+    //    }
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);

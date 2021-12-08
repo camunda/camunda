@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.api.util;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorRule;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.After;
 import org.junit.Before;
@@ -20,6 +21,7 @@ public abstract class GatewayTest {
 
   public final ControlledActorClock actorClock;
   public final ActorSchedulerRule actorSchedulerRule;
+  public final ActorRule longPollingActorRule;
   public final StubbedGatewayRule gatewayRule;
   @Rule public RuleChain ruleChain;
   protected StubbedGateway gateway;
@@ -33,8 +35,11 @@ public abstract class GatewayTest {
   public GatewayTest(final GatewayCfg config) {
     actorClock = new ControlledActorClock();
     actorSchedulerRule = new ActorSchedulerRule(actorClock);
-    gatewayRule = new StubbedGatewayRule(actorSchedulerRule, config);
-    ruleChain = RuleChain.outerRule(actorSchedulerRule).around(gatewayRule);
+    // creates always a long polling actor, even if long polling is disabled
+    longPollingActorRule = new ActorRule(actorSchedulerRule, "GatewayLongPollingActor-Test");
+    gatewayRule = new StubbedGatewayRule(actorSchedulerRule, longPollingActorRule, config);
+    ruleChain =
+        RuleChain.outerRule(actorSchedulerRule).around(longPollingActorRule).around(gatewayRule);
   }
 
   @Before

@@ -25,7 +25,10 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -112,10 +115,7 @@ public final class Gateway {
 
     final ActivateJobsHandler activateJobsHandler;
     if (gatewayCfg.getLongPolling().isEnabled()) {
-      final LongPollingActivateJobsHandler longPollingHandler =
-          buildLongPollingHandler(brokerClient);
-      actorSchedulingService.submitActor(longPollingHandler);
-      activateJobsHandler = longPollingHandler;
+      activateJobsHandler = buildLongPollingHandlerAndSubmitActor(brokerClient);
     } else {
       activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     }
@@ -189,8 +189,31 @@ public final class Gateway {
     return brokerClientFactory.apply(gatewayCfg);
   }
 
-  private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+  private LongPollingActivateJobsHandler buildLongPollingHandlerAndSubmitActor(
+      final BrokerClient brokerClient) {
+    final var actorStartedHandlerFuture = new CompletableActorFuture<ActorControl>();
+    final var actor =
+        Actor.newActor()
+            .name("GatewayLongPollingJobHandler")
+            .actorStartedHandler((t) -> actorStartedHandlerFuture.complete(t))
+            .build();
+
+    actorSchedulingService.submitActor(actor);
+
+    ActorControl actorControl = null;
+
+    try {
+      // continue only if the actor started successfully
+      // and provided with the required actor control
+      actorControl = actorStartedHandlerFuture.get();
+    } catch (Throwable e) {
+      throw new RuntimeException("TODO");
+    }
+
+    return LongPollingActivateJobsHandler.newBuilder()
+        .setBrokerClient(brokerClient)
+        .setActor(actorControl)
+        .build();
   }
 
   private ServerServiceDefinition applyInterceptors(final BindableService service) {

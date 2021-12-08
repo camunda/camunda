@@ -18,7 +18,7 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.grpc.protobuf.StatusProto;
 import java.time.Duration;
@@ -32,7 +32,7 @@ import org.slf4j.Logger;
  * Adds long polling to the handling of activate job requests. When there are no jobs available to
  * activate, the response will be kept open.
  */
-public final class LongPollingActivateJobsHandler extends Actor implements ActivateJobsHandler {
+public final class LongPollingActivateJobsHandler implements ActivateJobsHandler {
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
@@ -41,6 +41,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
 
   private final RoundRobinActivateJobsHandler activateJobsHandler;
   private final BrokerClient brokerClient;
+  private final ActorControl actor;
 
   // jobType -> state
   private final Map<String, InFlightLongPollingActivateJobsRequestsState> jobTypeState =
@@ -53,26 +54,38 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
 
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
+      final ActorControl actor,
       final long longPollingTimeout,
       final long probeTimeoutMillis,
       final int failedAttemptThreshold) {
     this.brokerClient = brokerClient;
+    this.actor = actor;
     activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
     metrics = new LongPollingMetrics();
+
+    init();
   }
 
-  @Override
-  public String getName() {
-    return "GatewayLongPollingJobHandler";
+  private void init() {
+    // #init() is called outside of the given actor,
+    // ensure that the initialization happens with the
+    // correct actor (to schedule probe)
+    actor.submit(
+        () -> {
+          subscribeJobAvailableNotification();
+          scheduleNextProbe();
+        });
   }
 
-  @Override
-  protected void onActorStarted() {
+  private void subscribeJobAvailableNotification() {
     brokerClient.subscribeJobAvailableNotification(JOBS_AVAILABLE_TOPIC, this::onNotification);
-    actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
+  }
+
+  private void scheduleNextProbe() {
+    actor.runDelayed(Duration.ofMillis(probeTimeoutMillis), this::probe);
   }
 
   @Override
@@ -256,21 +269,26 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   }
 
   private void probe() {
-    final long now = currentTimeMillis();
-    jobTypeState.forEach(
-        (type, state) -> {
-          if (state.getLastUpdatedTime() < (now - probeTimeoutMillis)) {
-            final LongPollingActivateJobsRequest probeRequest = state.getNextPendingRequest();
-            if (probeRequest != null) {
-              activateJobsUnchecked(state, probeRequest);
-            } else {
-              // there are no blocked requests, so use next request as probe
-              if (state.getFailedAttempts() >= failedAttemptThreshold) {
-                state.setFailedAttempts(failedAttemptThreshold - 1);
+    try {
+      final long now = currentTimeMillis();
+      jobTypeState.forEach(
+          (type, state) -> {
+            if (state.getLastUpdatedTime() < (now - probeTimeoutMillis)) {
+              final LongPollingActivateJobsRequest probeRequest = state.getNextPendingRequest();
+              if (probeRequest != null) {
+                activateJobsUnchecked(state, probeRequest);
+              } else {
+                // there are no blocked requests, so use next request as probe
+                if (state.getFailedAttempts() >= failedAttemptThreshold) {
+                  state.setFailedAttempts(failedAttemptThreshold - 1);
+                }
               }
             }
-          }
-        });
+          });
+    } finally {
+      // schedule next probe execution
+      scheduleNextProbe();
+    }
   }
 
   public static Builder newBuilder() {
@@ -285,12 +303,18 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
     private static final int EMPTY_RESPONSE_THRESHOLD = 3;
 
     private BrokerClient brokerClient;
+    private ActorControl actor;
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
 
     public Builder setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
+      return this;
+    }
+
+    public Builder setActor(final ActorControl actor) {
+      this.actor = actor;
       return this;
     }
 
@@ -311,8 +335,9 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
 
     public LongPollingActivateJobsHandler build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
+      Objects.requireNonNull(actor, "actor");
       return new LongPollingActivateJobsHandler(
-          brokerClient, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
+          brokerClient, actor, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
     }
   }
 }

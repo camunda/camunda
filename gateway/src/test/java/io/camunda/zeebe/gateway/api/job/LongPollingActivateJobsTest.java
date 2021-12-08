@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorRule;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.grpc.Status.Code;
 import io.grpc.StatusException;
@@ -43,6 +44,7 @@ import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -54,11 +56,17 @@ public final class LongPollingActivateJobsTest {
   private static final long PROBE_TIMEOUT = 20000;
   private static final int FAILED_RESPONSE_THRESHOLD = 3;
   protected final ControlledActorClock actorClock = new ControlledActorClock();
-  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   private LongPollingActivateJobsHandler handler;
   private ActivateJobsStub stub;
   private int partitionsCount;
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
+
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
+  private final ActorRule actorRule =
+      new ActorRule(actorSchedulerRule, "LongPollingActivateJobsTest-Actor");
+
+  @Rule
+  public final RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(actorRule);
 
   @Before
   public void setup() {
@@ -68,8 +76,8 @@ public final class LongPollingActivateJobsTest {
             .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
             .setProbeTimeoutMillis(PROBE_TIMEOUT)
             .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
+            .setActor(actorRule.getActorControl())
             .build();
-    actorSchedulerRule.submitActor(handler);
     stub = spy(new ActivateJobsStub());
     stub.registerWith(brokerClient);
     stub.addAvailableJobs(TYPE, 0);
@@ -219,8 +227,8 @@ public final class LongPollingActivateJobsTest {
             .setBrokerClient(brokerClient)
             .setLongPollingTimeout(20000)
             .setProbeTimeoutMillis(probeTimeout)
+            .setActor(actorRule.getActorControl())
             .build();
-    actorSchedulerRule.submitActor(handler);
 
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
@@ -243,8 +251,8 @@ public final class LongPollingActivateJobsTest {
             .setBrokerClient(brokerClient)
             .setLongPollingTimeout(longPollingTimeout)
             .setProbeTimeoutMillis(probeTimeout)
+            .setActor(actorRule.getActorControl())
             .build();
-    actorSchedulerRule.submitActor(handler);
 
     final int threshold = 3;
     final List<LongPollingActivateJobsRequest> requests =
