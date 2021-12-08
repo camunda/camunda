@@ -20,7 +20,6 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 public class ElasticsearchClientIT extends AbstractElasticsearchExporterIntegrationTestCase {
 
@@ -35,9 +34,7 @@ public class ElasticsearchClientIT extends AbstractElasticsearchExporterIntegrat
 
     configuration = getDefaultConfiguration();
     bulkRequest = new ArrayList<>();
-    client =
-        new ElasticsearchClient(
-            configuration, LoggerFactory.getLogger(ElasticsearchClientIT.class), bulkRequest);
+    client = new ElasticsearchClient(configuration, bulkRequest);
   }
 
   @Test

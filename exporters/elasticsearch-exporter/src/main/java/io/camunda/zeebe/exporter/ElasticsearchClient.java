@@ -47,33 +47,30 @@ import org.elasticsearch.xcontent.NamedXContentRegistry;
 import org.elasticsearch.xcontent.XContent;
 import org.elasticsearch.xcontent.XContentParser;
 import org.elasticsearch.xcontent.XContentType;
-import org.slf4j.Logger;
 
 public class ElasticsearchClient {
 
+  @SuppressWarnings("java:S1075") // not an actual URI
   public static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
+
   public static final String INDEX_DELIMITER = "_";
   public static final String ALIAS_DELIMITER = "-";
+  private static final String DOCUMENT_TYPE = "_doc";
+  private static final String TEMPLATE_FIELD_KEY = "template";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
   protected final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
-  private final Logger log;
   private final DateTimeFormatter formatter;
   private List<String> bulkRequest;
   private ElasticsearchMetrics metrics;
 
-  public ElasticsearchClient(
-      final ElasticsearchExporterConfiguration configuration, final Logger log) {
-    this(configuration, log, new ArrayList<>());
+  public ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
+    this(configuration, new ArrayList<>());
   }
 
   ElasticsearchClient(
-      final ElasticsearchExporterConfiguration configuration,
-      final Logger log,
-      final List<String> bulkRequest) {
+      final ElasticsearchExporterConfiguration configuration, final List<String> bulkRequest) {
     this.configuration = configuration;
-    this.log = log;
     client = createClient();
     this.bulkRequest = bulkRequest;
     formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
@@ -122,7 +119,7 @@ public class ElasticsearchClient {
     final var bulkMemorySize = getBulkMemorySize();
     metrics.recordBulkMemorySize(bulkMemorySize);
 
-    try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
+    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
       exportBulk();
       // all records where flushed, create new bulk request, otherwise retry next time
       bulkRequest = new ArrayList<>();
@@ -210,7 +207,7 @@ public class ElasticsearchClient {
 
     // update number of shards/replicas in template in case it was changed in configuration
     final Map<String, Object> settingsProperties =
-        getOrCreateSettingsPropertyMap(templateProperties, templateName, "template");
+        getOrCreateSettingsPropertyMap(templateProperties, templateName);
     updateSettings(settingsProperties);
 
     return putIndexTemplate(templateName, template);
@@ -218,19 +215,22 @@ public class ElasticsearchClient {
 
   private Map<String, Object> getOrCreateTemplatePropertyMap(
       final Map<String, Object> properties, final String templateName) {
-    final String field = "template";
+    final String field = TEMPLATE_FIELD_KEY;
     return getOrCreateProperties(properties, field, templateName, field);
   }
 
   private Map<String, Object> getOrCreateSettingsPropertyMap(
-      final Map<String, Object> properties, final String templateName, final String context) {
+      final Map<String, Object> properties, final String templateName) {
     final String field = "settings";
     return getOrCreateProperties(
-        properties, field, templateName, String.format("%s.%s", context, field));
+        properties, field, templateName, String.format("%s.%s", TEMPLATE_FIELD_KEY, field));
   }
 
   private Map<String, Object> getOrCreateProperties(
-      final Map<String, Object> from, final String field, final String templateName, final String context) {
+      final Map<String, Object> from,
+      final String field,
+      final String templateName,
+      final String context) {
     final Object properties = from.computeIfAbsent(field, key -> new HashMap<String, Object>());
     return convertToMap(properties, context, templateName);
   }
@@ -252,6 +252,7 @@ public class ElasticsearchClient {
   private Map<String, Object> convertToMap(
       final Object obj, final String context, final String templateName) {
     if (obj instanceof Map) {
+      //noinspection unchecked
       return (Map<String, Object>) obj;
     } else {
       throw new IllegalStateException(
@@ -262,14 +263,13 @@ public class ElasticsearchClient {
   }
 
   /** @return true if request was acknowledged */
-  public boolean putComponentTemplate(
-      final String templateName, final String aliasName, final String filename) {
+  public boolean createComponentTemplate(final String templateName, final String filename) {
     final Map<String, Object> template = getTemplateFromClasspath(filename);
 
     final Map<String, Object> templateProperties =
         getOrCreateTemplatePropertyMap(template, templateName);
     final Map<String, Object> settingProperties =
-        getOrCreateSettingsPropertyMap(templateProperties, templateName, "template");
+        getOrCreateSettingsPropertyMap(templateProperties, templateName);
     updateSettings(settingProperties);
 
     return putComponentTemplate(templateName, template);
@@ -385,8 +385,8 @@ public class ElasticsearchClient {
     return record.getPartitionId() + "-" + record.getPosition();
   }
 
-  protected String typeFor(final Record<?> record) {
-    return "_doc";
+  protected String typeFor() {
+    return DOCUMENT_TYPE;
   }
 
   protected String indexPrefixForValueTypeWithDelimiter(final ValueType valueType) {
@@ -407,7 +407,7 @@ public class ElasticsearchClient {
   }
 
   private static String valueTypeToString(final ValueType valueType) {
-    return valueType.name().toLowerCase().replaceAll("_", "-");
+    return valueType.name().toLowerCase().replace("_", "-");
   }
 
   private static String indexTemplateForValueType(final ValueType valueType) {
