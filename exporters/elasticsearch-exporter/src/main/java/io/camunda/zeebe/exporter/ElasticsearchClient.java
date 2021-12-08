@@ -42,11 +42,11 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.common.xcontent.DeprecationHandler;
-import org.elasticsearch.common.xcontent.NamedXContentRegistry;
-import org.elasticsearch.common.xcontent.XContent;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.DeprecationHandler;
+import org.elasticsearch.xcontent.NamedXContentRegistry;
+import org.elasticsearch.xcontent.XContent;
+import org.elasticsearch.xcontent.XContentParser;
+import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 
 public class ElasticsearchClient {
@@ -217,25 +217,25 @@ public class ElasticsearchClient {
   }
 
   private Map<String, Object> getOrCreateTemplatePropertyMap(
-      Map<String, Object> properties, String templateName) {
+      final Map<String, Object> properties, final String templateName) {
     final String field = "template";
     return getOrCreateProperties(properties, field, templateName, field);
   }
 
   private Map<String, Object> getOrCreateSettingsPropertyMap(
-      Map<String, Object> properties, String templateName, String context) {
+      final Map<String, Object> properties, final String templateName, final String context) {
     final String field = "settings";
     return getOrCreateProperties(
         properties, field, templateName, String.format("%s.%s", context, field));
   }
 
   private Map<String, Object> getOrCreateProperties(
-      Map<String, Object> from, String field, String templateName, String context) {
+      final Map<String, Object> from, final String field, final String templateName, final String context) {
     final Object properties = from.computeIfAbsent(field, key -> new HashMap<String, Object>());
     return convertToMap(properties, context, templateName);
   }
 
-  private void updateSettings(Map<String, Object> settingsProperties) {
+  private void updateSettings(final Map<String, Object> settingsProperties) {
     // update number of shards in template in case it was changed in configuration
     final Integer numberOfShards = configuration.index.getNumberOfShards();
     if (numberOfShards != null) {
