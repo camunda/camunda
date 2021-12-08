@@ -70,6 +70,14 @@ public class ReaderCloseTest {
             .getCluster()
             .getNodeId();
     clusteringRule.forceClusterToHaveNewLeader(followerId);
+    // because of https://github.com/camunda-cloud/zeebe/issues/8329
+    // we need to add another record so we can do a snapshot
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName("test")
+        .correlationKey("test")
+        .send();
 
     // when
     clusteringRule.triggerAndWaitForSnapshots();
@@ -78,6 +86,7 @@ public class ReaderCloseTest {
     for (final Broker broker : clusteringRule.getBrokers()) {
       assertThatFilesOfDeletedSegmentsDoesNotExist(broker);
     }
+    assertThat(leaderId).isNotEqualTo(clusteringRule.getLeaderForPartition(1).getNodeId());
   }
 
   private void assertThatFilesOfDeletedSegmentsDoesNotExist(final Broker leader)
