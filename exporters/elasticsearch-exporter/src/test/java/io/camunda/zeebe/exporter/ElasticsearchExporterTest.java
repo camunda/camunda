@@ -30,7 +30,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporterTest {
 
@@ -47,8 +46,7 @@ public class ElasticsearchExporterTest {
   @Test
   public void shouldNotFailOnOpenIfElasticIsUnreachable() {
     // given
-    final ElasticsearchClient client =
-        Mockito.spy(new ElasticsearchClient(config, LoggerFactory.getLogger("test")));
+    final ElasticsearchClient client = Mockito.spy(new ElasticsearchClient(config));
     final ElasticsearchExporter exporter = createExporter(client);
     config.index.createTemplate = true;
 
@@ -81,7 +79,7 @@ public class ElasticsearchExporterTest {
     testHarness.export();
 
     // then
-    verify(esClient).putComponentTemplate("foo-bar", "foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
+    verify(esClient).createComponentTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
 
     verify(esClient).putIndexTemplate(ValueType.DEPLOYMENT);
     verify(esClient).putIndexTemplate(ValueType.PROCESS);
