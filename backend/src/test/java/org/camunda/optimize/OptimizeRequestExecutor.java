@@ -121,7 +121,8 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static org.camunda.optimize.rest.JsonExportRestService.EXPORT_REPORT_PATH;
+import static org.camunda.optimize.rest.PublicJsonExportRestService.PUBLIC_EXPORT_PATH;
+import static org.camunda.optimize.rest.PublicJsonExportRestService.REPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -1052,9 +1053,19 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildJsonExportRequest(String reportId) {
-    this.path = EXPORT_REPORT_PATH + "/" + reportId + "/result/json";
+  public OptimizeRequestExecutor buildPublicExportJsonReportResultRequest(String reportId) {
+    this.path = PUBLIC_EXPORT_PATH + "/report/" + reportId + "/result/json";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicExportJsonReportDefinitionRequest(final List<String> reportIds,
+                                                                              final String accessToken) {
+    this.path = PUBLIC_EXPORT_PATH + REPORT_DEFINITION_SUB_PATH;
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(reportIds);
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
     return this;
   }
 

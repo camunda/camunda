@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessRepor
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,12 +27,16 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReportExportIT extends AbstractExportImportIT {
+public abstract class AbstractReportDefinitionExportIT extends AbstractExportImportEntityDefinitionIT {
+
+  protected abstract List<ReportDefinitionExportDto> exportReportDefinitionAndReturnAsList(final String reportId);
+
+  protected abstract Response exportReportDefinitionAndReturnResponse(final String reportId);
 
   @Test
   public void exportReportAsJsonFile_reportDoesNotExist() {
     // when
-    Response response = exportClient.exportReportAsJson("fakeId", "my_file.json");
+    Response response = exportClient.exportReportAsJsonAsDemo("fakeId", "my_file.json");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -41,15 +45,14 @@ public class ReportExportIT extends AbstractExportImportIT {
 
   @ParameterizedTest
   @MethodSource("getTestProcessReports")
-  public void exportProcessReportAsJsonFile(final SingleProcessReportDefinitionRequestDto reportDefToExport) {
+  public void exportProcessReportDefinitionAsJson(final SingleProcessReportDefinitionRequestDto reportDefToExport) {
     // given
     final String reportId = reportClient.createSingleProcessReport(reportDefToExport);
     final SingleProcessReportDefinitionExportDto expectedReportExportDto = createExportDto(reportDefToExport);
     expectedReportExportDto.setId(reportId);
 
     // when
-    final List<ReportDefinitionExportDto> actualExportDtos =
-      exportClient.exportReportAsJsonAndReturnExportDtos(reportId, "my_file.json");
+    final List<ReportDefinitionExportDto> actualExportDtos = exportReportDefinitionAndReturnAsList(reportId);
 
     // then
     assertThat(actualExportDtos)
@@ -60,7 +63,7 @@ public class ReportExportIT extends AbstractExportImportIT {
 
   @ParameterizedTest
   @MethodSource("getTestDecisionReports")
-  public void exportDecisionReportAsJsonFile(final SingleDecisionReportDefinitionRequestDto reportDefToExport) {
+  public void exportDecisionReportDefinitionAsJson(final SingleDecisionReportDefinitionRequestDto reportDefToExport) {
     // given
     final String reportId = reportClient.createSingleDecisionReport(reportDefToExport);
     final SingleDecisionReportDefinitionExportDto expectedReportExportDto =
@@ -68,8 +71,7 @@ public class ReportExportIT extends AbstractExportImportIT {
     expectedReportExportDto.setId(reportId);
 
     // when
-    final List<ReportDefinitionExportDto> actualExportDtos =
-      exportClient.exportReportAsJsonAndReturnExportDtos(reportId, "my_file.json");
+    final List<ReportDefinitionExportDto> actualExportDtos = exportReportDefinitionAndReturnAsList(reportId);
 
     // then
     assertThat(actualExportDtos)
@@ -99,8 +101,7 @@ public class ReportExportIT extends AbstractExportImportIT {
     expectedCombinedReportDto.setId(reportId);
 
     // when
-    final List<ReportDefinitionExportDto> actualExportDtos =
-      exportClient.exportReportAsJsonAndReturnExportDtos(reportId, "my_file.json");
+    final List<ReportDefinitionExportDto> actualExportDtos = exportReportDefinitionAndReturnAsList(reportId);
 
     // then
     assertThat(actualExportDtos)
@@ -124,7 +125,7 @@ public class ReportExportIT extends AbstractExportImportIT {
     elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndex());
 
     // when
-    Response response = exportClient.exportReportAsJson(combinedReportId, "my_file.json");
+    Response response = exportReportDefinitionAndReturnResponse(combinedReportId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());

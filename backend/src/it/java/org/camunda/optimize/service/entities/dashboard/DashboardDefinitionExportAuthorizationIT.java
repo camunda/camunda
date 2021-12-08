@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.entities.dashboard;
 
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class DashboardExportAuthorizationIT extends AbstractExportImportIT {
+public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest
   @EnumSource(SuperUserType.class)

@@ -12,8 +12,10 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.rest.PublicJsonExportRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 
 @AllArgsConstructor
@@ -33,14 +35,30 @@ public class ExportClient {
       .execute();
   }
 
-  public Response exportReportAsJson(final String reportId, final String fileName) {
+  public Response exportReportAsJsonAsDemo(final String reportId, final String fileName) {
     return getRequestExecutor()
       .buildExportReportRequest(reportId, fileName)
       .execute();
   }
 
-  public List<ReportDefinitionExportDto> exportReportAsJsonAndReturnExportDtos(final String reportId,
-                                                                               final String fileName) {
+  public Response exportReportAsJsonViaAPI(final List<String> reportIds,
+                                           final String accessToken) {
+    return getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicExportJsonReportDefinitionRequest(reportIds, accessToken)
+      .execute();
+  }
+
+  public List<ReportDefinitionExportDto> exportReportAsJsonAndReturnExportDtosViaAPI(final List<String> reportIds,
+                                                                                     final String accessToken) {
+    return getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicExportJsonReportDefinitionRequest(reportIds, accessToken)
+      .executeAndReturnList(ReportDefinitionExportDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public List<ReportDefinitionExportDto> exportReportAsJsonAndReturnExportDtosAsDemo(final String reportId,
+                                                                                     final String fileName) {
     return getRequestExecutor()
       .buildExportReportRequest(reportId, fileName)
       .executeAndReturnList(ReportDefinitionExportDto.class, Response.Status.OK.getStatusCode());

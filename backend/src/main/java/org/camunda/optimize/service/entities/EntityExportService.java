@@ -27,10 +27,14 @@ public class EntityExportService {
   private final ReportExportService reportExportService;
   private final DashboardExportService dashboardExportService;
 
-  public List<ReportDefinitionExportDto> getReportExportDtos(final String userId,
-                                                             final Set<String> reportIds) {
+  public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
+    return reportExportService.getReportExportDtos(reportIds);
+  }
+
+  public List<ReportDefinitionExportDto> getReportExportDtosAsUser(final String userId,
+                                                                   final Set<String> reportIds) {
     validateUserAuthorizedToExportOrFail(userId);
-    return reportExportService.getReportExportDtos(userId, reportIds);
+    return reportExportService.getReportExportDtosAsUser(userId, reportIds);
   }
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(final String userId,

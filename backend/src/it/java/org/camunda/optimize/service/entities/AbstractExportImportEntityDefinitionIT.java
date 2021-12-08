@@ -82,7 +82,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
-public abstract class AbstractExportImportIT extends AbstractIT {
+public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT {
   protected static final String DEFINITION_KEY = "aKey";
   protected static final String DEFINITION_NAME = "aDefinitionName";
   protected static final String DEFINITION_VERSION = "1";
@@ -500,7 +500,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     return decisionReportData;
   }
 
-  private static SingleProcessReportDefinitionRequestDto createProcessReportDefinition(
+  protected static SingleProcessReportDefinitionRequestDto createProcessReportDefinition(
     final ProcessReportDataDto reportData) {
     final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
     reportDef.setId(VALID_PROCESS_REPORT_ID);

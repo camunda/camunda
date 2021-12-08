@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class DecisionReportImportIT extends AbstractExportImportIT {
+public class DecisionReportDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest
   @MethodSource("getTestDecisionReports")

@@ -16,10 +16,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
-public class EntityImportIT extends AbstractExportImportIT {
+public class EntityDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test
   public void importEmptyFile_throwsInvalidImportFileException() {

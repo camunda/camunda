@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -21,7 +21,7 @@ import java.util.Collections;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class ReportImportAuthorizationIT extends AbstractExportImportIT {
+public class ReportDefinitionImportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest
   @MethodSource("reportAndAuthType")

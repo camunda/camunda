@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
-public class ProcessReportImportIT extends AbstractExportImportIT {
+public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityDefinitionIT {
 
   private static Stream<String> specialVersionKeywords() {
     return Stream.of(ALL_VERSIONS, LATEST_VERSION);

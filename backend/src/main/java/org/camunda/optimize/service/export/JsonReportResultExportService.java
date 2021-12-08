@@ -19,7 +19,7 @@ import java.time.ZoneId;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class JsonExportService {
+public class JsonReportResultExportService {
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   public PaginatedDataExportDto getJsonForEvaluatedReportResult(final String reportId,
                                                                 final ZoneId timezone,

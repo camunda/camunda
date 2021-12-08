@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.entities.report;
 
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,7 +16,11 @@ import javax.ws.rs.core.Response;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class ReportExportAuthorizationIT extends AbstractExportImportIT {
+/**
+ * These are authIT for the export via UI with user authorization. For the public API, please refer to
+ * PublicJsonExportRestServiceIT.
+ */
+public class ReportDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest
   @MethodSource("reportAndAuthType")
@@ -27,7 +31,7 @@ public class ReportExportAuthorizationIT extends AbstractExportImportIT {
     // when
     final Response response;
     if (superUserType == SuperUserType.USER) {
-      response = exportClient.exportReportAsJson(reportId, "my_file.json");
+      response = exportClient.exportReportAsJsonAsDemo(reportId, "my_file.json");
     } else {
       setAuthorizedSuperGroup();
       response = exportClient.exportReportAsJsonAsUser(

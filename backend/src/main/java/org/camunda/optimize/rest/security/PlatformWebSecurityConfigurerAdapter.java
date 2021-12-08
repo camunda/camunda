@@ -43,11 +43,12 @@ import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static org.camunda.optimize.rest.JsonExportRestService.EXPORT_REPORT_PATH;
-import static org.camunda.optimize.rest.JsonExportRestService.REPORT_DATA_SUB_PATH;
+import static org.camunda.optimize.rest.PublicJsonExportRestService.PUBLIC_EXPORT_PATH;
+import static org.camunda.optimize.rest.PublicJsonExportRestService.REPORT_DATA_SUB_PATH;
 import static org.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
 import static org.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static org.camunda.optimize.rest.ProcessVariableRestService.PROCESS_VARIABLES_PATH;
+import static org.camunda.optimize.rest.PublicJsonExportRestService.REPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.EVALUATE_SUB_PATH;
 import static org.camunda.optimize.rest.SharingRestService.REPORT_SUB_PATH;
@@ -116,8 +117,9 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
         // public ingestion api
         .antMatchers(createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH)).permitAll()
         .antMatchers(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH)).permitAll()
-        // public json exporter
-        .antMatchers(createApiPath(EXPORT_REPORT_PATH, REPORT_DATA_SUB_PATH)).permitAll()
+        // public json report data and definition exporter
+        .antMatchers(createApiPath(PUBLIC_EXPORT_PATH, REPORT_DATA_SUB_PATH)).permitAll()
+        .antMatchers(createApiPath(PUBLIC_EXPORT_PATH, REPORT_DEFINITION_SUB_PATH)).permitAll()
         // public share related resources
         .antMatchers(EXTERNAL_SUB_PATH).permitAll()
         .antMatchers(

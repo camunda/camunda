@@ -21,6 +21,7 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,21 +30,19 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_SCROLL_ID_PARAM;
-import static org.camunda.optimize.rest.JsonExportRestService.QUERY_PARAMETER_ACCESS_TOKEN;
+import static org.camunda.optimize.rest.PublicJsonExportRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class JsonExportRestServiceIT extends AbstractIT {
+public class PublicJsonExportRestServiceIT extends AbstractIT {
 
-  public String generateValidReport(int numberOfInstances)
-  {
+  private String generateValidReport(int numberOfInstances) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultValidRawProcessReportDefinition(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
     //-1 because the call deployAndStartSimpleProcess already creates one process instance
-    for(int i = 0; i < numberOfInstances-1; i++)
-    {
+    for (int i = 0; i < numberOfInstances - 1; i++) {
       engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
     }
     importAllEngineEntitiesFromScratch();
@@ -51,7 +50,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportWithoutAuthorization() {
+  public void exportReportResultWithoutAuthorization() {
     //given
     //make sure a token is generated but don't use it
     getAccessToken();
@@ -60,7 +59,23 @@ public class JsonExportRestServiceIT extends AbstractIT {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildJsonExportRequest("fake_id")
+      .buildPublicExportJsonReportResultRequest("fake_id")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void exportReportDefinitionWithoutAuthorization() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicExportJsonReportDefinitionRequest(Collections.singletonList("fake_id"), null)
       .execute();
 
     // then
@@ -74,7 +89,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildJsonExportRequest("fake_id")
+      .buildPublicExportJsonReportResultRequest("fake_id")
       .execute();
 
     // then
@@ -82,7 +97,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportExistingRawProcessReportInOnePage() {
+  public void exportExistingRawProcessReportResultInOnePage() {
     // given
     int numberOfInstances = 10;
     String reportId = generateValidReport(numberOfInstances);
@@ -92,24 +107,24 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, numberOfInstances)
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto data = response.readEntity(PaginatedDataExportDto.class);
 
     // then
     assertThat(data.getNumberOfRecordsInResponse()).isEqualTo(numberOfInstances);
-    assertThat((long)data.getNumberOfRecordsInResponse()).isEqualTo(data.getTotalNumberOfRecords());
+    assertThat((long) data.getNumberOfRecordsInResponse()).isEqualTo(data.getTotalNumberOfRecords());
     assertThat(data.getSearchRequestId()).isNotBlank();
     assertThat(response.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
-  public void exportExistingRawProcessReportInSeveralPages() {
+  public void exportExistingRawProcessReportResultInSeveralPages() {
     // given
     int numberOfInstances = 11;
-    int limit =  numberOfInstances / 2;
+    int limit = numberOfInstances / 2;
     String reportId = generateValidReport(numberOfInstances);
 
     // when
@@ -117,7 +132,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, limit)
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage1 =
@@ -127,7 +142,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage1.getSearchRequestId())
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage2 =
@@ -137,7 +152,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage2.getSearchRequestId())
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage3 =
@@ -150,7 +165,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .isEqualTo(numberOfInstances);
     assertThat(dataPage1.getNumberOfRecordsInResponse())
       .isEqualTo(dataPage2.getNumberOfRecordsInResponse())
-        .isEqualTo(limit);
+      .isEqualTo(limit);
     assertThat(dataPage3.getNumberOfRecordsInResponse())
       .isLessThan(limit);
 
@@ -171,10 +186,9 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .isNotEqualTo(extractFirstProcessInstanceId(dataPage3.getDataAs(List.class)));
   }
 
-  private String extractFirstProcessInstanceId(List<?> data)
-  {
+  private String extractFirstProcessInstanceId(List<?> data) {
     Object firstData = data.get(0);
-    if(firstData instanceof Map) {
+    if (firstData instanceof Map) {
       Map<String, String> firstDataPair = (Map<String, String>) firstData;
       return firstDataPair.get("processInstanceId");
     }
@@ -182,7 +196,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportExistingInvalidReport() {
+  public void exportExistingInvalidReportResult() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultInvalidReportDefinition(
@@ -194,7 +208,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
 
@@ -203,12 +217,12 @@ public class JsonExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportNotExistingReport() {
+  public void exportNotExistingReportResult() {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
-      .buildJsonExportRequest("IWishIExisted_ButIDont")
+      .buildPublicExportJsonReportResultRequest("IWishIExisted_ButIDont")
       .withoutAuthentication()
       .execute();
     // then
@@ -229,7 +243,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .addSingleQueryParam(QUERY_LIMIT_PARAM, numberOfInstances)
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, "NoSoupForYou!")
       .withoutAuthentication()
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .execute();
 
     // then
@@ -243,7 +257,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
 
     // given
     int numberOfInstances = 3;
-    int limit =  numberOfInstances / 2;
+    int limit = numberOfInstances / 2;
     String reportId = generateValidReport(numberOfInstances);
 
     // when
@@ -251,7 +265,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, limit)
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage1 =
@@ -259,19 +273,20 @@ public class JsonExportRestServiceIT extends AbstractIT {
 
     ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
     clearScrollRequest.addScrollId(dataPage1.getSearchRequestId());
-    ClearScrollResponse clearScrollResponse = embeddedOptimizeExtension.getOptimizeElasticClient().clearScroll(clearScrollRequest);
+    ClearScrollResponse clearScrollResponse = embeddedOptimizeExtension.getOptimizeElasticClient()
+      .clearScroll(clearScrollRequest);
     boolean succeeded = clearScrollResponse.isSucceeded();
 
     Response responsePage2 = embeddedOptimizeExtension
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, dataPage1.getSearchRequestId())
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
 
     // then
-    assert(succeeded);
+    assert (succeeded);
     assertThat(responsePage1.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(dataPage1.getSearchRequestId()).isNotBlank();
@@ -291,7 +306,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_LIMIT_PARAM, numberOfInstances * 3)
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto data = response.readEntity(PaginatedDataExportDto.class);
@@ -301,7 +316,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, data.getSearchRequestId())
-      .buildJsonExportRequest(reportId)
+      .buildPublicExportJsonReportResultRequest(reportId)
       .withoutAuthentication()
       .execute();
     PaginatedDataExportDto dataPage2 =
@@ -309,7 +324,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
 
     // then
     assertThat(data.getNumberOfRecordsInResponse()).isEqualTo(numberOfInstances);
-    assertThat((long)data.getNumberOfRecordsInResponse()).isEqualTo(data.getTotalNumberOfRecords());
+    assertThat((long) data.getNumberOfRecordsInResponse()).isEqualTo(data.getTotalNumberOfRecords());
     assertThat(data.getSearchRequestId()).isNotBlank();
     assertThat(response.getStatus())
       .isEqualTo(Response.Status.OK.getStatusCode());
@@ -328,7 +343,7 @@ public class JsonExportRestServiceIT extends AbstractIT {
     return createAndStoreDefaultProcessReportDefinition(reportData);
   }
 
- private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey,
+  private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey,
                                                               String processDefinitionVersion) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -362,14 +377,14 @@ public class JsonExportRestServiceIT extends AbstractIT {
   }
 
   private String getAccessToken() {
-     return
-        Optional.ofNullable(
-          embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().getAccessToken())
-          .orElseGet(() -> {
-            String randomToken = "1_2_Polizei";
-            embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(
-              randomToken);
-           return randomToken;
-          });
+    return
+      Optional.ofNullable(
+        embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().getAccessToken())
+        .orElseGet(() -> {
+          String randomToken = "1_2_Polizei";
+          embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(
+            randomToken);
+          return randomToken;
+        });
   }
 }

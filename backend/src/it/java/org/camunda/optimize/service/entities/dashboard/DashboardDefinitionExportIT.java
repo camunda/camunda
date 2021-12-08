@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefiniti
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class DashboardExportIT extends AbstractExportImportIT {
+public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test
   public void exportDashboard() {

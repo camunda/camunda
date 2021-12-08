@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.entities.dashboard;
 
-import org.camunda.optimize.service.entities.AbstractExportImportIT;
+import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -13,7 +13,7 @@ import javax.ws.rs.core.Response;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
-public class DashboardImportAuthorizationIT extends AbstractExportImportIT {
+public class DashboardDefinitionImportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @Test
   public void importDashboard_asSuperuser() {
