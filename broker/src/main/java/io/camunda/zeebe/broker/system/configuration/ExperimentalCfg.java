@@ -20,14 +20,12 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
-  public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
 
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
-  private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
   private RocksdbCfg rocksdb = new RocksdbCfg();
-  private RaftCfg raft = new RaftCfg();
+  private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
   private QueryApiCfg queryApi = new QueryApiCfg();
 
@@ -73,19 +71,11 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.rocksdb = rocksdb;
   }
 
-  public boolean isEnablePriorityElection() {
-    return enablePriorityElection;
-  }
-
-  public void setEnablePriorityElection(final boolean enablePriorityElection) {
-    this.enablePriorityElection = enablePriorityElection;
-  }
-
-  public RaftCfg getRaft() {
+  public ExperimentalRaftCfg getRaft() {
     return raft;
   }
 
-  public void setRaft(final RaftCfg raft) {
+  public void setRaft(final ExperimentalRaftCfg raft) {
     this.raft = raft;
   }
 

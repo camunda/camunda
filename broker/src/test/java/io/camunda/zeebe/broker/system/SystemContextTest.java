@@ -275,7 +275,7 @@ final class SystemContextTest {
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
-    brokerCfg.getExperimental().setEnablePriorityElection(true);
+    brokerCfg.getCluster().getRaft().setEnablePriorityElection(true);
     brokerCfg.getCluster().setClusterSize(2);
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of(fixedPartition));
@@ -301,7 +301,7 @@ final class SystemContextTest {
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
-    brokerCfg.getExperimental().setEnablePriorityElection(false);
+    brokerCfg.getCluster().getRaft().setEnablePriorityElection(false);
     brokerCfg.getCluster().setClusterSize(2);
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of(fixedPartition));
