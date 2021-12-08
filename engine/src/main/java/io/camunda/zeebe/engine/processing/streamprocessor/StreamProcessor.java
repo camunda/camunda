@@ -368,7 +368,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastReplayedEventPosition();
           } else {
-            return processingStateMachine.getLastWrittenEventPosition();
+            return processingStateMachine.getLastWrittenPosition();
           }
         });
   }
