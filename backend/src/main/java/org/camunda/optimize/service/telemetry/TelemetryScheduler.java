@@ -35,10 +35,7 @@ public class TelemetryScheduler extends AbstractScheduledService implements Conf
   public void init() {
     log.info("Initializing TelemetryScheduler");
     getTelemetryConfiguration().validate();
-    final boolean wasScheduled = startTelemetryScheduling();
-    if (wasScheduled) {
-      this.taskScheduler.submit(this::run);
-    }
+    startTelemetryScheduling();
   }
 
   @Override
