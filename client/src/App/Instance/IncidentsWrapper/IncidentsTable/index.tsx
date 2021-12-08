@@ -38,16 +38,16 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
   incidents,
 }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalContent, setModalContent] = useState<string | null>(null);
-  const [modalTitle, setModalTitle] = useState<string | null>(null);
+  const [modalContent, setModalContent] = useState<string>('');
+  const [modalTitle, setModalTitle] = useState<string>('');
   const {processInstanceId} = useInstancePageParams();
   const {sortBy, sortOrder} = getSorting('instance');
   const {filteredIncidents} = incidentsStore;
 
   const handleModalClose = () => {
     setIsModalVisible(false);
-    setModalContent(null);
-    setModalTitle(null);
+    setModalContent('');
+    setModalTitle('');
   };
 
   const handleMoreButtonClick = (

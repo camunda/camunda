@@ -7,11 +7,13 @@
 import React from 'react';
 
 import Modal, {SIZES} from 'modules/components/Modal';
+import CodeEditor from 'modules/components/CodeModal/CodeEditor';
+import {ModalBody} from './styled';
 
 type Props = {
   isVisible: boolean;
-  title: string | null;
-  content: string | null;
+  title: string;
+  content: string;
   onModalClose: () => void;
 };
 
@@ -24,9 +26,9 @@ const ErrorMessageModal = ({
   return (
     <Modal onModalClose={onModalClose} isVisible={isVisible} size={SIZES.BIG}>
       <Modal.Header>{title}</Modal.Header>
-      <Modal.Body>
-        <Modal.BodyText>{content}</Modal.BodyText>
-      </Modal.Body>
+      <ModalBody>
+        <CodeEditor initialValue={content} contentEditable={false} />
+      </ModalBody>
       <Modal.Footer>
         <Modal.PrimaryButton title="Close Modal" onClick={onModalClose}>
           Close
