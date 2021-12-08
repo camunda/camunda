@@ -53,7 +53,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final Set<FailureListener> listeners = new HashSet<>();
   private final BooleanSupplier isLastWrittenPositionCommitted;
 
-  private Long lastWrittenEventPosition;
+  private Long lastWrittenPosition;
   private TransientSnapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
@@ -81,7 +81,7 @@ public final class AsyncSnapshotDirector extends Actor
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
       isLastWrittenPositionCommitted = () -> true;
     } else {
-      isLastWrittenPositionCommitted = () -> lastWrittenEventPosition <= commitPosition;
+      isLastWrittenPositionCommitted = () -> lastWrittenPosition <= commitPosition;
     }
   }
 
@@ -104,7 +104,7 @@ public final class AsyncSnapshotDirector extends Actor
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
     actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
 
-    lastWrittenEventPosition = null;
+    lastWrittenPosition = null;
   }
 
   @Override
@@ -267,7 +267,7 @@ public final class AsyncSnapshotDirector extends Actor
   private void onLastWrittenPositionReceived(final Long endPosition, final Throwable error) {
     if (error == null) {
       LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
-      lastWrittenEventPosition = endPosition;
+      lastWrittenPosition = endPosition;
       persistingSnapshot = false;
       persistSnapshotIfLastWrittenPositionCommitted();
     } else {
@@ -303,7 +303,7 @@ public final class AsyncSnapshotDirector extends Actor
 
   private void persistSnapshotIfLastWrittenPositionCommitted() {
     if (pendingSnapshot != null
-        && lastWrittenEventPosition != null
+        && lastWrittenPosition != null
         && isLastWrittenPositionCommitted.getAsBoolean()
         && !persistingSnapshot) {
       persistingSnapshot = true;
@@ -311,7 +311,7 @@ public final class AsyncSnapshotDirector extends Actor
       LOG.debug(
           "Current commit position {} >= {}, committing snapshot {}.",
           commitPosition,
-          lastWrittenEventPosition,
+          lastWrittenPosition,
           pendingSnapshot);
       final var snapshotPersistFuture = pendingSnapshot.persist();
 
@@ -327,7 +327,7 @@ public final class AsyncSnapshotDirector extends Actor
                 LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
               }
             }
-            lastWrittenEventPosition = null;
+            lastWrittenPosition = null;
             takingSnapshot = false;
             pendingSnapshot = null;
             persistingSnapshot = false;
@@ -336,7 +336,7 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void resetStateOnFailure() {
-    lastWrittenEventPosition = null;
+    lastWrittenPosition = null;
     takingSnapshot = false;
     if (pendingSnapshot != null) {
       pendingSnapshot.abort();
