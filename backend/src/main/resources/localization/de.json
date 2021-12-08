@@ -70,7 +70,7 @@
     "disabledMessage": {
       "noProcess": "Wählen Sie eine Prozessdefinition aus, um eine Vorlage auswählen zu können.",
       "multipleProcess": "Diese Vorlage eignet sich am besten für mehrere Prozesse.",
-      "singleProcess": "Diese Vorlagen eignen sich am besten für einen einzelnen Prozess.",
+      "singleProcess": "Diese Vorlage eignet sich am besten für einzelne Prozesse.",
       "editReport": "Um diesen Wert zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
     },
     "templateGroups": {
