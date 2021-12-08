@@ -12,54 +12,52 @@ import {getMixpanelConfig} from 'config';
 
 import './Tracking.scss';
 
-export default function Tracking() {
+export function Tracking() {
   const location = useLocation();
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     if (enabled) {
-      mixpanel.track('Page view', {
-        Path: window.location.hash,
+      mixpanel.track('optimize:pageView', {
+        path: window.location.hash,
       });
     }
   }, [location, enabled]);
 
   useEffect(() => {
     (async () => {
-      const {enabled, token, apiHost, organizationId, osanoScriptUrl} = await getMixpanelConfig();
-      if (!enabled || !osanoScriptUrl) {
+      const {enabled, token, apiHost, organizationId, osanoScriptUrl} =
+        await getMixpanelConfig();
+      if (!enabled || !osanoScriptUrl || !(await isOsanoAnalyticsEnabled(osanoScriptUrl))) {
         return;
       }
 
-      function initMixpanel() {
-        mixpanel.init(token, {
-          api_host: apiHost,
-          batch_requests: true,
-        });
+      mixpanel.init(token, {
+        api_host: apiHost,
+        batch_requests: true,
+      });
 
-        mixpanel.register({
-          product: 'optimize',
-          organization: organizationId,
-          development: process.env.NODE_ENV === 'development',
-        });
-      }
+      mixpanel.register({
+        organization: organizationId,
+        product: 'optimize',
+        development: process.env.NODE_ENV === 'development',
+      });
 
-      const osanoScriptElement = document.createElement('script');
-      osanoScriptElement.src = osanoScriptUrl;
-      document.head.appendChild(osanoScriptElement);
-
-      osanoScriptElement.onload = function () {
-        if (analyticsEnabled()) {
-          initMixpanel();
-          setEnabled(enabled);
-        }
-      };
+      setEnabled(enabled);
     })();
   }, []);
 
   return null;
 }
 
-function analyticsEnabled() {
-  return window.Osano?.cm?.analytics;
+async function isOsanoAnalyticsEnabled(osanoScriptUrl) {
+  return new Promise((resolve) => {
+    const osanoScriptElement = document.createElement('script');
+    osanoScriptElement.src = osanoScriptUrl;
+    document.head.appendChild(osanoScriptElement);
+
+    osanoScriptElement.onload = () => {
+      resolve(window.Osano?.cm?.analytics);
+    };
+  });
 }
