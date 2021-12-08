@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.junit.Before;
 import org.junit.Test;
@@ -159,6 +160,8 @@ public class BasicProcessTest extends AbstractMigrationTest {
     assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
     IncidentEntity randomIncident = chooseOne(incidents);
     assertThat(randomIncident.getErrorMessageHash()).isNotNull();
+    //TODO remove this condition when migrating further
+    assertThat(incidents.stream().allMatch(i -> i.isPending() == true)).describedAs("All incidents are pending after migration to 1.3.0").isTrue();
 
     incidents.forEach(inc -> {
       assertThat(inc.getTreePath()).isNotNull();

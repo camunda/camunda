@@ -19,6 +19,7 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
   private Long incidentKey;
   private String errorMessage;
   private Long incidentJobKey;
+  private boolean incident;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
@@ -76,6 +77,15 @@ public class FlowNodeInstanceForListViewEntity extends OperateZeebeEntity<FlowNo
 
   public void setIncidentJobKey(Long incidentJobKey) {
     this.incidentJobKey = incidentJobKey;
+  }
+
+  public boolean isIncident() {
+    return incident;
+  }
+
+  public FlowNodeInstanceForListViewEntity setIncident(final boolean incident) {
+    this.incident = incident;
+    return this;
   }
 
   public ListViewJoinRelation getJoinRelation() {

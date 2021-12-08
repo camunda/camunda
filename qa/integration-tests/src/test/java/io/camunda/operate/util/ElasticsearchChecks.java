@@ -5,19 +5,14 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.schema.templates.IncidentTemplate.STATE;
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import java.io.IOException;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
@@ -28,6 +23,7 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
@@ -41,6 +37,10 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import java.io.IOException;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -57,6 +57,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
 public class ElasticsearchChecks {
+
+  public static QueryBuilder NOT_PENDING_INCIDENT_QUERY = termQuery(IncidentTemplate.PENDING,
+      false);
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -344,10 +347,10 @@ public class ElasticsearchChecks {
       Long processInstanceKey = (Long)objects[0];
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
-        boolean found = allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
+        boolean found = allActivityInstances.stream().anyMatch(ai -> ai.isIncident());
         if (found) {
           List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
-          found = allIncidents.size() > 0;
+          found = allIncidents.stream().filter(ie -> !ie.isPending()).count() > 0;
         }
         return found;
       } catch (NotFoundException ex) {
@@ -375,9 +378,9 @@ public class ElasticsearchChecks {
   }
 
   public long getActiveIncidentsCount() {
-    final QueryBuilder q = termQuery(STATE, IncidentState.ACTIVE.name());
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate)
-        .source(new SearchSourceBuilder().query(q));
+        .source(new SearchSourceBuilder()
+            .query(joinWithAnd(ACTIVE_INCIDENT_QUERY, NOT_PENDING_INCIDENT_QUERY)));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
@@ -400,7 +403,7 @@ public class ElasticsearchChecks {
       int incidentsCount = (int)objects[1];
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
-        return allActivityInstances.stream().filter(ai -> ai.getIncidentKey() != null).count() == incidentsCount;
+        return allActivityInstances.stream().filter(ai -> ai.isIncident()).count() == incidentsCount;
       } catch (NotFoundException ex) {
         return false;
       }
@@ -419,7 +422,7 @@ public class ElasticsearchChecks {
       Long processInstanceKey = (Long)objects[0];
       try {
         final List<FlowNodeInstanceEntity> allActivityInstances = getAllFlowNodeInstances(processInstanceKey);
-        return allActivityInstances.stream().noneMatch(ai -> ai.getIncidentKey() != null);
+        return allActivityInstances.stream().noneMatch(ai -> ai.isIncident());
       } catch (NotFoundException ex) {
         return false;
       }
@@ -519,6 +522,7 @@ public class ElasticsearchChecks {
             q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionId));
             q.setRunning(true);
             q.setActive(true);
+            q.setIncidents(true);
           });
       getActiveRequest.setPageSize(count);
       final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getActiveRequest);

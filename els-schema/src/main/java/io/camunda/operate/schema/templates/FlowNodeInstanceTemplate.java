@@ -23,11 +23,15 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String TYPE = "type";
   public static final String TREE_PATH = "treePath";
   public static final String LEVEL = "level";
+  public static final String INCIDENT = "incident";     //true/false
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
   }
 
-
+  @Override
+  public String getVersion() {
+    return "1.3.0";
+  }
 }

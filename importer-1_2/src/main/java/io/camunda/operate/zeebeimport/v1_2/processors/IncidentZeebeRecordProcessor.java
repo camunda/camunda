@@ -6,6 +6,8 @@
 package io.camunda.operate.zeebeimport.v1_2.processors;
 
 
+import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
@@ -20,20 +22,19 @@ import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.IncidentNotifier;
-import io.camunda.operate.zeebeimport.UpdateIncidentsFromProcessInstancesAction;
-import io.camunda.operate.zeebeimport.util.TreePath;
 import io.camunda.operate.zeebeimport.v1_2.record.Intent;
 import io.camunda.operate.zeebeimport.v1_2.record.value.IncidentRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -75,32 +76,27 @@ public class IncidentZeebeRecordProcessor {
   @Autowired
   private BeanFactory beanFactory;
 
-  public Callable<Void> processIncidentRecord(List<Record> records, BulkRequest bulkRequest) throws PersistenceException {
+  public void processIncidentRecord(List<Record> records, BulkRequest bulkRequest)
+      throws PersistenceException {
     List<IncidentEntity> newIncidents = new ArrayList<>();
-    List<String> processInstanceIdsForTreePathUpdate = new ArrayList<>();
     for (Record record: records) {
-      processIncidentRecord(record, bulkRequest, newIncidents::add, processInstanceIdsForTreePathUpdate);
+      processIncidentRecord(record, bulkRequest, newIncidents::add);
     }
     if (operateProperties.getAlert().getWebhook() != null) {
       incidentNotifier.notifyOnIncidents(newIncidents);
     }
-    return beanFactory.getBean(UpdateIncidentsFromProcessInstancesAction.class,
-        processInstanceIdsForTreePathUpdate);
   }
 
   public void processIncidentRecord(Record record, BulkRequest bulkRequest,
-      Consumer<IncidentEntity> newIncidentHandler,
-      List<String> processInstanceIdsForTreePathUpdate) throws PersistenceException {
+      Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
-    persistIncident(record, recordValue, bulkRequest, newIncidentHandler,
-        processInstanceIdsForTreePathUpdate);
+    persistIncident(record, recordValue, bulkRequest, newIncidentHandler);
 
   }
 
   private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest,
-      Consumer<IncidentEntity> newIncidentHandler,
-      List<String> processInstanceIdsForTreePathUpdate) throws PersistenceException {
+      Consumer<IncidentEntity> newIncidentHandler) throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
     if (intentStr.equals(Intent.RESOLVED.toString())) {
@@ -108,11 +104,12 @@ public class IncidentZeebeRecordProcessor {
       //resolve corresponding operation
       operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
 
-      bulkRequest.add(getIncidentDeleteQuery(incidentKey));
+      bulkRequest.add(getIncidentUpdateQuery(incidentKey, IncidentState.RESOLVED));
     } else if (intentStr.equals(Intent.CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
       incident.setId( ConversionUtils.toStringOrNull(incidentKey));
       incident.setKey(incidentKey);
+      incident.setPartitionId(record.getPartitionId());
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
       }
@@ -131,30 +128,10 @@ public class IncidentZeebeRecordProcessor {
       }
       incident.setState(IncidentState.ACTIVE);
       incident.setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      if (incident.getTreePath() == null) {
-        String processInstanceTreePath = elasticsearchQueries
-            .findProcessInstanceTreePath(recordValue.getProcessInstanceKey());
-        if (processInstanceTreePath == null) {
-          logger.warn("No tree path found for incident [{}], processInstanceKey [{}]",
-              incident.getKey(), recordValue.getProcessInstanceKey());
-          final String treePath = new TreePath().startTreePath(
-              String.valueOf(recordValue.getProcessInstanceKey()))
-              .appendFlowNode(incident.getFlowNodeId())
-              .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey())).toString();
-          incident.setTreePath(treePath);
-          processInstanceIdsForTreePathUpdate.add(String.valueOf(recordValue.getProcessInstanceKey()));
-        } else {
-          incident.setTreePath(new TreePath(processInstanceTreePath)
-              .appendFlowNode(incident.getFlowNodeId())
-              .appendFlowNodeInstance(String.valueOf(incident.getFlowNodeInstanceKey()))
-              .toString());
-        }
-      }
       bulkRequest.add(getIncidentInsertQuery(incident));
       newIncidentHandler.accept(incident);
     }
   }
-
 
   private IndexRequest getIncidentInsertQuery(IncidentEntity incident) throws PersistenceException {
     try {
@@ -167,9 +144,14 @@ public class IncidentZeebeRecordProcessor {
     }
   }
 
-  private DeleteRequest getIncidentDeleteQuery(Long incidentKey) throws PersistenceException {
-    logger.debug("Delete incident: key {}", incidentKey);
-    return new DeleteRequest().index(incidentTemplate.getFullQualifiedName()).id(incidentKey.toString());
+  private UpdateRequest getIncidentUpdateQuery(Long incidentKey, IncidentState state) throws PersistenceException {
+    logger.debug("Resolve incident: key {}", incidentKey);
+    Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(IncidentTemplate.PENDING, true);
+    updateFields.put(IncidentTemplate.STATE, state);
+    return new UpdateRequest(incidentTemplate.getFullQualifiedName(), String.valueOf(incidentKey))
+        .doc(updateFields)
+        .retryOnConflict(UPDATE_RETRY_COUNT);
   }
 
 }

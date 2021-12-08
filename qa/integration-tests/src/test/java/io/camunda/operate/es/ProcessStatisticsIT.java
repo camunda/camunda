@@ -20,7 +20,7 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.TestUtil;
-import io.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
+import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.util.CollectionUtil;
@@ -62,7 +62,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
     queryRequest.setActivityId("taskA");
 
-    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
+    final List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
     assertThat(activityStatisticsDtos).hasSize(1);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
       ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
@@ -78,7 +78,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
     queryRequest.setErrorMessage("error");
 
-    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
+    final List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
     assertThat(activityStatisticsDtos).hasSize(2);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskC")).allMatch(ai->
       ai.getActive().equals(0L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(2L)
@@ -147,7 +147,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
   }
 
   private void getStatisticsAndAssert(ListViewQueryDto query) throws Exception {
-    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
+    final List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
 
     assertThat(activityStatisticsDtos).hasSize(5);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
@@ -167,8 +167,8 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     );
   }
 
-  private List<ActivityStatisticsDto> getActivityStatistics(ListViewQueryDto query) throws Exception {
-    return mockMvcTestRule.listFromResponse(postRequest(QUERY_PROCESS_STATISTICS_URL, query), ActivityStatisticsDto.class);
+  private List<FlowNodeStatisticsDto> getActivityStatistics(ListViewQueryDto query) throws Exception {
+    return mockMvcTestRule.listFromResponse(postRequest(QUERY_PROCESS_STATISTICS_URL, query), FlowNodeStatisticsDto.class);
   }
 
   @Test
@@ -234,7 +234,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.TERMINATED, "taskC", null));
     entities.add(inst);
 
-    inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(TestUtil
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null));
     entities.add(TestUtil
@@ -247,7 +247,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     entities.add(task);
     entities.add(inst);
 
-    inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(TestUtil
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null));
     entities.add(TestUtil
@@ -287,7 +287,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskE", null));
     entities.add(inst);
 
-    inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(TestUtil
         .createFlowNodeInstance(inst.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null));
     entities.add(TestUtil

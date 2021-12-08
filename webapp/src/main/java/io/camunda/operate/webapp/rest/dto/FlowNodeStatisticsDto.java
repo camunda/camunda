@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-public class ActivityStatisticsDto {
+public class FlowNodeStatisticsDto {
 
   private String activityId;
 
@@ -14,10 +14,10 @@ public class ActivityStatisticsDto {
   private Long incidents = 0L;
   private Long completed = 0L;
 
-  public ActivityStatisticsDto() {
+  public FlowNodeStatisticsDto() {
   }
 
-  public ActivityStatisticsDto(String activityId) {
+  public FlowNodeStatisticsDto(String activityId) {
     this.activityId = activityId;
   }
 
@@ -84,7 +84,7 @@ public class ActivityStatisticsDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    ActivityStatisticsDto that = (ActivityStatisticsDto) o;
+    FlowNodeStatisticsDto that = (FlowNodeStatisticsDto) o;
 
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;

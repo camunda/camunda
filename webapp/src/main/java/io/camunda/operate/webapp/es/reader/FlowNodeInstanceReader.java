@@ -7,18 +7,18 @@ package io.camunda.operate.webapp.es.reader;
 
 import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
 import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
-import static io.camunda.operate.entities.FlowNodeState.INCIDENT;
 import static io.camunda.operate.entities.FlowNodeState.TERMINATED;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.END_DATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.ID;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.INCIDENT_KEY;
+import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.INCIDENT;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.LEVEL;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.START_DATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
@@ -54,6 +54,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
@@ -264,7 +265,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
   }
 
   private AggregationBuilder getIncidentsAgg() {
-    return filter(AGG_INCIDENTS, existsQuery(INCIDENT_KEY))
+    return filter(AGG_INCIDENTS, termQuery(INCIDENT, true))
         .subAggregation(
             terms(AGG_INCIDENT_PATHS).field(TREE_PATH)
                 .size(TERMS_AGG_SIZE));
@@ -294,7 +295,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
               FlowNodeInstanceEntity.class);
       entity.setSortValues(sh.getSortValues());
       if (incidentPaths.contains(entity.getTreePath())) {
-        entity.setState(INCIDENT);
+        entity.setIncident(true);
       }
       return entity;
     };
@@ -441,8 +442,8 @@ public class FlowNodeInstanceReader extends AbstractReader {
     final String incidentTreePath = new TreePath(treePath)
         .appendFlowNode(flowNodeId)
         .appendFlowNodeInstance(flowNodeInstanceId).toString();
-    final QueryBuilder query = constantScoreQuery(termQuery(IncidentTemplate.TREE_PATH,
-        incidentTreePath));
+    final QueryBuilder query = constantScoreQuery(
+        joinWithAnd(termQuery(IncidentTemplate.TREE_PATH, incidentTreePath), ACTIVE_INCIDENT_QUERY));
     final SearchRequest request = ElasticsearchUtil
         .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
@@ -478,8 +479,9 @@ public class FlowNodeInstanceReader extends AbstractReader {
     final String flowNodeInstancesTreePath = new TreePath(treePath)
         .appendFlowNode(flowNodeId).toString();
 
-    final QueryBuilder query = constantScoreQuery(termQuery(IncidentTemplate.TREE_PATH,
-        flowNodeInstancesTreePath));
+    final QueryBuilder query = constantScoreQuery(
+        joinWithAnd(termQuery(IncidentTemplate.TREE_PATH, flowNodeInstancesTreePath),
+            ACTIVE_INCIDENT_QUERY));
     final SearchRequest request = ElasticsearchUtil
         .createSearchRequest(incidentTemplate, QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
@@ -815,7 +817,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
     return eventEntity;
   }
 
-  public Map<String, FlowNodeState> getFlowNodeStates(String processInstanceId) {
+  public Map<String, FlowNodeStateDto> getFlowNodeStates(String processInstanceId) {
     final String latestFlowNodeAggName = "latestFlowNode";
     final String activeFlowNodesAggName = "activeFlowNodes";
     final String activeFlowNodesBucketsAggName = "activeFlowNodesBuckets";
@@ -825,7 +827,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
         termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     final AggregationBuilder notCompletedFlowNodesAggs =
-        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE.name(), INCIDENT.name(), TERMINATED.name()))
+        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE.name(), TERMINATED.name()))
         .subAggregation(
           terms(activeFlowNodesBucketsAggName)
           .field(FLOW_NODE_ID)
@@ -863,17 +865,17 @@ public class FlowNodeInstanceReader extends AbstractReader {
       final Filter activeFlowNodesAgg = response.getAggregations().get(activeFlowNodesAggName);
       final Terms flowNodesAgg = activeFlowNodesAgg.getAggregations()
           .get(activeFlowNodesBucketsAggName);
-      final Map<String, FlowNodeState> result = new HashMap<>();
+      final Map<String, FlowNodeStateDto> result = new HashMap<>();
       if (flowNodesAgg != null) {
         for (Bucket flowNode : flowNodesAgg.getBuckets()) {
           final Map<String, Object> lastFlowNodeFields = ((TopHits) flowNode.getAggregations()
               .get(latestFlowNodeAggName)).getHits()
               .getAt(0).getSourceAsMap();
-          FlowNodeState flowNodeState = FlowNodeState.valueOf(
+          FlowNodeStateDto flowNodeState = FlowNodeStateDto.valueOf(
               lastFlowNodeFields.get(STATE).toString());
-          if (flowNodeState.equals(ACTIVE) && incidentPaths
+          if (flowNodeState.equals(FlowNodeStateDto.ACTIVE) && incidentPaths
               .contains(lastFlowNodeFields.get(TREE_PATH))) {
-            flowNodeState = INCIDENT;
+            flowNodeState = FlowNodeStateDto.INCIDENT;
           }
           result.put(flowNode.getKeyAsString(), flowNodeState);
         }
@@ -881,7 +883,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
       //add finished when needed
       for (String finishedFlowNodeId: finishedFlowNodes) {
         if (result.get(finishedFlowNodeId) == null) {
-          result.put(finishedFlowNodeId, COMPLETED);
+          result.put(finishedFlowNodeId, FlowNodeStateDto.COMPLETED);
         }
       }
       return result;

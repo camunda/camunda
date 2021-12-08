@@ -5,12 +5,11 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.CollectionUtil.map;
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -20,13 +19,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.archiver.AbstractArchiverJob;
+import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.ArchiverException;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.es.reader.VariableReader;
+import io.camunda.operate.webapp.rest.dto.VariableDto;
+import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.operate.zeebe.ImportValueType;
+import io.camunda.operate.zeebeimport.RecordsReader;
+import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -40,32 +64,6 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
-import io.camunda.operate.archiver.AbstractArchiverJob;
-import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.exceptions.ArchiverException;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.webapp.es.reader.IncidentReader;
-import io.camunda.operate.webapp.es.reader.VariableReader;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.RecordsReader;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -258,7 +256,9 @@ public class OperateTester {
 
   public OperateTester resolveIncident() {
     zeebeClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
-    zeebeClient.newResolveIncidentCommand(getIncidents().get(0).getKey()).send().join();
+    zeebeClient.newResolveIncidentCommand(Long.valueOf(
+        getIncidents().stream().filter(i -> i.getJobId().equals(String.valueOf(jobKey))).findFirst()
+            .get().getId())).send().join();
     return this;
   }
 
@@ -457,12 +457,12 @@ public class OperateTester {
     return value==null? (variableValue == null): value.contains(variableValue);
   }
 
-  public List<IncidentEntity> getIncidents() {
+  public List<IncidentDto> getIncidents() {
     return getIncidentsFor(processInstanceKey);
   }
 
-  public List<IncidentEntity> getIncidentsFor(Long processInstanceKey) {
-    return incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
+  public List<IncidentDto> getIncidentsFor(Long processInstanceKey) {
+    return incidentReader.getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey)).getIncidents();
   }
 
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {

@@ -31,8 +31,7 @@ public class ZeebeImporter {
   private OperateProperties operateProperties;
 
   @Autowired
-  @Qualifier("recordsReaderThreadPoolExecutor")
-  private ThreadPoolTaskScheduler readersExecutor;
+  private ZeebePostImporter zeebePostImporter;
 
   @Autowired
   private RecordsReaderHolder recordsReaderHolder;
@@ -41,13 +40,14 @@ public class ZeebeImporter {
   public void startImportingData() {
     if (operateProperties.getImporter().isStartLoadingDataOnStartup()) {
       scheduleReaders();
+      zeebePostImporter.start();
     }
   }
 
   public void scheduleReaders() {
     logger.info("INIT: Start importing data...");
     recordsReaderHolder.getAllRecordsReaders().stream().forEach(
-        recordsReader -> readersExecutor.submit(recordsReader)
+        recordsReader -> getRecordsReaderTaskExecutor().submit(recordsReader)
     );
   }
 

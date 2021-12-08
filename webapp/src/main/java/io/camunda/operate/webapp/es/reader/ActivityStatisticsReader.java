@@ -13,8 +13,8 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.elasticsearch.action.search.SearchRequest;
@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_ARCHIVE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
@@ -40,10 +41,9 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JO
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT_KEY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.children;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
@@ -74,12 +74,12 @@ public class ActivityStatisticsReader {
 
   @FunctionalInterface
   private interface MapUpdater {
-    void updateMapEntry(ActivityStatisticsDto statistics, Long value);
+    void updateMapEntry(FlowNodeStatisticsDto statistics, Long value);
   }
 
-  public Collection<ActivityStatisticsDto> getActivityStatistics(ListViewQueryDto query) {
+  public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
 
-    Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
+    Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
 
     SearchRequest searchRequest = createQuery(query, ONLY_RUNTIME);
     runQueryAndCollectStats(statisticsMap, searchRequest);
@@ -92,17 +92,17 @@ public class ActivityStatisticsReader {
     return statisticsMap.values();
   }
 
-  public void runQueryAndCollectStats(Map<String, ActivityStatisticsDto> statisticsMap, SearchRequest searchRequest) {
+  public void runQueryAndCollectStats(Map<String, FlowNodeStatisticsDto> statisticsMap, SearchRequest searchRequest) {
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
       if (searchResponse.getAggregations() != null) {
         Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
         CollectionUtil.asMap(
-            AGG_ACTIVE_ACTIVITIES,     (MapUpdater)ActivityStatisticsDto::addActive,
-            AGG_INCIDENT_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::addIncidents,
-            AGG_TERMINATED_ACTIVITIES, (MapUpdater)ActivityStatisticsDto::addCanceled,
-            AGG_FINISHED_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::addCompleted)
+            AGG_ACTIVE_ACTIVITIES,     (MapUpdater) FlowNodeStatisticsDto::addActive,
+            AGG_INCIDENT_ACTIVITIES,   (MapUpdater) FlowNodeStatisticsDto::addIncidents,
+            AGG_TERMINATED_ACTIVITIES, (MapUpdater) FlowNodeStatisticsDto::addCanceled,
+            AGG_FINISHED_ACTIVITIES,   (MapUpdater) FlowNodeStatisticsDto::addCompleted)
             .forEach((aggName,mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (MapUpdater)mapUpdater));
       }
     } catch (IOException e) {
@@ -119,7 +119,7 @@ public class ActivityStatisticsReader {
         children(AGG_ACTIVITIES, ACTIVITIES_JOIN_RELATION);
 
     if (queryType != ONLY_ARCHIVE && query.isActive()) {
-      agg = agg.subAggregation(getActiveActivitiesAgg());
+      agg = agg.subAggregation(getActiveFlowNodesAgg());
     }
     if (query.isCanceled()) {
       agg = agg.subAggregation(getTerminatedActivitiesAgg());
@@ -142,7 +142,7 @@ public class ActivityStatisticsReader {
           .aggregation(agg));
   }
 
-  private void collectStatisticsFor(Map<String, ActivityStatisticsDto> statisticsMap, Children activities,String aggName,MapUpdater mapUpdater) {
+  private void collectStatisticsFor(Map<String, FlowNodeStatisticsDto> statisticsMap, Children activities,String aggName,MapUpdater mapUpdater) {
     Filter incidentActivitiesAgg = activities.getAggregations().get(aggName);
     if (incidentActivitiesAgg != null) {
       ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
@@ -150,7 +150,7 @@ public class ActivityStatisticsReader {
         final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_PROCESS);
         final long docCount = aggregation.getDocCount();  //number of process instances
         if (statisticsMap.get(activityId) == null) {
-          statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
+          statisticsMap.put(activityId, new FlowNodeStatisticsDto(activityId));
         }
         mapUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
       });
@@ -164,20 +164,23 @@ public class ActivityStatisticsReader {
     );
   }
 
-  private FilterAggregationBuilder getActiveActivitiesAgg() {
+  private FilterAggregationBuilder getActiveFlowNodesAgg() {
     return filter(AGG_ACTIVE_ACTIVITIES,
-        boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))).subAggregation(
+        boolQuery().must(termQuery(INCIDENT, false))
+            .must(termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(parent(AGG_ACTIVITY_TO_PROCESS, ACTIVITIES_JOIN_RELATION))
-            //we need this to count process instances, not the activity instances
+        //we need this to count process instances, not the activity instances
     );
   }
 
   private FilterAggregationBuilder getIncidentActivitiesAgg() {
-    return filter(AGG_INCIDENT_ACTIVITIES, existsQuery(INCIDENT_KEY)).subAggregation(
+    return filter(AGG_INCIDENT_ACTIVITIES,
+        boolQuery().must(termQuery(INCIDENT, true))
+            .must(termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(parent(AGG_ACTIVITY_TO_PROCESS, ACTIVITIES_JOIN_RELATION))
-            //we need this to count process instances, not the activity instances
+        //we need this to count process instances, not the activity instances
     );
   }
 

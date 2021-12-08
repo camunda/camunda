@@ -62,6 +62,9 @@
 			},
 			"level": {
 				"type": "long"
+			},
+			"incident": {
+				"type": "boolean"
 			}
 		}
 	}

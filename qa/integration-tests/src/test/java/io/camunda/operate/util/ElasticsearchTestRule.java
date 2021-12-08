@@ -5,11 +5,18 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.zeebeimport.ZeebePostImporter;
+import io.camunda.operate.zeebeimport.post.PostImportAction;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperateEntity;
@@ -61,6 +68,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+
 public class ElasticsearchTestRule extends TestWatcher {
 
   protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
@@ -103,6 +115,9 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Autowired
   protected ZeebeImporter zeebeImporter;
+
+  @Autowired
+  protected ZeebePostImporter zeebePostImporter;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -222,6 +237,8 @@ public class ElasticsearchTestRule extends TestWatcher {
         }
         refreshIndexesInElasticsearch();
         zeebeImporter.performOneRoundOfImportFor(readers);
+        runPostImportActions();
+
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
@@ -233,6 +250,8 @@ public class ElasticsearchTestRule extends TestWatcher {
         try {
           sleepFor(500);
           zeebeImporter.performOneRoundOfImportFor(readers);
+          runPostImportActions();
+
         } catch (Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
@@ -254,6 +273,15 @@ public class ElasticsearchTestRule extends TestWatcher {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound,finishedTime );
     }else {
       logger.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+    }
+  }
+
+  private void runPostImportActions() {
+    if (zeebePostImporter.getPostImportActions().size() == 0) {
+      zeebePostImporter.initPostImporters();
+    }
+    for (PostImportAction action: zeebePostImporter.getPostImportActions()) {
+      action.performOneRound();
     }
   }
 

@@ -37,7 +37,7 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler imple
     }
     final ProcessInstanceForListViewEntity processInstance = processInstanceReader.getProcessInstanceByKey(operation.getProcessInstanceKey());
 
-    if (!processInstance.getState().equals(ProcessInstanceState.ACTIVE) && !processInstance.getState().equals(ProcessInstanceState.INCIDENT)) {
+    if (!processInstance.getState().equals(ProcessInstanceState.ACTIVE)) {
       //fail operation
       failOperation(operation,
           String.format("Unable to cancel %s process instance. Instance must be in ACTIVE or INCIDENT state.", processInstance.getState()));

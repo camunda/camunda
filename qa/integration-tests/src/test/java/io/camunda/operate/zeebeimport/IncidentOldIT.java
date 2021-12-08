@@ -18,6 +18,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
@@ -75,9 +76,9 @@ public class IncidentOldIT extends OperateZeebeIntegrationTest {
     .waitUntil()
     .incidentIsActive();
     // then
-    List<IncidentEntity> incidents = tester.getIncidents();
+    List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
-    assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
+    assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
 
   @Test
@@ -104,9 +105,9 @@ public class IncidentOldIT extends OperateZeebeIntegrationTest {
     tester.activateJob("task")
         .waitUntil().incidentIsActive();
     // then
-    List<IncidentEntity> incidents = tester.getIncidents();
+    List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
-    assertIncidentEntity(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED, "Message size exceeded");
+    assertIncidentEntity(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED);
   }
 
   @Test
@@ -121,9 +122,9 @@ public class IncidentOldIT extends OperateZeebeIntegrationTest {
     .incidentIsActive();
 
     // then
-    List<IncidentEntity> incidents = tester.getIncidents();
+    List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
-    assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
+    assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
 
   @Test
@@ -169,10 +170,11 @@ public class IncidentOldIT extends OperateZeebeIntegrationTest {
     verify(incidentNotifier, atLeastOnce()).notifyOnIncidents(any());
   }
 
-  protected void assertIncidentEntity(IncidentEntity anIncident,ErrorType anErrorType,String anErrorTypeTitle) {
-    assertThat(anIncident.getErrorType()).isEqualTo(anErrorType);
-    assertThat(anIncident.getErrorType().getTitle()).isEqualTo(anErrorTypeTitle);
-    assertThat(anIncident.getProcessInstanceKey()).isEqualTo(tester.getProcessInstanceKey());
+  protected void assertIncidentEntity(IncidentDto anIncident, ErrorType anErrorType) {
+    assertThat(anIncident.getErrorType().getId()).isEqualTo(anErrorType.name());
+    assertThat(anIncident.getErrorType().getName()).isEqualTo(anErrorType.getTitle());
+    assertThat(anIncident.getRootCauseInstance().getInstanceId())
+        .isEqualTo(String.valueOf(tester.getProcessInstanceKey()));
   }
 
   protected void assertErrorType(IncidentResponseOldDto incidentResponse, ErrorType errorType, int count) {

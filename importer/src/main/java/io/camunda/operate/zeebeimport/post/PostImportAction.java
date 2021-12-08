@@ -3,12 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.operate.entities;
+package io.camunda.operate.zeebeimport.post;
 
-public enum FlowNodeState {
+public interface PostImportAction extends Runnable {
 
-  ACTIVE,
-  COMPLETED,
-  TERMINATED
+  boolean performOneRound();
 
 }

@@ -217,15 +217,15 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     //Demo process v1
     Long processDefinitionKey = processVersions.get(0).getKey();
     //instance #1
-    ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 1, 1));
     //instance #2
-    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 1, 1, true));
     //instance #3
-    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 1, 0));
     //entities #4,5,6
@@ -236,7 +236,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     //Demo process v2
     processDefinitionKey = processVersions.get(1).getKey();
     //instance #1
-    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 2, 0, true));
     //entities #2-7
@@ -270,7 +270,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 0, 1));
     //instance #2
-    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    processInstance = createProcessInstanceEntity(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     entities.add(processInstance);
     entities.addAll(createIncidents(processInstance, 2, 0));
     //entities #3,4

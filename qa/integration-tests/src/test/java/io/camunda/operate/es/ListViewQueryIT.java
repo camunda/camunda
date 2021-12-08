@@ -165,11 +165,11 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final String errorMessage = "No more retries left.";
 
     //given we have 2 process instances: one with active activity with given error msg, another with active activity with another error message
-    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
     final FlowNodeInstanceForListViewEntity activityInstance1 = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       errorMessage, null);
 
-    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
     final FlowNodeInstanceForListViewEntity activityInstance2 = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE,
       "other error message", null);
 
@@ -273,7 +273,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //pi 2: active with active activity with another id and incident activity with given id
-    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
 
     final FlowNodeInstanceForListViewEntity activeWithoutIdActivityInstance = createFlowNodeInstance(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "otherActivityId");
 
@@ -322,7 +322,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     List<OperateEntity> activityInstances = new ArrayList<>();
 
     //wi1: active with activity in INCIDENT state with given id
-    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance1 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
 
     final FlowNodeInstanceForListViewEntity incidentWithIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance1.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
     incidentWithIdActivityInstance.setActivityId(activityId);
@@ -333,7 +333,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     activityInstances.addAll(Arrays.asList(incidentWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi2: active with activity in INCIDENT state with another id
-    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity processInstance2 = createProcessInstance(ProcessInstanceState.ACTIVE, true);
 
     final FlowNodeInstanceForListViewEntity incidentWithoutIdActivityInstance = createFlowNodeInstanceWithIncident(processInstance2.getProcessInstanceKey(), FlowNodeState.ACTIVE, "error", null);
     incidentWithoutIdActivityInstance.setActivityId("otherActivityId");
@@ -1222,7 +1222,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     vars.add(createVariableForListView(canceledInstance.getProcessInstanceKey(), canceledInstance.getProcessInstanceKey(), "var2", "W"));
 
     //instance with incidents (one resolved and one active) and one active activity
-    final ProcessInstanceForListViewEntity instanceWithIncident = createProcessInstance(ProcessInstanceState.ACTIVE);
+    final ProcessInstanceForListViewEntity instanceWithIncident = createProcessInstance(ProcessInstanceState.ACTIVE, true);
     final FlowNodeInstanceForListViewEntity activityInstance5 = TestUtil
         .createFlowNodeInstance(instanceWithIncident.getProcessInstanceKey(), FlowNodeState.ACTIVE);
     vars.add(createVariableForListView(instanceWithIncident.getProcessInstanceKey(), instanceWithIncident.getProcessInstanceKey(), "var1", "Y"));

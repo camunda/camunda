@@ -9,6 +9,8 @@ public class ImportProperties {
 
   private static final int DEFAULT_IMPORT_THREADS_COUNT = 3;
 
+  private static final int DEFAULT_POST_IMPORT_THREADS_COUNT = 1;
+
   private static final int DEFAULT_READER_THREADS_COUNT = 3;
 
   private static final int DEFAULT_IMPORT_QUEUE_SIZE = 3;
@@ -22,6 +24,8 @@ public class ImportProperties {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
+
+  private int postImportThreadsCount = DEFAULT_POST_IMPORT_THREADS_COUNT;
 
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
@@ -57,6 +61,15 @@ public class ImportProperties {
 
   public void setThreadsCount(int threadsCount) {
     this.threadsCount = threadsCount;
+  }
+
+  public int getPostImportThreadsCount() {
+    return postImportThreadsCount;
+  }
+
+  public ImportProperties setPostImportThreadsCount(final int postImportThreadsCount) {
+    this.postImportThreadsCount = postImportThreadsCount;
+    return this;
   }
 
   public int getReaderThreadsCount() {

@@ -9,7 +9,6 @@ package io.camunda.operate.entities.listview;
 public enum ProcessInstanceState {
 
   ACTIVE,
-  INCIDENT,
   COMPLETED,
   CANCELED
 

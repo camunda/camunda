@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.es.reader;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
+import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
@@ -22,7 +23,6 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -41,14 +41,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -66,10 +62,9 @@ public class ProcessInstanceReader extends AbstractReader {
 
   public static final FilterAggregationBuilder INCIDENTS_AGGREGATION = AggregationBuilders.filter(
       "incidents",
-      new HasChildQueryBuilder(
-           ListViewTemplate.ACTIVITIES_JOIN_RELATION,
-           QueryBuilders.existsQuery(ListViewTemplate.INCIDENT_KEY),
-           ScoreMode.None
+      joinWithAnd(
+          termQuery(INCIDENT, true),
+          termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)
       )
   );
 
@@ -128,7 +123,6 @@ public class ProcessInstanceReader extends AbstractReader {
           processInstance.getTreePath(), String.valueOf(processInstanceKey));
 
       return ListViewProcessInstanceDto.createFrom(processInstance,
-            incidentExists(processInstance.getTreePath()),
             operationReader.getOperationsByProcessInstanceKey(processInstanceKey),
             callHierarchy
       );
@@ -176,11 +170,7 @@ public class ProcessInstanceReader extends AbstractReader {
    */
   public ProcessInstanceForListViewEntity getProcessInstanceByKey(Long processInstanceKey) {
     try {
-      final ProcessInstanceForListViewEntity processInstance = searchProcessInstanceByKey(processInstanceKey);
-      if (incidentExists(processInstance.getTreePath())) {
-          processInstance.setState(ProcessInstanceState.INCIDENT);
-      }
-      return processInstance;
+      return searchProcessInstanceByKey(processInstanceKey);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining process instance: %s", e.getMessage());
       logger.error(message, e);
@@ -208,22 +198,6 @@ public class ProcessInstanceReader extends AbstractReader {
     } else {
         throw new NotFoundException(String.format("Could not find process instance with id '%s'.", processInstanceKey));
     }
-  }
-
-  private boolean incidentExists(String treePath) throws IOException {
-
-    final TermQueryBuilder processInstanceKeyQuery = termQuery(
-        IncidentTemplate.TREE_PATH, treePath);
-    final TermQueryBuilder activeIncidentQ = termQuery(IncidentTemplate.STATE,
-        IncidentState.ACTIVE);
-
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-      .source(new SearchSourceBuilder()
-        .query(constantScoreQuery(joinWithAnd(processInstanceKeyQuery, activeIncidentQ)))
-        .fetchSource(ListViewTemplate.ID, null));
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    return response.getHits().getTotalHits().value > 0;
   }
 
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {

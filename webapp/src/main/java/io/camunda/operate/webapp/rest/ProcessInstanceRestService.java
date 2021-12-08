@@ -7,7 +7,6 @@ package io.camunda.operate.webapp.rest;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.rest.ValidLongId;
@@ -20,11 +19,12 @@ import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import io.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
+import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -195,7 +195,7 @@ public class ProcessInstanceRestService {
   @ApiOperation("Get incidents by process instance id")
   @GetMapping("/{id}/incidents-new")
   public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable @ValidLongId String id) {
-    return incidentReader.getIncidentsByProcessInstanceKey(id);
+    return incidentReader.getIncidentsByProcessInstanceId(id);
   }
 
   @ApiOperation("Get sequence flows by process instance id")
@@ -215,7 +215,7 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get flow node states by process instance id")
   @GetMapping("/{processInstanceId}/flow-node-states")
-  public Map<String, FlowNodeState> getFlowNodeStates(@PathVariable @ValidLongId String processInstanceId) {
+  public Map<String, FlowNodeStateDto> getFlowNodeStates(@PathVariable @ValidLongId String processInstanceId) {
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
@@ -253,7 +253,7 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get activity instance statistics")
   @PostMapping(path = "/statistics")
-  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewQueryDto query) {
+  public Collection<FlowNodeStatisticsDto> getStatistics(@RequestBody ListViewQueryDto query) {
     final List<Long> processDefinitionKeys = CollectionUtil.toSafeListOfLongs(query.getProcessIds());
     final String bpmnProcessId = query.getBpmnProcessId();
     final Integer processVersion = query.getProcessVersion();
@@ -261,7 +261,7 @@ public class ProcessInstanceRestService {
     if ( (processDefinitionKeys != null && processDefinitionKeys.size() == 1) == (bpmnProcessId != null && processVersion != null) ) {
       throw new InvalidRequestException("Exactly one process must be specified in the request (via processIds or bpmnProcessId/version).");
     }
-    return activityStatisticsReader.getActivityStatistics(query);
+    return activityStatisticsReader.getFlowNodeStatistics(query);
   }
 
   @ApiOperation("Get process instance core statistics (aggregations)")

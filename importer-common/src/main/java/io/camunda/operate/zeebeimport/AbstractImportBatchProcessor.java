@@ -24,13 +24,10 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
   @Override
   public void performImport(ImportBatch importBatch) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
-    Callable<Void> callable = processZeebeRecords(importBatch, bulkRequest);
+    processZeebeRecords(importBatch, bulkRequest);
     try {
       withTimer(() -> {
         ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
-        if (callable != null) {
-          callable.call();
-        }
         return null;
       });
     } catch (Exception e) {
@@ -49,6 +46,6 @@ public abstract class AbstractImportBatchProcessor implements ImportBatchProcess
    * @return
    * @throws PersistenceException
    */
-  protected abstract Callable processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException;
+  protected abstract void processZeebeRecords(ImportBatch importBatch, BulkRequest bulkRequest) throws PersistenceException;
 
 }

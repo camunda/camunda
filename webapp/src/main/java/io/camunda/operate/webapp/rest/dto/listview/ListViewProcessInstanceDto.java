@@ -8,10 +8,11 @@ package io.camunda.operate.webapp.rest.dto.listview;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.zeebeimport.util.TreePath;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.zeebeimport.util.TreePath;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -178,12 +179,12 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
-  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity, boolean containsIncident,
+  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
       List<OperationEntity> operations) {
-    return createFrom(processInstanceEntity, containsIncident, operations, null);
+    return createFrom(processInstanceEntity, operations, null);
   }
 
-  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity, boolean containsIncident,
+  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
     List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy) {
     if (processInstanceEntity == null) {
       return null;
@@ -192,10 +193,11 @@ public class ListViewProcessInstanceDto {
     processInstance.setId(processInstanceEntity.getId())
       .setStartDate(processInstanceEntity.getStartDate())
       .setEndDate(processInstanceEntity.getEndDate());
-    if (!containsIncident) {
-      processInstance.setState(ProcessInstanceStateDto.getState(processInstanceEntity.getState()));
-    } else {
+    if (processInstanceEntity.getState() == ProcessInstanceState.ACTIVE && processInstanceEntity
+        .isIncident()) {
       processInstance.setState(ProcessInstanceStateDto.INCIDENT);
+    } else {
+      processInstance.setState(ProcessInstanceStateDto.getState(processInstanceEntity.getState()));
     }
 
     processInstance.setProcessId(ConversionUtils.toStringOrNull(processInstanceEntity.getProcessDefinitionKey()))
@@ -233,12 +235,12 @@ public class ListViewProcessInstanceDto {
   }
 
   public static List<ListViewProcessInstanceDto> createFrom(List<ProcessInstanceForListViewEntity> processInstanceEntities,
-    Set<Long> instancesWithIncidents, Map<Long, List<OperationEntity>> operationsPerProcessInstance) {
+      Map<Long, List<OperationEntity>> operationsPerProcessInstance) {
     List<ListViewProcessInstanceDto> result = new ArrayList<>();
     if (processInstanceEntities != null) {
       for (ProcessInstanceForListViewEntity processInstanceEntity: processInstanceEntities) {
         if (processInstanceEntity != null) {
-          final ListViewProcessInstanceDto instanceDto = createFrom(processInstanceEntity, instancesWithIncidents.contains(processInstanceEntity.getProcessInstanceKey()),
+          final ListViewProcessInstanceDto instanceDto = createFrom(processInstanceEntity,
             operationsPerProcessInstance.get(processInstanceEntity.getProcessInstanceKey()));
           result.add(instanceDto);
         }

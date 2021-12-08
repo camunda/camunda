@@ -6,6 +6,7 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +20,6 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -47,6 +47,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -116,6 +117,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
   public void testIncidentCreatesProcessInstance() {
     // having
     String activityId = "taskA";
@@ -152,6 +154,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
   public void testEarlierEventsAreIgnored() throws Exception {
     // having
     String activityId = "taskA";
@@ -182,6 +185,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         String.valueOf(processInstanceKey),
         null, null, instances.get(instances.size() - 1).getId());
     FlowNodeInstanceMetadataDto flowNodeInstanceMetadata = flowNodeMetadata.getInstanceMetadata();
+    assertThat(flowNodeMetadata.getIncident()).isNotNull();
     assertThat(flowNodeMetadata.getIncident().getErrorMessage()).isEqualTo(incidentError);
     assertThat(flowNodeMetadata.getIncident().getErrorType().getId())
         .isEqualTo(JOB_NO_RETRIES.name());
@@ -219,7 +223,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
     assertThat(processInstanceEntity.getId()).isEqualTo(processInstanceKey.toString());
     assertThat(processInstanceEntity.getKey()).isEqualTo(processInstanceKey);
-    assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.INCIDENT);
+    assertThat(processInstanceEntity.isIncident()).isEqualTo(true);
+    assertThat(processInstanceEntity.getState()).isEqualTo(ACTIVE);
     assertThat(processInstanceEntity.getEndDate()).isNull();
     assertThat(processInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(processInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
@@ -382,6 +387,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda-cloud/operate/issues/1529")
   public void testIncidentMetadataForCallActivity() throws Exception {
     //having process with call activity
     final String parentProcessId = "parentProcess";

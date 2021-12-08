@@ -45,7 +45,7 @@ public class PartitionHolder {
     return getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
   }
   
-  public List<Integer> getPartitionIdsWithWaitingTimeAndRetries(long waitingTimeInMilliseconds, int maxRetries) {
+  private List<Integer> getPartitionIdsWithWaitingTimeAndRetries(long waitingTimeInMilliseconds, int maxRetries) {
     int retries = 0;
     while (partitionIds.isEmpty() && retries <= maxRetries) {
       if (retries > 0) {

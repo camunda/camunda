@@ -22,6 +22,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private String treePath;
   private int level;
   private Long position;
+  private boolean incident;
 
   @JsonIgnore
   private Object[] sortValues;
@@ -106,6 +107,15 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     this.position = position;
   }
 
+  public boolean isIncident() {
+    return incident;
+  }
+
+  public FlowNodeInstanceEntity setIncident(final boolean incident) {
+    this.incident = incident;
+    return this;
+  }
+
   public Object[] getSortValues() {
     return sortValues;
   }
@@ -127,6 +137,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     }
     final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
     return level == that.level &&
+        incident == that.incident &&
         Objects.equals(flowNodeId, that.flowNodeId) &&
         Objects.equals(startDate, that.startDate) &&
         Objects.equals(endDate, that.endDate) &&
@@ -143,7 +154,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   public int hashCode() {
     int result = Objects
         .hash(super.hashCode(), flowNodeId, startDate, endDate, state, type, incidentKey,
-            processInstanceKey, treePath, level, position);
+            processInstanceKey, treePath, level, position, incident);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

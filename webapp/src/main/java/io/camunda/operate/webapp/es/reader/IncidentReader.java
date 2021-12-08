@@ -5,7 +5,9 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
+import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -86,7 +88,8 @@ public class IncidentReader extends AbstractReader {
   public List<IncidentEntity> getAllIncidentsByProcessInstanceKey(Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery = termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(
+        joinWithAnd(processInstanceKeyQuery, ACTIVE_INCIDENT_QUERY));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query).sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
@@ -106,7 +109,9 @@ public class IncidentReader extends AbstractReader {
    * @return
    */
   public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
-    final QueryBuilder processInstanceKeysQuery = constantScoreQuery(termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
+    final QueryBuilder processInstanceKeysQuery = constantScoreQuery(
+        joinWithAnd(termsQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys),
+            ACTIVE_INCIDENT_QUERY));
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
@@ -133,7 +138,8 @@ public class IncidentReader extends AbstractReader {
   public IncidentEntity getIncidentById(Long incidentKey) {
     final IdsQueryBuilder idsQ = idsQuery().addIds(incidentKey.toString());
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(idsQ);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(
+        joinWithAnd(idsQ, ACTIVE_INCIDENT_QUERY));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query));
@@ -153,7 +159,7 @@ public class IncidentReader extends AbstractReader {
     }
   }
 
-  public IncidentResponseDto getIncidentsByProcessInstanceKey(String processInstanceId) {
+  public IncidentResponseDto getIncidentsByProcessInstanceId(String processInstanceId) {
     //get treePath for process instance
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
@@ -165,8 +171,11 @@ public class IncidentReader extends AbstractReader {
         ErrorType.values().length)
         .order(BucketOrder.key(true));
 
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-        .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceQuery)).aggregation(errorTypesAgg));
+    final SearchRequest searchRequest = ElasticsearchUtil
+        .createSearchRequest(incidentTemplate, ONLY_RUNTIME)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(joinWithAnd(processInstanceQuery, ACTIVE_INCIDENT_QUERY)))
+            .aggregation(errorTypesAgg));
 
     final IncidentResponseDto incidentResponse = new IncidentResponseDto();
     final Map<Long, String> processNames = new HashMap<>();
@@ -279,8 +288,11 @@ public class IncidentReader extends AbstractReader {
     final TermsAggregationBuilder flowNodesAgg = terms(flowNodesAggName).field(IncidentTemplate.FLOW_NODE_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .order(BucketOrder.key(true));
 
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-        .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceQuery)).aggregation(errorTypesAgg).aggregation(flowNodesAgg));
+    final SearchRequest searchRequest = ElasticsearchUtil
+        .createSearchRequest(incidentTemplate, ONLY_RUNTIME)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(joinWithAnd(processInstanceQuery, ACTIVE_INCIDENT_QUERY)))
+            .aggregation(errorTypesAgg).aggregation(flowNodesAgg));
 
     IncidentResponseOldDto incidentResponse = new IncidentResponseOldDto();
     try {

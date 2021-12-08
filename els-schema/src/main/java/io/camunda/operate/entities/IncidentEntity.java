@@ -33,6 +33,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
+  private boolean pending = true;
+
   public ErrorType getErrorType() {
     return errorType;
   }
@@ -132,6 +134,15 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
+  public boolean isPending() {
+    return pending;
+  }
+
+  public IncidentEntity setPending(final boolean pending) {
+    this.pending = pending;
+    return this;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -144,7 +155,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
       return false;
     }
     final IncidentEntity that = (IncidentEntity) o;
-    return errorType == that.errorType &&
+    return pending == that.pending &&
+        errorType == that.errorType &&
         Objects.equals(errorMessage, that.errorMessage) &&
         Objects.equals(errorMessageHash, that.errorMessageHash) &&
         state == that.state &&
@@ -162,6 +174,6 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return Objects
         .hash(super.hashCode(), errorType, errorMessage, errorMessageHash, state, flowNodeId,
             flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey,
-            treePath);
+            treePath, pending);
   }
 }

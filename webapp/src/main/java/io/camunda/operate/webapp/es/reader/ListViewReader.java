@@ -10,7 +10,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -38,8 +37,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -52,6 +49,7 @@ import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -65,7 +63,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STAT
 import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.END_DATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.ERROR_MSG;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT_KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
@@ -116,11 +113,10 @@ public class ListViewReader {
     List<ProcessInstanceForListViewEntity> processInstanceEntities = queryListView(processInstanceRequest, result);
     List<Long> processInstanceKeys = CollectionUtil
         .map(processInstanceEntities, processInstanceEntity -> Long.valueOf(processInstanceEntity.getId()));
-    final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(processInstanceKeys);
 
     final Map<Long, List<OperationEntity>> operationsPerProcessInstance = operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
 
-    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, instancesWithIncidentsIds, operationsPerProcessInstance);
+    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, operationsPerProcessInstance);
     result.setProcessInstances(processInstanceDtoList);
     return result;
   }
@@ -379,24 +375,6 @@ public class ListViewReader {
     return null;
   }
 
-  private Set<Long> findInstancesWithIncidents(List<Long> processInstanceKeys) {
-    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
-    final TermsQueryBuilder processInstanceKeysQuery = termsQuery(ListViewTemplate.ID, processInstanceKeys);
-    final HasChildQueryBuilder hasIncidentQ = hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), None);
-
-    SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
-        .source(new SearchSourceBuilder()
-          .query(constantScoreQuery(joinWithAnd(isProcessInstanceQuery, processInstanceKeysQuery, hasIncidentQ))));
-
-    try {
-      return ElasticsearchUtil.scrollKeysToSet(searchRequest, esClient);
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining instances with incidents: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
   private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
 
     boolean active = query.isActive();
@@ -501,14 +479,14 @@ public class ListViewReader {
 
   private QueryBuilder createIncidentsQuery(ListViewQueryDto query) {
     if (query.isIncidents()) {
-      return hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(INCIDENT_KEY), None);
+      return termQuery(INCIDENT, true);
     }
     return null;
   }
 
   private QueryBuilder createActiveQuery(ListViewQueryDto query) {
     if (query.isActive()) {
-      return boolQuery().mustNot(hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(INCIDENT_KEY), None));
+      return termQuery(INCIDENT, false);
     }
     return null;
 

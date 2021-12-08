@@ -640,7 +640,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
-    assertThat(processInstanceById.getState()).isEqualTo(ProcessInstanceState.INCIDENT);
+    assertThat(processInstanceById.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
+    assertThat(processInstanceById.isIncident()).isTrue();
   }
 
   @Test

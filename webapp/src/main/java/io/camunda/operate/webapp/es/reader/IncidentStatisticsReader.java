@@ -5,13 +5,13 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
+import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
+import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.lucene.search.join.ScoreMode;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -82,8 +81,9 @@ public class IncidentStatisticsReader extends AbstractReader {
 
   public static final QueryBuilder INCIDENTS_QUERY =
       joinWithAnd(
+          termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
           termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-          hasChildQuery(ListViewTemplate.ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
+          termQuery(INCIDENT, true));
 
 
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics(){
@@ -215,13 +215,14 @@ public class IncidentStatisticsReader extends AbstractReader {
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
+            .query(ACTIVE_INCIDENT_QUERY)
             .aggregation(aggregation)
             .size(0));
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-      Terms errorMessageAggregation = (Terms) searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
+      Terms errorMessageAggregation = searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
       for (Bucket bucket : errorMessageAggregation.getBuckets()) {
         result.add(getIncidentsByErrorMsgStatistic(processes, bucket));
       }

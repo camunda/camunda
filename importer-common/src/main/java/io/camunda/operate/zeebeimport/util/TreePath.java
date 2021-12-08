@@ -20,10 +20,10 @@ import java.util.regex.Pattern;
 /**
  * Class represents call tree path to store sequence of calls in case of call activities.
  *
- * PI = Process instance, FNI = Flow node instance.
+ * PI = Process instance, FN = Flow node, FNI = Flow node instance.
  *
  * If we have a process with call activity, then tree path for child process instance will be build
- * as PI_<parent_process_instance_id>/FN_<call_activity_id>/</call_activity_id>FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>,
+ * as PI_<parent_process_instance_id>/FN_<call_activity_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>,
  * for the incident in child instance we will have tree path as
  * PI_<parent_process_instance_id>/FN_<call_activity_id>/FNI_<parent_flow_node_instance_id_of_call_activity_type>/PI_<child_process_instance_id>/FN_<flow_node_id>/FNI<flow_node_instance_id_where_incident_happenned>.
  *
@@ -103,6 +103,19 @@ public class TreePath {
 
         );
     return processInstanceIds;
+  }
+
+  public List<String> extractFlowNodeInstanceIds() {
+    final List<String> flowNodeInstanceIds = new ArrayList<>();
+    final Pattern fniPattern = Pattern.compile("FNI_(\\d*)$");
+    Arrays.stream(treePath.toString().split("/"))
+        .map(fniPattern::matcher)
+        .filter(Matcher::matches)
+        .forEach(matcher ->
+            flowNodeInstanceIds.add(matcher.group(1))
+
+        );
+    return flowNodeInstanceIds;
   }
 
   @Override

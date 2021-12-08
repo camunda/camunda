@@ -56,15 +56,28 @@ public abstract class TestUtil {
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state) {
-    return createProcessInstance(state, null);
+    return createProcessInstance(state, null, false);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, boolean incident) {
+    return createProcessInstance(state, null, incident);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId) {
-    return createProcessInstance(state, processId, null, null);
+    return createProcessInstance(state, processId, null, null, false);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId, boolean incident) {
+    return createProcessInstance(state, processId, null, null, incident);
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
       Long parentInstanceKey, String treePath) {
+    return createProcessInstance(state, processId,parentInstanceKey, treePath, false);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
+      Long parentInstanceKey, String treePath, boolean incident) {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
 
     processInstance.setStartDate(DateUtil.getRandomStartDate());
@@ -95,6 +108,7 @@ public abstract class TestUtil {
     } else {
       processInstance.setTreePath(new TreePath().startTreePath(processInstance.getId()).toString());
     }
+    processInstance.setIncident(incident);
     return processInstance;
   }
 
@@ -122,6 +136,7 @@ public abstract class TestUtil {
 
   public static void createIncident(
       FlowNodeInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg, Long incidentKey) {
+    activityInstanceForListViewEntity.setIncident(true);
     if (incidentKey != null) {
       activityInstanceForListViewEntity.setIncidentKey(incidentKey);
     } else {
@@ -161,6 +176,11 @@ public abstract class TestUtil {
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey) {
+    return createProcessInstanceEntity(state, processDefinitionKey, false);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstanceEntity(ProcessInstanceState state, Long processDefinitionKey,
+      boolean incident) {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
     final int i = random.nextInt(10);
     processInstance.setBpmnProcessId("testProcess" + i);
@@ -174,6 +194,7 @@ public abstract class TestUtil {
     processInstance.setState(state);
     processInstance.setProcessDefinitionKey(processDefinitionKey);
     processInstance.setPartitionId(1);
+    processInstance.setIncident(incident);
     return processInstance;
   }
 
@@ -249,6 +270,7 @@ public abstract class TestUtil {
     incidentEntity.setState(state);
     incidentEntity.setPartitionId(1);
     incidentEntity.setProcessInstanceKey(processInstanceKey);
+    incidentEntity.setPending(false);
     return incidentEntity;
   }
 

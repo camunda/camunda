@@ -15,7 +15,6 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestApplication;
@@ -78,9 +77,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     .waitUntil()
     .incidentIsActive();
     // then
-    List<IncidentEntity> incidents = tester.getIncidents();
+    List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
-    assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
+    assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
 
   @Test
@@ -107,9 +106,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     tester.activateJob("task")
         .waitUntil().incidentIsActive();
     // then
-    List<IncidentEntity> incidents = tester.getIncidents();
+    List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
-    assertIncidentEntity(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED, "Message size exceeded");
+    assertIncident(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED);
   }
 
   @Test
@@ -124,9 +123,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     .incidentIsActive();
 
     // then
-    List<IncidentEntity> incidents = tester.getIncidents();
+    List<IncidentDto> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
-    assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
+    assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
   }
 
   @Test
@@ -171,7 +170,6 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     //verify that incidents notification was called
     verify(incidentNotifier, atLeastOnce()).notifyOnIncidents(any());
   }
-
 
   /**
    * parentProcess -> calledProcess (has incident) -> process (has incident)
@@ -290,10 +288,11 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
   }
 
-  protected void assertIncidentEntity(IncidentEntity anIncident,ErrorType anErrorType,String anErrorTypeTitle) {
-    assertThat(anIncident.getErrorType()).isEqualTo(anErrorType);
-    assertThat(anIncident.getErrorType().getTitle()).isEqualTo(anErrorTypeTitle);
-    assertThat(anIncident.getProcessInstanceKey()).isEqualTo(tester.getProcessInstanceKey());
+  protected void assertIncident(IncidentDto anIncident, ErrorType anErrorType) {
+    assertThat(anIncident.getErrorType().getId()).isEqualTo(anErrorType.name());
+    assertThat(anIncident.getErrorType().getName()).isEqualTo(anErrorType.getTitle());
+    assertThat(anIncident.getRootCauseInstance().getInstanceId())
+        .isEqualTo(String.valueOf(tester.getProcessInstanceKey()));
   }
 
   protected void assertErrorType(IncidentResponseDto incidentResponse, ErrorType errorType, int count) {

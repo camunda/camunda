@@ -37,7 +37,6 @@ import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ElasticsearchQueries;
 import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.zeebeimport.UpdateIncidentsWithTreePathsAction;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import io.camunda.operate.zeebeimport.v1_3.record.Intent;
 import io.camunda.operate.zeebeimport.v1_3.record.RecordImpl;
@@ -54,7 +53,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -150,7 +148,7 @@ public class ListViewZeebeRecordProcessor {
 
   }
 
-  public Callable<Void> processProcessInstanceRecord(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest,
+  public void processProcessInstanceRecord(Map<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> records, BulkRequest bulkRequest,
       ImportBatch importBatch) throws PersistenceException {
     final Map<String, String> treePathMap = new HashMap<>();
     for (Map.Entry<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
@@ -179,7 +177,6 @@ public class ListViewZeebeRecordProcessor {
         bulkRequest.add(getFlowNodeInstanceQuery(actEntity, processInstanceKey));
       }
     }
-    return beanFactory.getBean(UpdateIncidentsWithTreePathsAction.class, treePathMap);
   }
 
 

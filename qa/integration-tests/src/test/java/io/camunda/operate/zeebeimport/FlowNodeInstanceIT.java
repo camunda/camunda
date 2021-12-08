@@ -9,12 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -62,10 +62,10 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
     //then
     assertThat(instances).hasSize(4);
-    assertChild(instances, 0, "startEvent", FlowNodeState.COMPLETED, processInstanceId, FlowNodeType.START_EVENT);
-    assertChild(instances, 1, "task1", FlowNodeState.ACTIVE, processInstanceId, FlowNodeType.SERVICE_TASK);
-    assertChild(instances, 2, "boundaryEvent", FlowNodeState.COMPLETED, processInstanceId, FlowNodeType.BOUNDARY_EVENT);
-    assertChild(instances, 3, "task2", FlowNodeState.ACTIVE, processInstanceId, FlowNodeType.SERVICE_TASK);
+    assertChild(instances, 0, "startEvent", FlowNodeStateDto.COMPLETED, processInstanceId, FlowNodeType.START_EVENT);
+    assertChild(instances, 1, "task1", FlowNodeStateDto.ACTIVE, processInstanceId, FlowNodeType.SERVICE_TASK);
+    assertChild(instances, 2, "boundaryEvent", FlowNodeStateDto.COMPLETED, processInstanceId, FlowNodeType.BOUNDARY_EVENT);
+    assertChild(instances, 3, "task2", FlowNodeStateDto.ACTIVE, processInstanceId, FlowNodeType.SERVICE_TASK);
   }
 
   @Test
@@ -134,7 +134,7 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     if (level3Response1.getRunning()) { countRunningResponses++;}
     countFinishedTasks += level3Response1.getChildren().stream().filter(
         fni -> fni.getType().equals(FlowNodeType.SERVICE_TASK) && fni.getState()
-            .equals(FlowNodeState.COMPLETED)).count();
+            .equals(FlowNodeStateDto.COMPLETED)).count();
 
 
     final FlowNodeInstanceResponseDto level3Response2 = response.get(subprocess2ParentTreePath);
@@ -143,7 +143,7 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     if (level3Response2.getRunning()) { countRunningResponses++;}
     countFinishedTasks += level3Response2.getChildren().stream().filter(
         fni -> fni.getType().equals(FlowNodeType.SERVICE_TASK) && fni.getState()
-            .equals(FlowNodeState.COMPLETED)).count();
+            .equals(FlowNodeStateDto.COMPLETED)).count();
 
     assertThat(countRunningResponses).isEqualTo(1);     //only one of subprocesses is still running
     assertThat(countFinishedTasks).isEqualTo(3);        //3 out of 4 tasks are finished
@@ -172,10 +172,10 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
     //then
     assertThat(instances).hasSize(3);
-    assertChild(instances, 0, "startEvent", FlowNodeState.COMPLETED, processInstanceId, FlowNodeType.START_EVENT);
-    assertChild(instances, 1, "taskA", FlowNodeState.COMPLETED, processInstanceId, FlowNodeType.SERVICE_TASK);
+    assertChild(instances, 0, "startEvent", FlowNodeStateDto.COMPLETED, processInstanceId, FlowNodeType.START_EVENT);
+    assertChild(instances, 1, "taskA", FlowNodeStateDto.COMPLETED, processInstanceId, FlowNodeType.SERVICE_TASK);
     final FlowNodeInstanceDto subprocess = assertChild(instances, 2, "subprocess",
-        FlowNodeState.INCIDENT, processInstanceId, FlowNodeType.SUB_PROCESS);
+        FlowNodeStateDto.INCIDENT, processInstanceId, FlowNodeType.SUB_PROCESS);
 
     //when - test level 1
     request = new FlowNodeInstanceQueryDto(
@@ -184,10 +184,10 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
     //then
     assertThat(instances).hasSize(3);
-    assertChild(instances, 0, "startEventSubprocess", FlowNodeState.COMPLETED, subprocess.getTreePath(), FlowNodeType.START_EVENT);
-    assertChild(instances, 2, "taskC", FlowNodeState.INCIDENT, subprocess.getTreePath(), FlowNodeType.SERVICE_TASK);
+    assertChild(instances, 0, "startEventSubprocess", FlowNodeStateDto.COMPLETED, subprocess.getTreePath(), FlowNodeType.START_EVENT);
+    assertChild(instances, 2, "taskC", FlowNodeStateDto.INCIDENT, subprocess.getTreePath(), FlowNodeType.SERVICE_TASK);
     final FlowNodeInstanceDto innerSubprocess = assertChild(instances, 1, "innerSubprocess",
-        FlowNodeState.COMPLETED, subprocess.getTreePath(), FlowNodeType.SUB_PROCESS);
+        FlowNodeStateDto.COMPLETED, subprocess.getTreePath(), FlowNodeType.SUB_PROCESS);
 
     //when - test level 2 - multi-instance body
     request = new FlowNodeInstanceQueryDto(
@@ -196,11 +196,11 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
     //then
     assertThat(instances).hasSize(3);
-    assertChild(instances, 0, "startEventInnerSubprocess", FlowNodeState.COMPLETED, innerSubprocess.getTreePath(), FlowNodeType.START_EVENT);
-    final FlowNodeInstanceDto multiInstanceBody = assertChild(instances, 1, "taskB", FlowNodeState.COMPLETED,
+    assertChild(instances, 0, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED, innerSubprocess.getTreePath(), FlowNodeType.START_EVENT);
+    final FlowNodeInstanceDto multiInstanceBody = assertChild(instances, 1, "taskB", FlowNodeStateDto.COMPLETED,
         innerSubprocess.getTreePath(), FlowNodeType.MULTI_INSTANCE_BODY);
     assertChild(instances, 2,
-        "endEventInnerSubprocess", FlowNodeState.COMPLETED, innerSubprocess.getTreePath(),
+        "endEventInnerSubprocess", FlowNodeStateDto.COMPLETED, innerSubprocess.getTreePath(),
         FlowNodeType.END_EVENT);
 
     final String multiInstanceBodyTreePath = multiInstanceBody.getTreePath();
@@ -221,14 +221,14 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
     //then
     assertThat(instances).hasSize(4);
-    assertChild(instances, 0, "taskB", FlowNodeState.COMPLETED, multiInstanceBodyTreePath,
+    assertChild(instances, 0, "taskB", FlowNodeStateDto.COMPLETED, multiInstanceBodyTreePath,
         FlowNodeType.SERVICE_TASK);
-    assertChild(instances, 1, "taskB", FlowNodeState.COMPLETED, multiInstanceBodyTreePath,
+    assertChild(instances, 1, "taskB", FlowNodeStateDto.COMPLETED, multiInstanceBodyTreePath,
         FlowNodeType.SERVICE_TASK);
-    assertChild(instances, 2, "taskB", FlowNodeState.COMPLETED, multiInstanceBodyTreePath,
+    assertChild(instances, 2, "taskB", FlowNodeStateDto.COMPLETED, multiInstanceBodyTreePath,
         FlowNodeType.SERVICE_TASK);
     final FlowNodeInstanceDto lastTaskPage1 = assertChild(instances, 3, "taskB",
-        FlowNodeState.COMPLETED,
+        FlowNodeStateDto.COMPLETED,
         multiInstanceBodyTreePath, FlowNodeType.SERVICE_TASK);
 
     //when - test level 3 - page 2
@@ -241,10 +241,10 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     //then
     assertThat(instances).hasSize(2);
     final FlowNodeInstanceDto taskBBeforeLast = assertChild(instances, 0, "taskB",
-        FlowNodeState.COMPLETED,
+        FlowNodeStateDto.COMPLETED,
         multiInstanceBodyTreePath, FlowNodeType.SERVICE_TASK);
     final FlowNodeInstanceDto taskBLast = assertChild(instances, 1, "taskB",
-        FlowNodeState.COMPLETED,
+        FlowNodeStateDto.COMPLETED,
         multiInstanceBodyTreePath, FlowNodeType.SERVICE_TASK);
 
     //when - test level 3 - searchBefore
@@ -257,10 +257,10 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     //then
     assertThat(instances).hasSize(4);
     for (int i = 0; i < 3; i++) {
-      assertChild(instances, i, "taskB", FlowNodeState.COMPLETED, multiInstanceBodyTreePath,
+      assertChild(instances, i, "taskB", FlowNodeStateDto.COMPLETED, multiInstanceBodyTreePath,
           FlowNodeType.SERVICE_TASK);
     }
-    assertThat(assertChild(instances, 3, "taskB", FlowNodeState.COMPLETED,
+    assertThat(assertChild(instances, 3, "taskB", FlowNodeStateDto.COMPLETED,
         multiInstanceBodyTreePath, FlowNodeType.SERVICE_TASK).getId())
         .isEqualTo(taskBBeforeLast.getId());
   }
@@ -277,7 +277,7 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     //then
     assertThat(instances).hasSize(4);
     final FlowNodeInstanceDto lastTaskPage1 = assertChild(instances, 3, "taskB",
-        FlowNodeState.COMPLETED,
+        FlowNodeStateDto.COMPLETED,
         multiInstanceBodyTreePath, FlowNodeType.SERVICE_TASK);
 
     //when - test level 3 - same page 1 with searchAfterOrEqual
@@ -303,14 +303,14 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
 
   }
 
-  protected FlowNodeInstanceDto assertChild(List<FlowNodeInstanceDto> children, int childPosition, String flowNodeId, FlowNodeState state, String parentTreePath, FlowNodeType type) {
+  protected FlowNodeInstanceDto assertChild(List<FlowNodeInstanceDto> children, int childPosition, String flowNodeId, FlowNodeStateDto state, String parentTreePath, FlowNodeType type) {
     final FlowNodeInstanceDto flowNode = children.get(childPosition);
     assertThat(flowNode.getFlowNodeId()).isEqualTo(flowNodeId);
     assertThat(flowNode.getId()).isNotNull();
     assertThat(flowNode.getState()).isEqualTo(state);
     assertThat(flowNode.getTreePath()).isEqualTo(ConversionUtils.toStringOrNull(parentTreePath + "/" + flowNode.getId()));
     assertThat(flowNode.getStartDate()).isNotNull();
-    if (state.equals(FlowNodeState.COMPLETED) || state.equals(FlowNodeState.TERMINATED)) {
+    if (state.equals(FlowNodeStateDto.COMPLETED) || state.equals(FlowNodeStateDto.TERMINATED)) {
       assertThat(flowNode.getEndDate()).isNotNull();
       assertThat(flowNode.getStartDate()).isBeforeOrEqualTo(flowNode.getEndDate());
     } else {
@@ -344,8 +344,8 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(instances).filteredOn("flowNodeId", "subprocess").hasSize(1);
     final FlowNodeInstanceDto subprocess = instances.stream().filter(ai -> ai.getFlowNodeId().equals("subprocess"))
       .findFirst().get();
-    assertThat(subprocess.getState()).isEqualTo(FlowNodeState.INCIDENT);
-    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("subprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
+    assertThat(subprocess.getState()).isEqualTo(FlowNodeStateDto.INCIDENT);
+    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("subprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
 
     //level 2
     request = new FlowNodeInstanceQueryDto(processInstanceId, subprocess.getTreePath());
@@ -353,15 +353,15 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(instances).filteredOn("flowNodeId", "innerSubprocess").hasSize(1);
     final FlowNodeInstanceDto innerSubprocess = instances.stream().filter(ai -> ai.getFlowNodeId().equals("innerSubprocess"))
       .findFirst().get();
-    assertThat(innerSubprocess.getState()).isEqualTo(FlowNodeState.INCIDENT);
-    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("innerSubprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
+    assertThat(innerSubprocess.getState()).isEqualTo(FlowNodeStateDto.INCIDENT);
+    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("innerSubprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
 
     //level 3
     request = new FlowNodeInstanceQueryDto(processInstanceId, innerSubprocess.getTreePath());
     instances = getFlowNodeInstanceOneListFromRest(request);
     assertThat(instances).filteredOn("flowNodeId", "taskB").allMatch(ai -> ai.getState().equals(
-        FlowNodeState.INCIDENT));
-    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("taskB")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
+        FlowNodeStateDto.INCIDENT));
+    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("taskB")).allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
 
   }
 
@@ -389,8 +389,8 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(instances).filteredOn("flowNodeId", "subprocess").hasSize(1);
     final FlowNodeInstanceDto subprocess = instances.stream().filter(ai -> ai.getFlowNodeId().equals("subprocess"))
       .findFirst().get();
-    assertThat(subprocess.getState()).isEqualTo(FlowNodeState.INCIDENT);
-    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("subprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
+    assertThat(subprocess.getState()).isEqualTo(FlowNodeStateDto.INCIDENT);
+    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("subprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
 
     //level 2
     request = new FlowNodeInstanceQueryDto(processInstanceId, subprocess.getTreePath()).setPageSize(2);
@@ -398,15 +398,15 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(instances).filteredOn("flowNodeId", "innerSubprocess").hasSize(1);
     final FlowNodeInstanceDto innerSubprocess = instances.stream().filter(ai -> ai.getFlowNodeId().equals("innerSubprocess"))
       .findFirst().get();
-    assertThat(innerSubprocess.getState()).isEqualTo(FlowNodeState.INCIDENT);
-    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("innerSubprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
+    assertThat(innerSubprocess.getState()).isEqualTo(FlowNodeStateDto.INCIDENT);
+    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("innerSubprocess")).allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
 
     //level 3
     request = new FlowNodeInstanceQueryDto(processInstanceId, innerSubprocess.getTreePath()).setPageSize(2);
     instances = getFlowNodeInstanceOneListFromRest(request);
     assertThat(instances).filteredOn("flowNodeId", "taskB").allMatch(ai -> ai.getState().equals(
-        FlowNodeState.INCIDENT));
-    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("taskB")).allMatch(ai -> !ai.getState().equals(FlowNodeState.INCIDENT));
+        FlowNodeStateDto.INCIDENT));
+    assertThat(instances).filteredOn(ai -> !ai.getFlowNodeId().equals("taskB")).allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
 
   }
 
@@ -484,13 +484,13 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     return response.values().iterator().next().getChildren();
   }
 
-  protected Map<String, FlowNodeState> getFlowNodeStatesFromRest(String processInstanceId) throws Exception {
+  protected Map<String, FlowNodeStateDto> getFlowNodeStateDtosFromRest(String processInstanceId) throws Exception {
     MvcResult mvcResult = getRequest(String.format(ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states", processInstanceId));
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
   }
 
   @Test
-  public void testFlowNodeStatesIncidentIsPropagated() throws Exception {
+  public void testFlowNodeStateDtosIncidentIsPropagated() throws Exception {
     // having
     String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
@@ -502,22 +502,22 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     //when
-    final Map<String, FlowNodeState> flowNodeStates = getFlowNodeStatesFromRest(
+    final Map<String, FlowNodeStateDto> FlowNodeStateDtos = getFlowNodeStateDtosFromRest(
         String.valueOf(processInstanceKey));
 
     //then
-    assertThat(flowNodeStates).hasSize(7);
-    assertFlowNodeState(flowNodeStates, "startEvent", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "taskA", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "subprocess", FlowNodeState.INCIDENT);
-    assertFlowNodeState(flowNodeStates, "startEventSubprocess", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "innerSubprocess", FlowNodeState.INCIDENT);
-    assertFlowNodeState(flowNodeStates, "startEventInnerSubprocess", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "taskB", FlowNodeState.INCIDENT);
+    assertThat(FlowNodeStateDtos).hasSize(7);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "subprocess", FlowNodeStateDto.INCIDENT);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.INCIDENT);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "taskB", FlowNodeStateDto.INCIDENT);
   }
 
   @Test
-  public void testFlowNodeStates() throws Exception {
+  public void testFlowNodeStateDtos() throws Exception {
     // having
     String processId = "prWithSubprocess";
     deployProcess("subProcess.bpmn");
@@ -529,22 +529,22 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, "taskB", 9);
 
     //when
-    final Map<String, FlowNodeState> flowNodeStates = getFlowNodeStatesFromRest(
+    final Map<String, FlowNodeStateDto> FlowNodeStateDtos = getFlowNodeStateDtosFromRest(
         String.valueOf(processInstanceKey));
 
     //then
-    assertThat(flowNodeStates).hasSize(7);
-    assertFlowNodeState(flowNodeStates, "startEvent", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "taskA", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "subprocess", FlowNodeState.ACTIVE);
-    assertFlowNodeState(flowNodeStates, "startEventSubprocess", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "innerSubprocess", FlowNodeState.ACTIVE);
-    assertFlowNodeState(flowNodeStates, "startEventInnerSubprocess", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "taskB", FlowNodeState.ACTIVE);
+    assertThat(FlowNodeStateDtos).hasSize(7);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "subprocess", FlowNodeStateDto.ACTIVE);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.ACTIVE);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "taskB", FlowNodeStateDto.ACTIVE);
   }
 
   @Test
-  public void testFlowNodeStatesTerminated() throws Exception {
+  public void testFlowNodeStateDtosTerminated() throws Exception {
 
     final String bpmnProcessId = "process";
     final String flowNodeId = "taskA";
@@ -563,17 +563,17 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
         .getProcessInstanceKey();
 
     //when
-    final Map<String, FlowNodeState> flowNodeStates = getFlowNodeStatesFromRest(
+    final Map<String, FlowNodeStateDto> FlowNodeStateDtos = getFlowNodeStateDtosFromRest(
         String.valueOf(processInstanceKey));
 
     //then
-    assertThat(flowNodeStates).hasSize(2);
-    assertFlowNodeState(flowNodeStates, "start", FlowNodeState.COMPLETED);
-    assertFlowNodeState(flowNodeStates, "taskA", FlowNodeState.TERMINATED);
+    assertThat(FlowNodeStateDtos).hasSize(2);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "start", FlowNodeStateDto.COMPLETED);
+    assertFlowNodeStateDto(FlowNodeStateDtos, "taskA", FlowNodeStateDto.TERMINATED);
   }
 
-  private void assertFlowNodeState(Map<String, FlowNodeState> flowNodeStates, String flowNodeId, FlowNodeState... states) {
-    assertThat(flowNodeStates.get(flowNodeId)).isIn(states);
+  private void assertFlowNodeStateDto(Map<String, FlowNodeStateDto> FlowNodeStateDtos, String flowNodeId, FlowNodeStateDto... states) {
+    assertThat(FlowNodeStateDtos.get(flowNodeId)).isIn(states);
   }
 
 }

@@ -114,6 +114,9 @@
 				"type": "text",
 				"analyzer": "ca_path_tree",
 				"fielddata": true
+			},
+			"incident": {
+				"type": "boolean"
 			}
 		}
 	}

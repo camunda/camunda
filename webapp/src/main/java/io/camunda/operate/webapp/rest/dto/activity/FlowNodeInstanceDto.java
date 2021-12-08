@@ -20,7 +20,7 @@ public class FlowNodeInstanceDto {
 
   private FlowNodeType type;
 
-  private FlowNodeState state;
+  private FlowNodeStateDto state;
 
   private String flowNodeId;
 
@@ -43,11 +43,11 @@ public class FlowNodeInstanceDto {
     this.id = id;
   }
 
-  public FlowNodeState getState() {
+  public FlowNodeStateDto getState() {
     return state;
   }
 
-  public void setState(FlowNodeState state) {
+  public void setState(FlowNodeStateDto state) {
     this.state = state;
   }
 
@@ -105,10 +105,11 @@ public class FlowNodeInstanceDto {
     flowNode.setFlowNodeId(flowNodeInstanceEntity.getFlowNodeId());
     flowNode.setStartDate(flowNodeInstanceEntity.getStartDate());
     flowNode.setEndDate(flowNodeInstanceEntity.getEndDate());
-    if (flowNodeInstanceEntity.getIncidentKey() != null) {
-      flowNode.setState(FlowNodeState.INCIDENT);
+    if (flowNodeInstanceEntity.getState() == FlowNodeState.ACTIVE && flowNodeInstanceEntity
+        .isIncident()) {
+      flowNode.setState(FlowNodeStateDto.INCIDENT);
     } else {
-      flowNode.setState(flowNodeInstanceEntity.getState());
+      flowNode.setState(FlowNodeStateDto.getState(flowNodeInstanceEntity.getState()));
     }
     flowNode.setType(flowNodeInstanceEntity.getType());
     flowNode.setSortValues(flowNodeInstanceEntity.getSortValues());
