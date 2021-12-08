@@ -232,13 +232,17 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    * the last processing positions.
    */
   private void onRecordsReplayed() {
+    // Each event is caused by an command, the event points to the source command via the
+    // source position (pointer). This means the last source position is equal to the last processed
+    // position by the processing state machine, which we can backfill after replay.
+    final var lastProcessedPosition = lastSourceEventPosition;
+
+    // The replay state machine reads all records, but only applies the events.
+    // The last read record position can be used as lastWrittenPosition in order to
+    // init the processing state machine.
+    final var lastWrittenPosition = lastReadRecordPosition;
     final var lastProcessingPositions =
-        new LastProcessingPositions(
-            // the last source pos. is the last processed command by the processing state machine
-            lastSourceEventPosition,
-            // the last read position on replay, will be used as the last written for
-            // the processing state machine
-            lastReadRecordPosition);
+        new LastProcessingPositions(lastProcessedPosition, lastWrittenPosition);
 
     LOG.info(LOG_STMT_REPLAY_FINISHED, lastProcessingPositions);
     recoveryFuture.complete(lastProcessingPositions);
