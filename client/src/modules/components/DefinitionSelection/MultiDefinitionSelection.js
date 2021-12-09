@@ -49,7 +49,6 @@ export function MultiDefinitionSelection({
           newDefinitions.map(({key, name}, idx) => ({
             key,
             name,
-            displayName: name,
             versions: ['latest'],
             tenantIds: tenantInfo[idx].tenants.map(({id}) => id),
             identifier: getRandomId(),

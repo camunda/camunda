@@ -203,7 +203,7 @@ export function TemplateModal({
             state: templateToState({
               name,
               template,
-              definitions: selectedDefinitions,
+              definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
               xml: xmlData[0]?.xml,
             }),
           }}

@@ -90,7 +90,6 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
   );
   expect(spy).toHaveBeenCalledWith([
     {
-      displayName: 'Foo',
       identifier: 'randomID',
       key: 'foo',
       name: 'Foo',
@@ -98,7 +97,6 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
       versions: ['latest'],
     },
     {
-      displayName: 'Bar',
       identifier: 'randomID',
       key: 'bar',
       name: 'Bar',
