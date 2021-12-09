@@ -39,11 +39,7 @@ public class SpringGatewayBridge {
   }
 
   public Optional<Status> getGatewayStatus() {
-    if (gatewayStatusSupplier != null) {
-      return Optional.of(gatewayStatusSupplier.get());
-    } else {
-      return Optional.empty();
-    }
+    return Optional.ofNullable(gatewayStatusSupplier).map(Supplier::get);
   }
 
   public Optional<BrokerClusterState> getClusterState() {
@@ -51,10 +47,6 @@ public class SpringGatewayBridge {
   }
 
   public Optional<BrokerClient> getBrokerClient() {
-    if (brokerClientSupplier != null) {
-      return Optional.of(brokerClientSupplier.get());
-    } else {
-      return Optional.empty();
-    }
+    return Optional.ofNullable(brokerClientSupplier).map(Supplier::get);
   }
 }
