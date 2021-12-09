@@ -29,6 +29,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorRule;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -39,6 +41,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
@@ -60,16 +63,19 @@ public final class LongPollingActivateJobsTest {
   private ActivateJobsStub stub;
   private int partitionsCount;
   private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
+  private ControllableActor longPollingActor;
 
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   private final ActorRule actorRule =
-      new ActorRule(actorSchedulerRule, "LongPollingActivateJobsTest-Actor");
+      new ActorRule(
+          actorSchedulerRule, this::supplyLongPollingActor, getClass().getName() + "-Actor");
 
   @Rule
   public final RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(actorRule);
 
   @Before
   public void setup() {
+    longPollingActor = (ControllableActor) actorRule.getActor();
     handler =
         LongPollingActivateJobsHandler.newBuilder()
             .setBrokerClient(brokerClient)
@@ -545,5 +551,9 @@ public final class LongPollingActivateJobsTest {
     final ServerStreamObserver<ActivateJobsResponse> responseSpy = spy(ServerStreamObserver.class);
 
     return new LongPollingActivateJobsRequest(request, responseSpy);
+  }
+
+  private Actor supplyLongPollingActor(CompletableFuture<ActorControl> future) {
+    return new ControllableActor(getClass().getName(), (t) -> future.complete(t));
   }
 }

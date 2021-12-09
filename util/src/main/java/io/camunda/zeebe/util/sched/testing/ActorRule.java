@@ -9,12 +9,14 @@ package io.camunda.zeebe.util.sched.testing;
 
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.junit.rules.ExternalResource;
 
 public class ActorRule extends ExternalResource {
 
   private final ActorSchedulerRule actorSchedulerRule;
+  private final Function<CompletableFuture<ActorControl>, Actor> actorSupplier;
   private final String name;
 
   private ActorControl actorControl = null;
@@ -25,22 +27,28 @@ public class ActorRule extends ExternalResource {
   }
 
   public ActorRule(final ActorSchedulerRule actorSchedulerRule, final String name) {
+    this(actorSchedulerRule, null, name);
+  }
+
+  public ActorRule(
+      final ActorSchedulerRule actorSchedulerRule,
+      Function<CompletableFuture<ActorControl>, Actor> actorSupplier,
+      final String name) {
     this.actorSchedulerRule = actorSchedulerRule;
+    this.actorSupplier = actorSupplier != null ? actorSupplier : this::supplyDefaultActor;
     this.name = name;
+  }
+
+  private Actor supplyDefaultActor(CompletableFuture<ActorControl> future) {
+    return Actor.newActor().name(name).onActorStartedHandler((t) -> future.complete(t)).build();
   }
 
   @Override
   public void before() throws Throwable {
-    final var actorStartedHandlerFuture = new CompletableActorFuture<ActorControl>();
-
-    actor =
-        Actor.newActor()
-            .name(name)
-            .actorStartedHandler((t) -> actorStartedHandlerFuture.complete(t))
-            .build();
+    final var onActorStartedFuture = new CompletableFuture<ActorControl>();
+    actor = actorSupplier.apply(onActorStartedFuture);
     actorSchedulerRule.submitActor(actor);
-
-    actorControl = actorStartedHandlerFuture.get();
+    actorControl = onActorStartedFuture.get();
   }
 
   @Override

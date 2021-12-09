@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -41,6 +40,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -191,11 +191,15 @@ public final class Gateway {
 
   private LongPollingActivateJobsHandler buildLongPollingHandlerAndSubmitActor(
       final BrokerClient brokerClient) {
-    final var actorStartedHandlerFuture = new CompletableActorFuture<ActorControl>();
+    final var actorStartedHandlerFuture = new CompletableFuture<ActorControl>();
     final var actor =
         Actor.newActor()
             .name("GatewayLongPollingJobHandler")
-            .actorStartedHandler((t) -> actorStartedHandlerFuture.complete(t))
+            .onActorStartedHandler(
+                (t) -> {
+                  actorStartedHandlerFuture.complete(t);
+                  LOG.info("abc");
+                })
             .build();
 
     actorSchedulingService.submitActor(actor);
@@ -205,8 +209,10 @@ public final class Gateway {
     try {
       // continue only if the actor started successfully
       // and provided with the required actor control
+      LOG.info("def");
       actorControl = actorStartedHandlerFuture.get();
     } catch (Throwable e) {
+      e.printStackTrace();
       throw new RuntimeException("TODO");
     }
 

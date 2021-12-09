@@ -149,7 +149,7 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
       return this;
     }
 
-    public ActorBuilder actorStartedHandler(final Consumer<ActorControl> handler) {
+    public ActorBuilder onActorStartedHandler(final Consumer<ActorControl> handler) {
       this.handler = handler;
       return this;
     }
