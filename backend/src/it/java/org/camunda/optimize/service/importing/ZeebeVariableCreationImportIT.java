@@ -9,6 +9,7 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -68,6 +69,34 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
     // then
     ProcessInstanceDto savedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
+  }
+
+  @Test
+  public void variableImportWorksForLongStrings() {
+    // given
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    // see https://www.elastic.co/guide/en/elasticsearch/reference/7.15/ignore-above.html
+    final String variableName = "longStringVar";
+    // use a too long value of a length > 32766
+    final String largeValue = RandomStringUtils.randomAlphabetic(32767);
+    final Map<String, Object> variables = Map.of(variableName, largeValue);
+    final Long processInstanceKey = zeebeExtension
+      .startProcessInstanceWithVariables(deployedProcess.getBpmnProcessId(), variables);
+
+    // when
+    waitUntilNumberOfDefinitionsExported(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(1);
+    importAllZeebeEntitiesFromScratch();
+
+    // when
+    final ProcessInstanceDto importedProcessInstance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+    assertThat(importedProcessInstance.getVariables())
+      .singleElement()
+      .satisfies(variable -> {
+        assertThat(variable.getName()).isEqualTo(variableName);
+        assertThat(variable.getValue().get(0)).isEqualTo(largeValue);
+      });
   }
 
   @Test
