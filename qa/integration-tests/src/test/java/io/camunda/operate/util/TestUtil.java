@@ -231,7 +231,11 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state, Long incidentKey, Long processInstanceKey) {
-    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey);
+    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey, null);
+  }
+
+  public static IncidentEntity createIncident(IncidentState state, Long incidentKey, Long processInstanceKey, Long processDefinitionKey) {
+    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey, processDefinitionKey);
   }
 
   public static IncidentEntity createIncident(IncidentState state, String errorMsg) {
@@ -247,10 +251,11 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey) {
-    return createIncident(state, activityId, activityInstanceId, errorMsg, incidentKey, null);
+    return createIncident(state, activityId, activityInstanceId, errorMsg, incidentKey, null, null);
   }
 
-  public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey, Long processInstanceKey) {
+  public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey, Long processInstanceKey,
+      Long processDefinitionKey) {
     IncidentEntity incidentEntity = new IncidentEntity();
     if (incidentKey == null) {
       incidentEntity.setKey(random.nextLong());
@@ -270,7 +275,13 @@ public abstract class TestUtil {
     incidentEntity.setState(state);
     incidentEntity.setPartitionId(1);
     incidentEntity.setProcessInstanceKey(processInstanceKey);
+    incidentEntity.setTreePath(
+        new TreePath().startTreePath(String.valueOf(processInstanceKey)).appendFlowNode(activityId)
+            .appendFlowNodeInstance(String.valueOf(activityInstanceId)).toString());
     incidentEntity.setPending(false);
+    if (processDefinitionKey != null) {
+      incidentEntity.setProcessDefinitionKey(processDefinitionKey);
+    }
     return incidentEntity;
   }
 

@@ -5,25 +5,16 @@
  */
 package io.camunda.operate.it;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.webapp.es.reader.BatchOperationReader;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.net.HttpURLConnection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import org.apache.http.HttpStatus;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.IncidentEntity;
@@ -36,6 +27,7 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.es.reader.BatchOperationReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.OperationReader;
@@ -44,7 +36,7 @@ import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -54,6 +46,14 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.net.HttpURLConnection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -293,7 +293,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getId()).isNotNull();
 
     //check incidents
-    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKeyOld(processInstanceKey).getIncidents();
+    final List<IncidentDto> incidents = incidentReader.getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey)).getIncidents();
     assertThat(incidents).hasSize(1);
     assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(true);
     final OperationDto lastOperation = incidents.get(0).getLastOperation();
@@ -641,7 +641,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1);
 
     //check incidents
-    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKeyOld(processInstanceKey).getIncidents();
+    final List<IncidentDto> incidents = incidentReader
+        .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey)).getIncidents();
     assertThat(incidents).hasSize(0);
 
     //check batch operation progress
@@ -764,7 +765,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getId()).isNotNull();
 
     //check incidents
-    final List<IncidentOldDto> incidents = incidentReader.getIncidentsByProcessInstanceKeyOld(processInstanceKey).getIncidents();
+    final List<IncidentDto> incidents = incidentReader
+        .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey)).getIncidents();
     assertThat(incidents).hasSize(1);
     assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(false);
     final OperationDto lastOperation = incidents.get(0).getLastOperation();

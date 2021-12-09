@@ -19,10 +19,8 @@ import {incidentsStore} from 'modules/stores/incidents';
 import Diagram from 'modules/components/Diagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
-import {IncidentsWrapper as IncidentsWrapperLegacy} from '../IncidentsWrapper/index.legacy';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {tracking} from 'modules/tracking';
 
 type Props = {
@@ -94,36 +92,21 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
         )}
         {status === 'fetched' && (
           <>
-            {instance?.state === 'INCIDENT' &&
-              (IS_NEXT_INCIDENTS ? (
-                <IncidentsWrapper
-                  expandState={expandState}
-                  isOpen={incidentsStore.state.isIncidentBarOpen}
-                  onClick={() => {
-                    if (isIncidentBarOpen) {
-                      tracking.track({eventName: 'incident-bar-closed'});
-                    } else {
-                      tracking.track({eventName: 'incident-bar-opened'});
-                    }
+            {instance?.state === 'INCIDENT' && (
+              <IncidentsWrapper
+                expandState={expandState}
+                isOpen={incidentsStore.state.isIncidentBarOpen}
+                onClick={() => {
+                  if (isIncidentBarOpen) {
+                    tracking.track({eventName: 'incident-bar-closed'});
+                  } else {
+                    tracking.track({eventName: 'incident-bar-opened'});
+                  }
 
-                    setIncidentBarOpen(!isIncidentBarOpen);
-                  }}
-                />
-              ) : (
-                <IncidentsWrapperLegacy
-                  expandState={expandState}
-                  isOpen={incidentsStore.state.isIncidentBarOpen}
-                  onClick={() => {
-                    if (isIncidentBarOpen) {
-                      tracking.track({eventName: 'incident-bar-closed'});
-                    } else {
-                      tracking.track({eventName: 'incident-bar-opened'});
-                    }
-
-                    setIncidentBarOpen(!isIncidentBarOpen);
-                  }}
-                />
-              ))}
+                  setIncidentBarOpen(!isIncidentBarOpen);
+                }}
+              />
+            )}
             {/* @ts-expect-error ts-migrate(2339) FIXME: Property 'definitions' does not exist on type 'nev... Remove this comment to see the full error message */}
             {diagramModel?.definitions && (
               <Diagram

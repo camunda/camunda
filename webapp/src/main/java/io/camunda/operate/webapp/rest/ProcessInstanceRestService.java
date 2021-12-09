@@ -5,6 +5,10 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.SequenceFlowEntity;
@@ -26,13 +30,11 @@ import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -42,6 +44,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import javax.validation.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,16 +61,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.ConstraintViolationException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
-import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 @Api(tags = {"Process instances"})
 @SwaggerDefinition(tags = {
@@ -187,13 +184,6 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get incidents by process instance id")
   @GetMapping("/{id}/incidents")
-  @Deprecated
-  public IncidentResponseOldDto queryIncidentsByProcessInstanceIdOld(@PathVariable @ValidLongId String id) {
-    return incidentReader.getIncidentsByProcessInstanceKeyOld(Long.valueOf(id));
-  }
-
-  @ApiOperation("Get incidents by process instance id")
-  @GetMapping("/{id}/incidents-new")
   public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable @ValidLongId String id) {
     return incidentReader.getIncidentsByProcessInstanceId(id);
   }
@@ -221,15 +211,6 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
-  @Deprecated
-  public FlowNodeMetadataOldDto getFlowNodeMetadataOld(@PathVariable @ValidLongId String processInstanceId,
-      @RequestBody FlowNodeMetadataRequestDto request) {
-    validateRequest(request);
-    return flowNodeInstanceReader.getFlowNodeMetadataOld(processInstanceId, request);
-  }
-
-  @ApiOperation("Get flow node metadata.")
-  @PostMapping("/{processInstanceId}/flow-node-metadata-new")
   public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,
       @RequestBody FlowNodeMetadataRequestDto request) {
     validateRequest(request);

@@ -23,7 +23,6 @@ import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router';
 import {incidentsStore} from 'modules/stores/incidents';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
@@ -58,9 +57,6 @@ const completedFlowNodeMetaData = {
     jobCustomHeaders: null,
     calledProcessInstanceId: '229843728748927482',
     calledProcessDefinitionName: 'Called Process',
-    // TODO: remove incidentErrorType and incidentErrorMessage when IS_NEXT_INCIDENTS is removed
-    incidentErrorType: null,
-    incidentErrorMessage: null,
   },
 };
 
@@ -99,9 +95,6 @@ const incidentFlowNodeMetaData = {
     jobCustomHeaders: null,
     calledProcessInstanceId: null,
     calledProcessDefinitionName: null,
-    // TODO: remove incidentErrorType and incidentErrorMessage when IS_NEXT_INCIDENTS is removed
-    incidentErrorType: 'JOB_NO_RETRIES',
-    incidentErrorMessage: 'No more retries left.',
   },
 };
 
@@ -175,36 +168,23 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/End Date/)).toBeInTheDocument();
     expect(screen.getByText(/Type/)).toBeInTheDocument();
     expect(screen.getByText(/Error Message/)).toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(screen.getAllByText(/View/)).toHaveLength(2);
-    } else {
-      expect(screen.getByText(/View/)).toBeInTheDocument();
-    }
+    expect(screen.getAllByText(/View/)).toHaveLength(2);
     expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
 
     const {
       incident,
-      instanceMetadata: {
-        flowNodeInstanceId,
-        incidentErrorMessage,
-        incidentErrorType,
-      },
+      instanceMetadata: {flowNodeInstanceId},
     } = incidentFlowNodeMetaData;
 
     expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(screen.getByText(incident.errorMessage)).toBeInTheDocument();
-      expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          `${incident.rootCauseInstance.processDefinitionName} - ${incident.rootCauseInstance.instanceId}`
-        )
-      );
-    } else {
-      expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
-      expect(screen.getByText(incidentErrorType)).toBeInTheDocument();
-    }
+    expect(screen.getByText(incident.errorMessage)).toBeInTheDocument();
+    expect(screen.getByText(incident.errorType.name)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `${incident.rootCauseInstance.processDefinitionName} - ${incident.rootCauseInstance.instanceId}`
+      )
+    );
   });
 
   it('should render meta data for completed flow node', async () => {

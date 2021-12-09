@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {SORT_ORDER} from 'modules/constants';
 import {Incident} from 'modules/stores/incidents';
 import {compareAsc} from 'date-fns';
 
@@ -68,39 +67,4 @@ function sortIncidents(incidents: Incident[], key: string, order: SortOrder) {
   return incidentsCopy;
 }
 
-// TODO: remove, when IS_NEXT_INCIDENTS is removed
-function sanitize(value: string | number) {
-  return typeof value === 'string' ? value.toLowerCase() : value;
-}
-
-// TODO: remove, when IS_NEXT_INCIDENTS is removed
-function sortData(data: any, key: any, order: any) {
-  const modifier = order === SORT_ORDER.DESC ? -1 : 1;
-
-  function compare(a: any, b: any) {
-    // we want empty values to come last
-    if (!a[key]) return 1;
-    if (!b[key]) return -1;
-
-    const valA = sanitize(a[key]);
-    const valB = sanitize(b[key]);
-
-    const comparison =
-      key === 'creationTime'
-        ? new Date(a[key]) > new Date(b[key])
-        : valA > valB;
-
-    // this will sort entries with same value by secondary sort key
-    if (valA === valB)
-      return a[SECONDARY_SORT_KEY] > b[SECONDARY_SORT_KEY] ? 1 : -1;
-
-    return (comparison ? 1 : -1) * modifier;
-  }
-
-  let arr = data.slice(0);
-  arr.sort(compare);
-
-  return arr;
-}
-
-export {sortData, sortIncidents};
+export {sortIncidents};

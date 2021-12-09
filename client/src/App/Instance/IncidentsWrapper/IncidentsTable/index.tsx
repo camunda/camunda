@@ -13,7 +13,7 @@ import {IncidentOperation} from 'modules/components/IncidentOperation';
 
 import {formatDate} from 'modules/utils/date';
 import {getSorting} from 'modules/utils/filter';
-import {sortData, sortIncidents} from './service';
+import {sortIncidents} from './service';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
@@ -21,7 +21,6 @@ import {ErrorMessageModal} from './ErrorMessageModal';
 
 import * as Styled from './styled';
 import {Restricted} from 'modules/components/Restricted';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
@@ -29,14 +28,7 @@ import {Locations} from 'modules/routes';
 
 const {THead, TBody, TR, TD} = Table;
 
-type Props = {
-  incidents?: unknown[];
-  // TODO: remove this prop, when removing IS_NEXT_INCIDENTS
-};
-
-const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
-  incidents,
-}) {
+const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<string>('');
   const [modalTitle, setModalTitle] = useState<string>('');
@@ -59,9 +51,11 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
     setModalTitle(`Flow Node "${flowNodeName}" Error`);
   };
 
-  const sortedIncidents: Incident[] = IS_NEXT_INCIDENTS
-    ? sortIncidents(filteredIncidents, sortBy, sortOrder)
-    : sortData(incidents, sortBy, sortOrder);
+  const sortedIncidents: Incident[] = sortIncidents(
+    filteredIncidents,
+    sortBy,
+    sortOrder
+  );
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
 
@@ -103,12 +97,11 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
             <Styled.TH>
               <ColumnHeader label="Error Message" />
             </Styled.TH>
-            {IS_NEXT_INCIDENTS &&
-              singleInstanceDiagramStore.hasCalledInstances && (
-                <Styled.TH>
-                  <ColumnHeader label="Root Cause Instance" />
-                </Styled.TH>
-              )}
+            {singleInstanceDiagramStore.hasCalledInstances && (
+              <Styled.TH>
+                <ColumnHeader label="Root Cause Instance" />
+              </Styled.TH>
+            )}
             <Restricted scopes={['write']}>
               <Styled.TH>
                 <ColumnHeader label="Operations" />
@@ -121,17 +114,9 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
           <TransitionGroup component={null}>
             {sortedIncidents.map((incident, index: number) => {
               const {rootCauseInstance} = incident;
-              const areOperationsVisible = IS_NEXT_INCIDENTS
-                ? rootCauseInstance === null ||
-                  rootCauseInstance.instanceId === processInstanceId
-                : true;
-
-              //TODO: remove when IS_NEXT_INCIDENTS is removed
-              const isSelected = flowNodeSelectionStore.isSelected({
-                flowNodeId: incident.flowNodeId,
-                flowNodeInstanceId: incident.flowNodeInstanceId,
-                isMultiInstance: false,
-              });
+              const areOperationsVisible =
+                rootCauseInstance === null ||
+                rootCauseInstance.instanceId === processInstanceId;
 
               return (
                 <Styled.Transition
@@ -142,12 +127,8 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                 >
                   <Styled.IncidentTR
                     data-testid={`tr-incident-${incident.id}`}
-                    aria-selected={
-                      IS_NEXT_INCIDENTS ? incident.isSelected : isSelected
-                    }
-                    isSelected={
-                      IS_NEXT_INCIDENTS ? incident.isSelected : isSelected
-                    }
+                    aria-selected={incident.isSelected}
+                    isSelected={incident.isSelected}
                     onClick={() => {
                       incidentsStore.isSingleIncidentSelected(
                         incident.flowNodeInstanceId
@@ -159,18 +140,12 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                             isMultiInstance: false,
                           });
                     }}
-                    aria-label={`Incident ${
-                      IS_NEXT_INCIDENTS
-                        ? incident.errorType.name
-                        : incident.errorType
-                    }`}
+                    aria-label={`Incident ${incident.errorType.name}`}
                   >
                     <TD>
                       <Styled.FirstCell>
                         <Styled.Index>{index + 1}</Styled.Index>
-                        {IS_NEXT_INCIDENTS
-                          ? incident.errorType.name
-                          : incident.errorType}
+                        {incident.errorType.name}
                       </Styled.FirstCell>
                     </TD>
                     <TD>
@@ -203,8 +178,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                         )}
                       </Styled.Flex>
                     </TD>
-                    {IS_NEXT_INCIDENTS &&
-                      singleInstanceDiagramStore.hasCalledInstances &&
+                    {singleInstanceDiagramStore.hasCalledInstances &&
                       rootCauseInstance !== null && (
                         <TD>
                           {rootCauseInstance.instanceId ===

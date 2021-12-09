@@ -13,7 +13,6 @@ import {Route, MemoryRouter} from 'react-router-dom';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {authenticationStore} from 'modules/stores/authentication';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
@@ -45,10 +44,6 @@ const incidentsMock = [
     flowNodeInstanceId: id,
   }),
 ];
-
-jest.mock('modules/feature-flags', () => ({
-  IS_NEXT_INCIDENTS: true,
-}));
 
 type Props = {
   children?: React.ReactNode;
@@ -89,9 +84,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Creation Time')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
-    }
+    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
   it('should render the right column headers for restricted user', () => {
@@ -106,9 +99,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Creation Time')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.queryByText('Operations')).not.toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
-    }
+    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
   it('should render incident details', async () => {
@@ -138,20 +129,14 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(incidentsMock[0].errorMessage)
     ).toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(
-        withinRow.getByRole('link', {
-          name: /view root cause instance/i,
-        })
-      ).toBeInTheDocument();
-      expect(
-        withinRow.queryByRole('button', {name: 'Retry Incident'})
-      ).not.toBeInTheDocument();
-    } else {
-      expect(
-        withinRow.getByRole('button', {name: 'Retry Incident'})
-      ).toBeInTheDocument();
-    }
+    expect(
+      withinRow.getByRole('link', {
+        name: /view root cause instance/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      withinRow.queryByRole('button', {name: 'Retry Incident'})
+    ).not.toBeInTheDocument();
     withinRow = within(
       screen.getByTestId(`tr-incident-${incidentsMock[1].id}`)
     );
@@ -195,13 +180,11 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(incidentsMock[0].errorMessage)
     ).toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(
-        withinRow.getByRole('link', {
-          name: /view root cause instance/i,
-        })
-      ).toBeInTheDocument();
-    }
+    expect(
+      withinRow.getByRole('link', {
+        name: /view root cause instance/i,
+      })
+    ).toBeInTheDocument();
     expect(
       withinRow.queryByRole('button', {name: 'Retry Incident'})
     ).not.toBeInTheDocument();
@@ -225,13 +208,11 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.queryByRole('button', {name: 'Retry Incident'})
     ).not.toBeInTheDocument();
-    if (IS_NEXT_INCIDENTS) {
-      expect(
-        withinRow.queryByRole('link', {
-          name: /view root cause instance/i,
-        })
-      ).not.toBeInTheDocument();
-    }
+    expect(
+      withinRow.queryByRole('link', {
+        name: /view root cause instance/i,
+      })
+    ).not.toBeInTheDocument();
   });
 
   it('should display -- for jobId', () => {

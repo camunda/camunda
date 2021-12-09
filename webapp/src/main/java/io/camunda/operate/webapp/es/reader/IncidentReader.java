@@ -30,10 +30,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeOldDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeOldDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
@@ -273,51 +270,6 @@ public class IncidentReader extends AbstractReader {
           "Exception occurred when searching for flow node ids: " + e.getMessage(), e);
     }
     return flowNodeIdsMap;
-  }
-
-  @Deprecated
-  public IncidentResponseOldDto getIncidentsByProcessInstanceKeyOld(Long processInstanceKey) {
-    final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-
-    final String errorTypesAggName = "errorTypesAgg";
-    final String flowNodesAggName = "flowNodesAgg";
-
-    final TermsAggregationBuilder errorTypesAgg = terms(errorTypesAggName).field(IncidentTemplate.ERROR_TYPE).size(
-        ErrorType.values().length)
-        .order(BucketOrder.key(true));
-    final TermsAggregationBuilder flowNodesAgg = terms(flowNodesAggName).field(IncidentTemplate.FLOW_NODE_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-        .order(BucketOrder.key(true));
-
-    final SearchRequest searchRequest = ElasticsearchUtil
-        .createSearchRequest(incidentTemplate, ONLY_RUNTIME)
-        .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(joinWithAnd(processInstanceQuery, ACTIVE_INCIDENT_QUERY)))
-            .aggregation(errorTypesAgg).aggregation(flowNodesAgg));
-
-    IncidentResponseOldDto incidentResponse = new IncidentResponseOldDto();
-    try {
-      final List<IncidentEntity> incidents = scroll(searchRequest, IncidentEntity.class, aggs -> {
-        ((Terms) aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
-          ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-          incidentResponse.getErrorTypes().add(new IncidentErrorTypeOldDto(errorType.getTitle(), (int) b.getDocCount()));
-        });
-        ((Terms) aggs.get(flowNodesAggName)).getBuckets()
-            .forEach(b -> incidentResponse.getFlowNodes().add(new IncidentFlowNodeOldDto(b.getKeyAsString(), (int) b.getDocCount())));
-      });
-
-      final Map<Long, List<OperationEntity>> operations = operationReader
-          .getOperationsPerIncidentKey(String.valueOf(processInstanceKey));
-
-      incidentResponse.setIncidents(
-          IncidentOldDto.sortDefault(IncidentOldDto.createFrom(incidents, operations)));
-      incidentResponse.setCount(incidents.size());
-
-      return incidentResponse;
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
   }
 
   public class IncidentDataHolder {

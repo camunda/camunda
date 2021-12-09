@@ -323,7 +323,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   }
 
   protected String getIncidentsURL(long processInstanceKey) {
-    return String.format(PROCESS_INSTANCE_URL + "/%s/incidents-new", processInstanceKey);
+    return String.format(PROCESS_INSTANCE_URL + "/%s/incidents", processInstanceKey);
   }
 
 }

@@ -30,28 +30,6 @@ const mockIncidents = {
   ],
 };
 
-const mockIncidentsLegacy = {
-  count: 1,
-  incidents: [
-    createIncident({
-      errorType: 'Condition error',
-      flowNodeId: 'Service5678',
-    }),
-  ],
-  errorTypes: [
-    {
-      errorType: 'Condition error',
-      count: 1,
-    },
-  ],
-  flowNodes: [
-    {
-      flowNodeId: 'Service5678',
-      flowNodeName: 'Do something',
-      count: 1,
-    },
-  ],
-};
 const mockSequenceFlows = createSequenceFlows();
 
-export {mockIncidents, mockIncidentsLegacy, mockSequenceFlows};
+export {mockIncidents, mockSequenceFlows};

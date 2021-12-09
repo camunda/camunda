@@ -13,11 +13,10 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 const {reset, fetchIncidents} = incidentsStore;
 
-(IS_NEXT_INCIDENTS ? describe : describe.skip)('IncidentsFilter', () => {
+describe('IncidentsFilter', () => {
   afterAll(() => {
     reset();
   });

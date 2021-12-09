@@ -7,6 +7,8 @@ package io.camunda.operate.es;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import java.util.ArrayList;
 import java.util.List;
 import io.camunda.operate.entities.IncidentState;
@@ -18,8 +20,6 @@ import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentOldDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseOldDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -96,9 +96,9 @@ public class OperationReaderIT extends OperateIntegrationTest {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_1));
 
     MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(PROCESS_INSTANCE_ID_1));
-    IncidentResponseOldDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    IncidentResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 
-    List<IncidentOldDto> incidents = response.getIncidents();
+    List<IncidentDto> incidents = response.getIncidents();
     assertThat(incidents).hasSize(3);
     assertThat(incidents).filteredOn("id", INCIDENT_1)
         .allMatch(inc -> inc.isHasActiveOperation() == true &&
@@ -175,13 +175,13 @@ public class OperationReaderIT extends OperateIntegrationTest {
 
     List<OperateEntity> entities = new ArrayList<>();
 
-    ProcessInstanceForListViewEntity inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
+    ProcessInstanceForListViewEntity inst = createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey, true);
     PROCESS_INSTANCE_ID_1 = String.valueOf(inst.getKey());
-    entities.add(createIncident(IncidentState.ACTIVE, INCIDENT_1, Long.valueOf(PROCESS_INSTANCE_ID_1)));
+    entities.add(createIncident(IncidentState.ACTIVE, INCIDENT_1, Long.valueOf(PROCESS_INSTANCE_ID_1), processDefinitionKey));
     entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_1, null, USER_1));
-    entities.add(createIncident(IncidentState.ACTIVE, INCIDENT_2, Long.valueOf(PROCESS_INSTANCE_ID_1)));
+    entities.add(createIncident(IncidentState.ACTIVE, INCIDENT_2, Long.valueOf(PROCESS_INSTANCE_ID_1), processDefinitionKey));
     entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_2, null, USER_1));
-    entities.add(createIncident(IncidentState.ACTIVE, INCIDENT_3, Long.valueOf(PROCESS_INSTANCE_ID_1)));
+    entities.add(createIncident(IncidentState.ACTIVE, INCIDENT_3, Long.valueOf(PROCESS_INSTANCE_ID_1), processDefinitionKey));
     entities.add(TestUtil.createOperationEntity(inst.getProcessInstanceKey(), INCIDENT_3, null, USER_2));
     entities.add(inst);
 

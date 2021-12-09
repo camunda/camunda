@@ -10,11 +10,9 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {EXPAND_STATE} from 'modules/constants';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
-import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
 import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 const mockProps = {
   onClick: jest.fn(),
@@ -27,9 +25,7 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const {fetchIncidents} = IS_NEXT_INCIDENTS
-  ? incidentsStore
-  : incidentsStoreLegacy;
+const {fetchIncidents} = incidentsStore;
 
 const Wrapper = ({children}: Props) => {
   return (

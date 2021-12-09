@@ -58,9 +58,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEntryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataOldDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.zeebeimport.util.TreePath;
@@ -376,17 +374,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   }
 
-  @Deprecated
-  public FlowNodeMetadataOldDto getFlowNodeMetadataOld(String processInstanceId,
-      final FlowNodeMetadataRequestDto request) {
-    if (request.getFlowNodeId() != null) {
-      return getMetadataByFlowNodeIdOld(processInstanceId, request.getFlowNodeId(), request.getFlowNodeType());
-    } else if (request.getFlowNodeInstanceId() != null) {
-      return getMetadataByFlowNodeInstanceOldId(request.getFlowNodeInstanceId());
-    }
-    return null;
-  }
-
   public FlowNodeMetadataDto getFlowNodeMetadata(String processInstanceId,
       final FlowNodeMetadataRequestDto request) {
     if (request.getFlowNodeId() != null) {
@@ -395,23 +382,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
       return getMetadataByFlowNodeInstanceId(request.getFlowNodeInstanceId());
     }
     return null;
-  }
-
-  @Deprecated
-  private FlowNodeMetadataOldDto getMetadataByFlowNodeInstanceOldId(final String flowNodeInstanceId) {
-
-    final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstanceEntity(flowNodeInstanceId);
-
-    final FlowNodeMetadataOldDto result = new FlowNodeMetadataOldDto();
-    result.setInstanceMetadata(buildInstanceMetadataOld(flowNodeInstance));
-    result.setFlowNodeInstanceId(flowNodeInstanceId);
-
-    //calculate breadcrumb
-    result.setBreadcrumb(
-        buildBreadcrumb(flowNodeInstance.getTreePath(), flowNodeInstance.getFlowNodeId(),
-            flowNodeInstance.getLevel()));
-
-    return result;
   }
 
   private FlowNodeMetadataDto getMetadataByFlowNodeInstanceId(final String flowNodeInstanceId) {
@@ -617,56 +587,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
     }
   }
 
-  @Deprecated
-  private FlowNodeMetadataOldDto getMetadataByFlowNodeIdOld(final String processInstanceId,
-      final String flowNodeId, final FlowNodeType flowNodeType) {
-
-    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder flowNodeIdQ = termQuery(FLOW_NODE_ID, flowNodeId);
-
-    final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-        .query(constantScoreQuery(joinWithAnd(processInstanceIdQ, flowNodeIdQ)))
-        .sort(LEVEL, SortOrder.ASC)
-        .aggregation(getLevelsAggs())
-        .size(1);
-    if (flowNodeType != null) {
-      sourceBuilder.postFilter(termQuery(TYPE, flowNodeType));
-    }
-    final SearchRequest request = ElasticsearchUtil
-        .createSearchRequest(flowNodeInstanceTemplate)
-        .source(sourceBuilder);
-
-    try {
-      final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-
-      final FlowNodeMetadataOldDto result = new FlowNodeMetadataOldDto();
-      final FlowNodeInstanceEntity flowNodeInstance = getFlowNodeInstance(response);
-
-      final Terms levelsAgg = response.getAggregations().get(LEVELS_AGG_NAME);
-      if (levelsAgg != null && levelsAgg.getBuckets() != null && levelsAgg.getBuckets().size() > 0) {
-        final Bucket bucketCurrentLevel = getBucketFromLevel(levelsAgg.getBuckets(),
-            flowNodeInstance.getLevel());
-        if (bucketCurrentLevel.getDocCount() == 1) {
-          result.setInstanceMetadata(buildInstanceMetadataOld(flowNodeInstance));
-          result.setFlowNodeInstanceId(flowNodeInstance.getId());
-          //scenario 1-2
-          result.setBreadcrumb(buildBreadcrumbForFlowNodeId(levelsAgg.getBuckets(), flowNodeInstance.getLevel()));
-        } else {
-          result.setInstanceCount(bucketCurrentLevel.getDocCount());
-          result.setFlowNodeId(flowNodeInstance.getFlowNodeId());
-          result.setFlowNodeType(flowNodeInstance.getType());
-        }
-      }
-
-      return result;
-    } catch (IOException e) {
-      final String message = String.format(
-          "Exception occurred, while obtaining metadata for flow node: %s",
-          e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
   private Bucket getBucketFromLevel(final List<? extends Bucket> buckets, final int level) {
     return buckets.stream().filter(b -> b.getKeyAsNumber().intValue() == level).findFirst()
         .get();
@@ -742,28 +662,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
           });
     }
     return FlowNodeInstanceMetadataDto
-        .createFrom(flowNodeInstance, eventEntity, calledProcessInstanceId[0],
-            calledProcessDefinitionName[0]);
-  }
-
-  @Deprecated
-  private FlowNodeInstanceMetadataOldDto buildInstanceMetadataOld(final FlowNodeInstanceEntity flowNodeInstance) {
-    final EventEntity eventEntity = getEventEntity(flowNodeInstance.getId());
-    final String[] calledProcessInstanceId = {null};
-    final String[] calledProcessDefinitionName = {null};
-    if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
-      findCalledProcessInstance(flowNodeInstance.getId(),
-          sh -> {
-            calledProcessInstanceId[0] = sh.getId();
-            final Map<String, Object> source = sh.getSourceAsMap();
-            String processName = (String)source.get(ListViewTemplate.PROCESS_NAME);
-            if (processName == null) {
-              processName = (String)source.get(ListViewTemplate.BPMN_PROCESS_ID);
-            }
-            calledProcessDefinitionName[0] = processName;
-          });
-    }
-    return FlowNodeInstanceMetadataOldDto
         .createFrom(flowNodeInstance, eventEntity, calledProcessInstanceId[0],
             calledProcessDefinitionName[0]);
   }

@@ -5,6 +5,8 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.util.CollectionUtil.map;
+import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
@@ -19,6 +21,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.function.Predicate;
+import org.apache.commons.lang3.Validate;
+import org.apache.http.HttpStatus;
 import io.camunda.operate.archiver.AbstractArchiverJob;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
@@ -39,10 +61,6 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataOldDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
@@ -500,21 +518,6 @@ public class OperateTester {
   }
 
   public FlowNodeMetadataDto getFlowNodeMetadataFromRest(String processInstanceId,
-      String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
-      throws Exception {
-    final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()
-        .setFlowNodeId(flowNodeId)
-        .setFlowNodeType(flowNodeType)
-        .setFlowNodeInstanceId(flowNodeInstanceId);
-    MvcResult mvcResult = postRequest(
-        String.format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata-new", processInstanceId),
-        request);
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
-    });
-  }
-
-  @Deprecated
-  public FlowNodeMetadataOldDto getFlowNodeMetadataFromRestOld(String processInstanceId,
       String flowNodeId, FlowNodeType flowNodeType, String flowNodeInstanceId)
       throws Exception {
     final FlowNodeMetadataRequestDto request = new FlowNodeMetadataRequestDto()

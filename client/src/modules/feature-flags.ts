@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const IS_NEXT_INCIDENTS = false;
 const IS_NEW_VARIABLES_FORM = false;
 const IS_NEW_FILTERS_FORM = false;
 
-export {IS_NEXT_INCIDENTS, IS_NEW_VARIABLES_FORM, IS_NEW_FILTERS_FORM};
+export {IS_NEW_VARIABLES_FORM, IS_NEW_FILTERS_FORM};

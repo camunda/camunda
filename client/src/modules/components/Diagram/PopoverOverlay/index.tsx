@@ -31,7 +31,6 @@ import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';
 import {Locations} from 'modules/routes';
 import {Link} from 'modules/components/Link';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 
 type Props = {
   selectedFlowNodeRef: SVGGraphicsElement | null;
@@ -85,12 +84,6 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
     calledProcessInstanceId,
     calledProcessDefinitionName,
     flowNodeType,
-    // TODO: remove incidentErrorMessage and incidentErrorType
-    // when IS_NEXT_INSTANCES is removed
-    // @ts-expect-error
-    incidentErrorMessage,
-    // @ts-expect-error
-    incidentErrorType,
   } = instanceMetadata || {};
   const rootCauseInstance = incident?.rootCauseInstance || null;
 
@@ -181,80 +174,59 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                       </SummaryDataValue>
                     </>
                   )}
-                {IS_NEXT_INCIDENTS
-                  ? incident !== null && (
+                {incident !== null && (
+                  <>
+                    <Divider />
+                    <Header>
+                      <IncidentTitle>Incident</IncidentTitle>
+                      <LinkButton
+                        size="small"
+                        onClick={() => {
+                          incidentsStore.clearSelection();
+                          incidentsStore.toggleFlowNodeSelection(flowNodeId);
+                          incidentsStore.toggleErrorTypeSelection(
+                            incident.errorType.id
+                          );
+                          incidentsStore.setIncidentBarOpen(true);
+                        }}
+                        title="Show incident"
+                      >
+                        View
+                      </LinkButton>
+                    </Header>
+                    <SummaryDataKey>Type</SummaryDataKey>
+                    <SummaryDataValue>
+                      {incident.errorType.name}
+                    </SummaryDataValue>
+                    {incident.errorMessage !== null && (
                       <>
-                        <Divider />
-                        <Header>
-                          <IncidentTitle>Incident</IncidentTitle>
-                          <LinkButton
-                            size="small"
-                            onClick={() => {
-                              incidentsStore.clearSelection();
-                              incidentsStore.toggleFlowNodeSelection(
-                                flowNodeId
-                              );
-                              incidentsStore.toggleErrorTypeSelection(
-                                incident.errorType.id
-                              );
-                              incidentsStore.setIncidentBarOpen(true);
-                            }}
-                            title="Show incident"
-                          >
-                            View
-                          </LinkButton>
-                        </Header>
-                        <SummaryDataKey>Type</SummaryDataKey>
+                        <SummaryDataKey>Error Message</SummaryDataKey>
                         <SummaryDataValue>
-                          {incident.errorType.name}
+                          {incident.errorMessage}
                         </SummaryDataValue>
-                        {incident.errorMessage !== null && (
-                          <>
-                            <SummaryDataKey>Error Message</SummaryDataKey>
-                            <SummaryDataValue>
-                              {incident.errorMessage}
-                            </SummaryDataValue>
-                          </>
-                        )}
-                        {rootCauseInstance !== null && (
-                          <>
-                            <SummaryDataKey>Root Cause Instance</SummaryDataKey>
-                            <SummaryDataValue>
-                              <Link
-                                to={(location) =>
-                                  Locations.instance(
-                                    rootCauseInstance.instanceId,
-                                    location
-                                  )
-                                }
-                                title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
-                              >
-                                {`${rootCauseInstance.processDefinitionName}
-                                - ${rootCauseInstance.instanceId}`}
-                              </Link>
-                            </SummaryDataValue>
-                          </>
-                        )}
-                      </>
-                    )
-                  : incidentErrorType !== null && (
-                      <>
-                        <Divider />
-                        <Header>
-                          <IncidentTitle>Incident</IncidentTitle>
-                        </Header>
-                        <SummaryDataKey>Type</SummaryDataKey>
-                        <SummaryDataValue>{incidentErrorType}</SummaryDataValue>
-                        {incidentErrorMessage !== null && (
-                          <>
-                            <SummaryDataKey>Error Message</SummaryDataKey>
-                            <SummaryDataValue>
-                              {incidentErrorMessage}
-                            </SummaryDataValue>
-                          </>
-                        )}
                       </>
                     )}
+                    {rootCauseInstance !== null && (
+                      <>
+                        <SummaryDataKey>Root Cause Instance</SummaryDataKey>
+                        <SummaryDataValue>
+                          <Link
+                            to={(location) =>
+                              Locations.instance(
+                                rootCauseInstance.instanceId,
+                                location
+                              )
+                            }
+                            title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                          >
+                            {`${rootCauseInstance.processDefinitionName}
+                                - ${rootCauseInstance.instanceId}`}
+                          </Link>
+                        </SummaryDataValue>
+                      </>
+                    )}
+                  </>
+                )}
 
                 <CodeModal
                   handleModalClose={() => setIsModalVisible(false)}

@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
 import {InstanceMetaDataEntity} from 'modules/stores/flowNodeMetaData';
 
 export const beautifyMetadata = (
@@ -18,14 +17,8 @@ export const beautifyMetadata = (
   return JSON.stringify(
     {
       ...metadata,
-      incidentErrorType: IS_NEXT_INCIDENTS
-        ? incident?.errorType.name || null
-        : // @ts-expect-error
-          metadata.incidentErrorType,
-      incidentErrorMessage: IS_NEXT_INCIDENTS
-        ? incident?.errorMessage || null
-        : // @ts-expect-error
-          metadata.incidentErrorMessage,
+      incidentErrorType: incident?.errorType.name || null,
+      incidentErrorMessage: incident?.errorMessage || null,
     },
     null,
     '\t'

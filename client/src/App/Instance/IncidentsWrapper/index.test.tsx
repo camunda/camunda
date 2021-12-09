@@ -8,32 +8,19 @@ import React from 'react';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {IncidentsWrapper as IncidentsWrapperNext} from './index';
-import {IncidentsWrapper as IncidentsWrapperLegacy} from './index.legacy';
+import {IncidentsWrapper} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {
   mockIncidentWrapperProps,
   mockIncidents,
-  mockIncidentsLegacy,
   mockResolvedIncidents,
-  mockResolvedIncidentsLegacy,
 } from './index.setup';
 
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {incidentsStore as incidentsStoreNext} from 'modules/stores/incidents';
-import {incidentsStore as incidentsStoreLegacy} from 'modules/stores/incidents.legacy';
+import {incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {IS_NEXT_INCIDENTS} from 'modules/feature-flags';
-
-const incidentsStore = IS_NEXT_INCIDENTS
-  ? incidentsStoreNext
-  : incidentsStoreLegacy;
-
-const IncidentsWrapper = IS_NEXT_INCIDENTS
-  ? IncidentsWrapperNext
-  : IncidentsWrapperLegacy;
 
 jest.mock('modules/components/IncidentOperation', () => {
   return {
@@ -82,9 +69,7 @@ describe('IncidentsFilter', () => {
   beforeEach(async () => {
     mockServer.use(
       rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(
-          ctx.json(IS_NEXT_INCIDENTS ? mockIncidents : mockIncidentsLegacy)
-        )
+        res.once(ctx.json(mockIncidents))
       )
     );
 
@@ -242,14 +227,7 @@ describe('IncidentsFilter', () => {
       mockServer.use(
         rest.get(
           '/api/process-instances/:instanceId/incidents',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json(
-                IS_NEXT_INCIDENTS
-                  ? mockResolvedIncidents
-                  : mockResolvedIncidentsLegacy
-              )
-            )
+          (_, res, ctx) => res.once(ctx.json(mockResolvedIncidents))
         )
       );
 
