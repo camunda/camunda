@@ -55,7 +55,7 @@ final class RebalancingEndpointIT {
   @Test
   void shouldRebalanceCluster() throws IOException, InterruptedException {
     // given
-    badLeaderDistribution();
+    forceBadLeaderDistribution();
 
     // when
     triggerRebalancing();
@@ -77,39 +77,42 @@ final class RebalancingEndpointIT {
     assertThat(response.statusCode()).isEqualTo(200);
   }
 
-  private void badLeaderDistribution() {
-    cluster.getBrokers().get(1).stop();
-    cluster.getBrokers().get(1).start();
-    waitForBadDistribution();
+  private void forceBadLeaderDistribution() {
+    // Only restart a broker if we currently have a good distribution.
+    // Otherwise, restarting might accidentally create a good distribution and
+    // `waitForBadLeaderDistribution` times out.
+    if (hasGoodLeaderDistribution()) {
+      cluster.getBrokers().get(1).stop();
+      cluster.getBrokers().get(1).start();
+      waitForBadLeaderDistribution();
+    }
   }
 
-  private void waitForBadDistribution() {
+  private void waitForBadLeaderDistribution() {
     Awaitility.await("At least one broker is leader for more than one partition")
         .timeout(Duration.ofSeconds(30))
         .during(Duration.ofSeconds(10))
-        .until(
-            () ->
-                client.newTopologyRequest().send().join().getBrokers().stream()
-                    .anyMatch(
-                        brokerInfo ->
-                            brokerInfo.getPartitions().stream()
-                                    .filter(PartitionInfo::isLeader)
-                                    .count()
-                                > 1));
+        .until(this::hasBadLeaderDistribution);
   }
 
   private void reachesGoodLeaderDistribution() {
     Awaitility.await("All brokers are leader for exactly one partition")
         .timeout(Duration.ofSeconds(30))
         .during(Duration.ofSeconds(10))
-        .until(
-            () ->
-                client.newTopologyRequest().send().join().getBrokers().stream()
-                    .allMatch(
-                        brokerInfo ->
-                            brokerInfo.getPartitions().stream()
-                                    .filter(PartitionInfo::isLeader)
-                                    .count()
-                                == 1));
+        .until(this::hasGoodLeaderDistribution);
+  }
+
+  private boolean hasBadLeaderDistribution() {
+    return client.newTopologyRequest().send().join().getBrokers().stream()
+        .anyMatch(
+            brokerInfo ->
+                brokerInfo.getPartitions().stream().filter(PartitionInfo::isLeader).count() > 1);
+  }
+
+  private boolean hasGoodLeaderDistribution() {
+    return client.newTopologyRequest().send().join().getBrokers().stream()
+        .allMatch(
+            brokerInfo ->
+                brokerInfo.getPartitions().stream().filter(PartitionInfo::isLeader).count() == 1);
   }
 }
