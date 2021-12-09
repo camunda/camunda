@@ -26,7 +26,9 @@ public final class BrokerRebalancingService implements RebalancingService {
   @Override
   public void rebalanceCluster() {
     final var client =
-        bridge.getBrokerClient().orElseThrow(() -> new IllegalStateException("No broker client"));
+        bridge
+            .getBrokerClient()
+            .orElseThrow(() -> new IllegalStateException("No broker client available"));
     client
         .getTopologyManager()
         .getTopology()
