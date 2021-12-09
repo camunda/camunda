@@ -152,6 +152,7 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
         case STRING:
           return Optional.of(STRING_TYPE);
         case OBJECT:
+        case ARRAY:
           return Optional.of(OBJECT_TYPE);
         default:
           return Optional.empty();

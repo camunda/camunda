@@ -25,7 +25,6 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -229,7 +228,6 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   public void zeebeVariableImport_unsupportedTypesGetIgnored() {
     // given
     Map<String, Object> supportedAndUnsupportedVariables = new HashMap<>();
-    supportedAndUnsupportedVariables.put("listVariable", Arrays.asList(1, 2, 3, 4));
     supportedAndUnsupportedVariables.put("nullValue", null);
     supportedAndUnsupportedVariables.put("supportedVariable", "someValue");
 
@@ -239,7 +237,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       supportedAndUnsupportedVariables
     );
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    waitUntilMinimumVariableDocumentsExportedCount(3);
+    waitUntilMinimumVariableDocumentsExportedCount(2);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -258,8 +256,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   public void zeebeVariableImport_importObjectVariables() {
     // given
     final Map<String, Object> objectVar = createPersonVariableWithAllTypes();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("objectVar", objectVar);
+    final Map<String, Object> variables = Map.of("objectVar", objectVar);
 
     final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
     final long processInstanceKey = zeebeExtension.startProcessInstanceWithVariables(
@@ -295,8 +292,37 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       Tuple.tuple("objectVar.skills.read", BOOLEAN.getId(), Collections.singletonList("true")),
       Tuple.tuple("objectVar.skills.write", BOOLEAN.getId(), Collections.singletonList("false")),
       Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
-      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2"))
       // additional _listSize variable for lists
+      Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2"))
+    );
+  }
+
+  @SneakyThrows
+  @Test
+  public void zeebeVariableImport_importListVariables() {
+    // given
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey = zeebeExtension.startProcessInstanceWithVariables(
+      deployedProcess.getBpmnProcessId(),
+      Map.of("listVar", List.of("value1", "value2"))
+    );
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(1);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
+    assertThat(instance.getVariables())
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      ).containsExactlyInAnyOrder(
+      Tuple.tuple("listVar", STRING.getId(), List.of("value1", "value2")),
+      // additional _listSize variable for lists
+      Tuple.tuple("listVar._listSize", LONG.getId(), Collections.singletonList("2"))
     );
   }
 
