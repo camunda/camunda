@@ -97,7 +97,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     final long key = command.getKey();
     final JobRecord failedJob = jobState.getJob(key);
     final var retries = command.getValue().getRetries();
-    final var retryBackOff = command.getValue().getRetryBackOff();
+    final var retryBackOff = command.getValue().getRetryBackoff();
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(command.getValue().getErrorMessageBuffer());
     failedJob.setRetryBackoff(retryBackOff);

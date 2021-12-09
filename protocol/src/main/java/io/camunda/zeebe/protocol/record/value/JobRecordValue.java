@@ -42,7 +42,7 @@ public interface JobRecordValue extends RecordValueWithVariables, ProcessInstanc
    * @return the time of backoff in milliseconds. If backoff is disabled this method returns 0
    *     (default value).
    */
-  long getRetryBackOff();
+  long getRetryBackoff();
 
   /**
    * @return the timestamp when this job record should be recurred. This method is used by backoff

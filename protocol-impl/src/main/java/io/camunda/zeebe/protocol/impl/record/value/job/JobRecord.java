@@ -83,7 +83,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     deadlineProp.setValue(record.getDeadline());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
-    retryBackoffProp.setValue(record.getRetryBackOff());
+    retryBackoffProp.setValue(record.getRetryBackoff());
     recurringTimeProp.setValue(record.getRecurringTime());
     typeProp.setValue(record.getTypeBuffer());
     final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
@@ -139,7 +139,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public long getRetryBackOff() {
+  public long getRetryBackoff() {
     return retryBackoffProp.getValue();
   }
 
@@ -246,6 +246,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord setRetryBackoff(final long retryBackoff) {
+    retryBackoffProp.setValue(retryBackoff);
+    return this;
+  }
+
   public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
     return this;
@@ -272,11 +277,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
-  }
-
-  public JobRecord setRetryBackoff(final long retryBackoff) {
-    retryBackoffProp.setValue(retryBackoff);
-    return this;
   }
 
   @JsonIgnore
