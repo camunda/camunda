@@ -168,7 +168,7 @@ public final class SystemContext {
     for (final var partition : partitions) {
       final var members =
           validateFixedPartitionMembers(
-              cluster, partition, experimental.isEnablePriorityElection());
+              cluster, partition, cluster.getRaft().isEnablePriorityElection());
       partitionMembers.put(partition.getPartitionId(), members);
     }
 
