@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -217,6 +218,36 @@ public class ZeebePartitionTest {
     order.verify(transition).toLeader(0L);
     order.verify(transition).toInactive();
     order.verify(raft).goInactive();
+  }
+
+  @Test
+  public void shouldCloseZeebePartitionWhileOngoingTransition() {
+    // given
+    final PartitionTransition mockTransitionStep = mock(PartitionTransition.class);
+    final CompletableActorFuture<Void> firstTransitionFuture = new CompletableActorFuture<>();
+    final CompletableActorFuture<Void> secondTransitionFuture = new CompletableActorFuture<>();
+    when(mockTransitionStep.toLeader(anyLong())).thenReturn(firstTransitionFuture);
+    when(mockTransitionStep.toFollower(anyLong())).thenReturn(secondTransitionFuture);
+    when(mockTransitionStep.toInactive()).thenReturn(CompletableActorFuture.completed(null));
+
+    transition = spy(new NoopTransition());
+    partition = new ZeebePartition(ctx, transition, List.of(new NoopStartupStep()));
+    schedulerRule.submitActor(partition);
+
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // when
+    final var closeFuture = partition.closeAsync();
+    schedulerRule.workUntilDone();
+    partition.onNewRole(Role.FOLLOWER, 2);
+    schedulerRule.workUntilDone();
+    firstTransitionFuture.complete(null);
+    secondTransitionFuture.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    Awaitility.await().until(closeFuture::isDone);
   }
 
   private static class NoopTransition implements PartitionTransition {
