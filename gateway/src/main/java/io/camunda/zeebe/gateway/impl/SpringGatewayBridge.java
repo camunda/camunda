@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl;
 
 import io.camunda.zeebe.gateway.health.Status;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -22,6 +23,7 @@ public class SpringGatewayBridge {
 
   private Supplier<Status> gatewayStatusSupplier;
   private Supplier<Optional<BrokerClusterState>> clusterStateSupplier;
+  private Supplier<BrokerClient> brokerClientSupplier;
 
   public void registerGatewayStatusSupplier(final Supplier<Status> gatewayStatusSupplier) {
     this.gatewayStatusSupplier = gatewayStatusSupplier;
@@ -32,15 +34,19 @@ public class SpringGatewayBridge {
     this.clusterStateSupplier = clusterStateSupplier;
   }
 
+  public void registerBrokerClientSupplier(final Supplier<BrokerClient> brokerClientSupplier) {
+    this.brokerClientSupplier = brokerClientSupplier;
+  }
+
   public Optional<Status> getGatewayStatus() {
-    if (gatewayStatusSupplier != null) {
-      return Optional.of(gatewayStatusSupplier.get());
-    } else {
-      return Optional.empty();
-    }
+    return Optional.ofNullable(gatewayStatusSupplier).map(Supplier::get);
   }
 
   public Optional<BrokerClusterState> getClusterState() {
     return Optional.ofNullable(clusterStateSupplier).flatMap(Supplier::get);
+  }
+
+  public Optional<BrokerClient> getBrokerClient() {
+    return Optional.ofNullable(brokerClientSupplier).map(Supplier::get);
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ public class SpringBrokerBridge {
 
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
+  private Supplier<BrokerClient> brokerClient;
 
   public void registerBrokerHealthCheckServiceSupplier(
       final Supplier<BrokerHealthCheckService> healthCheckServiceSupplier) {
@@ -39,5 +41,13 @@ public class SpringBrokerBridge {
 
   public Optional<BrokerAdminService> getAdminService() {
     return Optional.ofNullable(adminServiceSupplier).map(Supplier::get);
+  }
+
+  public void registerBrokerClient(final Supplier<BrokerClient> brokerClient) {
+    this.brokerClient = brokerClient;
+  }
+
+  public Optional<BrokerClient> getBrokerClient() {
+    return Optional.ofNullable(brokerClient).map(Supplier::get);
   }
 }

@@ -98,6 +98,7 @@ public class StandaloneGateway
     actorScheduler = createActorScheduler(configuration);
     gateway = new Gateway(configuration, this::createBrokerClient, actorScheduler);
 
+    springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
