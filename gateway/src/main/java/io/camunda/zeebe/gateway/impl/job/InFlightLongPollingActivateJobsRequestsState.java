@@ -11,6 +11,7 @@ import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public final class InFlightLongPollingActivateJobsRequestsState {
@@ -25,6 +26,8 @@ public final class InFlightLongPollingActivateJobsRequestsState {
   private final Queue<LongPollingActivateJobsRequest> pendingRequests = new LinkedList<>();
   private int failedAttempts;
   private long lastUpdatedTime;
+
+  private AtomicBoolean ongoingNotification = new AtomicBoolean(false);
 
   public InFlightLongPollingActivateJobsRequestsState(
       final String jobType, final LongPollingMetrics metrics) {
@@ -113,5 +116,13 @@ public final class InFlightLongPollingActivateJobsRequestsState {
    */
   public boolean shouldBeRepeated(final LongPollingActivateJobsRequest request) {
     return activeRequestsToBeRepeated.contains(request);
+  }
+
+  public boolean shouldNotifyAndStartNotification() {
+    return ongoingNotification.compareAndSet(false, true);
+  }
+
+  public void completeNotification() {
+    ongoingNotification.set(false);
   }
 }
