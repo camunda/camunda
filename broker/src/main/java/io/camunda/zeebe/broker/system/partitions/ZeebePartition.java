@@ -56,7 +56,6 @@ public final class ZeebePartition extends Actor
   private final PartitionAdminControl adminControl;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
-  private ActorFuture<Void> currentTransitionFuture;
   private boolean closing = false;
 
   public ZeebePartition(
@@ -213,25 +212,20 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
-    ActorFuture<Void> nextTransitionFuture = null;
     switch (newRole) {
       case LEADER:
-        nextTransitionFuture = leaderTransition(newTerm);
+        leaderTransition(newTerm);
         break;
       case INACTIVE:
-        nextTransitionFuture = transitionToInactive();
+        transitionToInactive();
         break;
       case PASSIVE:
       case PROMOTABLE:
       case CANDIDATE:
       case FOLLOWER:
       default:
-        nextTransitionFuture = followerTransition(newTerm);
+        followerTransition(newTerm);
         break;
-    }
-
-    if (nextTransitionFuture != null) {
-      currentTransitionFuture = nextTransitionFuture;
     }
     LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
     raftRole = newRole;
@@ -288,9 +282,7 @@ public final class ZeebePartition extends Actor
 
   private ActorFuture<Void> transitionToInactive() {
     zeebePartitionHealth.setServicesInstalled(false);
-    final var inactiveTransitionFuture = transition.toInactive(context.getCurrentTerm());
-    currentTransitionFuture = inactiveTransitionFuture;
-    return inactiveTransitionFuture;
+    return transition.toInactive(context.getCurrentTerm());
   }
 
   private void registerListeners() {
@@ -463,7 +455,7 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           if (!closing) {
-            currentTransitionFuture = transition.toInactive(context.getCurrentTerm());
+            transition.toInactive(context.getCurrentTerm());
           }
         });
   }
@@ -475,7 +467,7 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           if (!closing) {
-            currentTransitionFuture = followerTransition(term);
+            followerTransition(term);
           }
         });
   }
