@@ -13,6 +13,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.event.ApplicationFailedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -39,6 +41,16 @@ public class Application {
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
 
+  public static class ApplicationErrorListener implements
+      ApplicationListener<ApplicationFailedEvent> {
+
+    @Override
+    public void onApplicationEvent(ApplicationFailedEvent event) {
+        event.getApplicationContext().close();
+        System.exit(-1);
+    }
+  }
+
   public static void main(String[] args) {
 
     //To ensure that debug logging performed using java.util.logging is routed into Log4j 2
@@ -49,6 +61,7 @@ public class Application {
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
+    springApplication.addListeners(new ApplicationErrorListener());
     setDefaultProperties(springApplication);
     setDefaultAuthProfile(springApplication);
     springApplication.run(args);
