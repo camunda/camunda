@@ -619,6 +619,36 @@ public final class ClusteringRule extends ExternalResource {
     raftPartition.getServer().stepDown().join();
   }
 
+  public void disconnectOneWay(final int notAccepting, final int blocked) {
+    final var notAcceptingBroker = getBroker(notAccepting);
+    final var blockedBroker = getBroker(blocked);
+    final var atomix = notAcceptingBroker.getBrokerContext().getAtomixCluster();
+
+    final var network = blockedBroker.getConfig().getNetwork();
+    atomix
+        .getCommunicationService()
+        .blockAddress(new Address(network.getAdvertisedHost(), network.getInternalApi().getPort()));
+    atomix
+        .getCommunicationService()
+        .blockAddress(new Address(network.getAdvertisedHost(), network.getCommandApi().getPort()));
+  }
+
+  public void connectOneWay(final int notAccepting, final int blocked) {
+    final var notAcceptingBroker = getBroker(notAccepting);
+    final var blockedBroker = getBroker(blocked);
+    final var atomix = notAcceptingBroker.getBrokerContext().getAtomixCluster();
+
+    final var network = blockedBroker.getConfig().getNetwork();
+    atomix
+        .getCommunicationService()
+        .unblockAddress(
+            new Address(network.getAdvertisedHost(), network.getInternalApi().getPort()));
+    atomix
+        .getCommunicationService()
+        .unblockAddress(
+            new Address(network.getAdvertisedHost(), network.getCommandApi().getPort()));
+  }
+
   public void disconnect(final Broker broker) {
     final var atomix = broker.getBrokerContext().getAtomixCluster();
 
