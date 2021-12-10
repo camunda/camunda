@@ -19,6 +19,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.event.ApplicationFailedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -58,6 +60,7 @@ public class Application {
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     springApplication.setAddCommandLineProperties(true);
+    springApplication.addListeners(new ApplicationErrorListener());
     setDefaultProperties(springApplication);
     setDefaultAuthProfile(springApplication);
     springApplication.run(args);
@@ -83,7 +86,7 @@ public class Application {
   }
 
   private static Map<String, Object> getGraphqlProperties() {
-    // GraphQL inspection tool is disabled by default
+    // GraphQL's inspection tool is disabled by default
     // Exception handler is enabled
     return Map.of(
         "graphql.playground.enabled", "false",
@@ -120,5 +123,15 @@ public class Application {
   public DataGenerator stubDataGenerator() {
     LOGGER.debug("Create Data generator stub");
     return DataGenerator.DO_NOTHING;
+  }
+
+  public static class ApplicationErrorListener
+      implements ApplicationListener<ApplicationFailedEvent> {
+
+    @Override
+    public void onApplicationEvent(ApplicationFailedEvent event) {
+      event.getApplicationContext().close();
+      System.exit(-1);
+    }
   }
 }
