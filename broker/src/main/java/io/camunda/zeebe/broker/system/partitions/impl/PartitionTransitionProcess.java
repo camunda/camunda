@@ -101,7 +101,11 @@ final class PartitionTransitionProcess {
   }
 
   ActorFuture<Void> prepare(final long newTerm, final Role newRole) {
-    LOG.info("Prepare transition from {} on term {} to {}", role, term, newRole);
+    LOG.info(
+        "Prepare transition from {} on term {} to {}",
+        context.getCurrentRole(),
+        context.getCurrentTerm(),
+        newRole);
     final ActorFuture<Void> prepareFuture = concurrencyControl.createFuture();
 
     if (stepsToPrepare.isEmpty()) {
@@ -121,8 +125,8 @@ final class PartitionTransitionProcess {
 
           LOG.info(
               "Prepare transition from {} on term {} to {} - preparing {}",
-              role,
-              term,
+              context.getCurrentRole(),
+              context.getCurrentTerm(),
               newRole,
               nextPrepareStep.getName());
 
@@ -145,7 +149,10 @@ final class PartitionTransitionProcess {
     }
 
     if (stepsToPrepare.isEmpty()) {
-      LOG.info("Preparing transition from {} on term {} completed", role, term);
+      LOG.info(
+          "Preparing transition from {} on term {} completed",
+          context.getCurrentRole(),
+          context.getCurrentTerm());
       future.complete(null);
 
       return;
