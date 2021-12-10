@@ -26,6 +26,7 @@ import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.NoopEntryValidator;
@@ -342,7 +343,7 @@ public final class ControllableRaftContexts {
     readers.values().forEach(RaftLogReader::close);
   }
 
-  public void assertOnlyOneLeader() {
+  public void assertAtMostOneLeader() {
     raftServers.values().forEach(s -> updateAndVerifyLeaderTerm(s));
   }
 
@@ -358,6 +359,71 @@ public final class ControllableRaftContexts {
       } else {
         leadersAtTerms.put(term, leader);
       }
+    }
+  }
+
+  // If a node is in CandidateRole, then it will update the term. But until the election is
+  // completed, there is no leader at that term.
+  public boolean hasLeaderAtTheLatestTerm() {
+    // update leadersAtTerms
+    assertAtMostOneLeader();
+
+    final var currentTerm =
+        raftServers.values().stream().map(RaftContext::getTerm).max(Long::compareTo).orElseThrow();
+    return leadersAtTerms.get(currentTerm) != null;
+  }
+
+  boolean hasCommittedAllEntries() {
+    return raftServers.values().stream()
+        .allMatch(
+            s -> {
+              final var lastCommittedEntry = getLastCommittedEntry(s);
+              final var lastUncommittedEntry = getLastUncommittedEntry(s);
+
+              return lastUncommittedEntry != null
+                  && lastUncommittedEntry.equals(lastCommittedEntry);
+            });
+  }
+
+  boolean hasReplicatedAllEntries() {
+    return raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+  }
+
+  public void assertAllEntriesCommittedAndReplicatedToAll() {
+    raftServers
+        .values()
+        .forEach(
+            s -> {
+              final var lastCommittedEntry = getLastCommittedEntry(s);
+              final var lastUncommittedEntry = getLastUncommittedEntry(s);
+
+              assertThat(lastCommittedEntry)
+                  .describedAs("All entries should be committed")
+                  .isEqualTo(lastUncommittedEntry);
+            });
+
+    assertThat(hasReplicatedAllEntries())
+        .describedAs("All entries are replicated to all followers")
+        .isTrue();
+  }
+
+  private IndexedRaftLogEntry getLastUncommittedEntry(final RaftContext s) {
+    try (final var uncommittedReader = s.getLog().openUncommittedReader()) {
+      uncommittedReader.seekToLast();
+      if (uncommittedReader.hasNext()) {
+        return uncommittedReader.next();
+      }
+      return null;
+    }
+  }
+
+  private IndexedRaftLogEntry getLastCommittedEntry(final RaftContext s) {
+    try (final var committedReader = s.getLog().openCommittedReader()) {
+      committedReader.seekToLast();
+      if (committedReader.hasNext()) {
+        return committedReader.next();
+      }
+      return null;
     }
   }
 }
