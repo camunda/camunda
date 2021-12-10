@@ -253,23 +253,38 @@ public final class ControllableRaftContexts {
   }
 
   public void tickElectionTimeout(final int memberId) {
-    getDeterministicScheduler(memberId).tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, electionTimeout);
   }
 
   public void tickElectionTimeout(final MemberId memberId) {
-    getDeterministicScheduler(memberId).tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, electionTimeout);
   }
 
   public void tickHeartbeatTimeout(final int memberId) {
-    getDeterministicScheduler(memberId).tick(hearbeatTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, hearbeatTimeout);
   }
 
   public void tickHeartbeatTimeout(final MemberId memberId) {
-    getDeterministicScheduler(memberId).tick(hearbeatTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, hearbeatTimeout);
+  }
+
+  public void tickHeartbeatTimeout() {
+    tick(hearbeatTimeout);
+  }
+
+  public void tick(final Duration time) {
+    final var serverIds = raftServers.keySet();
+    serverIds.forEach(memberId -> tick(memberId, time));
+  }
+
+  public void tick(final int memberId, final Duration time) {
+    getDeterministicScheduler(memberId).tick(time.toMillis(), TimeUnit.MILLISECONDS);
+    getServerProtocol(memberId).tick(time.toMillis());
   }
 
   public void tick(final MemberId memberId, final Duration time) {
     getDeterministicScheduler(memberId).tick(time.toMillis(), TimeUnit.MILLISECONDS);
+    getServerProtocol(memberId).tick(time.toMillis());
   }
 
   // Execute an append on memberid. If memberid is not the the leader, the append will be rejected.
