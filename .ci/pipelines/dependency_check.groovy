@@ -111,7 +111,7 @@ pipeline {
     stage('Create dependency lists') {
       steps {
         container('maven') {
-          configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+          configFileProvider([configFile(fileId: 'camunda-maven-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             sh("""
               cd ./util/dependency-doc-creation/
               ./createOptimizeDependencyFiles.sh useCISettings
