@@ -45,7 +45,6 @@ public enum ZbColumnFamilies {
   JOBS,
   JOB_STATES,
   JOB_DEADLINES,
-  JOB_BACKOFF,
   JOB_ACTIVATABLE,
 
   // message
@@ -88,5 +87,7 @@ public enum ZbColumnFamilies {
 
   EXPORTER,
 
-  AWAIT_WORKLOW_RESULT
+  AWAIT_WORKLOW_RESULT,
+
+  JOB_BACKOFF
 }
