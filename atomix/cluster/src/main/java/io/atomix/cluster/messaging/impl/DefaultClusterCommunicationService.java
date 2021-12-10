@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -53,6 +54,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Map<String, BiConsumer<Address, byte[]>> unicastConsumers = Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
+  private final Set<Address> blockingAddresses = new CopyOnWriteArraySet<>();
 
   public DefaultClusterCommunicationService(
       final ClusterMembershipService membershipService,
@@ -195,6 +197,16 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     }
   }
 
+  @Override
+  public void blockAddress(final Address address) {
+    blockingAddresses.add(address);
+  }
+
+  @Override
+  public void unblockAddress(final Address address) {
+    blockingAddresses.remove(address);
+  }
+
   private CompletableFuture<Void> doUnicast(
       final String subject,
       final byte[] payload,
@@ -256,7 +268,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     return CompletableFuture.completedFuture(null);
   }
 
-  private static class InternalMessageResponder<M, R>
+  private class InternalMessageResponder<M, R>
       implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
     private final Function<byte[], M> decoder;
     private final Function<R, byte[]> encoder;
@@ -273,11 +285,15 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
 
     @Override
     public CompletableFuture<byte[]> apply(final Address sender, final byte[] bytes) {
+      if (blockingAddresses.contains(sender)) {
+        return CompletableFuture.failedFuture(
+            new IllegalStateException("The address is blocked: " + sender));
+      }
       return handler.apply(decoder.apply(bytes)).thenApply(encoder);
     }
   }
 
-  private static class InternalMessageConsumer<M> implements BiConsumer<Address, byte[]> {
+  private class InternalMessageConsumer<M> implements BiConsumer<Address, byte[]> {
     private final Function<byte[], M> decoder;
     private final Consumer<M> consumer;
 
@@ -288,6 +304,10 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
 
     @Override
     public void accept(final Address sender, final byte[] bytes) {
+      if (blockingAddresses.contains(sender)) {
+        return;
+      }
+
       consumer.accept(decoder.apply(bytes));
     }
   }
@@ -304,6 +324,10 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
 
     @Override
     public void accept(final Address sender, final byte[] bytes) {
+      if (blockingAddresses.contains(sender)) {
+        return;
+      }
+
       final Member member = membershipService.getMember(sender);
       if (member != null) {
         consumer.accept(member.id(), decoder.apply(bytes));

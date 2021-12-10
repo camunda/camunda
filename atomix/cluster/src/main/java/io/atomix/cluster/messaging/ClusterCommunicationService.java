@@ -19,6 +19,7 @@ package io.atomix.cluster.messaging;
 import static io.atomix.utils.serializer.serializers.DefaultSerializers.BASIC;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.utils.net.Address;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -322,4 +323,18 @@ public interface ClusterCommunicationService {
    * @param subject message subject
    */
   void unsubscribe(String subject);
+
+  /**
+   * All requests received by the given address are not transmitted to registered handlers.
+   *
+   * @param address to blocked address
+   */
+  void blockAddress(Address address);
+
+  /**
+   * All requests received by the given address are transmitted to registered handlers again.
+   *
+   * @param address to unblocked address
+   */
+  void unblockAddress(Address address);
 }
