@@ -178,6 +178,12 @@ public final class GrpcClientRule extends ExternalResource {
     return deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
   }
 
+  public long deployProcessWithoutAwait(final BpmnModelInstance modelInstance) {
+    final DeploymentEvent deploymentEvent =
+        getClient().newDeployCommand().addProcessModel(modelInstance, "process.bpmn").send().join();
+    return deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
+  }
+
   public long createProcessInstance(final long processDefinitionKey, final String variables) {
     return getClient()
         .newCreateInstanceCommand()
