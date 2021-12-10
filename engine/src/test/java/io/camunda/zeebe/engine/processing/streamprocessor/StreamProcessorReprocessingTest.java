@@ -342,6 +342,48 @@ public final class StreamProcessorReprocessingTest {
   }
 
   @Test
+  public void shouldUpdateLastWrittenPositionAfterReplay() throws Exception {
+    // given
+    final long recordKey = 1L;
+    final var record = PROCESS_INSTANCE_RECORD;
+
+    final long firstPosition =
+        streamProcessorRule.writeCommand(recordKey, ACTIVATE_ELEMENT, record);
+
+    final var secondPosition =
+        streamProcessorRule.writeEvent(
+            ELEMENT_ACTIVATING,
+            record,
+            event -> event.key(recordKey).sourceRecordPosition(firstPosition));
+
+    waitUntil(
+        () ->
+            streamProcessorRule
+                .events()
+                .onlyProcessInstanceRecords()
+                .withIntent(ELEMENT_ACTIVATING)
+                .exists());
+
+    // when
+    final CountDownLatch recoveredLatch = new CountDownLatch(1);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) ->
+                processors.withListener(
+                    new StreamProcessorLifecycleAware() {
+                      @Override
+                      public void onRecovered(final ReadonlyProcessingContext context) {
+                        recoveredLatch.countDown();
+                      }
+                    }));
+
+    // then
+    recoveredLatch.await();
+
+    assertThat(streamProcessor.getLastWrittenPositionAsync().get()).isEqualTo(secondPosition);
+  }
+
+  @Test
   public void shouldUpdateLastProcessedEventWhenSnapshot() throws Exception {
     // given
     streamProcessorRule.startTypedStreamProcessor(

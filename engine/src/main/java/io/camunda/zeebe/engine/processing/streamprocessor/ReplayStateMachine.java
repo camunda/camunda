@@ -38,8 +38,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
 
-  private static final String LOG_STMT_REPLAY_FINISHED =
-      "Processor finished replay at event position {}";
+  private static final String LOG_STMT_REPLAY_FINISHED = "Processor finished replay, with {}";
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
   private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
@@ -75,7 +74,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private long lastReadRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastReplayedEventPosition = StreamProcessor.UNSET_POSITION;
 
-  private ActorFuture<Long> recoveryFuture;
+  private ActorFuture<LastProcessingPositions> recoveryFuture;
   private ZeebeDbTransaction zeebeDbTransaction;
   private final StreamProcessorMode streamProcessorMode;
   private final LogStream logStream;
@@ -113,7 +112,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    *
    * @return a ActorFuture with the position of the last processed command
    */
-  ActorFuture<Long> startRecover(final long snapshotPosition) {
+  ActorFuture<LastProcessingPositions> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
     this.snapshotPosition = snapshotPosition;
     lastSourceEventPosition =
@@ -230,11 +229,23 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   /**
    * Ends the replay and sets some important properties, especially completes the replay future with
-   * the last source event, which has caused the last applied event.
+   * the last processing positions.
    */
   private void onRecordsReplayed() {
-    LOG.info(LOG_STMT_REPLAY_FINISHED, lastReadRecordPosition);
-    recoveryFuture.complete(lastSourceEventPosition);
+    // Each event is caused by an command, the event points to the source command via the
+    // source position (pointer). This means the last source position is equal to the last processed
+    // position by the processing state machine, which we can backfill after replay.
+    final var lastProcessedPosition = lastSourceEventPosition;
+
+    // The replay state machine reads all records, but only applies the events.
+    // The last read record position can be used as lastWrittenPosition in order to
+    // init the processing state machine.
+    final var lastWrittenPosition = lastReadRecordPosition;
+    final var lastProcessingPositions =
+        new LastProcessingPositions(lastProcessedPosition, lastWrittenPosition);
+
+    LOG.info(LOG_STMT_REPLAY_FINISHED, lastProcessingPositions);
+    recoveryFuture.complete(lastProcessingPositions);
   }
 
   /**
