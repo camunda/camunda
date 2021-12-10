@@ -27,8 +27,11 @@ public class MixpanelDataServiceIT extends AbstractIT {
     mixpanelConfiguration.getProperties().setClusterId(clusterId);
 
     reportClient.createEmptySingleProcessReport();
-    reportClient.createEmptySingleProcessReport();
+    final String collectionId = collectionClient.createNewCollection();
+    final String reportInCollectionId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     reportClient.createEmptySingleDecisionReport();
+    dashboardClient.createEmptyDashboard();
+    alertClient.createAlertForReport(reportInCollectionId);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -46,6 +49,8 @@ public class MixpanelDataServiceIT extends AbstractIT {
     assertThat(mixpanelHeartbeatProperties.getClusterId()).isEqualTo(clusterId);
     assertThat(mixpanelHeartbeatProperties.getProcessReportCount()).isEqualTo(2);
     assertThat(mixpanelHeartbeatProperties.getDecisionReportCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getDashboardCount()).isEqualTo(1);
+    assertThat(mixpanelHeartbeatProperties.getAlertCount()).isEqualTo(1);
   }
 
   private MixpanelConfiguration getMixpanelConfiguration() {

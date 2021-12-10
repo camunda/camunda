@@ -16,6 +16,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -37,6 +38,15 @@ public class DashboardReader {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public long getDashboardCount() {
+    final CountRequest countRequest = new CountRequest(DASHBOARD_INDEX_NAME);
+    try {
+      return esClient.count(countRequest).getCount();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve dashboard count!", e);
+    }
+  }
 
   public Optional<DashboardDefinitionRestDto> getDashboard(String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
