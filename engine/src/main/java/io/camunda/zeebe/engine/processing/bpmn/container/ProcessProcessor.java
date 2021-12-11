@@ -124,7 +124,8 @@ public final class ProcessProcessor
   public void afterExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {
+      final BpmnElementContext childContext,
+      final Boolean satisfiesCompletionCondition) {
 
     if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.completeElement(flowScopeContext);

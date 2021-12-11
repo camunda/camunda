@@ -102,7 +102,8 @@ public final class CallActivityProcessor
   public void afterExecutionPathCompleted(
       final ExecutableCallActivity element,
       final BpmnElementContext callActivityContext,
-      final BpmnElementContext childContext) {
+      final BpmnElementContext childContext,
+      final Boolean satisfiesCompletionCondition) {
     final var currentState = callActivityContext.getIntent();
 
     if (currentState == ProcessInstanceIntent.ELEMENT_ACTIVATED) {

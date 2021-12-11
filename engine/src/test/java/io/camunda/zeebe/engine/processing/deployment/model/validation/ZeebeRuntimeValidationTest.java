@@ -14,9 +14,11 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
@@ -385,6 +387,20 @@ public final class ZeebeRuntimeValidationTest {
                     RESERVED_TASK_HEADER_KEY,
                     Protocol.RESERVED_HEADER_NAME_PREFIX)))
       },
+      {
+        /* invalid completion condition expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.multiInstance(
+                        m ->
+                            m.completionCondition(
+                                ExpressionTransformer.asFeelExpressionString(INVALID_EXPRESSION))))
+            .done(),
+        List.of(expect(MultiInstanceLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
+      }
     };
   }
 

@@ -519,6 +519,114 @@ public final class MultiInstanceIncidentTest {
         .await();
   }
 
+  @Test
+  public void shouldCreateIncidentIfCompletionConditionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("multi-task")
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.parallel()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT)
+                                        .completionCondition("=x")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("multi-task")
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    completeNthJob(processInstanceKey, 1);
+
+    // then
+    final Record<ProcessInstanceRecordValue> activityEvent =
+        RecordingExporter.processInstanceRecords()
+            .withElementId(ELEMENT_ID)
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementInstanceKey(activityEvent.getKey())
+        .hasVariableScopeKey(activityEvent.getKey());
+  }
+
+  @Test
+  public void shouldResolveIncidentDueToCompletionCondition() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("multi-task")
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.parallel()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT)
+                                        .completionCondition("=x")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("multi-task")
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    completeNthJob(processInstanceKey, 1);
+
+    // an incident is created because the variable `x` is missing
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when the missing variable is provided
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Maps.of(entry("x", true))).update();
+
+    // and we resolve the incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then the process is able to complete
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .exists())
+        .describedAs("the process has completed")
+        .isTrue();
+  }
+
   private static void completeNthJob(final long processInstanceKey, final int n) {
     final var nthJob = findNthJob(processInstanceKey, n);
     ENGINE.job().withKey(nthJob.getKey()).complete();

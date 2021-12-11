@@ -159,12 +159,14 @@ public final class BpmnStateTransitionBehavior {
       endOfExecutionPath = element.getOutgoing().isEmpty();
     }
 
+    final Either<Failure, ?> satisfiesCompletionConditionOrFailure;
     if (endOfExecutionPath) {
-      final var failureOrSuccess =
-          beforeExecutionPathCompleted(element, context).map(ok -> context);
-      if (failureOrSuccess.isLeft()) {
-        return failureOrSuccess;
+      satisfiesCompletionConditionOrFailure = beforeExecutionPathCompleted(element, context);
+      if (satisfiesCompletionConditionOrFailure.isLeft()) {
+        return satisfiesCompletionConditionOrFailure.map(ok -> context);
       }
+    } else {
+      satisfiesCompletionConditionOrFailure = Either.right(null);
     }
 
     final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
@@ -172,7 +174,8 @@ public final class BpmnStateTransitionBehavior {
 
     if (endOfExecutionPath) {
       // afterExecutionPathCompleted is not allowed to fail (incident would be unresolvable)
-      afterExecutionPathCompleted(element, completed);
+      afterExecutionPathCompleted(
+          element, completed, (Boolean) satisfiesCompletionConditionOrFailure.get());
     }
     return Either.right(completed);
   }
@@ -357,10 +360,15 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext childContext, final BpmnElementContext parentInstanceContext) {
     final var containerScope = getParentProcessScope(parentInstanceContext, childContext);
     final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
-    containerProcessor.beforeExecutionPathCompleted(
-        containerScope, parentInstanceContext, childContext);
+    final Either<Failure, ?> satisfiesCompletionConditionOrFailure =
+        containerProcessor.beforeExecutionPathCompleted(
+            containerScope, parentInstanceContext, childContext);
+    // todo(@korthout): deal with the left case of satisfiesCompletionConditionOrFailure
     containerProcessor.afterExecutionPathCompleted(
-        containerScope, parentInstanceContext, childContext);
+        containerScope,
+        parentInstanceContext,
+        childContext,
+        (Boolean) satisfiesCompletionConditionOrFailure.get());
   }
 
   public void onCalledProcessTerminated(
@@ -371,14 +379,16 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public void afterExecutionPathCompleted(
-      final ExecutableFlowElement element, final BpmnElementContext childContext) {
+      final ExecutableFlowElement element,
+      final BpmnElementContext childContext,
+      final Boolean satisfiesCompletionCondition) {
 
     invokeElementContainerIfPresent(
         element,
         childContext,
         (containerProcessor, containerScope, containerContext) -> {
           containerProcessor.afterExecutionPathCompleted(
-              containerScope, containerContext, childContext);
+              containerScope, containerContext, childContext, satisfiesCompletionCondition);
           return Either.right(null);
         });
   }

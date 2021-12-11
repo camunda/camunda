@@ -77,11 +77,13 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    * @param flowScopeContext process instance-related data of the element container
    * @param childContext process instance-related data of the child element that is completed. At
    *     this point in time the element has already been removed from the state.
+   * @param satisfiesCompletionCondition the evaluation result of completion condition
    */
   void afterExecutionPathCompleted(
       final T element,
       final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext);
+      final BpmnElementContext childContext,
+      final Boolean satisfiesCompletionCondition);
 
   /**
    * A child element is terminated. Terminate the element container if it has no more active child
