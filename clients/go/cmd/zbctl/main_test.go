@@ -214,12 +214,12 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			if test.jsonOutput {
 				cmdOut, err = reformatJSON(cmdOut)
 				if err != nil {
-					t.Fatalf("failed to reformat JSON: %v", err)
+					t.Fatalf("failed to reformat response JSON: %v\nErroneous JSON: %v", err, cmdOut)
 				}
 
 				goldenOut, err = reformatJSON(goldenOut)
 				if err != nil {
-					t.Fatalf("failed to reformat JSON: %v", err)
+					t.Fatalf("failed to reformat golden JSON: %v\nErroneous JSON: %v", err, goldenOut)
 				}
 			}
 
