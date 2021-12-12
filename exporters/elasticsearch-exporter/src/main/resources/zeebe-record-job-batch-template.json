@@ -68,6 +68,12 @@
                 "retries": {
                   "type": "long"
                 },
+                "retryBackoff": {
+                  "type": "long"
+                },
+                "recurringTime": {
+                  "type": "long"
+                },
                 "deadline": {
                   "type": "date"
                 },

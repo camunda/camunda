@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,12 +29,12 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class JobStateTest {
+
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableJobState jobState;
@@ -55,11 +56,12 @@ public final class JobStateTest {
     jobState.create(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1);
   }
 
   @Test
@@ -73,11 +75,12 @@ public final class JobStateTest {
     jobState.activate(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATED);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     assertListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -91,11 +94,12 @@ public final class JobStateTest {
     jobState.disable(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.FAILED);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -110,11 +114,12 @@ public final class JobStateTest {
     jobState.timeout(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -128,11 +133,12 @@ public final class JobStateTest {
     jobState.delete(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -169,11 +175,12 @@ public final class JobStateTest {
     jobState.complete(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -187,11 +194,12 @@ public final class JobStateTest {
     jobState.cancel(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -205,11 +213,12 @@ public final class JobStateTest {
     jobState.throwError(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ERROR_THROWN);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -224,11 +233,12 @@ public final class JobStateTest {
     jobState.complete(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -243,11 +253,12 @@ public final class JobStateTest {
     jobState.cancel(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -262,11 +273,12 @@ public final class JobStateTest {
     jobState.throwError(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ERROR_THROWN);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -282,11 +294,12 @@ public final class JobStateTest {
     jobState.complete(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -302,11 +315,12 @@ public final class JobStateTest {
     jobState.cancel(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -321,11 +335,94 @@ public final class JobStateTest {
     jobState.fail(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
+  }
+
+  @Test
+  public void shouldFailJobWithRetriesAndBackOff() {
+    // given
+    final long key = 1L;
+    final var retryBackoff = 100;
+    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(retryBackoff);
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord);
+
+    // then
+    assertThat(jobState.exists(key)).isTrue();
+    assertJobState(key, State.FAILED);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    assertListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + retryBackoff);
+  }
+
+  @Test
+  public void shouldRetryProperJobWithRetryBackoff() {
+    // given
+    final long firstKey = 1L;
+    final long secondKey = 2L;
+    final JobRecord firstJobRecord = newJobRecord().setRetries(1).setRetryBackoff(0);
+    final JobRecord secondJobRecord = newJobRecord().setRetries(1).setRetryBackoff(0);
+
+    // when
+    jobState.create(firstKey, firstJobRecord);
+    jobState.activate(firstKey, firstJobRecord);
+    jobState.create(secondKey, secondJobRecord);
+    jobState.activate(secondKey, secondJobRecord);
+    jobState.fail(firstKey, firstJobRecord);
+    jobState.fail(secondKey, secondJobRecord);
+
+    // then
+    assertThat(jobState.exists(firstKey)).isTrue();
+    assertThat(jobState.exists(secondKey)).isTrue();
+    assertJobState(firstKey, State.ACTIVATABLE);
+    assertJobState(secondKey, State.ACTIVATABLE);
+  }
+
+  @Test
+  public void shouldImmediatelyRetryJobAfterFailedIfRetryBackoffIsZeroAndHasRetries() {
+    // given
+    final long jobKey = 1L;
+    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(0);
+
+    // when
+    jobState.create(jobKey, jobRecord);
+    jobState.activate(jobKey, jobRecord);
+    jobState.fail(jobKey, jobRecord);
+
+    // then
+    assertThat(jobState.exists(jobKey)).isTrue();
+    assertJobState(jobKey, State.ACTIVATABLE);
+    refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime());
+  }
+
+  @Test
+  public void shouldRetryJobAfterRecurredAndHasRetries() {
+    // given
+    final long jobKey = 1L;
+    final long retryBackoff = Duration.ofDays(1).toMillis();
+    final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(retryBackoff);
+
+    // when
+    jobState.create(jobKey, jobRecord);
+    jobState.activate(jobKey, jobRecord);
+    jobState.fail(jobKey, jobRecord);
+    assertThat(jobState.exists(jobKey)).isTrue();
+    assertJobState(jobKey, State.FAILED);
+    assertListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1 + retryBackoff);
+    jobState.recurAfterBackoff(jobKey, jobRecord);
+
+    // then
+    assertJobState(jobKey, State.ACTIVATABLE);
+    refuteListedAsBackOff(jobKey, jobRecord.getRecurringTime() + 1 + retryBackoff);
   }
 
   @Test
@@ -340,7 +437,7 @@ public final class JobStateTest {
     jobState.fail(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.FAILED);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
@@ -360,11 +457,12 @@ public final class JobStateTest {
     jobState.resolve(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
     assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
   }
 
   @Test
@@ -453,8 +551,8 @@ public final class JobStateTest {
     jobState.create(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isTrue();
-    Assertions.assertThat(jobState.exists(key + 1)).isFalse();
+    assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key + 1)).isFalse();
   }
 
   @Test
@@ -495,7 +593,7 @@ public final class JobStateTest {
     final long key = 1L;
 
     // then
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    assertThat(jobState.getJob(key)).isNull();
   }
 
   @Test
@@ -598,8 +696,8 @@ public final class JobStateTest {
     final List<State> others =
         Arrays.stream(State.values()).filter(s -> s != state).collect(Collectors.toList());
 
-    Assertions.assertThat(jobState.isInState(key, state)).isTrue();
-    Assertions.assertThat(others).noneMatch(other -> jobState.isInState(key, other));
+    assertThat(jobState.isInState(key, state)).isTrue();
+    assertThat(others).noneMatch(other -> jobState.isInState(key, other));
   }
 
   private void assertJobRecordIsEqualTo(final JobRecord jobRecord, final JobRecord expected) {
@@ -631,6 +729,16 @@ public final class JobStateTest {
     assertThat(timedOutKeys).doesNotContain(key);
   }
 
+  private void assertListedAsBackOff(final long key, final long since) {
+    final List<Long> backedOffKeys = getBackedOffKeys(since);
+    assertThat(backedOffKeys).contains(key);
+  }
+
+  private void refuteListedAsBackOff(final long key, final long since) {
+    final List<Long> backedOffKeys = getBackedOffKeys(since);
+    assertThat(backedOffKeys).doesNotContain(key);
+  }
+
   private List<Long> getActivatableKeys(final DirectBuffer type) {
     final List<Long> activatableKeys = new ArrayList<>();
 
@@ -643,5 +751,11 @@ public final class JobStateTest {
 
     jobState.forEachTimedOutEntry(since, (k, e) -> timedOutKeys.add(k));
     return timedOutKeys;
+  }
+
+  private List<Long> getBackedOffKeys(final long since) {
+    final List<Long> backedOffKeys = new ArrayList<>();
+    jobState.findBackedOffJobs(since, (k, record) -> backedOffKeys.add(k));
+    return backedOffKeys;
   }
 }

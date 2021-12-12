@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -84,6 +85,11 @@ public final class JobClient {
 
   public JobClient withRetries(final int retries) {
     jobRecord.setRetries(retries);
+    return this;
+  }
+
+  public JobClient withBackOff(final Duration backOff) {
+    jobRecord.setRetryBackoff(backOff.toMillis());
     return this;
   }
 
