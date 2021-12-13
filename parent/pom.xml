@@ -57,7 +57,7 @@
     <version.guava>31.0.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
-    <version.httpasyncclient>4.1.4</version.httpasyncclient>
+    <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
     <version.httpcomponents>4.4.15</version.httpcomponents>
     <version.jackson>2.13.0</version.jackson>
