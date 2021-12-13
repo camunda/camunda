@@ -48,7 +48,7 @@ spec:
       - mountPath: /etc/vault-output
         name: vault-output
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
       command:
       - "sh"
       args:
@@ -61,7 +61,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
       command:
       - "sh"
       args:

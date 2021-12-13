@@ -1,7 +1,7 @@
 version: "2.4"
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -27,7 +27,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:1.3.0-alpha2
+    image: camunda/zeebe:1.3.0-alpha3
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -43,7 +43,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:1.3.0-alpha2
+    image: camunda/zeebe:1.3.0-alpha3
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}

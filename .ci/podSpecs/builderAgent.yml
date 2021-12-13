@@ -68,7 +68,7 @@ spec:
           cpu: 4
           memory: 4Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
       env:
         - name: ES_JAVA_OPTS
           value: "-Xms4096m -Xmx4096m"
@@ -116,7 +116,7 @@ spec:
           cpu: 1
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:1.3.0-alpha2
+      image: camunda/zeebe:1.3.0-alpha3
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
