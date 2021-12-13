@@ -325,10 +325,34 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     dashboardWriter.updateDashboard(updateDto, dashboardId);
   }
 
-  public void deleteDashboard(final String dashboardId, final String userId) {
+  public void deleteDashboard(final String dashboardId) {
+    final DashboardDefinitionRestDto dashboardDefinitionDto = getDashboardDefinitionAsService(dashboardId);
+    deleteDashboard(dashboardId, dashboardDefinitionDto);
+  }
+
+  public void deleteDashboardAsUser(final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
+    deleteDashboard(dashboardId, dashboardDefinitionDto);
+  }
 
+  public void validateDashboardFilters(final String userId,
+                                       final List<DashboardFilterDto<?>> availableFilters,
+                                       final List<ReportLocationDto> reportsInDashboard) {
+    if (!CollectionUtils.isEmpty(availableFilters)) {
+      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
+        availableFilters
+          .stream()
+          .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
+      validateFiltersHaveData(availableFilters);
+      validateDateAndStateFilters(filtersByClass);
+      validateIdentityFilters(filtersByClass);
+      validateVariableFilters(filtersByClass);
+      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
+    }
+  }
+
+  private void deleteDashboard(final String dashboardId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
     dashboardRelationService.handleDeleted(dashboardDefinitionDto);
     dashboardWriter.deleteDashboard(dashboardId);
   }
@@ -347,22 +371,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private void validateDashboardFilters(final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
     validateDashboardFilters(userId, dashboardDefinitionDto.getAvailableFilters(), dashboardDefinitionDto.getReports());
-  }
-
-  public void validateDashboardFilters(final String userId,
-                                       final List<DashboardFilterDto<?>> availableFilters,
-                                       final List<ReportLocationDto> reportsInDashboard) {
-    if (!CollectionUtils.isEmpty(availableFilters)) {
-      final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
-        availableFilters
-          .stream()
-          .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
-      validateFiltersHaveData(availableFilters);
-      validateDateAndStateFilters(filtersByClass);
-      validateIdentityFilters(filtersByClass);
-      validateVariableFilters(filtersByClass);
-      validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
-    }
   }
 
   private void validateFiltersHaveData(final List<DashboardFilterDto<?>> availableFilters) {

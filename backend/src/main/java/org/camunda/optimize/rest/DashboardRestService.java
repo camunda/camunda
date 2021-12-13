@@ -120,7 +120,7 @@ public class DashboardRestService {
   public void deleteDashboard(@Context ContainerRequestContext requestContext,
                               @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    dashboardService.deleteDashboard(dashboardId, userId);
+    dashboardService.deleteDashboardAsUser(dashboardId, userId);
   }
 
 }

@@ -110,7 +110,7 @@ public class EntitiesService {
 
     for (String dashboardId : entities.getDashboards()) {
       try {
-        dashboardService.deleteDashboard(dashboardId, userId);
+        dashboardService.deleteDashboardAsUser(dashboardId, userId);
       } catch (NotFoundException | OptimizeRuntimeException e) {
         log.debug("The dashboard with id {} could not be deleted: {}", dashboardId, e);
       }

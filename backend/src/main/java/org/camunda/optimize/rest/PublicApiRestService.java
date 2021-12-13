@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
+import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.export.JsonReportResultExportService;
 import org.camunda.optimize.service.report.ReportService;
@@ -53,8 +54,10 @@ public class PublicApiRestService {
 
   public static final String EXPORT_SUB_PATH = "/export";
   public static final String REPORT_SUB_PATH = "/report";
+  public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
   public static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
+  public static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   public static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
   public static final String REPORT_EXPORT_JSON_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
   public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
@@ -65,6 +68,7 @@ public class PublicApiRestService {
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
   private final ReportService reportService;
+  private final DashboardService dashboardService;
 
   @GET
   @Path(REPORT_EXPORT_JSON_SUB_PATH)
@@ -110,6 +114,15 @@ public class PublicApiRestService {
                                      final @PathParam("reportId") String reportId) {
     validateAccessToken(requestContext, getJsonExportAccessToken());
     reportService.deleteReport(reportId);
+  }
+
+  @DELETE
+  @Path(DASHBOARD_BY_ID_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  public void deleteDashboardDefinition(final @Context ContainerRequestContext requestContext,
+                                        final @PathParam("dashboardId") String dashboardId) {
+    validateAccessToken(requestContext, getJsonExportAccessToken());
+    dashboardService.deleteDashboard(dashboardId);
   }
 
   private void validateAccessToken(final ContainerRequestContext requestContext, final String expectedAccessToken) {

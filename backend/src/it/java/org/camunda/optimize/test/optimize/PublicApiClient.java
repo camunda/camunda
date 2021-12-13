@@ -40,6 +40,13 @@ public class PublicApiClient {
       .execute();
   }
 
+  public Response deleteDashboard(final String dashboardId, final String accessToken) {
+    return getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicDeleteDashboardRequest(dashboardId, accessToken)
+      .execute();
+  }
+
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }

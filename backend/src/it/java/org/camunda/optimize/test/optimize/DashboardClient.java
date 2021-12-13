@@ -38,6 +38,10 @@ public class DashboardClient {
       .execute(AuthorizedDashboardDefinitionResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public String createEmptyDashboard() {
+    return createEmptyDashboard(null);
+  }
+
   public String createEmptyDashboard(final String collectionId) {
     return createDashboard(collectionId, Collections.emptyList());
   }
