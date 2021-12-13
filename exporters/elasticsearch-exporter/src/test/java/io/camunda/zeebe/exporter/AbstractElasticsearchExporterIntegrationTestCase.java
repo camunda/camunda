@@ -29,8 +29,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -106,8 +104,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   protected ElasticsearchTestClient createElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration) {
-    return new ElasticsearchTestClient(
-        configuration, LoggerFactory.getLogger("io.camunda.zeebe.exporter.elasticsearch"));
+    return new ElasticsearchTestClient(configuration);
   }
 
   protected Map<String, Object> recordToMap(final Record<?> record) {
@@ -175,9 +172,8 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   protected static class ElasticsearchTestClient extends ElasticsearchClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    ElasticsearchTestClient(
-        final ElasticsearchExporterConfiguration configuration, final Logger log) {
-      super(configuration, log);
+    ElasticsearchTestClient(final ElasticsearchExporterConfiguration configuration) {
+      super(configuration);
     }
 
     GetSettingsForIndicesResponse getSettingsForIndices() {
@@ -199,7 +195,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
     Map<String, Object> getDocument(final Record<?> record) {
       final var request =
-          new Request("GET", "/" + indexFor(record) + "/" + typeFor(record) + "/" + idFor(record));
+          new Request("GET", "/" + indexFor(record) + "/" + typeFor() + "/" + idFor(record));
       request.addParameter("routing", String.valueOf(record.getPartitionId()));
       try {
         final var response = client.performRequest(request);

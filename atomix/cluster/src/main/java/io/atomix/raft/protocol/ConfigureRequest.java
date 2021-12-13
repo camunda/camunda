@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import java.util.Collection;
-import java.util.Objects;
 
 /**
  * Configuration installation request.
@@ -110,20 +109,38 @@ public class ConfigureRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), term, leader, index, members);
+    int result = (int) (term ^ (term >>> 32));
+    result = 31 * result + leader.hashCode();
+    result = 31 * result + (int) (index ^ (index >>> 32));
+    result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+    result = 31 * result + members.hashCode();
+    return result;
   }
 
   @Override
-  public boolean equals(final Object object) {
-    if (object instanceof ConfigureRequest) {
-      final ConfigureRequest request = (ConfigureRequest) object;
-      return request.term == term
-          && request.leader == leader
-          && request.index == index
-          && request.timestamp == timestamp
-          && request.members.equals(members);
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
-    return false;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final ConfigureRequest that = (ConfigureRequest) o;
+
+    if (term != that.term) {
+      return false;
+    }
+    if (index != that.index) {
+      return false;
+    }
+    if (timestamp != that.timestamp) {
+      return false;
+    }
+    if (!leader.equals(that.leader)) {
+      return false;
+    }
+    return members.equals(that.members);
   }
 
   @Override

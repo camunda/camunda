@@ -18,10 +18,15 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.migration.TemporaryVariableMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,7 +80,9 @@ public class TemporaryVariableMigrationTest {
 
       // then
       verify(mockZeebeState.getMigrationState())
-          .migrateTemporaryVariables(mockZeebeState.getEventScopeInstanceState());
+          .migrateTemporaryVariables(
+              mockZeebeState.getEventScopeInstanceState(),
+              mockZeebeState.getElementInstanceState());
 
       verifyNoMoreInteractions(mockZeebeState.getMigrationState());
     }
@@ -89,6 +96,8 @@ public class TemporaryVariableMigrationTest {
     private MutableZeebeState zeebeState;
     private TransactionContext transactionContext;
     private LegacyDbTemporaryVariablesState legacyTemporaryVariablesState;
+    private DbVariableState variableState;
+    private DbElementInstanceState elementInstanceState;
 
     @BeforeEach
     public void setUp() {
@@ -96,6 +105,8 @@ public class TemporaryVariableMigrationTest {
       legacyTemporaryVariablesState =
           new LegacyDbTemporaryVariablesState(zeebeDb, transactionContext);
       legacyTemporaryVariablesState.put(EVENT_SCOPE_KEY, VARIABLES);
+      variableState = new DbVariableState(zeebeDb, transactionContext);
+      elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     }
 
     @Test
@@ -127,6 +138,32 @@ public class TemporaryVariableMigrationTest {
       assertThat(eventTrigger.getEventKey()).isEqualTo(-1L);
       assertThat(eventTrigger.getElementId())
           .isEqualTo(BufferUtil.wrapString(String.format("migrated-variable-%d", EVENT_SCOPE_KEY)));
+    }
+
+    @Test
+    public void eventSubProcessGetsMigratedCorrectly() {
+      // given
+      final long flowScopeKey = 200L;
+      final ProcessInstanceRecord processInstanceRecord = new ProcessInstanceRecord();
+      processInstanceRecord.setBpmnElementType(BpmnElementType.EVENT_SUB_PROCESS);
+      processInstanceRecord.setFlowScopeKey(flowScopeKey);
+      elementInstanceState.newInstance(
+          EVENT_SCOPE_KEY, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+      // when
+      sutMigration.runMigration(zeebeState);
+
+      // then
+      final EventTrigger oldEventTrigger =
+          zeebeState.getEventScopeInstanceState().peekEventTrigger(EVENT_SCOPE_KEY);
+      final EventTrigger newEventTrigger =
+          zeebeState.getEventScopeInstanceState().peekEventTrigger(flowScopeKey);
+      assertThat(oldEventTrigger).isNull();
+      assertThat(newEventTrigger).isNotNull();
+      assertThat(newEventTrigger.getEventKey()).isEqualTo(-1L);
+      assertThat(newEventTrigger.getElementId())
+          .isEqualTo(BufferUtil.wrapString(String.format("migrated-variable-%d", EVENT_SCOPE_KEY)));
+      assertThat(legacyTemporaryVariablesState.isEmpty()).isTrue();
     }
   }
 }

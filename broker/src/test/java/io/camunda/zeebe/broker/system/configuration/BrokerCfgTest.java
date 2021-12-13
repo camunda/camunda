@@ -62,8 +62,8 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.maxAppendBatchSize";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
       "zeebe.broker.experimental.disableExplicitRaftFlush";
-  private static final String ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION =
-      "zeebe.broker.experimental.enablePriorityElection";
+  private static final String ZEEBE_BROKER_CLUSTER_RAFT_ENABLEPRIORITYELECTION =
+      "zeebe.broker.cluster.raft.enablePriorityElection";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED =
       "zeebe.broker.experimental.queryapi.enabled";
   private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
@@ -466,14 +466,14 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideEnablePriorityElectionViaEnvironment() {
     // given
-    environment.put(ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION, "true");
+    environment.put(ZEEBE_BROKER_CLUSTER_RAFT_ENABLEPRIORITYELECTION, "true");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
-    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+    final ClusterCfg clusterCfg = cfg.getCluster();
 
     // then
-    assertThat(experimentalCfg.isEnablePriorityElection()).isTrue();
+    assertThat(clusterCfg.getRaft().isEnablePriorityElection()).isTrue();
   }
 
   @Test
@@ -482,10 +482,10 @@ public final class BrokerCfgTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
 
     // when
-    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+    final ClusterCfg clusterCfg = cfg.getCluster();
 
     // then
-    assertThat(experimentalCfg.isEnablePriorityElection()).isTrue();
+    assertThat(clusterCfg.getRaft().isEnablePriorityElection()).isTrue();
   }
 
   @Test
@@ -494,10 +494,10 @@ public final class BrokerCfgTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
 
     // when
-    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+    final ClusterCfg clusterCfg = cfg.getCluster();
 
     // then
-    assertThat(experimentalCfg.isEnablePriorityElection()).isTrue();
+    assertThat(clusterCfg.getRaft().isEnablePriorityElection()).isTrue();
   }
 
   @Test

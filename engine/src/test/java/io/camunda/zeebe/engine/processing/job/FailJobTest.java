@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -34,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class FailJobTest {
+
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static String jobType;
@@ -157,6 +159,42 @@ public final class FailJobTest {
             tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED),
             tuple(RecordType.COMMAND, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB_BATCH, JobBatchIntent.ACTIVATED));
+  }
+
+  @Test
+  public void shouldFailJobAndRetryWithBackOff() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Duration backOff = Duration.ofDays(1);
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getValue().getProcessInstanceKey())
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    // explicitly wait for polling
+    ENGINE.increaseTime(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION));
+
+    // verify that our job didn't recur after backoff
+    final var reactivatedJobs = ENGINE.jobs().withType(jobType).activate();
+    assertThat(reactivatedJobs.getValue().getJobs()).isEmpty();
+
+    ENGINE.increaseTime(backOff.plus(Duration.ofMillis(JobBackoffChecker.BACKOFF_RESOLUTION)));
+
+    // verify that our job recurred after backoff
+    assertThat(jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).getFirst().getKey())
+        .isEqualTo(jobKey);
   }
 
   @Test

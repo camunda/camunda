@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -162,7 +164,8 @@ public class DbMigrationState implements MutableMigrationState {
 
   @Override
   public void migrateTemporaryVariables(
-      final MutableEventScopeInstanceState eventScopeInstanceState) {
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final MutableElementInstanceState elementInstanceState) {
     temporaryVariableColumnFamily.forEach(
         (key, value) -> {
           // Event key can be a static value. Together with the key this will always be a unique
@@ -172,11 +175,29 @@ public class DbMigrationState implements MutableMigrationState {
           final String elementId = "migrated-variable-" + key.getValue();
           final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
-          // We always use triggerStartEvent() here. This is because this method creates an event
-          // trigger with the passed parameters without doing any checks beforehand. This is
-          // sufficient for this migration.
-          eventScopeInstanceState.triggerStartEvent(
-              key.getValue(), eventKey, elementIdBuffer, value.get());
+          final var elementInstance = elementInstanceState.getInstance(key.getValue());
+          if (elementInstance != null
+              && elementInstance
+                  .getValue()
+                  .getBpmnElementType()
+                  .equals(BpmnElementType.EVENT_SUB_PROCESS)) {
+            final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
+            // We always use triggerStartEvent() here. This is because this method creates an event
+            // trigger with the passed parameters without doing any checks beforehand. This is
+            // sufficient for this migration.
+            eventScopeInstanceState.triggerStartEvent(
+                flowScopeKey, eventKey, elementIdBuffer, value.get());
+            while (eventScopeInstanceState.pollEventTrigger(key.getValue()) != null) {
+              // We don't need to do anything because we want to delete the event trigger, which is
+              // what the pollEventTrigger does
+            }
+          } else {
+            // We always use triggerStartEvent() here. This is because this method creates an event
+            // trigger with the passed parameters without doing any checks beforehand. This is
+            // sufficient for this migration.
+            eventScopeInstanceState.triggerStartEvent(
+                key.getValue(), eventKey, elementIdBuffer, value.get());
+          }
 
           temporaryVariableColumnFamily.delete(key);
         });

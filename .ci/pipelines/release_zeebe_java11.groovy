@@ -35,22 +35,22 @@ spec:
             -XX:+UseContainerSupport
       resources:
         limits:
-          cpu: 2
-          memory: 16Gi
+          cpu: 8
+          memory: 32Gi
         requests:
-          cpu: 2
-          memory: 16Gi
+          cpu: 8
+          memory: 32Gi
     - name: golang
-      image: golang:1.13.4
+      image: golang:1.15.15
       command: ["cat"]
       tty: true
       resources:
         limits:
-          cpu: 2
-          memory: 1Gi
+          cpu: 8
+          memory: 8Gi
         requests:
-          cpu: 2
-          memory: 1Gi
+          cpu: 8
+          memory: 8Gi
 '''
         }
     }

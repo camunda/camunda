@@ -119,7 +119,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration, log);
+    return new ElasticsearchClient(configuration);
   }
 
   private void flushAndReschedule() {
@@ -193,9 +193,8 @@ public class ElasticsearchExporter implements Exporter {
 
   private void createComponentTemplate() {
     final String templateName = configuration.index.prefix;
-    final String aliasName = configuration.index.prefix;
     final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
-    if (!client.putComponentTemplate(templateName, aliasName, filename)) {
+    if (!client.createComponentTemplate(templateName, filename)) {
       log.warn("Put index template {} from file {} was not acknowledged", templateName, filename);
     }
   }

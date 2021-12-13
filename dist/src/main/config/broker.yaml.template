@@ -209,6 +209,14 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_ELECTIONTIMEOUT.
       # electionTimeout: 2500ms
 
+      # Configure raft properties
+      # raft:
+        # When this flag is enabled, the leader election algorithm attempts to elect the leaders based on a pre-defined priority.
+        # As a result, it tries to distributed the leaders uniformly across the brokers. Note that it is only a best-effort strategy.
+        # It is not guaranteed to be a strictly uniform distribution.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_RAFT_ENABLEPRIORITYELECTION
+        # enablePriorityElection = true;
+
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
       # membership:
@@ -470,12 +478,6 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
       # maxAppendBatchSize = 32KB;
 
-      # When this flag is enabled, the leader election algorithm attempts to elect the leaders based on a pre-defined priority.
-      # As a result, it tries to distributed the leaders uniformly across the brokers. Note that it is only a best-effort strategy.
-      # It is not guaranteed to be a strictly uniform distribution.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
-      # enablePriorityElection = true;
-
       # This setting allows you to configure how partitions are distributed amongst the node of the
       # clusters. It currently supports to partitioning schemes: ROUND_ROBIN, and FIXED.
       #
@@ -535,7 +537,7 @@
         #       - nodeId: 2
         #         priority: 2
 
-      # Allows to configure specific raft properties
+      # Allows to configure experimental raft properties
       # raft:
         # Sets the timeout for all requests send by raft leaders and followers.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT

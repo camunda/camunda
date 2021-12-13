@@ -69,7 +69,7 @@ final class RaftPartitionGroupFactory {
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity())
-            .withPriorityElection(experimentalCfg.isEnablePriorityElection())
+            .withPriorityElection(clusterCfg.getRaft().isEnablePriorityElection())
             .withPartitionDistributor(partitionDistributor)
             .withElectionTimeout(clusterCfg.getElectionTimeout())
             .withHeartbeatInterval(clusterCfg.getHeartbeatInterval())

@@ -38,6 +38,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private MembershipCfg membership = new MembershipCfg();
+  private RaftCfg raft = new RaftCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -119,6 +120,14 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.heartbeatInterval = heartbeatInterval;
   }
 
+  public RaftCfg getRaft() {
+    return raft;
+  }
+
+  public void setRaft(final RaftCfg raft) {
+    this.raft = raft;
+  }
+
   @Override
   public String toString() {
     return "ClusterCfg{"
@@ -143,6 +152,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         + heartbeatInterval
         + ", electionTimeout="
         + electionTimeout
+        + ", raft="
+        + raft
         + '}';
   }
 

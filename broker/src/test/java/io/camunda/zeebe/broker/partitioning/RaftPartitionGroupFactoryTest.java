@@ -120,7 +120,7 @@ class RaftPartitionGroupFactoryTest {
   @Test
   void shouldEnablePriorityElection() {
     // given
-    brokerCfg.getExperimental().setEnablePriorityElection(true);
+    brokerCfg.getCluster().getRaft().setEnablePriorityElection(true);
 
     // when
     final var config = buildRaftPartitionGroup();
@@ -132,7 +132,7 @@ class RaftPartitionGroupFactoryTest {
   @Test
   void shouldDisablePriorityElection() {
     // given
-    brokerCfg.getExperimental().setEnablePriorityElection(false);
+    brokerCfg.getCluster().getRaft().setEnablePriorityElection(false);
 
     // when
     final var config = buildRaftPartitionGroup();

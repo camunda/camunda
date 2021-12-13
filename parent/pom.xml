@@ -50,7 +50,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.12</version.docker-java-api>
-    <version.elasticsearch>7.15.2</version.elasticsearch>
+    <version.elasticsearch>7.16.0</version.elasticsearch>
     <version.error-prone>2.10.0</version.error-prone>
     <version.grpc>1.42.1</version.grpc>
     <version.gson>2.8.9</version.gson>
@@ -59,14 +59,14 @@
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
-    <version.httpcomponents>4.4.14</version.httpcomponents>
+    <version.httpcomponents>4.4.15</version.httpcomponents>
     <version.jackson>2.13.0</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
     <version.jna>5.10.0</version.jna>
     <version.junit>5.8.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.opentest4j>1.2.0</version.opentest4j>
-    <version.log4j>2.14.1</version.log4j>
+    <version.log4j>2.15.0</version.log4j>
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>4.1.0</version.mockito>
     <version.mockito-jupiter>4.1.0</version.mockito-jupiter>
@@ -77,8 +77,8 @@
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.12.0</version.prometheus>
     <version.protobuf>3.19.1</version.protobuf>
-    <version.protobuf-common>2.6.0</version.protobuf-common>
-    <version.micrometer>1.8.0</version.micrometer>
+    <version.protobuf-common>2.7.0</version.protobuf-common>
+    <version.micrometer>1.8.1</version.micrometer>
     <version.rocksdbjni>6.26.1</version.rocksdbjni>
     <version.sbe>1.25.1</version.sbe>
     <version.scala-parser>2.1.0</version.scala-parser>
@@ -86,12 +86,12 @@
     <version.slf4j>1.7.32</version.slf4j>
     <version.snakeyaml>1.29</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>2.31.0</version.wiremock>
+    <version.wiremock>2.32.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.2</version.asm>
     <version.testcontainers>1.16.2</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>3.1.0</version.zeebe-test-container>
+    <version.zeebe-test-container>3.2.0</version.zeebe-test-container>
     <version.feel-scala>1.13.3</version.feel-scala>
     <version.rest-assured>4.4.0</version.rest-assured>
     <version.spring>5.3.13</version.spring>
@@ -101,10 +101,10 @@
     <version.kryo>5.2.0</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jqwik>1.6.0</version.jqwik>
+    <version.jqwik>1.6.1</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.12.2</version.byte-buddy>
+    <version.byte-buddy>1.12.3</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.8.9-ea-1</version.immutables>
@@ -135,7 +135,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.0.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.17.4</plugin.version.spotless>
+    <plugin.version.spotless>2.17.6</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
 

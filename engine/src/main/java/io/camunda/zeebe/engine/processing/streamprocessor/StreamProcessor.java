@@ -72,7 +72,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
-  private ActorFuture<Long> replayCompletedFuture;
+  private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -152,12 +152,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       } else {
         replayCompletedFuture.onComplete(
-            (lastSourceEventPosition, error) -> {
+            (lastProcessingPositions, error) -> {
               if (error != null) {
                 LOG.error("The replay of events failed.", error);
                 onFailure(error);
               } else {
-                onRecovered(lastSourceEventPosition);
+                onRecovered(lastProcessingPositions);
                 // observe recovery time
                 startRecoveryTimer.close();
               }
@@ -303,7 +303,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     return zeebeState;
   }
 
-  private void onRecovered(final long lastSourceEventPosition) {
+  private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
     phase = Phase.PROCESSING;
 
     // enable writing records to the stream
@@ -313,7 +313,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    processingStateMachine.startProcessing(lastSourceEventPosition);
+    processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
     }
@@ -368,7 +368,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           if (isInReplayOnlyMode()) {
             return replayStateMachine.getLastReplayedEventPosition();
           } else {
-            return processingStateMachine.getLastWrittenEventPosition();
+            return processingStateMachine.getLastWrittenPosition();
           }
         });
   }

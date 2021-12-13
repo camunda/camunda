@@ -134,9 +134,9 @@ public final class ProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private long writtenEventPosition = StreamProcessor.UNSET_POSITION;
+  private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedEventPosition = StreamProcessor.UNSET_POSITION;
-  private long lastWrittenEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
   private int onErrorRetries;
   // Used for processing duration metrics
@@ -348,7 +348,7 @@ public final class ProcessingStateMachine {
 
               // only overwrite position if events were flushed
               if (position > 0) {
-                writtenEventPosition = position;
+                writtenPosition = position;
               }
 
               return position >= 0;
@@ -365,7 +365,7 @@ public final class ProcessingStateMachine {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written events via the lastWritten and now written position.
-            final var amount = writtenEventPosition - lastWrittenEventPosition;
+            final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
             updateState();
           }
@@ -379,7 +379,7 @@ public final class ProcessingStateMachine {
               zeebeDbTransaction.commit();
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
               metrics.setLastProcessedPosition(lastSuccessfulProcessedEventPosition);
-              lastWrittenEventPosition = writtenEventPosition;
+              lastWrittenPosition = writtenPosition;
               return true;
             },
             abortCondition);
@@ -438,23 +438,29 @@ public final class ProcessingStateMachine {
     return lastSuccessfulProcessedEventPosition;
   }
 
-  public long getLastWrittenEventPosition() {
-    return lastWrittenEventPosition;
+  public long getLastWrittenPosition() {
+    return lastWrittenPosition;
   }
 
   public boolean isMakingProgress() {
     return !onErrorHandlingLoop;
   }
 
-  public void startProcessing(final long lastProcessedPosition) {
+  public void startProcessing(final LastProcessingPositions lastProcessingPositions) {
     // Replay ends at the end of the log and returns the lastSourceEventPosition
     // which is equal to the last processed position
     // we need to seek to the next record after that position where the processing should start
     // Be aware on processing we ignore events, so we will process the next command
+    final var lastProcessedPosition = lastProcessingPositions.getLastProcessedPosition();
     logStreamReader.seekToNextEvent(lastProcessedPosition);
     if (lastSuccessfulProcessedEventPosition == StreamProcessor.UNSET_POSITION) {
       lastSuccessfulProcessedEventPosition = lastProcessedPosition;
     }
+
+    if (lastWrittenPosition == StreamProcessor.UNSET_POSITION) {
+      lastWrittenPosition = lastProcessingPositions.getLastWrittenPosition();
+    }
+
     actor.submit(this::readNextEvent);
   }
 }

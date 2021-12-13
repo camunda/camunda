@@ -3,10 +3,12 @@
 * [Build Zeebe from source](#build-zeebe-from-source)
 * [Report issues or contact developers](#report-issues-or-contact-developers)
 * [GitHub Issue Guidelines](#github-issue-guidelines)
-* [Starting on an Issue](#starting-on-an-issue)
-* [Creating a Pull Request](#creating-a-pull-request)
-* [Backporting changes](#backporting-changes)
-* [Commit Message Guidelines](#commit-message-guidelines)
+  * [Starting on an Issue](#starting-on-an-issue)
+  * [Creating a Pull Request](#creating-a-pull-request)
+  * [Reviewing a Pull Request](#reviewing-a-pull-request)
+  * [Review Emoji Code](#review-emoji-code) 
+  * [Backporting changes](#backporting-changes)
+  * [Commit Message Guidelines](#commit-message-guidelines)
 * [Contributor License Agreement](#contributor-license-agreement)
 * [Licenses](#licenses)
 * [Code of Conduct](#code-of-conduct)
@@ -117,6 +119,8 @@ To work on an issue, follow the following steps:
 
 ## Creating a pull request
 
+Before opening your first pull request, please have a look at this [guide](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
+
 1. To start the review process create a new pull request on GitHub from your
    branch to the `develop` branch. Give it a meaningful name and describe
    your changes in the body of the pull request. Lastly add a link to the issue
@@ -126,8 +130,7 @@ To work on an issue, follow the following steps:
    you.
 3. The reviewer will look at the pull request in the following days and give
    you either feedback or accept the changes. Your reviewer might use
-   [emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)
-   during the reviewing process.
+   [emoji code](#review-emoji-code) during the reviewing process.
     1. If there are changes requested address them in a new commit. Notify the
        reviewer in a comment if the pull request is ready for review again. If
        the changes are accepted squash them again in the related commit and force push.
@@ -144,6 +147,30 @@ To work on an issue, follow the following steps:
     3. If there are CI errors the author of the pull request has to check if
        they are caused by its changes and address them. If they are flaky tests
        a merge can be retried with a comment with the content `bors retry`.
+
+## Reviewing a pull request
+
+Before doing your first review, please have a look at this [guide](https://github.com/camunda-cloud/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
+
+As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
+
+The review should result in:
+- approving the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍  
+- requesting changes if there are major issues ❌ 
+- commenting if there are open questions ❓
+
+### Review emoji code
+
+The following emojis can be used in a review to express the intention of a comment. 
+For example, to distinguish a required change from an optional suggestion.  
+
+- 👍 or `:+1:`: This is great! It always feels good when somebody likes your work. Show them!
+- ❓ or `:question:`: I have a question. Please clarify.
+- ❌ or `:x:`: This has to change. It’s possibly an error or strongly violates existing conventions.
+- 🔧 or `:wrench:`: This is a well-meant suggestion or minor issue. Take it or leave it. Nothing major that blocks merging.
+- 💭 or `:thought_balloon:`: I’m just thinking out loud here. Something doesn’t necessarily have to change, but I want to make sure to share my thoughts.
+
+_Inspired by [Microsofts emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)._
 
 ## Backporting changes
 

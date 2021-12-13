@@ -32,6 +32,7 @@ final class PartitionTransitionProcess {
   private final long term;
   private final Role role;
   private boolean cancelRequested = false;
+  private boolean completed = false;
 
   PartitionTransitionProcess(
       final List<PartitionTransitionStep> pendingSteps,
@@ -64,6 +65,7 @@ final class PartitionTransitionProcess {
     if (cancelRequested) {
       LOG.info("Cancelling transition to {} on term {}", role, term);
       future.complete(null);
+      completed = true;
       return;
     }
 
@@ -91,7 +93,7 @@ final class PartitionTransitionProcess {
     if (pendingSteps.isEmpty()) {
       LOG.info("Transition to {} on term {} completed", role, term);
       future.complete(null);
-
+      completed = true;
       return;
     }
 
@@ -99,7 +101,11 @@ final class PartitionTransitionProcess {
   }
 
   ActorFuture<Void> prepare(final long newTerm, final Role newRole) {
-    LOG.info("Prepare transition from {} on term {} to {}", role, term, newRole);
+    LOG.info(
+        "Prepare transition from {} on term {} to {}",
+        context.getCurrentRole(),
+        context.getCurrentTerm(),
+        newRole);
     final ActorFuture<Void> prepareFuture = concurrencyControl.createFuture();
 
     if (stepsToPrepare.isEmpty()) {
@@ -119,8 +125,8 @@ final class PartitionTransitionProcess {
 
           LOG.info(
               "Prepare transition from {} on term {} to {} - preparing {}",
-              role,
-              term,
+              context.getCurrentRole(),
+              context.getCurrentTerm(),
               newRole,
               nextPrepareStep.getName());
 
@@ -143,7 +149,10 @@ final class PartitionTransitionProcess {
     }
 
     if (stepsToPrepare.isEmpty()) {
-      LOG.info("Preparing transition from {} on term {} completed", role, term);
+      LOG.info(
+          "Preparing transition from {} on term {} completed",
+          context.getCurrentRole(),
+          context.getCurrentTerm());
       future.complete(null);
 
       return;
@@ -153,7 +162,9 @@ final class PartitionTransitionProcess {
   }
 
   void cancel() {
-    LOG.info("Received cancel signal for transition to {} on term {}", role, term);
+    if (!completed) {
+      LOG.info("Received cancel signal for transition to {} on term {}", role, term);
+    }
     cancelRequested = true;
   }
 }

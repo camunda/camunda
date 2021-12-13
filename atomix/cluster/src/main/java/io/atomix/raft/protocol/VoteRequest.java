@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
-import java.util.Objects;
 
 /**
  * Server vote request.
@@ -93,19 +92,34 @@ public class VoteRequest extends AbstractRaftRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), term, candidate, lastLogIndex, lastLogTerm);
+    int result = (int) (term ^ (term >>> 32));
+    result = 31 * result + candidate.hashCode();
+    result = 31 * result + (int) (lastLogIndex ^ (lastLogIndex >>> 32));
+    result = 31 * result + (int) (lastLogTerm ^ (lastLogTerm >>> 32));
+    return result;
   }
 
   @Override
-  public boolean equals(final Object object) {
-    if (object instanceof VoteRequest) {
-      final VoteRequest request = (VoteRequest) object;
-      return request.term == term
-          && request.candidate == candidate
-          && request.lastLogIndex == lastLogIndex
-          && request.lastLogTerm == lastLogTerm;
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
-    return false;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final VoteRequest that = (VoteRequest) o;
+
+    if (term != that.term) {
+      return false;
+    }
+    if (lastLogIndex != that.lastLogIndex) {
+      return false;
+    }
+    if (lastLogTerm != that.lastLogTerm) {
+      return false;
+    }
+    return candidate.equals(that.candidate);
   }
 
   @Override

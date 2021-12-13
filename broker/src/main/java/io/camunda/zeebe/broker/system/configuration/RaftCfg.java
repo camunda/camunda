@@ -7,39 +7,21 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
-import java.time.Duration;
-
 public final class RaftCfg implements ConfigurationEntry {
+  public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
 
-  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
-  private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
-  private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
+  private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
 
-  private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
-  private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
-  private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
-
-  public Duration getRequestTimeout() {
-    return requestTimeout;
+  public boolean isEnablePriorityElection() {
+    return enablePriorityElection;
   }
 
-  public void setRequestTimeout(final Duration requestTimeout) {
-    this.requestTimeout = requestTimeout;
+  public void setEnablePriorityElection(final boolean enablePriorityElection) {
+    this.enablePriorityElection = enablePriorityElection;
   }
 
-  public Duration getMaxQuorumResponseTimeout() {
-    return maxQuorumResponseTimeout;
-  }
-
-  public void setMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
-    this.maxQuorumResponseTimeout = maxQuorumResponseTimeout;
-  }
-
-  public int getMinStepDownFailureCount() {
-    return minStepDownFailureCount;
-  }
-
-  public void setMinStepDownFailureCount(final int minStepDownFailureCount) {
-    this.minStepDownFailureCount = minStepDownFailureCount;
+  @Override
+  public String toString() {
+    return "RaftCfg{" + "enablePriorityElection=" + enablePriorityElection + '}';
   }
 }
