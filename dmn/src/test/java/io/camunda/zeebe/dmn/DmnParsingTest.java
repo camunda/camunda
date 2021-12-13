@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,7 @@ class DmnParsingTest {
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
   @Test
-  void shouldRejectInvalidInputStream() {
+  void shouldRejectEmptyInputStream() {
     // given
     final InputStream inputStream = null;
 
@@ -32,6 +33,22 @@ class DmnParsingTest {
     assertThatThrownBy(() -> decisionEngine.parse(inputStream))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("The input stream must not be null");
+  }
+
+  @Test
+  void shouldRejectInvalidInputStream() {
+    // given
+    final InputStream inputStream = new ByteArrayInputStream("invalid DMN".getBytes());
+
+    // when
+    final var parsedDrg = decisionEngine.parse(inputStream);
+
+    // then
+    assertThat(parsedDrg.isValid())
+        .describedAs("Expect that the DMN is not parsed successfully")
+        .isFalse();
+
+    assertThat(parsedDrg.getFailureMessage()).startsWith("Failed to parse DMN");
   }
 
   @Test
