@@ -93,7 +93,6 @@ it('should include the selected parameters in the link state when creating a rep
       versions: ['1'],
       tenantIds: [null],
       name: 'Process Definition Name',
-      displayName: 'Process Definition Name',
       identifier: 'definition',
     },
   ]);
@@ -117,7 +116,6 @@ it('should call the templateToState prop to determine link state', async () => {
       versions: ['1'],
       tenantIds: [null],
       name: 'Process Definition Name',
-      displayName: 'Process Definition Name',
     },
   ]);
 
