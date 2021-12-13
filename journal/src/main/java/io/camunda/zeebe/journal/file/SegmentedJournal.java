@@ -211,10 +211,13 @@ public final class SegmentedJournal implements Journal {
   @Override
   public JournalReader openReader() {
     final var stamped = acquireReadlock();
-    final var reader = new SegmentedJournalReader(this);
-    readers.add(reader);
-    releaseReadlock(stamped);
-    return reader;
+    try {
+      final var reader = new SegmentedJournalReader(this);
+      readers.add(reader);
+      return reader;
+    } finally {
+      releaseReadlock(stamped);
+    }
   }
 
   @Override
