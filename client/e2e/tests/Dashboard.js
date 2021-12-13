@@ -82,7 +82,7 @@ test('create a report and add it to the Dashboard', async (t) => {
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
-  await u.addReportToDashboard(t, 'New Report');
+  await u.addReportToDashboard(t, 'Blank report');
 
   await u.save(t);
 
@@ -190,7 +190,7 @@ test('sharing with filters', async (t) => {
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
-  await u.addReportToDashboard(t, 'New Report');
+  await u.addReportToDashboard(t, 'Blank report');
 
   await t.click(e.addFilterButton);
   await t.click(e.option('Instance State'));
@@ -221,7 +221,7 @@ test('remove a report from a dashboard', async (t) => {
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
-  await u.addReportToDashboard(t, 'New Report');
+  await u.addReportToDashboard(t, 'Blank report');
 
   await t.click(e.report);
   await t.click(e.reportDeleteButton);
@@ -266,7 +266,7 @@ test('filters', async (t) => {
   await u.gotoOverview(t);
 
   await u.createNewDashboard(t);
-  await u.addReportToDashboard(t, 'New Report');
+  await u.addReportToDashboard(t, 'Blank report');
 
   await u.save(t);
   await t.click(e.editButton);

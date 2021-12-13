@@ -65,19 +65,17 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    initCronExpression();
+    this.cronExpression = evaluateCronExpression();
     resetCache();
   }
 
-  private void initCronExpression() {
-    this.cronExpression = CronExpression.parse(getCacheConfiguration().getCronTrigger());
-  }
+  protected abstract CronExpression evaluateCronExpression();
 
   @PostConstruct
   public void init() {
     log.info("Initializing {} identity sync.", getCacheLabel());
     getCacheConfiguration().validate();
-    initCronExpression();
+    this.cronExpression = evaluateCronExpression();
     startScheduledSync();
   }
 
@@ -192,6 +190,10 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
       .collect(toList());
   }
 
+  public List<UserDto> getUsersByEmail(final List<String> emails) {
+    return activeIdentityCache.getUsersByEmail(emails);
+  }
+
   public Optional<GroupDto> getGroupIdentityById(final String id) {
     return activeIdentityCache.getGroupIdentityById(id);
   }
@@ -258,7 +260,7 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
 
   @Override
   protected Trigger createScheduleTrigger() {
-    return new CronTrigger(getCacheConfiguration().getCronTrigger());
+    return new CronTrigger(this.cronExpression.toString());
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {

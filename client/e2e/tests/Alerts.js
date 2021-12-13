@@ -19,15 +19,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
   await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
   await t.click(Homepage.confirmButton);
-
-  await t.click(Collection.sourcesTab);
-  await t.click(Collection.addButton);
-  await t.click(Collection.tenantSource);
-  await t.typeText(Collection.typeaheadInput, 'Not defined', {replace: true});
-  await t.click(Collection.typeaheadOption('Not defined'));
-  await t.click(Collection.checkbox('Select All'));
-  await t.click(Collection.confirmModalButton);
-  await t.click(Collection.entityTab);
+  await t.click(Homepage.confirmButton);
 
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');

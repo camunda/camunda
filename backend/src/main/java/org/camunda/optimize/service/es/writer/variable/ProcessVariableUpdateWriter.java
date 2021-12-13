@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 import java.security.InvalidParameterException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypeSupported;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @Component
@@ -156,7 +157,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
   private Map<String, List<OptimizeDto>> groupVariablesByProcessInstanceIds(List<ProcessVariableDto> variableUpdates) {
     Map<String, List<OptimizeDto>> processInstanceIdToVariables = new HashMap<>();
     for (ProcessVariableDto variable : variableUpdates) {
-      if (isVariableFromCaseDefinition(variable) || !isVariableTypeSupported(variable.getType())) {
+      if (isVariableFromCaseDefinition(variable) || !isProcessVariableTypeSupported(variable.getType())) {
         log.warn(
           "Variable [{}] is either a case definition variable or the type [{}] is not supported!",
           variable, variable.getType()
@@ -179,6 +180,12 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
         var.getValue(),
         var.getVersion()
       ))
+      .map(variable -> {
+        if (variable.getValue().stream().allMatch(Objects::isNull)) {
+          variable.setValue(Collections.emptyList());
+        }
+        return variable;
+      })
       .collect(Collectors.toList());
   }
 

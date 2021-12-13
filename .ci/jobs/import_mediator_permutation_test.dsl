@@ -25,7 +25,7 @@ pipelineJob('import_mediator_permutation_test') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 0 * * *')
+          spec('H 0 * * 1-5')
         }
       }
     }

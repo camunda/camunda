@@ -12,35 +12,51 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
+import javax.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
 
 @Slf4j
 public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImportService<ZeebeVariableRecordDto> {
 
+  public static final Map<String, Object> OBJECT_VALUE_INFO = Map.of(
+    SERIALIZATION_DATA_FORMAT, MediaType.APPLICATION_JSON
+  );
+
   private final ObjectMapper objectMapper;
+  private final ObjectVariableService objectVariableService;
 
   public ZeebeVariableImportService(final ConfigurationService configurationService,
                                     final ZeebeProcessInstanceWriter processInstanceWriter,
                                     final int partitionId,
                                     final ObjectMapper objectMapper,
-                                    final ProcessDefinitionReader processDefinitionReader) {
+                                    final ProcessDefinitionReader processDefinitionReader,
+                                    final ObjectVariableService objectVariableService) {
     super(configurationService, processInstanceWriter, partitionId, processDefinitionReader);
     this.objectMapper = objectMapper;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -50,7 +66,7 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
       .values().stream()
       .map(this::createProcessInstanceForData)
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeVariableRecordDto> recordsForInstance) {
@@ -65,33 +81,61 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
     return updateProcessVariables(instanceToAdd, recordsForInstance);
   }
 
+  private ProcessDefinitionOptimizeDto getStoredDefinitionForRecord(final Long definitionKey) {
+    return processDefinitionReader.getProcessDefinition(String.valueOf(definitionKey))
+      .orElseThrow(() -> new OptimizeRuntimeException(
+        "The process definition with id " + definitionKey + " has not yet been imported to Optimize"));
+  }
+
   private ProcessInstanceDto updateProcessVariables(final ProcessInstanceDto instanceToAdd,
                                                     List<ZeebeVariableRecordDto> recordsForInstance) {
-    new ArrayList<>(
+    final List<ProcessVariableUpdateDto> variables = resolveDuplicateUpdates(recordsForInstance)
+      .stream()
+      .map(this::convertToProcessVariableDto)
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .collect(toList());
+    objectVariableService.convertObjectVariablesForImport(variables)
+      .forEach(variable -> instanceToAdd.getVariables().add(convertToSimpleProcessVariableDto(variable)));
+    return instanceToAdd;
+  }
+
+  private List<ZeebeVariableRecordDto> resolveDuplicateUpdates(final List<ZeebeVariableRecordDto> recordsForInstance) {
+    return new ArrayList<>(
       recordsForInstance.stream()
         .collect(Collectors.toMap(
           ZeebeVariableRecordDto::getKey,
           Function.identity(),
           (oldVar, newVar) -> (newVar.getPosition() > oldVar.getPosition()) ? newVar : oldVar
-        )).values()).forEach(
-      variableRecordDto -> convertToSimpleProcessVariableDto(variableRecordDto)
-        .ifPresent(variable -> instanceToAdd.getVariables().add(variable)));
-    return instanceToAdd;
+        )).values());
   }
 
-  private Optional<SimpleProcessVariableDto> convertToSimpleProcessVariableDto(final ZeebeVariableRecordDto variableRecordDto) {
+  private SimpleProcessVariableDto convertToSimpleProcessVariableDto(final ProcessVariableDto processVariableDto) {
+    SimpleProcessVariableDto simpleProcessVariableDto = new SimpleProcessVariableDto();
+    simpleProcessVariableDto.setId(String.valueOf(processVariableDto.getId()));
+    simpleProcessVariableDto.setName(processVariableDto.getName());
+    simpleProcessVariableDto.setType(processVariableDto.getType());
+    simpleProcessVariableDto.setValue(processVariableDto.getValue());
+    simpleProcessVariableDto.setVersion(processVariableDto.getVersion());
+    return simpleProcessVariableDto;
+  }
+
+  private Optional<ProcessVariableUpdateDto> convertToProcessVariableDto(final ZeebeVariableRecordDto variableRecordDto) {
     final ZeebeVariableDataDto zeebeVariableDataDto = variableRecordDto.getValue();
     return getVariableTypeFromJsonNode(zeebeVariableDataDto, variableRecordDto.getKey()).map(type -> {
-      SimpleProcessVariableDto simpleProcessVariableDto = new SimpleProcessVariableDto();
-      simpleProcessVariableDto.setId(String.valueOf(variableRecordDto.getKey()));
-      simpleProcessVariableDto.setName(zeebeVariableDataDto.getName());
-      simpleProcessVariableDto.setVersion(variableRecordDto.getPosition());
-      simpleProcessVariableDto.setType(type);
-      simpleProcessVariableDto.setValue(zeebeVariableDataDto.getValue());
+      ProcessVariableUpdateDto pluginVariableDto = new ProcessVariableUpdateDto();
+      pluginVariableDto.setId(String.valueOf(variableRecordDto.getKey()));
+      pluginVariableDto.setName(zeebeVariableDataDto.getName());
+      pluginVariableDto.setVersion(variableRecordDto.getPosition());
+      pluginVariableDto.setType(type);
+      pluginVariableDto.setValue(zeebeVariableDataDto.getValue());
       if (type.equals(STRING_TYPE)) {
-        simpleProcessVariableDto.setValue(stripExtraDoubleQuotationsIfExist(zeebeVariableDataDto.getValue()));
+        pluginVariableDto.setValue(stripExtraDoubleQuotationsIfExist(zeebeVariableDataDto.getValue()));
+      } else if (OBJECT_TYPE.equalsIgnoreCase(type)) {
+        // Zeebe object variables are always in JSON format
+        pluginVariableDto.setValueInfo(OBJECT_VALUE_INFO);
       }
-      return simpleProcessVariableDto;
+      return pluginVariableDto;
     });
   }
 
@@ -107,6 +151,9 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
           return Optional.of(BOOLEAN_TYPE);
         case STRING:
           return Optional.of(STRING_TYPE);
+        case OBJECT:
+        case ARRAY:
+          return Optional.of(OBJECT_TYPE);
         default:
           return Optional.empty();
       }

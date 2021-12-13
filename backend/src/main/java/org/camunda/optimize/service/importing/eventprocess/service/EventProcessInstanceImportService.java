@@ -30,6 +30,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.EventProcessInstanceElasticsearchImportJob;
@@ -57,6 +58,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @AllArgsConstructor
 @Slf4j
@@ -399,13 +401,42 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           .forEach(stringObjectEntry -> result.add(new SimpleProcessVariableDto(
             stringObjectEntry.getKey(),
             stringObjectEntry.getKey(),
-            stringObjectEntry.getValue().getClass().getSimpleName(),
-            stringObjectEntry.getValue().toString(),
+            extractVariableType(stringObjectEntry.getValue()),
+            extractVariableValue(stringObjectEntry.getValue()),
             1
           )));
       }
     }
     return result;
+  }
+
+  @SuppressWarnings(UNCHECKED_CAST)
+  private String extractVariableType(final Object variableValue) {
+    if (variableValue instanceof Collection) {
+      List<Object> valueList = (List<Object>) variableValue;
+      return valueList.isEmpty()
+        ? VariableType.STRING.getId()
+        : getVariableTypeFromValuesList((List<Object>) variableValue);
+    } else {
+      return variableValue.getClass().getSimpleName();
+    }
+  }
+
+  private String getVariableTypeFromValuesList(final List<Object> variableValues) {
+    if (variableValues.get(0) instanceof Number) {
+      return VariableType.DOUBLE.getId();
+    } else {
+      return variableValues.get(0).getClass().getSimpleName();
+    }
+  }
+
+  @SuppressWarnings(UNCHECKED_CAST)
+  private List<String> extractVariableValue(final Object variableValue) {
+    if (variableValue instanceof Collection) {
+      return (List<String>) variableValue;
+    } else {
+      return Collections.singletonList(variableValue.toString());
+    }
   }
 
   private ElasticsearchImportJob<EventProcessInstanceDto> createElasticsearchImportJob(List<EventProcessInstanceDto> processInstances,

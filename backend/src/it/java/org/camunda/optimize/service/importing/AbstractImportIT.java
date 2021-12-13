@@ -69,13 +69,13 @@ public abstract class AbstractImportIT extends AbstractIT {
     }
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
-    return deployAndStartSimpleServiceTaskWithVariables(variables);
+    return deployAndStartSimpleServiceProcessTaskWithVariables(variables);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceProcessTaskWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }

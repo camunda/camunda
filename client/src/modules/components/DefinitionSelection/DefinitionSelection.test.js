@@ -14,6 +14,7 @@ import {DefinitionSelection} from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
 
 import {loadDefinitions, loadVersions, loadTenants} from './service';
+import MultiDefinitionSelection from './MultiDefinitionSelection';
 
 jest.mock('./service', () => ({
   loadDefinitions: jest.fn().mockReturnValue([
@@ -42,16 +43,20 @@ jest.mock('./service', () => ({
   ]),
   loadTenants: jest.fn().mockReturnValue([
     {
-      id: 'a',
-      name: 'Tenant A',
-    },
-    {
-      id: 'b',
-      name: 'Tenant B',
-    },
-    {
-      id: 'c',
-      name: 'Tenant C',
+      tenants: [
+        {
+          id: 'a',
+          name: 'Tenant A',
+        },
+        {
+          id: 'b',
+          name: 'Tenant B',
+        },
+        {
+          id: 'c',
+          name: 'Tenant C',
+        },
+      ],
     },
   ]),
 }));
@@ -127,7 +132,7 @@ it('should load versions and tenants when key is selected', async () => {
   await flushPromises();
 
   expect(loadVersions).toHaveBeenCalledWith(props.type, undefined, 'foo');
-  expect(loadTenants).toHaveBeenCalledWith(props.type, undefined, 'foo', ['3']);
+  expect(loadTenants).toHaveBeenCalledWith(props.type, [{key: 'foo', versions: ['3']}], undefined);
 });
 
 it('should update to most recent version when key is selected', async () => {
@@ -280,8 +285,12 @@ it('should construct a popover title', async () => {
 
   loadTenants.mockReturnValueOnce([
     {
-      id: null,
-      name: 'Not defined',
+      tenants: [
+        {
+          id: null,
+          name: 'Not defined',
+        },
+      ],
     },
   ]);
   const nodeWithData = await shallow(
@@ -390,4 +399,37 @@ it('should display expanded definition selection without a popover if specified'
   await flushPromises();
 
   expect(node.find('.DefinitionSelection').type()).toBe('div');
+});
+
+it('should invoke onChange from MultiDefinitionSelection if selectedDefinitions is specified', async () => {
+  const spy = jest.fn();
+  const node = await shallow(
+    <DefinitionSelection {...props} selectedDefinitions={[]} onChange={spy} />
+  );
+
+  await flushPromises();
+
+  expect(node.find(Typeahead)).not.toExist();
+  expect(node.find(MultiDefinitionSelection)).toExist();
+
+  node.find(MultiDefinitionSelection).simulate('change', ['test']);
+  expect(spy).toHaveBeenCalledWith(['test']);
+
+  node.find(MultiDefinitionSelection).prop('changeDefinition')('foo');
+  await flushPromises();
+  expect(spy).toHaveBeenCalledWith([
+    {
+      identifier: 'definition',
+      key: 'foo',
+      name: 'Foo',
+      tenantIds: ['a', 'b', 'c'],
+      versions: ['3'],
+    },
+  ]);
+});
+
+it('should pass versionTooltip to the version popover', async () => {
+  const node = await shallow(<DefinitionSelection {...props} versionTooltip={'test tooltip'} />);
+
+  expect(node.find(VersionPopover).prop('tooltip')).toBe('test tooltip');
 });

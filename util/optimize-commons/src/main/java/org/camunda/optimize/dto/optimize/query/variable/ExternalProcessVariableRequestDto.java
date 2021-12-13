@@ -33,6 +33,7 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
   private String processInstanceId;
   @NotBlank
   private String processDefinitionKey;
+  private String serializationDataFormat; // optional, used for object variables
 
   public static List<ExternalProcessVariableDto> toExternalProcessVariableDtos(final Long ingestionTimestamp,
                                                                                final List<ExternalProcessVariableRequestDto> variableDtos) {
@@ -44,7 +45,8 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
         .setVariableValue(varDto.getValue())
         .setVariableType(varDto.getType())
         .setProcessInstanceId(varDto.getProcessInstanceId())
-        .setProcessDefinitionKey(varDto.getProcessDefinitionKey()))
+        .setProcessDefinitionKey(varDto.getProcessDefinitionKey())
+        .setSerializationDataFormat(varDto.getSerializationDataFormat()))
       .collect(toList());
   }
 }

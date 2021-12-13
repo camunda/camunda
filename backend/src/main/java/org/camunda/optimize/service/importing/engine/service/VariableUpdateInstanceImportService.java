@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.service;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
@@ -27,9 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.DateFormatterUtil.getDateStringInOptimizeDateFormat;
 import static org.camunda.optimize.service.util.DateFormatterUtil.isValidOptimizeDateFormat;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isProcessVariableTypeSupported;
 
 @Slf4j
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
@@ -41,13 +43,15 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private final EngineContext engineContext;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final ObjectVariableService objectVariableService;
 
   public VariableUpdateInstanceImportService(final ConfigurationService configurationService,
                                              final VariableImportAdapterProvider variableImportAdapterProvider,
                                              final ProcessVariableUpdateWriter variableWriter,
                                              final CamundaEventImportService camundaEventService,
                                              final EngineContext engineContext,
-                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                             final ProcessDefinitionResolverService processDefinitionResolverService,
+                                             final ObjectVariableService objectVariableService) {
     this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -58,6 +62,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -92,26 +97,14 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     for (VariableImportAdapter variableImportAdapter : variableImportAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
-    return convertPluginListToImportList(pluginVariableList);
+    pluginVariableList.removeIf(variable -> !isValidVariable(variable));
+    List<ProcessVariableUpdateDto> variableUpdateDtos =
+      pluginVariableList.stream().map(this::convertPluginVariableToImportVariable).collect(toList());
+    return objectVariableService.convertObjectVariablesForImport(variableUpdateDtos);
   }
 
-  private List<ProcessVariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
-    List<ProcessVariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
-    for (PluginVariableDto dto : pluginVariableList) {
-      if (isValidVariable(dto)) {
-        normalizeDateVariableFormats(dto);
-        if (dto instanceof ProcessVariableDto) {
-          variableImportList.add((ProcessVariableDto) dto);
-        } else {
-          variableImportList.add(convertPluginVariableToImportVariable(dto));
-        }
-      }
-    }
-    return variableImportList;
-  }
-
-  private ProcessVariableDto convertPluginVariableToImportVariable(PluginVariableDto pluginVariableDto) {
-    return new ProcessVariableDto(
+  private ProcessVariableUpdateDto convertPluginVariableToImportVariable(PluginVariableDto pluginVariableDto) {
+    final ProcessVariableUpdateDto pluginVariable = new ProcessVariableUpdateDto(
       pluginVariableDto.getId(),
       pluginVariableDto.getName(),
       pluginVariableDto.getType(),
@@ -125,6 +118,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       pluginVariableDto.getEngineAlias(),
       pluginVariableDto.getTenantId()
     );
+    normalizeDateVariableFormats(pluginVariable);
+    return pluginVariable;
   }
 
   private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
@@ -147,8 +142,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return new ArrayList<>(resultSet.values());
   }
 
-  private ProcessVariableDto mapEngineEntityToOptimizeEntity(HistoricVariableUpdateInstanceDto engineEntity) {
-    return new ProcessVariableDto(
+  private PluginVariableDto mapEngineEntityToOptimizeEntity(HistoricVariableUpdateInstanceDto engineEntity) {
+    return new PluginVariableDto(
       engineEntity.getVariableInstanceId(),
       engineEntity.getVariableName(),
       engineEntity.getVariableType(),
@@ -160,7 +155,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       engineEntity.getProcessInstanceId(),
       engineEntity.getSequenceCounter(),
       engineContext.getEngineAlias(),
-      engineEntity.getTenantId()
+      engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
   }
 
@@ -180,7 +175,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
         variableDto.getId()
       );
       return false;
-    } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
+    } else if (isNullOrEmpty(variableDto.getType()) || !isProcessVariableTypeSupported(variableDto.getType())) {
       log.info(
         "Refuse to add variable [{}] with type [{}] from variable import adapter plugin. " +
           "Variable has no type or type is not supported.",
@@ -230,17 +225,17 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return true;
   }
 
-  private void normalizeDateVariableFormats(final PluginVariableDto dto) {
-    if (VariableType.DATE.getId().equalsIgnoreCase(dto.getType())) {
-      final String dateVariableValue = dto.getValue();
-      if (dto.getValue() != null && !isValidOptimizeDateFormat(dto.getValue())) {
+  private void normalizeDateVariableFormats(final ProcessVariableUpdateDto variable) {
+    if (VariableType.DATE.getId().equalsIgnoreCase(variable.getType())) {
+      final String dateVariableValue = variable.getValue();
+      if (variable.getValue() != null && !isValidOptimizeDateFormat(variable.getValue())) {
         final Optional<String> optimizeDateFormat = getDateStringInOptimizeDateFormat(dateVariableValue);
         if (optimizeDateFormat.isPresent()) {
-          dto.setValue(optimizeDateFormat.get());
+          variable.setValue(optimizeDateFormat.get());
         } else {
           log.trace(
             "Could not convert date variable with name {} and value {} to valid Optimize date format",
-            dto.getName(),
+            variable.getName(),
             dateVariableValue
           );
         }

@@ -10,7 +10,7 @@ import {Icon, DownloadButton} from 'components';
 import {loadRawData, formatters} from 'services';
 import {t} from 'translation';
 
-export function InstancesButton({id, name, config, value}) {
+export function InstancesButton({id, name, config, value, totalCount}) {
   return (
     <DownloadButton
       retriever={loadRawData({
@@ -30,6 +30,7 @@ export function InstancesButton({id, name, config, value}) {
         t('analysis.outlier.tooltip.outlier.label-plural') +
         '.csv'
       }
+      totalCount={totalCount}
     >
       <Icon size="14" type="save" />
       {t('common.instanceIds')}

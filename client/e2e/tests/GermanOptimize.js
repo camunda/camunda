@@ -24,7 +24,7 @@ test('Create a report in the german version of optimize', async (t) => {
   await t.click(e.createNewMenu).hover(e.newReportOption);
   await t.click(e.submenuOption('Prozessbericht'));
 
-  await t.click(e.processTypeahead);
+  await t.click(e.templateModalProcessField);
   await t.click(e.firstTypeaheadOption);
   await t.click(e.confirmButton);
 

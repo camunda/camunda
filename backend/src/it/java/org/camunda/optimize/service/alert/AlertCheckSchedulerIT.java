@@ -137,29 +137,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
     assertThatTriggerIsInRange(trigger, secondsUntilItShouldFireNext);
   }
 
-  private void assertThatTriggerIsInRange(Trigger trigger, int secondsUntilItShouldFireNext) {
-    // we cannot check for exact time since
-    // time is running while we check for the supposed next trigger time
-    // and then the check might be by one second off. Thus we check if the
-    // the next trigger is within +/- 1 second bound.
-    Instant nextTimeToFire = getNextFireTime(trigger);
-    Instant lowerBound = Instant.now()
-      .plus(secondsUntilItShouldFireNext - 1, ChronoUnit.SECONDS)
-      .truncatedTo(ChronoUnit.SECONDS);
-    Instant upperBound = Instant.now()
-      .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
-      .truncatedTo(ChronoUnit.SECONDS);
-    assertThat(lowerBound.isBefore(nextTimeToFire)).isTrue();
-    assertThat(upperBound.isAfter(nextTimeToFire)).isTrue();
-  }
-
-  private TriggerKey getTriggerKey(String alertId) {
-    return new TriggerKey(alertId + "-check-trigger", "statusCheck-trigger");
-  }
-
   @Test
   public void testScheduleTriggers() throws Exception {
-
     // given
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
@@ -324,6 +303,26 @@ public class AlertCheckSchedulerIT extends AbstractAlertEmailIT {
 
     assertThat(nextFireTime.truncatedTo(ChronoUnit.SECONDS))
       .isEqualTo(Instant.now().plus(intervalValue * 7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS));
+  }
+
+  private void assertThatTriggerIsInRange(Trigger trigger, int secondsUntilItShouldFireNext) {
+    // we cannot check for exact time since
+    // time is running while we check for the supposed next trigger time
+    // and then the check might be by one second off. Thus we check if the
+    // the next trigger is within +/- 1 second bound.
+    Instant nextTimeToFire = getNextFireTime(trigger);
+    Instant lowerBound = Instant.now()
+      .plus(secondsUntilItShouldFireNext - 1, ChronoUnit.SECONDS)
+      .truncatedTo(ChronoUnit.SECONDS);
+    Instant upperBound = Instant.now()
+      .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
+      .truncatedTo(ChronoUnit.SECONDS);
+    assertThat(lowerBound.isBefore(nextTimeToFire)).isTrue();
+    assertThat(upperBound.isAfter(nextTimeToFire)).isTrue();
+  }
+
+  private TriggerKey getTriggerKey(String alertId) {
+    return new TriggerKey(alertId + "-check-trigger", "statusCheck-trigger");
   }
 
   private Instant getNextFireTime(Trigger cronTrigger) {

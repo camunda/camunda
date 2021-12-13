@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.test.it.extension;
 
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
@@ -17,21 +16,20 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.test.ClientRule;
-import io.camunda.zeebe.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.containers.ZeebeContainer;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.importing.ZeebeConstants;
-import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -45,46 +43,54 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
-  private static final String OPTIMIZE_EXPORTER_ID = "optimize";
-  private static final String EXPORTER_INDEX_CONFIG = "index";
-  private static final String EXPORTER_RECORD_PREFIX = "prefix";
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
+  private static final String ZEEBE_VERSION = IntegrationTestConfigurationUtil.getZeebeVersion();
 
-  private final EmbeddedBrokerRule embeddedBrokerRule;
-  private final ClientRule clientRule;
+  private ZeebeContainer zeebeContainer;
+  private ZeebeClient zeebeClient;
 
   @Getter
   private String zeebeRecordPrefix;
 
   public ZeebeExtension() {
-    this.embeddedBrokerRule = new EmbeddedBrokerRule(ZEEBE_CONFIG_PATH);
-    this.clientRule =
-      new ClientRule(
-        () -> {
-          final Properties properties = new Properties();
-          properties.put(ClientProperties.GATEWAY_ADDRESS, toHostAndPortString(embeddedBrokerRule.getGatewayAddress()));
-          properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
-          properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, "15000");
-          return properties;
-        });
+    Testcontainers.exposeHostPorts(9200);
+    this.zeebeContainer = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + ZEEBE_VERSION))
+      .withCopyFileToContainer(
+        MountableFile.forClasspathResource(ZEEBE_CONFIG_PATH),
+        "/usr/local/zeebe/config/application.yml"
+      );
   }
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     zeebeRecordPrefix = ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX + "-" + IdGenerator.getNextId();
     setZeebeRecordPrefixForTest();
-    embeddedBrokerRule.before();
-    clientRule.createClient();
+    zeebeContainer.start();
+    createClient();
   }
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
-    embeddedBrokerRule.after();
-    clientRule.destroyClient();
+    zeebeContainer.stop();
+    destroyClient();
+  }
+
+  public void createClient() {
+    zeebeClient =
+      ZeebeClient.newClientBuilder()
+        .defaultRequestTimeout(Duration.ofMillis(15000))
+        .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+        .usePlaintext()
+        .build();
+  }
+
+  public void destroyClient() {
+    zeebeClient.close();
+    zeebeClient = null;
   }
 
   public Process deployProcess(BpmnModelInstance bpmnModelInstance) {
-    DeployProcessCommandStep1 deployProcessCommandStep1 = getZeebeClient().newDeployCommand();
+    DeployProcessCommandStep1 deployProcessCommandStep1 = zeebeClient.newDeployCommand();
     deployProcessCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
     final DeploymentEvent deploymentEvent =
       ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
@@ -95,7 +101,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public long startProcessInstanceWithVariables(String bpmnProcessId, Map<String, Object> variables) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 =
-      getZeebeClient()
+      zeebeClient
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
@@ -104,7 +110,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void addVariablesToScope(Long variableScopeKey, Map<String, Object> variables, boolean local) {
-    getZeebeClient()
+    zeebeClient
       .newSetVariablesCommand(variableScopeKey)
       .variables(variables)
       .local(local)
@@ -114,12 +120,12 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public ProcessInstanceEvent startProcessInstanceForProcess(String processId) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 startInstanceCommand =
-      getZeebeClient().newCreateInstanceCommand().bpmnProcessId(processId).latestVersion();
+      zeebeClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion();
     return startInstanceCommand.send().join();
   }
 
   public void cancelProcessInstance(long processInstanceKey) {
-    getZeebeClient().newCancelInstanceCommand(processInstanceKey).send().join();
+    zeebeClient.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   @SneakyThrows
@@ -129,7 +135,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   @SneakyThrows
   public void completeTaskForInstanceWithJobType(String jobType, Map<String, Object> variables) {
-    handleJob(jobType, (zeebeClient, job) -> {
+    handleSingleJob(jobType, (zeebeClient, job) -> {
       CompleteJobCommandStep1 completeJobCommandStep1 = zeebeClient.newCompleteCommand(job.getKey());
       Optional.ofNullable(variables).ifPresent(completeJobCommandStep1::variables);
       completeJobCommandStep1.send().join();
@@ -137,7 +143,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void throwErrorIncident(String jobType) {
-    handleJob(jobType, (zeebeClient, job) -> {
+    handleSingleJob(jobType, (zeebeClient, job) -> {
       zeebeClient.newThrowErrorCommand(job.getKey())
         .errorCode("1")
         .errorMessage("someErrorMessage")
@@ -146,7 +152,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void failTask(String jobType) {
-    handleJob(jobType, (zeebeClient, job) -> {
+    handleSingleJob(jobType, (zeebeClient, job) -> {
       zeebeClient.newFailCommand(job.getKey())
         .retries(0)
         .errorMessage("someTaskFailMessage")
@@ -156,20 +162,23 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   }
 
   public void resolveIncident(Long jobKey, Long incidentKey) {
-    getZeebeClient().newResolveIncidentCommand(incidentKey).send().join();
+    zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  public ControlledActorClock getZeebeClock() {
-    return embeddedBrokerRule.getClock();
-  }
-
-  private void handleJob(String jobType, JobHandler jobHandler) {
+  private void handleSingleJob(String jobType, JobHandler jobHandler) {
     AtomicBoolean jobCompleted = new AtomicBoolean(false);
-    JobWorker jobWorker = getZeebeClient().newWorker()
+    JobWorker jobWorker = zeebeClient.newWorker()
       .jobType(jobType)
       .handler((zeebeClient, type) -> {
-        jobHandler.handle(zeebeClient, type);
-        jobCompleted.set(true);
+        if (jobCompleted.compareAndSet(false, true)) {
+          jobHandler.handle(zeebeClient, type);
+        } else {
+          zeebeClient.newFailCommand(type.getKey())
+            .retries(type.getRetries())
+            .errorMessage("skip job handling, already handled in this way")
+            .send()
+            .join();
+        }
       })
       .timeout(Duration.ofSeconds(2))
       .open();
@@ -179,22 +188,11 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     jobWorker.close();
   }
 
-  private ZeebeClient getZeebeClient() {
-    return clientRule.getClient();
-  }
-
   private void setZeebeRecordPrefixForTest() {
-    final ExporterCfg exporterConfig = embeddedBrokerRule.getBrokerCfg().getExporters().get(OPTIMIZE_EXPORTER_ID);
-    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final Map<String, String> indexArgs =
-      (Map<String, String>) exporterConfig.getArgs()
-        .get(EXPORTER_INDEX_CONFIG);
-    indexArgs.put(EXPORTER_RECORD_PREFIX, zeebeRecordPrefix);
-  }
-
-  private String toHostAndPortString(InetSocketAddress inetSocketAddress) {
-    final String host = inetSocketAddress.getHostString();
-    final int port = inetSocketAddress.getPort();
-    return host + ":" + port;
+    this.zeebeContainer = zeebeContainer.withEnv(
+      "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX",
+      zeebeRecordPrefix
+    );
   }
 
 }

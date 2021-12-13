@@ -27,11 +27,11 @@
 
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.2.2</zeebe.version>
+    <zeebe.version>1.2.5</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
-    <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
+    <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
     <jackson.version>2.13.0</jackson.version>
     <jsonpath.version>2.6.0</jsonpath.version>
@@ -41,19 +41,19 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.8.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.14.1</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.15.0</elasticsearch.log4j.version>
     <guava.version>31.0.1-jre</guava.version>
-    <spring.version>5.3.12</spring.version>
-    <mockito.version>4.0.0</mockito.version>
+    <spring.version>5.3.13</spring.version>
+    <mockito.version>4.1.0</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
-    <junit.jupiter.version>5.8.1</junit.jupiter.version>
-    <junit.platform.version>1.8.1</junit.platform.version>
+    <junit.jupiter.version>5.8.2</junit.jupiter.version>
+    <junit.platform.version>1.8.2</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.21.0</assertj.version>
 
     <lombok.version>1.18.22</lombok.version>
-    <logback.version>1.2.6</logback.version>
+    <logback.version>1.2.7</logback.version>
     <slf4j.version>1.7.32</slf4j.version>
 
     <version.node>v14.15.4</version.node>
@@ -454,7 +454,7 @@
       <plugin>
         <groupId>com.amashchenko.maven.plugin</groupId>
         <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.16.0</version>
+        <version>1.17.0</version>
         <configuration>
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>

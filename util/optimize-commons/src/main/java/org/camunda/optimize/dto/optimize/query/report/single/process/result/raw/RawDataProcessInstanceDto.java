@@ -29,5 +29,7 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String engineName;
   protected String tenantId;
   @FieldNameConstants.Exclude
+  // Note that for more convenient display in raw data reports, each list of variable values is joined to form one
+  // comma separated string
   protected Map<String, Object> variables;
 }

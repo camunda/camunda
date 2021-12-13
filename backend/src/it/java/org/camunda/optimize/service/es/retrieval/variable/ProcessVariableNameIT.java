@@ -16,6 +16,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 
 public class ProcessVariableNameIT extends AbstractVariableIT {
 
@@ -262,7 +264,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     // then
     assertThat(variableResponse).hasSize(1);
     assertThat(variableResponse.get(0).getName()).isEqualTo("var1");
-    assertThat(variableResponse.get(0).getType()).isEqualTo(VariableType.STRING);
+    assertThat(variableResponse.get(0).getType()).isEqualTo(STRING);
   }
 
   @Test
@@ -351,9 +353,40 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     // then
     assertThat(variableResponse).hasSize(variables.size());
     for (ProcessVariableNameResponseDto responseDto : variableResponse) {
-      assertThat(variables.containsKey(responseDto.getName())).isTrue();
-      assertThat(isVariableTypeSupported(responseDto.getType())).isTrue();
+      assertThat(variables).containsKey(responseDto.getName());
+      assertThat(VariableHelper.isProcessVariableTypeSupported(responseDto.getType())).isTrue();
     }
+  }
+
+  @Test
+  public void objectVariablesAreExcluded() {
+    // given
+    final Map<String, Object> objectVar = new HashMap<>();
+    objectVar.put("name", "Pond");
+    final VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVariableDto);
+
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    final String reportId = createSingleReport(processDefinition);
+    importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<ProcessVariableNameResponseDto> variablesForDef = variablesClient.getProcessVariableNames(processDefinition);
+    List<ProcessVariableNameResponseDto> variablesForReports =
+      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+
+    // then only the flattened property variable is included in the result, not the raw Object variable
+    assertThat(variablesForDef)
+      .singleElement()
+      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+      .containsExactly("objectVar.name", STRING);
+    assertThat(variablesForReports)
+      .singleElement()
+      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+      .containsExactly("objectVar.name", STRING);
   }
 
   @Test
@@ -376,7 +409,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .hasSize(3)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
       .containsExactly(
-        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var1", STRING),
         Tuple.tuple("var2", VariableType.LONG),
         Tuple.tuple("var3", VariableType.DOUBLE)
       );
@@ -443,7 +476,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .hasSize(3)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
       .containsExactly(
-        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var1", STRING),
         Tuple.tuple("var2", VariableType.LONG),
         Tuple.tuple("var3", VariableType.DOUBLE)
       );
@@ -485,7 +518,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly(Tuple.tuple("var1", VariableType.STRING));
+      .containsExactly(Tuple.tuple("var1", STRING));
   }
 
   @Test
@@ -512,7 +545,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .hasSize(2)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var1", STRING),
         Tuple.tuple("var1", VariableType.LONG)
       );
   }
@@ -543,7 +576,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .hasSize(2)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var1", STRING),
         Tuple.tuple("var2", VariableType.LONG)
       );
   }
@@ -573,7 +606,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .hasSize(3)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var1", STRING),
         Tuple.tuple("var2", VariableType.LONG),
         Tuple.tuple("var3", VariableType.DOUBLE)
       );
@@ -603,7 +636,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     assertThat(variableResponse)
       .hasSize(1)
       .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
-      .containsExactly(Tuple.tuple("var1", VariableType.STRING));
+      .containsExactly(Tuple.tuple("var1", STRING));
   }
 
 }

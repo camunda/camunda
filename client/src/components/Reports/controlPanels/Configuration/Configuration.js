@@ -94,6 +94,7 @@ export default class Configuration extends React.Component {
           duration: 'line',
         },
         stackedBar: false,
+        logScale: false,
       }),
       true
     );

@@ -41,6 +41,7 @@ export default class VariablesTable extends React.Component {
             variableTerm: row.variableTerm,
           })}
           fileName={`${row.variableName}_Outliers.csv`}
+          totalCount={this.props.totalCount}
         >
           <Icon type="save" />
           {t('common.instanceIds')}

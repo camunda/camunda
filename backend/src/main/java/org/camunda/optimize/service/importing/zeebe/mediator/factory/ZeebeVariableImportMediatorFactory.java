@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
 import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeVariableFetcher;
 import org.camunda.optimize.service.importing.zeebe.mediator.ZeebeVariableImportMediator;
@@ -28,6 +29,7 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
 
   private final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter;
   private final ProcessDefinitionReader processDefinitionReader;
+  private final ObjectVariableService objectVariableService;
 
   public ZeebeVariableImportMediatorFactory(final BeanFactory beanFactory,
                                             final ImportIndexHandlerRegistry importIndexHandlerRegistry,
@@ -35,10 +37,12 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
                                             final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
                                             final ObjectMapper objectMapper,
                                             final OptimizeElasticsearchClient esClient,
-                                            final ProcessDefinitionReader processDefinitionReader) {
+                                            final ProcessDefinitionReader processDefinitionReader,
+                                            final ObjectVariableService objectVariableService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.processDefinitionReader = processDefinitionReader;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -58,7 +62,8 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
           zeebeProcessInstanceWriter,
           zeebeDataSourceDto.getPartitionId(),
           new ObjectMapper(),
-          processDefinitionReader
+          processDefinitionReader,
+          objectVariableService
         ),
         configurationService,
         new BackoffCalculator(configurationService)

@@ -130,7 +130,7 @@ String camBpmContainerSpec(String camBpmVersion) {
 void integrationTestSteps(String camBpmVersion) {
   optimizeCloneGitRepo(params.BRANCH)
   container('maven') {
-    runMaven("verify -Dskip.docker -Pit,engine-${camBpmVersion} -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dit.test.excludedGroups=Zeebe-test -Dskip.docker -Pit,engine-${camBpmVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 

@@ -8,6 +8,9 @@ package org.camunda.optimize.dto.optimize.query.report;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
+import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 
 import java.time.ZoneId;
 import java.util.Collections;
@@ -38,5 +41,22 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     return commandEvaluationResults.get(0).getResultAsCsv(limit, offset, timezone);
+  }
+
+  @Override
+  public PaginatedDataExportDto getResult() {
+    final CommandEvaluationResult<?> commandResult = getFirstCommandResult();
+    if(commandResult instanceof RawDataCommandResult) {
+      PaginatedDataExportDto result = new PaginatedDataExportDto();
+      result.setData(commandResult.getResult());
+      result.setTotalNumberOfRecords(commandResult.getInstanceCount());
+      if (commandResult.getPagination() instanceof PaginationScrollableDto){
+        result.setSearchRequestId(((PaginationScrollableDto)commandResult.getPagination()).getScrollId());
+      } else {
+        result.setSearchRequestId(null);
+      }
+      return result;
+    }
+    return null;
   }
 }

@@ -25,6 +25,7 @@ import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheC
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
+import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 
@@ -39,6 +40,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
@@ -47,6 +49,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.JSON_EXPORT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -198,6 +201,10 @@ public class ConfigurationService {
 
   private GlobalCacheConfiguration caches;
 
+  private JsonExportConfiguration jsonExportConfiguration;
+
+  private AnalyticsConfiguration analytics;
+
   /**
    * This method is needed so jackson can deserialize/serialize
    * the service configuration.
@@ -266,7 +273,7 @@ public class ConfigurationService {
     if (elasticsearchConnectionNodes == null) {
       // @formatter:off
       TypeRef<List<ElasticsearchConnectionNodeConfiguration>> typeRef =
-        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {};
+        new TypeRef<>() {};
       // @formatter:on
       elasticsearchConnectionNodes = configJsonContext.read(
         ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef
@@ -899,7 +906,7 @@ public class ConfigurationService {
 
   public String getAlertEmailCompanyBranding() {
     if (alertEmailCompanyBranding == null) {
-        alertEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
+      alertEmailCompanyBranding = configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
     }
     return alertEmailCompanyBranding;
   }
@@ -1058,6 +1065,16 @@ public class ConfigurationService {
     return eventBasedProcessConfiguration;
   }
 
+  public JsonExportConfiguration getJsonExportConfiguration() {
+    if (jsonExportConfiguration == null) {
+      jsonExportConfiguration = configJsonContext.read(
+        JSON_EXPORT_CONFIGURATION,
+        JsonExportConfiguration.class
+      );
+    }
+    return jsonExportConfiguration;
+  }
+
   @JsonIgnore
   public EventImportConfiguration getEventImportConfiguration() {
     return getEventBasedProcessConfiguration().getEventImport();
@@ -1113,6 +1130,13 @@ public class ConfigurationService {
       caches = configJsonContext.read(CACHES_CONFIGURATION, GlobalCacheConfiguration.class);
     }
     return caches;
+  }
+
+  public AnalyticsConfiguration getAnalytics() {
+    if (analytics == null) {
+      analytics = configJsonContext.read(ANALYTICS_CONFIGURATION, AnalyticsConfiguration.class);
+    }
+    return analytics;
   }
 
 }

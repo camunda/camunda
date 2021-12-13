@@ -14,10 +14,8 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
@@ -116,13 +114,15 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
 
+
   @Test
+  @Disabled("OPT-5719")
   public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
     // given
     final String firstProcessName = "firstProcess";
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-
-    zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
+    
+    // zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
     final String secondProcessName = "secondProcess";
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilNumberOfDefinitionsExported(2);

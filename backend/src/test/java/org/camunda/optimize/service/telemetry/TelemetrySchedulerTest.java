@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService;
+import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetrySendingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,11 +34,9 @@ import static org.mockito.Mockito.when;
 public class TelemetrySchedulerTest {
 
   @Mock
-  private TelemetrySendingService telemetrySendingService;
-  @Mock
-  private TelemetryDataService telemetryDataService;
-  @Mock
   private SettingsService settingsService;
+  @Mock
+  private TelemetryReportingService telemetryService;
 
   private ConfigurationService configurationService;
 
@@ -70,26 +70,21 @@ public class TelemetrySchedulerTest {
   }
 
   @Test
-  public void telemetrySendingServiceIsCalled_whenEnabled() {
+  public void telemetryServiceIsCalled_whenEnabled() {
     // given
     final TelemetryScheduler underTest = createTelemetrySchedulerToTest();
     when(settingsService.getSettings()).thenReturn(getSettingsWithTelemetryEnabled());
-    when(telemetryDataService.getTelemetryData()).thenReturn(getTestTelemetryData());
-    doNothing().when(telemetrySendingService).sendTelemetryData(any(), any());
 
     // when
     underTest.run();
 
     // then
-    verify(telemetrySendingService, times(1))
-      .sendTelemetryData(
-        getTestTelemetryData(),
-        getConfiguredTelemetryEndpoint()
-      );
+    verify(telemetryService, times(1))
+      .sendTelemetryData();
   }
 
   @Test
-  public void telemetrySendingServiceIsNotCalled_whenDisabled() {
+  public void telemetryServiceIsNotCalled_whenDisabled() {
     // given
     final TelemetryScheduler underTest = createTelemetrySchedulerToTest();
     when(settingsService.getSettings()).thenReturn(getSettingsWithTelemetryDisabled());
@@ -98,16 +93,11 @@ public class TelemetrySchedulerTest {
     underTest.run();
 
     // then
-    verify(telemetrySendingService, never()).sendTelemetryData(any(), any());
+    verify(telemetryService, never()).sendTelemetryData();
   }
 
   private TelemetryScheduler createTelemetrySchedulerToTest() {
-    return new TelemetryScheduler(
-      telemetrySendingService,
-      telemetryDataService,
-      configurationService,
-      settingsService
-    );
+    return new TelemetryScheduler(configurationService, settingsService, telemetryService);
   }
 
   private SettingsResponseDto getSettingsWithTelemetryEnabled() {

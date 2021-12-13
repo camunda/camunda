@@ -325,8 +325,13 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     engineClient.performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, false);
   }
 
-  public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
+  public void deleteVariableInstanceForProcessInstance(final String variableName, final String processInstanceId) {
     engineClient.deleteVariableInstanceForProcessInstance(variableName, processInstanceId);
+  }
+
+  public void updateVariableInstanceForProcessInstance(final String processInstanceId, final String variableName,
+                                                       final String varValue) {
+    engineClient.updateVariableInstanceForProcessInstance(processInstanceId, variableName, varValue);
   }
 
   public String deployProcessAndGetId(BpmnModelInstance modelInstance) {

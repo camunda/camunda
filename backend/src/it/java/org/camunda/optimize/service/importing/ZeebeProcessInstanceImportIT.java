@@ -24,12 +24,12 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -240,6 +240,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   }
 
   @Test
+  @Disabled("OPT-5719")
   public void importZeebeProcessInstanceDataFromMultipleDays_allDataSavedToOptimizeProcessInstance() {
     // given
     final String processName = "someProcess";
@@ -248,7 +249,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
+    //zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
     waitUntilMinimumProcessInstanceEventsExportedCount(5);
     importAllZeebeEntitiesFromScratch();
@@ -348,7 +349,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     // The first instance generates 6 events, so the 7th indicates that both processes have been exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    waitUntilMinimumProcessInstanceEventsExportedCount(12);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -372,7 +373,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(1);
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
-    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    waitUntilMinimumProcessInstanceEventsExportedCount(18);
     importAllZeebeEntitiesFromScratch();
 
     // then

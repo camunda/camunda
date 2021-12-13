@@ -9,7 +9,7 @@ import {getOptimizeVersion} from 'config';
 import {loadDateTranslation} from 'dates';
 
 let translationObject = {};
-export async function init() {
+export async function initTranslation() {
   const localeCode = getLanguage();
   await loadDateTranslation(localeCode);
   const response = await get(`api/localization`, {version: await getOptimizeVersion(), localeCode});

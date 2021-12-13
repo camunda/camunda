@@ -44,7 +44,9 @@ export const getOptimizeVersion = createAccessorFunction('optimizeVersion');
 export const getWebappEndpoints = createAccessorFunction('webappsEndpoints');
 export const getHeader = createAccessorFunction('header');
 export const getWebhooks = createAccessorFunction('webhooks');
+export const getMixpanelConfig = createAccessorFunction('mixpanel');
 export const isOptimizeCloudEnvironment = createAccessorFunction('optimizeCloudEnvironment');
 export const isLogoutHidden = createAccessorFunction('logoutHidden');
+export const getExportCsvLimit = createAccessorFunction('exportCsvLimit');
 
 export {default as newReport} from './newReport.json';

@@ -28,7 +28,7 @@ pipelineJob('event-import-performance') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 20 * * *')
+          spec('H 20 * * 1-5')
         }
       }
     }

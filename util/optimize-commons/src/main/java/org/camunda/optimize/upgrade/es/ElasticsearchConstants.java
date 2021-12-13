@@ -20,12 +20,16 @@ public class ElasticsearchConstants {
 
   public static final int NUMBER_OF_RETRIES_ON_CONFLICT = 5;
 
+  public static final int IGNORE_ABOVE_CHAR_LIMIT = 7000;
+
   public static final String OPTIMIZE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
   public static final String NUMBER_OF_REPLICAS_SETTING = "number_of_replicas";
   public static final String NUMBER_OF_SHARDS_SETTING = "number_of_shards";
   public static final String REFRESH_INTERVAL_SETTING = "refresh_interval";
   public static final String MAPPING_NESTED_OBJECTS_LIMIT = "mapping.nested_objects.limit";
+  public static final String IGNORE_ABOVE_SETTING = "ignore_above";
+  public static final String IGNORE_MALFORMED = "ignore_malformed";
   public static final String ANALYSIS_SETTING = "analysis";
   public static final String SORT_SETTING = "sort";
   public static final String SORT_FIELD_SETTING = "field";
@@ -42,6 +46,7 @@ public class ElasticsearchConstants {
 
   public static final String TYPE_KEYWORD = "keyword";
   public static final String TYPE_LONG = "long";
+  public static final String TYPE_DOUBLE = "double";
   public static final String TYPE_DATE = "date";
   public static final String TYPE_BOOLEAN = "boolean";
   public static final String TYPE_OBJECT = "object";

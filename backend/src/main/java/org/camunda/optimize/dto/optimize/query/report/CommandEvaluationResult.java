@@ -68,6 +68,10 @@ public abstract class CommandEvaluationResult<T> {
 
   public abstract ResultType getType();
 
+  public T getResult(){
+    return getFirstMeasureData(); //This will be elaborated once we support the export of other types of reports
+  }
+
   protected String getGroupByIdentifier(final SingleReportDataDto reportData) {
     if (reportData instanceof ProcessReportDataDto) {
       return ((ProcessReportDataDto) reportData).getGroupBy().toString();

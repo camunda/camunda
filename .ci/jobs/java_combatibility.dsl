@@ -25,7 +25,7 @@ pipelineJob('java_compatibility') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 0 * * *')
+          spec('H H(3-5) * * 1-5')
         }
       }
     }

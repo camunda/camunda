@@ -12,7 +12,7 @@ import {t} from 'translation';
 
 import {
   DateFilter,
-  VariableFilter,
+  MultipleVariableFilter,
   AssigneeFilter,
   NodeFilter,
   DurationFilter,
@@ -60,8 +60,8 @@ export default class Filter extends React.Component {
       case 'flowNodeStartDate':
       case 'flowNodeEndDate':
         return NodeDateFilter;
-      case 'variable':
-        return VariableFilter;
+      case 'multipleVariable':
+        return MultipleVariableFilter;
       case 'processInstanceDuration':
         return DurationFilter;
       case 'flowNodeDuration':
@@ -83,7 +83,7 @@ export default class Filter extends React.Component {
   };
 
   getFilterConfig = (type) => {
-    if (type === 'variable') {
+    if (type === 'multipleVariable') {
       return {
         getVariables: async (definition) =>
           await loadVariables([

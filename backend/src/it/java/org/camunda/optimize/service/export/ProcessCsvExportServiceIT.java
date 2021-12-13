@@ -16,13 +16,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -67,7 +68,44 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   }
 
   @Test
-  @Disabled("TODO reenable after daylight savings stop having an impact")
+  public void rawDataReportWithVariableWithMultipleValues() {
+    // given
+    final VariableDto listVar = variablesClient.createListJsonObjectVariableDto(List.of("test1", "test2"));
+    HashMap<String, Object> variables = new HashMap<>();
+    variables.put("1", listVar);
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), shiftedStartDate);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0L);
+    importAllEngineEntitiesFromScratch();
+    final ProcessReportDataDto report = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+
+    final String reportId = createAndStoreDefaultReportDefinition(report);
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    final String actualContent = getResponseContentAsString(response);
+    final String stringExpected = getExpectedContentAsString(
+      processInstance,
+      "/csv/process/single/raw_process_grouped_by_none_multi_value_variable.csv"
+    );
+
+    assertThat(actualContent).isEqualTo(stringExpected);
+  }
+
+
+  @Test
   public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -135,7 +173,6 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
 
   @MethodSource("getSortingParamsAndExpectedResults")
   @ParameterizedTest
-  @Disabled("TODO reenable after daylight savings stop having an impact")
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -144,10 +181,10 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     OffsetDateTime oneWeekAgo = now.minusWeeks(1L);
     OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
 
-    long completedInstanceOneWeekDuration = oneWeekAgo.toInstant().toEpochMilli() - twoWeeksAgo.toInstant()
-      .toEpochMilli();
-    long completedInstanceOneDayDuration = twoDaysAgo.toInstant().toEpochMilli() - threeDaysAgo.toInstant()
-      .toEpochMilli();
+    long completedInstanceOneWeekDuration = oneWeekAgo.toInstant().toEpochMilli() -
+      twoWeeksAgo.toInstant().toEpochMilli();
+    long completedInstanceOneDayDuration = twoDaysAgo.toInstant().toEpochMilli() -
+      threeDaysAgo.toInstant().toEpochMilli();
     long runningInstanceTwoDaysDuration = now.toInstant().toEpochMilli() - twoDaysAgo.toInstant().toEpochMilli();
     long runningInstanceTwoWeeksDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
 

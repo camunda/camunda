@@ -25,7 +25,7 @@ pipelineJob('sonarqube_analysis') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 0 * * *')
+          spec('H 0 * * 1-5')
         }
       }
     }

@@ -60,7 +60,25 @@
   },
   "templates": {
     "noProcessHint": "Leeres Dashboard erstellen",
-    "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen"
+    "noXmlHint": "Prozessdefinition auswählen um Diagram anzuzeigen",
+    "blankSlate": {
+      "selectProcess": "Wählen Sie bis zu 10 Prozessdefinitionen aus",
+      "selectTemplate": "Wählen Sie eine Vorlage aus",
+      "review": "Überprüfen Sie Ihr Dashboardentwurf und entfernen Sie unerwünschte Berichte",
+      "refine": "Verfeinern Sie Ihr Dashboard und Ihre Berichte"
+    },
+    "disabledMessage": {
+      "noProcess": "Wählen Sie eine Prozessdefinition aus, um eine Vorlage auswählen zu können.",
+      "multipleProcess": "Diese Vorlage eignet sich am besten für mehrere Prozesse.",
+      "singleProcess": "Diese Vorlage eignet sich am besten für einzelne Prozesse.",
+      "editReport": "Um diesen Wert zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
+    },
+    "templateGroups": {
+      "blankGroup": "Leere Vorlage",
+      "templatesGroup": "Vorlagen",
+      "singleProcessGroup": "Einzel-Prozess-Vorlagen",
+      "multiProcessGroup": "Multi-Prozess-Vorlagen"
+    }
   },
   "home": {
     "createBtn": {
@@ -424,6 +442,7 @@
         "engineName": "Engine Name",
         "tenantId": "Mandanten Id",
         "variable": "Var",
+        "multipleVariable": "Var",
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar"
       },
@@ -482,8 +501,10 @@
         },
         "showAbsolute": "Absolutwert anzeigen"
       },
-      "axisLabels": {
-        "legend": "Achsen-Beschriftungen",
+      "axisSettings": {
+        "legend": "Achseneinstellungen",
+        "logScale": "Logarithmische Skala (Basis 10)",
+        "label": "Achsenbeschriftung",
         "xAxis": "X-Achse Beschriftung",
         "yAxis": "Y-Achse Beschriftung"
       },
@@ -583,16 +604,16 @@
       "bottleneckQueue": "Wie viele Aufgaben warten an meinem Engpass? (Zu tun: Bearbeiten Sie den Filter, um den Prozessknoten AM Engpass auszuwählen)",
       "workerProductivity": "Wie produktiv sind meine Arbeiter?",
       "workDuration": "Wie lange dauert jede Benutzeraufgabe?",
-      "completedProcesses": "Abgeschlossene Prozesse (ToDo: Weitere Prozesse hinzufügen)",
-      "activeIncidents": "Aktive Zwischenfälle (ToDo: Weitere Prozesse hinzufügen)",
-      "runningProcesses": "Welche Prozesse laufen? (ToDo: Weitere Prozesse hinzufügen und nach Prozess gruppieren)",
-      "runningTasks": "Welche Benutzeraufgaben sind in Bearbeitung? (ToDo: Weitere Prozesse hinzufügen)",
-      "processTotal": "Wie viel nutzen wir Camunda? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
-      "laborSavings": "Sparen wir die Gesamtarbeitskosten? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
-      "processAcceleration": "Werden meine Prozesse schneller? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
-      "taskAutomation": "Wie schnell automatisieren wir Benutzeraufgaben? (ToDo: Weitere Prozesse hinzufügen und nach Startdatum UND Prozess gruppieren)",
-      "incidentHandling": "Lösen wir Vorfälle schnell genug? (Zu tun: Weitere Prozesse hinzufügen)",
-      "taskLifecycle": "Wie lange warten Aufgaben auf eine Zuweisung? (ToDo: Weitere Prozesse hinzufügen)"
+      "completedProcesses": "Abgeschlossene Prozesse",
+      "activeIncidents": "Aktive Zwischenfälle",
+      "runningProcesses": "Welche Prozesse laufen?",
+      "runningTasks": "Welche Benutzeraufgaben sind in Bearbeitung?",
+      "processTotal": "Wie viel nutzen wir Camunda?",
+      "laborSavings": "Sparen wir die Gesamtarbeitskosten?",
+      "processAcceleration": "Werden meine Prozesse schneller?",
+      "taskAutomation": "Wie schnell automatisieren wir Benutzeraufgaben?",
+      "incidentHandling": "Lösen wir Vorfälle schnell genug?",
+      "taskLifecycle": "Wie lange warten Aufgaben auf eine Zuweisung?"
     },
     "addButton": {
       "addReport": "Einen Report hinzufügen",
@@ -796,6 +817,7 @@
     "documentation": "Dokumentation",
     "open": "Öffnen",
     "for": "für",
+    "download": "Herunterladen",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -885,7 +907,10 @@
         "createBtn": "Sammlung erstellen",
         "editBtn": "Sammlung bearbeiten",
         "inputLabel": "Name der Sammlung",
-        "defaultName": "Neue Sammlung"
+        "defaultName": "Neue Sammlung",
+        "addDataSources": "Datenquellen hinzufügen",
+        "info": "Mit einer Sammlung können Sie den Zugriff auf Daten einschränken, Benutzer hinzufügen und Alarme auf Zahlenberichten erstellen.",
+        "allTenants": "Alle Mandanten"
       },
       "addUserModal": {
         "searchPlaceholder": "Suche nach Name, E-Mail oder ID ..."
@@ -964,6 +989,7 @@
         "instanceDuration": "Dauer der Prozessinstanz",
         "flowNodeDuration": "Prozessknoten Dauer",
         "variable": "Variable",
+        "multipleVariable": "Variable",
         "flowNode": "Prozessknoten",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
@@ -1046,9 +1072,11 @@
       },
       "variableModal": {
         "inputLabel": "Variablenname",
+        "info": "Nur Instanzen anzeigen, bei denen...",
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
+        "or": "oder",
         "bool": {
           "true": "ist wahr",
           "false": "ist falsch",
@@ -1194,6 +1222,10 @@
         "delete": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?",
         "remove": "Sind Sie sicher, dass Sie die ausgewählten Elemente entfernen möchten?"
       }
+    },
+    "csvLimit": {
+      "Warning": "Warnung: CSV wird nicht alle angeforderten Daten enthalten",
+      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Wenden Sie sich an Ihren Administrator, um dieses Systemlimit zu erhöhen oder filtern Sie Ihre Daten, um dieses Problem zu beheben."
     },
     "unit": {
       "automatic": "Automatisch",

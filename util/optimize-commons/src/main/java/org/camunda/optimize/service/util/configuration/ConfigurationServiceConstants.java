@@ -99,6 +99,8 @@ public class ConfigurationServiceConstants {
   public static final String EXPORT_CSV_LIMIT = "$.export.csv.limit";
   public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 
+  public static final String JSON_EXPORT_CONFIGURATION = "$.export.json";
+
   public static final String HISTORY_CLEANUP = "$.historyCleanup";
   public static final String HISTORY_CLEANUP_PROCESS_DATA = HISTORY_CLEANUP + ".processDataCleanup";
 
@@ -118,6 +120,8 @@ public class ConfigurationServiceConstants {
   public static final String EXTERNAL_VARIABLE_CONFIGURATION = "$.externalVariable";
 
   public static final String CACHES_CONFIGURATION = "$.caches";
+
+  public static final String ANALYTICS_CONFIGURATION = "$.analytics";
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";

@@ -5,9 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.jetty.IngestionQoSFilter;
@@ -16,11 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,7 +50,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   public void ingestExternalVariables() {
     // given
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
 
     // when
@@ -56,11 +61,36 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     assertExternalVariablesArePersisted(variables);
   }
 
+  @SneakyThrows
+  @Test
+  public void ingestExternalObjectVariable() {
+    // given
+    final Map<String, Object> objectVariable = new HashMap<>();
+    objectVariable.put("property1", 1);
+    objectVariable.put("property2", "2");
+    ExternalProcessVariableRequestDto objectVariableDto = new ExternalProcessVariableRequestDto().setId("id1")
+      .setProcessInstanceId("instanceId")
+      .setProcessDefinitionKey("defKey")
+      .setName("objectVar")
+      .setType(VariableType.OBJECT)
+      .setValue(new ObjectMapper().writeValueAsString(objectVariable))
+      .setSerializationDataFormat(MediaType.APPLICATION_JSON);
+    final List<ExternalProcessVariableRequestDto> variablesToIngest = Collections.singletonList(objectVariableDto);
+
+    // when
+    final Response response = ingestionClient.ingestVariablesAndReturnResponse(variablesToIngest);
+
+    // then
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertExternalVariablesArePersisted(variablesToIngest);
+  }
+
   @Test
   public void ingestExternalVariables_ingestSameBatchTwice() {
     // given
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
     final OffsetDateTime ingestionTimestamp1 = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime ingestionTimestamp2 = LocalDateUtil.getCurrentDateTime().minusDays(1);
@@ -85,10 +115,10 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   public void ingestExternalVariables_ingestTwoDifferentBatches() {
     // given
     final List<ExternalProcessVariableRequestDto> variables1 = IntStream.range(0, 10)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
     final List<ExternalProcessVariableRequestDto> variables2 = IntStream.range(20, 30)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
     final OffsetDateTime ingestionTimestamp1 = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime ingestionTimestamp2 = LocalDateUtil.getCurrentDateTime().minusDays(1);
@@ -122,7 +152,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   @Test
   public void ingestExternalVariable_customAccessToken() {
     // given
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     final String accessToken = "aToken";
     embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
@@ -139,7 +169,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   @Test
   public void ingestExternalVariable_accessTokenAsQueryParam() {
     // given
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     final String accessToken = "aToken";
     embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
@@ -158,7 +188,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   @Test
   public void ingestExternalVariable_accessTokenUsingBearerScheme() {
     // given
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     final String accessToken = "aToken";
     embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setAccessToken(accessToken);
@@ -178,7 +208,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   @Test
   public void ingestExternalVariable_incorrectToken() {
     // given
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     // when
     final Response response =
@@ -230,8 +260,8 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   @Test
   public void ingestExternalVariable_invalidAndValidVariables() {
     // given
-    final ExternalProcessVariableRequestDto validVariable = ingestionClient.createExternalVariable();
-    final ExternalProcessVariableRequestDto invalidVariable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto validVariable = ingestionClient.createPrimitiveExternalVariable();
+    final ExternalProcessVariableRequestDto invalidVariable = ingestionClient.createPrimitiveExternalVariable();
     invalidVariable.setId(null);
 
     // when
@@ -257,7 +287,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   @Test
   public void ingestExternalVariable_nullValueAllowed() {
     // given
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
     variable.setValue(null);
 
     // when
@@ -273,7 +303,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
   public void ingestExternalVariable_maxRequestsConfiguredReached() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setMaxRequests(0);
-    final ExternalProcessVariableRequestDto variable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto variable = ingestionClient.createPrimitiveExternalVariable();
 
     // when
     final Response response = ingestionClient.ingestVariablesAndReturnResponse(Collections.singletonList(variable));
@@ -289,7 +319,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().setMaxBatchRequestBytes(1L);
     final List<ExternalProcessVariableRequestDto> variables = IntStream.range(0, 10)
-      .mapToObj(i -> ingestionClient.createExternalVariable().setId("id" + i))
+      .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .collect(toList());
 
     // when
@@ -321,6 +351,7 @@ public class ExternalVariableIngestionRestIT extends AbstractIT {
           .setIngestionTimestamp(ingestionTimestamp)
           .setProcessInstanceId(variable.getProcessInstanceId())
           .setProcessDefinitionKey(variable.getProcessDefinitionKey())
+          .setSerializationDataFormat(variable.getSerializationDataFormat())
         )
         .collect(Collectors.toList());
       expectedVariables.addAll(varsPerTimestamp);

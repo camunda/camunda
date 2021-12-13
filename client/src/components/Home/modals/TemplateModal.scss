@@ -31,15 +31,61 @@
     }
 
     .formArea {
-      margin-bottom: 40px;
+      min-height: 100px;
+      margin-bottom: 15px;
     }
 
     .diagramArea {
       flex: 1 0 auto;
       display: flex;
-
+      flex-direction: column;
+      flex-basis: 0;
       border-radius: 3px;
       border: solid 1px var(--silver-darken-87);
+      overflow-y: auto;
+      position: relative;
+
+      .diagramContainer {
+        display: flex;
+        flex-grow: 0;
+        flex-shrink: 0;
+        flex-direction: column;
+        padding: 15px;
+        min-height: 0;
+
+        &:not(:last-child) {
+          border-bottom: 1px solid var(--silver-darken-87);
+        }
+
+        .title {
+          font-size: 14px;
+          font-weight: 600;
+          padding-bottom: 5px;
+        }
+
+        .BPMNDiagram {
+          .ZoomControls {
+            display: none;
+          }
+
+          &:hover .ZoomControls {
+            display: block;
+          }
+        }
+      }
+
+      ol {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        align-self: center;
+        color: var(--grey-lighten-56);
+        font-size: 14px;
+
+        li {
+          margin: 5px 0;
+        }
+      }
     }
   }
 
@@ -54,6 +100,12 @@
       padding: 0;
       margin-top: 0;
 
+      .groupTitle {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 15px;
+      }
+
       .Button {
         display: block;
         width: 100%;
@@ -61,6 +113,10 @@
         margin-bottom: 20px;
         background-color: var(--white);
         text-align: left;
+
+        &:disabled {
+          opacity: 0.3;
+        }
 
         &.active {
           padding: 0;

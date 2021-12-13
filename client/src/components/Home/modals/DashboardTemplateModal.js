@@ -18,203 +18,215 @@ import portfolioPerformance from './images/portfolioPerformance.png';
 
 export default function DashboardTemplateModal({onClose}) {
   const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [isOptimizeCloudLoaded, setisOptimizeCloudLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
       setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setisOptimizeCloudLoaded(true);
     })();
   }, []);
 
-  let templates = [
-    {name: 'blank'},
+  let templateGroups = [
     {
-      name: 'processPerformance',
-      hasSubtitle: true,
-      img: processPerformance,
-      config: [
+      name: 'blankGroup',
+      templates: [{name: 'blank'}],
+    },
+    {
+      name: 'singleProcessGroup',
+      templates: [
         {
-          position: {x: 0, y: 0},
-          dimensions: {height: 2, width: 4},
-          report: {
-            name: t('dashboard.templates.completedInstances'),
-            data: {
-              view: {entity: 'processInstance', properties: ['frequency']},
-              groupBy: {type: 'none', value: null},
-              visualization: 'number',
-              filter: [
-                {
-                  appliedTo: ['all'],
-                  filterLevel: 'instance',
-                  type: 'completedInstancesOnly',
+          name: 'processPerformance',
+          hasSubtitle: true,
+          img: processPerformance,
+          disabled: (definitions) => definitions.length > 1,
+          config: [
+            {
+              position: {x: 0, y: 0},
+              dimensions: {height: 2, width: 4},
+              report: {
+                name: t('dashboard.templates.completedInstances'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      filterLevel: 'instance',
+                      type: 'completedInstancesOnly',
+                    },
+                  ],
                 },
-              ],
-            },
-          },
-        },
-        {
-          position: {x: 4, y: 0},
-          dimensions: {height: 2, width: 4},
-          report: {
-            name: t('dashboard.templates.runningInstances'),
-            data: {
-              view: {entity: 'processInstance', properties: ['frequency']},
-              groupBy: {type: 'none', value: null},
-              visualization: 'number',
-              filter: [
-                {
-                  appliedTo: ['all'],
-                  filterLevel: 'instance',
-                  type: 'runningInstancesOnly',
-                },
-              ],
-            },
-          },
-        },
-        {
-          position: {x: 8, y: 0},
-          dimensions: {height: 2, width: 6},
-          report: {
-            name: t('dashboard.templates.aggregateDuration'),
-            data: {
-              view: {entity: 'processInstance', properties: ['duration']},
-              groupBy: {type: 'none', value: null},
-              visualization: 'number',
-            },
-          },
-        },
-        {
-          position: {x: 14, y: 0},
-          dimensions: {height: 2, width: 4},
-          report: {
-            name: t('dashboard.templates.activeProcessIncidents'),
-            data: {
-              view: {entity: 'incident', properties: ['frequency']},
-              groupBy: {type: 'none', value: null},
-              visualization: 'number',
-              filter: [
-                {
-                  appliedTo: ['all'],
-                  filterLevel: 'view',
-                  type: 'includesOpenIncident',
-                },
-              ],
-            },
-          },
-        },
-        {
-          position: {x: 0, y: 2},
-          dimensions: {height: 5, width: 9},
-          report: {
-            name: t('dashboard.templates.flownodeDuration'),
-            data: {
-              view: {entity: 'flowNode', properties: ['duration']},
-              groupBy: {type: 'flowNodes', value: null},
-              visualization: 'heat',
-              configuration: {
-                aggregationTypes: ['avg', 'median', 'max'],
               },
             },
-          },
-        },
-        {
-          position: {x: 9, y: 2},
-          dimensions: {height: 5, width: 9},
-          report: {
-            name: t('dashboard.templates.controlChart'),
-            data: {
-              view: {entity: 'processInstance', properties: ['duration']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-              visualization: 'line',
-              configuration: {
-                aggregationTypes: ['min', 'avg', 'median', 'max'],
-              },
-            },
-          },
-        },
-        {
-          position: {x: 0, y: 7},
-          dimensions: {height: 5, width: 9},
-          report: {
-            name: t('dashboard.templates.flownodeFrequency'),
-            data: {
-              view: {entity: 'flowNode', properties: ['frequency']},
-              groupBy: {type: 'flowNodes', value: null},
-              visualization: 'heat',
-            },
-          },
-        },
-        {
-          position: {x: 9, y: 7},
-          dimensions: {height: 5, width: 9},
-          report: {
-            name: t('dashboard.templates.instanceTrends'),
-            data: {
-              view: {entity: 'processInstance', properties: ['frequency']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-              visualization: 'bar',
-              configuration: {
-                xLabel: t('report.groupBy.startDate'),
-                yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
-              },
-            },
-          },
-        },
-        {
-          position: {x: 0, y: 12},
-          dimensions: {height: 5, width: 9},
-          report: {
-            name: t('dashboard.templates.activeIncidentsHeatmap'),
-            data: {
-              view: {entity: 'incident', properties: ['frequency']},
-              groupBy: {type: 'flowNodes', value: null},
-              visualization: 'heat',
-            },
-          },
-        },
-        {
-          position: {x: 9, y: 12},
-          dimensions: {height: 5, width: 9},
-          report: {
-            name: t('dashboard.templates.incidentDurationHeatmap'),
-            data: {
-              view: {entity: 'incident', properties: ['duration']},
-              groupBy: {type: 'flowNodes', value: null},
-              visualization: 'heat',
-              configuration: {
-                aggregationTypes: ['avg', 'median', 'max'],
-              },
-            },
-          },
-        },
-        {
-          position: {x: 0, y: 17},
-          dimensions: {height: 5, width: 18},
-          report: {
-            name: t('dashboard.templates.incidentDurationTrend'),
-            data: {
-              view: {entity: 'processInstance', properties: ['frequency', 'duration']},
-              groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-              visualization: 'barLine',
-              filter: [
-                {
-                  appliedTo: ['all'],
-                  filterLevel: 'instance',
-                  type: 'includesResolvedIncident',
+            {
+              position: {x: 4, y: 0},
+              dimensions: {height: 2, width: 4},
+              report: {
+                name: t('dashboard.templates.runningInstances'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      filterLevel: 'instance',
+                      type: 'runningInstancesOnly',
+                    },
+                  ],
                 },
-              ],
+              },
             },
-          },
+            {
+              position: {x: 8, y: 0},
+              dimensions: {height: 2, width: 6},
+              report: {
+                name: t('dashboard.templates.aggregateDuration'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['duration']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                },
+              },
+            },
+            {
+              position: {x: 14, y: 0},
+              dimensions: {height: 2, width: 4},
+              report: {
+                name: t('dashboard.templates.activeProcessIncidents'),
+                data: {
+                  view: {entity: 'incident', properties: ['frequency']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      filterLevel: 'view',
+                      type: 'includesOpenIncident',
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 2},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.flownodeDuration'),
+                data: {
+                  view: {entity: 'flowNode', properties: ['duration']},
+                  groupBy: {type: 'flowNodes', value: null},
+                  visualization: 'heat',
+                  configuration: {
+                    aggregationTypes: ['avg', 'median', 'max'],
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 9, y: 2},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.controlChart'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['duration']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  visualization: 'line',
+                  configuration: {
+                    aggregationTypes: ['min', 'avg', 'median', 'max'],
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 7},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.flownodeFrequency'),
+                data: {
+                  view: {entity: 'flowNode', properties: ['frequency']},
+                  groupBy: {type: 'flowNodes', value: null},
+                  visualization: 'heat',
+                },
+              },
+            },
+            {
+              position: {x: 9, y: 7},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.instanceTrends'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  visualization: 'bar',
+                  configuration: {
+                    xLabel: t('report.groupBy.startDate'),
+                    yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 12},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.activeIncidentsHeatmap'),
+                data: {
+                  view: {entity: 'incident', properties: ['frequency']},
+                  groupBy: {type: 'flowNodes', value: null},
+                  visualization: 'heat',
+                },
+              },
+            },
+            {
+              position: {x: 9, y: 12},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.incidentDurationHeatmap'),
+                data: {
+                  view: {entity: 'incident', properties: ['duration']},
+                  groupBy: {type: 'flowNodes', value: null},
+                  visualization: 'heat',
+                  configuration: {
+                    aggregationTypes: ['avg', 'median', 'max'],
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 17},
+              dimensions: {height: 5, width: 18},
+              report: {
+                name: t('dashboard.templates.incidentDurationTrend'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency', 'duration']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  visualization: 'barLine',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      filterLevel: 'instance',
+                      type: 'includesResolvedIncident',
+                    },
+                  ],
+                },
+              },
+            },
+          ],
         },
       ],
     },
   ];
 
   if (!isOptimizeCloud) {
-    templates.push(
+    templateGroups[1].templates.push(
       {
         name: 'humanPerformance',
         hasSubtitle: true,
         img: humanPerformance,
+        disabled: (definitions) => definitions.length > 1,
         config: [
           {
             position: {x: 0, y: 0},
@@ -282,6 +294,7 @@ export default function DashboardTemplateModal({onClose}) {
         name: 'humanBottleneckAnalysis',
         hasSubtitle: true,
         img: humanBottleneckAnalysis,
+        disabled: (definitions) => definitions.length > 1,
         config: [
           {
             position: {x: 0, y: 0},
@@ -491,224 +504,236 @@ export default function DashboardTemplateModal({onClose}) {
             },
           },
         ],
-      },
-      {
-        name: 'portfolioPerformance',
-        hasSubtitle: true,
-        img: portfolioPerformance,
-        config: [
-          {
-            position: {x: 0, y: 0},
-            dimensions: {height: 3, width: 3},
-            report: {
-              name: t('dashboard.templates.completedProcesses'),
-              data: {
-                view: {entity: 'processInstance', properties: ['frequency']},
-                groupBy: {type: 'none', value: null},
-                visualization: 'number',
-                filter: [
-                  {
-                    appliedTo: ['all'],
-                    data: null,
-                    filterLevel: 'instance',
-                    type: 'completedInstancesOnly',
-                  },
-                ],
-              },
-            },
-          },
-          {
-            position: {x: 3, y: 0},
-            dimensions: {height: 3, width: 3},
-            report: {
-              name: t('dashboard.templates.activeIncidents'),
-              data: {
-                view: {entity: 'incident', properties: ['frequency']},
-                groupBy: {type: 'none', value: null},
-                visualization: 'number',
-                filter: [
-                  {
-                    appliedTo: ['all'],
-                    data: null,
-                    filterLevel: 'instance',
-                    type: 'includesOpenIncident',
-                  },
-                ],
-              },
-            },
-          },
-          {
-            position: {x: 6, y: 0},
-            dimensions: {height: 3, width: 6},
-            report: {
-              name: t('dashboard.templates.runningProcesses'),
-              data: {
-                view: {entity: 'processInstance', properties: ['frequency']},
-                groupBy: {type: 'none', value: null},
-                visualization: 'number',
-                filter: [
-                  {
-                    appliedTo: ['all'],
-                    data: null,
-                    filterLevel: 'instance',
-                    type: 'runningInstancesOnly',
-                  },
-                ],
-              },
-            },
-          },
-          {
-            position: {x: 12, y: 0},
-            dimensions: {height: 3, width: 6},
-            report: {
-              name: t('dashboard.templates.runningTasks'),
-              data: {
-                view: {entity: 'userTask', properties: ['frequency']},
-                groupBy: {type: 'userTasks', value: null},
-                visualization: 'pie',
-                filter: [
-                  {
-                    appliedTo: ['all'],
-                    data: null,
-                    filterLevel: 'view',
-                    type: 'runningFlowNodesOnly',
-                  },
-                ],
-              },
-            },
-          },
-          {
-            position: {x: 0, y: 3},
-            dimensions: {height: 5, width: 9},
-            report: {
-              name: t('dashboard.templates.processTotal'),
-              data: {
-                view: {entity: 'processInstance', properties: ['frequency']},
-                groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-                visualization: 'bar',
-                configuration: {
-                  stackedBar: true,
-                },
-              },
-            },
-          },
-          {
-            position: {x: 9, y: 3},
-            dimensions: {height: 5, width: 9},
-            report: {
-              name: t('dashboard.templates.laborSavings'),
-              data: {
-                view: {entity: 'userTask', properties: ['duration']},
-                groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-                visualization: 'bar',
-                filter: [
-                  {
-                    appliedTo: ['all'],
-                    data: null,
-                    filterLevel: 'instance',
-                    type: 'completedInstancesOnly',
-                  },
-                ],
-                configuration: {
-                  aggregationTypes: ['sum'],
-                  userTaskDurationTimes: ['work'],
-                  stackedBar: true,
-                },
-              },
-            },
-          },
-          {
-            position: {x: 0, y: 8},
-            dimensions: {height: 5, width: 9},
-            report: {
-              name: t('dashboard.templates.processAcceleration'),
-              data: {
-                view: {entity: 'processInstance', properties: ['duration']},
-                groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-                visualization: 'line',
-              },
-            },
-          },
-          {
-            position: {x: 9, y: 8},
-            dimensions: {height: 5, width: 9},
-            report: {
-              name: t('dashboard.templates.taskAutomation'),
-              data: {
-                view: {entity: 'userTask', properties: ['frequency']},
-                groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-                visualization: 'bar',
-                configuration: {
-                  aggregationTypes: ['sum'],
-                  userTaskDurationTimes: ['work'],
-                  stackedBar: true,
-                },
-              },
-            },
-          },
-          {
-            position: {x: 0, y: 13},
-            dimensions: {height: 5, width: 9},
-            report: {
-              name: t('dashboard.templates.incidentHandling'),
-              data: {
-                view: {entity: 'incident', properties: ['duration']},
-                groupBy: {type: 'flowNodes', value: null},
-                visualization: 'bar',
-                filter: [
-                  {
-                    appliedTo: ['all'],
-                    data: null,
-                    filterLevel: 'view',
-                    type: 'includesResolvedIncident',
-                  },
-                ],
-                configuration: {
-                  aggregationTypes: ['avg'],
-                  targetValue: {
-                    active: true,
-                    durationChart: {unit: 'hours', isBelow: true, value: '1'},
-                  },
-                },
-              },
-            },
-          },
-          {
-            position: {x: 9, y: 13},
-            dimensions: {height: 5, width: 9},
-            report: {
-              name: t('dashboard.templates.taskLifecycle'),
-              data: {
-                view: {entity: 'userTask', properties: ['duration']},
-                groupBy: {type: 'userTasks', value: null},
-                visualization: 'bar',
-                configuration: {
-                  userTaskDurationTimes: ['work', 'idle'],
-                },
-              },
-            },
-          },
-        ],
       }
     );
-  } else {
-    templates = templates.map((template) => {
-      return {
-        ...template,
-        config: template.config?.filter(
-          ({report: {data}}) =>
-            !data.filter?.some((filter) => filter.type.toLowerCase().includes('incident')) &&
-            data.view?.entity !== 'incident'
-        ),
-      };
+    templateGroups.push({
+      name: 'multiProcessGroup',
+      templates: [
+        {
+          name: 'portfolioPerformance',
+          hasSubtitle: true,
+          img: portfolioPerformance,
+          disabled: (definitions) => definitions.length < 2,
+          config: [
+            {
+              position: {x: 0, y: 0},
+              dimensions: {height: 3, width: 3},
+              report: {
+                name: t('dashboard.templates.completedProcesses'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      data: null,
+                      filterLevel: 'instance',
+                      type: 'completedInstancesOnly',
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              position: {x: 3, y: 0},
+              dimensions: {height: 3, width: 3},
+              report: {
+                name: t('dashboard.templates.activeIncidents'),
+                data: {
+                  view: {entity: 'incident', properties: ['frequency']},
+                  groupBy: {type: 'none', value: null},
+                  visualization: 'number',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      data: null,
+                      filterLevel: 'instance',
+                      type: 'includesOpenIncident',
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              position: {x: 6, y: 0},
+              dimensions: {height: 3, width: 6},
+              report: {
+                name: t('dashboard.templates.runningProcesses'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency']},
+                  groupBy: {type: 'none', value: null},
+                  distributedBy: {type: 'process', value: null},
+                  visualization: 'bar',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      data: null,
+                      filterLevel: 'instance',
+                      type: 'runningInstancesOnly',
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              position: {x: 12, y: 0},
+              dimensions: {height: 3, width: 6},
+              report: {
+                name: t('dashboard.templates.runningTasks'),
+                data: {
+                  view: {entity: 'userTask', properties: ['frequency']},
+                  groupBy: {type: 'userTasks', value: null},
+                  visualization: 'pie',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      data: null,
+                      filterLevel: 'view',
+                      type: 'runningFlowNodesOnly',
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 3},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.processTotal'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['frequency']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
+                  visualization: 'bar',
+                  configuration: {
+                    stackedBar: true,
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 9, y: 3},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.laborSavings'),
+                data: {
+                  view: {entity: 'userTask', properties: ['duration']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
+                  visualization: 'bar',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      data: null,
+                      filterLevel: 'instance',
+                      type: 'completedInstancesOnly',
+                    },
+                  ],
+                  configuration: {
+                    aggregationTypes: ['sum'],
+                    userTaskDurationTimes: ['work'],
+                    stackedBar: true,
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 8},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.processAcceleration'),
+                data: {
+                  view: {entity: 'processInstance', properties: ['duration']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
+                  visualization: 'line',
+                },
+              },
+            },
+            {
+              position: {x: 9, y: 8},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.taskAutomation'),
+                data: {
+                  view: {entity: 'userTask', properties: ['frequency']},
+                  groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+                  distributedBy: {type: 'process', value: null},
+                  visualization: 'bar',
+                  configuration: {
+                    aggregationTypes: ['sum'],
+                    userTaskDurationTimes: ['work'],
+                    stackedBar: true,
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 0, y: 13},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.incidentHandling'),
+                data: {
+                  view: {entity: 'incident', properties: ['duration']},
+                  groupBy: {type: 'flowNodes', value: null},
+                  visualization: 'bar',
+                  filter: [
+                    {
+                      appliedTo: ['all'],
+                      data: null,
+                      filterLevel: 'view',
+                      type: 'includesResolvedIncident',
+                    },
+                  ],
+                  configuration: {
+                    aggregationTypes: ['avg'],
+                    targetValue: {
+                      active: true,
+                      durationChart: {unit: 'hours', isBelow: true, value: '1'},
+                    },
+                  },
+                },
+              },
+            },
+            {
+              position: {x: 9, y: 13},
+              dimensions: {height: 5, width: 9},
+              report: {
+                name: t('dashboard.templates.taskLifecycle'),
+                data: {
+                  view: {entity: 'userTask', properties: ['duration']},
+                  groupBy: {type: 'userTasks', value: null},
+                  visualization: 'bar',
+                  configuration: {
+                    userTaskDurationTimes: ['work', 'idle'],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
     });
+  }
+
+  if (!isOptimizeCloudLoaded) {
+    return null;
   }
 
   return (
     <TemplateModal
       onClose={onClose}
-      templates={templates}
+      templateGroups={templateGroups}
       entity="dashboard"
+      blankSlate={
+        <ol>
+          <li>{t('templates.blankSlate.selectProcess')}</li>
+          <li>{t('templates.blankSlate.selectTemplate')}</li>
+          <li>{t('templates.blankSlate.review')}</li>
+          <li>{t('templates.blankSlate.refine')}</li>
+        </ol>
+      }
       templateToState={({template, ...props}) => ({
         ...props,
         data: template || [],

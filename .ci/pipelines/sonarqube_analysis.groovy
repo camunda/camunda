@@ -35,6 +35,8 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
       name: ci-optimize-cambpm-config
+  - name: docker-storage
+    emptyDir: {}
   initContainers:
     - name: init-sysctl
       image: busybox
@@ -49,15 +51,17 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 6
+        value: 3
       - name: TZ
         value: Europe/Berlin
+      - name: DOCKER_HOST
+        value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 6
+        cpu: 4
         memory: 20Gi
       requests:
-        cpu: 6
+        cpu: 4
         memory: 20Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
@@ -69,10 +73,10 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 6
+        cpu: 3
         memory: 4Gi
       requests:
-        cpu: 6
+        cpu: 3
         memory: 4Gi
     volumeMounts:
     - name: cambpm-config
@@ -105,11 +109,38 @@ spec:
         add: ["IPC_LOCK"]
     resources:
       limits:
-        cpu: 4
+        cpu: 2
         memory: 4Gi
       requests:
-        cpu: 4
+        cpu: 2
         memory: 4Gi
+  - name: docker
+    image: docker:20.10.5-dind
+    args:
+      - --storage-driver
+      - overlay2
+      - --ipv6
+      - --fixed-cidr-v6
+      - "2001:db8:1::/64"
+    env:
+      # The new dind versions expect secure access using cert
+      # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+      # (see https://hub.docker.com/_/docker?tab=description&page=1)
+      - name: DOCKER_TLS_CERTDIR
+        value: ""
+    securityContext:
+      privileged: true
+    volumeMounts:
+      - mountPath: /var/lib/docker
+        name: docker-storage
+    tty: true
+    resources:
+      limits:
+        cpu: 4
+        memory: 18Gi
+      requests:
+        cpu: 4
+        memory: 18Gi
 """
 }
 

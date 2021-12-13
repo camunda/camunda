@@ -19,6 +19,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONS
 @Data
 public class ProcessVariableValueRequestDto {
 
+  private String processInstanceId;
   private String processDefinitionKey;
   private List<String> processDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));

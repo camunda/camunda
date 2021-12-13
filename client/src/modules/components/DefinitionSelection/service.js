@@ -28,13 +28,13 @@ export async function loadVersions(type, collectionId, key) {
   return await response.json();
 }
 
-export async function loadTenants(type, collectionId, key, versions) {
-  const params = {definitions: [{versions, key}]};
+export async function loadTenants(type, definitions, collectionId) {
+  const payload = {definitions};
   if (collectionId) {
-    params.filterByCollectionScope = collectionId;
+    payload.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, params);
+  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, payload);
 
-  return (await response.json())[0].tenants;
+  return await response.json();
 }

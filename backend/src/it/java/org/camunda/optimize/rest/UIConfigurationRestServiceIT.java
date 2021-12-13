@@ -232,7 +232,40 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(response.isOptimizeCloudEnvironment()).isFalse();
   }
 
-  private void setWebappsEndpoint(String webappsEndpoint) {
+  @Test
+  public void getMixpanelConfiguration() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().setEnabled(true);
+    final String testToken = "testToken";
+    final String apiHost = "apiHost";
+    final String organizationId = "orgId";
+    final String scriptUrl = "test";
+    final String stage = "IT";
+    final String clusterId = "IT-cluster";
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setApiHost(apiHost);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().setToken(testToken);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+      .setOrganizationId(organizationId);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+      .setStage(stage);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getMixpanel().getProperties()
+      .setClusterId(clusterId);
+    embeddedOptimizeExtension.getConfigurationService().getAnalytics().getOsano().setScriptUrl(scriptUrl);
+
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.getMixpanel().isEnabled()).isEqualTo(true);
+    assertThat(response.getMixpanel().getApiHost()).isEqualTo(apiHost);
+    assertThat(response.getMixpanel().getToken()).isEqualTo(testToken);
+    assertThat(response.getMixpanel().getOrganizationId()).isEqualTo(organizationId);
+    assertThat(response.getMixpanel().getOsanoScriptUrl()).isEqualTo(scriptUrl);
+    assertThat(response.getMixpanel().getStage()).isEqualTo(stage);
+    assertThat(response.getMixpanel().getClusterId()).isEqualTo(clusterId);
+  }
+
+  private void setWebappsEndpoint(final String webappsEndpoint) {
     embeddedOptimizeExtension
       .getConfigurationService()
       .getConfiguredEngines()
@@ -241,7 +274,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
       .setEndpoint(webappsEndpoint);
   }
 
-  private void setWebappsEnabled(boolean enabled) {
+  private void setWebappsEnabled(final boolean enabled) {
     embeddedOptimizeExtension
       .getConfigurationService()
       .getConfiguredEngines()

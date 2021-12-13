@@ -14,7 +14,7 @@ jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: ()
 const App = AppWithErrorHandling.WrappedComponent;
 
 jest.mock('translation', () => ({
-  init: jest.fn(),
+  initTranslation: jest.fn(),
 }));
 
 const props = {

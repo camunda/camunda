@@ -16,6 +16,7 @@ import java.util.List;
 @Builder
 public class ProcessVariableSourceDto {
 
+  private String processInstanceId;
   private String processDefinitionKey;
   @Builder.Default
   private List<String> processDefinitionVersions = new ArrayList<>();

@@ -126,7 +126,13 @@ export class OutlierAnalysis extends React.Component {
           })}
         </p>
         <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
-        <InstancesButton id={id} name={flowNodeNames[id]} value={boundValue} config={config} />
+        <InstancesButton
+          id={id}
+          name={flowNodeNames[id]}
+          value={boundValue}
+          config={config}
+          totalCount={totalCount}
+        />
       </div>
     );
   };

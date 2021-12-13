@@ -446,6 +446,11 @@ export:
     limit: 1000
     delimiter: ","
 
+  json:
+    # Secret token to be provided on the JSON REST Export API when exporting data.
+    # If set `null` an error will be thrown and JSON Exports will be blocked
+    accessToken: ${OPTIMIZE_JSON_EXPORT_ACCESS_TOKEN:null}
+
 sharing:
   # decides if the sharing feature of Optimize can be used in the UI.
   enabled: true
@@ -541,11 +546,29 @@ eventBasedProcess:
 telemetry:
   # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
   # Telemetry can later be enabled/disabled in the UI by superusers
-  initializeTelemetry: false
+  initializeTelemetry: ${CAMUNDA_OPTIMIZE_TELEMETRY_ENABLED:false}
   # Interval for telemetry reporting, defaults to every 24 hours.
   reportingIntervalInHours: 24
   # Telemetry endpoint to send data to (production environment)
   telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'
+
+analytics:
+  # Enable/Disable user interaction tracking
+  enabled: ${CAMUNDA_OPTIMIZE_ANALYTICS_ENABLED:false}
+  osano:
+    scriptUrl: ${CAMUNDA_OPTIMIZE_ANALYTICS_OSANO_SCRIPT_URL:}
+  mixpanel:
+    apiHost: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_API_HOST:https://api.mixpanel.com}
+    importPath: '/import'
+    token: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_TOKEN:}
+    projectId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_PROJECT_ID:}
+    serviceAccount:
+      username: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_USERNAME:}
+      secret: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_SERVICE_SECRET:}
+    properties:
+      stage: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_STAGE:dev}
+      organizationId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_ORGANIZATION:dev}
+      clusterId: ${CAMUNDA_OPTIMIZE_ANALYTICS_MIXPANEL_CLUSTER_ID:dev}
 
 # Configuration of application internal in-memory caches
 caches:

@@ -1,0 +1,66 @@
+.SourcesModal {
+  .Table {
+    height: 500px;
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 10px;
+
+    .rightHeader {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-left: auto;
+      font-size: 14px;
+
+      .searchInputContainer {
+        position: relative;
+
+        .Input {
+          padding: 6px 30px 6px 15px;
+        }
+
+        .Input:valid ~ .searchIcon {
+          display: none;
+        }
+
+        .searchIcon {
+          position: absolute;
+          right: 10px;
+          top: calc(50% - 2px);
+          transform: translateY(-50%);
+          color: var(--silver-darken-80);
+        }
+      }
+
+      .Input[type='text'] {
+        border-radius: 15px;
+      }
+
+      .Tag {
+        margin-left: 10px;
+        height: 30px;
+        border-radius: 15px;
+        color: var(--grey-darken-36);
+        padding-left: 15px;
+
+        .tagText {
+          position: relative;
+          top: 2px;
+          margin-right: 5px;
+        }
+
+        button {
+          position: relative;
+          top: 7px;
+        }
+      }
+    }
+  }
+}
+
+.sourcesModalTenantPopover {
+  z-index: var(--z-modal-popup);
+}

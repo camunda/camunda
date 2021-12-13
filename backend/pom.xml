@@ -13,7 +13,7 @@
   <properties>
     <jetty.version>9.4.44.v20210927</jetty.version>
     <jersey.version>2.35</jersey.version>
-    <spring.security.version>5.5.3</spring.security.version>
+    <spring.security.version>5.6.0</spring.security.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
@@ -75,34 +75,6 @@
       <artifactId>zeebe-client-java</artifactId>
       <version>${zeebe.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-test</artifactId>
-      <version>${zeebe.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker</artifactId>
-      <version>${zeebe.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-elasticsearch-exporter</artifactId>
-      <version>${zeebe.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.elasticsearch</groupId>
-          <artifactId>elasticsearch-x-content</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.elasticsearch.client</groupId>
-          <artifactId>elasticsearch-rest-client</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Javax XML -->
@@ -284,7 +256,7 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.0.4</version>
+      <version>3.0.5</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -294,10 +266,15 @@
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
-      <version>1.0.7</version>
+      <version>1.0.9</version>
     </dependency>
 
     <!--Test dependencies-->
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-container</artifactId>
+      <version>3.2.0</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
@@ -348,6 +325,11 @@
       <artifactId>camunda-engine-rest-core</artifactId>
       <version>${camunda.maven.artifacts.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.wnameless.json</groupId>
+      <artifactId>json-flattener</artifactId>
+      <version>0.13.0</version>
     </dependency>
   </dependencies>
 

@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
@@ -57,6 +58,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAU
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
+import static org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
@@ -503,6 +505,64 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
+  public void allValuesOfListVariablesAreInResult() {
+    // given
+    final VariableDto listVariable = variablesClient.createListJsonObjectVariableDto(List.of(
+      "firstValue",
+      "secondValue"
+    ));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("listVariable", listVariable);
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(createReport(processInstance));
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    assertThat(result.getData())
+      .isNotNull()
+      .flatExtracting(RawDataProcessInstanceDto::getVariables)
+      .containsExactly(Map.of(
+        "listVariable", "firstValue, secondValue",
+        "listVariable._listSize", "2"
+      ));
+  }
+
+  @Test
+  public void objectVariable_placeholderForObjectAndPropertyVariablesAreIncluded() {
+    // given
+    final Map<String, Object> objectVar = new HashMap<>();
+    objectVar.put("name", "Kermit");
+    objectVar.put("age", "50");
+    objectVar.put("likes", List.of("MissPiggy", "Optimize"));
+    final VariableDto objectVariableDto = variablesClient.createMapJsonObjectVariableDto(objectVar);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", objectVariableDto);
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(createReport(processInstance));
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    assertThat(result.getData())
+      .isNotNull()
+      .flatExtracting(RawDataProcessInstanceDto::getVariables)
+      .containsExactly(Map.of(
+        "objectVar.name", "Kermit",
+        "objectVar.age", "50",
+        "objectVar.likes", "MissPiggy, Optimize",
+        "objectVar.likes._listSize", "2",
+        "objectVar", OBJECT_VARIABLE_VALUE_PLACEHOLDER
+      ));
+  }
+
+  @Test
   public void evaluationReturnsOnlyDataToGivenProcessDefinitionId() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -607,7 +667,12 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     reportData = createReport(processInstance);
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(past).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedInstanceStartDate()
+                           .start(past)
+                           .end(null)
+                           .add()
+                           .buildList());
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult2 =
       reportClient.evaluateRawReport(reportData);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result2 = evaluationResult2.getResult();

@@ -79,25 +79,12 @@ export default class Popover extends React.Component {
     });
   };
 
-  inSameScope = (evt) => {
-    const modal = evt.target?.closest('.Modal');
-    if (!modal) {
-      return true;
-    }
-    return modal.contains(this.popoverDialogRef);
-  };
-
   close = (evt) => {
     // We need to wait for the event delegation to be finished
     // so we know whether the click occured inside the popover,
     // in which case we do not want to close the popover
     setTimeout(() => {
-      if (
-        !(evt.popoverChain || []).includes(this.id) &&
-        this.mounted &&
-        !this.insideClick &&
-        this.inSameScope(evt)
-      ) {
+      if (!(evt.popoverChain || []).includes(this.id) && this.mounted && !this.insideClick) {
         this.setState({
           open: false,
         });

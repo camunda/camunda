@@ -18,58 +18,70 @@ import chartImg from './images/chart.png';
 import './ReportTemplateModal.scss';
 
 export default function ReportTemplateModal({onClose}) {
-  const templates = [
-    {name: 'blank'},
+  const templateGroups = [
     {
-      name: 'heatmap',
-      img: heatmapImg,
-      config: {
-        view: {entity: 'flowNode', properties: ['frequency']},
-        groupBy: {type: 'flowNodes', value: null},
-        visualization: 'heat',
-        configuration: {
-          xLabel: t('report.groupBy.flowNodes'),
-          yLabel: t('report.view.fn') + ' ' + t('report.view.count'),
-        },
-      },
+      name: 'blankGroup',
+      templates: [{name: 'blank'}],
     },
     {
-      name: 'number',
-      img: durationImg,
-      config: {
-        view: {entity: 'processInstance', properties: ['duration']},
-        groupBy: {type: 'none', value: null},
-        visualization: 'number',
-        configuration: {
-          yLabel: t('report.view.pi') + ' ' + t('report.view.duration'),
+      name: 'templatesGroup',
+      templates: [
+        {
+          name: 'chart',
+          img: chartImg,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['frequency']},
+            groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+            visualization: 'bar',
+            configuration: {
+              xLabel: t('report.groupBy.startDate'),
+              yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
+            },
+          },
         },
-      },
-    },
-    {
-      name: 'table',
-      img: tableImg,
-      config: {
-        view: {entity: 'userTask', properties: ['frequency']},
-        groupBy: {type: 'userTasks', value: null},
-        visualization: 'table',
-        configuration: {
-          xLabel: t('report.groupBy.userTasks'),
-          yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
+        {
+          name: 'heatmap',
+          img: heatmapImg,
+          disabled: (definitions) => definitions.length !== 1,
+          config: {
+            view: {entity: 'flowNode', properties: ['frequency']},
+            groupBy: {type: 'flowNodes', value: null},
+            visualization: 'heat',
+            configuration: {
+              xLabel: t('report.groupBy.flowNodes'),
+              yLabel: t('report.view.fn') + ' ' + t('report.view.count'),
+            },
+          },
         },
-      },
-    },
-    {
-      name: 'chart',
-      img: chartImg,
-      config: {
-        view: {entity: 'processInstance', properties: ['frequency']},
-        groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-        visualization: 'bar',
-        configuration: {
-          xLabel: t('report.groupBy.startDate'),
-          yLabel: t('report.view.pi') + ' ' + t('report.view.count'),
+        {
+          name: 'number',
+          img: durationImg,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'processInstance', properties: ['duration']},
+            groupBy: {type: 'none', value: null},
+            visualization: 'number',
+            configuration: {
+              yLabel: t('report.view.pi') + ' ' + t('report.view.duration'),
+            },
+          },
         },
-      },
+        {
+          name: 'table',
+          img: tableImg,
+          disabled: (definitions) => definitions.length === 0,
+          config: {
+            view: {entity: 'userTask', properties: ['frequency']},
+            groupBy: {type: 'userTasks', value: null},
+            visualization: 'table',
+            configuration: {
+              xLabel: t('report.groupBy.userTasks'),
+              yLabel: t('report.view.userTask') + ' ' + t('report.view.count'),
+            },
+          },
+        },
+      ],
     },
   ];
 
@@ -77,14 +89,20 @@ export default function ReportTemplateModal({onClose}) {
     <TemplateModal
       className="ReportTemplateModal"
       onClose={onClose}
-      templates={templates}
+      templateGroups={templateGroups}
       entity="report"
+      blankSlate={
+        <ol>
+          <li>{t('templates.blankSlate.selectProcess')}</li>
+          <li>{t('templates.blankSlate.selectTemplate')}</li>
+        </ol>
+      }
       templateToState={({name, template, definitions, xml}) => ({
         name,
         data: {
           ...(template || {}),
           configuration: {...(template?.configuration || {}), xml},
-          definitions: definitions[0].key ? definitions : [],
+          definitions: definitions[0]?.key ? definitions : [],
         },
       })}
     />

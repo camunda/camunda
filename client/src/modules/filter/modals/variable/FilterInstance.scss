@@ -1,0 +1,48 @@
+@import 'shared-styles/shared-styles.scss';
+
+.FilterInstance {
+  margin-bottom: 10px;
+
+  .sectionTitle {
+    padding-bottom: 5px;
+    position: relative;
+    font-size: 12px;
+
+    &.clickable {
+      cursor: pointer;
+    }
+
+    .sectionToggle {
+      color: var(--grey-darken-23);
+      float: right;
+      margin-top: 3px;
+      transition: transform 0.1s;
+
+      &:not(.expanded) {
+        transform: rotate(-90deg);
+      }
+    }
+
+    .highlighted {
+      @include highlighted;
+    }
+
+    .removeButton {
+      position: absolute;
+      right: 45px;
+      bottom: 2px;
+    }
+  }
+
+  .collapsed .sectionTitle {
+    margin-bottom: 0;
+  }
+
+  &.collapsed {
+    margin-bottom: 0;
+
+    > :not(.sectionTitle) {
+      display: none;
+    }
+  }
+}

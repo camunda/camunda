@@ -30,6 +30,7 @@ import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResult
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
@@ -233,6 +234,38 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
     assertThat(resultDto.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(resultDto.getFirstMeasureData(), "bar1").get().getValue()).isEqualTo(1.);
     assertThat(MapResultUtil.getEntryForKey(resultDto.getFirstMeasureData(), "bar2").get().getValue()).isEqualTo(2.);
+  }
+
+  @Test
+  public void multipleVariableValuesInOneInstance() {
+    // given
+    final VariableDto listVar = variablesClient.createListJsonObjectVariableDto(List.of("value1", "value2"));
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("listVar", listVar);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      "listVar",
+      VariableType.STRING
+    );
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getFirstMeasureData()).isNotNull();
+    assertThat(resultDto.getFirstMeasureData()).hasSize(2);
+    assertThat(MapResultUtil.getEntryForKey(resultDto.getFirstMeasureData(), "value1")).isPresent()
+      .map(MapResultEntryDto::getValue)
+      .contains(1.);
+    assertThat(MapResultUtil.getEntryForKey(resultDto.getFirstMeasureData(), "value2"))
+      .isPresent()
+      .map(MapResultEntryDto::getValue)
+      .contains(1.);
   }
 
   @Test
@@ -647,7 +680,6 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
     assertThat(resultData.get(2).getKey()).isEqualTo("19.00");
     assertThat(resultData.get(2).getValue()).isEqualTo(1.0);
   }
-
 
   @Test
   public void longVariable_valuesSmallerThanBaseline() {
@@ -1130,7 +1162,12 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
     assertThat(result.getFirstMeasureData()).isEmpty();
 
     // when
-    reportData.setFilter(ProcessFilterBuilder.filter().fixedInstanceStartDate().start(past).end(null).add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter()
+                           .fixedInstanceStartDate()
+                           .start(past)
+                           .end(null)
+                           .add()
+                           .buildList());
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then

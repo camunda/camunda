@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.TreeMap;
 public class RawProcessDataResultDtoMapper {
 
   private static final String DEFAULT_VARIABLE_VALUE = "";
+  public static final String OBJECT_VARIABLE_VALUE_PLACEHOLDER = "<<OBJECT_VARIABLE_VALUE>>";
 
   public List<RawDataProcessInstanceDto> mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
                                                  final ObjectMapper objectMapper,
@@ -70,12 +72,18 @@ public class RawProcessDataResultDtoMapper {
                                            final ObjectMapper objectMapper) {
     Map<String, Object> result = new TreeMap<>();
 
-    for (SimpleProcessVariableDto instance : processInstanceDto.getVariables()) {
-      if (instance.getName() != null) {
-        result.put(instance.getName(), instance.getValue());
+    for (SimpleProcessVariableDto variableInstance : processInstanceDto.getVariables()) {
+      if (variableInstance.getName() != null) {
+        if (VariableType.OBJECT.getId().equalsIgnoreCase(variableInstance.getType())) {
+          // Object variable value is available on demand in FE so that large values don't distort raw data tables
+          result.put(variableInstance.getName(), OBJECT_VARIABLE_VALUE_PLACEHOLDER);
+        } else {
+          // Convert strings to join list entries for neater display in raw data report UI
+          result.put(variableInstance.getName(), String.join(", ", variableInstance.getValue()));
+        }
       } else {
         try {
-          log.debug("Found variable with null name [{}]", objectMapper.writeValueAsString(instance));
+          log.debug("Found variable with null name [{}]", objectMapper.writeValueAsString(variableInstance));
         } catch (JsonProcessingException e) {
           //nothing to do
         }

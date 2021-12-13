@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,7 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.INTEGER;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
+import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.SHORT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 
@@ -62,6 +65,31 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
     assertThat(variableResponse.contains("value1")).isTrue();
     assertThat(variableResponse.contains("value2")).isTrue();
     assertThat(variableResponse.contains("value3")).isTrue();
+  }
+
+  @Test
+  public void getVariableValueForInstance() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("var", "value1");
+    final ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId(),
+      variables
+    );
+    variables.put("var", "value2");
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<String> variableResponse = variablesClient.getProcessVariableValues(
+      instance.getId(),
+      processDefinition,
+      "var"
+    );
+
+    // then
+    assertThat(variableResponse).singleElement().isEqualTo("value1");
   }
 
   @Test
@@ -329,6 +357,36 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
       assertThat(variableResponse.contains(expectedValue)).isTrue();
     }
 
+  }
+
+  @Test
+  public void retrieveValuesForObjectVariable() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    final Map<String, Object> kermitVar = new HashMap<>();
+    kermitVar.put("name", "Kermit");
+    kermitVar.put("likes", List.of("optimize", "Miss Piggy"));
+    VariableDto kermitObjectDto = variablesClient.createMapJsonObjectVariableDto(kermitVar);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("objectVar", kermitObjectDto);
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    final Map<String, Object> missPiggyVar = new HashMap<>();
+    missPiggyVar.put("name", "Miss Piggy");
+    missPiggyVar.put("likes", List.of("Kermit"));
+    VariableDto missPiggyObjectDto = variablesClient.createMapJsonObjectVariableDto(missPiggyVar);
+    variables.put("objectVar", missPiggyObjectDto);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<String> variableResponse =
+      variablesClient.getProcessVariableValues(instance.getId(), processDefinition, "objectVar", OBJECT);
+
+    // then
+    assertThat(variableResponse)
+      .singleElement()
+      .isEqualTo(kermitObjectDto.getValue());
   }
 
   private Map<String, VariableType> createVarNameToTypeMap() {

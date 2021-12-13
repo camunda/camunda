@@ -8,12 +8,15 @@ package org.camunda.optimize.service.importing.ingested.service;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ExternalVariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.security.core.parameters.P;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -25,9 +28,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
 
 @Slf4j
 public class ExternalVariableUpdateImportService implements ImportService<ExternalProcessVariableDto> {
@@ -37,14 +41,17 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ProcessVariableUpdateWriter variableWriter;
   private final ConfigurationService configurationService;
+  private final ObjectVariableService objectVariableService;
 
   public ExternalVariableUpdateImportService(final ConfigurationService configurationService,
-                                             final ProcessVariableUpdateWriter variableWriter) {
+                                             final ProcessVariableUpdateWriter variableWriter,
+                                             final ObjectVariableService objectVariableService) {
     this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.variableWriter = variableWriter;
     this.configurationService = configurationService;
+    this.objectVariableService = objectVariableService;
   }
 
   @Override
@@ -54,7 +61,8 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
 
     boolean newDataIsAvailable = !pageOfExternalEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessVariableDto> newOptimizeEntities = mapExternalEntitiesToOptimizeEntities(pageOfExternalEntities);
+      List<ProcessVariableDto> newOptimizeEntities =
+        mapExternalEntitiesToOptimizeEntities(pageOfExternalEntities);
       ElasticsearchImportJob<ProcessVariableDto> elasticsearchImportJob = createElasticsearchImportJob(
         newOptimizeEntities,
         importCompleteCallback
@@ -73,9 +81,12 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   }
 
   private List<ProcessVariableDto> mapExternalEntitiesToOptimizeEntities(final List<ExternalProcessVariableDto> externalEntities) {
-    final List<ExternalProcessVariableDto> deduplicatedVariables = resolveDuplicateVariableUpdatesPerProcessInstance(
-      externalEntities);
-    return deduplicatedVariables.stream().map(this::mapEngineEntityToOptimizeEntity).collect(Collectors.toList());
+    final List<ExternalProcessVariableDto> deduplicatedVariables =
+      resolveDuplicateVariableUpdatesPerProcessInstance(externalEntities);
+    List<ProcessVariableUpdateDto> processVariables = deduplicatedVariables.stream()
+      .map(this::convertExternalToProcessVariableDto)
+      .collect(toList());
+    return objectVariableService.convertObjectVariablesForImport(processVariables);
   }
 
   private List<ExternalProcessVariableDto> resolveDuplicateVariableUpdatesPerProcessInstance(
@@ -105,22 +116,23 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
       )).values());
   }
 
-  private ProcessVariableDto mapEngineEntityToOptimizeEntity(final ExternalProcessVariableDto externalEntity) {
-    return new ProcessVariableDto(
-      externalEntity.getVariableId(),
-      externalEntity.getVariableName(),
-      externalEntity.getVariableType().getId(),
-      externalEntity.getVariableValue(),
-      OffsetDateTime.ofInstant(Instant.ofEpochMilli(externalEntity.getIngestionTimestamp()), ZoneId.systemDefault()),
-      null,
-      externalEntity.getProcessDefinitionKey(),
-      null,
-      externalEntity.getProcessInstanceId(),
+  private ProcessVariableUpdateDto convertExternalToProcessVariableDto(final ExternalProcessVariableDto externalVariable) {
+    final Map<String, Object> valueInfo = new HashMap<>();
+    valueInfo.put(SERIALIZATION_DATA_FORMAT, externalVariable.getSerializationDataFormat());
+    return (ProcessVariableUpdateDto) new ProcessVariableUpdateDto()
+      .setId(externalVariable.getVariableId())
+      .setName(externalVariable.getVariableName())
+      .setType(externalVariable.getVariableType().getId())
+      .setValueInfo(valueInfo)
+      .setValue(externalVariable.getVariableValue())
+      .setProcessDefinitionKey(externalVariable.getProcessDefinitionKey())
+      .setProcessInstanceId(externalVariable.getProcessInstanceId())
       // defaulting to the same version as there is no versioning for external variables
-      DEFAULT_VERSION,
-      null,
-      null
-    );
+      .setVersion(DEFAULT_VERSION)
+      .setTimestamp(OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(externalVariable.getIngestionTimestamp()),
+        ZoneId.systemDefault()
+      ));
   }
 
   private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(final List<ProcessVariableDto> processVariables,

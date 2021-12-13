@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.test.optimize;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
-import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -18,17 +20,30 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@AllArgsConstructor
 public class VariablesClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+  private final ObjectMapper objectMapper;
+
+  public VariablesClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+    objectMapper = new ObjectMapper()
+      .setDateFormat(new SimpleDateFormat(OPTIMIZE_DATE_FORMAT))
+      .enable(SerializationFeature.INDENT_OUTPUT);
+  }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(final ProcessDefinitionEngineDto processDefinition) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
@@ -78,18 +93,61 @@ public class VariablesClient {
 
   public List<String> getProcessVariableValues(final ProcessDefinitionEngineDto processDefinition,
                                                final String variableName) {
-    return getProcessVariableValues(processDefinition, variableName, STRING);
+    return getProcessVariableValues(null, processDefinition, variableName, STRING);
+  }
+
+  public List<String> getProcessVariableValues(final String processInstanceId,
+                                               final ProcessDefinitionEngineDto processDefinition,
+                                               final String variableName) {
+    return getProcessVariableValues(processInstanceId, processDefinition, variableName, STRING);
   }
 
   public List<String> getProcessVariableValues(final ProcessDefinitionEngineDto processDefinition,
                                                final String variableName,
                                                final VariableType variableType) {
+    return getProcessVariableValues(null, processDefinition, variableName, variableType);
+  }
+
+  public List<String> getProcessVariableValues(final String processInstanceId,
+                                               final ProcessDefinitionEngineDto processDefinition,
+                                               final String variableName,
+                                               final VariableType variableType) {
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
+    requestDto.setProcessInstanceId(processInstanceId);
     requestDto.setProcessDefinitionKey(processDefinition.getKey());
     requestDto.setProcessDefinitionVersion(processDefinition.getVersionAsString());
     requestDto.setName(variableName);
     requestDto.setType(variableType);
     return getProcessVariableValues(requestDto);
+  }
+
+  @SneakyThrows
+  public VariableDto createMapJsonObjectVariableDto(final Map<String, Object> variable) {
+    return createJsonObjectVariableDto(
+      objectMapper.writeValueAsString(variable),
+      "java.util.HashMap"
+    );
+  }
+
+  @SneakyThrows
+  public VariableDto createListJsonObjectVariableDto(final List<Object> variable) {
+    return createJsonObjectVariableDto(
+      objectMapper.writeValueAsString(variable),
+      "java.util.ArrayList"
+    );
+  }
+
+  @SneakyThrows
+  public VariableDto createJsonObjectVariableDto(final String value,
+                                                 final String objectTypeName) {
+    VariableDto objectVariableDto = new VariableDto();
+    objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
+    objectVariableDto.setValue(value);
+    VariableDto.ValueInfo info = new VariableDto.ValueInfo();
+    info.setObjectTypeName(objectTypeName);
+    info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
+    objectVariableDto.setValueInfo(info);
+    return objectVariableDto;
   }
 
   public List<String> getDecisionInputVariableValues(final DecisionVariableValueRequestDto variableValueRequestDto) {
@@ -234,4 +292,5 @@ public class VariablesClient {
   public OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }
+
 }

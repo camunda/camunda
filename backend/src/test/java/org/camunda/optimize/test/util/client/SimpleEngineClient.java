@@ -61,7 +61,7 @@ import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
-import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
@@ -75,6 +75,7 @@ import org.camunda.optimize.test.util.client.dto.VariableValueDto;
 import org.elasticsearch.common.io.Streams;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -1103,8 +1104,7 @@ public class SimpleEngineClient {
 
   public void deleteHistoricProcessInstance(String processInstanceId) {
     HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
-    try {
-      CloseableHttpResponse response = client.execute(delete);
+    try (CloseableHttpResponse response = client.execute(delete)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         log.error(
           "Could not delete historic process instance for process instance ID [{}]. Reason: wrong response code [{}]",
@@ -1153,9 +1153,8 @@ public class SimpleEngineClient {
   }
 
   public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
-    HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
-    try {
-      CloseableHttpResponse response = client.execute(delete);
+    HttpDelete delete = new HttpDelete(getVariableUri(variableName, processInstanceId));
+    try (CloseableHttpResponse response = client.execute(delete)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         log.error(
           "Could not delete variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
@@ -1169,13 +1168,32 @@ public class SimpleEngineClient {
     }
   }
 
+  @SneakyThrows
+  public void updateVariableInstanceForProcessInstance(final String processInstanceId, final String variableName,
+                                                       final String variableValue) {
+    final HttpPut updateVar = new HttpPut(getVariableUri(variableName, processInstanceId));
+    updateVar.setHeader("Content-type", MediaType.APPLICATION_JSON);
+    updateVar.setEntity(new StringEntity(variableValue));
+    try (CloseableHttpResponse response = client.execute(updateVar)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        log.error(
+          "Could not update variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
+          variableName,
+          processInstanceId,
+          response.getStatusLine().getStatusCode()
+        );
+      }
+    } catch (Exception e) {
+      log.error("Could not update variable for process instance: " + processInstanceId, e);
+    }
+  }
+
   public DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance,
                                      String tenantId) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
-    try {
-      CloseableHttpResponse response = client.execute(deploymentRequest);
+    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new OptimizeRuntimeException("Something really bad happened during deployment, " +
                                              "could not create a deployment!");
@@ -1593,6 +1611,7 @@ public class SimpleEngineClient {
     put.addHeader("Content-Type", "application/json");
     String commaSeparatedTaskIds = externalTasks.stream()
       .map(ExternalTaskEngineDto::getId)
+      .map(id -> "\"" + id + "\"")
       .collect(Collectors.joining(","));
     // @formatter:off
     put.setEntity(new StringEntity(
@@ -1803,7 +1822,7 @@ public class SimpleEngineClient {
         fields.put("value", typedVariable.getValue());
         fields.put("type", typedVariable.getType());
         variables.put(nameToValue.getKey(), fields);
-      } else if (value instanceof ObjectVariableDto) {
+      } else if (value instanceof VariableDto) {
         variables.put(nameToValue.getKey(), value);
       } else {
         Map<String, Object> fields = new HashMap<>();
@@ -2205,7 +2224,7 @@ public class SimpleEngineClient {
     return engineRestEndpoint + "/process-instance/" + processInstanceId;
   }
 
-  private String getVariableDeleteUri(String variableName, String processInstanceId) {
+  private String getVariableUri(String variableName, String processInstanceId) {
     return engineRestEndpoint + "/process-instance/" + processInstanceId + "/variables/" + variableName;
   }
 

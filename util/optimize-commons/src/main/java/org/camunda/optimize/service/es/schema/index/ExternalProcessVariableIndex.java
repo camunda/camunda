@@ -14,6 +14,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
@@ -29,8 +31,9 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
   public static final String PROCESS_INSTANCE_ID = ExternalProcessVariableDto.Fields.processInstanceId;
   public static final String PROCESS_DEFINITION_KEY = ExternalProcessVariableDto.Fields.processDefinitionKey;
   public static final String INGESTION_TIMESTAMP = ExternalProcessVariableDto.Fields.ingestionTimestamp;
+  public static final String SERIALIZATION_DATA_FORMAT = ExternalProcessVariableDto.Fields.serializationDataFormat;
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
@@ -66,7 +69,7 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
         .field("type", TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_VALUE)
-        .field("type", TYPE_KEYWORD)
+        .field(MAPPING_ENABLED_SETTING, false)
       .endObject()
       .startObject(PROCESS_INSTANCE_ID)
         .field("type", TYPE_KEYWORD)
@@ -75,7 +78,10 @@ public class ExternalProcessVariableIndex extends DefaultIndexMappingCreator {
         .field("type", TYPE_KEYWORD)
       .endObject()
       .startObject(INGESTION_TIMESTAMP)
-        .field("type", TYPE_DATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+      .endObject()
+      .startObject(SERIALIZATION_DATA_FORMAT)
+        .field("type", TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }

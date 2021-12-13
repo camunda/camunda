@@ -6,14 +6,15 @@
 package org.camunda.optimize.service.identity;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
 import org.camunda.optimize.rest.cloud.CloudUserClient;
 import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -37,6 +38,17 @@ public class CloudUserIdentityCacheService extends AbstractIdentityCacheService 
   @Override
   protected String getCacheLabel() {
     return "Cloud user";
+  }
+
+  @Override
+  protected CronExpression evaluateCronExpression() {
+    final String cronTrigger = getCacheConfiguration().getCronTrigger();
+    String[] tokenisedExpression = cronTrigger.split("\\s+");
+    // To distribute the requests more evenly amongst cloud clusters, we select a random second and minute for
+    // the cron expression
+    tokenisedExpression[0] = String.valueOf(RandomUtils.nextInt(0, 60));
+    tokenisedExpression[1] = String.valueOf(RandomUtils.nextInt(0, 60));
+    return CronExpression.parse(String.join(" ", tokenisedExpression));
   }
 
   @Override

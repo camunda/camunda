@@ -209,8 +209,8 @@ public class CorrelatedCamundaProcessInstanceReader {
             final Map<String, SimpleProcessVariableDto> variablesByName = correlationValueDto.getVariables()
               .stream()
               .collect(Collectors.toMap(SimpleProcessVariableDto::getName, Function.identity()));
-            correlationValueToAdd = Optional.ofNullable(
-              variablesByName.get(eventSourceConfig.getTraceVariable()).getValue());
+            correlationValueToAdd =
+              variablesByName.get(eventSourceConfig.getTraceVariable()).getValue().stream().findFirst();
           } else {
             throw new OptimizeRuntimeException(
               "Cannot get variable sample values for event source with no tracing variable");

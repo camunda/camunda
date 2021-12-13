@@ -39,11 +39,9 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
           {t('common.filter.types.instanceEndDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
-      {!isOptimizeCloud && (
-        <Dropdown.Option onClick={openNewFilterModal('incident')}>
-          {t('common.filter.types.incident')}
-        </Dropdown.Option>
-      )}
+      <Dropdown.Option onClick={openNewFilterModal('incident')}>
+        {t('common.filter.types.incident')}
+      </Dropdown.Option>
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('flowNodeDuration')}

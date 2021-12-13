@@ -324,11 +324,15 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
     scheduler.runImportRound(true).get();
-    runOnlyScrollBasedMediators(scheduler);
+    // as the definition is imported in two steps,
+    // we need to run the xml imports once more as they depend on the definition entry to be present in elastic
+    // which is not guaranteed from the import round, as the write request of the definitions may not have
+    // been persisted when the xml importers were run
+    runDefinitionXmlImporterMediators(scheduler);
   }
 
   @SneakyThrows
-  private void runOnlyScrollBasedMediators(EngineImportScheduler scheduler) {
+  private void runDefinitionXmlImporterMediators(EngineImportScheduler scheduler) {
     final List<ImportMediator> definitionXmlMediators = scheduler.getImportMediators()
       .stream()
       .filter(mediator -> mediator instanceof DefinitionXmlImportMediator)

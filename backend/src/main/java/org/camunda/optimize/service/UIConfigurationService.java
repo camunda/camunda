@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
@@ -18,7 +19,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
-import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
@@ -47,7 +47,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
   private String logoAsBase64;
 
   public UIConfigurationResponseDto getUIConfiguration() {
-    UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
+    final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
     uiConfigurationDto.setHeader(getHeaderCustomization());
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
@@ -55,13 +55,24 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeCloudEnvironment(
-      Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE));
+      Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE)
+    );
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
+    uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
 
     final SettingsResponseDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
     uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
+
+    final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
+    mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
+    mixpanel.setApiHost(configurationService.getAnalytics().getMixpanel().getApiHost());
+    mixpanel.setToken(configurationService.getAnalytics().getMixpanel().getToken());
+    mixpanel.setOrganizationId(configurationService.getAnalytics().getMixpanel().getProperties().getOrganizationId());
+    mixpanel.setOsanoScriptUrl(configurationService.getAnalytics().getOsano().getScriptUrl().orElse(null));
+    mixpanel.setStage(configurationService.getAnalytics().getMixpanel().getProperties().getStage());
+    mixpanel.setClusterId(configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
 
     return uiConfigurationDto;
   }

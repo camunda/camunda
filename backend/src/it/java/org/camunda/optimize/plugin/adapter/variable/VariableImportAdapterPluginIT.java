@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.rest.optimize.dto.ObjectVariableDto;
+import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.util.DateFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
@@ -148,10 +148,10 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     ObjectMapper objectMapper = new ObjectMapper();
     String personAsString = objectMapper.writeValueAsString(person);
 
-    ObjectVariableDto objectVariableDto = new ObjectVariableDto();
+    VariableDto objectVariableDto = new VariableDto();
     objectVariableDto.setType(EngineConstants.VARIABLE_TYPE_OBJECT);
     objectVariableDto.setValue(personAsString);
-    ObjectVariableDto.ValueInfo info = new ObjectVariableDto.ValueInfo();
+    VariableDto.ValueInfo info = new VariableDto.ValueInfo();
     info.setObjectTypeName("org.camunda.foo.Person");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
     objectVariableDto.setValueInfo(info);
@@ -220,7 +220,6 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
       .hasSize(7)
       .allSatisfy(DateFormatterUtil::isValidOptimizeDateFormat);
   }
-
 
   private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
     return variablesClient

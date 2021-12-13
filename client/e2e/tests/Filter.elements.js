@@ -14,7 +14,11 @@ export const multiSelectOption = (text) => multiSelect.find('.DropdownOption').w
 export const multiSelectOptionNumber = (idx) => multiSelect.find('.DropdownOption').nth(idx);
 export const variableFilterOperatorButton = (text) =>
   Selector('.Modal .buttonRow .Button').withText(text);
+export const variableTypeahead = Selector('.variableContainer:last-of-type .Typeahead .Input');
 export const variableFilterValueInput = Selector('.Modal .ValueListInput input').nth(0);
+export const variableOrButton = Selector('.MultipleVariableFilterModal .orButton');
+export const removeVariableBtn = Selector('.MultipleVariableFilterModal .removeButton');
+export const variableHeader = (text) => Selector('.variableContainer .sectionTitle').withText(text);
 export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
 export const dateFilterTypeOption = (text) =>
   Selector('.DateRangeInput .DropdownOption').withText(text);

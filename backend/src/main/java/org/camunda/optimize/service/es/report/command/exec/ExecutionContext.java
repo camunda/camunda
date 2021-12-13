@@ -32,8 +32,8 @@ public class ExecutionContext<D extends SingleReportDataDto> {
   private D reportData;
   private ZoneId timezone;
   private long unfilteredInstanceCount;
-  private PaginationDto pagination;
-  private boolean isExport;
+  private Optional<PaginationDto> pagination;
+  private boolean isCsvExport;
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
@@ -60,7 +60,7 @@ public class ExecutionContext<D extends SingleReportDataDto> {
     this.timezone = reportEvaluationContext.getTimezone();
     this.combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
     this.pagination = reportEvaluationContext.getPagination();
-    this.isExport = reportEvaluationContext.isExport();
+    this.isCsvExport = reportEvaluationContext.isCsvExport();
     this.filterContext = createFilterContext(reportEvaluationContext);
   }
 

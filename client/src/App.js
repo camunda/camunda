@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
-import {init} from 'translation';
+import {initTranslation} from 'translation';
 
 import {
   PrivateRoute,
@@ -28,6 +28,7 @@ import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 import {Prompt} from 'prompt';
+import {Tracking} from 'tracking';
 
 import {Provider as Theme} from 'theme';
 import {withErrorHandling, UserProvider, DocsProvider} from 'HOC';
@@ -38,7 +39,7 @@ class App extends React.Component {
   };
 
   async componentDidMount() {
-    this.props.mightFail(init(), () => this.setState({translationLoaded: true}));
+    this.props.mightFail(initTranslation(), () => this.setState({translationLoaded: true}));
   }
 
   renderEntity = (props) => {
@@ -89,8 +90,8 @@ class App extends React.Component {
           <WithLicense>
             <div className="Root-container">
               <ErrorBoundary>
-                <DocsProvider>
-                  <UserProvider>
+                <UserProvider>
+                  <DocsProvider>
                     <Switch>
                       <PrivateRoute exact path="/" component={Home} />
                       <PrivateRoute path="/analysis" component={Analysis} />
@@ -105,8 +106,9 @@ class App extends React.Component {
                       <Route path="/logout" component={Logout} />
                       <PrivateRoute path="*" component={ErrorPage} />
                     </Switch>
-                  </UserProvider>
-                </DocsProvider>
+                  </DocsProvider>
+                  <Tracking />
+                </UserProvider>
               </ErrorBoundary>
             </div>
           </WithLicense>

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.metadata;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class Version {
@@ -14,6 +15,7 @@ public final class Version {
   public static final String VERSION_MAJOR = getMajorVersionFrom(VERSION);
   public static final String VERSION_MINOR = getMinorVersionFrom(VERSION);
   public static final String VERSION_PATCH = getPatchVersionFrom(VERSION);
+  public static final String INVALID_VERSION_MSG = "Provided version does not satisfy the x.x.x pattern: ";
 
   public static final String stripToPlainVersion(final String rawVersion) {
     // extract plain <major>.<minor>.<patch> version, strip everything else
@@ -24,15 +26,18 @@ public final class Version {
   }
 
   public static final String getMajorVersionFrom(String plainVersion) {
-    return plainVersion.split("\\.")[0];
+    return Arrays.stream(plainVersion.split("\\.")).findFirst()
+      .orElseThrow(() -> new IllegalArgumentException(INVALID_VERSION_MSG + plainVersion));
   }
 
   public static final String getMinorVersionFrom(String plainVersion) {
-    return plainVersion.split("\\.")[1];
+    return Arrays.stream(plainVersion.split("\\.")).skip(1).findFirst()
+      .orElseThrow(() -> new IllegalArgumentException(INVALID_VERSION_MSG + plainVersion));
   }
 
   public static final String getPatchVersionFrom(String plainVersion) {
-    return plainVersion.split("\\.")[2];
+    return Arrays.stream(plainVersion.split("\\.")).skip(2).findFirst()
+      .orElseThrow(() -> new IllegalArgumentException(INVALID_VERSION_MSG + plainVersion));
   }
 
   public static String getMajorAndMinor(String currentVersion) {

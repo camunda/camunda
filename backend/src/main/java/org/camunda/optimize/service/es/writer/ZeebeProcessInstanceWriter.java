@@ -184,7 +184,7 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
     "    incidentsById.put(newIncident.id, newIncident);\n" +
     "  }\n" +
     "}\n" +
-    // We have to set the correct element ID for incidents, replacing the key with the BPMN element
+    // We have to set the correct properties for incidents that we can't get from the record
     "def flowNodeIdsByFlowNodeInstanceIds = flowNodesById.values()\n" +
     "  .stream()\n" +
     "  .collect(Collectors.toMap(flowNode -> flowNode.flowNodeInstanceId, flowNode -> flowNode.flowNodeId));\n" +
@@ -195,6 +195,7 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
     "     if (flowNodeId != null) {\n" +
     "       incident.activityId = flowNodeId;\n" +
     "     }\n" +
+    "     incident.definitionVersion = existingInstance.processDefinitionVersion;\n" +
     "     return incident;\n" +
     "  })\n" +
     "  .collect(Collectors.toList());\n";

@@ -1,11 +1,7 @@
-## Neue Dashboard-Vorlagen
+## Hilfestellung
 
-Dashboards für Engpassanalysen, Prozessleistungen, und Portfolio-Performance können mit wenigen Klicks erstellt werden.
+Erhalten Sie über einen In-App-Link Zugriff auf unsere Dokumentation.
 
-## Detaillierte Filter
+## Webhook-Platzhalter
 
-Filter basierend auf Prozessknotendaten und erweiterten Datums-Bereichen.
-
-## Verbesserte Multi-Prozess Berichte
-
-Verschiedene Prozesse können verglichen und aggregiert werden, mit Prozessknoten-Filter um genau die richtigen Daten zu extrahieren.
+Erstellen Sie benutzerdefinierte Warnmeldungen mit mehreren neuen Webhook-Platzhaltern.

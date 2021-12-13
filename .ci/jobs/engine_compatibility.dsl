@@ -23,7 +23,7 @@ pipelineJob('engine_compatibility') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 22 * * *')
+          spec('H 22 * * 1-5')
         }
       }
     }

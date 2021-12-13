@@ -49,7 +49,7 @@ public class RawDataProcessReportResultDtoMapperTest {
       .stream()
       .peek(instance -> {
         final SimpleProcessVariableDto variableForInstances = new SimpleProcessVariableDto(
-          IdGenerator.getNextId(), "var1", "String", "val1", 1L);
+          IdGenerator.getNextId(), "var1", "String", Collections.singletonList("val1"), 1L);
         instance.setVariables(Collections.singletonList(variableForInstances));
       })
       .collect(Collectors.toList());

@@ -13,7 +13,7 @@ import {t} from 'translation';
 import {formatters} from 'services';
 const {formatTenantName} = formatters;
 
-export default function TenantPopover({tenants, selected, disabled, onChange}) {
+export default function TenantPopover({tenants, selected, disabled, onChange, renderInPortal}) {
   const allSelected = tenants && tenants.length === selected.length;
   const noneSelected = selected.length === 0;
 
@@ -33,6 +33,7 @@ export default function TenantPopover({tenants, selected, disabled, onChange}) {
       className="TenantPopover"
       disabled={disabled || tenants?.length < 2 || !tenants}
       title={label || '-'}
+      renderInPortal={renderInPortal}
     >
       <Form compact>
         <fieldset>

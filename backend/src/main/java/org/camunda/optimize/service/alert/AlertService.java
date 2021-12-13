@@ -51,12 +51,10 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,6 +71,7 @@ import static org.camunda.optimize.service.es.schema.index.AlertIndex.THRESHOLD_
 @Component
 @Slf4j
 public class AlertService implements ReportReferencingService {
+
   private final ApplicationContext applicationContext;
   private final AlertReader alertReader;
   private final AlertWriter alertWriter;
@@ -81,6 +80,7 @@ public class AlertService implements ReportReferencingService {
   private final AlertCheckJobFactory alertCheckJobFactory;
   private final ReportService reportService;
   private final AuthorizedCollectionService authorizedCollectionService;
+  private final AlertRecipientValidator alertRecipientValidator;
 
   private SchedulerFactoryBean schedulerFactoryBean;
 
@@ -149,70 +149,6 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
-    List<Trigger> triggers = new ArrayList<>();
-
-    for (Entry<AlertDefinitionDto, JobDetail> e : reminderDetails.entrySet()) {
-      if (e.getKey().getReminder() != null) {
-        triggers.add(alertReminderJobFactory.createTrigger(e.getKey(), e.getValue()));
-      }
-    }
-
-    return triggers;
-  }
-
-  private List<Trigger> createCheckTriggers(Map<AlertDefinitionDto, JobDetail> details) {
-    List<Trigger> triggers = new ArrayList<>();
-
-    for (Entry<AlertDefinitionDto, JobDetail> e : details.entrySet()) {
-      triggers.add(alertCheckJobFactory.createTrigger(e.getKey(), e.getValue()));
-    }
-
-    return triggers;
-  }
-
-  private Map<AlertDefinitionDto, JobDetail> createReminderDetails(List<AlertDefinitionDto> alerts) {
-    Map<AlertDefinitionDto, JobDetail> result = new HashMap<>();
-
-    for (AlertDefinitionDto alert : alerts) {
-      result.put(alert, alertReminderJobFactory.createJobDetails(alert));
-    }
-
-    return result;
-  }
-
-  private Map<AlertDefinitionDto, JobDetail> createCheckDetails(List<AlertDefinitionDto> alerts) {
-    Map<AlertDefinitionDto, JobDetail> result = new HashMap<>();
-
-    for (AlertDefinitionDto alert : alerts) {
-      result.put(alert, alertCheckJobFactory.createJobDetails(alert));
-    }
-
-    return result;
-  }
-
-  private JobListener createReminderListener() {
-    return new ReminderHandlingListener(alertReminderJobFactory);
-  }
-
-  private void checkAlertWebhooksAllExist(List<AlertDefinitionDto> alerts) {
-    final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
-    final Map<String, List<String>> missingWebhookMap = alerts.stream()
-      .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
-      .collect(groupingBy(AlertCreationRequestDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
-    if (!missingWebhookMap.isEmpty()) {
-      final String missingWebhookSummary = missingWebhookMap.entrySet()
-        .stream()
-        .map(entry -> String.format("Webhook: [%s] - Associated with alert(s): %s", entry.getKey(), entry.getValue()))
-        .collect(Collectors.joining("\n"));
-      final String errorMsg = String.format(
-        "The following webhooks no longer exist in the service-config, yet are associated with existing alerts:%n%s",
-        missingWebhookSummary
-      );
-      log.error(errorMsg);
-    }
-  }
-
   public Scheduler getScheduler() {
     return schedulerFactoryBean.getObject();
   }
@@ -225,203 +161,6 @@ public class AlertService implements ReportReferencingService {
       .collect(toList());
 
     return alertReader.getAlertsForReports(authorizedReportIds);
-  }
-
-  private List<AlertDefinitionDto> getAlertsForReport(String reportId) {
-    return alertReader.getAlertsForReport(reportId);
-  }
-
-  private AlertDefinitionDto getAlert(String alertId) {
-    Optional<AlertDefinitionDto> alertOptional = alertReader.getAlert(alertId);
-
-    if (!alertOptional.isPresent()) {
-      throw new NotFoundException("Alert does not exist!");
-    }
-
-    return alertOptional.get();
-  }
-
-  public IdResponseDto createAlert(AlertCreationRequestDto toCreate, String userId) {
-    validateAlert(toCreate, userId);
-    verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
-    String alertId = this.createAlertForUser(toCreate, userId).getId();
-    return new IdResponseDto(alertId);
-  }
-
-  private void validateAlert(AlertCreationRequestDto toCreate, String userId) {
-    ReportDefinitionDto report;
-    try {
-      report = reportService.getReportDefinition(toCreate.getReportId(), userId).getDefinitionDto();
-    } catch (Exception e) {
-      String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
-        toCreate.getReportId() + "] does not exist.";
-      log.error(errorMessage);
-      throw new BadRequestException(errorMessage, e);
-    }
-
-    if (report.getCollectionId() == null || report.getCollectionId().isEmpty()) {
-      throw new BadRequestException(
-        "Alerts cannot be created for private reports, only for reports within a collection.");
-    }
-
-    ValidationHelper.ensureNotEmpty(REPORT, report);
-
-    ValidationHelper.ensureNotEmpty(THRESHOLD_OPERATOR, toCreate.getThresholdOperator());
-    ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
-    ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
-
-    final boolean emailsDefined = CollectionUtils.isNotEmpty(toCreate.getEmails());
-    final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
-    if (!emailsDefined && !webhookDefined) {
-      throw new OptimizeValidationException("The fields [emails] and [webhook] are not allowed to " +
-                                              "both be empty. At least one of them must be set.");
-    }
-  }
-
-  private AlertDefinitionDto createAlertForUser(AlertCreationRequestDto toCreate, String userId) {
-    AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
-    scheduleAlert(alert);
-    return alert;
-  }
-
-  public void copyAndMoveAlerts(String oldReportId, String newReportId) {
-    List<AlertDefinitionDto> oldAlerts = getAlertsForReport(oldReportId);
-    for (AlertDefinitionDto alert : oldAlerts) {
-      alert.setReportId(newReportId);
-      createAlert(alert, alert.getOwner());
-    }
-  }
-
-  private void scheduleAlert(AlertDefinitionDto alert) {
-    try {
-      JobDetail jobDetail = alertCheckJobFactory.createJobDetails(alert);
-      if (schedulerFactoryBean != null) {
-        getScheduler().scheduleJob(jobDetail, alertCheckJobFactory.createTrigger(alert, jobDetail));
-      }
-    } catch (SchedulerException e) {
-      log.error("can't schedule new alert", e);
-    }
-  }
-
-  private static AlertDefinitionDto newAlert(AlertCreationRequestDto toCreate, String userId) {
-    AlertDefinitionDto result = new AlertDefinitionDto();
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    result.setOwner(userId);
-    result.setCreated(now);
-    result.setLastModified(now);
-    result.setLastModifier(userId);
-
-    AlertUtil.mapBasicFields(toCreate, result);
-    return result;
-  }
-
-  public void updateAlert(String alertId, AlertCreationRequestDto toCreate, String userId) {
-    validateAlert(toCreate, userId);
-    this.updateAlertForUser(alertId, toCreate, userId);
-  }
-
-  private void updateAlertForUser(String alertId, AlertCreationRequestDto toCreate, String userId) {
-    verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
-
-    AlertDefinitionDto toUpdate = getAlert(alertId);
-    unscheduleJob(toUpdate);
-    toUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
-    toUpdate.setLastModifier(userId);
-    AlertUtil.mapBasicFields(toCreate, toUpdate);
-    alertWriter.updateAlert(toUpdate);
-    scheduleAlert(toUpdate);
-  }
-
-  public void deleteAlert(String alertId, String userId) {
-    verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
-
-    AlertDefinitionDto toDelete = getAlert(alertId);
-    alertWriter.deleteAlert(alertId);
-    unscheduleJob(toDelete);
-  }
-
-  public void deleteAlerts(List<String> alertIds, String userId) {
-    List<String> alertIdsToDelete = new ArrayList<>();
-    for (String alertId : alertIds) {
-      try {
-        verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
-        alertIdsToDelete.add(alertId);
-      } catch (NotFoundException e) {
-        log.debug("Cannot find alert with id [{}], it may have been deleted already", alertId);
-      }
-    }
-    alertWriter.deleteAlerts(alertIdsToDelete);
-  }
-
-  private void unscheduleJob(AlertDefinitionDto toDelete) {
-    String alertId = toDelete.getId();
-    try {
-      unscheduleCheckJob(toDelete);
-      unscheduleReminderJob(toDelete);
-
-    } catch (SchedulerException e) {
-      log.error("can't adjust scheduler for alert [{}]", alertId, e);
-    }
-    toDelete.setTriggered(false);
-  }
-
-  private void unscheduleReminderJob(AlertDefinitionDto toDelete) throws SchedulerException {
-    JobKey toUnschedule = alertReminderJobFactory.getJobKey(toDelete);
-    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
-
-    if (toUnschedule != null) {
-      getScheduler().unscheduleJob(triggerKey);
-      getScheduler().deleteJob(toUnschedule);
-    }
-  }
-
-  private void unscheduleCheckJob(AlertDefinitionDto toDelete) throws SchedulerException {
-    JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);
-    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
-
-    if (toUnschedule != null) {
-      getScheduler().unscheduleJob(triggerKey);
-      getScheduler().deleteJob(toUnschedule);
-    }
-  }
-
-  private void deleteAlertsForReport(String reportId) {
-    List<AlertDefinitionDto> alerts = alertReader.getAlertsForReport(reportId);
-
-    for (AlertDefinitionDto alert : alerts) {
-      unscheduleJob(alert);
-    }
-
-    alertWriter.deleteAlertsForReport(reportId);
-  }
-
-  /**
-   * Check if it's still evaluated as number.
-   */
-  private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
-      SingleProcessReportDefinitionRequestDto singleReport = (SingleProcessReportDefinitionRequestDto) reportDefinition;
-      if (!validateIfReportIsSuitableForAlert(singleReport)) {
-        this.deleteAlertsForReport(reportId);
-      }
-    }
-  }
-
-  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionRequestDto report) {
-    final ProcessReportDataDto data = report.getData();
-    return data != null && data.getGroupBy() != null
-      && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
-      && ProcessVisualization.NUMBER.equals(data.getVisualization())
-      && data.getView().getProperties().size() == 1
-      && data.getConfiguration().getAggregationTypes().size() == 1
-      && data.getConfiguration().getUserTaskDurationTimes().size() == 1;
-  }
-
-  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionRequestDto report) {
-    final DecisionReportDataDto data = report.getData();
-    return data != null && data.getGroupBy() != null
-      && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
-      && DecisionVisualization.NUMBER.equals(data.getVisualization());
   }
 
   public JobDetail createStatusCheckJobDetails(AlertDefinitionDto fakeReportAlert) {
@@ -467,6 +206,143 @@ public class AlertService implements ReportReferencingService {
     deleteAlertsIfNeeded(reportId, updateDefinition);
   }
 
+  private List<AlertDefinitionDto> getAlertsForReport(String reportId) {
+    return alertReader.getAlertsForReport(reportId);
+  }
+
+  private AlertDefinitionDto getAlert(String alertId) {
+    return alertReader.getAlert(alertId).orElseThrow(() -> new NotFoundException("Alert does not exist!"));
+  }
+
+  public IdResponseDto createAlert(AlertCreationRequestDto toCreate, String userId) {
+    validateAlert(toCreate, userId);
+    verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
+    String alertId = this.createAlertForUser(toCreate, userId).getId();
+    return new IdResponseDto(alertId);
+  }
+
+  public void copyAndMoveAlerts(String oldReportId, String newReportId) {
+    List<AlertDefinitionDto> oldAlerts = getAlertsForReport(oldReportId);
+    for (AlertDefinitionDto alert : oldAlerts) {
+      alert.setReportId(newReportId);
+      createAlert(alert, alert.getOwner());
+    }
+  }
+
+  public void updateAlert(String alertId, AlertCreationRequestDto toCreate, String userId) {
+    validateAlert(toCreate, userId);
+    this.updateAlertForUser(alertId, toCreate, userId);
+  }
+
+  public void deleteAlert(String alertId, String userId) {
+    verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
+
+    AlertDefinitionDto toDelete = getAlert(alertId);
+    alertWriter.deleteAlert(alertId);
+    unscheduleJob(toDelete);
+  }
+
+  public void deleteAlerts(List<String> alertIds, String userId) {
+    List<String> alertIdsToDelete = new ArrayList<>();
+    for (String alertId : alertIds) {
+      try {
+        verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
+        alertIdsToDelete.add(alertId);
+      } catch (NotFoundException e) {
+        log.debug("Cannot find alert with id [{}], it may have been deleted already", alertId);
+      }
+    }
+    alertWriter.deleteAlerts(alertIdsToDelete);
+  }
+
+  private void unscheduleJob(AlertDefinitionDto toDelete) {
+    String alertId = toDelete.getId();
+    try {
+      unscheduleCheckJob(toDelete);
+      unscheduleReminderJob(toDelete);
+    } catch (SchedulerException e) {
+      log.error("can't adjust scheduler for alert [{}]", alertId, e);
+    }
+    toDelete.setTriggered(false);
+  }
+
+  private static AlertDefinitionDto newAlert(AlertCreationRequestDto toCreate, String userId) {
+    AlertDefinitionDto result = new AlertDefinitionDto();
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    result.setOwner(userId);
+    result.setCreated(now);
+    result.setLastModified(now);
+    result.setLastModifier(userId);
+    AlertUtil.mapBasicFields(toCreate, result);
+    return result;
+  }
+
+  private void updateAlertForUser(String alertId, AlertCreationRequestDto toCreate, String userId) {
+    verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
+
+    AlertDefinitionDto toUpdate = getAlert(alertId);
+    unscheduleJob(toUpdate);
+    toUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
+    toUpdate.setLastModifier(userId);
+    AlertUtil.mapBasicFields(toCreate, toUpdate);
+    alertWriter.updateAlert(toUpdate);
+    scheduleAlert(toUpdate);
+  }
+
+  private void unscheduleReminderJob(AlertDefinitionDto toDelete) throws SchedulerException {
+    JobKey toUnschedule = alertReminderJobFactory.getJobKey(toDelete);
+    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
+
+    if (toUnschedule != null) {
+      getScheduler().unscheduleJob(triggerKey);
+      getScheduler().deleteJob(toUnschedule);
+    }
+  }
+
+  private void unscheduleCheckJob(AlertDefinitionDto toDelete) throws SchedulerException {
+    JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);
+    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
+
+    if (toUnschedule != null) {
+      getScheduler().unscheduleJob(triggerKey);
+      getScheduler().deleteJob(toUnschedule);
+    }
+  }
+
+  private void deleteAlertsForReport(String reportId) {
+    alertReader.getAlertsForReport(reportId).forEach(this::unscheduleJob);
+    alertWriter.deleteAlertsForReport(reportId);
+  }
+
+  /**
+   * Check if it's still evaluated as number.
+   */
+  private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
+    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
+      SingleProcessReportDefinitionRequestDto singleReport = (SingleProcessReportDefinitionRequestDto) reportDefinition;
+      if (!validateIfReportIsSuitableForAlert(singleReport)) {
+        this.deleteAlertsForReport(reportId);
+      }
+    }
+  }
+
+  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionRequestDto report) {
+    final ProcessReportDataDto data = report.getData();
+    return data != null && data.getGroupBy() != null
+      && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
+      && ProcessVisualization.NUMBER.equals(data.getVisualization())
+      && data.getView().getProperties().size() == 1
+      && data.getConfiguration().getAggregationTypes().size() == 1
+      && data.getConfiguration().getUserTaskDurationTimes().size() == 1;
+  }
+
+  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionRequestDto report) {
+    final DecisionReportDataDto data = report.getData();
+    return data != null && data.getGroupBy() != null
+      && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
+      && DecisionVisualization.NUMBER.equals(data.getVisualization());
+  }
+
   private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
     return alertsForReport.stream()
       .map(alertDto -> new ConflictedItemDto(alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
@@ -484,4 +360,103 @@ public class AlertService implements ReportReferencingService {
         .getCollectionId()
     );
   }
+
+  private void validateAlert(AlertCreationRequestDto toCreate, String userId) {
+    ReportDefinitionDto report;
+    try {
+      report = reportService.getReportDefinition(toCreate.getReportId(), userId).getDefinitionDto();
+    } catch (Exception e) {
+      String errorMessage = "Could not create alert [" + toCreate.getName() + "]. Report id [" +
+        toCreate.getReportId() + "] does not exist.";
+      log.error(errorMessage);
+      throw new BadRequestException(errorMessage, e);
+    }
+
+    if (report.getCollectionId() == null || report.getCollectionId().isEmpty()) {
+      throw new BadRequestException(
+        "Alerts cannot be created for private reports, only for reports within a collection.");
+    }
+
+    ValidationHelper.ensureNotEmpty(REPORT, report);
+
+    ValidationHelper.ensureNotEmpty(THRESHOLD_OPERATOR, toCreate.getThresholdOperator());
+    ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
+    ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
+
+    final boolean emailsDefined = CollectionUtils.isNotEmpty(toCreate.getEmails());
+    if (emailsDefined) {
+      final List<String> validatedRecipients =
+        alertRecipientValidator.getValidatedRecipientEmailList(toCreate.getEmails());
+      toCreate.setEmails(validatedRecipients);
+    }
+    final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
+    if (!emailsDefined && !webhookDefined) {
+      throw new OptimizeValidationException(
+        "The fields [emails] and [webhook] are not allowed to both be empty. At least one of them must be set.");
+    }
+  }
+
+  private AlertDefinitionDto createAlertForUser(AlertCreationRequestDto toCreate, String userId) {
+    AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
+    scheduleAlert(alert);
+    return alert;
+  }
+
+  private void scheduleAlert(AlertDefinitionDto alert) {
+    try {
+      JobDetail jobDetail = alertCheckJobFactory.createJobDetails(alert);
+      if (schedulerFactoryBean != null) {
+        getScheduler().scheduleJob(jobDetail, alertCheckJobFactory.createTrigger(alert, jobDetail));
+      }
+    } catch (SchedulerException e) {
+      log.error("can't schedule new alert", e);
+    }
+  }
+
+  private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
+    return reminderDetails.entrySet()
+      .stream()
+      .filter(entry -> Objects.nonNull(entry.getKey().getReminder()))
+      .map(entry -> alertReminderJobFactory.createTrigger(entry.getKey(), entry.getValue()))
+      .collect(Collectors.toList());
+  }
+
+  private List<Trigger> createCheckTriggers(Map<AlertDefinitionDto, JobDetail> details) {
+    return details.entrySet()
+      .stream()
+      .map(entry -> alertCheckJobFactory.createTrigger(entry.getKey(), entry.getValue()))
+      .collect(Collectors.toList());
+  }
+
+  private Map<AlertDefinitionDto, JobDetail> createReminderDetails(List<AlertDefinitionDto> alerts) {
+    return alerts.stream().collect(Collectors.toMap(alert -> alert, alertReminderJobFactory::createJobDetails));
+  }
+
+  private Map<AlertDefinitionDto, JobDetail> createCheckDetails(List<AlertDefinitionDto> alerts) {
+    return alerts.stream().collect(Collectors.toMap(alert -> alert, alertCheckJobFactory::createJobDetails));
+  }
+
+  private JobListener createReminderListener() {
+    return new ReminderHandlingListener(alertReminderJobFactory);
+  }
+
+  private void checkAlertWebhooksAllExist(List<AlertDefinitionDto> alerts) {
+    final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
+    final Map<String, List<String>> missingWebhookMap = alerts.stream()
+      .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
+      .collect(groupingBy(AlertCreationRequestDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
+    if (!missingWebhookMap.isEmpty()) {
+      final String missingWebhookSummary = missingWebhookMap.entrySet()
+        .stream()
+        .map(entry -> String.format("Webhook: [%s] - Associated with alert(s): %s", entry.getKey(), entry.getValue()))
+        .collect(Collectors.joining("\n"));
+      final String errorMsg = String.format(
+        "The following webhooks no longer exist in Optimize configuration, yet are associated with existing " +
+          "alerts:%n%s",
+        missingWebhookSummary
+      );
+      log.error(errorMsg);
+    }
+  }
+
 }

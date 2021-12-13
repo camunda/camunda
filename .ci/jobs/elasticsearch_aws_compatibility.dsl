@@ -24,7 +24,7 @@ pipelineJob('elasticsearch_aws_compatibility') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 2 * * *')
+          spec('H 2 * * 1-5')
         }
       }
     }

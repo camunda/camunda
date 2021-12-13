@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {init, t, getLanguage} from './translation';
+export {initTranslation, t, getLanguage} from './translation';

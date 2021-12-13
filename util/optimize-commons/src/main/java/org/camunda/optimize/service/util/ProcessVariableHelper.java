@@ -57,6 +57,7 @@ public class ProcessVariableHelper {
     switch (Optional.ofNullable(type).orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
       case BOOLEAN:
       case STRING:
+      case OBJECT:
         return getNestedVariableValueField();
       case DOUBLE:
         return getNestedVariableValueField() + "." + MULTIVALUE_FIELD_DOUBLE;

@@ -1,11 +1,7 @@
-## New Dashboard Templates
+## Help Guide
 
-Create dashboards for bottleneck detection, process performance evaluation, and process portfolio evaluation with a few clicks.
+View our documentation through an in-app link.
 
-## Fine-Grained Filtering
+## Webhook Placeholders
 
-Filter on flow node data and advanced date ranges.
-
-## Improved Multi-Process Reports
-
-Compare or aggregate different processes, with flow node-level filters to extract the exact right data.
+Create custom alert messages using several new webhook placeholders.

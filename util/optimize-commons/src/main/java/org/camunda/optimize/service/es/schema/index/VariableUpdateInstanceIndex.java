@@ -76,8 +76,7 @@ public class VariableUpdateInstanceIndex extends DefaultIndexMappingCreator {
       .startObject(TIMESTAMP)
         .field("type", "date")
           .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      ;
+      .endObject();
     // @formatter:on
   }
 

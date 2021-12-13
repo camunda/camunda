@@ -36,7 +36,7 @@ pipelineJob('camunda-optimize-release-test') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 23 * * *')
+          spec('H 23 * * 1-5')
         }
       }
     }

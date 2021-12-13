@@ -26,7 +26,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
   @Test
   public void ingestedVariableDataImportProgressIsPersisted() {
     // given
-    final ExternalProcessVariableRequestDto externalVariable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto externalVariable = ingestionClient.createPrimitiveExternalVariable();
     ingestionClient.ingestVariables(List.of(externalVariable));
 
     // when
@@ -47,7 +47,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
   @SneakyThrows
   public void indexProgressIsRestoredAfterRestartOfOptimize() {
     // given
-    final ExternalProcessVariableRequestDto externalVariable = ingestionClient.createExternalVariable();
+    final ExternalProcessVariableRequestDto externalVariable = ingestionClient.createPrimitiveExternalVariable();
     ingestionClient.ingestVariables(List.of(externalVariable));
 
     // when

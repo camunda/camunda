@@ -28,11 +28,9 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       <Dropdown.Option onClick={openNewFilterModal('instanceState')}>
         {t('common.filter.types.instanceState')}
       </Dropdown.Option>
-      {!isOptimizeCloud && (
-        <Dropdown.Option onClick={openNewFilterModal('incidentInstances')}>
-          {t('common.filter.types.incident')}
-        </Dropdown.Option>
-      )}
+      <Dropdown.Option onClick={openNewFilterModal('incidentInstances')}>
+        {t('common.filter.types.incident')}
+      </Dropdown.Option>
       <Dropdown.Submenu label={t('common.filter.types.date')}>
         <Dropdown.Option onClick={openNewFilterModal('instanceStartDate')}>
           {t('common.filter.types.instanceStartDate')}
@@ -87,7 +85,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       )}
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
-        onClick={openNewFilterModal('variable')}
+        onClick={openNewFilterModal('multipleVariable')}
       >
         {t('common.filter.types.variable')}
       </Dropdown.Option>

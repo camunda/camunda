@@ -37,7 +37,7 @@ public class CsvExportService {
       ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportId)
         .userId(userId)
         .timezone(timezone)
-        .isExport(true)
+        .isCsvExport(true)
         .build();
       final AuthorizedReportEvaluationResult reportResult = reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
@@ -64,7 +64,7 @@ public class CsvExportService {
       ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportDefinition)
         .userId(userId)
         .timezone(timezone)
-        .isExport(true)
+        .isCsvExport(true)
         .build();
       final AuthorizedReportEvaluationResult reportResult =
         reportEvaluationHandler.evaluateReport(evaluationInfo);

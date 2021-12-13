@@ -37,7 +37,7 @@ public class CorrelatableProcessInstanceDto extends CorrelatableInstanceDto {
         return variables
           .stream()
           .filter(var -> var.getName().equals(traceVariableName))
-          .map(SimpleProcessVariableDto::getValue)
+          .map(simpleVar -> simpleVar.getValue().stream().findFirst().orElse(null))
           .findFirst().orElse(null);
       }
     }

@@ -140,7 +140,13 @@ public class ProcessVariableReader {
       .setPathToAggregation(VARIABLES, VAR_NAME_AND_TYPE_COMPOSITE_AGG)
       .setCompositeBucketConsumer(bucket -> variableNames.add(extractVariableName(bucket)))
       .consumeAllPages();
+    filterVariableNameResults(variableNames);
     return variableNames;
+  }
+
+  private void filterVariableNameResults(final List<ProcessVariableNameResponseDto> variableNames) {
+    // Exclude object variables from this result as they are only visible in raw data reports
+    variableNames.removeIf(varName -> VariableType.OBJECT.equals(varName.getType()));
   }
 
   private ProcessVariableNameResponseDto extractVariableName(final ParsedComposite.ParsedBucket bucket) {
@@ -158,22 +164,26 @@ public class ProcessVariableReader {
       .filter(source -> !CollectionUtils.isEmpty(source.getProcessDefinitionVersions()))
       .collect(Collectors.toList());
     if (processVariableSources.isEmpty()) {
-      log.debug("Cannot fetch variable names for process definition with missing versions.");
+      log.debug("Cannot fetch variable values for process definition with missing versions.");
       return Collections.emptyList();
     }
 
     log.debug("Fetching input variable values from sources [{}]", processVariableSources);
 
     final BoolQueryBuilder query = boolQuery();
-    processVariableSources.forEach(source -> query.should(
-      DefinitionQueryUtil.createDefinitionQuery(
-        source.getProcessDefinitionKey(),
-        source.getProcessDefinitionVersions(),
-        source.getTenantIds(),
-        new ProcessInstanceIndex(source.getProcessDefinitionKey()),
-        processDefinitionReader::getLatestVersionToKey
-      ))
-    );
+    processVariableSources
+      .forEach(source -> {
+        query.should(DefinitionQueryUtil.createDefinitionQuery(
+          source.getProcessDefinitionKey(),
+          source.getProcessDefinitionVersions(),
+          source.getTenantIds(),
+          new ProcessInstanceIndex(source.getProcessDefinitionKey()),
+          processDefinitionReader::getLatestVersionToKey
+        ));
+        if (source.getProcessInstanceId() != null) {
+          query.must(termQuery(ProcessInstanceIndex.PROCESS_INSTANCE_ID, source.getProcessInstanceId()));
+        }
+      });
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

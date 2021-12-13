@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.engine;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Data
 public class HistoricIncidentEngineDto implements EngineDto {
@@ -32,5 +33,9 @@ public class HistoricIncidentEngineDto implements EngineDto {
   protected boolean open;
   protected boolean deleted;
   protected boolean resolved;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 
 }

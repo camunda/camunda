@@ -426,8 +426,12 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.configurationButton);
 
+  await t.click(e.selectSwitchLabel('Logarithmic Scale'));
+
   await t.typeText(e.axisInputs('X Axis Label'), 'x axis label', {replace: true});
   await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label', {replace: true});
+
+  await t.click(e.selectSwitchLabel('Logarithmic Scale'));
 
   await t.expect(e.reportChart.visible).ok();
 

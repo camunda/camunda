@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.telemetry;
+package org.camunda.optimize.service.telemetry.easytelemetry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetrySendingService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -46,7 +47,7 @@ public class TelemetrySendingServiceTest {
   public void telemetryDataIsSentWithCorrectPayload() {
     // given
     final CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-    final TelemetrySendingService underTest = new TelemetrySendingService(mockClient, new ObjectMapper());
+    final EasyTelemetrySendingService underTest = new EasyTelemetrySendingService(mockClient, new ObjectMapper());
 
     // mock successful response
     final CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
@@ -71,7 +72,7 @@ public class TelemetrySendingServiceTest {
   public void telemetryDataIsSent_withUnexpectedResponse_throwsRuntimeException() {
     // given
     final CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-    final TelemetrySendingService underTest = new TelemetrySendingService(mockClient, new ObjectMapper());
+    final EasyTelemetrySendingService underTest = new EasyTelemetrySendingService(mockClient, new ObjectMapper());
 
     // mock unexpected response
     final CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
@@ -89,7 +90,7 @@ public class TelemetrySendingServiceTest {
   public void telemetryDataIsSent_withIOException_throwsRuntimeException() {
     // given
     final CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
-    final TelemetrySendingService underTest = new TelemetrySendingService(mockClient, new ObjectMapper());
+    final EasyTelemetrySendingService underTest = new EasyTelemetrySendingService(mockClient, new ObjectMapper());
 
     // mock IOException when executing request
     when(mockClient.execute(any())).thenThrow(IOException.class);
@@ -98,7 +99,7 @@ public class TelemetrySendingServiceTest {
     assertThrows(OptimizeRuntimeException.class, () -> sendTelemetry(underTest));
   }
 
-  private void sendTelemetry(final TelemetrySendingService underTest) {
+  private void sendTelemetry(final EasyTelemetrySendingService underTest) {
     underTest.sendTelemetryData(
       getTestTelemetryData(),
       TEST_ENDPOINT

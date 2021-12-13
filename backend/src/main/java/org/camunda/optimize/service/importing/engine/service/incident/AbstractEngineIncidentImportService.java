@@ -104,7 +104,7 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
         engineEntity.getProcessInstanceId(),
         definition.getKey(),
         definition.getVersion(),
-        engineEntity.getTenantId(),
+        engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)),
         engineContext.getEngineAlias(),
         engineEntity.getId(),
         engineEntity.getCreateTime(),

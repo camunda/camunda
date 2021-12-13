@@ -6,7 +6,7 @@
 
 import {cleanEntities} from '../setup';
 import config from '../config';
-import {login, save, getUser} from '../utils';
+import {login, save, getUser, createNewDashboard} from '../utils';
 
 import * as Homepage from './Homepage.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
@@ -18,6 +18,8 @@ async function createCollection(t, name = 'Test Collection') {
   await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
   await t.typeText(Homepage.modalNameInput, name, {replace: true});
   await t.click(Homepage.confirmButton);
+  await t.click(e.selectAllCheckbox);
+  await t.click(Homepage.confirmButton);
 }
 
 test('create a collection and entities inside it', async (t) => {
@@ -26,15 +28,6 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.collectionTitle.visible).ok();
   await t.expect(e.collectionTitle.textContent).contains('Test Collection');
 
-  await t.click(e.sourcesTab);
-
-  await t.click(e.addButton);
-  const definitionName = 'Invoice Receipt with alternative correlation variable';
-  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
-  await t.click(e.typeaheadOption(definitionName));
-  await t.click(e.checkbox('Select All'));
-  await t.click(e.confirmModalButton);
-
   await t.click(e.entitiesTab);
 
   await t.click(e.createNewMenu);
@@ -42,15 +35,14 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.createNewMenu.textContent).notContains('New Collection');
   await t.expect(e.createNewMenu.textContent).contains('New Dashboard');
   await t.expect(e.createNewMenu.textContent).contains('New Report');
+  await t.click(e.createNewMenu);
 
-  await t.click(e.option('New Dashboard'));
-  await t.click(Homepage.modalConfirmbutton);
-
+  await createNewDashboard(t);
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
   await t.expect(e.dashboardItem.visible).ok();
-  await t.expect(e.dashboardItem.textContent).contains('New Dashboard');
+  await t.expect(e.dashboardItem.textContent).contains('Blank Dashboard');
 });
 
 test('renaming a collection', async (t) => {
@@ -85,17 +77,13 @@ test('user permissions', async (t) => {
 
   await t.click(e.addButton);
   const definitionName = 'Invoice Receipt with alternative correlation variable';
-  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
-  await t.click(e.typeaheadOption(definitionName));
-  await t.click(e.checkbox('Select All'));
+  await t.typeText(e.searchField, definitionName, {replace: true});
+  await t.click(e.selectAllCheckbox);
   await t.click(e.confirmModalButton);
 
   await t.click(e.entitiesTab);
 
-  await t.click(e.createNewMenu);
-  await t.click(e.option('New Dashboard'));
-  await t.click(Homepage.modalConfirmbutton);
-
+  await createNewDashboard(t);
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
@@ -183,14 +171,14 @@ test('user permissions', async (t) => {
 
 test('add, edit and delete sources', async (t) => {
   await createCollection(t);
+
   await t.click(e.sourcesTab);
 
   // add source by definition
   await t.click(e.addButton);
   const definitionName = 'Hiring Demo 5 Tenants';
-  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
-  await t.click(e.typeaheadOption(definitionName));
-  await t.click(e.checkbox('Select All'));
+  await t.typeText(e.searchField, definitionName, {replace: true});
+  await t.click(e.selectAllCheckbox);
   await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByDefinition.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();
@@ -201,11 +189,10 @@ test('add, edit and delete sources', async (t) => {
   // add source by tenant
   await t.click(e.addButton);
   const tenantName = 'engineering';
-  await t.click(e.tenantSource);
   await t.typeText(e.typeaheadInput, tenantName, {replace: true});
   await t.click(e.typeaheadOption(tenantName));
-  await t.click(e.checkbox('Beverages'));
-  await t.click(e.checkbox('Book Request with no business key'));
+  await t.click(e.itemCheckbox(3));
+  await t.click(e.itemCheckbox(4));
   await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByTenant.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();

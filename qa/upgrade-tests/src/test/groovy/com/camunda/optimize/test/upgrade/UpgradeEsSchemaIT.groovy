@@ -6,7 +6,6 @@
 package com.camunda.optimize.test.upgrade
 
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex
-import org.camunda.optimize.service.metadata.PreviousVersion
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -91,7 +90,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
               .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.FLOW_NODE_INSTANCES))
       assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
               .as("Process Instance FlowNode Variable Count is not as expected")
-              .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
+              .isGreaterThanOrEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceIndex.VARIABLES))
 
       assertThat(oldElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
               .as("Decision Definition Document Count is not as expected")
@@ -112,7 +111,8 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
                 .isFalse()
       }
       new File(getNewOptimizeOutputLogPath()).eachLine { line ->
-        def matcherWarn = line =~ /WARN/
+        // ignore warns about incorrect serializationDataFormat in default processes from ObjectVariableFlatteningService
+        def matcherWarn = line =~ /WARN(?!.*ObjectVariableService - Object variable 'approverGroups'*)/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
                 .isFalse()

@@ -18,6 +18,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -197,7 +198,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
 
   private SimpleProcessVariableDto expectedExternalEventVariable() {
     return new SimpleProcessVariableDto(
-      VARIABLE_ID, VARIABLE_ID, VARIABLE_VALUE.getClass().getSimpleName(), VARIABLE_VALUE, 1
+      VARIABLE_ID, VARIABLE_ID, VARIABLE_VALUE.getClass().getSimpleName(), Collections.singletonList(VARIABLE_VALUE), 1
     );
   }
 
@@ -224,7 +225,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       .flatMap(entry -> entry.getValue().entrySet().stream()
         .map(variableProperties ->
                new SimpleProcessVariableDto(variableProperties.getKey(), variableProperties.getKey(),
-                                            entry.getKey().getId(), variableProperties.getValue().toString(), 1
+                                            entry.getKey().getId(),
+                                            Collections.singletonList(variableProperties.getValue().toString()), 1
                )))
       .collect(Collectors.toList());
   }

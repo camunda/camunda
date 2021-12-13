@@ -60,7 +60,25 @@
   },
   "templates": {
     "noProcessHint": "Create Blank Dashboard",
-    "noXmlHint": "Select Process definition to display diagram"
+    "noXmlHint": "Select Process definition to display diagram",
+    "blankSlate": {
+      "selectProcess": "Select up to 10 process definitions",
+      "selectTemplate": "Select a template",
+      "review": "Review your draft dashboard and remove unwanted reports",
+      "refine": "Refine your dashboard and reports"
+    },
+    "disabledMessage": {
+      "noProcess": "Select process definition to be able to select a template.",
+      "multipleProcess": "This template is best suited for multiple processes.",
+      "singleProcess": "This template is best suited for single processes.",
+      "editReport": "To change this value, edit the data source section of the created report(s)."
+    },
+    "templateGroups": {
+      "blankGroup": "Blank template",
+      "templatesGroup": "Templates",
+      "singleProcessGroup": "Single process templates",
+      "multiProcessGroup": "Multi process templates"
+    }
   },
   "home": {
     "createBtn": {
@@ -424,6 +442,7 @@
         "engineName": "Engine Name",
         "tenantId": "Tenant Id",
         "variable": "Var",
+        "multipleVariable": "Var",
         "inputVariable": "InputVar",
         "outputVariable": "OutputVar"
       },
@@ -482,8 +501,10 @@
         },
         "showAbsolute": "Show Absolute Value"
       },
-      "axisLabels": {
-        "legend": "Axis Labels",
+      "axisSettings": {
+        "legend": "Axis Settings",
+        "logScale": "Logarithmic Scale (base 10)",
+        "label": "Axis Label",
         "xAxis": "X Axis Label",
         "yAxis": "Y Axis Label"
       },
@@ -583,16 +604,16 @@
       "bottleneckQueue": "How many tasks are waiting at my bottleneck? (To Do: Edit the filter to select the flow node AT the bottleneck)",
       "workerProductivity": "How productive are my workers?",
       "workDuration": "How long does each user task take?",
-      "completedProcesses": "Processes Completed (To Do: Add other processes)",
-      "activeIncidents": "Active Incidents(To Do: Add other processes)",
-      "runningProcesses": "Which processes are running? (To Do: Add other processes and group by process)",
-      "runningTasks": "Which user tasks are in progress? (To Do: Add other processes)",
-      "processTotal": "How much are we using Camunda? (To Do: Add other processes and group by start date AND process)",
-      "laborSavings": "Are we saving total labor costs? (To Do: Add other processes and group by start date AND process)",
-      "processAcceleration": "Are my processes getting faster? (To Do: Add other processes and group by start date AND process)",
-      "taskAutomation": "How quickly are we automating user tasks? (To Do: Add other processes and group by start date AND process)",
-      "incidentHandling": "Are we resolving incidents fast enough? (To Do: Add other processes)",
-      "taskLifecycle": "How long do tasks wait before assignment? (To Do: Add other processes)"
+      "completedProcesses": "Processes Completed",
+      "activeIncidents": "Active Incident",
+      "runningProcesses": "Which processes are running?",
+      "runningTasks": "Which user tasks are in progress?",
+      "processTotal": "How much are we using Camunda?",
+      "laborSavings": "Are we saving total labor costs?",
+      "processAcceleration": "Are my processes getting faster?",
+      "taskAutomation": "How quickly are we automating user tasks?",
+      "incidentHandling": "Are we resolving incidents fast enough?",
+      "taskLifecycle": "How long do tasks wait before assignment?"
     },
     "addButton": {
       "addReport": "Add a Report",
@@ -796,6 +817,7 @@
     "documentation": "documentation",
     "open": "Open",
     "for": "for",
+    "download": "Download",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
@@ -885,7 +907,10 @@
         "createBtn": "Create Collection",
         "editBtn": "Edit Collection",
         "inputLabel": "Collection Name",
-        "defaultName": "New Collection"
+        "defaultName": "New Collection",
+        "addDataSources": "Add Data Sources",
+        "info": "A collection allows you to limit access to data, add users and create alerts on number reports.",
+        "allTenants": "All tenants"
       },
       "addUserModal": {
         "searchPlaceholder": "Search for name, email or ID ..."
@@ -964,6 +989,7 @@
         "instanceDuration": "Process Instance Duration",
         "flowNodeDuration": "Flow Node Duration",
         "variable": "Variable",
+        "multipleVariable": "Variable",
         "flowNode": "Flow Node",
         "evaluationDateTime": "Evaluation Date Time",
         "inputVariable": "Input Variable",
@@ -1046,9 +1072,11 @@
       },
       "variableModal": {
         "inputLabel": "Variable Name",
+        "info": "Only display instances where...",
         "inputPlaceholder": "Select or search for a variable here",
         "noVariables": "No variables found",
         "loadMore": "Load More",
+        "or": "or",
         "bool": {
           "true": "is true",
           "false": "is false",
@@ -1194,6 +1222,10 @@
         "delete": "Are you sure you want to delete the selected items?",
         "remove": "Are you sure you want to remove the selected items?"
       }
+    },
+    "csvLimit": {
+      "Warning": "Warning: CSV will not contain all requested data",
+      "info": "This download will contain the first {exportLimit} of {totalCount} records. Contact your administrator to increase this system limit or filter your data to resolve this issue."
     },
     "unit": {
       "automatic": "automatic",

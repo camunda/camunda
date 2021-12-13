@@ -13,7 +13,7 @@ import {getSources, removeSource, editSource, addSources} from './service';
 
 import SourcesListWithErrorHandling from './SourcesList';
 import EditSourceModal from './modals/EditSourceModal';
-import AddSourceModal from './modals/AddSourceModal';
+import SourcesModal from './modals/SourcesModal';
 import {areTenantsAvailable} from 'config';
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
@@ -111,7 +111,7 @@ it('should modify the tenants in source', () => {
   expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants, undefined);
 });
 
-it('should add sources when addSourceModal is confirmed', () => {
+it('should add sources when SourcesModal is confirmed', () => {
   const node = shallow(<SourcesList {...props} />);
 
   node.setState({addingSource: true});
@@ -123,7 +123,7 @@ it('should add sources when addSourceModal is confirmed', () => {
       tenants: ['tenantId'],
     },
   ];
-  node.find(AddSourceModal).prop('onConfirm')(sources);
+  node.find(SourcesModal).prop('onConfirm')(sources);
 
   expect(addSources).toHaveBeenCalledWith('collectionId', sources);
 });

@@ -27,6 +27,7 @@ import java.util.Collections;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 
 public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
@@ -48,7 +49,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
       .hasMessage(String.format(
         "Schema version saved in Metadata [%s] must be one of [%s, %s]",
         metadataIndexVersion,
-        PreviousVersion.PREVIOUS_VERSION,
+        PreviousVersion.PREVIOUS_VERSION_MAJOR_MINOR,
         Version.VERSION
       ));
 
@@ -59,6 +60,18 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   public void upgradeSucceedsOnSchemaVersionOfPreviousVersion() {
     // given
     setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
+
+    // when
+    assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
+
+    // then
+    assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
+  }
+
+  @Test
+  public void upgradeSucceedsOnSchemaVersionOfPreviousPatchVersion() {
+    // given
+    setMetadataVersion(getMajorAndMinor(PreviousVersion.PREVIOUS_VERSION) + ".1");
 
     // when
     assertThatNoException().isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));

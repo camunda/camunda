@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
@@ -92,19 +93,22 @@ public class DecisionViewRawData extends DecisionViewPart {
 
     final SearchSourceBuilder search = searchRequest.source()
       .fetchSource(true);
-    if (context.isExport()) {
-      search.size(
-        context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
-          MAX_RESPONSE_SIZE_LIMIT : context.getPagination().getLimit());
-      searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
-    } else {
-      if (context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
-        context.getPagination().setLimit(MAX_RESPONSE_SIZE_LIMIT);
+    context.getPagination().ifPresent(pag -> {
+      if (context.isCsvExport()) {
+        search.size(
+         pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
+            MAX_RESPONSE_SIZE_LIMIT : pag.getLimit());
+        searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      } else {
+        if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
+          pag.setLimit(MAX_RESPONSE_SIZE_LIMIT);
+        }
+        search
+          .size(pag.getLimit())
+          .from(pag.getOffset());
       }
-      search
-        .size(context.getPagination().getLimit())
-        .from(context.getPagination().getOffset());
-    }
+    });
+
     addSortingToQuery(context.getReportData(), searchRequest.source());
   }
 
@@ -118,7 +122,7 @@ public class DecisionViewRawData extends DecisionViewPart {
                                    final Aggregations aggs,
                                    final ExecutionContext<DecisionReportDataDto> context) {
     final List<DecisionInstanceDto> rawDataDecisionInstanceDtos;
-    if (context.isExport()) {
+    if (context.isCsvExport()) {
       rawDataDecisionInstanceDtos =
         ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
           response,
@@ -126,7 +130,7 @@ public class DecisionViewRawData extends DecisionViewPart {
           objectMapper,
           esClient,
           configurationService.getEsScrollTimeoutInSeconds(),
-          context.getPagination().getLimit()
+          context.getPagination().orElse(new PaginationDto()).getLimit()
         );
     } else {
       rawDataDecisionInstanceDtos = ElasticsearchReaderUtil.mapHits(

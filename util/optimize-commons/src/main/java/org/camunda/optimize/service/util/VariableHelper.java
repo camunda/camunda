@@ -15,13 +15,23 @@ import java.util.Optional;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableHelper {
 
-  public static boolean isVariableTypeSupported(String variableTypeString) {
-    return isVariableTypeSupported(
+  public static boolean isProcessVariableTypeSupported(final String variableTypeString) {
+    return isProcessVariableTypeSupported(
       Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)
     );
   }
 
-  public static boolean isVariableTypeSupported(VariableType variableType) {
-    return ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES.contains(variableType);
+  public static boolean isProcessVariableTypeSupported(final VariableType variableType) {
+    return ReportConstants.ALL_SUPPORTED_PROCESS_VARIABLE_TYPES.contains(variableType);
+  }
+
+  public static boolean isDecisionVariableTypeSupported(final String variableTypeString) {
+    return isProcessVariableTypeSupported(
+      Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)
+    );
+  }
+
+  public static boolean isDecisionVariableTypeSupported(final VariableType variableType) {
+    return ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES.contains(variableType);
   }
 }

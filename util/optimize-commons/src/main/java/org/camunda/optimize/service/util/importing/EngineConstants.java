@@ -115,9 +115,10 @@ public class EngineConstants {
 
   // variable types
   public static final String VARIABLE_TYPE_OBJECT = "Object";
+  public static final String VARIABLE_SERIALIZATION_DATA_FORMAT = "serializationDataFormat";
 
   // flownode types, relates to engine ActivityTypes enum
   public static final String FLOW_NODE_TYPE_USER_TASK = "userTask";
-  public static final String FLOW_NODE_TYPE_MI_BODY= "multiInstanceBody";
+  public static final String FLOW_NODE_TYPE_MI_BODY = "multiInstanceBody";
 
 }

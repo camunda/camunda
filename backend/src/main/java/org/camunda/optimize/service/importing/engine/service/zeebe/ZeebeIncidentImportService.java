@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.service.zeebe;
 
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
@@ -50,25 +49,22 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeIncidentRecordDto> recordsForInstance) {
     final ZeebeIncidentDataDto firstRecordValue = recordsForInstance.get(0).getValue();
-    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto =
-      getStoredDefinitionForRecord(firstRecordValue.getProcessDefinitionKey());
     final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(
-      processDefinitionOptimizeDto.getKey(),
+      firstRecordValue.getBpmnProcessId(),
       firstRecordValue.getProcessInstanceKey(),
       firstRecordValue.getProcessDefinitionKey()
     );
-    return updateIncidents(instanceToAdd, recordsForInstance, processDefinitionOptimizeDto);
+    return updateIncidents(instanceToAdd, recordsForInstance);
   }
 
   private ProcessInstanceDto updateIncidents(final ProcessInstanceDto instanceToAdd,
-                                             List<ZeebeIncidentRecordDto> recordsForInstance,
-                                             final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto) {
+                                             List<ZeebeIncidentRecordDto> recordsForInstance) {
     Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
     recordsForInstance
       .forEach(incident -> {
         final long recordKey = incident.getKey();
         IncidentDto incidentForKey = incidentsByRecordKey.getOrDefault(
-          recordKey, createSkeletonIncident(incident, processDefinitionOptimizeDto));
+          recordKey, createSkeletonIncident(incident));
         if (incident.getIntent() == IncidentIntent.CREATED && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {
           incidentForKey.setIncidentStatus(IncidentStatus.OPEN);
           incidentForKey.setCreateTime(dateForTimestamp(incident));
@@ -89,14 +85,11 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
     }
   }
 
-  private IncidentDto createSkeletonIncident(final ZeebeIncidentRecordDto zeebeIncidentRecordDto,
-                                             final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto) {
+  private IncidentDto createSkeletonIncident(final ZeebeIncidentRecordDto zeebeIncidentRecordDto) {
     final ZeebeIncidentDataDto incidentDataDto = zeebeIncidentRecordDto.getValue();
     final IncidentDto incidentDto = new IncidentDto();
     incidentDto.setId(String.valueOf(zeebeIncidentRecordDto.getKey()));
-    incidentDto.setDefinitionKey(processDefinitionOptimizeDto.getKey());
-    incidentDto.setDefinitionVersion(processDefinitionOptimizeDto.getVersion());
-    incidentDto.setTenantId(processDefinitionOptimizeDto.getTenantId());
+    incidentDto.setDefinitionKey(zeebeIncidentRecordDto.getValue().getBpmnProcessId());
     incidentDto.setIncidentType(IncidentType.valueOfId(incidentDataDto.getErrorType().toString()));
     incidentDto.setActivityId(String.valueOf(incidentDataDto.getElementInstanceKey()));
     incidentDto.setIncidentMessage(incidentDataDto.getErrorMessage());

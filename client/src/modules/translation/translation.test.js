@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {t, init} from './translation';
+import {t, initTranslation} from './translation';
 import * as request from 'request';
 
 let languageGetter;
@@ -25,7 +25,7 @@ beforeAll(async () => {
       },
     }),
   });
-  await init();
+  await initTranslation();
 });
 
 it('should resolve the translation using a key ', async () => {

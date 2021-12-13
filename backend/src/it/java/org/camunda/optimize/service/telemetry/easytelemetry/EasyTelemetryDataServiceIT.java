@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.telemetry;
+package org.camunda.optimize.service.telemetry.easytelemetry;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
@@ -20,6 +20,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.license.LicenseManager;
+import org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.junit.jupiter.api.Test;
@@ -40,22 +41,22 @@ import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.licensecheck.LicenseType.OPTIMIZE;
 import static org.camunda.bpm.licensecheck.LicenseType.UNIFIED;
-import static org.camunda.optimize.service.telemetry.TelemetryDataService.CAMUNDA_BPM_FEATURE;
-import static org.camunda.optimize.service.telemetry.TelemetryDataService.CAWEMO_FEATURE;
-import static org.camunda.optimize.service.telemetry.TelemetryDataService.FEATURE_NAMES;
-import static org.camunda.optimize.service.telemetry.TelemetryDataService.INFORMATION_UNAVAILABLE_STRING;
-import static org.camunda.optimize.service.telemetry.TelemetryDataService.OPTIMIZE_FEATURE;
+import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.CAMUNDA_BPM_FEATURE;
+import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.CAWEMO_FEATURE;
+import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.FEATURE_NAMES;
+import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.INFORMATION_UNAVAILABLE_STRING;
+import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.OPTIMIZE_FEATURE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.mockserver.model.HttpRequest.request;
 
-public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
+public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @Test
   public void retrieveTelemetryData() {
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     final Optional<MetadataDto> metadata = getMetadata();
@@ -77,7 +78,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     assertThat(telemetryData.getProduct().getInternals().getEngineInstallationIds())
@@ -91,7 +92,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     assertThat(getMetadata()).isNotPresent();
@@ -111,7 +112,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     final Optional<MetadataDto> metadata = getMetadata();
@@ -133,7 +134,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
     // when
     final TelemetryDataDto telemetryData =
-      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+      embeddedOptimizeExtension.getApplicationContext().getBean(EasyTelemetryDataService.class).getTelemetryData();
 
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
@@ -313,7 +314,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   private LicenseKeyDto getTelemetryLicenseKey() {
     return embeddedOptimizeExtension.getApplicationContext()
-      .getBean(TelemetryDataService.class)
+      .getBean(EasyTelemetryDataService.class)
       .getTelemetryData()
       .getProduct()
       .getInternals()
