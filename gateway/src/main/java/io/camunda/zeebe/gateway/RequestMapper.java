@@ -72,7 +72,8 @@ public final class RequestMapper {
   }
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
-    return new BrokerFailJobRequest(grpcRequest.getJobKey(), grpcRequest.getRetries())
+    return new BrokerFailJobRequest(
+            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
         .setErrorMessage(grpcRequest.getErrorMessage());
   }
 

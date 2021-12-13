@@ -182,6 +182,8 @@ message FailJobRequest {
   // this is particularly useful if a job runs out of retries and an incident is raised,
   // as it this message can help explain why an incident was raised
   string errorMessage = 3;
+  // the backoff timeout for the next retry
+  int64 retryBackOff = 4;
 }
 
 message FailJobResponse {
