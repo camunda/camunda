@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Deleter, ReportRenderer, InstanceCount, DownloadButton} from 'components';
+import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
 import {isOptimizeCloudEnvironment} from 'config';
 
@@ -141,4 +141,12 @@ it('should hide sharing popover in cloud environment', async () => {
   const node = await shallow(<ReportView report={report} />);
 
   expect(node.find('Popover.share-button')).not.toExist();
+});
+
+it('should show alert dropdown for number reports', async () => {
+  const node = await shallow(
+    <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  expect(node.find(AlertsDropdown)).toExist();
 });

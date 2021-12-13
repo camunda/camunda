@@ -50,6 +50,7 @@ export class AlertModal extends React.Component {
 
     this.state = {
       ...newAlert,
+      reportId: props.initialReport || '',
       name: t('alert.newAlert'),
       inactive: false,
       invalid: false,
@@ -242,7 +243,7 @@ export class AlertModal extends React.Component {
       report,
     } = this.state;
 
-    const {reports, webhooks, onClose} = this.props;
+    const {reports, webhooks, onClose, onRemove} = this.props;
 
     const selectedReport = reports.find((report) => report.id === reportId) || {};
     return (
@@ -444,6 +445,11 @@ export class AlertModal extends React.Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
+          {onRemove && (
+            <Button link className="deleteButton" onClick={onRemove}>
+              {t('common.delete')}
+            </Button>
+          )}
           <Button main onClick={onClose}>
             {t('common.cancel')}
           </Button>

@@ -18,6 +18,7 @@ import {
   InstanceCount,
   ReportDetails,
   DownloadButton,
+  AlertsDropdown,
 } from 'components';
 import {isSharingEnabled, isOptimizeCloudEnvironment} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
@@ -109,6 +110,7 @@ export default class ReportView extends React.Component {
                   />
                 </Popover>
               )}
+              {report?.data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
               {this.shouldShowCSVDownload() && (
                 <DownloadButton
                   main

@@ -7,15 +7,23 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, BulkDeleter} from 'components';
+import {Button, EntityList, Deleter, BulkDeleter, AlertModal} from 'components';
 import {showError} from 'notifications';
-import {formatters, loadReports, isDurationReport} from 'services';
+import {
+  loadAlerts,
+  addAlert,
+  editAlert,
+  removeAlert,
+  formatters,
+  loadReports,
+  isDurationReport,
+  isAlertCompatibleReport,
+} from 'services';
 import {withErrorHandling} from 'HOC';
 import {getWebhooks} from 'config';
 
-import AlertModal from './modals/AlertModal';
 import CopyAlertModal from './modals/CopyAlertModal';
-import {loadAlerts, addAlert, editAlert, removeAlert, removeAlerts} from './service';
+import {removeAlerts} from './service';
 
 import './AlertList.scss';
 
@@ -53,13 +61,7 @@ export default withErrorHandling(
         loadReports(this.props.collection),
         (reports) =>
           this.setState({
-            reports: reports.filter(
-              ({combined, data: {visualization, view, configuration}}) =>
-                !combined &&
-                visualization === 'number' &&
-                view?.properties?.length === 1 &&
-                (configuration.aggregationTypes.length === 1 || view.properties[0] !== 'duration')
-            ),
+            reports: reports.filter(isAlertCompatibleReport),
           }),
         (error) => {
           showError(error);

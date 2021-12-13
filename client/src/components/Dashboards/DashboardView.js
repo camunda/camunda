@@ -20,6 +20,7 @@ import {
   Deleter,
   EntityName,
   DiagramScrollLock,
+  AlertsDropdown,
 } from 'components';
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
@@ -204,7 +205,7 @@ export function DashboardView(props) {
                   <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
                 </Button>
               )}
-
+              <AlertsDropdown dashboardReports={reports} />
               <Button
                 main
                 onClick={() =>

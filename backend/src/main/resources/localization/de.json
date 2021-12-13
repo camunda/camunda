@@ -701,7 +701,9 @@
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
     "inactiveStatus": "Alarm inaktiv",
-    "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu"
+    "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
+    "updated": "\"{name}\" aktualisiert.",
+    "removed": "\"{name}\" entfernt."
   },
   "analysis": {
     "branchAnalysis": "Verlaufsanalyse",

@@ -230,3 +230,18 @@ it('should display report value', () => {
   expect(evaluateReport).toHaveBeenCalledWith('6');
   expect(node.find('Message').at(0).dive()).toIncludeText('123');
 });
+
+it('should load an initial report if specified', () => {
+  const node = shallow(<AlertModal {...props} initialReport="5" />);
+
+  expect(node.find('Typeahead').prop('initialValue')).toBe('5');
+});
+
+it('should allow to remove an alert from inside the modal if onRemove prop is provided', () => {
+  const spy = jest.fn();
+  const node = shallow(<AlertModal {...props} onRemove={spy} />);
+
+  node.find('.deleteButton').simulate('click');
+
+  expect(spy).toHaveBeenCalled();
+});
