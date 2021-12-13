@@ -24,7 +24,7 @@ spec:
       effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
       command:
       - "sh"
       args:

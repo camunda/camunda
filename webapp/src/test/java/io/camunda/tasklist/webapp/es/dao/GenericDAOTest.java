@@ -16,7 +16,7 @@ import java.io.IOException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
