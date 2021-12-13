@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.3.0-alpha3</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -238,7 +238,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration></configuration>
+            <configuration />
           </execution>
         </executions>
       </plugin>
@@ -254,10 +254,10 @@
             <configuration>
               <target>
                 <?SORTPOM IGNORE?> <!-- ordering is important here, chmod needs to run after copying -->
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe"></copy>
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin"></copy>
-                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl"></copy>
-                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx"></chmod>
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin" />
+                <copy failonerror="${zbctl.force}" file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl" />
+                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" failonerror="${zbctl.force}" includes="zbctl*" perm="ugo+rx" />
                 <?SORTPOM RESUME?>
               </target>
             </configuration>
