@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
 import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.export.JsonReportResultExportService;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ import javax.validation.Valid;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
@@ -44,20 +46,28 @@ import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKE
 
 @AllArgsConstructor
 @Slf4j
-@Path(PublicJsonExportRestService.PUBLIC_EXPORT_PATH)
+@Path(PublicApiRestService.PUBLIC_PATH)
 @Component
-public class PublicJsonExportRestService {
-  public static final String PUBLIC_EXPORT_PATH = "/public/export";
-  public static final String REPORT_DATA_SUB_PATH = "/report/{reportId}/result/json";
-  public static final String REPORT_DEFINITION_SUB_PATH = "/report/definition/json";
+public class PublicApiRestService {
+  public static final String PUBLIC_PATH = "/public";
+
+  public static final String EXPORT_SUB_PATH = "/export";
+  public static final String REPORT_SUB_PATH = "/report";
+  public static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
+  public static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
+  public static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
+  public static final String REPORT_EXPORT_JSON_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
+  public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
+
   public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
   private final ConfigurationService configurationService;
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
+  private final ReportService reportService;
 
   @GET
-  @Path(REPORT_DATA_SUB_PATH)
+  @Path(REPORT_EXPORT_JSON_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
   public PaginatedDataExportDto exportReportData(@Context ContainerRequestContext requestContext,
@@ -84,13 +94,22 @@ public class PublicJsonExportRestService {
   }
 
   @POST
-  @Path(REPORT_DEFINITION_SUB_PATH)
+  @Path(REPORT_EXPORT_DEFINITION_SUB_PATH)
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public List<ReportDefinitionExportDto> exportReportDefinition(final @Context ContainerRequestContext requestContext,
                                                                 final @RequestBody Set<String> reportIds) {
     validateAccessToken(requestContext, getJsonExportAccessToken());
     return entityExportService.getReportExportDtos(Optional.ofNullable(reportIds).orElse(Collections.emptySet()));
+  }
+
+  @DELETE
+  @Path(REPORT_BY_ID_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  public void deleteReportDefinition(final @Context ContainerRequestContext requestContext,
+                                     final @PathParam("reportId") String reportId) {
+    validateAccessToken(requestContext, getJsonExportAccessToken());
+    reportService.deleteReport(reportId);
   }
 
   private void validateAccessToken(final ContainerRequestContext requestContext, final String expectedAccessToken) {

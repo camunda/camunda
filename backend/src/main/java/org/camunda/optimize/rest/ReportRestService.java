@@ -284,7 +284,7 @@ public class ReportRestService {
                            @PathParam("id") String reportId,
                            @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    reportService.deleteReport(userId, reportId, force);
+    reportService.deleteReportAsUser(userId, reportId, force);
   }
 
 }

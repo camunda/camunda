@@ -121,8 +121,9 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static org.camunda.optimize.rest.PublicJsonExportRestService.PUBLIC_EXPORT_PATH;
-import static org.camunda.optimize.rest.PublicJsonExportRestService.REPORT_DEFINITION_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.REPORT_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
@@ -1054,18 +1055,25 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildPublicExportJsonReportResultRequest(String reportId) {
-    this.path = PUBLIC_EXPORT_PATH + "/report/" + reportId + "/result/json";
+    this.path = PUBLIC_PATH + EXPORT_SUB_PATH + "/report/" + reportId + "/result/json";
     this.method = GET;
     return this;
   }
 
   public OptimizeRequestExecutor buildPublicExportJsonReportDefinitionRequest(final List<String> reportIds,
                                                                               final String accessToken) {
-    this.path = PUBLIC_EXPORT_PATH + REPORT_DEFINITION_SUB_PATH;
+    this.path = PUBLIC_PATH + REPORT_EXPORT_DEFINITION_SUB_PATH;
     this.method = POST;
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(reportIds);
     Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicDeleteReportRequest(final String id, final String accessToken) {
+    this.path = PUBLIC_PATH + "/report/" + id;
+    this.method = DELETE;
+    setAccessToken(accessToken);
     return this;
   }
 
@@ -1600,6 +1608,10 @@ public class OptimizeRequestExecutor {
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(externalVariables);
     return this;
+  }
+
+  private void setAccessToken(final String accessToken) {
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
   }
 
   private Entity getBody(Object entity) {

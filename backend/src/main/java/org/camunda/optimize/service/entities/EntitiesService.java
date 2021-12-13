@@ -102,7 +102,7 @@ public class EntitiesService {
   public void bulkDeleteEntities(EntitiesDeleteRequestDto entities, String userId) {
     for (String reportId : entities.getReports()) {
       try {
-        reportService.deleteReport(userId, reportId, true);
+        reportService.deleteReportAsUser(userId, reportId, true);
       } catch (NotFoundException | OptimizeRuntimeException e) {
         log.debug("The report with id {} could not be deleted: {}", reportId, e);
       }

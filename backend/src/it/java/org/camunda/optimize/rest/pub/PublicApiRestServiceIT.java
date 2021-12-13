@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.rest;
+package org.camunda.optimize.rest.pub;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
@@ -30,10 +30,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_SCROLL_ID_PARAM;
-import static org.camunda.optimize.rest.PublicJsonExportRestService.QUERY_PARAMETER_ACCESS_TOKEN;
+import static org.camunda.optimize.rest.PublicApiRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class PublicJsonExportRestServiceIT extends AbstractIT {
+public class PublicApiRestServiceIT extends AbstractIT {
 
   private String generateValidReport(int numberOfInstances) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -76,6 +76,22 @@ public class PublicJsonExportRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .withoutAuthentication()
       .buildPublicExportJsonReportDefinitionRequest(Collections.singletonList("fake_id"), null)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void deleteReportDefinitionWithoutAuthorization() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicDeleteReportRequest("fake_id", null)
       .execute();
 
     // then

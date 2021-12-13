@@ -152,7 +152,7 @@ public class ReportServiceConflictTest {
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
-    underTest.deleteReport("user1", "test1", false);
+    underTest.deleteReportAsUser("user1", "test1", false);
 
     // then
     verify(reportWriter).removeSingleReportFromCombinedReports("test1");
@@ -173,6 +173,6 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForDeleteReport(any())).thenReturn(conflicts);
 
     // when
-    assertThrows(OptimizeConflictException.class, () -> underTest.deleteReport("user1", "test1", false));
+    assertThrows(OptimizeConflictException.class, () -> underTest.deleteReportAsUser("user1", "test1", false));
   }
 }

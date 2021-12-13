@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.entities.report;
+package org.camunda.optimize.rest.pub;
 
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.report.AbstractReportDefinitionExportIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -25,19 +26,19 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
 
-public class ReportDefinitionExportViaApiIT extends AbstractReportDefinitionExportIT {
+public class PublicApiReportDefinitionExportIT extends AbstractReportDefinitionExportIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 
   @Override
   protected List<ReportDefinitionExportDto> exportReportDefinitionAndReturnAsList(final String reportId) {
     setAccessToken();
-    return exportClient.exportReportAsJsonAndReturnExportDtosViaAPI(Collections.singletonList(reportId), ACCESS_TOKEN);
+    return publicApiClient.exportReportDefinitionAndReturnResponse(Collections.singletonList(reportId), ACCESS_TOKEN);
   }
 
   @Override
   protected Response exportReportDefinitionAndReturnResponse(final String reportId) {
     setAccessToken();
-    return exportClient.exportReportAsJsonViaAPI(Collections.singletonList(reportId), ACCESS_TOKEN);
+    return publicApiClient.exportReportDefinition(Collections.singletonList(reportId), ACCESS_TOKEN);
   }
 
   @ParameterizedTest
@@ -70,7 +71,7 @@ public class ReportDefinitionExportViaApiIT extends AbstractReportDefinitionExpo
 
     // when
     final List<ReportDefinitionExportDto> actualExportDtos =
-      exportClient.exportReportAsJsonAndReturnExportDtosViaAPI(reportIds, ACCESS_TOKEN);
+      publicApiClient.exportReportDefinitionAndReturnResponse(reportIds, ACCESS_TOKEN);
 
     // then
     assertThat(actualExportDtos)
@@ -96,7 +97,7 @@ public class ReportDefinitionExportViaApiIT extends AbstractReportDefinitionExpo
 
     // when
     final List<ReportDefinitionExportDto> actualExportDtos =
-      exportClient.exportReportAsJsonAndReturnExportDtosViaAPI(List.of(reportId, reportId), ACCESS_TOKEN);
+      publicApiClient.exportReportDefinitionAndReturnResponse(List.of(reportId, reportId), ACCESS_TOKEN);
 
     // then
     assertThat(actualExportDtos)
