@@ -50,14 +50,14 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.12</version.docker-java-api>
-    <version.elasticsearch>7.16.0</version.elasticsearch>
+    <version.elasticsearch>7.16.1</version.elasticsearch>
     <version.error-prone>2.10.0</version.error-prone>
     <version.grpc>1.42.1</version.grpc>
     <version.gson>2.8.9</version.gson>
     <version.guava>31.0.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
-    <version.httpasyncclient>4.1.4</version.httpasyncclient>
+    <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
     <version.httpcomponents>4.4.15</version.httpcomponents>
     <version.jackson>2.13.0</version.jackson>
@@ -98,7 +98,7 @@
     <version.spring-boot>2.6.1</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
-    <version.kryo>5.2.0</version.kryo>
+    <version.kryo>5.2.1</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jqwik>1.6.1</version.jqwik>
