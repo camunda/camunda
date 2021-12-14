@@ -59,7 +59,9 @@ if [ ! -x "$JAVA_HOME/bin/java" ]; then
 fi
 
 # limit the java heapspace used by ElasticSearch to 1GB
-export ES_JAVA_OPTS="-Xms1g -Xmx1g"
+# `log4j2.formatMsgNoLookup` is set to mitigate a potential log4j2 exploit on older JDKs,
+# see https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476
+export ES_JAVA_OPTS="-Xms1g -Xmx1g -Dlog4j2.formatMsgNoLookups=true"
 
 echo
 echo "Starting Elasticsearch ${elasticsearch.version}...";
