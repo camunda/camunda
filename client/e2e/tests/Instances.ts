@@ -13,6 +13,7 @@ import {
   cmFinishedInstancesCheckbox,
   cmCompletedCheckbox,
   cmCanceledCheckbox,
+  cmInstanceIdsField,
 } from './Instances.setup';
 import {deploy} from '../setup-utils';
 import {demoUser} from './utils/Roles';
@@ -95,10 +96,14 @@ test('Instances Page Initial Load', async (t) => {
     )
     .ok();
 
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: /instance id\(s\) separated by space or comma/i,
+      });
+
   await t.typeText(
-    screen.queryByRole('textbox', {
-      name: /instance id\(s\) separated by space or comma/i,
-    }),
+    instanceIdsField,
     `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
@@ -132,14 +137,16 @@ test('Select flow node in diagram', async (t) => {
     })
   );
 
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
   // Filter by Instance ID
-  await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
-    instance.processInstanceKey,
-    {paste: true}
-  );
+  await t.typeText(instanceIdsField, instance.processInstanceKey, {
+    paste: true,
+  });
 
   const processCombobox = IS_NEW_FILTERS_FORM
     ? screen.queryByTestId('filter-process-name')

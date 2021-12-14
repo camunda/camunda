@@ -31,6 +31,10 @@ const cmCanceledCheckbox = within(
   screen.queryByTestId('filter-canceled').shadowRoot()
 ).queryByRole('checkbox');
 
+const cmInstanceIdsField = within(
+  screen.queryByTestId('filter-instance-ids').shadowRoot()
+).queryByRole('textbox');
+
 const setup = async () => {
   await deploy(['./e2e/tests/resources/orderProcess_v_1.bpmn']);
 
@@ -57,4 +61,5 @@ export {
   cmFinishedInstancesCheckbox,
   cmCompletedCheckbox,
   cmCanceledCheckbox,
+  cmInstanceIdsField,
 };

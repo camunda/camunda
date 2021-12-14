@@ -21,12 +21,9 @@ import {
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
 import {FlowNodeField} from './FlowNodeField';
-import Textarea from 'modules/components/Textarea';
 import {CheckboxGroup} from './CheckboxGroup';
 import Button from 'modules/components/Button';
-import {InjectAriaInvalid} from './InjectAriaInvalid';
 import {AutoSubmit} from './AutoSubmit';
-import {Error} from './Error';
 import {
   validateDateCharacters,
   validateDateComplete,
@@ -116,15 +113,17 @@ const Filters: React.FC = () => {
                   )}
                 >
                   {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Textarea
-                        {...input}
-                        placeholder="Instance Id(s) separated by space or comma"
-                      />
-                    </InjectAriaInvalid>
+                    <TextField
+                      {...input}
+                      type="multiline"
+                      data-testid="filter-instance-ids"
+                      label="Instance Id(s)"
+                      placeholder="separated by space or comma"
+                      rows={1}
+                      shouldDebounceError={false}
+                    />
                   )}
                 </Field>
-                <Error name="ids" />
               </Row>
               <Row>
                 <Field

@@ -18,6 +18,10 @@ const cmVariableValueFilter = within(
   screen.queryByTestId('filter-variable-value').shadowRoot()
 ).queryByRole('textbox');
 
+const cmInstanceIdsFilter = within(
+  screen.queryByTestId('filter-instance-ids').shadowRoot()
+).queryByRole('textbox');
+
 const cmEditValueField = screen.getByTestId('edit-variable-value').shadowRoot();
 
 const setup = async () => {
@@ -51,4 +55,5 @@ export {
   cmEditValueField,
   cmVariableNameFilter,
   cmVariableValueFilter,
+  cmInstanceIdsFilter,
 };

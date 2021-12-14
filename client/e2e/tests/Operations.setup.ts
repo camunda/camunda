@@ -13,6 +13,10 @@ const cmOperationIdField = within(
   screen.queryByTestId('filter-operation-id').shadowRoot()
 ).queryByRole('textbox');
 
+const cmInstanceIdsField = within(
+  screen.queryByTestId('filter-instance-ids').shadowRoot()
+).queryByRole('textbox');
+
 async function setup() {
   await deploy([
     './e2e/tests/resources/operationsProcessA.bpmn',
@@ -38,4 +42,4 @@ async function setup() {
   return {singleOperationInstance, batchOperationInstances};
 }
 
-export {setup, cmOperationIdField};
+export {setup, cmOperationIdField, cmInstanceIdsField};

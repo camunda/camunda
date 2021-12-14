@@ -225,9 +225,7 @@ describe('Filters', () => {
 
     expect(screen.getByTestId('filter-process-name')).toHaveValue('');
     expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
-    expect(
-      screen.getByLabelText('Instance Id(s) separated by space or comma')
-    ).toHaveValue('');
+    expect(screen.getByTestId('filter-instance-ids')).toHaveValue('');
     expect(screen.getByTestId('filter-parent-instance-id')).toHaveValue('');
     expect(screen.getByTestId('filter-error-message')).toHaveValue('');
     expect(screen.getByTestId('filter-start-date')).toHaveValue('');
@@ -244,10 +242,7 @@ describe('Filters', () => {
     userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
       'Big variable process',
     ]);
-    userEvent.paste(
-      screen.getByLabelText('Instance Id(s) separated by space or comma'),
-      MOCK_VALUES.ids
-    );
+    userEvent.paste(screen.getByTestId('filter-instance-ids'), MOCK_VALUES.ids);
     userEvent.paste(
       screen.getByTestId('filter-parent-instance-id'),
       MOCK_VALUES.parentInstanceId
@@ -323,48 +318,38 @@ describe('Filters', () => {
       });
 
       expect(MOCK_HISTORY.location.search).toBe('');
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        'a'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), 'a');
 
       expect(
-        screen.getByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(
-        screen.getByLabelText('Instance Id(s) separated by space or comma')
-      );
+      userEvent.clear(screen.getByTestId('filter-instance-ids'));
 
-      expect(
-        screen.queryByTitle(
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
-      ).not.toBeInTheDocument();
-
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
       );
 
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
+
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
 
-      userEvent.clear(
-        screen.getByLabelText('Instance Id(s) separated by space or comma')
-      );
+      userEvent.clear(screen.getByTestId('filter-instance-ids'));
 
-      expect(
-        screen.queryByTitle(
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
-      ).not.toBeInTheDocument();
+      );
     });
 
     it('should validate parent instance id', async () => {
@@ -638,15 +623,12 @@ describe('Filters', () => {
         await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument();
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -663,13 +645,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -677,7 +656,7 @@ describe('Filters', () => {
       userEvent.type(screen.getByTestId('filter-operation-id'), 'abc');
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -687,7 +666,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -702,13 +681,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -716,7 +692,7 @@ describe('Filters', () => {
       userEvent.type(screen.getByTestId('filter-start-date'), '2021');
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -726,7 +702,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -741,13 +717,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -755,7 +728,7 @@ describe('Filters', () => {
       userEvent.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -765,7 +738,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -780,13 +753,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -794,7 +764,7 @@ describe('Filters', () => {
       userEvent.type(screen.getByTestId('filter-variable-value'), 'a');
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -808,7 +778,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -823,13 +793,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -837,7 +804,7 @@ describe('Filters', () => {
       userEvent.type(screen.getByTestId('filter-variable-name'), 'a');
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -847,7 +814,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -862,13 +829,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -880,7 +844,7 @@ describe('Filters', () => {
       expect(screen.getByTestId('filter-process-version')).toBeEnabled();
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -890,7 +854,7 @@ describe('Filters', () => {
       ]);
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -900,7 +864,7 @@ describe('Filters', () => {
       ]);
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -915,13 +879,10 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
-      userEvent.type(
-        screen.getByLabelText('Instance Id(s) separated by space or comma'),
-        '1'
-      );
+      userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
-        await screen.findByTitle(
+        await screen.findByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -929,7 +890,7 @@ describe('Filters', () => {
       userEvent.click(screen.getByTestId(/active/));
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -937,7 +898,7 @@ describe('Filters', () => {
       userEvent.click(screen.getByTestId(/incidents/));
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -945,7 +906,7 @@ describe('Filters', () => {
       userEvent.click(screen.getByTestId(/completed/));
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -953,7 +914,7 @@ describe('Filters', () => {
       userEvent.click(screen.getByTestId(/canceled/));
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -961,7 +922,7 @@ describe('Filters', () => {
       userEvent.click(screen.getByTestId('filter-running-instances'));
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();
@@ -969,7 +930,7 @@ describe('Filters', () => {
       userEvent.click(screen.getByTestId('filter-finished-instances'));
 
       expect(
-        screen.getByTitle(
+        screen.getByText(
           'Id has to be 16 to 19 digit numbers, separated by space or comma'
         )
       ).toBeInTheDocument();

@@ -8,7 +8,7 @@ import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
-import {setup} from './InstancesTable.setup';
+import {cmInstanceIdsField, setup} from './InstancesTable.setup';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 
@@ -44,14 +44,14 @@ test('Sorting', async (t) => {
     instances.processB_v_2[0].processInstanceKey,
   ].sort();
 
-  await t
-    .typeText(
-      screen.queryByRole('textbox', {
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
         name: 'Instance Id(s) separated by space or comma',
-      }),
-      instanceIds.join(),
-      {paste: true}
-    )
+      });
+
+  await t
+    .typeText(instanceIdsField, instanceIds.join(), {paste: true})
     .expect(
       screen.getAllByTestId('filter-panel-header-badge').nth(0).textContent
     )

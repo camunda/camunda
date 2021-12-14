@@ -11,6 +11,10 @@ const cmFinishedInstancesCheckbox = within(
   screen.queryByTestId('filter-finished-instances').shadowRoot()
 ).queryByRole('checkbox');
 
+const cmInstanceIdsField = within(
+  screen.queryByTestId('filter-instance-ids').shadowRoot()
+).queryByRole('textbox');
+
 const setup = async () => {
   await deploy([
     './e2e/tests/resources/withoutIncidentsProcess_v_1.bpmn',
@@ -23,4 +27,4 @@ const setup = async () => {
   await createInstances('processWithAnIncident', 1, 5);
 };
 
-export {setup, cmFinishedInstancesCheckbox};
+export {setup, cmFinishedInstancesCheckbox, cmInstanceIdsField};

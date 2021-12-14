@@ -7,7 +7,11 @@
 import {screen, within} from '@testing-library/testcafe';
 import {demoUser} from './utils/Roles';
 import {config} from '../config';
-import {setup, cmOperationIdField} from './Operations.setup';
+import {
+  setup,
+  cmOperationIdField,
+  cmInstanceIdsField,
+} from './Operations.setup';
 import {DATE_REGEX} from './constants';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 
@@ -41,14 +45,16 @@ test('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
 
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
   // filter by instance id
-  await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
-    instance.processInstanceKey,
-    {paste: true}
-  );
+  await t.typeText(instanceIdsField, instance.processInstanceKey, {
+    paste: true,
+  });
 
   // wait for filter to be applied
   await t
@@ -147,11 +153,15 @@ test('Retry and cancel multiple instances ', async (t) => {
     screen.queryByTestId('operations-list')
   ).getAllByRole('listitem');
 
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
   // filter by instance ids
   await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
+    instanceIdsField,
     // @ts-ignore I had to use ignore instead of expect-error here because Testcafe would not run the tests with it
     instances.map((instance) => instance.processInstanceKey).join(','),
     {paste: true}

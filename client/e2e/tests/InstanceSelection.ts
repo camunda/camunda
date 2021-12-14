@@ -5,7 +5,11 @@
  */
 
 import {config} from '../config';
-import {setup, cmFinishedInstancesCheckbox} from './InstanceSelection.setup';
+import {
+  setup,
+  cmFinishedInstancesCheckbox,
+  cmInstanceIdsField,
+} from './InstanceSelection.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
@@ -63,15 +67,15 @@ test('Selection of instances are removed on filter selection', async (t) => {
     .getAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
-  await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
-    instanceId.toString(),
-    {
-      paste: true,
-    }
-  );
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
+  await t.typeText(instanceIdsField, instanceId.toString(), {
+    paste: true,
+  });
 
   await t
     .expect(

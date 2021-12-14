@@ -20,6 +20,7 @@ import {
   cmEndDateField,
   cmVariableNameField,
   cmVariableValueField,
+  cmInstanceIdsField,
 } from './Filters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
@@ -113,15 +114,15 @@ test('Instance IDs filter', async (t) => {
     .queryAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
-  await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
-    instanceId.toString(),
-    {
-      paste: true,
-    }
-  );
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
+  await t.typeText(instanceIdsField, instanceId.toString(), {
+    paste: true,
+  });
 
   // wait for filter to be applied, see there is only 1 result
   await t
@@ -162,13 +163,7 @@ test('Instance IDs filter', async (t) => {
     .gt(1);
 
   // filter has been reset
-  await t
-    .expect(
-      await screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      }).value
-    )
-    .eql('');
+  await t.expect(instanceIdsField.value).eql('');
 
   // changes reflected in the url
   await t
@@ -301,15 +296,15 @@ test('End Date filter', async (t) => {
     initialData: {instanceToCancel},
   } = t.fixtureCtx;
 
-  await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
-    instanceToCancel.processInstanceKey,
-    {
-      paste: true,
-    }
-  );
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
+  await t.typeText(instanceIdsField, instanceToCancel.processInstanceKey, {
+    paste: true,
+  });
 
   // wait for filter to be applied
   await t
@@ -482,10 +477,14 @@ test('Operation ID filter', async (t) => {
     initialData: {instanceToCancelForOperations},
   } = t.fixtureCtx;
 
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
   await t.typeText(
-    screen.queryByRole('textbox', {
-      name: 'Instance Id(s) separated by space or comma',
-    }),
+    instanceIdsField,
     instanceToCancelForOperations.processInstanceKey,
     {
       paste: true,
@@ -1415,6 +1414,12 @@ test('Should set filters from url', async (t) => {
     ? cmOperationIdField
     : screen.queryByRole('textbox', {name: /operation id/i});
 
+  const instanceIdsField = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsField
+    : screen.queryByRole('textbox', {
+        name: 'Instance Id(s) separated by space or comma',
+      });
+
   if (IS_NEW_FILTERS_FORM) {
     await t
       .expect(
@@ -1450,11 +1455,7 @@ test('Should set filters from url', async (t) => {
   }
 
   await t
-    .expect(
-      screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      }).value
-    )
+    .expect(instanceIdsField.value)
     .eql('2251799813685255')
     .expect(parentInstanceIdField.value)
     .eql('2251799813685731')
@@ -1556,11 +1557,7 @@ test('Should set filters from url', async (t) => {
   }
 
   await t
-    .expect(
-      screen.queryByRole('textbox', {
-        name: 'Instance Id(s) separated by space or comma',
-      }).value
-    )
+    .expect(instanceIdsField.value)
     .eql('2251799813685255')
     .expect(parentInstanceIdField.value)
     .eql('2251799813685731')

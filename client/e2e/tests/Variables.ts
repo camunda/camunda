@@ -12,6 +12,7 @@ import {
   cmEditValueField,
   cmVariableNameFilter,
   cmVariableValueFilter,
+  cmInstanceIdsFilter,
 } from './Variables.setup';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
@@ -501,6 +502,11 @@ test('Add variables', async (t) => {
   const variableValueFilter = IS_NEW_FILTERS_FORM
     ? cmVariableValueFilter
     : screen.queryByRole('textbox', {name: 'Value'});
+  const instanceIdsFilter = IS_NEW_FILTERS_FORM
+    ? cmInstanceIdsFilter
+    : screen.queryByRole('textbox', {
+        name: /instance id\(s\) separated by space or comma/i,
+      });
 
   await t
     .click(
@@ -510,12 +516,7 @@ test('Add variables', async (t) => {
     )
     .typeText(variableNameFilter, 'secondTestKey')
     .typeText(variableValueFilter, '"secondTestValue"')
-    .typeText(
-      screen.queryByRole('textbox', {
-        name: /instance id\(s\) separated by space or comma/i,
-      }),
-      instance.processInstanceKey
-    );
+    .typeText(instanceIdsFilter, instance.processInstanceKey);
 
   await t
     .expect(
