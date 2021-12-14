@@ -27,6 +27,7 @@ import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
 const FLOW_NODE_INSTANCE_ID = '2251799813699889';
+const PROCESS_INSTANCE_ID = '2251799813685591';
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -98,6 +99,17 @@ const incidentFlowNodeMetaData = {
   },
 };
 
+const rootIncidentFlowNodeMetaData = {
+  ...incidentFlowNodeMetaData,
+  incident: {
+    ...incidentFlowNodeMetaData.incident,
+    rootCauseInstance: {
+      ...incidentFlowNodeMetaData.incident.rootCauseInstance,
+      instanceId: PROCESS_INSTANCE_ID,
+    },
+  },
+};
+
 const multiInstanceFlowNodeData = {
   flowNodeInstanceId: null,
   flowNodeId: FLOW_NODE_ID,
@@ -141,17 +153,17 @@ describe('PopoverOverlay', () => {
         res.once(ctx.text(mockProcessXML))
       ),
       rest.post(
-        `/api/process-instances/${FLOW_NODE_ID}/flow-node-metadata`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(incidentFlowNodeMetaData))
       ),
       rest.get(
-        `http://localhost/api/process-instances/${FLOW_NODE_ID}/incidents`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/incidents`,
         (_, res, ctx) => res.once(ctx.json(mockIncidents))
       )
     );
     currentInstanceStore.setCurrentInstance(
       createInstance({
-        id: FLOW_NODE_ID,
+        id: PROCESS_INSTANCE_ID,
         state: 'INCIDENT',
       })
     );
@@ -193,13 +205,13 @@ describe('PopoverOverlay', () => {
         res.once(ctx.text(mockCallActivityProcessXML))
       ),
       rest.post(
-        `/api/process-instances/${CALL_ACTIVITY_FLOW_NODE_ID}/flow-node-metadata`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
       )
     );
     currentInstanceStore.setCurrentInstance(
       createInstance({
-        id: CALL_ACTIVITY_FLOW_NODE_ID,
+        id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
       })
     );
@@ -239,13 +251,13 @@ describe('PopoverOverlay', () => {
         res.once(ctx.text(mockCallActivityProcessXML))
       ),
       rest.post(
-        `/api/process-instances/${CALL_ACTIVITY_FLOW_NODE_ID}/flow-node-metadata`,
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
       )
     );
     currentInstanceStore.setCurrentInstance(
       createInstance({
-        id: CALL_ACTIVITY_FLOW_NODE_ID,
+        id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
       })
     );
@@ -347,7 +359,7 @@ describe('PopoverOverlay', () => {
     );
     currentInstanceStore.setCurrentInstance(
       createInstance({
-        id: CALL_ACTIVITY_FLOW_NODE_ID,
+        id: PROCESS_INSTANCE_ID,
         state: 'ACTIVE',
       })
     );
@@ -361,5 +373,42 @@ describe('PopoverOverlay', () => {
       await screen.findByText(/Flow Node Instance Id/)
     ).toBeInTheDocument();
     expect(screen.queryByText(/Called Instance/)).not.toBeInTheDocument();
+  });
+
+  it('should not render root cause instance link when instance is root', async () => {
+    const {rootCauseInstance} = rootIncidentFlowNodeMetaData.incident;
+
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      ),
+      rest.post(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(rootIncidentFlowNodeMetaData))
+      ),
+      rest.get(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/incidents`,
+        (_, res, ctx) => res.once(ctx.json(mockIncidents))
+      )
+    );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'INCIDENT',
+      })
+    );
+    incidentsStore.init();
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(await screen.findByText(/Root Cause Instance/)).toBeInTheDocument();
+    expect(screen.getByText(/Current Instance/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        `${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`
+      )
+    ).not.toBeInTheDocument();
   });
 });

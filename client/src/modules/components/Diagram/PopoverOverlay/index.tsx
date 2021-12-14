@@ -25,6 +25,7 @@ import {
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {beautifyMetadata} from './beautifyMetadata';
@@ -42,6 +43,7 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const {metaData} = flowNodeMetaDataStore.state;
+  const processInstanceId = currentInstanceStore.state.instance?.id;
 
   const {styles, attributes} = usePopper(
     selectedFlowNodeRef,
@@ -210,18 +212,22 @@ const PopoverOverlay = observer(({selectedFlowNodeRef}: Props) => {
                       <>
                         <SummaryDataKey>Root Cause Instance</SummaryDataKey>
                         <SummaryDataValue>
-                          <Link
-                            to={(location) =>
-                              Locations.instance(
-                                rootCauseInstance.instanceId,
-                                location
-                              )
-                            }
-                            title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
-                          >
-                            {`${rootCauseInstance.processDefinitionName}
-                                - ${rootCauseInstance.instanceId}`}
-                          </Link>
+                          {rootCauseInstance.instanceId ===
+                          processInstanceId ? (
+                            'Current Instance'
+                          ) : (
+                            <Link
+                              to={(location) =>
+                                Locations.instance(
+                                  rootCauseInstance.instanceId,
+                                  location
+                                )
+                              }
+                              title={`View root cause instance ${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                            >
+                              {`${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`}
+                            </Link>
+                          )}
                         </SummaryDataValue>
                       </>
                     )}
