@@ -65,7 +65,7 @@ import org.springframework.test.context.junit4.SpringRunner;
   },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-      "management.endpoints.web.exposure.include = info,prometheus,loggers",
+      "management.endpoints.web.exposure.include = info,prometheus,loggers,usage-metrics",
       "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID
   }
 )

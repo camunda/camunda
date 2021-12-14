@@ -99,7 +99,7 @@ public class Application {
         "management.endpoint.health.probes.enabled", "true",
 
         //enable health check and metrics endpoints
-        "management.endpoints.web.exposure.include", "health, prometheus, loggers",
+        "management.endpoints.web.exposure.include", "health, prometheus, loggers, usage-metrics",
 
         //add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck");

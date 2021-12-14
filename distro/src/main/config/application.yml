@@ -25,6 +25,6 @@ camunda.operate:
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 #Spring Boot Actuator endpoints to be exposed
-management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheusprometheus,usage-metrics
 # Enable or disable metrics
 #management.metrics.export.prometheus.enabled: false
