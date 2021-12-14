@@ -23,23 +23,23 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PriorityElectionTimerTest {
+final class PriorityElectionTimerTest {
 
   private final Logger log = LoggerFactory.getLogger(PriorityElectionTimerTest.class);
   private final SingleThreadContext threadContext = new SingleThreadContext("priorityElectionTest");
 
-  @After
-  public void after() {
+  @AfterEach
+  void afterEach() {
     threadContext.close();
   }
 
   @Test
-  public void shouldLowerPriorityNodeEventuallyStartsAnElection() {
+  void shouldLowerPriorityNodeEventuallyStartsAnElection() {
     // given
     final AtomicInteger triggerCount = new AtomicInteger();
 
@@ -55,7 +55,7 @@ public class PriorityElectionTimerTest {
   }
 
   @Test
-  public void shouldHighPriorityNodeStartElectionFirst() {
+  void shouldHighPriorityNodeStartElectionFirst() {
     // given
     final String highPrioId = "highPrioTimer";
     final String lowPrioId = "lowPrioTimer";
