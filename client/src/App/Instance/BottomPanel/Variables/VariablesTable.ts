@@ -19,7 +19,6 @@ type TRProps = {
 const TR = styled.tr<TRProps>`
   ${({theme, hasActiveOperation}) => {
     const colors = theme.colors.variables.variablesTable.tr;
-    const opacity = theme.opacity.variables.variablesTable.tr;
 
     return css`
       border-width: 1px 0;
@@ -52,7 +51,6 @@ const TR = styled.tr<TRProps>`
       ${hasActiveOperation
         ? css`
             background-color: ${colors.backgroundColor};
-            opacity: ${opacity};
           `
         : ''};
     `;

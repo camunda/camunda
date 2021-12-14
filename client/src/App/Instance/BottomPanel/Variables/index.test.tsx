@@ -271,12 +271,8 @@ describe('Variables', () => {
       userEvent.type(screen.getByTestId('add-variable-value'), '    ');
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-      expect(
-        screen.queryByTitle('Value has to be JSON')
-      ).not.toBeInTheDocument();
-      expect(
-        await screen.findByText('Value has to be JSON')
-      ).toBeInTheDocument();
+      expect(screen.queryByTitle('Invalid input text')).not.toBeInTheDocument();
+      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
     });
 
     it('should not allow empty characters in variable name', async () => {
@@ -315,28 +311,24 @@ describe('Variables', () => {
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
       expect(screen.getByText('Name has to be filled')).toBeInTheDocument();
-      expect(
-        screen.queryByText('Value has to be JSON')
-      ).not.toBeInTheDocument();
-      expect(
-        await screen.findByText('Value has to be JSON')
-      ).toBeInTheDocument();
+      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
+      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
 
       userEvent.type(screen.getByTestId('add-variable-name'), '   ');
 
-      expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
+      expect(screen.getByText('Invalid input text')).toBeInTheDocument();
       expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
 
       userEvent.type(screen.getByTestId('add-variable-name'), ' test');
 
-      expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
+      expect(screen.getByText('Invalid input text')).toBeInTheDocument();
       expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
       userEvent.clear(screen.getByTestId('add-variable-value'));
       userEvent.type(screen.getByTestId('add-variable-value'), '"valid value"');
 
       await waitForElementToBeRemoved(() =>
-        screen.getByText('Value has to be JSON')
+        screen.getByText('Invalid input text')
       );
 
       expect(screen.getByText('Name is invalid')).toBeInTheDocument();
@@ -374,15 +366,11 @@ describe('Variables', () => {
       expect(
         screen.queryByText('Name should be unique')
       ).not.toBeInTheDocument();
-      expect(
-        screen.queryByText('Value has to be JSON')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
       expect(
         await screen.findByText('Name should be unique')
       ).toBeInTheDocument();
-      expect(
-        await screen.findByText('Value has to be JSON')
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
 
       userEvent.clear(screen.getByTestId('add-variable-value'));
       userEvent.type(screen.getByTestId('add-variable-value'), '123');
@@ -390,7 +378,7 @@ describe('Variables', () => {
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
       await waitForElementToBeRemoved(() =>
-        screen.getByText('Value has to be JSON')
+        screen.getByText('Invalid input text')
       );
       expect(screen.getByText('Name should be unique')).toBeInTheDocument();
 
@@ -686,20 +674,16 @@ describe('Variables', () => {
 
       expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
 
-      expect(
-        screen.queryByText('Value has to be JSON')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Invalid input text')).not.toBeInTheDocument();
 
       jest.runOnlyPendingTimers();
-      expect(
-        await screen.findByText('Value has to be JSON')
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Invalid input text')).toBeInTheDocument();
 
       userEvent.clear(screen.getByTestId('edit-variable-value'));
       userEvent.type(screen.getByTestId('edit-variable-value'), '123');
 
       await waitForElementToBeRemoved(() =>
-        screen.getByText('Value has to be JSON')
+        screen.getByText('Invalid input text')
       );
       expect(screen.getByTitle(/save variable/i)).toBeEnabled();
 

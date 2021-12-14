@@ -103,11 +103,11 @@ describe('validators', () => {
     expect(validateValueComplete('false', {name: 'name'})).toBeUndefined();
 
     expect(validateValueComplete('invalid json', {name: 'name'})).resolves.toBe(
-      'Value has to be JSON'
+      'Invalid input text'
     );
 
     expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
-      'Value has to be JSON'
+      'Invalid input text'
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);

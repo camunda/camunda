@@ -878,11 +878,6 @@ const theme = Object.freeze({
           selected: 1,
         },
       },
-      variables: {
-        variablesTable: {
-          tr: 0.7,
-        },
-      },
       flowNodeInstancesTree: {
         bar: {
           nodeIcon: {
@@ -1827,11 +1822,6 @@ const theme = Object.freeze({
         incidentTr: {
           default: 0.9,
           selected: 1,
-        },
-      },
-      variables: {
-        variablesTable: {
-          tr: 1,
         },
       },
       flowNodeInstancesTree: {

@@ -85,6 +85,10 @@ const TD = styled.td`
       &:not(:nth-child(2)) {
         white-space: nowrap;
       }
+
+      &:first-child {
+        vertical-align: top;
+      }
     `;
   }}
 `;
@@ -281,11 +285,11 @@ const Footer = styled(Panel.Footer)<FooterProps>`
       max-height: initial;
       padding-right: ${scrollBarWidth}px;
       min-width: ${scrollBarWidth + 400}px;
-      box-shadow: ${theme.shadows.variablesPanel.footer}
-        ${hasPendingVariable &&
-        css`
-          background-color: ${colors.backgroundColor};
-        `};
+      box-shadow: ${theme.shadows.variablesPanel.footer};
+      ${hasPendingVariable &&
+      css`
+        background-color: ${colors.backgroundColor};
+      `};
     `;
   }}
 `;
