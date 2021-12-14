@@ -47,6 +47,10 @@ public final class InFlightLongPollingActivateJobsRequestsState {
     }
   }
 
+  public boolean shouldAttempt(final int attemptThreshold) {
+    return failedAttempts < attemptThreshold;
+  }
+
   public void resetFailedAttempts() {
     setFailedAttempts(0);
   }
@@ -112,10 +116,11 @@ public final class InFlightLongPollingActivateJobsRequestsState {
 
   /**
    * Returns whether the request should be repeated. A request should be repeated if the failed
-   * attempts were reset to 0 (because new jobs became available) whilst the request was running
+   * attempts were reset to 0 (because new jobs became available) whilst the request was running,
+   * and if the request's long polling is enabled.
    */
   public boolean shouldBeRepeated(final LongPollingActivateJobsRequest request) {
-    return activeRequestsToBeRepeated.contains(request);
+    return activeRequestsToBeRepeated.contains(request) && !request.isLongPollingDisabled();
   }
 
   public boolean shouldNotifyAndStartNotification() {

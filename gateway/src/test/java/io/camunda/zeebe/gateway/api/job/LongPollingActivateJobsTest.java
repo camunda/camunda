@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.api.job;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -43,6 +44,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
@@ -596,6 +598,57 @@ public final class LongPollingActivateJobsTest {
     assertThat(request.hasScheduledTimer()).isFalse();
   }
 
+  @Test
+  public void shouldCompleteRequestImmediatellyDespiteNotification() throws Exception {
+    // given
+    final LongPollingActivateJobsRequest request =
+        new LongPollingActivateJobsRequest(
+            ActivateJobsRequest.newBuilder()
+                .setType(TYPE)
+                .setRequestTimeout(-1)
+                .setMaxJobsToActivate(1)
+                .build(),
+            spy(ServerStreamObserver.class));
+
+    registerCustomHandlerWithNotification(
+        (r) -> {
+          final var partitionId = r.getPartitionId();
+          if (partitionId == 1) {
+            brokerClient.notifyJobsAvailable(TYPE);
+          }
+        });
+
+    // when
+    handler.activateJobs(request);
+
+    // then
+    waitUntil(request::isCompleted);
+    verify(stub, times(partitionsCount)).handle(any());
+  }
+
+  @Test
+  public void shouldTimeOutRequestDespiteMultipleNotificationLoops() throws Exception {
+    // given
+    final var request = getLongPollingActivateJobsRequest();
+
+    registerCustomHandlerWithNotification(
+        (r) -> {
+          final var partitionId = r.getPartitionId();
+          if (partitionId == 1) {
+            brokerClient.notifyJobsAvailable(TYPE);
+          }
+        });
+
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::hasScheduledTimer);
+    actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
+    waitUntil(request::isTimedOut);
+
+    // then
+    verify(stub, atLeast(partitionsCount)).handle(any());
+  }
+
   private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
     return IntStream.range(0, amount)
         .boxed()
@@ -623,5 +676,20 @@ public final class LongPollingActivateJobsTest {
     final ServerStreamObserver<ActivateJobsResponse> responseSpy = spy(ServerStreamObserver.class);
 
     return new LongPollingActivateJobsRequest(request, responseSpy);
+  }
+
+  private void registerCustomHandlerWithNotification(
+      final Consumer<BrokerActivateJobsRequest> notification) {
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<?>>() {
+
+          @Override
+          public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
+              throws Exception {
+            notification.accept(request);
+            return stub.handle(request);
+          }
+        });
   }
 }
