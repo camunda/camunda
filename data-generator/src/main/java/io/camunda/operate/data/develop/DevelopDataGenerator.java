@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.data.develop;
 
-import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
@@ -29,7 +29,7 @@ import java.util.function.BiFunction;
 import javax.annotation.PostConstruct;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;

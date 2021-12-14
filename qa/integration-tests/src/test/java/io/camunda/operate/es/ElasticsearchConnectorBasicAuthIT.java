@@ -31,7 +31,7 @@ import java.util.Map;
 public class ElasticsearchConnectorBasicAuthIT {
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.16.1")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.15.2")
           .withEnv(Map.of(
           "xpack.security.enabled", "true",
           "ELASTIC_PASSWORD","changeme"
