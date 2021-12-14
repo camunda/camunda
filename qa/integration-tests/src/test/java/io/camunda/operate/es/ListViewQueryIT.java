@@ -66,9 +66,28 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private String rootInstanceId = "333";
 
   @Test
-  public void testQueryAllRunning() throws Exception {
+  public void testVariousQueries() throws Exception {
     createData();
 
+    testQueryAllRunning();
+    testQueryByVariableValue();
+    testQueryByVariableValueNotExists();
+    testQueryByBatchOperationId();
+    testQueryByParentProcessId();
+
+    testQueryAllFinished();
+    testQueryFinishedAndRunning();
+    testQueryFinishedCompleted();
+    testQueryFinishedCanceled();
+    testQueryRunningWithIncidents();
+    testQueryRunningWithoutIncidents();
+    testParamsAreEmptyStringsInsteadOfNull();
+    testPagination();
+    testQueryByNonExistingParentProcessId();
+
+  }
+
+  private void testQueryAllRunning() throws Exception {
     //query running instances
     ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllRunningRequest();
 
@@ -191,10 +210,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
-  @Test
-  public void testQueryByVariableValue() throws Exception {
-    createData();
-
+  private void testQueryByVariableValue() throws Exception {
     //given
     ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "X")));
@@ -211,10 +227,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
-  @Test
-  public void testQueryByVariableValueNotExists() throws Exception {
-    createData();
-
+  private void testQueryByVariableValueNotExists() throws Exception {
     //given
     ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "A")));
@@ -538,11 +551,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getProcessInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
   }
 
-  @Test
   public void testQueryByBatchOperationId() throws Exception {
-    //given
-    createData();
-
     ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
       q.setBatchOperationId(batchOperationId)
     );
@@ -647,11 +656,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       .containsExactly(processInstance1.getId());
   }
 
-  @Test
-  public void testQueryByParentProcessId() throws Exception {
+  private void testQueryByParentProcessId() throws Exception {
     //given
-    createData();
-
     ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
         q.setParentInstanceId(parentInstanceKey1)
     );
@@ -670,10 +676,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         .containsExactly(rootInstanceId, rootInstanceId);
   }
 
-  @Test
-  public void testQueryByNonExistingParentProcessId() throws Exception {
+  private void testQueryByNonExistingParentProcessId() throws Exception {
     //given
-    createData();
     long nonExistingParentId = 333L;
     ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
         q.setParentInstanceId(nonExistingParentId)
@@ -734,10 +738,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
   }
 
-  @Test
-  public void testPagination() throws Exception {
-    createData();
-
+  private void testPagination() throws Exception {
     //query running instances
     ListViewRequestDto processInstanceRequest = TestUtil.createGetAllProcessInstancesRequest();
     processInstanceRequest.setPageSize(5);
@@ -773,8 +774,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(page1Response.getProcessInstances()).containsExactlyInAnyOrderElementsOf(page1Response2.getProcessInstances());
   }
 
-  private void testSorting(SortingDto sorting, Comparator<ListViewProcessInstanceDto> comparator) throws Exception {
-    createData();
+  private void testSorting(SortingDto sorting, Comparator<ListViewProcessInstanceDto> comparator,
+      String sortingDescription) throws Exception {
 
     //query running instances
     ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllProcessInstancesRequest();
@@ -784,61 +785,75 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
-    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
 
-    assertThat(response.getProcessInstances().size()).isEqualTo(8);
+    assertThat(response.getProcessInstances().size()).as("List size sorted by %s.", sortingDescription).isEqualTo(8);
 
-    assertThat(response.getProcessInstances()).isSortedAccordingTo(comparator);
+    assertThat(response.getProcessInstances()).as("Sorted by %s.", sortingDescription).isSortedAccordingTo(comparator);
   }
 
   @Test
-  public void testSortingByStartDateAsc() throws Exception {
+  public void testVariousSorting() throws Exception {
+
+    createData();
+
+    testSortingByStartDateAsc();
+    testSortingByStartDateDesc();
+    testDefaultSorting();
+    testSortingByIdAsc();
+    testSortingByIdDesc();
+    testSortingByProcessNameAsc();
+    testSortingByProcessNameDesc();
+    testSortingByProcessVersionAsc();
+    testSortingByProcessVersionDesc();
+    testSortingByEndDateAsc();
+    testSortingByEndDateDesc();
+    testSortingByParentInstanceIdDesc();
+    testSortingByParentInstanceIdAsc();
+  }
+
+  private void testSortingByStartDateAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(ListViewProcessInstanceDto::getStartDate);
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.START_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "startDate asc");
   }
 
-  @Test
-  public void testSortingByStartDateDesc() throws Exception {
+  private void testSortingByStartDateDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> o2.getStartDate().compareTo(o1.getStartDate());
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.START_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "startDate desc");
   }
 
-  @Test
-  public void testDefaultSorting() throws Exception {
+  private void testDefaultSorting() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
-    testSorting(null, comparator);
+    testSorting(null, comparator, "default");
   }
 
-  @Test
-  public void testSortingByIdAsc() throws Exception {
+  private void testSortingByIdAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(o -> Long.valueOf(o.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "id asc");
   }
 
-  @Test
-  public void testSortingByIdDesc() throws Exception {
+  private void testSortingByIdDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> Long.valueOf(o2.getId()).compareTo(Long.valueOf(o1.getId()));
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "id desc");
   }
 
-  @Test
-  public void testSortingByProcessNameAsc() throws Exception {
+  private void testSortingByProcessNameAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator =
         Comparator.comparing((ListViewProcessInstanceDto o) -> o.getProcessName().toLowerCase())
           .thenComparingLong(o -> Long.valueOf(o.getId()));
@@ -846,11 +861,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortBy(ListViewTemplate.PROCESS_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "processName acs");
   }
 
-  @Test
-  public void testSortingByProcessNameDesc() throws Exception {
+  private void testSortingByProcessNameDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       int x = o2.getProcessName().toLowerCase().compareTo(o1.getProcessName().toLowerCase());
       if (x == 0) {
@@ -862,31 +876,28 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortBy(ListViewTemplate.PROCESS_NAME);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "processName desc");
   }
 
-  @Test
-  public void testSortingByProcessVersionAsc() throws Exception {
+  private void testSortingByProcessVersionAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = Comparator.comparing(ListViewProcessInstanceDto::getProcessVersion);
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.PROCESS_VERSION);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "processVersion asc");
   }
 
-  @Test
-  public void testSortingByProcessVersionDesc() throws Exception {
+  private void testSortingByProcessVersionDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> o2.getProcessVersion().compareTo(o1.getProcessVersion());
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy(ListViewTemplate.PROCESS_VERSION);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "processVersion desc");
   }
 
-  @Test
-  public void testSortingByEndDateAsc() throws Exception {
+  private void testSortingByEndDateAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       //nulls are always at the end
       if (o1.getEndDate() == null && o2.getEndDate() == null) {
@@ -903,11 +914,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortBy(ListViewTemplate.END_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "endDate asc");
   }
 
-  @Test
-  public void testSortingByEndDateDesc() throws Exception {
+  private void testSortingByEndDateDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       //nulls are always at the end
       if (o1.getEndDate() == null && o2.getEndDate() == null) {
@@ -924,11 +934,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortBy(ListViewTemplate.END_DATE);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "endDate desc");
   }
 
-  @Test
-  public void testSortingByParentInstanceIdDesc() throws Exception {
+  private void testSortingByParentInstanceIdDesc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       int x;
       if (o1.getParentInstanceId() == null && o2.getParentInstanceId() == null) {
@@ -949,11 +958,10 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortBy(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "parentProcessInstanceId desc");
   }
 
-  @Test
-  public void testSortingByParentInstanceIdAsc() throws Exception {
+  private void testSortingByParentInstanceIdAsc() throws Exception {
     final Comparator<ListViewProcessInstanceDto> comparator = (o1, o2) -> {
       int x;
       if (o1.getParentInstanceId() == null && o2.getParentInstanceId() == null) {
@@ -974,7 +982,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortBy(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID);
     sorting.setSortOrder(SortingDto.SORT_ORDER_ASC_VALUE);
 
-    testSorting(sorting, comparator);
+    testSorting(sorting, comparator, "parentProcessInstanceId asc");
   }
 
   @Test
@@ -996,10 +1004,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         mvcResult, "SortBy parameter has invalid value: " + wrongSortParameter);
   }
 
-  @Test
-  public void testQueryAllFinished() throws Exception {
-    createData();
-
+  private void testQueryAllFinished() throws Exception {
     ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllFinishedRequest();
 
     MvcResult mvcResult =  postRequest(query(),processInstanceQueryDto);
@@ -1014,10 +1019,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     }
   }
 
-  @Test
-  public void testQueryFinishedAndRunning() throws Exception {
-    createData();
-
+  private void testQueryFinishedAndRunning() throws Exception {
     ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllProcessInstancesRequest();
 
     MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
@@ -1028,10 +1030,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getProcessInstances().size()).isEqualTo(8);
   }
 
-  @Test
-  public void testQueryFinishedCompleted() throws Exception {
-    createData();
-
+  private void testQueryFinishedCompleted() throws Exception {
     ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCompleted(true);
@@ -1047,10 +1046,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getProcessInstances().get(0).getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
   }
 
-  @Test
-  public void testQueryFinishedCanceled() throws Exception {
-    createData();
-
+  private void testQueryFinishedCanceled() throws Exception {
     ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCanceled(true);
@@ -1068,10 +1064,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         .containsOnlyNulls();
   }
 
-  @Test
-  public void testQueryRunningWithIncidents() throws Exception {
-    createData();
-
+  private void testQueryRunningWithIncidents() throws Exception {
     ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true);
@@ -1087,10 +1080,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
-  @Test
-  public void testQueryRunningWithoutIncidents() throws Exception {
-    createData();
-
+  private void testQueryRunningWithoutIncidents() throws Exception {
     ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setActive(true);
@@ -1140,9 +1130,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   // ---- Observed queries: ----
   // Before: {"queries":[{"running":true,"incidents":true,"active":true,"ids":["2251799813686074","2251799813686197"]}]}
   // After:  {"queries":[{"running":true,"completed":false,"canceled":false,"ids":["2251799813685731","2251799813685734"],"errorMessage":"","startDateAfter":null,"startDateBefore":null,"endDateAfter":null,"endDateBefore":null,"activityId":"","variable":{"name":"","value":""},"active":true,"incidents":true}]}
-  @Test
-  public void testParamsAreEmptyStringsInsteadOfNull() throws Exception {
-    createData();
+  private void testParamsAreEmptyStringsInsteadOfNull() throws Exception {
 
     List<String> processInstanceIds = CollectionUtil.toSafeListOfStrings(
         runningInstance.getProcessInstanceKey().toString(),
