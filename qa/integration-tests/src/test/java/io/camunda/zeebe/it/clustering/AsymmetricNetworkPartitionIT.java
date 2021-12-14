@@ -17,13 +17,19 @@ import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -59,12 +65,16 @@ public class AsymmetricNetworkPartitionIT {
             "Deployment distribution",
             (Consumer<ZeebeClient>)
                 (client) -> { // given
+                },
+            (Function<ZeebeClient, CompletableFuture<?>>)
+                (client) -> { // when - network partition is set up
                   final var process =
                       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
                   client.newDeployCommand().addProcessModel(process, "process.bpmn").send().join();
+                  return null;
                 },
-            (Consumer<ZeebeClient>)
-                (client) -> { // then
+            (BiConsumer<ZeebeClient, CompletableFuture<?>>)
+                (client, future) -> { // then - after network partition
                   final var topology = client.newTopologyRequest().send().join();
 
                   final var partitions =
@@ -93,6 +103,48 @@ public class AsymmetricNetworkPartitionIT {
                             partitions.remove(partitionId);
                             return partitions.isEmpty();
                           });
+                }),
+        Arguments.of(
+            "Message correlation",
+            (Consumer<ZeebeClient>)
+                (client) -> { // given
+                  final var process =
+                      Bpmn.createExecutableProcess("process")
+                          .startEvent()
+                          .intermediateCatchEvent()
+                          .message(msg -> msg.name("msg").zeebeCorrelationKeyExpression("key"))
+                          .endEvent()
+                          .done();
+                  client.newDeployCommand().addProcessModel(process, "process.bpmn").send().join();
+                  // make sure that the message is correlated to correct partition
+                  assertThat(
+                          SubscriptionUtil.getSubscriptionPartitionId(
+                              BufferUtil.wrapString("key"), 3))
+                      .describedAs("message should correlated to partition three")
+                      .isEqualTo(3);
+
+                  client
+                      .newPublishMessageCommand()
+                      .messageName("msg")
+                      .correlationKey("key")
+                      .timeToLive(Duration.ofMinutes(30))
+                      .send()
+                      .join();
+                },
+            (Function<ZeebeClient, CompletableFuture<?>>)
+                (client) -> { // when - network partition is set up
+                  return (CompletableFuture<?>)
+                      client
+                          .newCreateInstanceCommand()
+                          .bpmnProcessId("process")
+                          .latestVersion()
+                          .variables(Map.of("key", "key"))
+                          .withResult()
+                          .send();
+                },
+            (BiConsumer<ZeebeClient, CompletableFuture<?>>)
+                (client, future) -> { // then - after network partition
+                  future.join(); // await the process instance completion
                 }));
   }
 
@@ -104,7 +156,10 @@ public class AsymmetricNetworkPartitionIT {
   @ParameterizedTest
   @MethodSource("provideTestCases")
   public void shouldWithstandAsymmetricNetworkPartition(
-      final String name, final Consumer<ZeebeClient> given, final Consumer<ZeebeClient> then)
+      final String name,
+      final Consumer<ZeebeClient> given,
+      final Function<ZeebeClient, CompletableFuture<?>> when,
+      final BiConsumer<ZeebeClient, CompletableFuture<?>> then)
       throws IOException, InterruptedException {
     // given
     LOGGER.info("Run test {}", name);
@@ -118,17 +173,17 @@ public class AsymmetricNetworkPartitionIT {
 
     final var ipAddress =
         getContainerIpAddress(getContainerForNodeId(leaderOfPartitionOne.getNodeId()));
+    given.accept(zeebeClient);
     setupAsymmetricNetworkPartition(
         ipAddress, getContainerForNodeId(leaderOfPartitionThree.getNodeId()));
 
-    given.accept(zeebeClient);
-
     // when
+    final var future = when.apply(zeebeClient);
     removeAsymmetricNetworkPartition(
         ipAddress, getContainerForNodeId(leaderOfPartitionThree.getNodeId()));
 
     // then
-    then.accept(zeebeClient);
+    then.accept(zeebeClient, future);
   }
 
   private BrokerInfo getPartitionLeader(final Topology topology, final int partition) {
