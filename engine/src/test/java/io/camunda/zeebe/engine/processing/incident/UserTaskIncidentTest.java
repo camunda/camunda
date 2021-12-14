@@ -248,6 +248,32 @@ public class UserTaskIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfCandidateGroupsExpressionOfInvalidArrayItemType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeCandidateGroupsExpression("[1,2,3]")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '[1,2,3]' to be 'ARRAY' containing 'STRING' items,"
+                + " but was 'ARRAY' containing at least one non-'STRING' item.");
+  }
+
+  @Test
   public void shouldResolveIncidentAfterCandidateGroupsExpressionEvaluationFailed() {
     // given
     ENGINE

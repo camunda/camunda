@@ -87,4 +87,14 @@ public interface EvaluationResult {
    * @return the evaluation result, or {@code null} if it is not an array
    */
   List<DirectBuffer> getList();
+
+  /**
+   * Use {@link #getType()} to check if the result is of the type {@link ResultType#ARRAY}. Note
+   * that, this method differs from {@link #getList()} in that it returns {@code null} if any of the
+   * array items is not of type {@link ResultType#STRING}.
+   *
+   * @return the evaluation result, or {@code null} if it is not an array, or {@code null} if any of
+   *     the items in the array is not a string.
+   */
+  List<String> getListOfStrings();
 }

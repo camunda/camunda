@@ -85,4 +85,9 @@ public final class EvaluationFailure implements EvaluationResult {
   public List<DirectBuffer> getList() {
     return null;
   }
+
+  @Override
+  public List<String> getListOfStrings() {
+    return null;
+  }
 }
