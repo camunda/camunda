@@ -51,6 +51,14 @@ const cmOperationIdField = within(
   screen.queryByTestId('filter-operation-id').shadowRoot()
 ).queryByRole('textbox');
 
+const cmVariableNameField = within(
+  screen.queryByTestId('filter-variable-name').shadowRoot()
+).queryByRole('textbox');
+
+const cmVariableValueField = within(
+  screen.queryByTestId('filter-variable-value').shadowRoot()
+).queryByRole('textbox');
+
 const setup = async () => {
   await deploy([
     './e2e/tests/resources/Filters/processWithMultipleVersions_v_1.bpmn',
@@ -107,4 +115,6 @@ export {
   cmOperationIdField,
   cmStartDateField,
   cmEndDateField,
+  cmVariableNameField,
+  cmVariableValueField,
 };

@@ -10,12 +10,17 @@ import {
   cmNameField,
   cmValueField,
   cmEditValueField,
+  cmVariableNameFilter,
+  cmVariableValueFilter,
 } from './Variables.setup';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {IS_NEW_VARIABLES_FORM} from '../../src/modules/feature-flags';
+import {
+  IS_NEW_FILTERS_FORM,
+  IS_NEW_VARIABLES_FORM,
+} from '../../src/modules/feature-flags';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
@@ -490,20 +495,21 @@ test('Add variables', async (t) => {
     .ok();
 
   // go to instance page, filter and find the instance by added variable
+  const variableNameFilter = IS_NEW_FILTERS_FORM
+    ? cmVariableNameFilter
+    : screen.queryByRole('textbox', {name: 'Variable'});
+  const variableValueFilter = IS_NEW_FILTERS_FORM
+    ? cmVariableValueFilter
+    : screen.queryByRole('textbox', {name: 'Value'});
+
   await t
     .click(
       screen.queryByRole('link', {
         name: /view instances/i,
       })
     )
-    .typeText(
-      screen.queryByRole('textbox', {name: 'Variable'}),
-      'secondTestKey'
-    )
-    .typeText(
-      screen.queryByRole('textbox', {name: 'Value'}),
-      '"secondTestValue"'
-    )
+    .typeText(variableNameFilter, 'secondTestKey')
+    .typeText(variableValueFilter, '"secondTestValue"')
     .typeText(
       screen.queryByRole('textbox', {
         name: /instance id\(s\) separated by space or comma/i,

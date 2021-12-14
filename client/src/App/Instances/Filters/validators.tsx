@@ -110,9 +110,7 @@ const validateVariableNameComplete: FieldValidator<
       return undefined;
     }
 
-    return isValidJSON(variableValue)
-      ? `${ERRORS.variables.nameUnfilled}`
-      : `${ERRORS.variables.bothInvalid}`;
+    return ERRORS.variables.nameUnfilled;
   },
   VALIDATION_TIMEOUT
 );
@@ -132,9 +130,7 @@ const validateVariableValueComplete: FieldValidator<
     }
 
     if (!isValidJSON(variableValue)) {
-      return variableName === ''
-        ? `${ERRORS.variables.bothInvalid}`
-        : `${ERRORS.variables.valueInvalid}`;
+      return ERRORS.variables.valueInvalid;
     }
   },
   VALIDATION_TIMEOUT

@@ -6,9 +6,6 @@
 
 import styled, {css} from 'styled-components';
 import Panel from 'modules/components/Panel';
-import {Input} from 'modules/components/Input';
-import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
-import IconButton from 'modules/components/IconButton';
 import {CmText} from '@camunda-cloud/common-ui-react';
 
 const FiltersForm = styled.form`
@@ -40,26 +37,9 @@ const Row = styled.div`
   }
 `;
 
-const VariableRow = styled(Row)`
-  display: flex;
-  ${Input} {
-    width: calc(50% - 22px);
-  }
-
-  ${Input}:focus {
-    z-index: 1;
-  }
-
-  ${Input}:first-child:not(:focus) {
-    border-right: none;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-
-  ${Input}:nth-child(2):not(:focus) {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-  }
+const VariableHeader = styled(CmText)`
+  display: block;
+  padding: 0 0 8px 20px;
 `;
 
 const ResetButtonContainer = styled(Panel.Footer)`
@@ -81,25 +61,6 @@ const Fields = styled.div`
   flex-grow: 1;
 `;
 
-const JSONEditorButton = styled(IconButton)`
-  svg {
-    margin-top: 4px;
-  }
-`;
-
-const ModalIcon = styled(DefaultModal)`
-  ${({theme}) => {
-    const colors = theme.colors.filtersPanel.modalIcon;
-
-    return css`
-      width: 16px;
-      height: 16px;
-      object-fit: contain;
-      color: ${colors.color};
-    `;
-  }}
-`;
-
 const ProcessHeader = styled(CmText)`
   display: block;
   padding: 24px 0 8px 20px;
@@ -117,11 +78,9 @@ const InstanceStates = styled.div`
 export {
   FiltersForm,
   Row,
-  VariableRow,
+  VariableHeader,
   ResetButtonContainer,
   Fields,
-  JSONEditorButton,
-  ModalIcon,
   ProcessHeader,
   StatesHeader,
   InstanceStates,

@@ -11,11 +11,9 @@ import {isEqual} from 'lodash';
 import {
   FiltersForm,
   Row,
-  VariableRow,
+  VariableHeader,
   ResetButtonContainer,
   Fields,
-  JSONEditorButton,
-  ModalIcon,
   StatesHeader,
   InstanceStates,
   ProcessHeader,
@@ -24,12 +22,11 @@ import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
 import {FlowNodeField} from './FlowNodeField';
 import Textarea from 'modules/components/Textarea';
-import {Input} from 'modules/components/Input';
 import {CheckboxGroup} from './CheckboxGroup';
 import Button from 'modules/components/Button';
 import {InjectAriaInvalid} from './InjectAriaInvalid';
 import {AutoSubmit} from './AutoSubmit';
-import {Error, VariableError} from './Error';
+import {Error} from './Error';
 import {
   validateDateCharacters,
   validateDateComplete,
@@ -202,75 +199,60 @@ const Filters: React.FC = () => {
                   )}
                 </Field>
               </Row>
-
-              <VariableRow>
+              <VariableHeader appearance="emphasis">Variable</VariableHeader>
+              <Row>
                 <Field
                   name="variableName"
                   validate={validateVariableNameComplete}
                 >
-                  {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input
-                        {...input}
-                        onChange={(
-                          event: React.ChangeEvent<HTMLInputElement>
-                        ) => {
-                          input.onChange(event);
-
-                          if (event.target.value === '') {
-                            form.submit();
-                          }
-                        }}
-                        placeholder="Variable"
-                      />
-                    </InjectAriaInvalid>
+                  {({input, meta}) => (
+                    <TextField
+                      {...input}
+                      type="text"
+                      data-testid="filter-variable-name"
+                      label="Name"
+                      shouldDebounceError={!meta.dirty && form.getState().dirty}
+                    />
                   )}
                 </Field>
+              </Row>
+              <Row>
                 <Field
                   name="variableValue"
                   validate={validateVariableValueComplete}
                 >
-                  {({input}) => (
-                    <InjectAriaInvalid name={input.name}>
-                      <Input
-                        {...input}
-                        onChange={(
-                          event: React.ChangeEvent<HTMLInputElement>
-                        ) => {
-                          input.onChange(event);
-
-                          if (event.target.value === '') {
-                            form.submit();
-                          }
-                        }}
-                        placeholder="Value"
-                      />
-                    </InjectAriaInvalid>
+                  {({input, meta}) => (
+                    <TextField
+                      {...input}
+                      type="text"
+                      placeholder="in JSON format"
+                      data-testid="filter-variable-value"
+                      label="Value"
+                      fieldSuffix={{
+                        type: 'icon',
+                        icon: 'window',
+                        press: () => {
+                          setIsModalVisible(true);
+                        },
+                        tooltip: 'Open JSON editor modal',
+                      }}
+                      shouldDebounceError={!meta.dirty && form.getState().dirty}
+                    />
                   )}
                 </Field>
-
-                <JSONEditorButton
-                  type="button"
-                  title="Open JSON editor modal"
-                  onClick={() => setIsModalVisible(true)}
-                  size="large"
-                  iconButtonTheme="default"
-                  icon={<ModalIcon />}
-                />
-                <JSONEditorModal
-                  title={`Edit Variable Value`}
-                  value={values?.variableValue}
-                  onClose={() => {
-                    setIsModalVisible(false);
-                  }}
-                  onSave={(value) => {
-                    form.change('variableValue', value);
-                    setIsModalVisible(false);
-                  }}
-                  isModalVisible={isModalVisible}
-                />
-                <VariableError names={['variableName', 'variableValue']} />
-              </VariableRow>
+              </Row>
+              <JSONEditorModal
+                title={`Edit Variable Value`}
+                value={values?.variableValue}
+                onClose={() => {
+                  setIsModalVisible(false);
+                }}
+                onSave={(value) => {
+                  form.change('variableValue', value);
+                  setIsModalVisible(false);
+                }}
+                isModalVisible={isModalVisible}
+              />
               <Row>
                 <Field
                   name="operationId"

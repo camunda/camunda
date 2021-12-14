@@ -18,6 +18,8 @@ import {
   cmOperationIdField,
   cmStartDateField,
   cmEndDateField,
+  cmVariableNameField,
+  cmVariableValueField,
 } from './Filters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
@@ -407,21 +409,25 @@ test('End Date filter', async (t) => {
 });
 
 test('Variable filter', async (t) => {
+  const variableNameField = IS_NEW_FILTERS_FORM
+    ? cmVariableNameField
+    : screen.queryByRole('textbox', {name: /variable/i});
+
+  const variableValueField = IS_NEW_FILTERS_FORM
+    ? cmVariableValueField
+    : screen.queryByRole('textbox', {name: /value/i});
+
   await t.expect(screen.queryByTestId('instances-list').exists).ok();
 
   const instanceCount = await within(
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
-  await t.typeText(
-    screen.queryByRole('textbox', {name: /variable/i}),
-    'filtersTest',
-    {
-      paste: true,
-    }
-  );
+  await t.typeText(variableNameField, 'filtersTest', {
+    paste: true,
+  });
 
-  await t.typeText(screen.queryByRole('textbox', {name: /value/i}), '123', {
+  await t.typeText(variableValueField, '123', {
     paste: true,
   });
 
@@ -455,11 +461,9 @@ test('Variable filter', async (t) => {
     .eql(instanceCount);
 
   // filter has been reset
-  await t
-    .expect(screen.queryByRole('textbox', {name: /variable/i}).value)
-    .eql('');
+  await t.expect(variableNameField.value).eql('');
 
-  await t.expect(screen.queryByRole('textbox', {name: /value/i}).value).eql('');
+  await t.expect(variableValueField.value).eql('');
 
   await t
     .expect(await getPathname())
@@ -1363,6 +1367,14 @@ test('Process Filter - Interaction with diagram', async (t) => {
 });
 
 test('Should set filters from url', async (t) => {
+  const variableNameField = IS_NEW_FILTERS_FORM
+    ? cmVariableNameField
+    : screen.queryByRole('textbox', {name: /variable/i});
+
+  const variableValueField = IS_NEW_FILTERS_FORM
+    ? cmVariableValueField
+    : screen.queryByRole('textbox', {name: /value/i});
+
   await t.navigateTo(
     `/instances?${convertToQueryString({
       active: 'true',
@@ -1453,9 +1465,9 @@ test('Should set filters from url', async (t) => {
     .expect(endDateField.value)
     .eql('2020-12-12 12:12:12')
 
-    .expect(screen.queryByRole('textbox', {name: /variable/i}).value)
+    .expect(variableNameField.value)
     .eql('test')
-    .expect(screen.queryByRole('textbox', {name: /value/i}).value)
+    .expect(variableValueField.value)
     .eql('123')
     .expect(operationIdField.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');
@@ -1558,9 +1570,9 @@ test('Should set filters from url', async (t) => {
     .eql('2020-09-10 18:41:44')
     .expect(endDateField.value)
     .eql('2020-12-12 12:12:12')
-    .expect(screen.queryByRole('textbox', {name: /variable/i}).value)
+    .expect(variableNameField.value)
     .eql('test')
-    .expect(screen.queryByRole('textbox', {name: /value/i}).value)
+    .expect(variableValueField.value)
     .eql('123')
     .expect(operationIdField.value)
     .eql('5be8a137-fbb4-4c54-964c-9c7be98b80e6');

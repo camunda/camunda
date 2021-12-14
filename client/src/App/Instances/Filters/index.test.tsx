@@ -233,8 +233,8 @@ describe('Filters', () => {
     expect(screen.getByTestId('filter-start-date')).toHaveValue('');
     expect(screen.getByTestId('filter-end-date')).toHaveValue('');
     expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
-    expect(screen.getByLabelText('Variable')).toHaveValue('');
-    expect(screen.getByLabelText('Value')).toHaveValue('');
+    expect(screen.getByTestId('filter-variable-name')).toHaveValue('');
+    expect(screen.getByTestId('filter-variable-value')).toHaveValue('');
     expect(screen.getByTestId('filter-operation-id')).toHaveValue('');
     expect(screen.getByTestId(/active/)).not.toBeChecked();
     expect(screen.getByTestId(/incidents/)).not.toBeChecked();
@@ -267,10 +267,13 @@ describe('Filters', () => {
       MOCK_VALUES.flowNodeId,
     ]);
     userEvent.paste(
-      screen.getByLabelText('Variable'),
+      screen.getByTestId('filter-variable-name'),
       MOCK_VALUES.variableName
     );
-    userEvent.paste(screen.getByLabelText('Value'), MOCK_VALUES.variableValue);
+    userEvent.paste(
+      screen.getByTestId('filter-variable-value'),
+      MOCK_VALUES.variableValue
+    );
     userEvent.paste(
       screen.getByTestId('filter-operation-id'),
       MOCK_VALUES.operationId
@@ -294,9 +297,7 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
-    userEvent.click(
-      screen.getByRole('button', {name: /open json editor modal/i})
-    );
+    userEvent.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
@@ -490,21 +491,29 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByLabelText('Value'), '"someValidValue"');
+      userEvent.type(
+        screen.getByTestId('filter-variable-value'),
+        '"someValidValue"'
+      );
 
       expect(
-        await screen.findByTitle('Variable has to be filled')
+        await screen.findByText('Variable has to be filled')
       ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByLabelText('Value'));
-      userEvent.type(screen.getByLabelText('Value'), 'somethingInvalid');
+      userEvent.clear(screen.getByTestId('filter-variable-value'));
+      userEvent.type(
+        screen.getByTestId('filter-variable-value'),
+        'somethingInvalid'
+      );
 
       expect(
-        await screen.findByTitle(
-          'Variable has to be filled and Value has to be JSON'
-        )
+        await screen.findByText('Variable has to be filled')
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
@@ -520,33 +529,43 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByLabelText('Variable'), 'aRandomVariable');
+      userEvent.type(
+        screen.getByTestId('filter-variable-name'),
+        'aRandomVariable'
+      );
 
       expect(
-        await screen.findByTitle('Value has to be JSON')
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.clear(screen.getByLabelText('Variable'));
+      userEvent.clear(screen.getByTestId('filter-variable-name'));
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText('Value has to be JSON')
+      );
+
+      userEvent.type(
+        screen.getByTestId('filter-variable-value'),
+        'invalidValue'
+      );
 
       expect(
-        screen.queryByTitle('Value has to be JSON')
-      ).not.toBeInTheDocument();
-
-      userEvent.type(screen.getByLabelText('Value'), 'invalidValue');
-
+        await screen.findByText('Value has to be JSON')
+      ).toBeInTheDocument();
       expect(
-        await screen.findByTitle(
-          'Variable has to be filled and Value has to be JSON'
-        )
+        await screen.findByText('Variable has to be filled')
       ).toBeInTheDocument();
       expect(MOCK_HISTORY.location.search).toBe('');
 
-      userEvent.type(screen.getByLabelText('Variable'), 'aRandomVariable');
+      userEvent.type(
+        screen.getByTestId('filter-variable-name'),
+        'aRandomVariable'
+      );
 
       expect(
-        await screen.findByTitle('Value has to be JSON')
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
       expect(MOCK_HISTORY.location.search).toBe('');
@@ -772,7 +791,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByLabelText('Value'), 'a');
+      userEvent.type(screen.getByTestId('filter-variable-value'), 'a');
 
       expect(
         screen.getByTitle(
@@ -781,9 +800,11 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByTitle(
-          'Variable has to be filled and Value has to be JSON'
-        )
+        await screen.findByText('Variable has to be filled')
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
       expect(
@@ -813,7 +834,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByLabelText('Variable'), 'a');
+      userEvent.type(screen.getByTestId('filter-variable-name'), 'a');
 
       expect(
         screen.getByTitle(
@@ -822,7 +843,7 @@ describe('Filters', () => {
       ).toBeInTheDocument();
 
       expect(
-        await screen.findByTitle('Value has to be JSON')
+        await screen.findByText('Value has to be JSON')
       ).toBeInTheDocument();
 
       expect(
