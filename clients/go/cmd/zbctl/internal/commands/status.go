@@ -67,7 +67,7 @@ func (s StatusResponseWrapper) human() (string, error) {
 				roleToString(partition.Role),
 				healthToString(partition.Health)))
 
-			if p < len(broker.Partitions)-1 || b < len(broker.Partitions)-1 {
+			if p < len(broker.Partitions)-1 || b < len(resp.Brokers)-1 {
 				stringBuilder.WriteRune('\n')
 			}
 		}
