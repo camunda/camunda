@@ -1,32 +1,11 @@
 [
   {
     "extension": "revapi.filter",
+    "justification": "Ignore everything not included in the module itself",
     "configuration": {
-      "justification": "We expose certain external types on purpose, and for these, we can relax the compatibility guarantees.",
-      "elements": {
-        "exclude": [
-          {
-            "matcher": "java-package",
-            "match": "/org\\.assertj(\\..*)?/"
-          },
-          {
-            "matcher": "java-package",
-            "match": "io.camunda.zeebe.broker.system.configuration"
-          }
-        ]
-      }
-    }
-  },
-  {
-    "extension": "revapi.filter",
-    "configuration": {
-      "justification": "The client API is already checked in the module itself.",
-      "elements": {
-        "exclude": [
-          {
-            "matcher": "java-package",
-            "match": "io.camunda.zeebe.client"
-          }
+      "archives": {
+        "include": [
+          "io\\.camunda:zeebe-test:.*"
         ]
       }
     }
