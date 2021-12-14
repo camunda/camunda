@@ -28,7 +28,7 @@ set COMMAND=curl.exe -f -XGET http://localhost:9200/_cluster/health?wait_for_sta
 echo Environment is set up.
 
 :: limit the java heapspace used by ElasticSearch to 1GB
-set ES_JVM_OPTIONS="-Xms1g -Xmx1g"
+set ES_JVM_OPTIONS="-Xms1g -Xmx1g -Dlog4j2.formatMsgNoLookups=true"
 
 echo Starting Elasticsearch ${elasticsearch.version}...
 echo (Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)
