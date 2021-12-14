@@ -32,13 +32,13 @@ public class PublicApiReportDefinitionExportIT extends AbstractReportDefinitionE
   @Override
   protected List<ReportDefinitionExportDto> exportReportDefinitionAndReturnAsList(final String reportId) {
     setAccessToken();
-    return publicApiClient.exportReportDefinitionAndReturnResponse(Collections.singletonList(reportId), ACCESS_TOKEN);
+    return publicApiClient.exportReportDefinitionsAndReturnResponse(Collections.singletonList(reportId), ACCESS_TOKEN);
   }
 
   @Override
   protected Response exportReportDefinitionAndReturnResponse(final String reportId) {
     setAccessToken();
-    return publicApiClient.exportReportDefinition(Collections.singletonList(reportId), ACCESS_TOKEN);
+    return publicApiClient.exportReportDefinitions(Collections.singletonList(reportId), ACCESS_TOKEN);
   }
 
   @ParameterizedTest
@@ -71,7 +71,7 @@ public class PublicApiReportDefinitionExportIT extends AbstractReportDefinitionE
 
     // when
     final List<ReportDefinitionExportDto> actualExportDtos =
-      publicApiClient.exportReportDefinitionAndReturnResponse(reportIds, ACCESS_TOKEN);
+      publicApiClient.exportReportDefinitionsAndReturnResponse(reportIds, ACCESS_TOKEN);
 
     // then
     assertThat(actualExportDtos)
@@ -97,7 +97,7 @@ public class PublicApiReportDefinitionExportIT extends AbstractReportDefinitionE
 
     // when
     final List<ReportDefinitionExportDto> actualExportDtos =
-      publicApiClient.exportReportDefinitionAndReturnResponse(List.of(reportId, reportId), ACCESS_TOKEN);
+      publicApiClient.exportReportDefinitionsAndReturnResponse(List.of(reportId, reportId), ACCESS_TOKEN);
 
     // then
     assertThat(actualExportDtos)

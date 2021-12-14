@@ -121,6 +121,7 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
@@ -1064,12 +1065,16 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildPublicExportJsonReportDefinitionRequest(final List<String> reportIds,
                                                                               final String accessToken) {
-    this.path = PUBLIC_PATH + REPORT_EXPORT_DEFINITION_SUB_PATH;
-    this.method = POST;
-    this.mediaType = MediaType.APPLICATION_JSON;
-    this.body = getBody(reportIds);
-    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
-    return this;
+    return buildPublicExportJsonEntityDefinitionRequest(reportIds, REPORT_EXPORT_DEFINITION_SUB_PATH, accessToken);
+  }
+
+  public OptimizeRequestExecutor buildPublicExportJsonDashboardDefinitionRequest(final List<String> dashboardIds,
+                                                                                 final String accessToken) {
+    return buildPublicExportJsonEntityDefinitionRequest(
+      dashboardIds,
+      DASHBOARD_EXPORT_DEFINITION_SUB_PATH,
+      accessToken
+    );
   }
 
   public OptimizeRequestExecutor buildPublicDeleteReportRequest(final String id, final String accessToken) {
@@ -1616,6 +1621,17 @@ public class OptimizeRequestExecutor {
     Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
     this.mediaType = MediaType.APPLICATION_JSON;
     this.body = getBody(externalVariables);
+    return this;
+  }
+
+  private OptimizeRequestExecutor buildPublicExportJsonEntityDefinitionRequest(final List<String> entityIds,
+                                                                               final String entityExportSubpath,
+                                                                               final String accessToken) {
+    this.path = PUBLIC_PATH + entityExportSubpath;
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(entityIds);
+    setAccessToken(accessToken);
     return this;
   }
 

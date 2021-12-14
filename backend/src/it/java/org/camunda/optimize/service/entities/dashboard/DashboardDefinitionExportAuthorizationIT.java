@@ -19,6 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
+/**
+ * These are authIT for the export via UI with user authorization. For the public API, please refer to
+ * PublicJsonExportRestServiceIT.
+ */
 public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
 
   @ParameterizedTest

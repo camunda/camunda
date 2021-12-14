@@ -29,7 +29,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefinitionIT {
+public abstract class AbstractDashboardDefinitionExportIT extends AbstractExportImportEntityDefinitionIT {
+
+  protected abstract List<OptimizeEntityExportDto> exportDashboardDefinitionAndReturnAsList(final String dashboardId);
+
+  protected abstract Response exportDashboardDefinitionAndReturnResponse(final String dashboardId);
 
   @Test
   public void exportDashboard() {
@@ -65,13 +69,11 @@ public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefin
     final DashboardDefinitionExportDto expectedDashboard = createExportDto(dashboardDef);
 
     // when
-    final List<OptimizeEntityExportDto> exportedDtos =
-      exportClient.exportDashboardAndReturnExportDtos(dashboardId, "my_file.json");
+    final List<OptimizeEntityExportDto> exportedDtos = exportDashboardDefinitionAndReturnAsList(dashboardId);
 
     // then
-    assertThat(exportedDtos).hasSize(5);
-
     assertThat(exportedDtos)
+      .hasSize(5)
       .filteredOn(dto -> ExportEntityType.DASHBOARD.equals(dto.getExportEntityType()))
       .singleElement()
       .usingRecursiveComparison()
@@ -102,8 +104,7 @@ public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefin
       dashboardClient.createDashboard(null, Collections.singletonList(externalResourceId));
 
     // when
-    final List<OptimizeEntityExportDto> exportedDtos =
-      exportClient.exportDashboardAndReturnExportDtos(dashboardId, "my_file.json");
+    final List<OptimizeEntityExportDto> exportedDtos = exportDashboardDefinitionAndReturnAsList(dashboardId);
 
     // then
     assertThat(exportedDtos)
@@ -121,8 +122,7 @@ public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefin
     final String dashboardId = dashboardClient.createDashboard(null, Arrays.asList(singleReportId, combinedReportId));
 
     // when
-    final List<OptimizeEntityExportDto> exportedDtos =
-      exportClient.exportDashboardAndReturnExportDtos(dashboardId, "my_file.json");
+    final List<OptimizeEntityExportDto> exportedDtos = exportDashboardDefinitionAndReturnAsList(dashboardId);
 
     // then the export only includes the single report once
     assertThat(exportedDtos)
@@ -134,7 +134,7 @@ public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefin
   @Test
   public void exportDashboard_dashboardDoesNotExist() {
     // when
-    Response response = exportClient.exportDashboard("fakeId", "my_file.json");
+    Response response = exportDashboardDefinitionAndReturnResponse("fakeId");
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
@@ -156,7 +156,7 @@ public class DashboardDefinitionExportIT extends AbstractExportImportEntityDefin
     elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndex());
 
     // when
-    Response response = exportClient.exportDashboard(dashboardId, "my_file.json");
+    Response response = exportDashboardDefinitionAndReturnResponse(dashboardId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());

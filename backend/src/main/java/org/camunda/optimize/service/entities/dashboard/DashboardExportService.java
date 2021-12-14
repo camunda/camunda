@@ -36,9 +36,22 @@ public class DashboardExportService {
   private final ReportExportService reportExportService;
   private final AuthorizedCollectionService collectionService;
 
+  public List<OptimizeEntityExportDto> getCompleteDashboardExport(final Set<String> dashboardIds) {
+    log.debug("Exporting dashboards with IDs {} via API.", dashboardIds);
+    final List<DashboardDefinitionRestDto> dashboards = retrieveDashboardDefinitionsOrFailIfMissing(dashboardIds);
+    final List<ReportDefinitionDto<?>> reports = retrieveRelevantReportDefinitionsOrFailIfMissing(dashboards);
+
+    final List<OptimizeEntityExportDto> exportDtos = reports.stream()
+      .map(ReportDefinitionExportDto::mapReportDefinitionToExportDto)
+      .collect(toList());
+    exportDtos.addAll(dashboards.stream().map(DashboardDefinitionExportDto::new).collect(toList()));
+
+    return exportDtos;
+  }
+
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(final String userId,
                                                                   final Set<String> dashboardIds) {
-    log.debug("Exporting dashboards with IDs {}.", dashboardIds);
+    log.debug("Exporting dashboards with IDs {} as user {}.", dashboardIds, userId);
     final List<DashboardDefinitionRestDto> dashboards = retrieveDashboardDefinitionsOrFailIfMissing(dashboardIds);
     validateUserAuthorizedToAccessDashboardsOrFail(userId, dashboards);
 

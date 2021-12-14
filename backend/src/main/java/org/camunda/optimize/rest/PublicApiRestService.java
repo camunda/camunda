@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
@@ -61,6 +62,7 @@ public class PublicApiRestService {
   public static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
   public static final String REPORT_EXPORT_JSON_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
   public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
+  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
 
   public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
@@ -105,6 +107,16 @@ public class PublicApiRestService {
                                                                 final @RequestBody Set<String> reportIds) {
     validateAccessToken(requestContext, getJsonExportAccessToken());
     return entityExportService.getReportExportDtos(Optional.ofNullable(reportIds).orElse(Collections.emptySet()));
+  }
+
+  @POST
+  @Path(DASHBOARD_EXPORT_DEFINITION_SUB_PATH)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<OptimizeEntityExportDto> exportDashboardDefinition(final @Context ContainerRequestContext requestContext,
+                                                                 final @RequestBody Set<String> dashboardIds) {
+    validateAccessToken(requestContext, getJsonExportAccessToken());
+    return entityExportService.getDashboardExportDtos(Optional.ofNullable(dashboardIds).orElse(Collections.emptySet()));
   }
 
   @DELETE

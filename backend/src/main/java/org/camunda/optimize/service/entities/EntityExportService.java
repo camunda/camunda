@@ -37,10 +37,14 @@ public class EntityExportService {
     return reportExportService.getReportExportDtosAsUser(userId, reportIds);
   }
 
-  public List<OptimizeEntityExportDto> getCompleteDashboardExport(final String userId,
-                                                                  final Set<String> reportIds) {
+  public List<OptimizeEntityExportDto> getDashboardExportDtos(final Set<String> dashboardIds) {
+    return dashboardExportService.getCompleteDashboardExport(dashboardIds);
+  }
+
+  public List<OptimizeEntityExportDto> getCompleteDashboardExportAsUser(final String userId,
+                                                                        final Set<String> dashboardIds) {
     validateUserAuthorizedToExportOrFail(userId);
-    return dashboardExportService.getCompleteDashboardExport(userId, reportIds);
+    return dashboardExportService.getCompleteDashboardExport(userId, dashboardIds);
   }
 
   private void validateUserAuthorizedToExportOrFail(final String userId) {

@@ -7,6 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 
 import javax.ws.rs.core.Response;
@@ -17,20 +18,36 @@ import java.util.function.Supplier;
 public class PublicApiClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public List<ReportDefinitionExportDto> exportReportDefinitionAndReturnResponse(final List<String> reportIds,
-                                                                                 final String accessToken) {
+  public List<ReportDefinitionExportDto> exportReportDefinitionsAndReturnResponse(final List<String> reportIds,
+                                                                                  final String accessToken) {
     return getRequestExecutor()
       .withoutAuthentication()
       .buildPublicExportJsonReportDefinitionRequest(reportIds, accessToken)
       .executeAndReturnList(ReportDefinitionExportDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public Response exportReportDefinition(final List<String> reportIds,
-                                         final String accessToken) {
+  public Response exportReportDefinitions(final List<String> reportIds,
+                                          final String accessToken) {
     return getRequestExecutor()
       .withoutAuthentication()
       .buildPublicExportJsonReportDefinitionRequest(reportIds, accessToken)
       .execute();
+  }
+
+
+  public Response exportDashboardDefinitions(final List<String> dashboardIds, final String accessToken) {
+    return getRequestExecutor()
+      .buildPublicExportJsonDashboardDefinitionRequest(dashboardIds, accessToken)
+      .withoutAuthentication()
+      .execute();
+  }
+
+  public List<OptimizeEntityExportDto> exportDashboardsAndReturnExportDtos(final List<String> dashboardIds,
+                                                                           final String accessToken) {
+    return getRequestExecutor()
+      .buildPublicExportJsonDashboardDefinitionRequest(dashboardIds, accessToken)
+      .withoutAuthentication()
+      .executeAndReturnList(OptimizeEntityExportDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response deleteReport(final String reportId, final String accessToken) {

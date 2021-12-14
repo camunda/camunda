@@ -99,6 +99,22 @@ public class PublicApiRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void exportDashboardDefinitionWithoutAuthorization() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicExportJsonDashboardDefinitionRequest(Collections.singletonList("fake_id"), null)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
   public void failGracefullyWhenNoSecretIsConfigured() {
 
     // when
