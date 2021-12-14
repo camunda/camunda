@@ -1,23 +1,43 @@
 [
   {
-    "extension": "revapi.semver.ignore",
-    "configuration": {
-      "enabled": true,
-      "versionIncreaseAllows": {
-        "major": "breaking",
-        "minor": "nonBreaking",
-        "patch": "nonBreaking"
-      },
-      "passThroughDifferences": [
-        "java.class.nonPublicPartOfAPI"
-      ]
-    }
-  },
-  {
     "extension": "revapi.java",
     "configuration": {
       "reportUsesFor": "all-differences",
+      "missing-classes": {
+        "behavior": "ignore",
+        "ignoreMissingAnnotations": true
+      },
       "matchOverloads": false
+    }
+  },
+  {
+    "extension": "revapi.versions",
+    "configuration": {
+      "enabled": true,
+      "passThroughDifferences": [
+        "java.class.nonPublicPartOfAPI"
+      ],
+      "versionIncreaseAllows": {
+        "major": {
+          "severity": "BREAKING"
+        },
+        "minor": {
+          "classification": {
+            "BINARY": "NON_BREAKING",
+            "SOURCE": "BREAKING",
+            "SEMANTIC": "BREAKING",
+            "OTHER": "BREAKING"
+          }
+        },
+        "patch": {
+          "classification": {
+            "BINARY": "NON_BREAKING",
+            "SOURCE": "BREAKING",
+            "SEMANTIC": "BREAKING",
+            "OTHER": "BREAKING"
+          }
+        }
+      }
     }
   }
 ]

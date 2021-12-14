@@ -100,7 +100,7 @@
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
     <version.byte-buddy>1.11.5</version.byte-buddy>
-    <version.revapi>0.24.3</version.revapi>
+    <version.revapi>0.26.1</version.revapi>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -127,7 +127,7 @@
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
     <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
-    <plugin.version.revapi>0.14.3</plugin.version.revapi>
+    <plugin.version.revapi>0.14.6</plugin.version.revapi>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
@@ -776,27 +776,6 @@
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
           <version>${plugin.version.revapi}</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.revapi</groupId>
-              <artifactId>revapi-java</artifactId>
-              <version>${version.revapi}</version>
-            </dependency>
-            <dependency>
-              <groupId>io.camunda</groupId>
-              <artifactId>zeebe-build-tools</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <phase>verify</phase>
-              <id>check</id>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
           <configuration>
             <!-- see the property's documentation as to why -->
             <checkDependencies>true</checkDependencies>
@@ -804,7 +783,11 @@
             <expandProperties>true</expandProperties>
             <!-- allows us to pre-defined ignored-changes, even when missing -->
             <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
-            <analysisConfigurationFiles combine.children="append">
+            <analysisConfigurationFiles>
+              <!-- look for an optional relative configuration file -->
+              <configurationFile>
+                <path>revapi.json</path>
+              </configurationFile>
               <!-- uses the default configuration file packaged in build-tools -->
               <configurationFile>
                 <resource>revapi/revapi.json</resource>
@@ -819,7 +802,38 @@
               different branches which need to compare to different versions
               -->
             <oldVersion>${backwards.compat.version}</oldVersion>
+            <pipelineConfiguration>
+              <transformBlocks>
+                <!-- always execute the various differences plugins first which can exclude some
+                     differences for the semantic version checker -->
+                <block>
+                  <item>revapi.differences</item>
+                  <item>revapi.versions</item>
+                </block>
+              </transformBlocks>
+            </pipelineConfiguration>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.revapi</groupId>
+              <artifactId>revapi-java</artifactId>
+              <version>${version.revapi}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>check</id>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <phase>verify</phase>
+            </execution>
+          </executions>
         </plugin>
 
         <!-- javadoc generation -->
