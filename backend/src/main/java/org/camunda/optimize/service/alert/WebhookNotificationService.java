@@ -47,7 +47,7 @@ public class WebhookNotificationService implements NotificationService {
     if (!webhookConfigurationMap.containsKey(destination)) {
       log.error(
         "Could not send webhook notification as the configuration for webhook with name {} " +
-          "no longer exists in the service-config.",
+          "no longer exists in the configuration file.",
         destination
       );
       return;

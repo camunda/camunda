@@ -13,7 +13,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -28,13 +28,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @Conditional(CamundaPlatformCondition.class)
-public class PlatformUserIdentityCacheService extends AbstractPlatformIdentityCacheService implements UserIdentityCache {
+public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache implements UserIdentityCache {
   private final EngineContextFactory engineContextFactory;
 
-  public PlatformUserIdentityCacheService(final ConfigurationService configurationService,
-                                          final EngineContextFactory engineContextFactory,
-                                          final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                          final BackoffCalculator backoffCalculator) {
+  public PlatformUserIdentityCache(final ConfigurationService configurationService,
+                                   final EngineContextFactory engineContextFactory,
+                                   final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+                                   final BackoffCalculator backoffCalculator) {
     super(configurationService::getUserIdentityCacheConfiguration, identityCacheSyncListeners, backoffCalculator);
     this.engineContextFactory = engineContextFactory;
   }

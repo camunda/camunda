@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;

@@ -137,7 +137,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     importAllEngineEntitiesFromScratch();
 
     // cache is empty
-    embeddedOptimizeExtension.getUserTaskIdentityCacheService().resetCache();
+    embeddedOptimizeExtension.getUserTaskIdentityCache().resetCache();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 

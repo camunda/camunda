@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.rest.cloud.CloudUserClient;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -21,30 +21,16 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-@Conditional(CamundaCloudCondition.class)
-public class CloudIdentityService extends AbstractIdentityService {
+@Conditional(CCSMCondition.class)
+public class CCSMIdentityService extends AbstractIdentityService {
 
-  private final CloudUserClient cloudUserClient;
-
-  public CloudIdentityService(final ConfigurationService configurationService,
-                              final UserIdentityCache syncedIdentityCache,
-                              final CloudUserClient cloudUserClient) {
-    super(configurationService, syncedIdentityCache);
-    this.cloudUserClient = cloudUserClient;
+  public CCSMIdentityService(final ConfigurationService configurationService) {
+    super(configurationService);
   }
 
   @Override
   public Optional<UserDto> getUserById(final String userId) {
-    return syncedIdentityCache.getUserIdentityById(userId)
-      .or(() -> {
-        try {
-          return cloudUserClient.getCloudUserForId(userId)
-            .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail()));
-        } catch (Exception exception) {
-          log.warn("Failed fetching Cloud user with id {}: ", userId, exception);
-          return Optional.empty();
-        }
-      });
+    return Optional.empty();
   }
 
   @Override
@@ -60,6 +46,12 @@ public class CloudIdentityService extends AbstractIdentityService {
   @Override
   public boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity) {
     return true;
+  }
+
+  @Override
+  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId, final String searchString,
+                                                                   final int maxResults) {
+    return new IdentitySearchResultResponseDto(0, Collections.emptyList());
   }
 
 }

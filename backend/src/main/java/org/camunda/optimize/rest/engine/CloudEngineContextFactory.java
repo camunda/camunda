@@ -7,7 +7,7 @@ package org.camunda.optimize.rest.engine;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 

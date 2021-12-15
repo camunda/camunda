@@ -18,6 +18,8 @@ import java.util.Optional;
 public class AuthConfiguration {
   @JsonProperty("cloud")
   private CloudAuthConfiguration cloudAuthConfiguration;
+  @JsonProperty("ccsm")
+  private CCSMAuthConfiguration ccsmAuthConfiguration;
   @JsonProperty("token.lifeMin")
   private Integer tokenLifeTime;
   @JsonProperty("token.secret")

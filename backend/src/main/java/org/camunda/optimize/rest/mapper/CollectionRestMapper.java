@@ -31,4 +31,5 @@ public class CollectionRestMapper {
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(collectionDefinitionDto::setLastModifier);
   }
+
 }

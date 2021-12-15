@@ -3,14 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration;
+package org.camunda.optimize.service.util.configuration.condition;
 
+import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-public class CamundaPlatformCondition extends CamundaCloudCondition {
+// This condition is enabled if either Cloud SaaS or CCSM conditions are enabled
+public class CamundaCloudCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    return !super.matches(context, metadata);
+    return new CCSaaSCondition().matches(context, metadata) || new CCSMCondition().matches(context, metadata);
   }
 }

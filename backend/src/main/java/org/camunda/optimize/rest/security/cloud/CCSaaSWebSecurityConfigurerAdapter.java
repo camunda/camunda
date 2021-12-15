@@ -13,7 +13,7 @@ import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -55,8 +55,8 @@ import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSecurity
-@Conditional(CamundaCloudCondition.class)
-public class CloudWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+@Conditional(CCSaaSCondition.class)
+public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
   private static final String OAUTH_AUTH_ENDPOINT = "/sso";
   private static final String OAUTH_REDIRECT_ENDPOINT = "/sso-callback";
@@ -91,21 +91,21 @@ public class CloudWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdap
 
   @Bean
   public ClientRegistrationRepository clientRegistrationRepository() {
-    final ClientRegistration.Builder builder = ClientRegistration.withRegistrationId("auth0");
-    builder.clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
-    builder.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE);
-    // For allowed redirect urls auth0 is not supporting wildcards within the actual path.
-    // Thus the clusterId is passed along as query parameter and will get picked up by the cloud ingress proxy
-    // which redirects the callback to the particular Optimize instance of the cluster the login was issued from.
-    builder.redirectUri("{baseUrl}" + OAUTH_REDIRECT_ENDPOINT + "?uuid=" + getAuth0Configuration().getClusterId());
-    builder.authorizationUri(buildAuth0CustomDomainUrl(AUTH0_AUTH_ENDPOINT));
-    builder.tokenUri(buildAuth0DomainUrl(AUTH0_TOKEN_ENDPOINT));
-    builder.userInfoUri(buildAuth0DomainUrl(AUTH0_USERINFO_ENDPOINT));
-    builder.scope("openid", "profile");
-    builder.userNameAttributeName(getAuth0Configuration().getUserIdAttributeName());
-    builder.clientId(getAuth0Configuration().getClientId());
-    builder.clientSecret(getAuth0Configuration().getClientSecret());
-    builder.jwkSetUri(String.format(URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
+    final ClientRegistration.Builder builder = ClientRegistration.withRegistrationId("auth0")
+      .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+      .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+      // For allowed redirect urls auth0 is not supporting wildcards within the actual path.
+      // Thus the clusterId is passed along as query parameter and will get picked up by the cloud ingress proxy
+      // which redirects the callback to the particular Optimize instance of the cluster the login was issued from.
+      .redirectUri("{baseUrl}" + OAUTH_REDIRECT_ENDPOINT + "?uuid=" + getAuth0Configuration().getClusterId())
+      .authorizationUri(buildAuth0CustomDomainUrl(AUTH0_AUTH_ENDPOINT))
+      .tokenUri(buildAuth0DomainUrl(AUTH0_TOKEN_ENDPOINT))
+      .userInfoUri(buildAuth0DomainUrl(AUTH0_USERINFO_ENDPOINT))
+      .scope("openid", "profile")
+      .userNameAttributeName(getAuth0Configuration().getUserIdAttributeName())
+      .clientId(getAuth0Configuration().getClientId())
+      .clientSecret(getAuth0Configuration().getClientSecret())
+      .jwkSetUri(String.format(URL_TEMPLATE, getAuth0Configuration().getDomain(), AUTH0_JWKS_ENDPOINT));
     return new InMemoryClientRegistrationRepository(List.of(builder.build()));
   }
 
@@ -162,10 +162,9 @@ public class CloudWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdap
 
         // we can't redirect to the previously accesses path or the root of the application as the Optimize Cookie
         // won't be sent by the browser in this case. This is because the chain of requests that lead to the
-        // authentication
-        // success are initiated by the auth0 server and the same-site:strict property prevents the cookie to be
-        // transmitted
-        // in such a case. See https://stackoverflow.com/a/42220786
+        // authenticationOptimizeWebSecurityConfigurerAdapter success are initiated by the auth0 server and the
+        // same-site:strict property prevents the cookie to be transmitted in such a case.
+        // See https://stackoverflow.com/a/42220786
         // This static page breaks the redirect chain initiated from the auth0 login and forces the browser to start
         // a new request chain which then allows the Optimize auth cookie to be provided to be read by the
         // authenticationCookieFilter granting the user access.

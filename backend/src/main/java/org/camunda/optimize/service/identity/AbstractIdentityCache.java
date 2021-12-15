@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-public abstract class AbstractIdentityCacheService extends AbstractScheduledService implements ConfigurationReloadable {
+public abstract class AbstractIdentityCache extends AbstractScheduledService implements ConfigurationReloadable {
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
   private final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier;
@@ -46,9 +46,9 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
   private SearchableIdentityCache activeIdentityCache;
   private CronExpression cronExpression;
 
-  protected AbstractIdentityCacheService(final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
-                                         final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                         final BackoffCalculator backoffCalculator) {
+  protected AbstractIdentityCache(final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
+                                  final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+                                  final BackoffCalculator backoffCalculator) {
     this.cacheConfigurationSupplier = cacheConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;

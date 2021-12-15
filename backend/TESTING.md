@@ -25,7 +25,7 @@ To write your own unit test, just add the springrunner class and the respective 
 @ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class YourCustomUnitTest {
 
-    // example optimze bean creation
+    // example Optimize bean creation
     @Autowired
     private ConfigurationService configurationService;
 

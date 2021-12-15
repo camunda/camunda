@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
@@ -108,7 +109,6 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     // when
     UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
-
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
     assertThat(webappsEndpoints).isNotEmpty();
@@ -125,7 +125,6 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
     // when
     UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
-
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
@@ -202,8 +201,6 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
   @Test
   public void tenantsAvailable_noTenants() {
-    // given
-
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
 
@@ -221,6 +218,15 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
       .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isMetadataTelemetryEnabled());
     assertThat(response.isSettingsManuallyConfirmed())
       .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isManuallyConfirmed());
+  }
+
+  @Test
+  public void getDefaultOptimizeProfile() {
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
   }
 
   @Test

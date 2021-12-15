@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.glassfish.jersey.client.ClientProperties;

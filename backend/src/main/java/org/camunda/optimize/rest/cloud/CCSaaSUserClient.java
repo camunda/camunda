@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
 import org.camunda.optimize.dto.optimize.cloud.TokenRequestDto;
 import org.camunda.optimize.dto.optimize.cloud.TokenResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import org.camunda.optimize.service.util.configuration.users.CloudTokenConfiguration;
@@ -39,8 +39,8 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @Component
 @Slf4j
-@Conditional(CamundaCloudCondition.class)
-public class CloudUserClient {
+@Conditional(CCSaaSCondition.class)
+public class CCSaaSUserClient {
 
   private static final String GRANT_TYPE = "client_credentials";
 
@@ -51,8 +51,8 @@ public class CloudUserClient {
   private TokenResponseDto accessToken;
   private Instant tokenExpires = Instant.now();
 
-  public CloudUserClient(final ConfigurationService configurationService,
-                         final ObjectMapper objectMapper) {
+  public CCSaaSUserClient(final ConfigurationService configurationService,
+                          final ObjectMapper objectMapper) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     httpClient = HttpClients.createDefault();

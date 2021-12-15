@@ -13,10 +13,10 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizat
 import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetriever.readLogoAsBase64;
 
 @Component
@@ -54,9 +57,10 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
+    final String optimizeProfile = determineOptimizeProfile();
+    uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setOptimizeCloudEnvironment(
-      Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE)
-    );
+      optimizeProfile.equals(CLOUD_PROFILE) || optimizeProfile.equals(CCSM_PROFILE));
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(configurationService.getExportCsvLimit());
@@ -75,6 +79,20 @@ public class UIConfigurationService implements ConfigurationReloadable {
     mixpanel.setClusterId(configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
 
     return uiConfigurationDto;
+  }
+
+  private String determineOptimizeProfile() {
+    final String[] activeProfiles = environment.getActiveProfiles();
+    if (activeProfiles.length == 0) {
+      return PLATFORM_PROFILE;
+    }
+    if (activeProfiles.length > 1) {
+      throw new OptimizeConfigurationException("Cannot configure more than one profile for Optimize");
+    }
+    if (!Arrays.asList(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE).contains(activeProfiles[0])) {
+      throw new OptimizeConfigurationException("Invalid profile configured");
+    }
+    return activeProfiles[0];
   }
 
   private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {

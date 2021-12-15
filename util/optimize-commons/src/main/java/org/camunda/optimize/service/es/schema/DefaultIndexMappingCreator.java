@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.schema;
 
-import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -19,13 +18,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_S
 
 public abstract class DefaultIndexMappingCreator implements IndexMappingCreator, PropertiesAppender {
 
-  private Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
   private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
   public static final String LOWERCASE_FIELD = "lowercase";
   protected static final String ANALYZER = "analyzer";
   protected static final String NORMALIZER = "normalizer";
 
-  @Getter
   @Setter
   private String dynamic = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
 

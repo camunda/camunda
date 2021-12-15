@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public abstract class AbstractPlatformIdentityCacheService extends AbstractIdentityCacheService {
+public abstract class AbstractPlatformIdentityCache extends AbstractIdentityCache {
 
-  protected AbstractPlatformIdentityCacheService(final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
-                                                 final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                                 final BackoffCalculator backoffCalculator) {
+  protected AbstractPlatformIdentityCache(final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier,
+                                          final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+                                          final BackoffCalculator backoffCalculator) {
     super(cacheConfigurationSupplier, identityCacheSyncListeners, backoffCalculator);
   }
 

@@ -9,10 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
-import org.camunda.optimize.rest.cloud.CloudUserClient;
+import org.camunda.optimize.rest.cloud.CCSaaSUserClient;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.identity.CloudUserIdentityCacheService;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.identity.CCSaaSUserIdentityCache;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -22,23 +22,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Conditional(CamundaCloudCondition.class)
+@Conditional(CCSaaSCondition.class)
 @Component
 @RequiredArgsConstructor
-public class CloudAlertRecipientValidator implements AlertRecipientValidator {
+public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
 
-  private final CloudUserIdentityCacheService cloudUserIdentityCacheService;
-  private final CloudUserClient cloudUserClient;
+  private final CCSaaSUserIdentityCache userIdentityCacheService;
+  private final CCSaaSUserClient userClient;
 
   @Override
   public List<String> getValidatedRecipientEmailList(final List<String> emails) {
-    final List<String> cachedUserEmails = cloudUserIdentityCacheService.getUsersByEmail(emails)
+    final List<String> cachedUserEmails = userIdentityCacheService.getUsersByEmail(emails)
       .stream().map(UserDto::getEmail).collect(Collectors.toList());
     final Collection<String> uncachedUserEmails = CollectionUtils.subtract(emails, cachedUserEmails);
 
     // If the user has supplied an ID rather than an email address, we can still fetch it directly
     final Map<String, String> fetchedEmailsByUserId = uncachedUserEmails.stream()
-      .map(cloudUserClient::getCloudUserForId)
+      .map(userClient::getCloudUserForId)
       .filter(Optional::isPresent)
       .map(Optional::get)
       .collect(Collectors.toMap(CloudUserDto::getUserId, CloudUserDto::getEmail));

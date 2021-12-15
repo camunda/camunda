@@ -41,7 +41,7 @@ public class MultiEnginePlatformIdentityServiceIT extends AbstractMultiEngineIT 
     secondaryEngineAuthorizationClient.addUserAndGrantOptimizeAccess(otherEngineUser);
 
     // make sure there are no cached entries
-    embeddedOptimizeExtension.getUserIdentityCacheService().resetCache();
+    embeddedOptimizeExtension.getUserIdentityCache().resetCache();
 
     final ClientAndServer firstEngineMock = useAndGetEngineMockServer();
     // requests for otherUser to the first engine will fail hard

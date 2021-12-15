@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 
 @Component
-public class PlatformUserTaskIdentityCacheService extends AbstractPlatformIdentityCacheService {
+public class PlatformUserTaskIdentityCache extends AbstractPlatformIdentityCache {
   private final EngineContextFactory engineContextFactory;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
 
-  public PlatformUserTaskIdentityCacheService(final ConfigurationService configurationService,
-                                              final EngineContextFactory engineContextFactory,
-                                              final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
-                                              final BackoffCalculator backoffCalculator) {
+  public PlatformUserTaskIdentityCache(final ConfigurationService configurationService,
+                                       final EngineContextFactory engineContextFactory,
+                                       final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
+                                       final BackoffCalculator backoffCalculator) {
     super(configurationService::getUserTaskIdentityCacheConfiguration, Collections.emptyList(), backoffCalculator);
     this.engineContextFactory = engineContextFactory;
     this.assigneeAndCandidateGroupsReader = assigneeAndCandidateGroupsReader;

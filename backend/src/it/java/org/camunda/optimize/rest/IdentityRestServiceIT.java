@@ -121,7 +121,7 @@ public class IdentityRestServiceIT extends AbstractIT {
     final String userId = "Baggins";
     authorizationClient.addUserAndGrantOptimizeAccess(userId);
 
-    embeddedOptimizeExtension.getUserIdentityCacheService().synchronizeIdentities();
+    embeddedOptimizeExtension.getUserIdentityCache().synchronizeIdentities();
 
     // when
     final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("baggins");
@@ -199,13 +199,13 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:
@@ -229,7 +229,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/user/" + expectedIdentity.getId() + "/profile");
@@ -237,7 +237,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/group/" + expectedIdentity.getId());
@@ -275,7 +275,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/user/" + expectedIdentity.getId() + "/profile");
@@ -283,7 +283,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       case GROUP:
         authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         engineFetchRequestMatcher = request()
           .withPath(engineIntegrationExtension.getEnginePath() + "/group/" + expectedIdentity.getId());
@@ -312,13 +312,13 @@ public class IdentityRestServiceIT extends AbstractIT {
       case USER:
         engineIntegrationExtension.addUser(expectedIdentity.getId(), "password");
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         engineIntegrationExtension.createGroup(expectedIdentity.getId());
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:
@@ -335,12 +335,12 @@ public class IdentityRestServiceIT extends AbstractIT {
     switch (expectedIdentity.getType()) {
       case USER:
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getUserIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       case GROUP:
         assertThat(
-          embeddedOptimizeExtension.getUserIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+          embeddedOptimizeExtension.getUserIdentityCache().getGroupIdentityById(expectedIdentity.getId())
         ).isEmpty();
         break;
       default:

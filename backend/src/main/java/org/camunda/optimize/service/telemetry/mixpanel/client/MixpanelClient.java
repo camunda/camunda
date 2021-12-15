@@ -17,7 +17,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
-@Conditional(CamundaCloudCondition.class)
+@Conditional(CCSaaSCondition.class)
 @Slf4j
 public class MixpanelClient {
   private final ConfigurationService configurationService;

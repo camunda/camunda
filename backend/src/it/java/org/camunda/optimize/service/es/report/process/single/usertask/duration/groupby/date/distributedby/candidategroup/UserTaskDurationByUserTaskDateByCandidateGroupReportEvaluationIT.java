@@ -139,7 +139,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     importAllEngineEntitiesFromScratch();
 
     // cache is empty
-    embeddedOptimizeExtension.getUserTaskIdentityCacheService().resetCache();
+    embeddedOptimizeExtension.getUserTaskIdentityCache().resetCache();
 
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
 

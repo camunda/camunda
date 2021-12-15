@@ -5,24 +5,22 @@
  */
 package org.camunda.optimize.service.alert;
 
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Conditional(CamundaPlatformCondition.class)
+@Conditional(CCSMCondition.class)
 @Component
-public class PlatformAlertRecipientValidator implements AlertRecipientValidator {
+@RequiredArgsConstructor
+public class CCSMAlertRecipientValidator implements AlertRecipientValidator {
 
   @Override
-  public List<String> getValidatedRecipientEmailList(final List<String> emailAddresses) {
-    if (emailAddresses.isEmpty()) {
-      throw new OptimizeValidationException(
-        "The field [emails] is not allowed to both be empty. At least one recipient must be set.");
-    }
-    return emailAddresses;
+  public List<String> getValidatedRecipientEmailList(final List<String> emails) {
+    throw new OptimizeValidationException("Alerts are not available in CCSM");
   }
 
 }

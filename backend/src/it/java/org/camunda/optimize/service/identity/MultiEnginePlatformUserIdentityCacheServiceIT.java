@@ -110,8 +110,8 @@ public class MultiEnginePlatformUserIdentityCacheServiceIT extends AbstractMulti
     return new EngineUserDto(duplicateProfile2, new UserCredentialsDto(KERMIT_USER));
   }
 
-  private PlatformUserIdentityCacheService getSyncedIdentityCacheService() {
-    return embeddedOptimizeExtension.getUserIdentityCacheService();
+  private PlatformUserIdentityCache getSyncedIdentityCacheService() {
+    return embeddedOptimizeExtension.getUserIdentityCache();
   }
 
 }

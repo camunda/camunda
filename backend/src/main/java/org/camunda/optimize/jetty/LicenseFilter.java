@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 
 @Slf4j
@@ -96,7 +97,7 @@ public class LicenseFilter implements Filter {
 
   private boolean isCloudEnvironment() {
     return Arrays.stream(awareDelegate.getApplicationContext().getEnvironment().getActiveProfiles())
-      .anyMatch(CLOUD_PROFILE::equalsIgnoreCase);
+      .anyMatch(profile -> CLOUD_PROFILE.equalsIgnoreCase(profile) || CCSM_PROFILE.equalsIgnoreCase(profile));
   }
 
   private static boolean isStatusRequest(String requestPath) {

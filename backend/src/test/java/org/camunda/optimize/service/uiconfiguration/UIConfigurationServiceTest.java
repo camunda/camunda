@@ -9,10 +9,12 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationR
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.UIConfigurationService;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -27,6 +29,10 @@ import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,8 +53,8 @@ public class UIConfigurationServiceTest {
   UIConfigurationService underTest;
 
   @ParameterizedTest
-  @MethodSource("profilesAndExpectedCloudEnabledSetting")
-  public void testCloudProfileReadCorrectly(final String activeProfile, final boolean expectedCloudEnabled) {
+  @MethodSource("optimizeProfiles")
+  public void testProfileReadCorrectly(final String activeProfile) {
     // given
     initializeMocks();
     when(environment.getActiveProfiles()).thenReturn(new String[]{activeProfile});
@@ -57,14 +63,74 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.isOptimizeCloudEnvironment()).isEqualTo(expectedCloudEnabled);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(activeProfile);
   }
 
-  private static Stream<Arguments> profilesAndExpectedCloudEnabledSetting() {
+  @ParameterizedTest
+  @MethodSource("optimizeProfilesAndExpectedCloudEnabledSetting")
+  public void testCloudEnabledConfiguredCorrectly(final String activeProfile,
+                                                  final boolean expectedCloudEnabledProperty) {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[]{activeProfile});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.isOptimizeCloudEnvironment()).isEqualTo(expectedCloudEnabledProperty);
+  }
+
+  @Test
+  public void testDefaultProfileUsed() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[]{});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(PLATFORM_PROFILE);
+  }
+
+  @Test
+  public void testMultipleProfilesDoesNotWork() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[]{CLOUD_PROFILE, CCSM_PROFILE});
+
+    // then
+    assertThatThrownBy(() -> underTest.getUIConfiguration())
+      .isInstanceOf(OptimizeConfigurationException.class)
+      .hasMessage("Cannot configure more than one profile for Optimize");
+  }
+
+  @Test
+  public void testInvalidProfilesDoesNotWork() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[]{"someUnknownProfile"});
+
+    // then
+    assertThatThrownBy(() -> underTest.getUIConfiguration())
+      .isInstanceOf(OptimizeConfigurationException.class)
+      .hasMessage("Invalid profile configured");
+  }
+
+  private static Stream<Arguments> optimizeProfiles() {
     return Stream.of(
-      Arguments.of("cloud", true),
-      Arguments.of("someOtherProfile", false),
-      Arguments.of(null, false)
+      Arguments.of(CLOUD_PROFILE),
+      Arguments.of(CCSM_PROFILE),
+      Arguments.of(PLATFORM_PROFILE)
+    );
+  }
+
+  private static Stream<Arguments> optimizeProfilesAndExpectedCloudEnabledSetting() {
+    return Stream.of(
+      Arguments.of(CLOUD_PROFILE, true),
+      Arguments.of(CCSM_PROFILE, true),
+      Arguments.of(PLATFORM_PROFILE, false)
     );
   }
 

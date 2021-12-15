@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security.util.tenant;
 
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 

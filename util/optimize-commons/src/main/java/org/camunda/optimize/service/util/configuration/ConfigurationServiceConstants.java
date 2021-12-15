@@ -125,6 +125,8 @@ public class ConfigurationServiceConstants {
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";
+  public static final String CCSM_PROFILE = "ccsm";
+  public static final String PLATFORM_PROFILE = "platform";
   //@formatter:on
 
 }

@@ -77,6 +77,13 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- IAM-->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-cloud-iam-sdk</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+
     <!-- Javax XML -->
     <dependency>
       <groupId>javax.xml.bind</groupId>

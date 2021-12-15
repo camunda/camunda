@@ -8,10 +8,10 @@ package org.camunda.optimize.service.identity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.rest.cloud.CloudUserClient;
+import org.camunda.optimize.rest.cloud.CCSaaSUserClient;
 import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.util.BackoffCalculator;
-import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.scheduling.support.CronExpression;
@@ -22,17 +22,17 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@Conditional(CamundaCloudCondition.class)
-public class CloudUserIdentityCacheService extends AbstractIdentityCacheService implements UserIdentityCache {
+@Conditional(CCSaaSCondition.class)
+public class CCSaaSUserIdentityCache extends AbstractIdentityCache implements UserIdentityCache {
 
-  private final CloudUserClient cloudUserClient;
+  private final CCSaaSUserClient userClient;
 
-  protected CloudUserIdentityCacheService(final List<IdentityCacheSyncListener> identityCacheSyncListeners,
-                                          final ConfigurationService configurationService,
-                                          final CloudUserClient cloudUserClient,
-                                          final BackoffCalculator backoffCalculator) {
+  protected CCSaaSUserIdentityCache(final List<IdentityCacheSyncListener> identityCacheSyncListeners,
+                                    final ConfigurationService configurationService,
+                                    final CCSaaSUserClient userClient,
+                                    final BackoffCalculator backoffCalculator) {
     super(configurationService::getUserIdentityCacheConfiguration, identityCacheSyncListeners, backoffCalculator);
-    this.cloudUserClient = cloudUserClient;
+    this.userClient = userClient;
   }
 
   @Override
@@ -53,7 +53,7 @@ public class CloudUserIdentityCacheService extends AbstractIdentityCacheService 
 
   @Override
   protected void populateCache(final SearchableIdentityCache newIdentityCache) {
-    final List<UserDto> users = cloudUserClient.fetchAllCloudUsers()
+    final List<UserDto> users = userClient.fetchAllCloudUsers()
       .stream()
       .map(cloudUser -> new UserDto(cloudUser.getUserId(), cloudUser.getName(), cloudUser.getEmail()))
       .collect(Collectors.toList());

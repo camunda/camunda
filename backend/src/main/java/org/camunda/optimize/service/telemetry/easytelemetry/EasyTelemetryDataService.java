@@ -22,7 +22,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
-import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
