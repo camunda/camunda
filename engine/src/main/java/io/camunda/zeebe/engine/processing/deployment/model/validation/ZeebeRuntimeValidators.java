@@ -120,6 +120,8 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledDecision.class)
             .hasValidExpression(
                 ZeebeCalledDecision::getDecisionId, ExpressionVerification::isMandatory)
-            .build(expressionLanguage));
+            .build(expressionLanguage),
+        // ----------------------------------------
+        new ZeebeTaskHeadersValidator());
   }
 }
