@@ -5,10 +5,11 @@
  */
 
 import * as React from 'react';
-import {BrandInfo, Brand, UserControls, AppName} from './styled';
+import {BrandInfo, Brand, UserControls, AppName, Separator} from './styled';
 import {getPersistentQueryParams} from 'modules/utils/getPersistentQueryParams';
 import {Location} from 'history';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
+import {LicenseNote} from './LicenseNote';
 
 const Header: React.FC = () => {
   return (
@@ -25,6 +26,17 @@ const Header: React.FC = () => {
           <AppName>Tasklist</AppName>
         </Brand>
       </BrandInfo>
+      {window.clientConfig?.isEnterprise === true ||
+      window.clientConfig?.organizationId ? null : (
+        <>
+          <div slot="right">
+            <LicenseNote />
+          </div>
+          <div slot="right">
+            <Separator />
+          </div>
+        </>
+      )}
       <UserControls slot="right" />
     </CmHeader>
   );

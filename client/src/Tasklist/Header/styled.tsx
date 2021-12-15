@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Link} from 'react-router-dom';
 import {Dropdown} from './Dropdown';
 
@@ -30,4 +30,17 @@ const AppName = styled.div`
   margin-left: 19px;
 `;
 
-export {BrandInfo, Brand, UserControls, AppName};
+const Separator = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.header;
+
+    return css`
+      width: 1px;
+      height: 24px;
+      background-color: ${colors.separator};
+      margin: 0 15px;
+    `;
+  }}
+`;
+
+export {BrandInfo, Brand, UserControls, AppName, Separator};

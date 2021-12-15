@@ -17,7 +17,7 @@ interface ButtonProps {
 const Button = styled.button<ButtonProps>`
   display: flex;
   align-items: center;
-  padding-right: 0px;
+  padding: 0px;
   color: ${({theme}) => theme.colors.ui06};
   background: none;
   font-family: IBM Plex Sans;

@@ -48,14 +48,15 @@ const Container = styled.main`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   height: 100%;
 `;
 
 const CopyrightNotice = styled.span`
   color: ${({theme}) => theme.colors.text.copyrightNotice};
   font-size: 12px;
-  padding-bottom: 10px;
+  margin-top: auto;
+  padding-bottom: 8px;
+  padding-top: 70px;
 `;
 
 const Error = styled.span`

@@ -24,6 +24,10 @@ const palette = {
   black: '#000',
   focusInner: '#2b7bff',
   focusOuter: '#8cb7ff',
+  linkDefault: '#346ac4',
+  linkHover: '#4b7ccf',
+  linkActive: '#29549c',
+  linkVisited: '#a846fe',
 } as const;
 
 const theme = {
@@ -124,6 +128,27 @@ const theme = {
         labelColor: palette.ui06,
         focusInner: palette.focusInner,
         focusOuter: palette.focusOuter,
+      },
+    },
+    disclaimer: {
+      container: {
+        color: '#7e7e7f',
+      },
+    },
+    header: {
+      separator: palette.ui05,
+      license: {
+        color: palette.ui07,
+        backgroundColor: palette.ui02,
+        borderColor: palette.ui05,
+        arrowStyle: {
+          before: {
+            borderColor: palette.ui05,
+          },
+          after: {
+            borderColor: palette.ui02,
+          },
+        },
       },
     },
   },

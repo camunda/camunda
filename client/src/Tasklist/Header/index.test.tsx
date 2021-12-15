@@ -103,4 +103,61 @@ describe('<Header />', () => {
     await waitFor(() => expect(login.status).toBe('logged-out'));
     expect(screen.queryByText('logout')).not.toBeInTheDocument();
   });
+
+  describe('license note', () => {
+    beforeEach(() => {
+      Object.defineProperties(window.clientConfig, {
+        isEnterprise: {
+          configurable: true,
+          writable: true,
+          value: null,
+        },
+        organizationId: {
+          configurable: true,
+          writable: true,
+          value: null,
+        },
+      });
+    });
+    afterEach(() => {
+      delete window.clientConfig!.isEnterprise;
+      delete window.clientConfig!.organizationId;
+    });
+
+    it('should show license note in CCSM free/trial environment', () => {
+      window.clientConfig!.isEnterprise = false;
+
+      render(<Header />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(screen.getByText('Non-Production License')).toBeInTheDocument();
+    });
+
+    it('should not show license note in SaaS environment', () => {
+      window.clientConfig!.isEnterprise = false;
+      window.clientConfig!.organizationId =
+        '000000000-0000-0000-0000-000000000000';
+
+      render(<Header />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        screen.queryByText('Non-Production License'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should not show license note in CCSM enterprise environment', () => {
+      window.clientConfig!.isEnterprise = true;
+
+      render(<Header />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        screen.queryByText('Non-Production License'),
+      ).not.toBeInTheDocument();
+    });
+  });
 });

@@ -23,6 +23,7 @@ import {
 } from './styled';
 import {Input} from './Input';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
+import {Disclaimer} from './Disclaimer';
 
 interface FormValues {
   username: string;
@@ -112,6 +113,7 @@ const Login: React.FC = () => {
           );
         }}
       </Form>
+      <Disclaimer />
       <CopyrightNotice>{getCurrentCopyrightNoticeText()}</CopyrightNotice>
     </Container>
   );
