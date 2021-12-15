@@ -11,4 +11,4 @@ mvn -s ${MAVEN_SETTINGS_XML} release:prepare release:perform -B \
     -DpushChanges=${PUSH_CHANGES} \
     -DremoteTagging=${PUSH_CHANGES} \
     -DlocalCheckout=${SKIP_DEPLOY} \
-    -Darguments='--settings=${MAVEN_SETTINGS_XML} -DskipTests=true -Dgpg.passphrase="${GPG_PASS}" -Dskip.central.release=${SKIP_DEPLOY} -Dskip.camunda.release=${SKIP_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR}'
+    -Darguments='--settings=${MAVEN_SETTINGS_XML} -DskipChecks=true -DskipTests=true -Dgpg.passphrase="${GPG_PASS}" -Dskip.central.release=${SKIP_DEPLOY} -Dskip.camunda.release=${SKIP_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR}'
