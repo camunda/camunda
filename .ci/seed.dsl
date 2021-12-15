@@ -23,8 +23,8 @@ if (broken) {
 }
 '''
 
-def seedJob = job('seed-job-optimize') {
 
+job('seed-job-optimize') {
   displayName 'Seed Job Optimize'
   description 'JobDSL Seed Job for Camunda Optimize'
 
@@ -90,92 +90,87 @@ def seedJob = job('seed-job-optimize') {
   }
 
   logRotator(-1, 5, -1, 1)
-
 }
 
-queue(seedJob)
 
-// By default, this job is enabled for prod env only.
-if (ENVIRONMENT == 'prod') {
-  multibranchPipelineJob('camunda-optimize') {
+multibranchPipelineJob('camunda-optimize') {
 
-    displayName 'Camunda Optimize'
-    description 'MultiBranchJob for Camunda Optimize'
+  displayName 'Camunda Optimize'
+  description 'MultiBranchJob for Camunda Optimize'
 
-    branchSources {
-      branchSource {
-        source {
-          github {
-            id 'optimize-repo'
-            repoOwner githubOrga
-            repository gitRepository
-            credentialsId 'github-optimize-app'
-            repositoryUrl "https://github.com/${githubOrga}/${gitRepository}"
-            configuredByUrl false
-            traits {
-              // Discover branches.
-              // Strategy ID 3 => Discover all branches.
-              gitHubBranchDiscovery {
-                strategyId 3
-              }
+  branchSources {
+    branchSource {
+      source {
+        github {
+          id 'optimize-repo'
+          repoOwner githubOrga
+          repository gitRepository
+          credentialsId 'github-optimize-app'
+          repositoryUrl "https://github.com/${githubOrga}/${gitRepository}"
+          configuredByUrl false
+          traits {
+            // Discover branches.
+            // Strategy ID 3 => Discover all branches.
+            gitHubBranchDiscovery {
+              strategyId 3
+            }
 
-              // Discovers pull requests where the origin repository is the same as the target repository.
-              // Strategy ID 2 => The current pull request revision.
-              gitHubPullRequestDiscovery {
-                strategyId 2
-              }
+            // Discovers pull requests where the origin repository is the same as the target repository.
+            // Strategy ID 2 => The current pull request revision.
+            gitHubPullRequestDiscovery {
+              strategyId 2
+            }
 
-              // Based on team usage and decision, only main branch, PRs, and selected branches will be part of CI.
-              // That to avoid running the same CI job twice (one for branch and one for PR).
-              headWildcardFilter {
-                // Space-separated list of name patterns to consider.
-                includes 'master PR-* CI-* maintenance/*'
-                excludes ''
-              }
+            // Based on team usage and decision, only main branch, PRs, and selected branches will be part of CI.
+            // That to avoid running the same CI job twice (one for branch and one for PR).
+            headWildcardFilter {
+              // Space-separated list of name patterns to consider.
+              includes 'master PR-* CI-* maintenance/*'
+              excludes ''
+            }
 
-              // Disable sending Github status notifications in non-prod envs.
-              if (ENVIRONMENT != 'prod') {
-                notificationsSkip()
-              }
+            // Disable sending Github status notifications in non-prod envs.
+            if (ENVIRONMENT != 'prod') {
+              notificationsSkip()
             }
           }
         }
-        buildStrategies {
-          // Don't auto build discovered branches/PRs for non prod envs.
-          if (ENVIRONMENT == 'prod') {
-            // Builds regular branches whenever a change is detected.
-            buildRegularBranches()
+      }
+      buildStrategies {
+        // Don't auto build discovered branches/PRs for non prod envs.
+        if (ENVIRONMENT == 'prod') {
+          // Builds regular branches whenever a change is detected.
+          buildRegularBranches()
 
-            // Builds change requests / pull requests.
-            buildChangeRequests {
-              ignoreTargetOnlyChanges false
-              ignoreUntrustedChanges true
-            }
+          // Builds change requests / pull requests.
+          buildChangeRequests {
+            ignoreTargetOnlyChanges false
+            ignoreUntrustedChanges true
           }
         }
-        strategy {
-          allBranchesSame {
-            props {
-              if (ENVIRONMENT != 'prod') {
-                // Suppresses the normal SCM commit trigger coming from branch indexing.
-                suppressAutomaticTriggering()
-              }
+      }
+      strategy {
+        allBranchesSame {
+          props {
+            if (ENVIRONMENT != 'prod') {
+              // Suppresses the normal SCM commit trigger coming from branch indexing.
+              suppressAutomaticTriggering()
             }
           }
         }
       }
     }
+  }
 
-    orphanedItemStrategy {
-      discardOldItems {
-        daysToKeep 1
-      }
+  orphanedItemStrategy {
+    discardOldItems {
+      daysToKeep 1
     }
+  }
 
-    triggers {
-      periodicFolderTrigger {
-        interval '1d'
-      }
+  triggers {
+    periodicFolderTrigger {
+      interval '1d'
     }
   }
 }
