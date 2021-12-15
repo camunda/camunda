@@ -35,22 +35,22 @@ spec:
             -XX:+UseContainerSupport
       resources:
         limits:
-          cpu: 2
-          memory: 16Gi
+          cpu: 8
+          memory: 32Gi
         requests:
-          cpu: 2
-          memory: 16Gi
+          cpu: 8
+          memory: 32Gi
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
       tty: true
       resources:
         limits:
-          cpu: 2
-          memory: 1Gi
+          cpu: 4
+          memory: 8Gi
         requests:
-          cpu: 2
-          memory: 1Gi
+          cpu: 4
+          memory: 8Gi
 '''
         }
     }
@@ -69,6 +69,7 @@ spec:
         PUSH_DOCKER = "${params.PUSH_DOCKER}"
         PUSH_DOCS = "${params.PUSH_DOCS}"
         SKIP_DEPLOY = "${!params.PUSH_CHANGES}"
+        BINDIR = "/usr/local/bin"
     }
 
     options {
