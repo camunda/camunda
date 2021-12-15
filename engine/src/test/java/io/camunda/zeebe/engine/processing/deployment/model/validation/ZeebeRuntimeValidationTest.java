@@ -24,8 +24,10 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
+import io.camunda.zeebe.protocol.Protocol;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -54,6 +56,8 @@ public final class ZeebeRuntimeValidationTest {
   private static final String INVALID_PATH_EXPRESSION = "a ? b";
   private static final String INVALID_PATH_EXPRESSION_MESSAGE =
       "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*'.";
+  private static final String RESTRICTED_TASK_HEADER_MESSAGE =
+      "Attribute 'key' may not use restricted header '%s'";
   public BpmnModelInstance modelInstance;
 
   @Parameter(0)
@@ -346,6 +350,19 @@ public final class ZeebeRuntimeValidationTest {
         List.of(expect(ZeebeAssignmentDefinition.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
+        /* restricted header key: assignee */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeTaskHeader(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, STATIC_EXPRESSION)
+            .done(),
+        List.of(
+            expect(
+                ZeebeTaskHeaders.class,
+                String.format(
+                    RESTRICTED_TASK_HEADER_MESSAGE, Protocol.USER_TASK_ASSIGNEE_HEADER_NAME)))
+      },
+      {
         /* invalid candidateGroups expression */
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -363,7 +380,34 @@ public final class ZeebeRuntimeValidationTest {
             expect(
                 ZeebeAssignmentDefinition.class,
                 "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found '1,,'"))
-      }
+      },
+      {
+        /* restricted header key: candidate groups */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeTaskHeader(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, STATIC_EXPRESSION)
+            .done(),
+        List.of(
+            expect(
+                ZeebeTaskHeaders.class,
+                String.format(
+                    RESTRICTED_TASK_HEADER_MESSAGE,
+                    Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)))
+      },
+      {
+        /* restricted header key: form key */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeTaskHeader(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, STATIC_EXPRESSION)
+            .done(),
+        List.of(
+            expect(
+                ZeebeTaskHeaders.class,
+                String.format(
+                    RESTRICTED_TASK_HEADER_MESSAGE, Protocol.USER_TASK_FORM_KEY_HEADER_NAME)))
+      },
     };
   }
 
