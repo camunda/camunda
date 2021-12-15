@@ -444,7 +444,8 @@
         "variable": "Var",
         "multipleVariable": "Var",
         "inputVariable": "InputVar",
-        "outputVariable": "OutputVar"
+        "outputVariable": "OutputVar",
+        "objectVariable": "Object Variable"
       },
       "pageError": "Only the first 10,000 instances can be displayed"
     },
@@ -820,6 +821,7 @@
     "open": "Open",
     "for": "for",
     "download": "Download",
+    "view": "View",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

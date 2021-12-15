@@ -125,3 +125,6 @@ export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist .label').withText(name);
 export const lineButton = Selector('.measureContainer .Button').withText('Line');
+export const tableScrollableContainer = reportTable.find('table');
+export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
+export const objectVariableModal = Selector('.ObjectVariableModal');

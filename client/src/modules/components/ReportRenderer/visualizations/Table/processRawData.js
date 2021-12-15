@@ -9,6 +9,7 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
+import {Button} from 'components';
 
 import {
   cockpitLink,
@@ -43,6 +44,8 @@ const instanceColumns = {
   ],
 };
 
+export const OBJECT_VARIABLE_IDENTIFIER = '<<OBJECT_VARIABLE_VALUE>>';
+
 export default function processRawData(
   {
     report: {
@@ -53,7 +56,8 @@ export default function processRawData(
       result: {data: result},
     },
   },
-  endpoints = {}
+  endpoints = {},
+  onVariableView
 ) {
   const instanceProps = instanceColumns[reportType].filter((entry) =>
     isVisibleColumn(entry, tableColumns)
@@ -103,9 +107,12 @@ export default function processRawData(
       return instance[entry];
     });
 
+    const onVariableClick = (variableName) =>
+      onVariableView(variableName, instance.processInstanceId, instance.processDefinitionKey);
+
     return [
       ...row,
-      ...getVariableValues(variableNames, instance.variables),
+      ...getVariableValues(variableNames, instance.variables, onVariableClick),
       ...getVariableValues(inputVariables, instance.inputVariables),
       ...getVariableValues(outputVariables, instance.outputVariables),
     ];
@@ -154,9 +161,23 @@ export default function processRawData(
   return {head: sortedHead, body: sortedBody};
 }
 
-function getVariableValues(variableKeys, variableValues) {
+function getVariableValues(variableKeys, variableValues, onVariableClick) {
   return variableKeys.map((entry) => {
     const variableData = variableValues[entry];
+
+    if (variableData === OBJECT_VARIABLE_IDENTIFIER) {
+      return (
+        <Button
+          className="ObjectViewBtn"
+          link
+          onClick={() => {
+            onVariableClick(entry);
+          }}
+        >
+          {t('common.view')}
+        </Button>
+      );
+    }
 
     // Output variables have multiple values
     if (variableData?.values) {

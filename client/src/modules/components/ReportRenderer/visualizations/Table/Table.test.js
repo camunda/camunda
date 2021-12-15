@@ -11,6 +11,7 @@ import WrappedTable from './Table';
 import processRawData from './processRawData';
 
 import {getWebappEndpoints} from 'config';
+import ObjectVariableModal from './ObjectVariableModal';
 
 jest.mock('./processRawData', () => jest.fn().mockReturnValue({}));
 
@@ -20,10 +21,16 @@ jest.mock('./processDefaultData', () =>
 
 jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
 
+beforeEach(() => {
+  processRawData.mockClear();
+});
+
+const testDefinition = {key: 'definitionKey', versions: ['ver1'], tenantIds: ['id1']};
 const report = {
   reportType: 'process',
   combined: false,
   data: {
+    definitions: [testDefinition],
     groupBy: {
       value: {},
       type: '',
@@ -83,12 +90,8 @@ it('should process raw data', async () => {
       {...props}
       report={{
         ...report,
-        result: {
-          data: [
-            {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-            {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}},
-          ],
-        },
+        data: {...report.data, view: {properties: ['rawData']}},
+        result: {data: [1, 2, 3], pagination: {limit: 20}},
       }}
       formatter={(v) => v}
     />
@@ -96,6 +99,54 @@ it('should process raw data', async () => {
   runLastEffect();
 
   expect(processRawData).toHaveBeenCalled();
+});
+
+it('should display object variable modal when invoked from processRawData function', async () => {
+  const node = await shallow(
+    <Table
+      {...props}
+      report={{
+        ...report,
+        data: {...report.data, view: {properties: ['rawData']}},
+        result: {data: [1, 2, 3], pagination: {limit: 20}},
+      }}
+      formatter={(v) => v}
+    />
+  );
+  runLastEffect();
+
+  processRawData.mock.calls[0][2]('varName', 'instanceId', testDefinition.key);
+
+  expect(node.find(ObjectVariableModal).prop('variable')).toEqual({
+    name: 'varName',
+    processInstanceId: 'instanceId',
+    processDefinitionKey: testDefinition.key,
+    versions: testDefinition.versions,
+    tenantIds: testDefinition.tenantIds,
+  });
+
+  node.find(ObjectVariableModal).simulate('close');
+  expect(node.find(ObjectVariableModal)).not.toExist();
+});
+
+it('should close object variable modal', async () => {
+  const node = await shallow(
+    <Table
+      {...props}
+      report={{
+        ...report,
+        data: {...report.data, view: {properties: ['rawData']}},
+        result: {data: [1, 2, 3], pagination: {limit: 20}},
+      }}
+      formatter={(v) => v}
+    />
+  );
+  runLastEffect();
+
+  processRawData.mock.calls[0][2]('varName', 'instanceId', testDefinition.key);
+
+  node.find(ObjectVariableModal).simulate('close');
+  expect(node.find(ObjectVariableModal)).not.toExist();
 });
 
 it('should load report when updating sorting', () => {
