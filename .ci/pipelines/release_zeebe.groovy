@@ -69,6 +69,7 @@ spec:
         PUSH_DOCKER = "${params.PUSH_DOCKER}"
         PUSH_DOCS = "${params.PUSH_DOCS}"
         SKIP_DEPLOY = "${!params.PUSH_CHANGES}"
+        BINDIR = "/usr/local/bin"
     }
 
     options {
