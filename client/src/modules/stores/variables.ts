@@ -72,6 +72,7 @@ class Variables extends NetworkReconnectionHandler {
   instanceId: ProcessInstanceEntity['id'] | null = null;
   pollingAbortController: AbortController | undefined;
   fetchAbortController: AbortController | undefined;
+  onPollingOperationSuccess: (() => void) | null = null;
 
   constructor() {
     super();
@@ -357,6 +358,8 @@ class Variables extends NetworkReconnectionHandler {
           variables.some(({name}) => name === pendingItem.name)
         ) {
           this.setPendingItem(null);
+          this.stopPollingOperation();
+          this.onPollingOperationSuccess?.();
         }
 
         this.setItems(variables);
@@ -599,6 +602,7 @@ class Variables extends NetworkReconnectionHandler {
     onSuccess: () => void;
     onError: () => void;
   }) => {
+    this.onPollingOperationSuccess = onSuccess;
     this.operationIntervalId = setInterval(() => {
       this.handlePollingOperation(operationId, onSuccess, onError);
     }, 5000);
@@ -655,6 +659,7 @@ class Variables extends NetworkReconnectionHandler {
     this.variablesWithActiveOperationsDisposer?.();
     this.fetchVariablesDisposer?.();
     this.instanceId = null;
+    this.onPollingOperationSuccess = null;
   }
 }
 

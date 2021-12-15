@@ -602,6 +602,7 @@ describe('VariablePanel', () => {
       expect(screen.getByRole('cell', {name: 'foo'})).toBeInTheDocument()
     );
 
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
     jest.clearAllTimers();
     jest.useRealTimers();
   });
