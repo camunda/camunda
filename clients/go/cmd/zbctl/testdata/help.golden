@@ -13,7 +13,7 @@ Available Commands:
   activate    Activate a resource
   cancel      Cancel resource
   complete    Complete a resource
-  completion  generate the autocompletion script for the specified shell
+  completion  Generate the autocompletion script for the specified shell
   create      Create resources
   deploy      Creates a new process for each BPMN or YAML resource provided
   fail        Fail a resource
