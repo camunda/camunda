@@ -26,6 +26,8 @@ type Task {
     formKey: String
     #Reference to process definition
     processDefinitionId: String
+    #Candidate groups
+    candidateGroups: [String!]
 }
 
 #Describes task embedded form
@@ -46,6 +48,8 @@ input TaskQuery {
     assigned: Boolean
     # Who is assigned to the tasks?
     assignee: String
+    # given group is in candidate groups list
+    candidateGroup: String
     #Size of tasks page (default: 50).
     pageSize: Int
     # Task definition ID - what's the BPMN flow node?

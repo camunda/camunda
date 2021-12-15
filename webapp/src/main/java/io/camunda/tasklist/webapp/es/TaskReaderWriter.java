@@ -290,7 +290,13 @@ public class TaskReaderWriter {
       taskDefinitionQ = termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, query.getTaskDefinitionId());
     }
 
-    QueryBuilder jointQ = joinWithAnd(stateQ, assignedQ, assigneeQ, idsQuery, taskDefinitionQ);
+    QueryBuilder candidateGroupQ = null;
+    if (query.getCandidateGroup() != null) {
+      candidateGroupQ = termQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
+    }
+
+    QueryBuilder jointQ =
+        joinWithAnd(stateQ, assignedQ, assigneeQ, idsQuery, taskDefinitionQ, candidateGroupQ);
     if (jointQ == null) {
       jointQ = matchAllQuery();
     }

@@ -29,6 +29,7 @@ public final class TaskDTO {
   private String creationTime;
   private String completionTime;
   private String assignee;
+  private String[] candidateGroups;
 
   private TaskState taskState;
 
@@ -53,6 +54,15 @@ public final class TaskDTO {
 
   public TaskDTO setAssignee(String assignee) {
     this.assignee = assignee;
+    return this;
+  }
+
+  public String[] getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public TaskDTO setCandidateGroups(final String[] candidateGroups) {
+    this.candidateGroups = candidateGroups;
     return this;
   }
 
@@ -174,7 +184,8 @@ public final class TaskDTO {
             .setProcessDefinitionId(taskEntity.getProcessDefinitionId())
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
-            .setFormKey(taskEntity.getFormKey());
+            .setFormKey(taskEntity.getFormKey())
+            .setCandidateGroups(taskEntity.getCandidateGroups());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -200,6 +211,7 @@ public final class TaskDTO {
         && Objects.equals(creationTime, taskDTO.creationTime)
         && Objects.equals(completionTime, taskDTO.completionTime)
         && Objects.equals(assignee, taskDTO.assignee)
+        && Arrays.equals(candidateGroups, taskDTO.candidateGroups)
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
         && Objects.equals(formKey, taskDTO.formKey);
@@ -221,6 +233,7 @@ public final class TaskDTO {
             taskState,
             isFirst,
             formKey);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

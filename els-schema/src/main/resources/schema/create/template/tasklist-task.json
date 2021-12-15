@@ -43,6 +43,9 @@
 			"assignee": {
 				"type": "keyword"
 			},
+			"candidateGroups": {
+				"type": "keyword"
+			},
 			"formKey": {
 				"type": "keyword"
 			}

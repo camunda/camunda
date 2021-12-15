@@ -6,6 +6,7 @@
 package io.camunda.tasklist.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
@@ -19,6 +20,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private OffsetDateTime completionTime;
   private TaskState state;
   private String assignee;
+  private String[] candidateGroups;
   private String formKey;
 
   public String getBpmnProcessId() {
@@ -102,6 +104,15 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public String[] getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public TaskEntity setCandidateGroups(final String[] candidateGroups) {
+    this.candidateGroups = candidateGroups;
+    return this;
+  }
+
   public String getFormKey() {
     return formKey;
   }
@@ -132,22 +143,26 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && Objects.equals(completionTime, that.completionTime)
         && state == that.state
         && Objects.equals(assignee, that.assignee)
+        && Arrays.equals(candidateGroups, that.candidateGroups)
         && Objects.equals(formKey, that.formKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        bpmnProcessId,
-        processDefinitionId,
-        flowNodeBpmnId,
-        flowNodeInstanceId,
-        processInstanceId,
-        creationTime,
-        completionTime,
-        state,
-        assignee,
-        formKey);
+    int result =
+        Objects.hash(
+            super.hashCode(),
+            bpmnProcessId,
+            processDefinitionId,
+            flowNodeBpmnId,
+            flowNodeInstanceId,
+            processInstanceId,
+            creationTime,
+            completionTime,
+            state,
+            assignee,
+            formKey);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    return result;
   }
 }

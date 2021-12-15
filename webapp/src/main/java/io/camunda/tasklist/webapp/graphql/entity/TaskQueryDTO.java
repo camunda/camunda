@@ -15,6 +15,7 @@ public class TaskQueryDTO {
   private Boolean assigned;
   private String assignee;
   private String taskDefinitionId;
+  private String candidateGroup;
 
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
@@ -103,6 +104,15 @@ public class TaskQueryDTO {
     return this;
   }
 
+  public String getCandidateGroup() {
+    return candidateGroup;
+  }
+
+  public TaskQueryDTO setCandidateGroup(final String candidateGroup) {
+    this.candidateGroup = candidateGroup;
+    return this;
+  }
+
   public TaskQueryDTO createCopy() {
     return new TaskQueryDTO()
         .setAssigned(this.assigned)
@@ -113,6 +123,7 @@ public class TaskQueryDTO {
         .setSearchAfterOrEqual(this.searchAfterOrEqual)
         .setSearchBefore(this.searchBefore)
         .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
-        .setState(this.state);
+        .setState(this.state)
+        .setCandidateGroup(this.candidateGroup);
   }
 }

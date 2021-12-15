@@ -5,6 +5,8 @@
  */
 package io.camunda.tasklist.data;
 
+import static java.util.Arrays.asList;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.UserEntity;
@@ -107,7 +109,8 @@ public class DevDataGenerator implements DataGenerator {
     final UserEntity user =
         UserEntity.from(username, passwordEncoded, List.of("USER"))
             .setFirstname(firstname)
-            .setLastname(lastname);
+            .setLastname(lastname)
+            .setRoles(asList("OWNER"));
     try {
       final IndexRequest request =
           new IndexRequest(userIndex.getFullQualifiedName())
@@ -196,7 +199,9 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startFlightRegistrationProcess() {
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "flightRegistration", null);
+    final String payload =
+        "{\"candidateGroups\": [\"group1\", \"group2\"]," + "\"assignee\": \"demo\"}";
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "flightRegistration", payload);
   }
 
   private void deployProcesses() {

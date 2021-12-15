@@ -21,11 +21,17 @@ public class TaskTemplate extends AbstractTemplateDescriptor implements ProcessI
   public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
   public static final String STATE = "state";
   public static final String ASSIGNEE = "assignee";
+  public static final String CANDIDATE_GROUPS = "candidateGroups";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public String getVersion() {
+    return "1.3.0";
   }
 }
