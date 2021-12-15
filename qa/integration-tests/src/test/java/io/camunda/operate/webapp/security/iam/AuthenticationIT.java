@@ -69,7 +69,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles(IAM_AUTH_PROFILE)
-public class AuthenticationTest implements AuthenticationTestable {
+public class AuthenticationIT implements AuthenticationTestable {
 
   @LocalServerPort
   private int randomServerPort;

@@ -54,8 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles({"ldap-auth", "test"})
-@ContextConfiguration(initializers = {AuthenticationTest.Initializer.class})
-public class AuthenticationTest implements AuthenticationTestable {
+@ContextConfiguration(initializers = {AuthenticationIT.Initializer.class})
+public class AuthenticationIT implements AuthenticationTestable {
 
   @Autowired
   private TestRestTemplate testRestTemplate;

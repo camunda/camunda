@@ -5,7 +5,6 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
@@ -13,6 +12,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
@@ -23,7 +23,15 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.es.RetryElasticsearchClient;
+import io.camunda.operate.management.ElsIndicesCheck;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.rest.AuthenticationRestService;
+import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.OperateProfileService;
+import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.RolePermissionService;
 import java.util.Arrays;
 import java.util.Base64;
@@ -33,11 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import io.camunda.operate.management.ElsIndicesCheck;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.rest.AuthenticationRestService;
-import io.camunda.operate.webapp.security.OperateURIs;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -73,10 +76,14 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
         RolePermissionService.class,
         OperateURIs.class,
         OperateProperties.class,
+        ElasticsearchSessionRepository.class,
+        OperateWebSessionIndex.class,
+        RetryElasticsearchClient.class,
         OperateProfileService.class
     },
     properties = {
-        "server.servlet.context-path=" + AuthenticationTest.CONTEXT_PATH,
+        "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
+        "camunda.operate.persistentSessionsEnabled=true",
         "camunda.operate.auth0.clientId=1",
         "camunda.operate.auth0.clientSecret=2",
         "camunda.operate.auth0.organization=3",
@@ -87,7 +94,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles(SSO_AUTH_PROFILE)
-public class AuthenticationTest {
+public class AuthenticationWithPersistentSessionsIT {
 
   public final static String CONTEXT_PATH = "/operate-test";
   @ClassRule
@@ -109,9 +116,10 @@ public class AuthenticationTest {
 
   @MockBean
   private ElsIndicesCheck probes;
+
   private final BiFunction<String, String, Tokens> orgExtractor;
 
-  public AuthenticationTest(BiFunction<String, String, Tokens> orgExtractor) {
+  public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
   }
 
@@ -252,10 +260,12 @@ public class AuthenticationTest {
     // Step 1 try to access user info
     String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
     ResponseEntity<String> response = get(userInfoUrl);
-
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
-    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), response.getHeaders());
+
+    // Save cookie for further requests
+    HttpEntity<?> httpEntity = httpEntityWithCookie(response);
+
     // Step 2 Get Login provider url
     response = get(LOGIN_RESOURCE, httpEntity);
 
@@ -270,11 +280,12 @@ public class AuthenticationTest {
         .apply(operateProperties.getAuth0().getClaimName(),
             operateProperties.getAuth0().getOrganization()));
 
+
     response = get(SSO_CALLBACK_URI, httpEntity);
     httpEntity = httpEntityWithCookie(response);
     response = get(userInfoUrl, httpEntity);
-    assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
+    assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
