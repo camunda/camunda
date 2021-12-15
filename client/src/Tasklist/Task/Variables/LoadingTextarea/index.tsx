@@ -4,37 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useRef, useState} from 'react';
-import {EditTextarea} from '../styled';
+import React from 'react';
+import {ValueTextField} from '../styled';
 import {LoadingStateContainer, Overlay} from './styled';
 
-type Props = React.ComponentProps<typeof EditTextarea> & {
+type Props = React.ComponentProps<typeof ValueTextField> & {
   isLoading: boolean;
 };
 
 const LoadingTextarea: React.FC<Props> = ({isLoading, ...props}) => {
-  const ref = useRef<HTMLElement | null>(null);
-  const [wasFocusRemoved, setWasFocusRemoved] = useState(false);
-
-  useEffect(() => {
-    if (isLoading) {
-      setWasFocusRemoved(true);
-    } else if (wasFocusRemoved) {
-      ref.current?.focus();
-      setWasFocusRemoved(false);
-    }
-  }, [isLoading, wasFocusRemoved]);
-
   if (isLoading) {
     return (
       <LoadingStateContainer data-testid="textarea-loading-overlay">
         <Overlay />
-        <EditTextarea {...props} ref={ref} />
+        <ValueTextField {...props} />
       </LoadingStateContainer>
     );
   }
 
-  return <EditTextarea {...props} ref={ref} />;
+  return <ValueTextField {...props} />;
 };
 
 export {LoadingTextarea};

@@ -7,44 +7,21 @@
 /* istanbul ignore file */
 
 import React from 'react';
-import styled from 'styled-components';
 
 import {
-  EditTextarea,
   Cross,
-  NameInputTD,
-  ValueInputTD,
+  InputTD,
   IconTD,
   IconContainer,
-  NameInput,
   IconButton,
   RowTH,
-  Warning,
 } from './styled';
 import {Table, TD, TR} from 'modules/components/Table';
+import {TextField} from './TextField';
+import {noop} from 'lodash';
 
 export default {
   title: 'Components/Tasklist/Right Panel',
-};
-
-const StyledTextarea = styled(EditTextarea)`
-  width: 300px;
-`;
-
-const Input: React.FC = () => {
-  return <NameInput name="name" placeholder="Name" />;
-};
-
-const InputError: React.FC = () => {
-  return <NameInput name="name" placeholder="Name" aria-invalid />;
-};
-
-const Textarea: React.FC = () => {
-  return <StyledTextarea name="value" placeholder="Value" />;
-};
-
-const TextareaError: React.FC = () => {
-  return <StyledTextarea name="value" placeholder="Value" aria-invalid />;
 };
 
 const VariablesTable: React.FC = () => {
@@ -59,33 +36,48 @@ const VariablesTable: React.FC = () => {
           <RowTH>
             <label htmlFor="clientNo">clientNo</label>
           </RowTH>
-          <ValueInputTD>
-            <EditTextarea
+          <InputTD>
+            <TextField
               name="clientNo"
               id="clientNo"
               value={'"CNT-1211132-02"'}
+              onChange={noop}
             />
-          </ValueInputTD>
+          </InputTD>
           <IconTD />
         </TR>
         <TR>
           <RowTH>
             <label htmlFor="mwst">mwst</label>
           </RowTH>
-          <ValueInputTD>
-            <EditTextarea name="mwst" id="mwst" aria-invalid value={42.37} />
-          </ValueInputTD>
-          <IconTD>
-            <Warning title="invalid" />
-          </IconTD>
+          <InputTD>
+            <TextField
+              name="mwst"
+              id="mwst"
+              aria-invalid
+              value="42.37"
+              onChange={noop}
+            />
+          </InputTD>
+          <td />
         </TR>
         <TR>
-          <NameInputTD>
-            <NameInput placeholder="Variable" name="variable" />
-          </NameInputTD>
-          <ValueInputTD>
-            <EditTextarea placeholder="Value" name="value" />
-          </ValueInputTD>
+          <InputTD>
+            <TextField
+              value=""
+              placeholder="Variable"
+              name="variable"
+              onChange={noop}
+            />
+          </InputTD>
+          <InputTD>
+            <TextField
+              value=""
+              placeholder="Value"
+              name="value"
+              onChange={noop}
+            />
+          </InputTD>
           <IconTD>
             <IconContainer>
               <IconButton type="button">
@@ -95,15 +87,26 @@ const VariablesTable: React.FC = () => {
           </IconTD>
         </TR>
         <TR>
-          <NameInputTD>
-            <NameInput placeholder="Variable" aria-invalid />
-          </NameInputTD>
-          <ValueInputTD>
-            <EditTextarea placeholder="Value" aria-invalid />
-          </ValueInputTD>
+          <InputTD>
+            <TextField
+              name=""
+              value=""
+              placeholder="Variable"
+              aria-invalid
+              onChange={noop}
+            />
+          </InputTD>
+          <InputTD>
+            <TextField
+              name=""
+              value=""
+              placeholder="Value"
+              aria-invalid
+              onChange={noop}
+            />
+          </InputTD>
           <IconTD>
             <IconContainer>
-              <Warning title="invalid" />
               <IconButton type="button">
                 <Cross />
               </IconButton>
@@ -115,4 +118,4 @@ const VariablesTable: React.FC = () => {
   );
 };
 
-export {Input, InputError, Textarea, TextareaError, VariablesTable};
+export {VariablesTable};

@@ -4,14 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+function isValidJSON(value: string) {
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-const PanelHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 34px 19px 0 20px;
-  padding-bottom: 8px;
-`;
-
-export {PanelHeader};
+export {isValidJSON};

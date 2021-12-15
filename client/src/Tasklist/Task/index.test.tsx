@@ -411,39 +411,46 @@ describe('<Task />', () => {
     // try to add a variable with a same name from one of the existing variables
     userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar');
 
-    expect(
-      screen.getByTitle('Name must be unique and Value has to be JSON'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Name must be unique')).toBeInTheDocument();
+    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
     userEvent.clear(screen.getByLabelText('New variable 0 name'));
     userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
 
-    expect(
-      await screen.findByTitle('Value has to be JSON'),
-    ).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText('Name must be unique'),
+    );
+    expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
 
     // try to add a variable with a same name from one of the new added variables
     userEvent.click(screen.getByText(/Add Variable/));
     userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
 
     expect(
-      within(screen.getByTestId('newVariables[1]')).getByTitle(
-        'Name must be unique and Value has to be JSON',
+      await within(screen.getByTestId('newVariables[1]')).findByText(
+        'Name must be unique',
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      await within(screen.getByTestId('newVariables[1]')).findByText(
+        'Value has to be JSON',
       ),
     ).toBeInTheDocument();
 
     const withinFirstVariable = within(screen.getByTestId('newVariables[0]'));
     expect(
-      withinFirstVariable.queryByTitle(
-        'Name must be unique and Value has to be JSON',
-      ),
+      withinFirstVariable.queryByText('Name must be unique'),
     ).not.toBeInTheDocument();
+
+    expect(
+      withinFirstVariable.getByText('Value has to be JSON'),
+    ).toBeInTheDocument();
 
     userEvent.click(screen.getByLabelText('Remove new variable 0'));
 
-    expect(
-      screen.queryByTitle('Name must be unique and Value has to be JSON'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Name must be unique')).not.toBeInTheDocument();
+    expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
   });
 
   it('should render created task with variables form', async () => {

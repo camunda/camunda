@@ -10,7 +10,6 @@ const PanelTitle = styled.h1`
   font-size: 20px;
   font-weight: 600;
   color: ${({theme}) => theme.colors.ui06};
-  margin: 0;
 `;
 
 export {PanelTitle};

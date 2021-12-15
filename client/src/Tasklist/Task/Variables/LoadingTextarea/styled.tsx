@@ -5,10 +5,15 @@
  */
 
 import styled from 'styled-components';
-import {LoadingOverlay} from 'modules/components/LoadingOverlay';
+import {LoadingOverlay, Spinner} from 'modules/components/LoadingOverlay';
 
 const Overlay = styled(LoadingOverlay)`
   position: absolute;
+  ${Spinner} {
+    width: 10px;
+    height: 10px;
+    border-width: 2px;
+  }
 `;
 
 const LoadingStateContainer = styled.div`

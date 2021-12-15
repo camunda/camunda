@@ -26,13 +26,15 @@ const RowTH = styled.th`
 
 const ColumnTH = styled.th`
   font-weight: normal;
-  font-style: italic;
   color: ${({theme}) => theme.colors.label01};
   text-align: left;
-  padding: 12px;
+  padding: 12px 12px 7px 0;
 
   &:first-child {
     padding-left: 20px;
+  }
+  &:nth-child(2) {
+    padding-left: 4px;
   }
 `;
 

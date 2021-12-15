@@ -110,6 +110,7 @@ describe('<Variables />', () => {
     userEvent.type(screen.getByLabelText('myVar'), newVariableValue);
 
     expect(screen.getByDisplayValue(newVariableValue)).toBeInTheDocument();
+    expect(await screen.findByText(/complete task/i)).toBeEnabled();
   });
 
   it('should add two variables and remove one', async () => {
@@ -135,6 +136,8 @@ describe('<Variables />', () => {
     expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
     expect(screen.getByLabelText('New variable 1 name')).toBeInTheDocument();
     expect(screen.getByLabelText('New variable 1 value')).toBeInTheDocument();
+
+    expect(await screen.findByText(/complete task/i)).toBeDisabled();
 
     userEvent.click(screen.getByLabelText('Remove new variable 1'));
 
@@ -169,6 +172,8 @@ describe('<Variables />', () => {
 
     expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
     expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
+
+    expect(await screen.findByText(/complete task/i)).toBeDisabled();
   });
 
   it('should validate an empty variable name', async () => {
@@ -191,7 +196,9 @@ describe('<Variables />', () => {
       '"valid_value"',
     );
 
-    expect(screen.getByTitle('Name has to be filled')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Name has to be filled'),
+    ).toBeInTheDocument();
   });
 
   it('should validate an empty variable value', async () => {
@@ -211,7 +218,7 @@ describe('<Variables />', () => {
     userEvent.click(await screen.findByText(/Add Variable/));
     userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
 
-    expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
   });
 
   it('should validate an invalid variable value', async () => {
@@ -236,8 +243,9 @@ describe('<Variables />', () => {
     );
 
     expect(
-      screen.getByTitle('Name has to be filled and Value has to be JSON'),
+      await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
+    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
   });
 
   it('should not validate valid variables', async () => {
@@ -260,6 +268,8 @@ describe('<Variables />', () => {
       screen.getByLabelText('New variable 0 value'),
       '"valid_value"',
     );
+
+    expect(await screen.findByText(/complete task/i)).toBeEnabled();
 
     expect(
       screen.queryByTitle('Name has to be filled and Value has to be JSON'),
@@ -440,9 +450,7 @@ describe('<Variables />', () => {
 
     userEvent.type(await screen.findByLabelText('myVar'), '{{ invalid value');
 
-    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
-    expect(screen.getByTestId('warning-icon-myVar')).toBeInTheDocument();
-    expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
     expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
@@ -466,10 +474,7 @@ describe('<Variables />', () => {
       '{{ invalid value',
     );
 
-    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
-    expect(
-      screen.getByTestId('warning-icon-newVariables[0].value'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
     expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
@@ -489,7 +494,7 @@ describe('<Variables />', () => {
 
     userEvent.click(await screen.findByText(/add variable/i));
 
-    expect(screen.getByText(/complete task/i)).toBeDisabled();
+    expect(await screen.findByText(/complete task/i)).toBeDisabled();
   });
 
   it('should complete a task with a truncated variable', async () => {

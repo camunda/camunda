@@ -7,17 +7,14 @@
 import {createVariableFieldName} from './createVariableFieldName';
 import {Variable} from 'modules/types';
 import {FormValues} from './types';
+import {isValidJSON} from 'modules/utils/isValidJSON';
 
 const validateJSON = (value?: string) => {
-  try {
-    if (value === undefined || value === '') {
-      return 'Value has to be JSON';
-    }
-    JSON.parse(value);
-  } catch {
-    return 'Value has to be JSON';
+  if (value !== undefined && isValidJSON(value)) {
+    return undefined;
   }
-  return undefined;
+
+  return 'Value has to be JSON';
 };
 
 const validateNonEmpty = (value?: string) => {

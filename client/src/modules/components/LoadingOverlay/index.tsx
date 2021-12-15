@@ -19,4 +19,4 @@ const LoadingOverlay = styled<React.FC<Props>>((props) => (
   </Overlay>
 ))``;
 
-export {LoadingOverlay};
+export {LoadingOverlay, Spinner};

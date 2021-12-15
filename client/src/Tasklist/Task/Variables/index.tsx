@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef} from 'react';
+import React, {useRef, useState} from 'react';
 import {FieldState} from 'final-form';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -17,22 +17,20 @@ import {
   Body,
   TableContainer,
   EmptyMessage,
-  EditTextarea,
   CreateButton,
   Plus,
   Cross,
-  NameInputTD,
-  ValueInputTD,
+  InputTD,
   VariableNameTH,
   VariableValueTH,
   IconTD,
-  Warning,
   IconContainer,
-  NameInput,
   IconButton,
   RowTH,
   Form as StyledForm,
   ValueContainer,
+  ValueTextField,
+  NameTextField,
 } from './styled';
 import {
   validateJSON,
@@ -58,6 +56,7 @@ import {LoadingTextarea} from './LoadingTextarea';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
 import {tracking} from 'modules/tracking';
+import {JSONEditorModal} from './JSONEditorModal';
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
@@ -74,6 +73,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
     queryFullVariable,
     variablesLoadingFullValue,
   } = useTaskVariables(task.id);
+  const [editingVariable, setEditingVariable] = useState<string | void>();
 
   if (loading || areVariablesLoading) {
     return null;
@@ -90,28 +90,6 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
     value: undefined | FieldState<string>,
   ): boolean => {
     return Boolean(name?.dirty || value?.dirty);
-  };
-
-  const getError = (
-    name: undefined | FieldState<string>,
-    value: undefined | FieldState<string>,
-  ): string | void => {
-    const nameFieldError = name?.error;
-    const valueFieldError = value?.error;
-    const isDirty = isVariableDirty(name, value);
-
-    if (
-      !isDirty ||
-      (nameFieldError === undefined && valueFieldError === undefined)
-    ) {
-      return;
-    }
-
-    if (nameFieldError !== undefined && valueFieldError !== undefined) {
-      return `${nameFieldError} and ${valueFieldError}`;
-    }
-
-    return nameFieldError ?? valueFieldError;
   };
 
   return (
@@ -219,7 +197,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                     {variable.name}
                                   </label>
                                 </RowTH>
-                                <ValueInputTD>
+                                <InputTD>
                                   <Field
                                     name={createVariableFieldName(
                                       variable.name,
@@ -232,37 +210,36 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                   >
                                     {({input, meta}) => (
                                       <LoadingTextarea
+                                        name={input.name}
+                                        data-testid={`variable-value-${input.name}`}
+                                        onChange={input.onChange}
+                                        value={input.value}
+                                        error={meta.error}
                                         isLoading={variablesLoadingFullValue.includes(
                                           variable.id,
                                         )}
-                                        {...input}
                                         id={variable.name}
-                                        aria-invalid={meta.error !== undefined}
                                         onFocus={() => {
                                           if (variable.isValueTruncated) {
                                             queryFullVariable(variable.id);
                                           }
                                         }}
+                                        fieldSuffix={{
+                                          type: 'icon',
+                                          icon: 'window',
+                                          press: () => {
+                                            if (variable.isValueTruncated) {
+                                              queryFullVariable(variable.id);
+                                            }
+                                            setEditingVariable(input.name);
+                                          },
+                                          tooltip: 'Open JSON editor modal',
+                                        }}
                                       />
                                     )}
                                   </Field>
-                                </ValueInputTD>
-                                <IconTD>
-                                  {form.getFieldState(
-                                    createVariableFieldName(variable.name),
-                                  )?.error !== undefined && (
-                                    <Warning
-                                      title={
-                                        form.getFieldState(
-                                          createVariableFieldName(
-                                            variable.name,
-                                          ),
-                                        )?.error
-                                      }
-                                      data-testid={`warning-icon-${variable.name}`}
-                                    />
-                                  )}
-                                </IconTD>
+                                </InputTD>
+                                <IconTD />
                               </>
                             ) : (
                               <>
@@ -293,21 +270,18 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                           <FieldArray name="newVariables">
                             {({fields}) =>
                               fields.map((variable, index) => {
-                                const error = getError(
-                                  form.getFieldState(`${variable}.name`),
-                                  form.getFieldState(`${variable}.value`),
-                                );
                                 return (
                                   <TR key={variable} data-testid={variable}>
-                                    <NameInputTD>
+                                    <InputTD>
                                       <Field name={`${variable}.name`}>
-                                        {({input, meta}) => (
-                                          <NameInput
-                                            {...input}
-                                            placeholder="Name"
+                                        {({input}) => (
+                                          <NameTextField
+                                            name={input.name}
+                                            data-testid={input.name}
+                                            onChange={input.onChange}
+                                            value={input.value}
                                             aria-label={`New variable ${index} name`}
-                                            aria-invalid={
-                                              meta.error !== undefined &&
+                                            error={
                                               isVariableDirty(
                                                 form.getFieldState(
                                                   `${variable}.name`,
@@ -316,20 +290,28 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                                   `${variable}.value`,
                                                 ),
                                               )
+                                                ? get(
+                                                    form.getState().errors,
+                                                    `${variable}.name`,
+                                                  )
+                                                : undefined
                                             }
+                                            placeholder="Name"
+                                            autoFocus={true}
                                           />
                                         )}
                                       </Field>
-                                    </NameInputTD>
-                                    <ValueInputTD>
+                                    </InputTD>
+                                    <InputTD>
                                       <Field name={`${variable}.value`}>
-                                        {({input, meta}) => (
-                                          <EditTextarea
-                                            {...input}
+                                        {({input}) => (
+                                          <ValueTextField
+                                            name={input.name}
+                                            data-testid={`${input.name}`}
+                                            onChange={input.onChange}
+                                            value={input.value}
                                             aria-label={`New variable ${index} value`}
-                                            placeholder="Value"
-                                            aria-invalid={
-                                              meta.error !== undefined &&
+                                            error={
                                               isVariableDirty(
                                                 form.getFieldState(
                                                   `${variable}.name`,
@@ -338,19 +320,29 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                                   `${variable}.value`,
                                                 ),
                                               )
+                                                ? get(
+                                                    form.getState().errors,
+                                                    `${variable}.value`,
+                                                  )
+                                                : undefined
                                             }
+                                            placeholder="Value"
+                                            fieldSuffix={{
+                                              type: 'icon',
+                                              icon: 'window',
+                                              press: () => {
+                                                setEditingVariable(
+                                                  `${variable}.value`,
+                                                );
+                                              },
+                                              tooltip: 'Open JSON editor modal',
+                                            }}
                                           />
                                         )}
                                       </Field>
-                                    </ValueInputTD>
+                                    </InputTD>
                                     <IconTD>
                                       <IconContainer>
-                                        {error !== undefined && (
-                                          <Warning
-                                            title={error}
-                                            data-testid={`warning-icon-${variable}.value`}
-                                          />
-                                        )}
                                         <IconButton
                                           type="button"
                                           aria-label={`Remove new variable ${index}`}
@@ -389,6 +381,19 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                 Complete Task
               </Button>
             </DetailsFooter>
+          )}
+          {editingVariable && (
+            <JSONEditorModal
+              title="Edit Variable"
+              onClose={() => {
+                setEditingVariable(undefined);
+              }}
+              onSave={(value) => {
+                form.change(editingVariable, value);
+                setEditingVariable(undefined);
+              }}
+              value={get(values, editingVariable)}
+            />
           )}
         </StyledForm>
       )}

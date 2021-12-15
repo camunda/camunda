@@ -46,7 +46,7 @@ const primaryButtonStyles = css`
 
 const smallButtonStyles = css`
   height: 22px;
-  padding: 0 11px;
+  padding: 0 11px 0 9px;
   border-radius: 11px;
   border: solid 1px
     ${({theme}) => theme.colors.button.small.default.borderColor};
