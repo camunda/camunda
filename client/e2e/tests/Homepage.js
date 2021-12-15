@@ -153,7 +153,7 @@ test('complex Homepage actions', async (t) => {
 
   await t
     .resizeWindow(1150, 550)
-    .takeScreenshot('homepage/collection.png', {fullPage: true})
+    .takeScreenshot('img/collection.png', {fullPage: true})
     .maximizeWindow();
 
   await t.click(e.homepageLink);
@@ -162,7 +162,7 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.collectionItem.textContent).contains('Sales');
   await t.expect(e.collectionItem.textContent).contains('1 Dashboard, 2 Reports');
 
-  await t.takeElementScreenshot(e.entityList, 'homepage/home.png');
+  await t.takeElementScreenshot(e.entityList, 'img/home.png');
 
   // search
   await t.click(e.searchButton);
@@ -196,7 +196,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.copyTargetsInput);
   await t.click(e.copyTarget('Sales'));
 
-  await t.takeElementScreenshot(e.copyModal, 'homepage/copy.png');
+  await t.takeElementScreenshot(e.copyModal, 'img/copy.png');
 
   await t.click(e.confirmButton);
 

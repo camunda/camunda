@@ -62,7 +62,7 @@ test('combine two single number reports', async (t) => {
 
   await t.takeElementScreenshot(
     Homepage.entityList,
-    'process/combined-report/combined-report-create.png',
+    'img/combined-report-create.png',
     {crop: {left: 1000, bottom: 300}}
   );
 
@@ -71,7 +71,7 @@ test('combine two single number reports', async (t) => {
 
   await t
     .resizeWindow(1150, 700)
-    .takeScreenshot('process/combined-report/combined-report.png', {fullPage: true})
+    .takeScreenshot('img/combined-report.png', {fullPage: true})
     .maximizeWindow();
 
   await t.click(Combined.singleReport('Leads'));
@@ -105,7 +105,7 @@ test('combine two single table reports and reorder them', async (t) => {
 
   await t
     .resizeWindow(1150, 700)
-    .takeScreenshot('process/combined-report/table-report.png', {fullPage: true})
+    .takeScreenshot('img/table-report.png', {fullPage: true})
     .maximizeWindow();
 
   await t.dragToElement(Combined.singleReport('Table Report'), Combined.dragEndIndicator);
@@ -133,7 +133,7 @@ test('combine two single chart reports and change their colors', async (t) => {
   await t.click(Combined.reportColorPopover('Line Report - 2'));
 
   await t
-    .takeScreenshot('process/combined-report/area-chart-report.png', {fullPage: true})
+    .takeScreenshot('img/area-chart-report.png', {fullPage: true})
     .maximizeWindow();
 
   await t.click(Combined.redColor);
@@ -161,7 +161,7 @@ test('open the configuration popover and add a goal line', async (t) => {
   await t.typeText(Combined.goalInput, '300', {replace: true});
 
   await t
-    .takeScreenshot('process/combined-report/combined-config.png', {fullPage: true})
+    .takeScreenshot('img/combined-config.png', {fullPage: true})
     .maximizeWindow();
 
   await t.click(Combined.configurationButton);

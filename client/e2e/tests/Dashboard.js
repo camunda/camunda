@@ -30,12 +30,12 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.click(e.option('Invoice Receipt with alternative correlation variable'));
   await t.click(e.templateOption('Process performance overview'));
 
-  await t.takeScreenshot('dashboard/dashboardTemplate.png', {fullPage: true});
+  await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
 
   await t.click(e.modalConfirmbutton);
 
-  await t.takeScreenshot('dashboard/dashboard-dashboardEditActions.png', {fullPage: true});
+  await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
   await addAnnotation(
     e.reportTile,
@@ -57,7 +57,7 @@ test('create a dashboard and reports from a template', async (t) => {
     {x: 50, y: 0}
   );
 
-  await t.takeElementScreenshot(e.body, 'dashboard/dashboard-reportEditActions.png', {
+  await t.takeElementScreenshot(e.body, 'img/dashboard-reportEditActions.png', {
     crop: {right: 750},
   });
 
@@ -74,7 +74,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await t.click(e.autoRefreshButton);
 
-  await t.takeScreenshot('dashboard/dashboard-viewMode-monitorFeatures.png', {fullPage: true});
+  await t.takeScreenshot('img/dashboard-viewMode-monitorFeatures.png', {fullPage: true});
   await t.maximizeWindow();
 
   await t.click(e.collectionLink);
@@ -150,7 +150,7 @@ test('sharing', async (t) => {
   await t.click(e.shareButton);
   await t.click(e.shareSwitch);
 
-  await t.takeScreenshot('dashboard/dashboard-sharingPopover.png', {fullPage: true});
+  await t.takeScreenshot('img/dashboard-sharingPopover.png', {fullPage: true});
 
   const shareUrl = await e.shareUrl.value;
 
@@ -243,7 +243,7 @@ test('external datasources', async (t) => {
 
   await t.click(e.addButton);
 
-  await t.takeElementScreenshot(e.reportModal, 'dashboard/dashboard-addAReportModal.png');
+  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal.png');
 
   await t.click(e.externalSourceLink);
   await t.typeText(e.externalSourceInput, 'http://example.com/');
@@ -297,7 +297,7 @@ test('filters', async (t) => {
   await t.click(Filter.confirmButton);
 
   await t.resizeWindow(1200, 550);
-  await t.takeElementScreenshot(e.dashboardContainer, 'dashboard/filter-editMode.png', {
+  await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-editMode.png', {
     crop: {bottom: 250},
   });
 
@@ -313,7 +313,7 @@ test('filters', async (t) => {
   await t.click(e.switchElement('Software License Costs'));
   await t.click(e.switchElement('Misc'));
 
-  await t.takeElementScreenshot(e.dashboardContainer, 'dashboard/filter-viewMode.png', {
+  await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-viewMode.png', {
     crop: {bottom: 450},
   });
 

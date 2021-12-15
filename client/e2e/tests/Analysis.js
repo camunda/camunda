@@ -28,7 +28,7 @@ test('show the statistics diagram', async (t) => {
   await t.expect(Analysis.statisticsDiagram.visible).ok();
 
   await t
-    .takeScreenshot('process/analysis/branch-analysis/analysis-2.png', {fullPage: true})
+    .takeScreenshot('process-analysis/img/analysis-2.png', {fullPage: true})
     .maximizeWindow();
 });
 
@@ -54,7 +54,7 @@ test('show end event statistics on hover', async (t) => {
   await addAnnotation(Analysis.endEventOverlay, 'End Event Information', {x: 50, y: 0});
 
   await t
-    .takeScreenshot('process/analysis/branch-analysis/analysis-1.png', {fullPage: true})
+    .takeScreenshot('process-analysis/img/analysis-1.png', {fullPage: true})
     .maximizeWindow();
 
   await clearAllAnnotations();
@@ -90,7 +90,7 @@ test('should show outliers heatmap when selecting a process definition', async (
   await t.hover(Analysis.flowNode('AE0010P0030'));
 
   await t
-    .takeScreenshot('process/analysis/outlier-analysis/outlierExample_1_heatMap.png', {
+    .takeScreenshot('process-analysis/img/outlierExample_1_heatMap.png', {
       fullPage: true,
     })
     .maximizeWindow();
@@ -111,7 +111,7 @@ test('should show outlier details modal when clicking view details on a flow nod
     .resizeWindow(1600, 800)
     .takeElementScreenshot(
       Analysis.modal,
-      'process/analysis/outlier-analysis/outlierExample_2_distribution.png'
+      'process-analysis/img/outlierExample_2_distribution.png'
     )
     .maximizeWindow();
 
@@ -133,7 +133,7 @@ test('should show common outliers variables as a table', async (t) => {
     .resizeWindow(1600, 800)
     .takeElementScreenshot(
       Analysis.modal,
-      'process/analysis/outlier-analysis/outlierExample_3_Variables.png'
+      'process-analysis/img/outlierExample_3_Variables.png'
     )
     .maximizeWindow();
 

@@ -27,23 +27,16 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Filter.typeahead);
   await t.typeText(Filter.variableTypeahead, 'dc', {replace: true});
 
-  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter.png');
+  await t.takeElementScreenshot(Report.modalContainer, 'process-analysis/img/variable-filter.png');
 
   await t.typeText(Filter.variableTypeahead, 'boolVar', {replace: true});
   await t.click(Filter.typeaheadOption('boolVar'));
   await t.click(Filter.firstMultiSelectValue);
 
-  await t.takeElementScreenshot(
-    Report.modalContainer,
-    'process/filter/variable-filter-boolean.png'
-  );
-
   await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
   await t.click(Filter.typeaheadOption('stringVar'));
 
   await t.expect(Filter.stringValues.textContent).contains('aStringValue');
-
-  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-string.png');
 
   await t.click(Filter.variableFilterOperatorButton('contains'));
   await t
@@ -59,11 +52,6 @@ test('variable filter modal dependent on variable type', async (t) => {
     .typeText(Filter.variableFilterValueInput, '14', {replace: true})
     .pressKey('tab 3 0 tab 1 0 0 tab');
 
-  await t.takeElementScreenshot(
-    Report.modalContainer,
-    'process/filter/variable-filter-numeric.png'
-  );
-
   await t.click(Filter.variableOrButton);
 
   await t.typeText(Filter.variableTypeahead, 'dateVar', {replace: true});
@@ -78,8 +66,6 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Filter.variableHeader('integerVar'));
 
   await t.click(Filter.removeVariableBtn);
-
-  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
 });
 
 test('filter for custom string variable values', async (t) => {
@@ -118,14 +104,7 @@ test('should apply a filter to the report result', async (t) => {
 
   const unfiltered = +(await Report.reportNumber.textContent);
 
-  await t
-    .resizeWindow(1400, 850)
-    .click(Report.filterButton)
-    .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png', {
-      crop: {top: 120, bottom: 500},
-    })
-    .maximizeWindow();
-
+  await t.click(Report.filterButton);
   await t.click(Report.filterOption('Variable'));
 
   await t.click(Filter.typeahead);
@@ -198,11 +177,6 @@ test('pick a start date from the date picker', async (t) => {
   await t.click(Filter.pickerDate('22'));
   await t.click(Filter.infoText);
 
-  await t.takeElementScreenshot(
-    Report.modalContainer,
-    'process/filter/fixed-start-date-filter.png'
-  );
-
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
 
@@ -229,11 +203,6 @@ test('add relative current month start date filter', async (t) => {
   await t.click(Report.option('This...'));
   await t.click(Filter.unitSelect);
   await t.click(Report.option('month'));
-
-  await t.takeElementScreenshot(
-    Report.modalContainer,
-    'process/filter/relative-start-date-filter.png'
-  );
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -270,7 +239,7 @@ test('add process instance duration filter', async (t) => {
 
   await t.typeText(Filter.durationFilterInput, '30', {replace: true});
 
-  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/duration-filter.png');
+  await t.takeElementScreenshot(Report.modalContainer, 'process-analysis/img/duration-filter.png');
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -294,7 +263,7 @@ test('add flow node duration filter', async (t) => {
   await t.resizeWindow(1650, 850);
   await t.takeElementScreenshot(
     Report.modalContainer,
-    'process/filter/flowNode-duration-filter.png'
+    'process-analysis/img/flowNode-duration-filter.png'
   );
 
   await t.click(Report.primaryModalButton);
@@ -308,24 +277,14 @@ test('add assignee filter', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
 
-  await t
-    .resizeWindow(1400, 850)
-    .click(Report.flowNodeFilterButton)
-    .takeElementScreenshot(
-      Report.controlPanel,
-      'process/filter/report-with-flownode-filterlist-open.png',
-      {
-        crop: {top: 220},
-      }
-    );
-
+  await t.click(Report.flowNodeFilterButton);
   await t.click(Report.filterOption('Assignee'));
 
   await t.click(Filter.multiSelect);
   await t.typeText(Filter.multiSelect, 'er', {replace: true});
   await t.click(Filter.multiSelectOptionNumber(0));
 
-  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/assignee-filter.png');
+  await t.takeElementScreenshot(Report.modalContainer, 'process-analysis/img/assignee-filter.png');
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -346,7 +305,7 @@ test('add Flow Node filter', async (t) => {
   await t.click(Report.flowNode('reviewInvoice'));
 
   await t
-    .takeElementScreenshot(Report.modalContainer, 'process/filter/flownode-filter.png')
+    .takeElementScreenshot(Report.modalContainer, 'process-analysis/img/flownode-filter.png')
     .maximizeWindow();
 
   await t.click(Report.primaryModalButton);
@@ -388,7 +347,9 @@ test('the filter is visible in the control panel and contains correct informatio
   await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Heatmap');
 
-  await t.takeScreenshot('process/filter/combined-filter.png', {fullPage: true}).maximizeWindow();
+  await t
+    .takeScreenshot('process-analysis/img/combined-filter.png', {fullPage: true})
+    .maximizeWindow();
 });
 
 test('add an incident filter', async (t) => {
@@ -459,7 +420,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await t.click(Report.flowNode('prepareBankTransfer'));
 
   await t
-    .takeElementScreenshot(Report.modalContainer, 'process/filter/flowNodeSelection.png')
+    .takeElementScreenshot(Report.modalContainer, 'process-analysis/img/flowNodeSelection.png')
     .maximizeWindow();
 
   await t.click(Report.primaryModalButton);
@@ -532,7 +493,7 @@ test('add flow node start date filter', async (t) => {
   await t.click(Report.flowNode('reviewInvoice'));
 
   await t
-    .takeElementScreenshot(Report.modalContainer, 'process/filter/flowNode-date-filter.png')
+    .takeElementScreenshot(Report.modalContainer, 'process-analysis/img/flowNode-date-filter.png')
     .maximizeWindow();
 
   await t.click(Report.primaryModalButton);

@@ -25,7 +25,7 @@ test('create a dmn js table report', async (t) => {
 
   await t.takeElementScreenshot(
     Homepage.entityList,
-    'decision/single-report/dmn_report_create.png',
+    'decision-analysis/img/dmn_report_create.png',
     {
       crop: {left: 1000, bottom: 300},
     }
@@ -48,7 +48,7 @@ test('create a dmn js table report', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_decision_table.png')
+    .takeElementScreenshot(Report.report, 'decision-analysis/img/dmn_decision_table.png')
     .maximizeWindow();
 });
 
@@ -68,7 +68,7 @@ test('create raw data report', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_raw_data_report.png')
+    .takeElementScreenshot(Report.report, 'decision-analysis/img/dmn_raw_data_report.png')
     .maximizeWindow();
 });
 
@@ -109,7 +109,7 @@ test('create a single number report', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_progress_bar.png')
+    .takeElementScreenshot(Report.report, 'decision-analysis/img/dmn_progress_bar.png')
     .maximizeWindow();
 });
 
@@ -136,7 +136,7 @@ test('create a report grouped by evaluation date', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_date_chart.png')
+    .takeElementScreenshot(Report.report, 'decision-analysis/img/dmn_date_chart.png')
     .maximizeWindow();
 });
 
@@ -164,7 +164,7 @@ test('create a report grouped by Input variable', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_pie_chart.png')
+    .takeElementScreenshot(Report.report, 'decision-analysis/img/dmn_pie_chart.png')
     .maximizeWindow();
 });
 
@@ -183,7 +183,7 @@ test('filters', async (t) => {
     .resizeWindow(1400, 700)
     .click(Report.filterButton)
     .hover(Report.filterOption('Output Variable'))
-    .takeElementScreenshot(Report.controlPanel, 'decision/filter/report-with-filterlist-open.png')
+    .takeElementScreenshot(Report.controlPanel, 'decision-analysis/img/report-with-filterlist-open.png')
     .maximizeWindow();
 });
 
