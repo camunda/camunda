@@ -156,6 +156,19 @@ const theme = Object.freeze({
           backgroundColor: rgba(SEMANTIC_COLORS.badge02, 0.2),
         },
         color: SEMANTIC_COLORS.white,
+        license: {
+          color: SEMANTIC_COLORS.white,
+          backgroundColor: DARK_COLORS.ui04,
+          borderColor: DARK_COLORS.ui06,
+          arrowStyle: {
+            before: {
+              borderColor: DARK_COLORS.ui06,
+            },
+            after: {
+              borderColor: DARK_COLORS.ui04,
+            },
+          },
+        },
       },
       variablesPanel: {
         color: SEMANTIC_COLORS.white,
@@ -1103,6 +1116,19 @@ const theme = Object.freeze({
           backgroundColor: rgba(LIGHT_COLORS.ui06, 0.09),
         },
         color: LIGHT_COLORS.ui06,
+        license: {
+          color: DARK_COLORS.ui04,
+          backgroundColor: LIGHT_COLORS.ui02,
+          borderColor: LIGHT_COLORS.ui05,
+          arrowStyle: {
+            before: {
+              borderColor: LIGHT_COLORS.ui05,
+            },
+            after: {
+              borderColor: LIGHT_COLORS.ui02,
+            },
+          },
+        },
       },
       variablesPanel: {
         color: DARK_COLORS.ui04,

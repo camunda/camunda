@@ -35,4 +35,12 @@ const Separator = styled.div`
   }}
 `;
 
-export {HEADER_HEIGHT, Menu, Separator};
+const LeftSeparator = styled(Separator)`
+  margin: 0 20px;
+`;
+
+const RightSeparator = styled(Separator)`
+  margin: 0 11px 0 15px;
+`;
+
+export {HEADER_HEIGHT, Menu, LeftSeparator, RightSeparator};

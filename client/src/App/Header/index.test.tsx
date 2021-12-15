@@ -137,4 +137,53 @@ describe('Header', () => {
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
   });
+
+  describe('license note', () => {
+    afterEach(() => {
+      window.clientConfig = undefined;
+    });
+
+    it('should show license note in CCSM free/trial environment', () => {
+      window.clientConfig = {
+        isEnterprise: false,
+        organizationId: null,
+      };
+
+      render(<Header />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(screen.getByText('Non-Production License')).toBeInTheDocument();
+    });
+
+    it('should not show license note in SaaS environment', () => {
+      window.clientConfig = {
+        isEnterprise: false,
+        organizationId: '000000000-0000-0000-0000-000000000000',
+      };
+
+      render(<Header />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        screen.queryByText('Non-Production License')
+      ).not.toBeInTheDocument();
+    });
+
+    it('should not show license note in CCSM enterprise environment', () => {
+      window.clientConfig = {
+        isEnterprise: true,
+        organizationId: null,
+      };
+
+      render(<Header />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        screen.queryByText('Non-Production License')
+      ).not.toBeInTheDocument();
+    });
+  });
 });

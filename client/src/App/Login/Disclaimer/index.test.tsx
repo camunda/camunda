@@ -10,7 +10,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Disclaimer} from './index';
 
 const DISCLAIMER_TEXT =
-  'This Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the Terms and Conditions of the Operate Trial Version.';
+  'Non-Production License. If you would like information on production usage, please refer to our terms & conditions page or contact sales.';
 
 describe('<Disclaimer />', () => {
   afterEach(() => {
@@ -27,10 +27,14 @@ describe('<Disclaimer />', () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', {name: 'Terms and Conditions'})
+      screen.getByRole('link', {name: 'terms & conditions page'})
     ).toHaveAttribute(
       'href',
-      'https://zeebe.io/legal/operate-evaluation-license'
+      'https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/'
+    );
+    expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
+      'href',
+      'https://camunda.com/contact/'
     );
 
     window.clientConfig = {
@@ -44,10 +48,14 @@ describe('<Disclaimer />', () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', {name: 'Terms and Conditions'})
+      screen.getByRole('link', {name: 'terms & conditions page'})
     ).toHaveAttribute(
       'href',
-      'https://zeebe.io/legal/operate-evaluation-license'
+      'https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/'
+    );
+    expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
+      'href',
+      'https://camunda.com/contact/'
     );
   });
 
@@ -63,7 +71,10 @@ describe('<Disclaimer />', () => {
       })
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', {name: 'Terms and Conditions'})
+      screen.queryByRole('link', {name: 'terms & conditions page'})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'contact sales'})
     ).not.toBeInTheDocument();
   });
 });

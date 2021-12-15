@@ -12,14 +12,12 @@ import * as api from 'modules/api/header';
 import * as Styled from './styled';
 import {getDisplayName} from './getDisplayName';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {CmHeader} from '@camunda-cloud/common-ui-react';
 
 type Props = {
   handleRedirect: () => void;
-  slot?: React.ComponentProps<typeof CmHeader>['slot'];
 };
 
-const User: React.FC<Props> = ({handleRedirect, slot}) => {
+const User: React.FC<Props> = ({handleRedirect}) => {
   const [{firstname, lastname, username, canLogout}, setUser] = useState(
     getStateLocally()
   );
@@ -42,7 +40,7 @@ const User: React.FC<Props> = ({handleRedirect, slot}) => {
   }
 
   return (
-    <Styled.ProfileDropdown data-testid="profile-dropdown" slot={slot}>
+    <Styled.ProfileDropdown data-testid="profile-dropdown">
       {displayName ? (
         <Styled.Dropdown label={displayName}>
           <Option

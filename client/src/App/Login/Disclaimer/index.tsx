@@ -6,18 +6,25 @@
 
 import React from 'react';
 
-import {Container, Anchor} from './styled';
+import {Anchor} from 'modules/components/Anchor/styled';
+import {Container} from './styled';
 
 const Disclaimer: React.FC = () => {
   return window.clientConfig?.isEnterprise ? null : (
     <Container>
-      This Operate distribution is available under an evaluation license that is
-      valid for development (non-production) use only. By continuing using this
-      software, you agree to the{' '}
-      <Anchor href="https://zeebe.io/legal/operate-evaluation-license">
-        Terms and Conditions
+      Non-Production License. If you would like information on production usage,
+      please refer to our{' '}
+      <Anchor
+        href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
+        target="_blank"
+      >
+        terms & conditions page
       </Anchor>{' '}
-      of the Operate Trial Version.
+      or{' '}
+      <Anchor href="https://camunda.com/contact/" target="_blank">
+        contact sales
+      </Anchor>
+      .
     </Container>
   );
 };

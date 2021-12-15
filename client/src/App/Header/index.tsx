@@ -9,10 +9,11 @@ import {Redirect, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {User} from './User';
 import {NavElement} from './NavElement';
-import {Menu, Separator} from './styled';
+import {Menu, LeftSeparator, RightSeparator} from './styled';
 import {Locations} from 'modules/routes';
 import {CmHeader, CmLogo} from '@camunda-cloud/common-ui-react';
 import {tracking} from 'modules/tracking';
+import {LicenseNote} from './LicenseNote';
 
 const Header: React.FC = observer(() => {
   const [forceRedirect, setForceRedirect] = useState(false);
@@ -38,7 +39,7 @@ const Header: React.FC = observer(() => {
               });
             }}
           />
-          <Separator />
+          <LeftSeparator />
           <NavElement
             to={Locations.dashboard}
             title="View Dashboard"
@@ -63,7 +64,20 @@ const Header: React.FC = observer(() => {
           />
         </Menu>
       </nav>
-      <User handleRedirect={() => setForceRedirect(true)} slot="right" />
+      {window.clientConfig?.isEnterprise === true ||
+      window.clientConfig?.organizationId ? null : (
+        <>
+          <div slot="right">
+            <LicenseNote />
+          </div>
+          <div slot="right">
+            <RightSeparator />
+          </div>
+        </>
+      )}
+      <div slot="right">
+        <User handleRedirect={() => setForceRedirect(true)} />
+      </div>
     </CmHeader>
   );
 });
