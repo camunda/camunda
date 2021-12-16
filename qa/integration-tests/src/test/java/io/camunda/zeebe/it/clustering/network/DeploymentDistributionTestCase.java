@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
-public class DeploymentDistributionTestCase implements AsymmetricNetworkPartitionTestCase {
+final class DeploymentDistributionTestCase implements AsymmetricNetworkPartitionTestCase {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(DeploymentDistributionTestCase.class);

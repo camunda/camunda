@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container.ExecResult;
 import org.testcontainers.containers.GenericContainer;
 
-public class AsymmetricNetworkPartitionIT {
+final class AsymmetricNetworkPartitionIT {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AsymmetricNetworkPartitionIT.class);
   private ZeebeCluster cluster;

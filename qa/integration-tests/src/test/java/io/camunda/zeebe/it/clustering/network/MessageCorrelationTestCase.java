@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTestCase {
+final class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTestCase {
 
   @Override
   public void given(final ZeebeClient client) {
