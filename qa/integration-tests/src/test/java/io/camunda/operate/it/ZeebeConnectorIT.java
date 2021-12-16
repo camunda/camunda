@@ -10,11 +10,9 @@ import org.assertj.core.api.Assertions;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.camunda.operate.util.ElasticsearchTestRule;
-import io.camunda.operate.util.EmbeddedZeebeConfigurer;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.OperateZeebeRule;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.util.ZeebeClientRule;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -45,9 +43,6 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   private PartitionHolder partitionHolder;
 
   @Autowired
-  private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
-
-  @Autowired
   private OperateProperties operateProperties;
 
   @Autowired
@@ -56,15 +51,10 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   private OperateZeebeRule operateZeebeRule;
 
-  private ZeebeClientRule clientRule;
-
   @After
   public void cleanup() {
     if (operateZeebeRule != null) {
       operateZeebeRule.finished(null);
-    }
-    if (clientRule != null) {
-      clientRule.after();
     }
   }
 
@@ -101,15 +91,12 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   private void startZeebe() {
     operateZeebeRule = new OperateZeebeRule();
     operateZeebeRule.setOperateProperties(operateProperties);
-    operateZeebeRule.setEmbeddedZeebeConfigurer(embeddedZeebeConfigurer);
     operateZeebeRule.setZeebeEsClient(zeebeEsClient);
 
-    clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
     operateZeebeRule.starting(null);
-    clientRule.before();
     operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRule.getPrefix());
 
-    partitionHolder.setZeebeClient(clientRule.getClient());
+    partitionHolder.setZeebeClient(operateZeebeRule.getClient());
   }
 
   @Test
@@ -125,9 +112,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     //when 2
     //Zeebe is restarted
     operateZeebeRule.finished(null);
-    clientRule.after();
     operateZeebeRule.starting(null);
-    clientRule.before();
 
     //then 2
     //data import is still working

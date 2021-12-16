@@ -168,7 +168,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected void finished(Description description) {
     if (!failed) {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
-      TestUtil.removeAllIndices(esClient,indexPrefix);
+      TestUtil.removeAllIndices(esClient, indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(15);

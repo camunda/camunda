@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -121,12 +122,12 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testArchivingProcessInstances() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+
+    final Instant currentTime = pinZeebeTime();
 
     //having
     //deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    offsetZeebeTime(Duration.ofDays(-4));
     String processId = "demoProcess";
     final String activityId = "task1";
     deployProcessWithOneActivity(processId, activityId);
@@ -156,7 +157,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     int count3 = random.nextInt(6) + 5;
     final List<Long> ids3 = startInstances(processId, count3, endDate2);
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
 
     //when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
@@ -231,12 +232,11 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testArchivingOnlyOneHourOldData() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     //having
     //deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    offsetZeebeTime(Duration.ofDays(-4));
     String processId = "demoProcess";
     final String activityId = "task1";
     deployProcessWithOneActivity(processId, activityId);
@@ -258,7 +258,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     finishInstances(count2, endDate2, activityId);
     elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids2);
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
 
     //when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
@@ -282,13 +282,12 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Test
   @Ignore
   public void testArchivingBigInstance() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     //having
     //deploy process
     final Instant endDate = currentTime.minus(4, ChronoUnit.DAYS);
-    brokerRule.getClock().setCurrentTime(endDate);
+    pinZeebeTime(endDate);
     final Long processDefinitionKey = deployProcess("sequential-noop.bpmn");
     elasticsearchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     String processId = "sequential-noop";
@@ -302,7 +301,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //wait till it's finished
     elasticsearchTestRule.processAllRecordsAndWait(400, processInstanceIsCompletedCheck, processInstanceKey);
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    resetZeebeTime();
 
     //when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
@@ -410,13 +409,13 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   private void finishInstances(int count, Instant currentTime, String taskId) {
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     ZeebeTestUtil.completeTask(getClient(), taskId, getWorkerName(), null, count);
   }
 
   private List<Long> startInstances(String processId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));

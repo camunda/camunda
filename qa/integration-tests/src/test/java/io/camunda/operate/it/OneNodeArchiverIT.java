@@ -99,12 +99,11 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testArchiving() throws ArchiverException, IOException {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    final Instant currentTime = pinZeebeTime();
 
     //having
     //deploy process
-    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    pinZeebeTime(currentTime.minus(4, ChronoUnit.DAYS));
     String processId = "demoProcess";
     final String activityId = "task1";
     deployProcessWithOneActivity(processId, activityId);
@@ -118,7 +117,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     finishInstances(count, endDate, activityId);
     elasticsearchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, ids1);
 
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
 
     //when
     int expectedCount = count / operateProperties.getClusterNode().getNodeCount(); // we're archiving only part of the partitions
@@ -198,13 +197,13 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   private void finishInstances(int count, Instant currentTime, String taskId) {
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     ZeebeTestUtil.completeTask(getClient(), taskId, getWorkerName(), null, count);
   }
 
   private List<Long> startInstances(String processId, int count, Instant currentTime) {
     assertThat(count).isGreaterThan(0);
-    brokerRule.getClock().setCurrentTime(currentTime);
+    pinZeebeTime(currentTime);
     List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));

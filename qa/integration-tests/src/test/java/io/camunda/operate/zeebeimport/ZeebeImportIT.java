@@ -39,14 +39,9 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -302,8 +297,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    sleepFor(500L);
-    final long incidentKey = getOnlyIncidentKey();
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
+    final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     //when update retries
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
@@ -330,9 +325,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertFlowNodeIsCompleted(flowNodeInstances.get(1), "taskA");
   }
 
-  protected long getOnlyIncidentKey() {
-    final List<Record<IncidentRecordValue>> incidents = RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-      .collect(Collectors.toList());
+  protected long getOnlyIncidentKey(long processInstanceKey) {
+    final List<IncidentEntity> incidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(incidents).hasSize(1);
     return incidents.get(0).getKey();
   }
@@ -355,8 +349,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    sleepFor(500L);
-    final long incidentKey = getOnlyIncidentKey();
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
+    final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     //when update retries
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);

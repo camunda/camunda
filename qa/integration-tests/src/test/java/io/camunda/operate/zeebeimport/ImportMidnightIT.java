@@ -74,7 +74,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     //disable automatic index refreshes
     zeebeRule.updateRefreshInterval("-1");
 
-    final Instant firstDate = brokerRule.getClock().getCurrentTime();
+    final Instant firstDate = pinZeebeTime();
     fillIndicesWithData(processId, firstDate);
 
     //start process instance
@@ -84,7 +84,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     sleepFor(5000);
     //complete instances next day
     Instant secondDate = firstDate.plus(1, ChronoUnit.DAYS);
-    brokerRule.getClock().setCurrentTime(secondDate);
+    pinZeebeTime(secondDate);
     completeTask(processInstanceKey, "task2", null, false);
     //let Zeebe export data
     sleepFor(5000);

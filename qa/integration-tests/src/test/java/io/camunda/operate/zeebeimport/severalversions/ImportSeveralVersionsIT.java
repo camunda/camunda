@@ -8,12 +8,15 @@ package io.camunda.operate.zeebeimport.severalversions;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.zeebeimport.severalversions.ImportSeveralVersionsInitializer.OPERATE_PREFIX;
+import static io.camunda.operate.zeebeimport.severalversions.ImportSeveralVersionsInitializer.ZEEBE_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
@@ -23,28 +26,33 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import io.camunda.operate.util.TestImportListener;
+import io.camunda.operate.util.TestUtil;
+import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import java.io.IOException;
+import java.util.Arrays;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
-public class ImportSeveralVersionsTest extends OperateIntegrationTest {
+public class ImportSeveralVersionsIT extends OperateIntegrationTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule(ImportSeveralVersionsInitializer.OPERATE_PREFIX);
+  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule(OPERATE_PREFIX);
 
   @Autowired
   private ZeebeImporter zeebeImporter;
@@ -79,11 +87,18 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   @SpyBean
   private io.camunda.operate.zeebeimport.v1_2.processors.ElasticsearchBulkProcessor importerv1;
 
-  public TestContainerUtil testContainerUtil = new TestContainerUtil();
+  @MockBean
+  private PartitionHolder partitionHolder;
+
+  @Before
+  public void beforeTest() {
+    when(partitionHolder.getPartitionIds()).thenReturn(Arrays.asList(1));
+  }
 
   @After
   public void afterTest() {
-    testContainerUtil.stopAll();
+    TestUtil.removeAllIndices(esClient, ZEEBE_PREFIX);
+    TestUtil.removeAllIndices(esClient, OPERATE_PREFIX);
   }
 
   @Test

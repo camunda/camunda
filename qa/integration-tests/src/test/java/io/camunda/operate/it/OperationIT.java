@@ -721,7 +721,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
 
-    brokerRule.stopBroker();
+    zeebeContainer.stop();
 
     //when we call CANCEL_PROCESS_INSTANCE and then RESOLVE_INCIDENT operation on one instance
     final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()

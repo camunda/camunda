@@ -11,14 +11,22 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.test.ClientRule;
-import io.camunda.zeebe.test.EmbeddedBrokerRule;
+import io.zeebe.containers.ZeebeContainer;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -59,9 +67,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Rule
   public final OperateZeebeRule zeebeRule;
 
-  protected ClientRule clientRule;
-
-  protected EmbeddedBrokerRule brokerRule;
+  protected ZeebeContainer zeebeContainer;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
@@ -77,6 +83,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  private HttpClient httpClient = HttpClient.newHttpClient();
 
   /// Predicate checks
   @Autowired
@@ -167,10 +175,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Before
   public void before() {
     super.before();
-    clientRule = zeebeRule.getClientRule();
-    assertThat(clientRule).as("clientRule is not null").isNotNull();
-    brokerRule = zeebeRule.getBrokerRule();
-    assertThat(brokerRule).as("brokerRule is not null").isNotNull();
+
+    zeebeContainer = zeebeRule.getZeebeContainer();
+    assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
 
     zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
@@ -194,11 +201,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   public ZeebeClient getClient() {
-    return clientRule.getClient();
-  }
-
-  public BrokerCfg getBrokerCfg() {
-    return brokerRule.getBrokerCfg();
+    return zeebeRule.getClient();
   }
 
   public String getWorkerName() {
@@ -348,5 +351,78 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     for (Meter meter: meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
+  }
+
+  protected Instant pinZeebeTime() {
+      return pinZeebeTime(Instant.now());
+  }
+
+  protected Instant pinZeebeTime(Instant pinAt) {
+      final var pinRequest = new ZeebeClockActuatorPinRequest(pinAt.toEpochMilli());
+      try {
+          final var body = HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(pinRequest));
+          return zeebeRequest("POST", "actuator/clock/pin", body);
+      } catch (IOException | InterruptedException e) {
+          throw new IllegalStateException("Could not pin zeebe clock", e);
+      }
+  }
+
+  protected Instant offsetZeebeTime(Duration offsetBy) {
+      final var offsetRequest = new ZeebeClockActuatorOffsetRequest(offsetBy.toMillis());
+      try {
+          final var body = HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(offsetRequest));
+          return zeebeRequest("POST", "actuator/clock/pin", body);
+      } catch (IOException | InterruptedException e) {
+          throw new IllegalStateException("Could not offset zeebe clock", e);
+      }
+  }
+
+  protected Instant resetZeebeTime() {
+      try {
+          return zeebeRequest("DELETE", "actuator/clock/", HttpRequest.BodyPublishers.noBody());
+      } catch (IOException | InterruptedException e) {
+          throw new IllegalStateException("Could not reset zeebe clock", e);
+      }
+  }
+
+  private Instant zeebeRequest(String method, String endpoint, HttpRequest.BodyPublisher bodyPublisher) throws IOException, InterruptedException {
+      final var fullEndpoint =
+              URI.create(
+                      String.format("http://%s/%s", zeebeContainer.getExternalAddress(9600), endpoint));
+      final var httpRequest =
+              HttpRequest.newBuilder(fullEndpoint)
+                      .method(method, bodyPublisher)
+                      .header("Content-Type", "application/json")
+                      .build();
+      final var httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+      if (httpResponse.statusCode() != 200) {
+          throw new IllegalStateException("Pinning time failed: " + httpResponse.body());
+      }
+      final var result = objectMapper.readValue(httpResponse.body(),ZeebeClockActuatorResponse.class);
+
+      return Instant.ofEpochMilli(result.epochMilli);
+  }
+
+  private final static class ZeebeClockActuatorPinRequest {
+      @JsonProperty
+      long epochMilli;
+      ZeebeClockActuatorPinRequest(long epochMilli) {
+          this.epochMilli = epochMilli;
+      }
+  }
+
+  private final static class ZeebeClockActuatorOffsetRequest {
+      @JsonProperty
+      long epochMilli;
+
+      public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
+          this.epochMilli = offsetMilli;
+      }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private final static class ZeebeClockActuatorResponse {
+    @JsonProperty
+    long epochMilli;
   }
 }

@@ -5,14 +5,18 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Properties;
-
-import io.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -24,22 +28,14 @@ import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.client.ClientProperties;
-import io.camunda.zeebe.test.ClientRule;
-import io.camunda.zeebe.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-
 public class OperateZeebeRule extends TestWatcher {
 
-  private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds
-  private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearch";
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
 
   private static final Logger logger = LoggerFactory.getLogger(OperateZeebeRule.class);
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
@@ -51,26 +47,18 @@ public class OperateZeebeRule extends TestWatcher {
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired
-  private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
-
-  protected final EmbeddedBrokerRule brokerRule;
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-  private ClientRule clientRule;
+  protected ZeebeContainer zeebeContainer;
+  private ZeebeClient client;
 
   private String prefix;
   private boolean failed = false;
-
-  public OperateZeebeRule() {
-    brokerRule = new EmbeddedBrokerRule();
-  }
 
   @Override
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
-    embeddedZeebeConfigurer.injectPrefixToZeebeConfig(brokerRule, ELASTICSEARCH_EXPORTER_ID, prefix);
-    start();
+
+    startZeebe();
   }
 
   public void updateRefreshInterval(String value) {
@@ -114,57 +102,47 @@ public class OperateZeebeRule extends TestWatcher {
     this.failed = true;
   }
 
-  @Override
-  public Statement apply(Statement base, Description description) {
-    Statement statement = this.recordingExporterTestWatcher.apply(base, description);
-    return super.apply(statement, description);
-  }
-
   /**
    * Starts the broker and the client. This is blocking and will return once the broker is ready to
    * accept commands.
    *
    * @throws IllegalStateException if no exporter has previously been configured
    */
-  public void start() {
-    long startTime = System.currentTimeMillis();
-    brokerRule.startBroker();
-    logger.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
+  public void startZeebe() {
 
-    clientRule = new ClientRule(this::newClientProperties);
-    clientRule.createClient();
+    final String zeebeVersion = ZeebeVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+    zeebeContainer = TestContainerUtil.startZeebe(zeebeVersion, prefix, 2);
+
+    client = ZeebeClient.newClientBuilder()
+        .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+        .usePlaintext()
+        .defaultRequestTimeout(REQUEST_TIMEOUT)
+    .build();
+
+    testZeebeIsReady();
+
+  }
+
+  private void testZeebeIsReady() {
+    //get topology to check that cluster is available and ready for work
+    Topology topology = null;
+    while (topology == null) {
+      try {
+        topology = client.newTopologyRequest().send().join();
+      } catch (ClientException ex) {
+        ex.printStackTrace();
+      }
+    }
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
-    brokerRule.stopBroker();
+    zeebeContainer.stop();
 
-    if (clientRule != null) {
-      clientRule.destroyClient();
+    if (client != null) {
+      client.close();
+      client = null;
     }
-  }
-
-  /**
-   * Returns the current broker configuration.
-   *
-   * @return current broker configuration
-   */
-  public BrokerCfg getBrokerConfig() {
-    return brokerRule.getBrokerCfg();
-  }
-
-  private Properties newClientProperties() {
-    final Properties properties = new Properties();
-    properties.put(ClientProperties.GATEWAY_ADDRESS, toHostAndPortString(brokerRule.getGatewayAddress()));
-    properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
-    properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
-    return properties;
-  }
-
-  private static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
-    final String host = inetSocketAddress.getHostString();
-    final int port = inetSocketAddress.getPort();
-    return host + ":" + port;
   }
 
   public String getPrefix() {
@@ -175,12 +153,8 @@ public class OperateZeebeRule extends TestWatcher {
     this.prefix = prefix;
   }
 
-  public EmbeddedBrokerRule getBrokerRule() {
-    return brokerRule;
-  }
-
-  public ClientRule getClientRule() {
-    return clientRule;
+  public ZeebeContainer getZeebeContainer() {
+    return zeebeContainer;
   }
 
   public void setOperateProperties(final OperateProperties operateProperties) {
@@ -191,8 +165,7 @@ public class OperateZeebeRule extends TestWatcher {
     this.zeebeEsClient = zeebeEsClient;
   }
 
-  public void setEmbeddedZeebeConfigurer(
-      final EmbeddedZeebeConfigurer embeddedZeebeConfigurer) {
-    this.embeddedZeebeConfigurer = embeddedZeebeConfigurer;
+  public ZeebeClient getClient() {
+    return client;
   }
 }
