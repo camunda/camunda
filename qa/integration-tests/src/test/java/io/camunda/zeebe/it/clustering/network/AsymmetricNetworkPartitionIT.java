@@ -17,6 +17,7 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
+import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.cluster.ZeebeCluster;
@@ -34,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container.ExecResult;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
 
 public class AsymmetricNetworkPartitionIT {
 
@@ -170,7 +170,7 @@ public class AsymmetricNetworkPartitionIT {
   private void setupZeebeCluster() {
     cluster =
         ZeebeCluster.builder()
-            .withImage(DockerImageName.parse("camunda/zeebe:SNAPSHOT"))
+            .withImage(ZeebeTestContainerDefaults.defaultTestImage())
             .withBrokersCount(3)
             .withEmbeddedGateway(true)
             .withPartitionsCount(3)
