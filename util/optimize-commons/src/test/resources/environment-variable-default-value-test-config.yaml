@@ -3,6 +3,8 @@ security:
   auth:
     token:
       lifeMin: ${AUTH_TOKEN_LIFEMIN:5}
+  license:
+    enterprise: ${OPTIMIZE_ENTERPRISE_MODE:false}
 
 engines:
   'camunda-bpm-1':

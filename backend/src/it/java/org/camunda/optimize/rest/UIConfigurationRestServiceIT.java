@@ -239,6 +239,15 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getIsEnterpriseMode() {
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.isEnterpriseMode()).isTrue();
+  }
+
+  @Test
   public void getMixpanelConfiguration() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getAnalytics().setEnabled(true);

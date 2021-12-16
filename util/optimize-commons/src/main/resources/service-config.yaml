@@ -17,7 +17,7 @@ security:
       clientSecret: ${CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET:}
     cookie:
       same-site:
-        # decides if the optimize auth cookie has the same site cookie flag set
+        # decides if the Optimize auth cookie has the same site cookie flag set
         enabled: true
       secure: auto
     token:
@@ -33,6 +33,11 @@ security:
     superUserIds: ${OPTIMIZE_SUPER_USER_IDS:[]}
     # List of group ids that are granted full permission to all collections, reports & dashboards
     superGroupIds: []
+
+  # Configuration relating to the use of Optimize
+  license:
+    # True if Optimize is running in enterprise mode, or false if in trial mode
+    enterprise: ${OPTIMIZE_ENTERPRISE_MODE:true}
 
   # Here you can define HTTP response headers that Optimize can send in its responses
   # to increase the security of your application.
@@ -108,7 +113,7 @@ engines:
   'camunda-bpm':
     # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
     name: default
-    # A default tenant to the be injected on data from this engine where no tenant is configured in the engine itself.
+    # A default tenant to be injected on data from this engine where no tenant is configured in the engine itself.
     # This property is only relevant in the context of a `One Process Engine Per Tenant`.
     # For details consult the Multi-Tenancy documentation.
     defaultTenant:
@@ -150,7 +155,7 @@ engines:
 engine-commons:
   connection:
     #Maximum time without connection to the engine, Optimize should wait
-    #until a time out is triggered. A value of zero means to wait an
+    #until a timeout is triggered. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
   read:
@@ -192,7 +197,7 @@ import:
       # Determines the page size for historic variable instance fetching.
       maxPageSize: 10000
       # Controls whether Optimize fetches the serialized value of object variables from the Camunda Runtime REST API.
-      # By default this is active for backwards compatibility. If no variable plugin to handle object
+      # By default, this is active for backwards compatibility. If no variable plugin to handle object
       # variables is installed, it can be turned off to reduce the overhead of the variable import.
       includeObjectVariableValue: true
     user-task-instance:
@@ -288,7 +293,7 @@ import:
 es:
   connection:
     # Maximum time without connection to Elasticsearch, Optimize should
-    # wait until a time out triggers.
+    # wait until a timeout triggers.
     timeout: 10000
     # Maximum size of the Elasticsearch response consumer heap buffer.
     responseConsumerBufferLimitInMb: 100

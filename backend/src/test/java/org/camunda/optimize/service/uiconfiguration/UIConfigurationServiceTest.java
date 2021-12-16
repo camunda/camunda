@@ -118,6 +118,21 @@ public class UIConfigurationServiceTest {
       .hasMessage("Invalid profile configured");
   }
 
+  @ParameterizedTest
+  @MethodSource("optimizeProfilesAndExpectedIsEnterpriseModeResult")
+  public void testIsEnterpriseModeDeterminedCorrectly(final String activeProfile,
+                                                      final boolean expectedIsEnterprise) {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[]{activeProfile});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.isEnterpriseMode()).isEqualTo(expectedIsEnterprise);
+  }
+
   private static Stream<Arguments> optimizeProfiles() {
     return Stream.of(
       Arguments.of(CLOUD_PROFILE),
@@ -131,6 +146,14 @@ public class UIConfigurationServiceTest {
       Arguments.of(CLOUD_PROFILE, true),
       Arguments.of(CCSM_PROFILE, true),
       Arguments.of(PLATFORM_PROFILE, false)
+    );
+  }
+
+  private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
+    return Stream.of(
+      Arguments.of(CLOUD_PROFILE, true),
+      Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
+      Arguments.of(PLATFORM_PROFILE, true)
     );
   }
 

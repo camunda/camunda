@@ -5,13 +5,11 @@
  */
 package org.camunda.optimize.service.util.configuration.security;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class SecurityConfiguration {
-
-  private AuthConfiguration auth;
-  private LicenseConfiguration license;
-  private ResponseHeadersConfiguration responseHeaders;
-
+public class LicenseConfiguration {
+  @JsonProperty("enterprise")
+  private boolean enterprise;
 }

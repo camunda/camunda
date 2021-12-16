@@ -58,6 +58,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     final String optimizeProfile = determineOptimizeProfile();
+    uiConfigurationDto.setEnterpriseMode(determineEnterpriseMode(optimizeProfile));
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setOptimizeCloudEnvironment(
       optimizeProfile.equals(CLOUD_PROFILE) || optimizeProfile.equals(CCSM_PROFILE));
@@ -79,6 +80,15 @@ public class UIConfigurationService implements ConfigurationReloadable {
     mixpanel.setClusterId(configurationService.getAnalytics().getMixpanel().getProperties().getClusterId());
 
     return uiConfigurationDto;
+  }
+
+  private boolean determineEnterpriseMode(final String optimizeProfile) {
+    if (Arrays.asList(CLOUD_PROFILE, PLATFORM_PROFILE).contains(optimizeProfile)) {
+      return true;
+    } else if (optimizeProfile.equals(CCSM_PROFILE)) {
+      return configurationService.getSecurityConfiguration().getLicense().isEnterprise();
+    }
+    throw new OptimizeConfigurationException("Could not determine whether Optimize is running in enterprise mode");
   }
 
   private String determineOptimizeProfile() {
