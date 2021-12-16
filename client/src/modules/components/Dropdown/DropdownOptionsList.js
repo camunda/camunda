@@ -32,6 +32,7 @@ export default function DropdownOptionsList({open, closeParent, children, classN
     if (child?.type === Submenu || child?.type === Select.Submenu) {
       return React.cloneElement(child, {
         open: fixedSubmenu === idx || (fixedSubmenu === null && openSubmenu === idx),
+        fixed: fixedSubmenu === idx,
         offset: optionsListRef.current?.offsetWidth,
         setOpened: () => {
           clearTimeout(scheduledRemove.current);

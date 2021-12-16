@@ -25,21 +25,10 @@ jest.mock('./service', () => ({findLetterOption: jest.fn()}));
 
 console.error = jest.fn();
 
-it('should render a dropdown option with the provided label', () => {
-  const node = mount(<Submenu label="my label" />);
+it('should render the provided label', () => {
+  const node = shallow(<Submenu label="my label" />);
 
-  expect(node.find('.DropdownOption')).toExist();
-  expect(node.find('.DropdownOption')).toIncludeText('my label');
-});
-
-it('should render its child content when it is open', () => {
-  const node = mount(<Submenu label="my label">SubmenuContent</Submenu>);
-
-  expect(node).not.toIncludeText('SubmenuContent');
-
-  node.setProps({open: true});
-
-  expect(node).toIncludeText('SubmenuContent');
+  expect(node.children().at(0)).toIncludeText('my label');
 });
 
 it('should change focus after pressing an arrow key', () => {
@@ -65,20 +54,38 @@ it('should change focus after pressing an arrow key', () => {
   expect(document.activeElement.textContent).toBe('foo');
 });
 
-it('should close the submenu when left arrow is pressed', () => {
-  const spy = jest.fn();
-  const node = mount(
-    <Submenu label="Click me" forceToggle={spy}>
+it('should open/close the submenu on mouseOver/mouseLeave', () => {
+  const openSpy = jest.fn();
+  const closeSpy = jest.fn();
+  const node = shallow(
+    <Submenu label="Click me" setClosed={closeSpy} setOpened={openSpy}>
       <DropdownOption>foo</DropdownOption>
       <DropdownOption>bar</DropdownOption>
     </Submenu>
   );
 
-  node.setProps({open: true});
+  node.simulate('mouseover');
+  expect(openSpy).toHaveBeenCalled();
+
+  node.simulate('mouseleave');
+  expect(closeSpy).toHaveBeenCalled();
+});
+
+it('should close the submenu when left arrow is pressed', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Submenu label="Click me" forceToggle={spy} open>
+      <DropdownOption>foo</DropdownOption>
+      <DropdownOption>bar</DropdownOption>
+    </Submenu>
+  );
 
   const container = node.find('.childrenContainer');
-
-  container.simulate('keyDown', {key: 'ArrowLeft'});
+  container.simulate('keyDown', {
+    key: 'ArrowLeft',
+    stopPropagation: jest.fn(),
+    preventDefault: jest.fn(),
+  });
 
   expect(spy).toHaveBeenCalled();
 });
@@ -126,39 +133,8 @@ it('should shift the submenu up when there is no space available', () => {
   expect(node.state().styles.top).toBe('-20px');
 });
 
-it('should show a scrollbar when submenu is bigger than the viewport height', () => {
-  const node = mount(<Submenu />);
-
-  node.instance().containerRef = {
-    current: {
-      // submenu dimensions
-      querySelector: () => ({
-        clientHeight: 100,
-      }),
-      //parentMenu.top
-      getBoundingClientRect: () => ({top: 50}),
-    },
-  };
-
-  const footer = document.createElement('div');
-  footer.getBoundingClientRect = () => ({top: 100});
-  document.body.appendChild(footer);
-  node.instance().footerRef = footer;
-
-  const header = document.createElement('div');
-  header.getBoundingClientRect = () => ({bottom: 10});
-  document.body.appendChild(header);
-  node.instance().headerRef = header;
-
-  node.instance().calculatePlacement();
-  node.setProps({open: true});
-  node.update();
-  expect(node.state().styles.top).toBe('-30px');
-  expect(node.find('.childrenContainer')).toHaveClassName('scrollable');
-});
-
 it('should invoke findLetterOption when typing a character', () => {
-  const node = mount(<Submenu open={true} />);
+  const node = shallow(<Submenu open={true} />);
 
   node.instance().containerRef = {
     current: {
@@ -168,7 +144,21 @@ it('should invoke findLetterOption when typing a character', () => {
 
   const container = node.find('.childrenContainer');
 
-  container.simulate('keyDown', {key: 'f', keyCode: 70});
+  container.simulate('keyDown', {
+    key: 'f',
+    keyCode: 70,
+    stopPropagation: jest.fn(),
+    preventDefault: jest.fn(),
+  });
   expect(findLetterOption.mock.calls[0][1]).toBe('f');
   expect(findLetterOption.mock.calls[0][2]).toBe(0);
+});
+
+it('should invoke onClose when closing the submenu', () => {
+  const spy = jest.fn();
+  const node = shallow(<Submenu onClose={spy} open />);
+
+  node.setProps({open: false});
+
+  expect(spy).toHaveBeenCalled();
 });

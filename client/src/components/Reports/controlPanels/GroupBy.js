@@ -8,14 +8,15 @@ import {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {reportConfig, createReportUpdate} from 'services';
-import {Select, Button, Icon} from 'components';
+import {formatters, reportConfig, createReportUpdate} from 'services';
+import {Select, Button, Icon, Input} from 'components';
 import {isOptimizeCloudEnvironment} from 'config';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
   const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -50,19 +51,58 @@ export default function GroupBy({type, report, onChange, variables}) {
     )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
+        const filtersVariables = variables?.[key]?.filter(({name}) =>
+          name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        /**
+         *  The Select dropdown depends on the option dom element to figure out which element is selected
+         *  If we remove the element completely from the dom (e.g. when searching), the selected option checkmark
+         *  and the Select button label will not work, in that case, we add it again in a hidden state
+         *  to ensure that the select still indicate the selected option
+         */
+        const isSelectedOptionRemoved =
+          selectedOption.key === key &&
+          !filtersVariables.some(({name}) => report.groupBy.value.name === name);
+
         return (
           <Select.Submenu
             key={key}
             label={label()}
             disabled={!enabled(report) || !variables || !variables[key]?.length}
+            onClose={() => setSearchQuery('')}
           >
-            {variables?.[key]?.map(({name}, idx) => {
+            <div className="searchContainer">
+              <Icon className="searchIcon" type="search" />
+              <Input
+                type="text"
+                className="searchInput"
+                placeholder={t('report.groupBy.searchForVariable')}
+                value={searchQuery}
+                onChange={({target: {value}}) => setSearchQuery(value)}
+                onClick={(evt) => evt.stopPropagation()}
+                onKeyDown={(evt) => evt.stopPropagation()}
+                onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
+              />
+            </div>
+            {filtersVariables?.map(({name}, idx) => {
               return (
-                <Select.Option key={idx} value={key + '_' + name}>
-                  {name}
+                <Select.Option key={idx} value={key + '_' + name} label={name}>
+                  {formatters.getHighlightedText(name, searchQuery)}
                 </Select.Option>
               );
             })}
+            {isSelectedOptionRemoved && (
+              <Select.Option
+                className="hidden"
+                value={getValue(selectedOption.key, report.groupBy)}
+              >
+                {report.groupBy.value.name}
+              </Select.Option>
+            )}
+            {filtersVariables?.length === 0 && (
+              <Select.Option disabled>{t('common.filter.variableModal.noVariables')}</Select.Option>
+            )}
           </Select.Submenu>
         );
       } else if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(key)) {

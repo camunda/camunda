@@ -32,6 +32,9 @@
     padding: 5px 0;
     border-radius: 3px;
     box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
+    @include scrollable;
+    overflow-x: hidden;
+    overflow-y: auto;
 
     .hoverGuard {
       position: absolute;
@@ -39,12 +42,6 @@
       left: -3px;
       height: 100%;
       width: calc(100% + 6px);
-    }
-
-    &.scrollable {
-      overflow-x: hidden;
-      margin: 0;
-      @include scrollable;
     }
   }
 }

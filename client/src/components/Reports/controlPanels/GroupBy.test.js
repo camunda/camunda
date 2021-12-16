@@ -7,7 +7,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Select, Button} from 'components';
+import {Select, Button, Input} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
 import {isOptimizeCloudEnvironment} from 'config';
 
@@ -162,4 +162,51 @@ it('should pass null as a value to Select if groupBy is null', () => {
   const node = shallow(<GroupBy {...config} report={{...config.report, groupBy: null}} />);
 
   expect(node.find(Select).prop('value')).toBe(null);
+});
+
+it('should filter variables based on search query', () => {
+  const node = shallow(<GroupBy {...config} variables={{variable: [{name: 'a'}, {name: 'b'}]}} />);
+
+  expect(node.find({value: 'variable_a'})).toExist();
+  expect(node.find({value: 'variable_b'})).toExist();
+
+  node.find(Input).simulate('change', {target: {value: 'b'}});
+
+  expect(node.find({value: 'variable_a'})).not.toExist();
+  expect(node.find({value: 'variable_b'})).toExist();
+});
+
+it('should show the selected variable option in a hidden state if it was filtered by search', () => {
+  reportConfig.process.group = [
+    {
+      key: 'none',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('None'),
+    },
+    {
+      key: 'variable',
+      matcher: jest.fn().mockReturnValue(true),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Variable'),
+    },
+  ];
+
+  const node = shallow(
+    <GroupBy
+      {...config}
+      report={{
+        ...config.report,
+        groupBy: {value: {name: 'a'}},
+      }}
+      variables={{variable: [{name: 'a'}, {name: 'b'}]}}
+    />
+  );
+
+  node.find(Input).simulate('change', {target: {value: 'b'}});
+
+  expect(node.find('.hidden').prop('value')).toBe('variable_a');
+  expect(node.find({value: 'variable_b'})).toExist();
 });
