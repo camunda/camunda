@@ -10,19 +10,15 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.protocol.Protocol;
-import java.util.Set;
-import java.util.function.Predicate;
-import org.agrona.Strings;
+import java.util.Objects;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class ZeebeTaskHeadersValidator implements ModelElementValidator<ZeebeTaskHeaders> {
 
-  private static final Set<String> RESTRICTED_HEADERS =
-      Set.of(
-          Protocol.USER_TASK_ASSIGNEE_HEADER_NAME,
-          Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
-          Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
+  private static final String RESERVED_HEADER_NAME_PREFIX = Protocol.RESERVED_HEADER_NAME_PREFIX;
+  private static final String RESERVED_KEY_MESSAGE_TEMPLATE =
+      "Attribute 'key' contains '%s', but header keys starting with '%s' are reserved for internal use.";
 
   @Override
   public Class<ZeebeTaskHeaders> getElementType() {
@@ -34,9 +30,9 @@ public class ZeebeTaskHeadersValidator implements ModelElementValidator<ZeebeTas
       final ZeebeTaskHeaders element, final ValidationResultCollector validationResultCollector) {
     element.getHeaders().stream()
         .map(ZeebeHeader::getKey)
-        .filter(Predicate.not(Strings::isEmpty))
-        .filter(RESTRICTED_HEADERS::contains)
-        .map(key -> String.format("Attribute 'key' may not use restricted header '%s'", key))
+        .filter(Objects::nonNull)
+        .filter(x -> x.startsWith(RESERVED_HEADER_NAME_PREFIX))
+        .map(key -> String.format(RESERVED_KEY_MESSAGE_TEMPLATE, key, RESERVED_HEADER_NAME_PREFIX))
         .forEach(message -> validationResultCollector.addError(0, message));
   }
 }

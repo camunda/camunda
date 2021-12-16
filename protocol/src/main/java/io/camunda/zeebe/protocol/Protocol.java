@@ -65,15 +65,20 @@ public final class Protocol {
   /** Job typ used for user tasks handled by Camunda Cloud Tasklist */
   public static final String USER_TASK_JOB_TYPE = "io.camunda.zeebe:userTask";
 
+  /** Prefix for key of reserved task headers */
+  public static final String RESERVED_HEADER_NAME_PREFIX = "io.camunda.zeebe:";
+
   /** Task header key used for user tasks to contain form key from BPMN XML */
-  public static final String USER_TASK_FORM_KEY_HEADER_NAME = "io.camunda.zeebe:formKey";
+  public static final String USER_TASK_FORM_KEY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "formKey";
 
   /** Task header key used for assignee */
-  public static final String USER_TASK_ASSIGNEE_HEADER_NAME = "io.camunda.zeebe:assignee";
+  public static final String USER_TASK_ASSIGNEE_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "assignee";
 
   /** Task header key used for candidate groups */
   public static final String USER_TASK_CANDIDATE_GROUPS_HEADER_NAME =
-      "io.camunda.zeebe:candidateGroups";
+      RESERVED_HEADER_NAME_PREFIX + "candidateGroups";
 
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
