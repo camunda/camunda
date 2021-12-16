@@ -40,7 +40,7 @@ export function MultiDefinitionSelection({
         'process',
         newDefinitions.map(({key}) => ({
           key,
-          versions: ['latest'],
+          versions: ['all'],
         })),
         getCollection(location.pathname)
       ),
@@ -49,7 +49,7 @@ export function MultiDefinitionSelection({
           newDefinitions.map(({key, name}, idx) => ({
             key,
             name,
-            versions: ['latest'],
+            versions: ['all'],
             tenantIds: tenantInfo[idx].tenants.map(({id}) => id),
             identifier: getRandomId(),
           }))

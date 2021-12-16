@@ -83,8 +83,8 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
   expect(loadTenants).toHaveBeenCalledWith(
     'process',
     [
-      {key: 'foo', versions: ['latest']},
-      {key: 'bar', versions: ['latest']},
+      {key: 'foo', versions: ['all']},
+      {key: 'bar', versions: ['all']},
     ],
     props.location.pathname
   );
@@ -94,14 +94,14 @@ it('should invoke loadTenants and onChange when selecting more than one definiti
       key: 'foo',
       name: 'Foo',
       tenantIds: ['a', 'b'],
-      versions: ['latest'],
+      versions: ['all'],
     },
     {
       identifier: 'randomID',
       key: 'bar',
       name: 'Bar',
       tenantIds: ['a'],
-      versions: ['latest'],
+      versions: ['all'],
     },
   ]);
 });
