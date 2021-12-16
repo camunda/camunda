@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -20,6 +22,8 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,22 +87,6 @@ public class PublicApiRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void deleteReportDefinitionWithoutAuthorization() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicDeleteReportRequest("fake_id", null)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
   public void exportDashboardDefinitionWithoutAuthorization() {
     // given
     getAccessToken();
@@ -108,6 +96,121 @@ public class PublicApiRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .withoutAuthentication()
       .buildPublicExportJsonDashboardDefinitionRequest(Collections.singletonList("fake_id"), null)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void importEntitiesWithoutAuthorization() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicImportEntityDefinitionsRequest("fake_id", Collections.emptySet(), "null")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void importEntitiesWithoutCollectionId() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicImportEntityDefinitionsRequest(null, Collections.emptySet(), getAccessToken())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(String.class)).contains("Must specify a target collection ID for data import.");
+  }
+
+  @Test
+  public void importInvalidEntities() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
+    final SingleProcessReportDefinitionExportDto exportDto = new SingleProcessReportDefinitionExportDto(reportDef);
+    exportDto.setId(null);
+
+    // when
+    final Response response = publicApiClient.importEntityAndReturnResponse(
+      Collections.singleton(exportDto),
+      collectionId,
+      getAccessToken()
+    );
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+    assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
+      .contains("Could not import entities because the provided file contains invalid OptimizeExportDtos.");
+  }
+
+  @Test
+  public void importInvalidJson() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicImportEntityDefinitionsRequest(
+        Entity.entity("Invalid Json String", MediaType.APPLICATION_JSON_TYPE),
+        collectionId,
+        getAccessToken()
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+    assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
+      .contains("Could not import entities because the provided file is not a valid list of OptimizeEntityExportDtos.");
+  }
+
+  @Test
+  public void importEmptyBody() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicImportEntityDefinitionsRequest(
+        Entity.entity("", MediaType.APPLICATION_JSON_TYPE),
+        collectionId,
+        getAccessToken()
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
+    assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
+      .contains("Could not import entity because the provided file is null or empty.");
+  }
+
+  @Test
+  public void deleteReportDefinitionWithoutAuthorization() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicDeleteReportRequest("fake_id", null)
       .execute();
 
     // then
@@ -286,7 +389,6 @@ public class PublicApiRestServiceIT extends AbstractIT {
   @Test
   @SneakyThrows
   public void paginatingWithExpiredScrollId() {
-
     // given
     int numberOfInstances = 3;
     int limit = numberOfInstances / 2;

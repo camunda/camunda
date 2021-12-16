@@ -124,6 +124,7 @@ import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.IMPORT_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.PUBLIC_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.REPORT_SUB_PATH;
@@ -1075,6 +1076,29 @@ public class OptimizeRequestExecutor {
       DASHBOARD_EXPORT_DEFINITION_SUB_PATH,
       accessToken
     );
+  }
+
+  public OptimizeRequestExecutor buildPublicImportEntityDefinitionsRequest(final String collectionId,
+                                                                           final Set<OptimizeEntityExportDto> exportedDtos,
+                                                                           final String accessToken) {
+    this.path = PUBLIC_PATH + IMPORT_SUB_PATH;
+    this.body = getBody(exportedDtos);
+    this.method = POST;
+    this.mediaType = MediaType.APPLICATION_JSON;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicImportEntityDefinitionsRequest(final Entity<?> importRequestBody,
+                                                                           final String collectionId,
+                                                                           final String accessToken) {
+    this.path = PUBLIC_PATH + IMPORT_SUB_PATH;
+    this.body = importRequestBody;
+    this.method = POST;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setAccessToken(accessToken);
+    return this;
   }
 
   public OptimizeRequestExecutor buildPublicDeleteReportRequest(final String id, final String accessToken) {

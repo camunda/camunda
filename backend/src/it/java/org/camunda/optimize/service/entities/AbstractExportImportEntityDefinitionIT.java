@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
@@ -20,6 +21,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -28,6 +31,8 @@ import org.camunda.optimize.dto.optimize.query.report.combined.configuration.tar
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportDurationChartDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
@@ -53,6 +58,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -60,19 +66,25 @@ import org.camunda.optimize.util.SuperUserType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 
+import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_START_DATE;
@@ -446,13 +458,108 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     return new DashboardDefinitionExportDto(reportDefToImport);
   }
 
+  protected void assertImportedReport(final SingleReportDefinitionDto<? extends SingleReportDataDto> importedReport,
+                                      final SingleReportDefinitionDto<? extends SingleReportDataDto> expectedReport,
+                                      final String expectedCollectionId) {
+    assertImportedReport(
+      importedReport,
+      expectedReport,
+      expectedCollectionId,
+      DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME
+    );
+  }
+
+  protected void assertImportedReport(final SingleReportDefinitionDto<? extends SingleReportDataDto> importedReport,
+                                      final SingleReportDefinitionDto<? extends SingleReportDataDto> expectedReport,
+                                      final String expectedCollectionId,
+                                      final String ownerAndLastModifier) {
+    assertThat(importedReport.getOwner()).isEqualTo(ownerAndLastModifier);
+    assertThat(importedReport.getLastModifier()).isEqualTo(ownerAndLastModifier);
+    assertThat(importedReport.getCreated()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedReport.getLastModified()).isEqualTo(LocalDateUtil.getCurrentDateTime());
+    assertThat(importedReport.getCollectionId()).isEqualTo(expectedCollectionId);
+    assertThat(importedReport.getName()).isEqualTo(expectedReport.getName());
+    assertThat(importedReport.getData())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportDataDto.Fields.configuration)
+      .isEqualTo(expectedReport.getData());
+    assertThat(importedReport.getData().getConfiguration())
+      .usingRecursiveComparison()
+      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
+      .isEqualTo(expectedReport.getData().getConfiguration());
+    assertThat(importedReport.getData().getConfiguration().getXml())
+      .isEqualTo(DEFINITION_XML_STRING + "1");
+  }
+
   protected static DashboardDefinitionExportDto createDashboardExportDtoWithResources(final List<String> resourceIds) {
     final DashboardDefinitionRestDto dashboard = createDashboardDefinition(resourceIds);
     return new DashboardDefinitionExportDto(dashboard);
   }
 
-  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String tenantId, final String version) {
-    return createProcessDefinition(DEFINITION_KEY, tenantId, version);
+  protected Optional<DashboardDefinitionRestDto> retrieveImportedDashboard(final List<IdResponseDto> importedIds) {
+    return retrieveImportedDashboards(importedIds).stream().findFirst();
+  }
+
+  protected List<DashboardDefinitionRestDto> retrieveImportedDashboards(final List<IdResponseDto> importedIds) {
+    List<DashboardDefinitionRestDto> dashboards = new ArrayList<>();
+    for (IdResponseDto id : importedIds) {
+      final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildGetDashboardRequest(id.getId())
+        .execute();
+      if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+        dashboards.add(response.readEntity(DashboardDefinitionRestDto.class));
+      }
+    }
+    return dashboards;
+  }
+
+  protected List<ReportDefinitionDto> retrieveImportedReports(final List<IdResponseDto> importedIds) {
+    List<ReportDefinitionDto> reports = new ArrayList<>();
+    for (IdResponseDto id : importedIds) {
+      final Response response = embeddedOptimizeExtension.getRequestExecutor()
+        .buildGetReportRequest(id.getId())
+        .execute();
+      if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+        reports.add(response.readEntity(ReportDefinitionDto.class));
+      }
+    }
+    return reports;
+  }
+
+  protected static SingleProcessReportDefinitionRequestDto createProcessReportDefinition(
+    final ProcessReportDataDto reportData) {
+    final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
+    reportDef.setId(VALID_PROCESS_REPORT_ID);
+    reportDef.setName("Test Process Report");
+    reportDef.setData(reportData);
+    reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
+    reportDef.setLastModifier("lastModifierId");
+    reportDef.setOwner("ownerId");
+    return reportDef;
+  }
+
+  protected static SingleDecisionReportDefinitionRequestDto createDecisionReportDefinition(
+    final DecisionReportDataDto reportData) {
+    final SingleDecisionReportDefinitionRequestDto reportDef = new SingleDecisionReportDefinitionRequestDto();
+    reportDef.setId(VALID_DECISION_REPORT_ID);
+    reportDef.setName("Test Decision Report");
+    reportDef.setData(reportData);
+    reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
+    reportDef.setLastModifier("lastModifierId");
+    reportDef.setOwner("ownerId");
+    return reportDef;
+  }
+
+  protected void setAuthorizedSuperGroup() {
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperUserIds(Collections.emptyList());
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantKermitGroupOptimizeAccess();
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_DECISION_DEFINITION);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
   }
 
   private static ProcessDefinitionOptimizeDto createProcessDefinition(final String key, final String tenantId,
@@ -500,32 +607,6 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     return decisionReportData;
   }
 
-  protected static SingleProcessReportDefinitionRequestDto createProcessReportDefinition(
-    final ProcessReportDataDto reportData) {
-    final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
-    reportDef.setId(VALID_PROCESS_REPORT_ID);
-    reportDef.setName("Test Process Report");
-    reportDef.setData(reportData);
-    reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
-    reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
-    reportDef.setLastModifier("lastModifierId");
-    reportDef.setOwner("ownerId");
-    return reportDef;
-  }
-
-  private static SingleDecisionReportDefinitionRequestDto createDecisionReportDefinition(
-    final DecisionReportDataDto reportData) {
-    final SingleDecisionReportDefinitionRequestDto reportDef = new SingleDecisionReportDefinitionRequestDto();
-    reportDef.setId(VALID_DECISION_REPORT_ID);
-    reportDef.setName("Test Decision Report");
-    reportDef.setData(reportData);
-    reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
-    reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
-    reportDef.setLastModifier("lastModifierId");
-    reportDef.setOwner("ownerId");
-    return reportDef;
-  }
-
   private static Stream<Arguments> reportAndAuthType() {
     return Stream.of(
       Arguments.of(ReportType.PROCESS, SuperUserType.USER),
@@ -535,13 +616,4 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     );
   }
 
-  protected void setAuthorizedSuperGroup() {
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperUserIds(Collections.emptyList());
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    authorizationClient.grantKermitGroupOptimizeAccess();
-    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_DECISION_DEFINITION);
-    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
-  }
 }

@@ -132,11 +132,13 @@ public class ProcessVariableService {
     );
     allAuthorizedReportsForIds.addAll(
       allAuthorizedReportsForIds.stream()
-        .filter(reportDefinitionDto -> reportDefinitionDto instanceof CombinedReportDefinitionRequestDto)
+        .filter(CombinedReportDefinitionRequestDto.class::isInstance)
         .flatMap(combinedReport -> {
           final List<String> reportIdsFromCombined = ((CombinedReportDefinitionRequestDto) combinedReport).getData()
             .getReportIds();
-          return reportService.getAllAuthorizedReportsForIds(userId, reportIdsFromCombined).stream();
+          return Optional.ofNullable(userId)
+            .map(user -> reportService.getAllAuthorizedReportsForIds(userId, reportIdsFromCombined).stream())
+            .orElse(reportService.getAllReportsForIds(reportIdsFromCombined).stream());
         }).collect(Collectors.toList()));
     return allAuthorizedReportsForIds;
   }

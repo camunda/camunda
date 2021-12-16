@@ -39,7 +39,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
   public void importReport(final SingleDecisionReportDefinitionRequestDto reportDefToImport) {
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    dateFreezer().freezeDateAndReturn();
 
     // when
     final IdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
@@ -48,21 +48,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
-    assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getCreated()).isEqualTo(now);
-    assertThat(importedReport.getLastModified()).isEqualTo(now);
-    assertThat(importedReport.getCollectionId()).isNull();
-    assertThat(importedReport.getName()).isEqualTo(reportDefToImport.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison()
-      .ignoringFields(SingleReportDataDto.Fields.configuration)
-      .isEqualTo(reportDefToImport.getData());
-    assertThat(importedReport.getData().getConfiguration())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(reportDefToImport.getData().getConfiguration());
-    assertThat(importedReport.getData().getConfiguration().getXml())
-      .isEqualTo(DEFINITION_XML_STRING + "1");
+    assertImportedReport(importedReport, reportDefToImport, null);
   }
 
   @Test
@@ -218,8 +204,10 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     importAllEngineEntitiesFromScratch();
 
     createAndSaveDefinition(DefinitionType.DECISION, "tenant1");
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    dateFreezer().freezeDateAndReturn();
+    final SingleDecisionReportDefinitionRequestDto reportDefToImport = createSimpleDecisionReportDefinition();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+      new SingleDecisionReportDefinitionExportDto(reportDefToImport);
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
@@ -229,21 +217,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
-    assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getCreated()).isEqualTo(now);
-    assertThat(importedReport.getLastModified()).isEqualTo(now);
-    assertThat(importedReport.getCollectionId()).isNull();
-    assertThat(importedReport.getName()).isEqualTo(exportedReportDto.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison()
-      .ignoringFields(SingleReportDataDto.Fields.configuration)
-      .isEqualTo(importedReport.getData());
-    assertThat(importedReport.getData().getConfiguration())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(importedReport.getData().getConfiguration());
-    assertThat(importedReport.getData().getConfiguration().getXml())
-      .isEqualTo(DEFINITION_XML_STRING + "1");
+    assertImportedReport(importedReport, reportDefToImport, null);
   }
 
   @Test
@@ -254,8 +228,10 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     importAllEngineEntitiesFromScratch();
 
     createAndSaveDefinition(DefinitionType.DECISION, null);
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
-    final SingleDecisionReportDefinitionExportDto exportedReportDto = createSimpleDecisionExportDto();
+    dateFreezer().freezeDateAndReturn();
+    final SingleDecisionReportDefinitionRequestDto reportDefToImport = createSimpleDecisionReportDefinition();
+    final SingleDecisionReportDefinitionExportDto exportedReportDto =
+      new SingleDecisionReportDefinitionExportDto(reportDefToImport);
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
@@ -265,21 +241,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
-    assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getCreated()).isEqualTo(now);
-    assertThat(importedReport.getLastModified()).isEqualTo(now);
-    assertThat(importedReport.getCollectionId()).isNull();
-    assertThat(importedReport.getName()).isEqualTo(exportedReportDto.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison()
-      .ignoringFields(SingleReportDataDto.Fields.configuration)
-      .isEqualTo(importedReport.getData());
-    assertThat(importedReport.getData().getConfiguration())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(importedReport.getData().getConfiguration());
-    assertThat(importedReport.getData().getConfiguration().getXml())
-      .isEqualTo(DEFINITION_XML_STRING + "1");
+    assertImportedReport(importedReport, reportDefToImport, null);
   }
 
   @ParameterizedTest
@@ -287,7 +249,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
   public void importReportIntoCollection(final SingleDecisionReportDefinitionRequestDto reportDefToImport) {
     // given
     createAndSaveDefinition(DefinitionType.DECISION, null);
-    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    dateFreezer().freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollectionWithScope(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
@@ -307,21 +269,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     final SingleDecisionReportDefinitionRequestDto importedReport =
       (SingleDecisionReportDefinitionRequestDto) reportClient.getReportById(importedId.getId());
 
-    assertThat(importedReport.getOwner()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getLastModifier()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
-    assertThat(importedReport.getCreated()).isEqualTo(now);
-    assertThat(importedReport.getLastModified()).isEqualTo(now);
-    assertThat(importedReport.getCollectionId()).isEqualTo(collectionId);
-    assertThat(importedReport.getName()).isEqualTo(reportDefToImport.getName());
-    assertThat(importedReport.getData()).usingRecursiveComparison()
-      .ignoringFields(SingleReportDataDto.Fields.configuration)
-      .isEqualTo(importedReport.getData());
-    assertThat(importedReport.getData().getConfiguration())
-      .usingRecursiveComparison()
-      .ignoringFields(SingleReportConfigurationDto.Fields.xml)
-      .isEqualTo(importedReport.getData().getConfiguration());
-    assertThat(importedReport.getData().getConfiguration().getXml())
-      .isEqualTo(DEFINITION_XML_STRING + "1");
+    assertImportedReport(importedReport, reportDefToImport, collectionId);
   }
 
   @Test

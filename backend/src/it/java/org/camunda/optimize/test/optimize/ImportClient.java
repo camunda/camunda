@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -25,7 +26,11 @@ public class ImportClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public Response importEntity(final OptimizeEntityExportDto exportedDto) {
-    return importEntityAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, exportedDto);
+    return this.importEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, Collections.singleton(exportedDto));
+  }
+
+  public Response importEntities(final Set<OptimizeEntityExportDto> exportedDtos) {
+    return this.importEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, exportedDtos);
   }
 
   public IdResponseDto importEntityAndReturnId(final OptimizeEntityExportDto exportedDto) {
@@ -44,22 +49,22 @@ public class ImportClient {
   public Response importEntityAsUser(final String userId,
                                      final String password,
                                      final OptimizeEntityExportDto exportedDto) {
-    return importEntityIntoCollectionAsUser(userId, password, null, exportedDto);
+    return importEntitiesIntoCollectionAsUser(userId, password, null, Collections.singleton(exportedDto));
   }
 
   public Response importEntitiesAsUser(final String userId,
                                        final String password,
-                                       final Set<OptimizeEntityExportDto> exportedDto) {
-    return importEntitiesIntoCollectionAsUser(userId, password, null, exportedDto);
+                                       final Set<OptimizeEntityExportDto> exportedDtos) {
+    return importEntitiesIntoCollectionAsUser(userId, password, null, exportedDtos);
   }
 
   public Response importEntityIntoCollection(final String collectionId,
-                                             final OptimizeEntityExportDto exportedDto) {
-    return importEntityIntoCollectionAsUser(
+                                             final OptimizeEntityExportDto exportedDtos) {
+    return importEntitiesIntoCollectionAsUser(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
       collectionId,
-      exportedDto
+      Collections.singleton(exportedDtos)
     );
   }
 
@@ -87,7 +92,7 @@ public class ImportClient {
                                                    final String password,
                                                    final String collectionId,
                                                    final OptimizeEntityExportDto exportedDto) {
-    return importEntitiesIntoCollectionAsUser(userId, password, collectionId, Sets.newHashSet(exportedDto));
+    return importEntitiesIntoCollectionAsUser(userId, password, collectionId, Collections.singleton(exportedDto));
   }
 
   public Response importEntitiesIntoCollectionAsUser(final String userId,

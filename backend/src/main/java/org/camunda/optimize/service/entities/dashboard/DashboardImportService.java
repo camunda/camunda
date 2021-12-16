@@ -25,7 +25,10 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
 
 @AllArgsConstructor
 @Component
@@ -35,6 +38,10 @@ public class DashboardImportService {
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final DashboardWriter dashboardWriter;
   private final DashboardService dashboardService;
+
+  public void validateAllDashboardsOrFail(final List<DashboardDefinitionExportDto> dashboardsToImport) {
+    validateAllDashboardsOrFail(null, dashboardsToImport);
+  }
 
   public void validateAllDashboardsOrFail(final String userId,
                                           final List<DashboardDefinitionExportDto> dashboardsToImport) {
@@ -61,6 +68,12 @@ public class DashboardImportService {
     }
   }
 
+  public void importDashboardsIntoCollection(final String collectionId,
+                                             final List<DashboardDefinitionExportDto> dashboardsToImport,
+                                             final Map<String, IdResponseDto> originalIdToNewIdMap) {
+    importDashboardsIntoCollection(null, collectionId, dashboardsToImport, originalIdToNewIdMap);
+  }
+
   public void importDashboardsIntoCollection(final String userId,
                                              final String collectionId,
                                              final List<DashboardDefinitionExportDto> dashboardsToImport,
@@ -85,7 +98,10 @@ public class DashboardImportService {
       );
     originalIdToNewIdMap.put(
       dashboardToImport.getId(),
-      dashboardWriter.createNewDashboard(userId, createDashboardDefinition(collectionId, dashboardToImport))
+      dashboardWriter.createNewDashboard(
+        Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+        createDashboardDefinition(collectionId, dashboardToImport)
+      )
     );
   }
 

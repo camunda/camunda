@@ -19,6 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -72,9 +73,9 @@ public class DashboardWriter {
 
       IndexResponse indexResponse = esClient.index(request);
 
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
         String message = "Could not write dashboard to Elasticsearch. " +
-          "Maybe the connection to Elasticsearch got lost?";
+          "Maybe the connection to Elasticsearch was lost?";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }

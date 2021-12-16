@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
@@ -15,6 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.entities.EntityExportService;
+import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.export.JsonReportResultExportService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -33,6 +35,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -54,26 +57,28 @@ public class PublicApiRestService {
   public static final String PUBLIC_PATH = "/public";
 
   public static final String EXPORT_SUB_PATH = "/export";
+  public static final String IMPORT_SUB_PATH = "/import";
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
   public static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
   public static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   public static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
-  public static final String REPORT_EXPORT_JSON_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
+  public static final String REPORT_EXPORT_DATA_SUB_PATH = REPORT_EXPORT_BY_ID_PATH + "/result/json";
   public static final String REPORT_EXPORT_DEFINITION_SUB_PATH = REPORT_EXPORT_PATH + "/definition/json";
-  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
-
+  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH = EXPORT_SUB_PATH + DASHBOARD_SUB_PATH +
+    "/definition/json";
   public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
   private final ConfigurationService configurationService;
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
+  private final EntityImportService entityImportService;
   private final ReportService reportService;
   private final DashboardService dashboardService;
 
   @GET
-  @Path(REPORT_EXPORT_JSON_SUB_PATH)
+  @Path(REPORT_EXPORT_DATA_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
   public PaginatedDataExportDto exportReportData(@Context ContainerRequestContext requestContext,
@@ -119,6 +124,19 @@ public class PublicApiRestService {
     return entityExportService.getDashboardExportDtos(Optional.ofNullable(dashboardIds).orElse(Collections.emptySet()));
   }
 
+  @POST
+  @Path(IMPORT_SUB_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public List<IdResponseDto> importEntities(@Context final ContainerRequestContext requestContext,
+                                            @QueryParam("collectionId") String collectionId,
+                                            final String exportedDtoJson) {
+    validateAccessToken(requestContext, getJsonExportAccessToken());
+    validateCollectionIdNotNull(collectionId);
+    final Set<OptimizeEntityExportDto> exportDtos = entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
+    return entityImportService.importEntities(collectionId, exportDtos);
+  }
+
   @DELETE
   @Path(REPORT_BY_ID_PATH)
   @Produces(MediaType.APPLICATION_JSON)
@@ -150,6 +168,12 @@ public class PublicApiRestService {
     if (!expectedAccessToken.equals(extractAuthorizationHeaderToken(requestContext))
       && !expectedAccessToken.equals(queryParameterAccessToken)) {
       throw new NotAuthorizedException("Invalid or no JSON export API 'accessToken' provided.");
+    }
+  }
+
+  private void validateCollectionIdNotNull(final String collectionId) {
+    if (collectionId == null) {
+      throw new BadRequestException("Must specify a target collection ID for data import.");
     }
   }
 

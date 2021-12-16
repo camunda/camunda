@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.entities.dashboard;
+package org.camunda.optimize.rest.pub;
 
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.entities.dashboard.AbstractDashboardDefinitionExportIT;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -22,7 +23,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DashboardDefinitionExportViaApiIT extends AbstractDashboardDefinitionExportIT {
+public class PublicApiDashboardDefinitionExportIT extends AbstractDashboardDefinitionExportIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
 
   @Override

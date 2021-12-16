@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
@@ -25,6 +26,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +40,7 @@ public class CollectionService {
   private final CollectionRelationService collectionRelationService;
   private final CollectionEntityService collectionEntityService;
   private final CollectionWriter collectionWriter;
+  private final CollectionReader collectionReader;
 
   public IdResponseDto createNewCollectionAndReturnId(final String userId,
                                                       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
@@ -95,6 +98,11 @@ public class CollectionService {
     return new ConflictResponseDto(getConflictedItemsForDelete(userId, collectionId));
   }
 
+  public CollectionDefinitionDto getCollectionDefinition(final String collectionId) {
+    return collectionReader.getCollection(collectionId)
+      .orElseThrow(() -> new NotFoundException("Collection with ID [" + collectionId + "] does not exist."));
+  }
+
   private AuthorizedCollectionDefinitionDto getCollectionDefinition(final String userId, final String collectionId) {
     return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
   }
@@ -102,7 +110,6 @@ public class CollectionService {
   public List<AuthorizedCollectionDefinitionDto> getAllCollectionDefinitions(final String userId) {
     return authorizedCollectionService.getAuthorizedCollectionDefinitions(userId);
   }
-
 
   public IdResponseDto copyCollection(String userId, String collectionId, String newCollectionName) {
     AuthorizedCollectionDefinitionDto oldCollection = authorizedCollectionService

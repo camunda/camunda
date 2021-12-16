@@ -24,7 +24,6 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -221,33 +220,6 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
-  }
-
-  private Optional<DashboardDefinitionRestDto> retrieveImportedDashboard(final List<IdResponseDto> importedIds) {
-    DashboardDefinitionRestDto dashboard = null;
-    for (IdResponseDto id : importedIds) {
-      final Response response = embeddedOptimizeExtension.getRequestExecutor()
-        .buildGetDashboardRequest(id.getId())
-        .execute();
-      if (Response.Status.OK.getStatusCode() == response.getStatus()) {
-        dashboard = response.readEntity(DashboardDefinitionRestDto.class);
-        break;
-      }
-    }
-    return Optional.ofNullable(dashboard);
-  }
-
-  private List<ReportDefinitionDto> retrieveImportedReports(final List<IdResponseDto> importedIds) {
-    List<ReportDefinitionDto> reports = new ArrayList<>();
-    for (IdResponseDto id : importedIds) {
-      final Response response = embeddedOptimizeExtension.getRequestExecutor()
-        .buildGetReportRequest(id.getId())
-        .execute();
-      if (Response.Status.OK.getStatusCode() == response.getStatus()) {
-        reports.add(response.readEntity(ReportDefinitionDto.class));
-      }
-    }
-    return reports;
   }
 
 }
