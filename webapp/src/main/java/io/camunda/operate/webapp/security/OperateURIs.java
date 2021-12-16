@@ -14,6 +14,7 @@ public final class OperateURIs {
       RESPONSE_CHARACTER_ENCODING = "UTF-8";
   public static final String ROOT = "/";
   public static final String API = "/api/**";
+  public static final String PUBLIC_API = "/v*/**";
 
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";

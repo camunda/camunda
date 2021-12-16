@@ -9,7 +9,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_KEY;
 import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 
-import io.camunda.operate.Application;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.security.UserService;
 import org.junit.Ignore;

@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.apache.http.HttpStatus;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
@@ -424,5 +425,14 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   private final static class ZeebeClockActuatorResponse {
     @JsonProperty
     long epochMilli;
+  }
+
+  protected void deployProcesses(String... processResources) {
+    Stream.of(processResources)
+        .forEach(resource ->
+            tester.deployProcess(resource)
+                .and()
+                .waitUntil()
+                .processIsDeployed());
   }
 }

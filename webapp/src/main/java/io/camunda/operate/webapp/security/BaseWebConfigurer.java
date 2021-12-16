@@ -10,6 +10,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
 import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 import static io.camunda.operate.webapp.security.OperateURIs.RESPONSE_CHARACTER_ENCODING;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
@@ -45,7 +46,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
     http.csrf().disable()
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers(API).authenticated()
+        .antMatchers(API , PUBLIC_API).authenticated()
         .and()
         .formLogin()
         .loginProcessingUrl(LOGIN_RESOURCE)
