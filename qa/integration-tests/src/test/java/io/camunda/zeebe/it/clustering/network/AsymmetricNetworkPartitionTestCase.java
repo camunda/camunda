@@ -5,9 +5,6 @@ import java.util.concurrent.CompletableFuture;
 
 interface AsymmetricNetworkPartitionTestCase {
 
-  /** @return the name of the test case */
-  String getName();
-
   /**
    * The given part is called before the asymmetric partition is set up. This can be used by the
    * test case to setup own resources or for example deploy processes etc.

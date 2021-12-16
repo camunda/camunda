@@ -17,11 +17,6 @@ public class DeploymentDistributionTestCase implements AsymmetricNetworkPartitio
       LoggerFactory.getLogger(DeploymentDistributionTestCase.class);
 
   @Override
-  public String getName() {
-    return "Deployment distribution";
-  }
-
-  @Override
   public void given(final ZeebeClient client) {}
 
   @Override

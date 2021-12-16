@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +48,11 @@ public class AsymmetricNetworkPartitionIT {
   private ZeebeClient zeebeClient;
 
   @SuppressWarnings("unused")
-  public static Stream<AsymmetricNetworkPartitionTestCase> provideTestCases() {
-    return Stream.of(new DeploymentDistributionTestCase(), new MessageCorrelationTestCase());
+  public static Stream<Arguments> provideTestCases() {
+    return Stream.of(
+        Arguments.arguments(
+            Named.named("Deployment distribution", new DeploymentDistributionTestCase())),
+        Arguments.arguments(Named.named("Message correlation", new MessageCorrelationTestCase())));
   }
 
   @AfterEach
@@ -54,13 +60,13 @@ public class AsymmetricNetworkPartitionIT {
     CloseHelper.quietCloseAll(cluster, zeebeClient);
   }
 
-  @ParameterizedTest
+  @DisplayName("Withstand Asymmetric Network Partition")
+  @ParameterizedTest(name = "{index}: {0}")
   @MethodSource("provideTestCases")
   public void shouldWithstandAsymmetricNetworkPartition(
       final AsymmetricNetworkPartitionTestCase asymmetricNetworkPartitionTestCase)
       throws IOException, InterruptedException {
     // given
-    LOGGER.info("Run test {}", asymmetricNetworkPartitionTestCase.getName());
     setupZeebeCluster();
     zeebeClient = cluster.newClientBuilder().build();
 

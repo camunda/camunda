@@ -13,11 +13,6 @@ import java.util.concurrent.CompletableFuture;
 public class MessageCorrelationTestCase implements AsymmetricNetworkPartitionTestCase {
 
   @Override
-  public String getName() {
-    return "Message correlation";
-  }
-
-  @Override
   public void given(final ZeebeClient client) {
     final var process =
         Bpmn.createExecutableProcess("process")
