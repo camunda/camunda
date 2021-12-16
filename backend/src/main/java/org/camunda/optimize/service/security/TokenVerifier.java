@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
-
 public class TokenVerifier {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
