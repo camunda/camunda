@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.clustering.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Capability;
@@ -155,8 +156,11 @@ public class AsymmetricNetworkPartitionIT {
     if (execResult.getExitCode() == 0) {
       LOGGER.info("Command {} was successful.", command);
     } else {
-      LOGGER.error("Command {} failed with code: {}", command, execResult.getExitCode());
-      LOGGER.error("Stderr: {}", execResult.getStderr());
+      final var errorMessage =
+          String.format(
+              "Command '%s' failed with code: %d stderr: '%s'",
+              command, execResult.getExitCode(), execResult.getStderr());
+      fail(errorMessage);
     }
 
     return execResult;
