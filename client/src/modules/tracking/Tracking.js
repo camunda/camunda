@@ -13,13 +13,20 @@ import {withUser} from 'HOC';
 
 import './Tracking.scss';
 
+let trackingEnabled = false;
+export function track(eventName, properties) {
+  if (trackingEnabled) {
+    mixpanel.track('optimize:' + eventName, properties);
+  }
+}
+
 export function Tracking({getUser}) {
   const location = useLocation();
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     if (enabled) {
-      mixpanel.track('optimize:pageView', {
+      track('pageView', {
         path: window.location.hash,
       });
     }
@@ -55,6 +62,7 @@ export function Tracking({getUser}) {
         cluster_id: clusterId,
       });
       setEnabled(enabled);
+      trackingEnabled = true;
     })();
   }, [getUser]);
 

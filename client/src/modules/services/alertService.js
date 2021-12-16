@@ -4,7 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get, post, put, del} from 'request';
+import {del, get, post, put} from 'request';
+import {track} from 'tracking';
 
 export async function loadAlerts(collection) {
   const response = await get(`api/collection/${collection}/alerts`);
@@ -12,13 +13,20 @@ export async function loadAlerts(collection) {
 }
 
 export async function addAlert(alert) {
-  return await post(`api/alert`, alert);
+  const response = await post(`api/alert`, alert);
+  const json = await response.json();
+  track('createAlert', {entityId: json.id});
+  return response;
 }
 
 export async function editAlert(id, alert) {
-  return await put(`api/alert/${id}`, alert);
+  const response = await put(`api/alert/${id}`, alert);
+  track('updateAlert', {entityId: id});
+  return response;
 }
 
 export async function removeAlert(id) {
-  return await del(`api/alert/${id}`);
+  const response = await del(`api/alert/${id}`);
+  track('deleteAlert', {entityId: id});
+  return response;
 }

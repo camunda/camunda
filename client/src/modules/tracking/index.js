@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as Tracking} from './Tracking';
+export {default as Tracking, track} from './Tracking';
