@@ -624,6 +624,32 @@ class SegmentedJournalTest {
         .hasSize(1);
   }
 
+  @Test
+  void shouldReleaseReadLock() throws InterruptedException {
+    // given
+    final var latch = new CountDownLatch(1);
+    final var journal = openJournal(5);
+
+    // delete first segment so that it closes
+    final var segment = journal.getFirstSegment();
+    segment.delete();
+
+    // expect
+    assertThat(segment.isOpen()).isFalse();
+    assertThatThrownBy(() -> journal.openReader()).withFailMessage("Segment not open");
+
+    // when
+    new Thread(
+            () -> {
+              journal.reset(100);
+              latch.countDown();
+            })
+        .start();
+
+    // then
+    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
