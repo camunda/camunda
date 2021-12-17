@@ -121,6 +121,7 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
+import static org.camunda.optimize.rest.PublicApiRestService.COLLECTION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
@@ -1104,6 +1105,15 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildPublicDeleteReportRequest(final String id, final String accessToken) {
     this.path = PUBLIC_PATH + REPORT_SUB_PATH + "/" + id;
     this.method = DELETE;
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicGetAllReportIdsInCollectionRequest(final String collectionId,
+                                                                               final String accessToken) {
+    this.path = PUBLIC_PATH + REPORT_SUB_PATH;
+    this.method = GET;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     setAccessToken(accessToken);
     return this;
   }

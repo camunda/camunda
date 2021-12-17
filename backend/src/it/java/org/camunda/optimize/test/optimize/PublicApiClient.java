@@ -85,6 +85,13 @@ public class PublicApiClient {
       .execute();
   }
 
+  public List<IdResponseDto> getAllReportIdsInCollection(final String collectionId, final String accessToken) {
+    return getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicGetAllReportIdsInCollectionRequest(collectionId, accessToken)
+      .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }

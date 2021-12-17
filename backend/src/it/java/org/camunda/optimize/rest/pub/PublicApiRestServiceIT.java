@@ -132,7 +132,7 @@ public class PublicApiRestServiceIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.readEntity(String.class)).contains("Must specify a target collection ID for data import.");
+    assertThat(response.readEntity(String.class)).contains("Must specify a target collection ID for this request.");
   }
 
   @Test
@@ -215,6 +215,39 @@ public class PublicApiRestServiceIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void retrieveListOfReportIdsWithoutAuthorization() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicGetAllReportIdsInCollectionRequest("fake_id", null)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void retrieveListOfReportIdsWithoutCollectionId() {
+    // given
+    getAccessToken();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicGetAllReportIdsInCollectionRequest(null, getAccessToken())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(String.class)).contains("Must specify a target collection ID for this request.");
   }
 
   @Test

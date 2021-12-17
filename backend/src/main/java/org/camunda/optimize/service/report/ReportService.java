@@ -154,6 +154,13 @@ public class ReportService implements CollectionReferencingService {
     return copyAndMoveReport(reportId, userId, collectionId, newReportName, new HashMap<>());
   }
 
+  public List<IdResponseDto> getAllReportIdsInCollection(final String collectionId) {
+    return reportReader.getReportsForCollectionOmitXml(collectionId)
+      .stream()
+      .map(report -> new IdResponseDto(report.getId()))
+      .collect(toList());
+  }
+
   public List<ReportDefinitionDto> getAllAuthorizedReportsForIds(final String userId, final List<String> reportIds) {
     return reportReader.getAllReportsForIdsOmitXml(reportIds)
       .stream()
@@ -215,7 +222,7 @@ public class ReportService implements CollectionReferencingService {
     return filterAuthorizedReports(userId, reports)
       .stream()
       .sorted(Comparator.comparing(o -> ((AuthorizedReportDefinitionResponseDto) o).getDefinitionDto()
-          .getLastModified())
+        .getLastModified())
                 .reversed())
       .collect(toList());
   }
