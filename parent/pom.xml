@@ -104,7 +104,7 @@
     <version.jqwik>1.6.1</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.12.4</version.byte-buddy>
+    <version.byte-buddy>1.12.5</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.8.9-ea-1</version.immutables>
@@ -135,7 +135,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.0.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.17.6</plugin.version.spotless>
+    <plugin.version.spotless>2.17.7</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
 
