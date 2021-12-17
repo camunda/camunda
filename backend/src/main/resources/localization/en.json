@@ -1229,7 +1229,7 @@
     },
     "csvLimit": {
       "Warning": "Warning: CSV will not contain all requested data",
-      "info": "This download will contain the first {exportLimit} of {totalCount} records. Contact your administrator to increase this system limit or filter your data to resolve this issue."
+      "info": "This download will contain the first {exportLimit} of {totalCount} records. Filter your data, use the data export API, or ask your administrator to increase the system limit to resolve this issue."
     },
     "unit": {
       "automatic": "automatic",

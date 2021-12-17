@@ -1229,7 +1229,7 @@
     },
     "csvLimit": {
       "Warning": "Warnung: CSV wird nicht alle angeforderten Daten enthalten",
-      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Wenden Sie sich an Ihren Administrator, um dieses Systemlimit zu erhöhen oder filtern Sie Ihre Daten, um dieses Problem zu beheben."
+      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Filtern Sie Ihre Daten, verwenden Sie die Datenexport-API oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben"
     },
     "unit": {
       "automatic": "Automatisch",
