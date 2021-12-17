@@ -88,6 +88,9 @@ export default function DashboardTemplateModal({onClose}) {
                   view: {entity: 'processInstance', properties: ['duration']},
                   groupBy: {type: 'none', value: null},
                   visualization: 'number',
+                  configuration: {
+                    precision: 3,
+                  },
                 },
               },
             },
