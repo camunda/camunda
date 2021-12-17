@@ -121,7 +121,6 @@ import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static org.camunda.optimize.rest.PublicApiRestService.COLLECTION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DEFINITION_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.DASHBOARD_SUB_PATH;
 import static org.camunda.optimize.rest.PublicApiRestService.EXPORT_SUB_PATH;
@@ -1042,7 +1041,7 @@ public class OptimizeRequestExecutor {
     this.path = "import/";
     this.body = getBody(exportedDtos);
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     return this;
   }
 
@@ -1086,7 +1085,7 @@ public class OptimizeRequestExecutor {
     this.body = getBody(exportedDtos);
     this.method = POST;
     this.mediaType = MediaType.APPLICATION_JSON;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     setAccessToken(accessToken);
     return this;
   }
@@ -1097,7 +1096,7 @@ public class OptimizeRequestExecutor {
     this.path = PUBLIC_PATH + IMPORT_SUB_PATH;
     this.body = importRequestBody;
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     setAccessToken(accessToken);
     return this;
   }
@@ -1113,7 +1112,16 @@ public class OptimizeRequestExecutor {
                                                                                final String accessToken) {
     this.path = PUBLIC_PATH + REPORT_SUB_PATH;
     this.method = GET;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
+    setAccessToken(accessToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicGetAllDashboardIdsInCollectionRequest(final String collectionId,
+                                                                                  final String accessToken) {
+    this.path = PUBLIC_PATH + DASHBOARD_SUB_PATH;
+    this.method = GET;
+    setCollectionIdQueryParam(collectionId);
     setAccessToken(accessToken);
     return this;
   }
@@ -1349,7 +1357,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCopyReportRequest(String id, String collectionId) {
     this.path = "report/" + id + "/copy";
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     return this;
   }
 
@@ -1360,7 +1368,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCopyDashboardRequest(String id, String collectionId) {
     this.path = "dashboard/" + id + "/copy";
     this.method = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    setCollectionIdQueryParam(collectionId);
     return this;
   }
 
@@ -1671,6 +1679,10 @@ public class OptimizeRequestExecutor {
 
   private void setAccessToken(final String accessToken) {
     Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+  }
+
+  private void setCollectionIdQueryParam(final String collectionId) {
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
   }
 
   private Entity getBody(Object entity) {

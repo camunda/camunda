@@ -92,6 +92,13 @@ public class PublicApiClient {
       .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public List<IdResponseDto> getAllDashboardIdsInCollection(final String collectionId, final String accessToken) {
+    return getRequestExecutor()
+      .withoutAuthentication()
+      .buildPublicGetAllDashboardIdsInCollectionRequest(collectionId, accessToken)
+      .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }

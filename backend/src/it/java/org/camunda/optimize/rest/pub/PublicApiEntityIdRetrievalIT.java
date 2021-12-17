@@ -46,6 +46,10 @@ public class PublicApiEntityIdRetrievalIT extends AbstractIT {
     final String reportId2 = createDecisionReport(collectionId);
     dashboardClient.createDashboard(collectionId, Collections.singletonList(reportId1));
 
+    final String otherCollection = collectionClient.createNewCollectionForAllDefinitionTypes();
+    final String otherCollReport = createProcessReport(otherCollection);
+    dashboardClient.createDashboard(collectionId, Collections.singletonList(otherCollReport));
+
     // when
     final List<IdResponseDto> reportIds = publicApiClient.getAllReportIdsInCollection(collectionId, ACCESS_TOKEN);
 
@@ -57,6 +61,38 @@ public class PublicApiEntityIdRetrievalIT extends AbstractIT {
   public void retrieveReportIdsFromNonExistentCollection() {
     // when
     final List<IdResponseDto> reportIds = publicApiClient.getAllReportIdsInCollection("fake_id", ACCESS_TOKEN);
+
+    // then
+    assertThat(reportIds).isEmpty();
+  }
+
+  @Test
+  public void retrieveDashboardIdsFromCollection() {
+    // given
+    createAndSaveDefinitions();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
+    final String reportId1 = createProcessReport(collectionId);
+    final String reportId2 = createDecisionReport(collectionId);
+    final String dashboardId1 = dashboardClient.createDashboard(collectionId, Collections.singletonList(reportId1));
+    final String dashboardId2 = dashboardClient.createDashboard(collectionId, List.of(reportId1, reportId2));
+
+    final String otherCollection = collectionClient.createNewCollectionForAllDefinitionTypes();
+    final String otherCollReport = createProcessReport(otherCollection);
+    dashboardClient.createDashboard(otherCollection, Collections.singletonList(otherCollReport));
+
+    // when
+    final List<IdResponseDto> reportIds = publicApiClient.getAllDashboardIdsInCollection(collectionId, ACCESS_TOKEN);
+
+    // then
+    assertThat(reportIds).hasSize(2)
+      .extracting(IdResponseDto::getId)
+      .containsExactlyInAnyOrder(dashboardId1, dashboardId2);
+  }
+
+  @Test
+  public void retrieveDashboardIdsFromNonExistentCollection() {
+    // when
+    final List<IdResponseDto> reportIds = publicApiClient.getAllDashboardIdsInCollection("fake_id", ACCESS_TOKEN);
 
     // then
     assertThat(reportIds).isEmpty();

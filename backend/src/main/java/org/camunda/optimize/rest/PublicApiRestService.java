@@ -59,7 +59,6 @@ public class PublicApiRestService {
   public static final String EXPORT_SUB_PATH = "/export";
   public static final String IMPORT_SUB_PATH = "/import";
   public static final String REPORT_SUB_PATH = "/report";
-  public static final String COLLECTION_SUB_PATH = "/collection";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
   public static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
@@ -87,6 +86,17 @@ public class PublicApiRestService {
     validateAccessToken(requestContext, getJsonExportAccessToken());
     validateCollectionIdNotNull(collectionId);
     return reportService.getAllReportIdsInCollection(collectionId);
+  }
+
+  @GET
+  @Path(DASHBOARD_SUB_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  @SneakyThrows
+  public List<IdResponseDto> getDashboardIds(final @Context ContainerRequestContext requestContext,
+                                             final @QueryParam("collectionId") String collectionId) {
+    validateAccessToken(requestContext, getJsonExportAccessToken());
+    validateCollectionIdNotNull(collectionId);
+    return dashboardService.getAllDashboardIdsInCollection(collectionId);
   }
 
   @GET
@@ -185,7 +195,7 @@ public class PublicApiRestService {
 
   private void validateCollectionIdNotNull(final String collectionId) {
     if (collectionId == null) {
-      throw new BadRequestException("Must specify a target collection ID for this request.");
+      throw new BadRequestException("Must specify a collection ID for this request.");
     }
   }
 

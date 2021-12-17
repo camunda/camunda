@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.pub;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -21,6 +22,10 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
@@ -30,14 +35,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
 import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_SCROLL_ID_PARAM;
 import static org.camunda.optimize.rest.PublicApiRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+@TestInstance(PER_CLASS)
 public class PublicApiRestServiceIT extends AbstractIT {
+
+  private static final String ACCESS_TOKEN = "1_2_Polizei";
 
   private String generateValidReport(int numberOfInstances) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -53,86 +64,34 @@ public class PublicApiRestServiceIT extends AbstractIT {
     return reportId;
   }
 
-  @Test
-  public void exportReportResultWithoutAuthorization() {
-    //given
-    //make sure a token is generated but don't use it
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("publicApiRequestWithoutAccessTokenSupplier")
+  public void executePublicApiRequestWithoutAuthorization(final String name,
+                                                          final Supplier<OptimizeRequestExecutor> apiRequestExecutorSupplier) {
+    // given
+    // make sure a token is generated but don't use it
     getAccessToken();
 
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicExportJsonReportResultRequest("fake_id")
-      .execute();
+    // when executing a public API request without accessToken
+    final Response response = apiRequestExecutorSupplier.get().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
-  @Test
-  public void exportReportDefinitionWithoutAuthorization() {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("publicApiRequestWithoutRequiredCollectionIdSupplier")
+  public void executePublicApiRequestWithoutRequiredCollectionId(final String name,
+                                                                 final Supplier<OptimizeRequestExecutor> apiRequestExecutorSupplier) {
     // given
     getAccessToken();
 
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicExportJsonReportDefinitionRequest(Collections.singletonList("fake_id"), null)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void exportDashboardDefinitionWithoutAuthorization() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicExportJsonDashboardDefinitionRequest(Collections.singletonList("fake_id"), null)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void importEntitiesWithoutAuthorization() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicImportEntityDefinitionsRequest("fake_id", Collections.emptySet(), "null")
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void importEntitiesWithoutCollectionId() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicImportEntityDefinitionsRequest(null, Collections.emptySet(), getAccessToken())
-      .execute();
+    // when executing a request which usually requires a collectionId without a collectionId
+    final Response response = apiRequestExecutorSupplier.get().execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.readEntity(String.class)).contains("Must specify a target collection ID for this request.");
+    assertThat(response.readEntity(String.class)).contains("Must specify a collection ID for this request.");
   }
 
   @Test
@@ -199,55 +158,6 @@ public class PublicApiRestServiceIT extends AbstractIT {
     assertThat(response.readEntity(ErrorResponseDto.class).getErrorCode()).isEqualTo("importFileInvalid");
     assertThat(response.readEntity(ErrorResponseDto.class).getDetailedMessage())
       .contains("Could not import entity because the provided file is null or empty.");
-  }
-
-  @Test
-  public void deleteReportDefinitionWithoutAuthorization() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicDeleteReportRequest("fake_id", null)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void retrieveListOfReportIdsWithoutAuthorization() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicGetAllReportIdsInCollectionRequest("fake_id", null)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void retrieveListOfReportIdsWithoutCollectionId() {
-    // given
-    getAccessToken();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildPublicGetAllReportIdsInCollectionRequest(null, getAccessToken())
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-    assertThat(response.readEntity(String.class)).contains("Must specify a target collection ID for this request.");
   }
 
   @Test
@@ -548,10 +458,88 @@ public class PublicApiRestServiceIT extends AbstractIT {
       Optional.ofNullable(
         embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().getAccessToken())
         .orElseGet(() -> {
-          String randomToken = "1_2_Polizei";
-          embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(
-            randomToken);
-          return randomToken;
+          embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(ACCESS_TOKEN);
+          return ACCESS_TOKEN;
         });
   }
+
+  private Stream<Arguments> publicApiRequestWithoutAccessTokenSupplier() {
+    return Stream.of(
+      Arguments.of(
+        "Export Report Result",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicExportJsonReportResultRequest("fake_id")
+      ), Arguments.of(
+        "Export Report Definition",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicExportJsonReportDefinitionRequest(Collections.singletonList("fake_id"), null)
+      ),
+      Arguments.of(
+        "Export Dashboard Definition",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicExportJsonDashboardDefinitionRequest(Collections.singletonList("fake_id"), null)
+      ),
+      Arguments.of(
+        "Import Entity",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicImportEntityDefinitionsRequest("fake_id", Collections.emptySet(), null)
+      ),
+      Arguments.of(
+        "Delete Report",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicDeleteReportRequest("fake_id", null)
+      ),
+      Arguments.of(
+        "Get ReportIds in Collection",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicGetAllReportIdsInCollectionRequest("fake_id", null)
+      ),
+      Arguments.of(
+        "Get DashboardIds in Collection",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicGetAllDashboardIdsInCollectionRequest("fake_id", null)
+      )
+    );
+  }
+
+  private Stream<Arguments> publicApiRequestWithoutRequiredCollectionIdSupplier() {
+    return Stream.of(
+      Arguments.of(
+        "Import Entity",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicImportEntityDefinitionsRequest(null, Collections.emptySet(), ACCESS_TOKEN)
+      ),
+      Arguments.of(
+        "Get ReportIds in Collection",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicGetAllReportIdsInCollectionRequest(null, ACCESS_TOKEN)
+      ),
+      Arguments.of(
+        "Get DashboardIds in Collection",
+        (Supplier<OptimizeRequestExecutor>) () -> embeddedOptimizeExtension
+          .getRequestExecutor()
+          .withoutAuthentication()
+          .buildPublicGetAllDashboardIdsInCollectionRequest(null, ACCESS_TOKEN)
+      )
+    );
+  }
+
 }

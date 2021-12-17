@@ -284,10 +284,16 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return currentUserRole;
   }
 
+  public List<IdResponseDto> getAllDashboardIdsInCollection(final String collectionId) {
+    return getDashboardDefinitionsInCollectionAsService(collectionId).stream()
+      .map(dashboard -> new IdResponseDto(dashboard.getId()))
+      .collect(toList());
+  }
+
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
     Optional<DashboardDefinitionRestDto> dashboard = dashboardReader.getDashboard(dashboardId);
 
-    if (!dashboard.isPresent()) {
+    if (dashboard.isEmpty()) {
       log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
       throw new NotFoundException("Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
     }
@@ -297,6 +303,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public List<DashboardDefinitionRestDto> getDashboardDefinitionsAsService(final Set<String> dashboardIds) {
     return dashboardReader.getDashboards(dashboardIds);
+  }
+
+  public List<DashboardDefinitionRestDto> getDashboardDefinitionsInCollectionAsService(final String collectionId) {
+    return dashboardReader.getDashboardsForCollection(collectionId);
   }
 
   public void updateDashboard(final DashboardDefinitionRestDto updatedDashboard, final String userId) {
