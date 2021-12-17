@@ -63,9 +63,7 @@ public final class LongPollingActivateJobsRequest {
     if (isCompleted() || isCanceled()) {
       return;
     }
-    if (scheduledTimer != null) {
-      scheduledTimer.cancel();
-    }
+    cancelTimerIfScheduled();
     try {
       responseObserver.onCompleted();
     } catch (final Exception e) {
@@ -92,7 +90,7 @@ public final class LongPollingActivateJobsRequest {
     if (isCompleted() || isCanceled()) {
       return;
     }
-
+    cancelTimerIfScheduled();
     try {
       responseObserver.onError(error);
     } catch (final Exception e) {
@@ -150,5 +148,12 @@ public final class LongPollingActivateJobsRequest {
 
   public boolean isLongPollingDisabled() {
     return longPollingTimeout != null && longPollingTimeout.isNegative();
+  }
+
+  private void cancelTimerIfScheduled() {
+    if (hasScheduledTimer()) {
+      scheduledTimer.cancel();
+      scheduledTimer = null;
+    }
   }
 }
