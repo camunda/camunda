@@ -1,7 +1,12 @@
-## Help Guide
+## Faster Dashboard and Alert Creation
 
-View our documentation through an in-app link.
+Add data sources while creating a Collection, create dashboards with multi-process templates, and create Alerts directly from dashboards and reports.
 
-## Webhook Placeholders
+## Improved Variable Support
 
-Create custom alert messages using several new webhook placeholders.
+Object variables imported from the Process Engine are flattened into simple variables for analysis. Variable filters can now be combined with OR logic, as well.
+
+## Public API Endpoints
+
+Developers can backup, migrate and control dashboards and reports programmatically using the public [REST API](https://docs.camunda.org/optimize/3.7/technical-guide/rest-api/). In addition, they can export the report data for offline analysis.
+
