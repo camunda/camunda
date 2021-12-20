@@ -1,6 +1,9 @@
 #!/bin/bash
 set -exo pipefail
 
+# Contains OS specific sed function
+. utils.sh
+
 if [ -z $1 ]
 then
   echo "Please provide an namespace name!"
@@ -15,8 +18,8 @@ fi
 namespace=$1
 
 kubectl create namespace $namespace
-kubens $namespace
 cp -rv cloud-default/ $namespace
 cd $namespace
 
-sed -i "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
+# calls OS specific sed inplace function
+sed_inplace "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
