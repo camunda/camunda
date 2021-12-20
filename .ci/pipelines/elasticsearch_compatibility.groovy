@@ -345,6 +345,24 @@ pipeline {
             }
           }
         }
+        stage("Elasticsearch 7.16.2 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.16.2_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.16.2", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
       }
     }
   }
