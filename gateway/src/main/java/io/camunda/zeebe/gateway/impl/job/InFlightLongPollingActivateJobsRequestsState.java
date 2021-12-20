@@ -7,16 +7,12 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
-import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
 
 public final class InFlightLongPollingActivateJobsRequestsState {
-
-  private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final String jobType;
   private final LongPollingMetrics metrics;
@@ -27,7 +23,7 @@ public final class InFlightLongPollingActivateJobsRequestsState {
   private int failedAttempts;
   private long lastUpdatedTime;
 
-  private AtomicBoolean ongoingNotification = new AtomicBoolean(false);
+  private final AtomicBoolean ongoingNotification = new AtomicBoolean(false);
 
   public InFlightLongPollingActivateJobsRequestsState(
       final String jobType, final LongPollingMetrics metrics) {
@@ -40,13 +36,6 @@ public final class InFlightLongPollingActivateJobsRequestsState {
     this.lastUpdatedTime = lastUpdatedTime;
   }
 
-  public void setFailedAttempts(final int failedAttempts) {
-    this.failedAttempts = failedAttempts;
-    if (failedAttempts == 0) {
-      activeRequestsToBeRepeated.addAll(activeRequests);
-    }
-  }
-
   public boolean shouldAttempt(final int attemptThreshold) {
     return failedAttempts < attemptThreshold;
   }
@@ -57,6 +46,13 @@ public final class InFlightLongPollingActivateJobsRequestsState {
 
   public int getFailedAttempts() {
     return failedAttempts;
+  }
+
+  public void setFailedAttempts(final int failedAttempts) {
+    this.failedAttempts = failedAttempts;
+    if (failedAttempts == 0) {
+      activeRequestsToBeRepeated.addAll(activeRequests);
+    }
   }
 
   public long getLastUpdatedTime() {

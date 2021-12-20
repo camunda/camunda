@@ -85,7 +85,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
     activateJobs(longPollingRequest);
   }
 
-  protected void completeOrResubmitRequest(
+  private void completeOrResubmitRequest(
       final LongPollingActivateJobsRequest request, final boolean activateImmediately) {
     if (request.isLongPollingDisabled()) {
       // request is not supposed to use the

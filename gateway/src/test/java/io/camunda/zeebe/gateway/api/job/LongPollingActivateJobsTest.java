@@ -60,7 +60,7 @@ public final class LongPollingActivateJobsTest {
   private static final long LONG_POLLING_TIMEOUT = 5000;
   private static final long PROBE_TIMEOUT = 20000;
   private static final int FAILED_RESPONSE_THRESHOLD = 3;
-  protected final ControlledActorClock actorClock = new ControlledActorClock();
+  private final ControlledActorClock actorClock = new ControlledActorClock();
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   private LongPollingActivateJobsHandler handler;
   private ActivateJobsStub stub;
@@ -599,7 +599,7 @@ public final class LongPollingActivateJobsTest {
   }
 
   @Test
-  public void shouldCompleteRequestImmediatellyDespiteNotification() throws Exception {
+  public void shouldCompleteRequestImmediatelyDespiteNotification() throws Exception {
     // given
     final LongPollingActivateJobsRequest request =
         new LongPollingActivateJobsRequest(
