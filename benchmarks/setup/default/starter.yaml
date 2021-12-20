@@ -30,11 +30,11 @@ spec:
             value: "warn"
         resources:
           limits:
-            cpu: 2
-            memory: 2Gi
+            cpu: 250m
+            memory: 256Mi
           requests:
-            cpu: 2
-            memory: 512Mi
+            cpu: 250m
+            memory: 256Mi
 ---
 apiVersion: v1
 kind: Service

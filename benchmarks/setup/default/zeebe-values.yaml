@@ -16,7 +16,7 @@ podSecurityContext:
         add: ["NET_ADMIN"]
 
 gateway:
-  replicas: 1
+  replicas: 3
   logLevel: debug
   env:
     - name: ZEEBE_LOG_APPENDER
@@ -34,14 +34,14 @@ gateway:
     - name: ZEEBE_GATEWAY_MONITORING_ENABLED
       value: "true"
     - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
-      value: "4"
+      value: "1"
   resources:
     limits:
-      cpu: 2
-      memory: 2Gi
+      cpu: 1
+      memory: 512Mi
     requests:
-      cpu: 2
-      memory: 1Gi
+      cpu: 1
+      memory: 512Mi
 
 # Uncomment to add custom YAML configuration
 # This will overwrite anything at the application.yml location
@@ -84,10 +84,10 @@ env:
 resources:
   limits:
     cpu: 5
-    memory: 12Gi
+    memory: 4Gi
   requests:
     cpu: 5
-    memory: 12Gi
+    memory: 4Gi
 
 # PVC
 pvcAccessMode: ["ReadWriteOnce"]
