@@ -18,10 +18,13 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
+import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsRequest;
@@ -29,6 +32,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.grpc.Status.Code;
@@ -508,6 +513,87 @@ public final class LongPollingActivateJobsTest {
     final ActivateJobsResponse response = responseArgumentCaptor.getValue();
 
     assertThat(response.getJobsList()).hasSize(10);
+  }
+
+  @Test
+  public void shouldCancelTimerOnResourceExhausted() {
+    // given
+    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<?>>() {
+
+          private int count = 0;
+
+          /*
+           * First execution of the request (count < partitionCount) -> don't activate jobs
+           * Second execution of the request (count >= partitionCount) -> fail immediately
+           */
+          @Override
+          public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
+              throws Exception {
+            if (count >= partitionsCount) {
+              return new BrokerErrorResponse<>(
+                  new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
+            }
+            count += 1;
+            return stub.handle(request);
+          }
+        });
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::hasScheduledTimer);
+    brokerClient.notifyJobsAvailable(TYPE);
+
+    // then
+    final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
+    verify(request.getResponseObserver(), timeout(1000).times(1))
+        .onError(throwableCaptor.capture());
+    assertThat(throwableCaptor.getValue()).isInstanceOf(StatusException.class);
+
+    assertThat(request.hasScheduledTimer()).isFalse();
+  }
+
+  @Test
+  public void shouldCancelTimerOnBrokerRejectionException() {
+    // given
+    final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
+
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        new RequestHandler<BrokerActivateJobsRequest, BrokerResponse<?>>() {
+
+          private int count = 0;
+
+          /*
+           * First execution of the request (count < partitionCount) -> don't activate jobs
+           * Second execution of the request (count >= partitionCount) -> fail immediately
+           */
+          @Override
+          public BrokerResponse<?> handle(final BrokerActivateJobsRequest request)
+              throws Exception {
+            if (count >= partitionsCount) {
+              return new BrokerRejectionResponse<>(
+                  new BrokerRejection(
+                      Intent.UNKNOWN, 1, RejectionType.INVALID_ARGUMENT, "expected"));
+            }
+            count += 1;
+            return stub.handle(request);
+          }
+        });
+    // when
+    handler.activateJobs(request);
+    waitUntil(request::hasScheduledTimer);
+    brokerClient.notifyJobsAvailable(TYPE);
+
+    // then
+    final ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
+    verify(request.getResponseObserver(), timeout(1000).times(1))
+        .onError(throwableCaptor.capture());
+    assertThat(throwableCaptor.getValue()).isInstanceOf(BrokerRejectionException.class);
+
+    assertThat(request.hasScheduledTimer()).isFalse();
   }
 
   private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
