@@ -162,7 +162,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
                       .setMessage(errorMsg)
                       .build();
 
-              request.getResponseObserver().onError(StatusProto.toStatusException(status));
+              request.onError(StatusProto.toStatusException(status));
             });
       } else {
         actor.submit(
