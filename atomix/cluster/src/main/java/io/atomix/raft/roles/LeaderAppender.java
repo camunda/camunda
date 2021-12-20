@@ -204,10 +204,7 @@ final class LeaderAppender extends AbstractAppender {
       member.appendSucceeded();
       updateMatchIndex(member, response);
 
-      // If entries were committed to the replica then check commit indexes.
-      if (!request.entries().isEmpty()) {
-        commitEntries();
-      }
+      commitEntries();
 
       // If there are more entries to send then attempt to send another commit.
       if (hasMoreEntries(member)) {

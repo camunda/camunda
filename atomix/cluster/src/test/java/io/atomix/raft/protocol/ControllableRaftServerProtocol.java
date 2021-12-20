@@ -20,6 +20,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Futures;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.net.ConnectException;
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +48,9 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   // Incoming messages to each member
   private final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture>>> messageQueue;
   private final MemberId localMemberId;
+  private final Map<CompletableFuture, Long> timeoutQueue = new HashMap<>();
+  private long currentTime = 0;
+  private final long requestTimeoutMillis = Duration.ofSeconds(5).toMillis();
 
   public ControllableRaftServerProtocol(
       final MemberId memberId,
@@ -61,14 +66,18 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   public void receiveNextMessage() {
     final var rcvQueue = messageQueue.get(localMemberId);
     if (!rcvQueue.isEmpty()) {
-      rcvQueue.poll().getLeft().run();
+      final Tuple<Runnable, CompletableFuture> message = rcvQueue.poll();
+      message.getLeft().run();
+      timeoutQueue.remove(message.getRight());
     }
   }
 
   public void receiveAll() {
     final var rcvQueue = messageQueue.get(localMemberId);
     while (!rcvQueue.isEmpty()) {
-      rcvQueue.poll().getLeft().run();
+      final Tuple<Runnable, CompletableFuture> message = rcvQueue.poll();
+      message.getLeft().run();
+      timeoutQueue.remove(message.getRight());
     }
   }
 
@@ -99,6 +108,30 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       final CompletableFuture responseFuture) {
     final var message = new Tuple<>(requestHandler, responseFuture);
     messageQueue.computeIfAbsent(memberId, m -> new LinkedList<>()).add(message);
+    addTimeOut(responseFuture);
+  }
+
+  private void addTimeOut(final CompletableFuture responseFuture) {
+    if (responseFuture != null) {
+      timeoutQueue.put(responseFuture, currentTime + requestTimeoutMillis);
+    }
+  }
+
+  public void tick(final long timeoutMillis) {
+    currentTime += timeoutMillis;
+    // timeout messages
+    final var iter = timeoutQueue.entrySet().iterator();
+    while (iter.hasNext()) {
+      final var entry = iter.next();
+      final Long deadline = entry.getValue();
+      if (currentTime >= deadline) {
+        final CompletableFuture messageFuture = entry.getKey();
+        if (!messageFuture.isDone()) {
+          messageFuture.completeExceptionally(new TimeoutException());
+        }
+        iter.remove();
+      }
+    }
   }
 
   @Override
