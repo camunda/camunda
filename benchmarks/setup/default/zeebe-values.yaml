@@ -40,8 +40,8 @@ gateway:
       cpu: 1
       memory: 512Mi
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 1
+      memory: 512Mi
 
 # Uncomment to add custom YAML configuration
 # This will overwrite anything at the application.yml location
@@ -86,8 +86,8 @@ resources:
     cpu: 5
     memory: 4Gi
   requests:
-    cpu: 2
-    memory: 2Gi
+    cpu: 5
+    memory: 4Gi
 
 # PVC
 pvcAccessMode: ["ReadWriteOnce"]
