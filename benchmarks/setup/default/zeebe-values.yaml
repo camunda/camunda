@@ -22,7 +22,7 @@ gateway:
     - name: ZEEBE_LOG_APPENDER
       value: Stackdriver
     - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
-      value: zeebe-gateway
+      value: zeebe
     - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
       valueFrom:
         fieldRef:
@@ -63,7 +63,7 @@ env:
   - name: ZEEBE_LOG_APPENDER
     value: Stackdriver
   - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
-    value: zeebe-broker
+    value: zeebe
   - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
     valueFrom:
       fieldRef:
