@@ -408,7 +408,7 @@ public final class ControllableRaftContexts {
   }
 
   private IndexedRaftLogEntry getLastUncommittedEntry(final RaftContext s) {
-    try (final var uncommittedReader = s.getLog().openUncommittedReader()) {
+    try (final var uncommittedReader = s.getLog().openReader(Mode.ALL)) {
       uncommittedReader.seekToLast();
       if (uncommittedReader.hasNext()) {
         return uncommittedReader.next();
@@ -418,7 +418,7 @@ public final class ControllableRaftContexts {
   }
 
   private IndexedRaftLogEntry getLastCommittedEntry(final RaftContext s) {
-    try (final var committedReader = s.getLog().openCommittedReader()) {
+    try (final var committedReader = s.getLog().openReader(Mode.COMMITS)) {
       committedReader.seekToLast();
       if (committedReader.hasNext()) {
         return committedReader.next();
