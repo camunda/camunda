@@ -50,7 +50,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.12</version.docker-java-api>
-    <version.elasticsearch>7.16.1</version.elasticsearch>
+    <version.elasticsearch>7.16.2</version.elasticsearch>
     <version.error-prone>2.10.0</version.error-prone>
     <version.grpc>1.43.0</version.grpc>
     <version.gson>2.8.9</version.gson>
@@ -60,7 +60,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.13</version.httpclient>
     <version.httpcomponents>4.4.15</version.httpcomponents>
-    <version.jackson>2.13.0</version.jackson>
+    <version.jackson>2.13.1</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
     <version.jna>5.10.0</version.jna>
     <version.junit>5.8.2</version.junit>
@@ -74,7 +74,7 @@
     <version.msgpack>0.9.0</version.msgpack>
     <version.netty>4.1.72.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
-    <version.prometheus>0.13.0</version.prometheus>
+    <version.prometheus>0.14.1</version.prometheus>
     <version.protobuf>3.19.1</version.protobuf>
     <version.protobuf-common>2.7.0</version.protobuf-common>
     <version.micrometer>1.8.1</version.micrometer>
@@ -101,10 +101,10 @@
     <version.kryo>5.2.1</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jqwik>1.6.1</version.jqwik>
+    <version.jqwik>1.6.2</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.12.5</version.byte-buddy>
+    <version.byte-buddy>1.12.6</version.byte-buddy>
     <version.revapi>0.26.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.8.9-ea-1</version.immutables>
