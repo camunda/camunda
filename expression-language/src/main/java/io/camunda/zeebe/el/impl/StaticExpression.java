@@ -35,7 +35,7 @@ public final class StaticExpression implements Expression, EvaluationResult {
 
     try {
       treatAsNumber(expression);
-    } catch (NumberFormatException e) {
+    } catch (final NumberFormatException e) {
       treatAsString(expression);
     }
   }
@@ -124,6 +124,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
 
   @Override
   public List<DirectBuffer> getList() {
+    return null;
+  }
+
+  @Override
+  public List<String> getListOfStrings() {
     return null;
   }
 }

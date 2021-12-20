@@ -15,6 +15,8 @@
  */
 package io.atomix.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -65,7 +67,7 @@ public class RandomizedRaftTest {
   }
 
   @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
-  void raftProperty(
+  void consistencyTest(
       @ForAll("raftOperations") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
       @ForAll("seeds") final long seed)
@@ -81,7 +83,7 @@ public class RandomizedRaftTest {
       final MemberId member = memberIter.next();
       LOG.info("{} on {}", operation, member);
       operation.run(raftContexts, member);
-      raftContexts.assertOnlyOneLeader();
+      raftContexts.assertAtMostOneLeader();
 
       if (step % 100 == 0) { // reading logs after every operation can be too slow
         raftContexts.assertAllLogsEqual();
@@ -90,6 +92,60 @@ public class RandomizedRaftTest {
     }
 
     raftContexts.assertAllLogsEqual();
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void livenessTest(
+      @ForAll("raftOperations") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    setUpRaftNodes(new Random(seed));
+
+    // given - when there are failures such as message loss
+    final var memberIter = raftMembers.iterator();
+    for (final RaftOperation operation : raftOperations) {
+      final MemberId member = memberIter.next();
+      LOG.info("{} on {}", operation, member);
+      operation.run(raftContexts, member);
+    }
+
+    raftContexts.assertAtMostOneLeader();
+    raftContexts.assertAllLogsEqual();
+
+    // when - no more message loss
+
+    // hoping that 100 iterations are enough to elect a new leader, since there are no more failures
+    int maxStepsUntilLeader = 100;
+    while (!raftContexts.hasLeaderAtTheLatestTerm() && maxStepsUntilLeader-- > 0) {
+      raftContexts.runUntilDone();
+      raftContexts.processAllMessage();
+      raftContexts.tickHeartbeatTimeout();
+      raftContexts.processAllMessage();
+      raftContexts.runUntilDone();
+    }
+
+    // then - eventually a leader should be elected
+    assertThat(raftContexts.hasLeaderAtTheLatestTerm())
+        .describedAs("Leader election should be completed if there are no messages lost.")
+        .isTrue();
+
+    // then - eventually all entries are replicated to all followers and all entries are committed
+    // hoping that 2000 iterations are enough to replicate all entries
+    int maxStepsToReplicateEntries = 2000;
+    while (!(raftContexts.hasReplicatedAllEntries() && raftContexts.hasCommittedAllEntries())
+        && maxStepsToReplicateEntries-- > 0) {
+      raftContexts.runUntilDone();
+      raftContexts.processAllMessage();
+      raftContexts.tickHeartbeatTimeout();
+      raftContexts.processAllMessage();
+      raftContexts.runUntilDone();
+    }
+
+    // Verify all entries are replicated and committed in all replicas
+    raftContexts.assertAllLogsEqual();
+    raftContexts.assertAllEntriesCommittedAndReplicatedToAll();
   }
 
   @Provide

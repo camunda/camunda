@@ -79,4 +79,19 @@ class FeelEvaluationResult(
     case ValList(array) => array.map(value => cloneBuffer(messagePackTransformer(value))).asJava
     case _ => null
   }
+
+  override def getListOfStrings: util.List[String] = result match {
+    case ValList(array) => array.map {
+      case ValString(string) => string
+      case _ => null
+    }.foldLeft(List[String]())((acc, next) => {
+      if (acc == null) {
+        acc
+      } else if (next == null) {
+        null
+      } else {
+        acc :+ next
+      }
+    }).asJava
+  }
 }

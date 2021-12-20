@@ -28,11 +28,13 @@ public final class FailJobTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     final int retries = 123;
+    final int retryBackOff = 100;
 
     final FailJobRequest request =
         FailJobRequest.newBuilder()
             .setJobKey(stub.getKey())
             .setRetries(retries)
+            .setRetryBackOff(retryBackOff)
             .setErrorMessage("failed")
             .build();
 
@@ -49,6 +51,7 @@ public final class FailJobTest extends GatewayTest {
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getRetries()).isEqualTo(retries);
+    assertThat(brokerRequestValue.getRetryBackoff()).isEqualTo(retryBackOff);
     assertThat(brokerRequestValue.getErrorMessageBuffer()).isEqualTo(wrapString("failed"));
   }
 }

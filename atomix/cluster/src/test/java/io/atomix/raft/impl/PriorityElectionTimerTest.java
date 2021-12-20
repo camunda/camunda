@@ -15,31 +15,31 @@
  */
 package io.atomix.raft.impl;
 
-import static org.mockito.Mockito.spy;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.concurrent.SingleThreadContext;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
-import org.junit.After;
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PriorityElectionTimerTest {
+final class PriorityElectionTimerTest {
 
   private final Logger log = LoggerFactory.getLogger(PriorityElectionTimerTest.class);
   private final SingleThreadContext threadContext = new SingleThreadContext("priorityElectionTest");
 
-  @After
-  public void after() {
+  @AfterEach
+  void afterEach() {
     threadContext.close();
   }
 
   @Test
-  public void shouldLowerPriorityNodeEventuallyStartsAnElection() {
+  void shouldLowerPriorityNodeEventuallyStartsAnElection() {
     // given
     final AtomicInteger triggerCount = new AtomicInteger();
 
@@ -55,17 +55,18 @@ public class PriorityElectionTimerTest {
   }
 
   @Test
-  public void shouldHighPriorityNodeStartElectionFirst() {
+  void shouldHighPriorityNodeStartElectionFirst() {
     // given
-    final AtomicBoolean highPrioElectionTriggered = spy(new AtomicBoolean());
-    final AtomicBoolean lowPrioElectionTriggered = spy(new AtomicBoolean());
+    final String highPrioId = "highPrioTimer";
+    final String lowPrioId = "lowPrioTimer";
+    final List<String> electionOrder = new CopyOnWriteArrayList<>();
 
     final int targetPriority = 4;
     final PriorityElectionTimer timerHighPrio =
         new PriorityElectionTimer(
             Duration.ofMillis(100),
             threadContext,
-            () -> highPrioElectionTriggered.set(true),
+            () -> electionOrder.add(highPrioId),
             log,
             targetPriority,
             targetPriority);
@@ -74,7 +75,7 @@ public class PriorityElectionTimerTest {
         new PriorityElectionTimer(
             Duration.ofMillis(100),
             threadContext,
-            () -> lowPrioElectionTriggered.set(true),
+            () -> electionOrder.add(lowPrioId),
             log,
             targetPriority,
             1);
@@ -82,12 +83,16 @@ public class PriorityElectionTimerTest {
     // when
     timerLowPrio.reset();
     timerHighPrio.reset();
-    Awaitility.await().until(highPrioElectionTriggered::get);
-    Awaitility.await().until(lowPrioElectionTriggered::get);
 
     // then
-    final var inorder = Mockito.inOrder(highPrioElectionTriggered, lowPrioElectionTriggered);
-    inorder.verify(highPrioElectionTriggered).set(true);
-    inorder.verify(lowPrioElectionTriggered).set(true);
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(electionOrder)
+                    .as("both elections should have been triggered eventually")
+                    .contains(highPrioId, lowPrioId));
+    assertThat(electionOrder.get(0))
+        .as("the first election triggered should have been the high priority election")
+        .isEqualTo(highPrioId);
   }
 }

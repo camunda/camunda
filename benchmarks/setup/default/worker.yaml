@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       app: worker
-  replicas: 12
+  replicas: 6
   template:
     metadata:
       labels:
@@ -31,11 +31,11 @@ spec:
             value: "warn"
         resources:
           limits:
-            cpu: 4
-            memory: 2Gi
+            cpu: 500m
+            memory: 256Mi
           requests:
-            cpu: 1
-            memory: 512Mi
+            cpu: 500m
+            memory: 256Mi
 ---
 apiVersion: v1
 kind: Service

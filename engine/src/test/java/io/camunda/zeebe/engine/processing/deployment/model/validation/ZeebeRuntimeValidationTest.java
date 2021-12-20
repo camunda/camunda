@@ -14,9 +14,11 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
@@ -24,8 +26,10 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
+import io.camunda.zeebe.protocol.Protocol;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -54,6 +58,10 @@ public final class ZeebeRuntimeValidationTest {
   private static final String INVALID_PATH_EXPRESSION = "a ? b";
   private static final String INVALID_PATH_EXPRESSION_MESSAGE =
       "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*'.";
+  private static final String RESERVED_TASK_HEADER_KEY =
+      Protocol.RESERVED_HEADER_NAME_PREFIX + "reserved-header-key";
+  private static final String RESERVED_TASK_HEADER_MESSAGE =
+      "Attribute 'key' contains '%s', but header keys starting with '%s' are reserved for internal use.";
   public BpmnModelInstance modelInstance;
 
   @Parameter(0)
@@ -363,6 +371,35 @@ public final class ZeebeRuntimeValidationTest {
             expect(
                 ZeebeAssignmentDefinition.class,
                 "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found '1,,'"))
+      },
+      {
+        /* reserved header key */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeTaskHeader(RESERVED_TASK_HEADER_KEY, STATIC_EXPRESSION)
+            .done(),
+        List.of(
+            expect(
+                ZeebeTaskHeaders.class,
+                String.format(
+                    RESERVED_TASK_HEADER_MESSAGE,
+                    RESERVED_TASK_HEADER_KEY,
+                    Protocol.RESERVED_HEADER_NAME_PREFIX)))
+      },
+      {
+        /* invalid completion condition expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.multiInstance(
+                        m ->
+                            m.completionCondition(
+                                ExpressionTransformer.asFeelExpressionString(INVALID_EXPRESSION))))
+            .done(),
+        List.of(expect(MultiInstanceLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
       }
     };
   }

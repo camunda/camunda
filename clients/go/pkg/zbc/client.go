@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/camunda-cloud/zeebe/clients/go/internal/embedded"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
 	"strconv"
@@ -257,7 +258,7 @@ func configureConnectionSecurity(config *ClientConfig) error {
 
 		config.DialOpts = append(config.DialOpts, grpc.WithTransportCredentials(creds))
 	} else {
-		config.DialOpts = append(config.DialOpts, grpc.WithInsecure())
+		config.DialOpts = append(config.DialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
 	return nil

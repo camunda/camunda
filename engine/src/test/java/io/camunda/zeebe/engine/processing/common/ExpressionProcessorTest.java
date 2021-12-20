@@ -59,12 +59,7 @@ class ExpressionProcessorTest {
       return Stream.of(
           Arguments.of("= []", List.of()),
           Arguments.of("= [\"a\"]", List.of("a")),
-          Arguments.of("= [\"a\",\"b\"]", List.of("a", "b")),
-          // todo: move the arguments below to notArrayOfStringsExpressions once we find a better
-          //  implementation to check each of the elements in the list to be of type string
-          Arguments.of("= [1,2,3]", List.of("1", "2", "3")),
-          Arguments.of("= [{},{}]", List.of("{}", "{}")),
-          Arguments.of("= [null]", List.of("null")));
+          Arguments.of("= [\"a\",\"b\"]", List.of("a", "b")));
     }
 
     Stream<Arguments> notArrayOfStringsExpressions() {
@@ -77,7 +72,16 @@ class ExpressionProcessorTest {
           Arguments.of(
               "= {}", "Expected result of the expression ' {}' to be 'ARRAY', but was 'OBJECT'."),
           Arguments.of(
-              "[]", "Expected result of the expression '[]' to be 'ARRAY', but was 'STRING'."));
+              "[]", "Expected result of the expression '[]' to be 'ARRAY', but was 'STRING'."),
+          Arguments.of(
+              "= [1,2,3]",
+              "Expected result of the expression ' [1,2,3]' to be 'ARRAY' containing 'STRING' items, but was 'ARRAY' containing at least one non-'STRING' item."),
+          Arguments.of(
+              "= [{},{}]",
+              "Expected result of the expression ' [{},{}]' to be 'ARRAY' containing 'STRING' items, but was 'ARRAY' containing at least one non-'STRING' item."),
+          Arguments.of(
+              "= [null]",
+              "Expected result of the expression ' [null]' to be 'ARRAY' containing 'STRING' items, but was 'ARRAY' containing at least one non-'STRING' item."));
     }
   }
 }

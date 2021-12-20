@@ -371,6 +371,11 @@
                 "id": 3,
                 "name": "errorMessage",
                 "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "retryBackOff",
+                "type": "int64"
               }
             ]
           },

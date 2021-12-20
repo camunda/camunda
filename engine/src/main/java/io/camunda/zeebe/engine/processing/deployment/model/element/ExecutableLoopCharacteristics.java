@@ -15,6 +15,8 @@ public class ExecutableLoopCharacteristics {
 
   private final boolean isSequential;
 
+  private final Optional<Expression> completionCondition;
+
   private final Expression inputCollection;
   private final Optional<DirectBuffer> inputElement;
 
@@ -23,11 +25,13 @@ public class ExecutableLoopCharacteristics {
 
   public ExecutableLoopCharacteristics(
       final boolean isSequential,
+      final Optional<Expression> completionCondition,
       final Expression inputCollection,
       final Optional<DirectBuffer> inputElement,
       final Optional<DirectBuffer> outputCollection,
       final Optional<Expression> outputElement) {
     this.isSequential = isSequential;
+    this.completionCondition = completionCondition;
     this.inputCollection = inputCollection;
     this.inputElement = inputElement;
     this.outputCollection = outputCollection;
@@ -40,6 +44,10 @@ public class ExecutableLoopCharacteristics {
 
   public Expression getInputCollection() {
     return inputCollection;
+  }
+
+  public Optional<Expression> getCompletionCondition() {
+    return completionCondition;
   }
 
   public Optional<DirectBuffer> getInputElement() {
@@ -59,6 +67,8 @@ public class ExecutableLoopCharacteristics {
     return "ExecutableLoopCharacteristics{"
         + "isSequential="
         + isSequential
+        + "completionCondition="
+        + completionCondition
         + ", inputCollection="
         + inputCollection
         + ", inputElement="

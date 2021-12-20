@@ -11,7 +11,12 @@
 # You can specify the `-p` flag to automatically push, or the environment variable PUSH=1, e.g.:
 #   $ ./release.sh -p 1.2.4
 
-WORKTREE="$(pwd)/.release"
+WORKTREE=$(mktemp -d)
+if [ ! -e "${WORKTREE}" ]; then
+    >&2 echo "Failed to create worktree directory"
+    exit 1
+fi
+
 function cleanup() {
   if [ -d "${WORKTREE}" ]; then
     popd > /dev/null 2>&1
@@ -57,7 +62,7 @@ fi
 
 VERSION=${1:-}
 if [ -n "$VERSION" ]; then
-	echo "Checking out release worktree under .worktree/release. In case of interruption, make sure to manually clean it up afterwards"
+	echo "Checking out release worktree under ${WORKTREE}. In case of interruption, make sure to manually clean it up afterwards"
 	git worktree add -q "${WORKTREE}" "${VERSION}"
 	pushd "${WORKTREE}/benchmarks/project" > /dev/null 2>&1
 fi
