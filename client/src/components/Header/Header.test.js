@@ -7,7 +7,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {isOptimizeCloudEnvironment} from 'config';
+import {isOptimizeCloudEnvironment, isEnterpriseMode} from 'config';
 
 import {isEventBasedProcessEnabled} from './service';
 import {Header} from './Header';
@@ -19,6 +19,7 @@ jest.mock('config', () => ({
     logo: 'url',
   }),
   isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  isEnterpriseMode: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('./service', () => ({
@@ -76,4 +77,14 @@ it('should hide event based process nav item in cloud environment', async () => 
   await node.update();
 
   expect(node.find('[linksTo="/events/processes/"]')).not.toExist();
+});
+
+it('should show non production warning if enterpriseMode is not set', async () => {
+  isEnterpriseMode.mockReturnValueOnce(false);
+  const node = shallow(<Header {...props} />);
+
+  await runLastEffect();
+  await node.update();
+
+  expect(node.find('.licenseWarning')).toExist();
 });

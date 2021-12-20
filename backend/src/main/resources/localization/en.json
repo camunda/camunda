@@ -35,7 +35,11 @@
     "redirectMessage": "You will be redirected to login page shortly. <a href=\"./\">Click here to go to login page immediately</a>",
     "licenseKey": "License Key",
     "enterLicense": "Please enter license key",
-    "submit": "Submit"
+    "submit": "Submit",
+    "nonProduction": "Non-Production License",
+    "referTo": "If you would like information on production usage, please refer to our",
+    "terms": "terms & conditions",
+    "contactSales": "contact sales"
   },
   "saveGuard": {
     "header": "Unsaved changes",
@@ -798,6 +802,7 @@
     "enabled": "enabled",
     "disabled": "disabled",
     "and": "and",
+    "or": "or",
     "off": "Off",
     "none": "None",
     "all": "All",

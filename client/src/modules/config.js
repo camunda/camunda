@@ -48,5 +48,6 @@ export const getMixpanelConfig = createAccessorFunction('mixpanel');
 export const isOptimizeCloudEnvironment = createAccessorFunction('optimizeCloudEnvironment');
 export const isLogoutHidden = createAccessorFunction('logoutHidden');
 export const getExportCsvLimit = createAccessorFunction('exportCsvLimit');
+export const isEnterpriseMode = createAccessorFunction('enterpriseMode');
 
 export {default as newReport} from './newReport.json';

@@ -35,7 +35,11 @@
     "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
     "licenseKey": "Lizenzschlüssel",
     "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
-    "submit": "Absenden"
+    "submit": "Absenden",
+    "nonProduction": "Lizenz: Kein Produktivbetrieb",
+    "referTo": "Für mehr Informationen zum Produktivbetrieb lesen Sie bitte unsere",
+    "terms": "Allgemeinen Geschäftsbedingungen (AGB)",
+    "contactSales": "wenden Sie sich an den Vertrieb"
   },
   "saveGuard": {
     "header": "Ungespeicherte Änderungen",
@@ -798,6 +802,7 @@
     "enabled": "aktiviert",
     "disabled": "deaktiviert",
     "and": "und",
+    "or": "oder",
     "off": "Aus",
     "none": "Keine",
     "all": "Alle",

@@ -37,7 +37,7 @@
 
   .Dropdown .activateButton {
     border: none;
-    background-color: var(--white);
+    background-color: transparent;
     height: 100%;
     padding-top: 0;
     padding-bottom: 0;
@@ -76,5 +76,21 @@
 
   .appLink:visited {
     color: var(--grey-base-40);
+  }
+
+  .licenseWarning {
+    padding-right: 20px;
+    border-right: 1px solid var(--silver-darken-87);
+    margin-right: 20px;
+
+    .warning {
+      background-color: var(--orange-base-60);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 4px 15px;
+      white-space: nowrap;
+      border-radius: 5px;
+      color: var(--white);
+    }
   }
 }

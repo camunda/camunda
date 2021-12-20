@@ -177,3 +177,23 @@ it('should switch alignment and position if no space at the edges of the screen'
   expect(node.find('.Tooltip')).toHaveClassName('bottom');
   expect(node.find('.Tooltip')).toHaveClassName('left');
 });
+
+it('should keep the tooltip open when the mouse is inside it', () => {
+  const node = shallow(
+    <Tooltip content="tooltip content">
+      <p>child content</p>
+    </Tooltip>
+  );
+
+  node.find('p').simulate('mouseEnter', {currentTarget: element});
+  jest.runAllTimers();
+  node.find('p').simulate('mouseLeave', {currentTarget: element});
+  node.find('.Tooltip').simulate('mouseEnter');
+  jest.runAllTimers();
+
+  expect(node.find('.Tooltip')).toIncludeText('tooltip content');
+
+  node.find('.Tooltip').simulate('mouseLeave');
+
+  expect(node.find('.Tooltip')).not.toExist();
+});
