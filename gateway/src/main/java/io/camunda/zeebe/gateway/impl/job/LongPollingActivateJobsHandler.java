@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 /**
@@ -50,6 +51,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private final int failedAttemptThreshold;
 
   private final LongPollingMetrics metrics;
+  private final AtomicLong requestIdGenerator = new AtomicLong(1);
 
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
@@ -79,8 +81,9 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    final LongPollingActivateJobsRequest longPollingRequest =
-        new LongPollingActivateJobsRequest(request, responseObserver);
+    final var requestId = getNextActivateJobsRequestId();
+    final var longPollingRequest =
+        new LongPollingActivateJobsRequest(requestId, request, responseObserver);
     activateJobs(longPollingRequest);
   }
 
@@ -125,6 +128,10 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
             completeOrResubmitRequest(request, false);
           }
         });
+  }
+
+  private long getNextActivateJobsRequestId() {
+    return requestIdGenerator.getAndIncrement();
   }
 
   private InFlightLongPollingActivateJobsRequestsState getJobTypeState(final String jobType) {
