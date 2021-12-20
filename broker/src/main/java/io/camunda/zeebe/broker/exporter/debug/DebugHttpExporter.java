@@ -13,6 +13,8 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
 import org.slf4j.Logger;
 
+/** @deprecated to be removed >= 1.4. There will be no replacement for this exporter */
+@Deprecated(since = "1.3", forRemoval = true)
 public final class DebugHttpExporter implements Exporter {
 
   private static DebugHttpServer httpServer;
