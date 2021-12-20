@@ -48,13 +48,13 @@ public final class LongPollingActivateJobsRequest {
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
       final String jobType,
       final String worker,
-      final int maxJobstoActivate,
+      final int maxJobsToActivate,
       final long longPollingTimeout) {
     this.request = request;
     this.responseObserver = responseObserver;
     this.jobType = jobType;
     this.worker = worker;
-    maxJobsToActivate = maxJobstoActivate;
+    this.maxJobsToActivate = maxJobsToActivate;
     this.longPollingTimeout =
         longPollingTimeout == 0 ? null : Duration.ofMillis(longPollingTimeout);
   }
