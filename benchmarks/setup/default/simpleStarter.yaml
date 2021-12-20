@@ -22,7 +22,7 @@ spec:
           - name: JAVA_OPTIONS
             value: >-
               -Dapp.brokerUrl=default-zeebe-gateway:26500
-              -Dapp.starter.rate=300
+              -Dapp.starter.rate=100
               -Dzeebe.client.requestTimeout=62000
               -XX:+HeapDumpOnOutOfMemoryError
               -Dapp.starter.bpmnXmlPath=bpmn/simpleProcess.bpmn
@@ -31,11 +31,11 @@ spec:
             value: "warn"
         resources:
           limits:
-            cpu: 2
-            memory: 2Gi
+            cpu: 250m
+            memory: 256Mi
           requests:
-            cpu: 2
-            memory: 512Mi
+            cpu: 250m
+            memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
