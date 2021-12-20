@@ -27,6 +27,7 @@ import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
@@ -253,23 +254,38 @@ public final class ControllableRaftContexts {
   }
 
   public void tickElectionTimeout(final int memberId) {
-    getDeterministicScheduler(memberId).tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, electionTimeout);
   }
 
   public void tickElectionTimeout(final MemberId memberId) {
-    getDeterministicScheduler(memberId).tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, electionTimeout);
   }
 
   public void tickHeartbeatTimeout(final int memberId) {
-    getDeterministicScheduler(memberId).tick(hearbeatTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, hearbeatTimeout);
   }
 
   public void tickHeartbeatTimeout(final MemberId memberId) {
-    getDeterministicScheduler(memberId).tick(hearbeatTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    tick(memberId, hearbeatTimeout);
+  }
+
+  public void tickHeartbeatTimeout() {
+    tick(hearbeatTimeout);
+  }
+
+  public void tick(final Duration time) {
+    final var serverIds = raftServers.keySet();
+    serverIds.forEach(memberId -> tick(memberId, time));
+  }
+
+  public void tick(final int memberId, final Duration time) {
+    getDeterministicScheduler(memberId).tick(time.toMillis(), TimeUnit.MILLISECONDS);
+    getServerProtocol(memberId).tick(time.toMillis());
   }
 
   public void tick(final MemberId memberId, final Duration time) {
     getDeterministicScheduler(memberId).tick(time.toMillis(), TimeUnit.MILLISECONDS);
+    getServerProtocol(memberId).tick(time.toMillis());
   }
 
   // Execute an append on memberid. If memberid is not the the leader, the append will be rejected.
@@ -326,7 +342,7 @@ public final class ControllableRaftContexts {
     readers.values().forEach(RaftLogReader::close);
   }
 
-  public void assertOnlyOneLeader() {
+  public void assertAtMostOneLeader() {
     raftServers.values().forEach(s -> updateAndVerifyLeaderTerm(s));
   }
 
@@ -342,6 +358,71 @@ public final class ControllableRaftContexts {
       } else {
         leadersAtTerms.put(term, leader);
       }
+    }
+  }
+
+  // If a node is in CandidateRole, then it will update the term. But until the election is
+  // completed, there is no leader at that term.
+  public boolean hasLeaderAtTheLatestTerm() {
+    // update leadersAtTerms
+    assertAtMostOneLeader();
+
+    final var currentTerm =
+        raftServers.values().stream().map(RaftContext::getTerm).max(Long::compareTo).orElseThrow();
+    return leadersAtTerms.get(currentTerm) != null;
+  }
+
+  boolean hasCommittedAllEntries() {
+    return raftServers.values().stream()
+        .allMatch(
+            s -> {
+              final var lastCommittedEntry = getLastCommittedEntry(s);
+              final var lastUncommittedEntry = getLastUncommittedEntry(s);
+
+              return lastUncommittedEntry != null
+                  && lastUncommittedEntry.equals(lastCommittedEntry);
+            });
+  }
+
+  boolean hasReplicatedAllEntries() {
+    return raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+  }
+
+  public void assertAllEntriesCommittedAndReplicatedToAll() {
+    raftServers
+        .values()
+        .forEach(
+            s -> {
+              final var lastCommittedEntry = getLastCommittedEntry(s);
+              final var lastUncommittedEntry = getLastUncommittedEntry(s);
+
+              assertThat(lastCommittedEntry)
+                  .describedAs("All entries should be committed")
+                  .isEqualTo(lastUncommittedEntry);
+            });
+
+    assertThat(hasReplicatedAllEntries())
+        .describedAs("All entries are replicated to all followers")
+        .isTrue();
+  }
+
+  private IndexedRaftLogEntry getLastUncommittedEntry(final RaftContext s) {
+    try (final var uncommittedReader = s.getLog().openUncommittedReader()) {
+      uncommittedReader.seekToLast();
+      if (uncommittedReader.hasNext()) {
+        return uncommittedReader.next();
+      }
+      return null;
+    }
+  }
+
+  private IndexedRaftLogEntry getLastCommittedEntry(final RaftContext s) {
+    try (final var committedReader = s.getLog().openCommittedReader()) {
+      committedReader.seekToLast();
+      if (committedReader.hasNext()) {
+        return committedReader.next();
+      }
+      return null;
     }
   }
 }
