@@ -58,6 +58,7 @@ public final class ZeebePartition extends Actor
   private CompletableActorFuture<Void> closeFuture;
   private ActorFuture<Void> currentTransitionFuture;
   private final boolean newTransitionLogicEnabled;
+  private boolean closing = false;
 
   public ZeebePartition(
       final PartitionStartupAndTransitionContextImpl transitionContext,
@@ -152,42 +153,26 @@ public final class ZeebePartition extends Actor
 
   @Override
   protected void onActorClosing() {
-    context.getRaftPartition().getServer().removeSnapshotReplicationListener(this);
-    context.getRaftPartition().removeRoleChangeListener(this);
+    // Already transitioned to inactive
+    if (newTransitionLogicEnabled) {
+      startupProcess
+          .shutdown(actor, startupContext)
+          .onComplete(
+              (newStartupContext, error) -> {
+                if (error != null) {
+                  LOG.error(error.getMessage(), error);
+                }
 
-    transitionToInactive()
-        .onComplete(
-            (nothing, err) -> {
-              context
-                  .getComponentHealthMonitor()
-                  .removeComponent(context.getRaftPartition().name());
+                // reset contexts to null to not have lingering references that could
+                // cause OOM problems in tests which start/stop partitions
+                startupContext = null;
+                context = null;
 
-              if (newTransitionLogicEnabled) {
-                startupProcess
-                    .shutdown(actor, startupContext)
-                    .onComplete(
-                        (newStartupContext, error) -> {
-                          if (error != null) {
-                            LOG.error(error.getMessage(), error);
-                          }
-
-                          // reset contexts to null to not have lingering references that could
-                          // cause OOM problems in tests which start/stop partitions
-                          startupContext = null;
-                          context = null;
-
-                          closeFuture.complete(null);
-                        });
-              } else {
                 closeFuture.complete(null);
-              }
-            });
-  }
-
-  @Override
-  protected void onActorCloseRequested() {
-    LOG.debug("Closing ZeebePartition {}", context.getPartitionId());
-    context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
+              });
+    } else {
+      closeFuture.complete(null);
+    }
   }
 
   @Override
@@ -199,10 +184,22 @@ public final class ZeebePartition extends Actor
     closeFuture = new CompletableActorFuture<>();
 
     actor.run(
-        () ->
-            // allows to await current transition to avoid concurrent modifications and
-            // transitioning
-            currentTransitionFuture.onComplete((nothing, err) -> super.closeAsync()));
+        () -> {
+          LOG.debug("Closing ZeebePartition {}", context.getPartitionId());
+          closing = true;
+
+          removeListeners();
+          context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
+
+          currentTransitionFuture.onComplete(
+              (ignore, error) -> {
+                final var inactiveTransitionFuture = transitionToInactive();
+
+                // allows to await current transition to avoid concurrent modifications and
+                // transitioning
+                inactiveTransitionFuture.onComplete((nothing, err) -> super.closeAsync());
+              });
+        });
 
     return closeFuture;
   }
@@ -223,7 +220,12 @@ public final class ZeebePartition extends Actor
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
   public void onNewRole(final Role newRole, final long newTerm) {
-    actor.run(() -> onRoleChange(newRole, newTerm));
+    actor.run(
+        () -> {
+          if (!closing) {
+            onRoleChange(newRole, newTerm);
+          }
+        });
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
@@ -316,6 +318,12 @@ public final class ZeebePartition extends Actor
     context.getRaftPartition().addRoleChangeListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
     context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
+  }
+
+  private void removeListeners() {
+    context.getRaftPartition().removeRoleChangeListener(this);
+    context.getComponentHealthMonitor().removeFailureListener(this);
+    context.getRaftPartition().getServer().removeSnapshotReplicationListener(this);
   }
 
   @Override
@@ -471,14 +479,24 @@ public final class ZeebePartition extends Actor
     // restart from a new state. So we transition to Inactive to close existing services. The
     // services will be reinstalled when snapshot replication is completed.
     // We do not want to mark it as unhealthy, hence we don't reuse transitionToInactive()
-    actor.run(() -> currentTransitionFuture = transition.toInactive());
+    actor.run(
+        () -> {
+          if (!closing) {
+            currentTransitionFuture = transition.toInactive();
+          }
+        });
   }
 
   @Override
   public void onSnapshotReplicationCompleted(final long term) {
     // Snapshot is received only by the followers. Hence we can safely assume that we have to
     // re-install follower services.
-    actor.run(() -> currentTransitionFuture = followerTransition(term));
+    actor.run(
+        () -> {
+          if (!closing) {
+            currentTransitionFuture = followerTransition(term);
+          }
+        });
   }
 
   public ActorFuture<Role> getCurrentRole() {

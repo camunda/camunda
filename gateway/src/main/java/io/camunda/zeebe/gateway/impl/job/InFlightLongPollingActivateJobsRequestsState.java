@@ -8,8 +8,10 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class InFlightLongPollingActivateJobsRequestsState {
@@ -17,9 +19,8 @@ public final class InFlightLongPollingActivateJobsRequestsState {
   private final String jobType;
   private final LongPollingMetrics metrics;
   private final Queue<LongPollingActivateJobsRequest> activeRequests = new LinkedList<>();
-  private final Queue<LongPollingActivateJobsRequest> activeRequestsToBeRepeated =
-      new LinkedList<>();
   private final Queue<LongPollingActivateJobsRequest> pendingRequests = new LinkedList<>();
+  private final Set<LongPollingActivateJobsRequest> activeRequestsToBeRepeated = new HashSet<>();
   private int failedAttempts;
   private long lastUpdatedTime;
 
