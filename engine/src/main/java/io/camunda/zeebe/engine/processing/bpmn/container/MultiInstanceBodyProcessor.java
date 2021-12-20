@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -154,23 +155,45 @@ public final class MultiInstanceBodyProcessor
       return updatedOrFailure;
     }
 
+    // test that completion condition can be evaluated correctly
+    final Either<Failure, Boolean> satisfiesCompletionConditionOrFailure =
+        satisfiesCompletionCondition(element, childContext);
+    if (satisfiesCompletionConditionOrFailure.isLeft()) {
+      return satisfiesCompletionConditionOrFailure;
+    }
+
     if (!element.getLoopCharacteristics().isSequential()) {
-      return Either.right(null);
+      return Either.right(satisfiesCompletionConditionOrFailure.get());
     }
 
     // test that input collection variable can be evaluated correctly
-    return readInputCollectionVariable(element, flowScopeContext).map(ok -> null);
+    return readInputCollectionVariable(element, flowScopeContext)
+        .map(ok -> satisfiesCompletionConditionOrFailure.get());
   }
 
   @Override
   public void afterExecutionPathCompleted(
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {
+      final BpmnElementContext childContext,
+      final Boolean satisfiesCompletionCondition) {
 
     boolean childInstanceCreated = false;
 
     final var loopCharacteristics = element.getLoopCharacteristics();
+
+    if (satisfiesCompletionCondition) {
+      // terminate all remaining child instances because the completion condition evaluates to true.
+      final boolean hasNoActiveChildren =
+          stateTransitionBehavior.terminateChildInstances(flowScopeContext);
+
+      if (hasNoActiveChildren || loopCharacteristics.isSequential()) {
+        // complete the multi-instance body immediately
+        stateTransitionBehavior.completeElement(flowScopeContext);
+      }
+      return;
+    }
+
     if (loopCharacteristics.isSequential()) {
 
       final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
@@ -203,10 +226,14 @@ public final class MultiInstanceBodyProcessor
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
-
-    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.canBeTerminated(childContext)) {
-      terminate(element, flowScopeContext);
+    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+      if (stateBehavior.canBeTerminated(childContext)) {
+        terminate(element, flowScopeContext);
+      }
+    } else if (stateBehavior.canBeCompleted(childContext)) {
+      // complete the multi-instance body because it's completion condition was met previously and
+      // all remaining child instances were terminated.
+      stateTransitionBehavior.completeElement(flowScopeContext);
     }
   }
 
@@ -392,5 +419,17 @@ public final class MultiInstanceBodyProcessor
 
     resultBuffer.wrap(variableBuffer, 0, length);
     return resultBuffer;
+  }
+
+  private Either<Failure, Boolean> satisfiesCompletionCondition(
+      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+    final Optional<Expression> completionCondition =
+        element.getLoopCharacteristics().getCompletionCondition();
+
+    if (completionCondition.isPresent()) {
+      return expressionBehavior.evaluateBooleanExpression(
+          completionCondition.get(), context.getElementInstanceKey());
+    }
+    return Either.right(false);
   }
 }

@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.LoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -83,6 +84,12 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
     final boolean isSequential = elementLoopCharacteristics.isSequential();
 
+    final Optional<Expression> completionCondition =
+        Optional.ofNullable(elementLoopCharacteristics.getCompletionCondition())
+            .map(CompletionCondition::getTextContent)
+            .filter(e -> !e.isEmpty())
+            .map(context.getExpressionLanguage()::parseExpression);
+
     final ZeebeLoopCharacteristics zeebeLoopCharacteristics =
         elementLoopCharacteristics.getSingleExtensionElement(ZeebeLoopCharacteristics.class);
 
@@ -107,6 +114,11 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
             .map(e -> context.getExpressionLanguage().parseExpression(e));
 
     return new ExecutableLoopCharacteristics(
-        isSequential, inputCollection, inputElement, outputCollection, outputElement);
+        isSequential,
+        completionCondition,
+        inputCollection,
+        inputElement,
+        outputCollection,
+        outputElement);
   }
 }

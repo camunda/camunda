@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
@@ -122,6 +123,15 @@ public final class ZeebeRuntimeValidators {
                 ZeebeCalledDecision::getDecisionId, ExpressionVerification::isMandatory)
             .build(expressionLanguage),
         // ----------------------------------------
-        new ZeebeTaskHeadersValidator());
+        new ZeebeTaskHeadersValidator(),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(MultiInstanceLoopCharacteristics.class)
+            .hasValidExpression(
+                loopCharacteristics ->
+                    loopCharacteristics.getCompletionCondition() != null
+                        ? loopCharacteristics.getCompletionCondition().getTextContent()
+                        : null,
+                ExpressionVerification::isOptional)
+            .build(expressionLanguage));
   }
 }
