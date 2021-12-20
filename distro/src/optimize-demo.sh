@@ -51,24 +51,22 @@ else
   JAVA_PATH=${JAVA_PATH%"/bin/java"}
 fi
 # make the JAVA_HOME variable available for ElasticSearch
-export JAVA_HOME=${JAVA_PATH}
+export ES_JAVA_HOME=${JAVA_PATH}
 
-if [ ! -x "$JAVA_HOME/bin/java" ]; then
+if [ ! -x "$ES_JAVA_HOME/bin/java" ]; then
   echo "Could not find any Java installation on your machine. Please make sure that Java is installed and the JAVA_HOME environment variable is set!" >&2
   exit 1
 fi
 
 # limit the java heapspace used by ElasticSearch to 1GB
-# `log4j2.formatMsgNoLookup` is set to mitigate a potential log4j2 exploit on older JDKs,
-# see https://discuss.elastic.co/t/apache-log4j2-remote-code-execution-rce-vulnerability-cve-2021-44228-esa-2021-31/291476
-export ES_JAVA_OPTS="-Xms1g -Xmx1g -Dlog4j2.formatMsgNoLookups=true"
+export ES_JAVA_OPTS="-Xms1g -Xmx1g"
 
 echo
-echo "Starting Elasticsearch ${elasticsearch.version}...";
+echo "Starting Elasticsearch ${elasticsearch.demo.version}...";
 echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
 echo
 ELASTICSEARCH_LOG_FILE=$BASEDIR/log/elasticsearch.log
-bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.version}/bin/elasticsearch" </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
+bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.demo.version}/bin/elasticsearch" </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
 
 URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
 checkStartup $URL "Elasticsearch"

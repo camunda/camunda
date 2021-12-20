@@ -17,8 +17,8 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/elasticsearch-${elasticsearch.version}</directory>
-      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}</outputDirectory>
+      <directory>${project.build.directory}/elasticsearch-${elasticsearch.demo.version}</directory>
+      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.demo.version}</outputDirectory>
     </fileSet>
 
     <fileSet>
@@ -66,6 +66,12 @@
       <source>src/config/environment-logback-demo.xml</source>
       <outputDirectory>config</outputDirectory>
       <destName>environment-logback.xml</destName>
+    </file>
+
+    <!-- elastic config -->
+    <file>
+      <source>src/elastic/config/elasticsearch.yml</source>
+      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.demo.version}/config</outputDirectory>
     </file>
   </files>
 

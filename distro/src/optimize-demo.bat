@@ -29,13 +29,13 @@ set COMMAND=curl.exe -f -XGET http://localhost:9200/_cluster/health?wait_for_sta
 echo Environment is set up.
 
 :: limit the java heapspace used by ElasticSearch to 1GB
-set "ES_JAVA_OPTS=-Xms1g -Xmx1g -Dlog4j2.formatMsgNoLookups=true"
+set "ES_JAVA_OPTS=-Xms1g -Xmx1g"
 
-echo Starting Elasticsearch ${elasticsearch.version}...
+echo Starting Elasticsearch ${elasticsearch.demo.version}...
 echo (Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)
 echo.
 set ELASTICSEARCH_LOG_FILE=%BASEDIR%/log/elasticsearch.log
-start /b "Elasticsearch" cmd /c "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat" >"%ELASTICSEARCH_LOG_FILE%" 2>&1
+start /b "Elasticsearch" cmd /c "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.demo.version}\bin\elasticsearch.bat" >"%ELASTICSEARCH_LOG_FILE%" 2>&1
 
 :: query elasticsearch if it's up
 :while1
