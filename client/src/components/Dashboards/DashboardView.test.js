@@ -8,13 +8,13 @@ import React, {runAllEffects, runAllCleanups} from 'react';
 import {shallow} from 'enzyme';
 import {useFullScreenHandle} from 'react-full-screen';
 
-import {Dropdown} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {Dropdown, AlertsDropdown} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import {DashboardView} from './DashboardView';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('react-full-screen', () => {
@@ -61,12 +61,21 @@ it('should render a sharing popover', async () => {
 });
 
 it('should hide sharing popover in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<DashboardView />);
 
   await runAllEffects();
 
   expect(node.find('Popover.share-button')).not.toExist();
+});
+
+it('should hide alert dropdown in ccsm environment', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = shallow(<DashboardView />);
+
+  await runAllEffects();
+
+  expect(node.find(AlertsDropdown)).not.toExist();
 });
 
 it('should enter fullscreen mode', () => {

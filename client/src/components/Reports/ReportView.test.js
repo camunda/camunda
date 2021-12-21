@@ -9,13 +9,13 @@ import {shallow} from 'enzyme';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import ReportView from './ReportView';
 
 jest.mock('config', () => ({
   isSharingEnabled: jest.fn().mockReturnValue(true),
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('services', () => {
@@ -137,7 +137,7 @@ it('should hide edit/delete if the report current user role is not "editor"', ()
 });
 
 it('should hide sharing popover in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = await shallow(<ReportView report={report} />);
 
   expect(node.find('Popover.share-button')).not.toExist();
@@ -148,5 +148,16 @@ it('should show alert dropdown for number reports', async () => {
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );
 
+  await node.update();
+
   expect(node.find(AlertsDropdown)).toExist();
+});
+
+it('should hide alert dropdown in ccsm environment', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = await shallow(
+    <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+  );
+
+  expect(node.find(AlertsDropdown)).not.toExist();
 });

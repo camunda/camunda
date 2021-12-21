@@ -25,7 +25,7 @@ import {
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import {
   getSharedDashboard,
@@ -63,7 +63,7 @@ export function DashboardView(props) {
   const [filtersShown, setFiltersShown] = useState(availableFilters?.length > 0);
   const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
   const fullScreenHandle = useFullScreenHandle();
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   const themeRef = useRef(theme);
 
@@ -84,7 +84,7 @@ export function DashboardView(props) {
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -160,7 +160,7 @@ export function DashboardView(props) {
                       </Button>
                     </>
                   )}
-                  {!isOptimizeCloud && (
+                  {optimizeProfile === 'platform' && (
                     <Popover
                       main
                       className="tool-button share-button"
@@ -205,7 +205,9 @@ export function DashboardView(props) {
                   <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
                 </Button>
               )}
-              <AlertsDropdown dashboardReports={reports} />
+              {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
+                <AlertsDropdown dashboardReports={reports} />
+              )}
               <Button
                 main
                 onClick={() =>

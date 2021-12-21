@@ -7,12 +7,12 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import AggregationType from './AggregationType';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 it('should render nothing if the current result is no duration and the view is not variable', () => {
@@ -153,7 +153,7 @@ it('should disable median aggregation for reports distributed by process', () =>
 });
 
 it('should not show user task duration selection for user task duration reports in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(
     <AggregationType
       report={{

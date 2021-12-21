@@ -10,14 +10,14 @@ import {useState, useEffect} from 'react';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 import {Select, Button, Icon} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 export default function DistributedBy({report, onChange, variables}) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -34,7 +34,7 @@ export default function DistributedBy({report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+        (optimizeProfile === 'platform' ? true : !['assignee', 'candidateGroup'].includes(key))
     )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {

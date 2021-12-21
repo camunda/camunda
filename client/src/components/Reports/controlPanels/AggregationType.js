@@ -8,7 +8,7 @@ import React, {useState, useEffect} from 'react';
 
 import {Popover, Icon, Form, Switch, Tooltip} from 'components';
 import {t} from 'translation';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import './AggregationType.scss';
 
@@ -25,11 +25,11 @@ export default function AggregationType({report, onChange}) {
   const isUserTaskReport = report?.view?.entity === 'userTask';
   const isVariableReport = report?.view?.entity === 'variable';
   const isIncidentReport = report?.view?.entity === 'incident';
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -107,7 +107,7 @@ export default function AggregationType({report, onChange}) {
         }
       >
         <Form compact>
-          {isUserTaskReport && !isOptimizeCloud && (
+          {isUserTaskReport && optimizeProfile === 'platform' && (
             <>
               <h4>{t('report.config.aggregation.userTaskLegend')}</h4>
               <fieldset>

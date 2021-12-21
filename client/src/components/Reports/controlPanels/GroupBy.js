@@ -10,17 +10,17 @@ import classnames from 'classnames';
 import {t} from 'translation';
 import {formatters, reportConfig, createReportUpdate} from 'services';
 import {Select, Button, Icon, Input} from 'components';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+  const [optimizeProfile, setOptimizeProfile] = useState();
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+      setOptimizeProfile(await getOptimizeProfile());
     })();
   }, []);
 
@@ -47,7 +47,7 @@ export default function GroupBy({type, report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (isOptimizeCloud ? !['assignee', 'candidateGroup'].includes(key) : true)
+        (optimizeProfile === 'platform' ? true : !['assignee', 'candidateGroup'].includes(key))
     )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {

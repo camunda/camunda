@@ -9,12 +9,12 @@ import {shallow} from 'enzyme';
 
 import {Select} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import DistributedBy from './DistributedBy';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('services', () => {
@@ -136,7 +136,7 @@ it('should have a button to remove the distribution', () => {
 });
 
 it('should hide assignee option in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<DistributedBy {...config} />);
 
   await runAllEffects();

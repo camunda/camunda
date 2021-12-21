@@ -9,14 +9,14 @@ import {shallow} from 'enzyme';
 
 import {Dropdown} from 'components';
 import {showPrompt} from 'prompt';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import {getVariableNames} from './service';
 
 import {AddFiltersButton} from './AddFiltersButton';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 const props = {
@@ -204,7 +204,7 @@ it('should show an assignee filter modal with additional content', async () => {
 });
 
 it('should not show assignee/group options in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<AddFiltersButton {...props} />);
 
   await runAllEffects();

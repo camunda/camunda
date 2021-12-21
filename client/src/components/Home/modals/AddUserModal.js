@@ -37,17 +37,19 @@ export default class AddUserModal extends React.Component {
   };
 
   render() {
-    const {isOptimizeCloud, open, existingUsers} = this.props;
+    const {optimizeProfile, open, existingUsers} = this.props;
     const {users, activeRole} = this.state;
 
     return (
       <Modal className="AddUserModal" open={open} onClose={this.onClose} onConfirm={this.onConfirm}>
         <Modal.Header>
-          {isOptimizeCloud ? t('home.roles.addUserTitle') : t('home.roles.addUserGroupTitle')}
+          {optimizeProfile === 'platform'
+            ? t('home.roles.addUserGroupTitle')
+            : t('home.roles.addUserTitle')}
         </Modal.Header>
         <Modal.Content>
           <Form>
-            {isOptimizeCloud ? t('home.userTitle') : t('home.userGroupsTitle')}
+            {optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle')}
             <Form.Group>
               <UserTypeahead
                 users={users}

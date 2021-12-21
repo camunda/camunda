@@ -9,12 +9,12 @@ import {shallow} from 'enzyme';
 
 import {Select, Button, Input} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import GroupBy from './GroupBy';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('services', () => {
@@ -150,7 +150,7 @@ it('should use the distributedBy value when removing the groupBy', () => {
 });
 
 it('should hide assignee option in cloud environment', async () => {
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<GroupBy {...config} />);
 
   await runAllEffects();

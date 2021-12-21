@@ -16,6 +16,7 @@ const props = {
   existingUsers: [],
   onClose: jest.fn(),
   onConfirm: jest.fn(),
+  optimizeProfile: 'platform',
 };
 
 it('should match snapshot', () => {

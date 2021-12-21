@@ -8,14 +8,16 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {EntityList, Deleter} from 'components';
+import {getOptimizeProfile} from 'config';
 
 import {editUser, removeUser} from './service';
+import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 
 import UserListWithErrorHandling from './UserList';
 
 jest.mock('config', () => ({
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 jest.mock('./service', () => ({
@@ -99,4 +101,13 @@ it('should modify the user role', () => {
 
   expect(editUser).toHaveBeenCalledWith('collectionId', 'USER:kermit', 'viewer');
   expect(props.onChange).toHaveBeenCalled();
+});
+
+it('should pass optimize environment to addUserModal', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  const node = await shallow(<UserList {...props} />);
+
+  node.find(EntityList).prop('action')().props.onClick({});
+
+  expect(node.find(AddUserModal).prop('optimizeProfile')).toBe('ccsm');
 });

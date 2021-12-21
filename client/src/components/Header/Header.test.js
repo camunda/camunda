@@ -7,7 +7,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {isOptimizeCloudEnvironment, isEnterpriseMode} from 'config';
+import {getOptimizeProfile, isEnterpriseMode} from 'config';
 
 import {isEventBasedProcessEnabled} from './service';
 import {Header} from './Header';
@@ -18,7 +18,7 @@ jest.mock('config', () => ({
     backgroundColor: '#000',
     logo: 'url',
   }),
-  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
   isEnterpriseMode: jest.fn().mockReturnValue(true),
 }));
 
@@ -70,7 +70,7 @@ it('should show and hide the event based process nav item depending on authoriza
 
 it('should hide event based process nav item in cloud environment', async () => {
   isEventBasedProcessEnabled.mockReturnValueOnce(true);
-  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<Header {...props} />);
 
   await runLastEffect();

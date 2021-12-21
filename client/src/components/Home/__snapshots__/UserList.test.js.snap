@@ -109,10 +109,10 @@ exports[`should match snapshot 1`] = `
         },
       ]
     }
-    isOptimizeCloud={false}
     onClose={[Function]}
     onConfirm={[Function]}
     open={false}
+    optimizeProfile="platform"
   />
 </div>
 `;

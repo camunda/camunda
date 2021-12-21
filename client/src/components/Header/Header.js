@@ -9,7 +9,7 @@ import {Link, withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {getHeader, isOptimizeCloudEnvironment, isEnterpriseMode} from 'config';
+import {getHeader, getOptimizeProfile, isEnterpriseMode} from 'config';
 import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
 import {Tooltip} from 'components';
@@ -33,9 +33,9 @@ export function Header({mightFail, location, noActions}) {
     );
 
     mightFail(
-      Promise.all([isEventBasedProcessEnabled(), isOptimizeCloudEnvironment(), isEnterpriseMode()]),
-      ([enabled, isOptimizeCloud, isEnterpriseMode]) => {
-        setShowEventBased(enabled && !isOptimizeCloud);
+      Promise.all([isEventBasedProcessEnabled(), getOptimizeProfile(), isEnterpriseMode()]),
+      ([enabled, optimizeProfile, isEnterpriseMode]) => {
+        setShowEventBased(enabled && optimizeProfile === 'platform');
         setEnterpiseMode(isEnterpriseMode);
       },
       showError

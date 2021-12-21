@@ -7,7 +7,7 @@
 import React, {useState, useEffect} from 'react';
 
 import {t} from 'translation';
-import {isOptimizeCloudEnvironment} from 'config';
+import {getOptimizeProfile} from 'config';
 
 import TemplateModal from './TemplateModal';
 
@@ -18,13 +18,13 @@ import portfolioPerformance from './images/portfolioPerformance.png';
 import operationsMonitoring from './images/operationsMonitoring.png';
 
 export default function DashboardTemplateModal({onClose}) {
-  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
-  const [isOptimizeCloudLoaded, setisOptimizeCloudLoaded] = useState(false);
+  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
-      setisOptimizeCloudLoaded(true);
+      setOptimizeProfile(await getOptimizeProfile());
+      setOptimizeProfileLoaded(true);
     })();
   }, []);
 
@@ -452,7 +452,7 @@ export default function DashboardTemplateModal({onClose}) {
     },
   ];
 
-  if (!isOptimizeCloud) {
+  if (optimizeProfile === 'platform') {
     templateGroups[1].templates.push(
       {
         name: 'humanPerformance',
@@ -944,7 +944,7 @@ export default function DashboardTemplateModal({onClose}) {
     });
   }
 
-  if (!isOptimizeCloudLoaded) {
+  if (!optimizeProfileLoaded) {
     return null;
   }
 
