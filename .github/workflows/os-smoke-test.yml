@@ -2,12 +2,12 @@ name: OS Support Smoke Test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ develop, staging, trying ]
   pull_request:
     branches: [ develop ]
 
 jobs:
-  build:
+  smoke-test:
     name: Run smoke tests on ${{ matrix.os }}
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
