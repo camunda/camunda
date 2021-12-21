@@ -1,5 +1,6 @@
 status = [
-  "continuous-integration/jenkins/branch"
+  "continuous-integration/jenkins/branch",
+  "smoke-test"
 ]
 
 required_approvals = 1
