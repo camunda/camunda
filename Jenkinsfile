@@ -337,7 +337,7 @@ pipeline {
                 TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
                 ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
-                ZEEBE_CLIENT_ID = '6WIMz9KT7076gBWmfV7QJK0zGNotmF04'
+                ZEEBE_CLIENT_ID = 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
                 QA_RUN_VARIABLES = "{\"zeebeImage\": \"${env.IMAGE}:${env.TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", " +
                                     "\"channel\": \"Internal Dev\", \"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\", " +
                                     "\"businessKey\": \"${currentBuild.absoluteUrl}\", \"processId\": \"qa-protocol\"}"
