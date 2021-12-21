@@ -17,6 +17,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_LIMIT_PARAM;
+import static org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto.QUERY_SCROLL_ID_PARAM;
+import static org.camunda.optimize.rest.PublicApiRestService.QUERY_PARAMETER_ACCESS_TOKEN;
+
 @AllArgsConstructor
 public class PublicApiClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
@@ -82,6 +86,17 @@ public class PublicApiClient {
     return getRequestExecutor()
       .withoutAuthentication()
       .buildPublicDeleteDashboardRequest(dashboardId, accessToken)
+      .execute();
+  }
+
+  public Response exportReport(final String reportId, final String accessToken, final Integer limit,
+                               final String searchRequestId) {
+    return getRequestExecutor()
+      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, accessToken)
+      .addSingleQueryParam(QUERY_LIMIT_PARAM, limit)
+      .addSingleQueryParam(QUERY_SCROLL_ID_PARAM, searchRequestId)
+      .buildPublicExportJsonReportResultRequest(reportId)
+      .withoutAuthentication()
       .execute();
   }
 

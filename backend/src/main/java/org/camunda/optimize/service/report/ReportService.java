@@ -205,6 +205,12 @@ public class ReportService implements CollectionReferencingService {
     );
   }
 
+  public ReportDefinitionDto<ReportDataDto> getReportDefinition(final String reportId) {
+    return reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
+                                                 + "from Elasticsearch. Report does not exist."));
+  }
+
   public AuthorizedReportDefinitionResponseDto getReportDefinition(final String reportId, final String userId) {
     final ReportDefinitionDto report = reportReader.getReport(reportId)
       .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"

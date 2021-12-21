@@ -11,7 +11,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -19,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.service.es.report.result.MapCommandResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.export.CSVUtils;
 
 import java.time.ZoneId;
@@ -64,7 +64,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
   @Override
   public PaginatedDataExportDto getResult() {
-    throw new NotImplementedException("This feature is currently not implemented for Combined Reports");
+    throw new OptimizeValidationException("Combined reports cannot be exported");
   }
 
   private List<String[]> mapCombinedReportResultsToCsvList(final Integer limit,

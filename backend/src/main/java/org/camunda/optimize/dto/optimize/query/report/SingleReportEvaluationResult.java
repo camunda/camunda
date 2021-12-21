@@ -13,8 +13,10 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto
 import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -46,17 +48,21 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
   @Override
   public PaginatedDataExportDto getResult() {
     final CommandEvaluationResult<?> commandResult = getFirstCommandResult();
+    PaginatedDataExportDto result = new PaginatedDataExportDto();
+    result.setData(commandResult.getResult());
     if(commandResult instanceof RawDataCommandResult) {
-      PaginatedDataExportDto result = new PaginatedDataExportDto();
-      result.setData(commandResult.getResult());
       result.setTotalNumberOfRecords(commandResult.getInstanceCount());
       if (commandResult.getPagination() instanceof PaginationScrollableDto){
         result.setSearchRequestId(((PaginationScrollableDto)commandResult.getPagination()).getScrollId());
       } else {
         result.setSearchRequestId(null);
       }
-      return result;
     }
-    return null;
+    else {
+      Object data = Optional.ofNullable(result.getData()).orElse(new ArrayList<>());
+      int payloadSize = (data instanceof List ? ((List<?>)data).size() : 1);
+      result.setTotalNumberOfRecords(payloadSize);
+    }
+    return result;
   }
 }

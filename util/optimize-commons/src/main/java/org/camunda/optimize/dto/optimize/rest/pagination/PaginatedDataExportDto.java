@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,10 +16,13 @@ import java.util.Collection;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaginatedDataExportDto {
   private String searchRequestId;
+  private String message;
   private Integer numberOfRecordsInResponse;
   private long totalNumberOfRecords;
+  private String reportId;
   private Object data;
 
   public void setData(Object data) {

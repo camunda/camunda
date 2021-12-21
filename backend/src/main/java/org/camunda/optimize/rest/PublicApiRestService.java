@@ -116,7 +116,7 @@ public class PublicApiRestService {
       );
     } catch (ElasticsearchStatusException e) {
       // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier valid, but now
-      // expired) the message from ElasticSearch is a bit cryptic. Therefore we extract the useful information so
+      // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful information so
       // that the user gets an appropriate response.
       throw Optional.ofNullable(e.getCause())
         .filter(pag -> pag.getMessage().contains("search_context_missing_exception"))
