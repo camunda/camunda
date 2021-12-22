@@ -2,12 +2,14 @@ name: OS Support Smoke Test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ develop, staging, trying ]
   pull_request:
     branches: [ develop ]
 
 jobs:
-  build:
+  smoke-test:
+    # This name is hard-referenced from bors.toml
+    # Remember to update that if this name, or the matrix.os changes
     name: Run smoke tests on ${{ matrix.os }}
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
