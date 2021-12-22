@@ -16,7 +16,7 @@ jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
     {
       key: 'definitionA',
-      versions: ['latest'],
+      versions: ['all'],
       tenants: [
         {id: 'a', name: 'Tenant A'},
         {id: 'b', name: 'Tenant B'},
@@ -35,7 +35,7 @@ const props = {
       key: 'definitionA',
       name: 'Definition A',
       displayName: 'Definition A',
-      versions: ['latest'],
+      versions: ['all'],
       tenantIds: ['a', 'b'],
     },
   ],
@@ -76,7 +76,7 @@ it('should not allow copy if limit of 10 definitions is reached', () => {
         key: 'definitionA',
         name: 'Definition A',
         displayName: 'Definition A',
-        versions: ['latest'],
+        versions: ['all'],
         tenantIds: ['a', 'b'],
       })}
     />

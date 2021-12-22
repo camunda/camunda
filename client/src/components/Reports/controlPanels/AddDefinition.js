@@ -101,7 +101,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                   type,
                   selectedDefinitions.map(({key}) => ({
                     key,
-                    versions: ['latest'],
+                    versions: ['all'],
                   })),
                   collection
                 ),
@@ -111,7 +111,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                       key,
                       name,
                       displayName: name,
-                      versions: ['latest'],
+                      versions: ['all'],
                       tenantIds: tenantInfo[idx].tenants.map(({id}) => id),
                       identifier: getRandomId(),
                     }))

@@ -80,7 +80,7 @@ it('should call back with definitions to add', () => {
   loadTenants.mockReturnValueOnce([
     {
       key: 'definitionA',
-      versions: ['latest'],
+      versions: ['all'],
       tenants: [{id: null, name: 'Not Defined'}],
     },
   ]);
@@ -91,7 +91,7 @@ it('should call back with definitions to add', () => {
       key: 'definitionA',
       name: 'Definition A',
       displayName: 'Definition A',
-      versions: ['latest'],
+      versions: ['all'],
       tenantIds: [null],
       identifier: 'randomID',
     },

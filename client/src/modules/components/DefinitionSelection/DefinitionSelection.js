@@ -117,18 +117,17 @@ export class DefinitionSelection extends React.Component {
 
     this.setState({isLoadingVersions: true, isLoadingTenants: true});
 
-    const {availableVersions, availableTenants, latestVersion} = await debounceRequest(async () => {
+    const allVersions = ['all'];
+    const {availableVersions, availableTenants} = await debounceRequest(async () => {
       const availableVersions = await this.loadVersions(key);
-      const latestVersion = [availableVersions[0].version];
+      const availableTenants = await this.loadTenants(key, allVersions);
 
-      const availableTenants = await this.loadTenants(key, latestVersion);
-
-      return {availableVersions, availableTenants, latestVersion};
+      return {availableVersions, availableTenants};
     });
 
     const newSelection = {
       key,
-      versions: latestVersion,
+      versions: allVersions,
       tenantIds: availableTenants.map(({id}) => id),
       name: this.getName(key),
       identifier: 'definition', // this component only allows selection of a single definition, so we keep the identifier static
@@ -137,7 +136,7 @@ export class DefinitionSelection extends React.Component {
     this.setState({
       availableVersions,
       availableTenants,
-      selectedSpecificVersions: latestVersion,
+      selectedSpecificVersions: [availableVersions[0].version],
       selection: newSelection,
       isLoadingVersions: false,
       isLoadingTenants: false,

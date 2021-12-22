@@ -102,7 +102,7 @@ it('should apply templates from the location state', async () => {
             configuration: {xml: 'processXML'},
             processDefinitionKey: 'key',
             processDefinitionName: 'Definition Name',
-            processDefinitionVersions: ['latest'],
+            processDefinitionVersions: ['all'],
             tenantIds: [null, 'a'],
             view: {entity: 'flowNode', properties: ['frequency']},
             groupBy: {type: 'flowNodes', value: null},

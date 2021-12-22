@@ -43,7 +43,7 @@ const props = {
     key: 'definitionA',
     name: 'Definition A',
     displayName: 'Definition A',
-    versions: ['latest'],
+    versions: ['all'],
     tenantIds: [null],
   },
   tenantInfo: [
