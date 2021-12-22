@@ -11,7 +11,6 @@ import {login, save, addReportToDashboard, createNewReport, createNewDashboard} 
 import * as e from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
-import * as Collection from './Collection.elements.js';
 
 fixture('Homepage').page(config.endpoint).beforeEach(login).afterEach(cleanEntities);
 
@@ -213,4 +212,24 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.del(e.bulkMenu));
   await t.click(e.modalConfirmbutton);
   await t.expect(e.listItem.exists).notOk();
+});
+
+test('multi definition selection', async (t) => {
+  await t.click(e.createNewMenu);
+  await t.click(e.newReportOption);
+  await t.click(e.submenuOption('Process Report'));
+
+  const firstDefinition = 'Invoice Receipt with alternative correlation variable';
+  await t
+    .click(e.definitionSelection)
+    .typeText(e.templateModalProcessField, firstDefinition, {replace: true})
+    .click(e.option(firstDefinition));
+
+  const secondDefinition = 'Embedded Subprocess';
+  await t
+    .click(e.definitionSelection)
+    .typeText(e.templateModalProcessField, secondDefinition, {replace: true})
+    .click(e.option(secondDefinition));
+
+  await t.click(e.confirmButton);
 });
