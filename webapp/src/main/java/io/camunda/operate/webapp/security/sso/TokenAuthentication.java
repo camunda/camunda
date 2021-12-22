@@ -106,6 +106,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return expires == null || expires.before(new Date());
   }
 
+  public Date getExpiresAt() {
+    return JWT.decode(idToken).getExpiresAt();
+  }
+
   @Override
   public String getCredentials() {
     return JWT.decode(idToken).getToken();
@@ -134,7 +138,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   private void tryAuthenticateAsListOfMaps(final Claim claim) {
     try {
-      List<Map> claims = claim.asList(Map.class);
+      List<? extends Map> claims = claim.asList(Map.class);
       if (claims != null) {
         setAuthenticated(claims.stream().anyMatch(this::isIdEqualsOrganization));
       }

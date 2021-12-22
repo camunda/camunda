@@ -59,6 +59,11 @@ public class Auth0Service {
     final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
     authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
     SecurityContextHolder.getContext().setAuthentication(authentication);
+    sessionExpiresWhenAuthenticationExpires(req);
+  }
+
+  private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {
+    req.getSession().setMaxInactiveInterval(-1);
   }
 
   public String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {

@@ -34,6 +34,8 @@ import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.session.ExpiringSession;
 import org.springframework.session.MapSession;
 import org.springframework.session.SessionRepository;
@@ -280,7 +282,8 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
     }
 
     public boolean isExpired() {
-      return delegate.isExpired();
+      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+      return delegate.isExpired() || (authentication != null && !authentication.isAuthenticated());
     }
 
     @Override
