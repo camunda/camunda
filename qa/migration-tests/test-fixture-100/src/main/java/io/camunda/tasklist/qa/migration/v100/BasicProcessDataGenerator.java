@@ -16,13 +16,19 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +74,8 @@ public class BasicProcessDataGenerator {
 
       waitUntilAllDataAreImported();
 
+      claimAllTasks();
+
       try {
         esClient.indices().refresh(new RefreshRequest("tasklist-*"), RequestOptions.DEFAULT);
       } catch (IOException e) {
@@ -79,6 +87,24 @@ public class BasicProcessDataGenerator {
       testContext.addProcess(PROCESS_BPMN_PROCESS_ID);
     } finally {
       closeClients();
+    }
+  }
+
+  private void claimAllTasks() {
+    final UpdateByQueryRequest updateRequest =
+        new UpdateByQueryRequest(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
+            .setQuery(QueryBuilders.matchAllQuery())
+            .setScript(
+                new Script(
+                    ScriptType.INLINE,
+                    "painless",
+                    "ctx._source.assignee = 'demo'",
+                    Collections.emptyMap()))
+            .setRefresh(true);
+    try {
+      esClient.updateByQuery(updateRequest, RequestOptions.DEFAULT);
+    } catch (ElasticsearchException | IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -152,5 +178,9 @@ public class BasicProcessDataGenerator {
 
   private String getAliasFor(String index) {
     return String.format("tasklist-%s-*_alias", index);
+  }
+
+  private String getMainIndexNameFor(String index) {
+    return String.format("tasklist-%s-*_", index);
   }
 }

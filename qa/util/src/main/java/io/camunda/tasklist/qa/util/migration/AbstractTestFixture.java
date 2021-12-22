@@ -5,7 +5,7 @@
  */
 package io.camunda.tasklist.qa.util.migration;
 
-import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -26,12 +26,11 @@ public abstract class AbstractTestFixture implements TestFixture {
 
   public static final String PROPERTIES_PREFIX = "camunda.tasklist.";
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTestFixture.class);
-  private static final String ZEEBE_CFG_YAML_FILE = "/zeebe-config/zeebe.cfg.yaml";
   private static final String DOCKER_TASKLIST_IMAGE_NAME = "camunda/tasklist";
   private static final Integer TASKLIST_HTTP_PORT = 8080;
   private static final String ZEEBE_PREFIX = "migration-test";
 
-  protected ZeebeBrokerContainer broker;
+  protected ZeebeContainer broker;
   protected GenericContainer<?> tasklistContainer;
 
   protected TestContext testContext;
@@ -130,12 +129,25 @@ public abstract class AbstractTestFixture implements TestFixture {
   protected void startZeebe(final String version) {
     LOGGER.info("************ Starting Zeebe {} ************", version);
     broker =
-        new ZeebeBrokerContainer(DockerImageName.parse("camunda/zeebe:" + version))
+        new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version))
             .withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data")
-            .withNetwork(testContext.getNetwork())
-            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+            .withNetwork(testContext.getNetwork());
+    broker
+        .withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
+        .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
+        .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
+        .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:9200")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.ElasticsearchExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", "migration-test")
+        .withEnv("ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK", "0.99")
+        .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.98")
+        .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m");
     broker.setWaitStrategy(new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
-    addConfig(broker);
     broker.start();
     LOGGER.info("************ Zeebe started  ************");
 
@@ -143,12 +155,6 @@ public abstract class AbstractTestFixture implements TestFixture {
         broker.getInternalAddress(ZeebePort.GATEWAY.getPort()));
     testContext.setExternalZeebeContactPoint(
         broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
-  }
-
-  protected void addConfig(ZeebeBrokerContainer zeebeBroker) {
-    zeebeBroker.withCopyFileToContainer(
-        MountableFile.forClasspathResource(ZEEBE_CFG_YAML_FILE),
-        "/usr/local/zeebe/config/application.yaml");
   }
 
   protected void stopZeebeAndTasklist() {

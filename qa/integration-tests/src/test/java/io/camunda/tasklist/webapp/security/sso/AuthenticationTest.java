@@ -79,6 +79,7 @@ public class AuthenticationTest implements AuthenticationTestable {
 
   private static final String COOKIE_KEY = "Cookie";
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
+  private static final String TASKLIST_TESTUSER_EMAIL = "testuser@tasklist.io";
   @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
   @LocalServerPort int randomServerPort;
@@ -241,7 +242,8 @@ public class AuthenticationTest implements AuthenticationTestable {
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.username")).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(graphQLResponse.get("$.data.currentUser.username"))
+        .isEqualTo(TASKLIST_TESTUSER_EMAIL);
     assertThat(graphQLResponse.get("$.data.currentUser.firstname")).isEmpty();
     assertThat(graphQLResponse.get("$.data.currentUser.lastname")).isEqualTo(TASKLIST_TESTUSER);
   }
@@ -272,7 +274,15 @@ public class AuthenticationTest implements AuthenticationTestable {
         Map.of("id", organization, "roles", List.of("owner", "user"));
     final String accountData =
         toEncodedToken(
-            asMap(claim, List.of(orgMap), "exp", expiresInSeconds, "name", "tasklist-testuser"));
+            asMap(
+                claim,
+                List.of(orgMap),
+                "exp",
+                expiresInSeconds,
+                "name",
+                TASKLIST_TESTUSER,
+                "email",
+                TASKLIST_TESTUSER_EMAIL));
     return new Tokens(
         "accessToken",
         emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,

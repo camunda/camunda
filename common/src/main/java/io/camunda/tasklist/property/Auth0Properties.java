@@ -40,6 +40,9 @@ public class Auth0Properties {
   /** Key for claim to retrieve the user name */
   private String nameKey = "name";
 
+  /** Key for claim to retrieve the user email */
+  private String emailKey = "email";
+
   public String getDomain() {
     return domain;
   }
@@ -100,6 +103,15 @@ public class Auth0Properties {
 
   public Auth0Properties setNameKey(final String nameKey) {
     this.nameKey = nameKey;
+    return this;
+  }
+
+  public String getEmailKey() {
+    return emailKey;
+  }
+
+  public Auth0Properties setEmailKey(final String emailKey) {
+    this.emailKey = emailKey;
     return this;
   }
 }

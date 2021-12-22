@@ -5,11 +5,13 @@
  */
 package io.camunda.tasklist.qa.migration;
 
+import static io.camunda.tasklist.schema.templates.TaskTemplate.ASSIGNEE;
 import static io.camunda.tasklist.schema.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
@@ -21,8 +23,6 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,9 +63,9 @@ public class BasicProcessTest extends AbstractMigrationTest {
     final SearchRequest searchRequest =
         new SearchRequest(taskTemplate.getAlias())
             .source(new SearchSourceBuilder().query(termQuery(BPMN_PROCESS_ID, bpmnProcessId)));
-    final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    assertThat(searchResponse.getHits().getTotalHits().value)
-        .isEqualTo(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT);
+    final List<TaskEntity> tasks = entityReader.searchEntitiesFor(searchRequest, TaskEntity.class);
+    assertThat(tasks).hasSize(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT);
+    assertThat(tasks).extracting(ASSIGNEE).containsOnlyNulls();
   }
 
   @Test

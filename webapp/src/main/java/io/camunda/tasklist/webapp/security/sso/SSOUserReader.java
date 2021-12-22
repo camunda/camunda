@@ -39,9 +39,10 @@ public class SSOUserReader implements UserReader {
       if (claims.containsKey(tasklistProperties.getAuth0().getNameKey())) {
         name = claims.get(tasklistProperties.getAuth0().getNameKey()).asString();
       }
+      final String email = claims.get(tasklistProperties.getAuth0().getEmailKey()).asString();
       return Optional.of(
           new UserDTO()
-              .setUsername(name)
+              .setUsername(email)
               .setFirstname(EMPTY)
               .setLastname(name)
               .setApiUser(false)
