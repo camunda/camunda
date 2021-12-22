@@ -22,7 +22,7 @@ spec:
       effect: "NoSchedule"
   containers:
     - name: maven
-      image: maven:3.8.3-eclipse-temurin-17
+      image: maven:3.8.4-eclipse-temurin-17
       command: ["cat"]
       tty: true
       env:

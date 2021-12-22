@@ -18,7 +18,7 @@ spec:
       effect: "NoSchedule"
   containers:
     - name: maven
-      image: maven:3.8.3-eclipse-temurin-17
+      image: maven:3.8.4-eclipse-temurin-17
       command: ["cat"]
       tty: true
       resources:
@@ -29,15 +29,21 @@ spec:
           cpu: 500m
           memory: 1Gi
     - name: docker
-      image: docker:18.09.4-dind
-      args: ["--storage-driver=overlay2"]
-      securityContext:
-        privileged: true
+      image: docker:20.10.5-dind
+      args:
+        - --storage-driver
+        - overlay2
+      env:
+        # The new dind versions expect secure access using cert
+        # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
+        # (see https://hub.docker.com/_/docker?tab=description&page=1)
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
       tty: true
       resources:
         limits:
-          cpu: 1
-          memory: 1Gi
+          cpu: 4
+          memory: 4Gi
         requests:
           cpu: 500m
           memory: 512Mi
