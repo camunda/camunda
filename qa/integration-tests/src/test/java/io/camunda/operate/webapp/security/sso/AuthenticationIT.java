@@ -25,9 +25,7 @@ import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.RolePermissionService;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,12 +41,10 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
@@ -60,7 +56,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
-@RunWith(Parameterized.class)
 @SpringBootTest(
     classes = {
         TestApplicationWithNoBeans.class,
@@ -107,18 +102,12 @@ public class AuthenticationIT {
   @MockBean
   private AuthenticationController authenticationController;
 
+  @SpyBean
+  private Auth0Service auth0Service;
+
   @MockBean
   private ElsIndicesCheck probes;
-  private final BiFunction<String, String, Tokens> orgExtractor;
-
-  public AuthenticationIT(BiFunction<String, String, Tokens> orgExtractor) {
-    this.orgExtractor = orgExtractor;
-  }
-
-  @Parameters
-  public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
-    return Arrays.asList((claimName, org) -> tokensWithOrgAsMapFrom(claimName, org));
-  }
+  private final BiFunction<String, String, Tokens> orgExtractor = AuthenticationIT::tokensWithOrgAsMapFrom;
 
   @Before
   public void setUp() {
@@ -131,6 +120,39 @@ public class AuthenticationIT {
     given(mockedAuthorizedUrl.build()).willReturn(
         "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo");
 
+  }
+
+  @Test
+  public void testHandleInvalidRequestException() throws Exception {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(ROOT);
+    HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response)).contains(
+        operateProperties.getAuth0().getDomain(),
+        SSO_CALLBACK_URI,
+        operateProperties.getAuth0().getClientId(),
+        operateProperties.getAuth0().getBackendDomain()
+    );
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
+            operateProperties.getAuth0().getOrganization()));
+    doThrow(new Auth0ServiceException(new Exception("Invalid response code from the auth0-sandbox: HTTP 502.")))
+        .when(auth0Service).authenticate(any(), any());
+    response = get(SSO_CALLBACK_URI, cookies);
+
+    assertThat(redirectLocationIn(response)).contains(
+        operateProperties.getAuth0().getDomain(),
+        "logout",
+        operateProperties.getAuth0().getClientId(),
+        urlFor(ROOT)
+    );
   }
 
   @Test

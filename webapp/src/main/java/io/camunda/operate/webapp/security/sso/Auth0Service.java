@@ -54,12 +54,16 @@ public class Auth0Service {
   private String clientId;
 
   public void authenticate(final HttpServletRequest req, final HttpServletResponse res)
-      throws Exception {
-    final Tokens tokens = retrieveTokens(req, res);
-    final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
-    authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
-    SecurityContextHolder.getContext().setAuthentication(authentication);
-    sessionExpiresWhenAuthenticationExpires(req);
+      throws Auth0ServiceException {
+    try {
+      final Tokens tokens = retrieveTokens(req, res);
+      final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
+      authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+      sessionExpiresWhenAuthenticationExpires(req);
+    } catch (Exception e) {
+      throw new Auth0ServiceException(e);
+    }
   }
 
   private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {

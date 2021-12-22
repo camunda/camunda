@@ -86,7 +86,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
       requestedUrl = requestedUrl + "?" + request.getQueryString();
     }
     logger.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
-    request.getSession().setAttribute(REQUESTED_URL, requestedUrl);
+    request.getSession(true).setAttribute(REQUESTED_URL, requestedUrl);
     response.sendRedirect(request.getContextPath() + LOGIN_RESOURCE);
   }
 

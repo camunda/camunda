@@ -13,6 +13,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
 
+import com.auth0.IdentityVerificationException;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,10 +52,25 @@ public class SSOController {
     try {
       auth0Service.authenticate(req, res);
       redirectToPage(req, res);
-    } catch (InsufficientAuthenticationException iae) {
-      logoutAndRedirectToNoPermissionPage(req, res);
-    } catch (Exception t /*AuthenticationException | IdentityVerificationException e*/) {
-      clearContextAndRedirectToNoPermission(req,res, t);
+    } catch (Auth0ServiceException ase) {
+      handleAuth0Exception(ase,req, res);
+    }
+  }
+
+  private void handleAuth0Exception(final Auth0ServiceException ase,
+      final HttpServletRequest req, final HttpServletResponse res) throws IOException {
+    Throwable cause = ase.getCause();
+    if(cause!=null) {
+      if(cause instanceof InsufficientAuthenticationException){
+        logoutAndRedirectToNoPermissionPage(req, res);
+      }else if(cause instanceof IdentityVerificationException ||
+         cause instanceof AuthenticationException) {
+        clearContextAndRedirectToNoPermission(req,res, cause);
+      } else {
+        logout(req, res);
+      }
+    } else {
+      logout(req, res);
     }
   }
 
