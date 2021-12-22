@@ -1,7 +1,11 @@
-## Hilfestellung
+## Schnellere Dashboard- und Alert-Erstellung
 
-Erhalten Sie über einen In-App-Link Zugriff auf unsere Dokumentation.
+Fügen Sie Datenquellen hinzu, während Sie eine Sammlung erstellen, erstellen Sie Dashboards mit Multi-Prozess-Vorlagen und erstellen Sie Warnungen direkt aus Dashboards und Berichten.
 
-## Webhook-Platzhalter
+## Verbesserte Variablenunterstützung
 
-Erstellen Sie benutzerdefinierte Warnmeldungen mit mehreren neuen Webhook-Platzhaltern.
+Aus der Process Engine importierte Objektvariablen werden zur Analyse in einfache Variablen reduziert. Variable Filter können jetzt auch mit ODER-Logik kombiniert werden.
+
+## Öffentliche API-Endpunkte
+
+Entwickler können Dashboards und Berichte programmgesteuert sichern, migrieren und verwalten mittels der öffentlichen [REST API](https://docs.camunda.org/optimize/3.7/technical-guide/rest-api/). Darüber hinaus können sie die Berichtsdaten zur Offline-Analyse exportieren.
