@@ -45,12 +45,16 @@ public class Auth0Service {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  public void authenticate(final HttpServletRequest req, final HttpServletResponse res)
-      throws Exception {
+  public void authenticate(final HttpServletRequest req, final HttpServletResponse res) {
     final Tokens tokens = retrieveTokens(req, res);
     final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
     authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
     SecurityContextHolder.getContext().setAuthentication(authentication);
+    sessionExpiresWhenAuthenticationExpires(req);
+  }
+
+  private void sessionExpiresWhenAuthenticationExpires(final HttpServletRequest req) {
+    req.getSession().setMaxInactiveInterval(-1);
   }
 
   public String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
