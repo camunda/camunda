@@ -7,7 +7,7 @@ There are two ways to run a benchmark:
 * [Self-Managed Zeebe Cluster](#benchmarking-self-managed-zeebe-cluster)
 * [Camunda Cloud Cluster](#benchmarking-camunda-cloud-saas)
 
-All guides are targete4d at a Linux systems.
+All guides are targeted at a Linux systems.
 
 ## Requirements 
 
@@ -97,10 +97,15 @@ Possible future extension point: Use https://docs.camunda.io/docs/apis-clients/c
 ### Setup Cloud Benchmark
 
  * Create a new cloud benchmark in our benchmark folder, via `./newCloudBenchmark`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
- * Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!**. https://github.com/camunda-cloud/zeebe/blob/develop/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
- * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter.
+ * Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda-cloud/zeebe/blob/develop/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
+ * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter. **Alternatively**, you can also manually provision the resources:
+  * `kubectl apply -f cloudcredentials.yaml`
+  * `kubectl apply -f worker.yaml`
+  * `kubectl apply -f starter.yaml`
+
 
 ### Use Grafana to Inspect Cloud Metrics (Camunda Internals Only)
 
-* If you use the region 'new chaos' when creating a clsuter, it will be created in 'ultrachaos' gke cluster
+* If you use the region 'new chaos' when creating a cluster, it will be created in 'ultrachaos' gke cluster
 * This allows to check the metrics for your benchmark via https://grafana-ultrachaos.internal.ultrawombat.com/?orgId=1
+* If you use the region "integration worker' when creating a cluster, it you can check for metrics via https://grafana-worker-1.internal.ultrawombat.com/
