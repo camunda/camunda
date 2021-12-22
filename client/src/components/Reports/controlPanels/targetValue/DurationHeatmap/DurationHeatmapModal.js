@@ -237,11 +237,6 @@ export default class DurationHeatmapModal extends React.Component {
 
   render() {
     const {open, onClose, report} = this.props;
-    let errorMessage = !this.hasSomethingChanged() ? t('report.heatTarget.noChangeWarning') : '';
-    if (!this.areAllFieldsNumbers()) {
-      errorMessage += t('report.heatTarget.invalidValue');
-    }
-
     const nodeType = this.getNodeType();
 
     return (
@@ -276,7 +271,9 @@ export default class DurationHeatmapModal extends React.Component {
               disablePagination
             />
           )}
-          {!this.validChanges() && !this.state.loading && <Message error>{errorMessage}</Message>}
+          {!this.areAllFieldsNumbers() && !this.state.loading && (
+            <Message error>{t('report.heatTarget.invalidValue')}</Message>
+          )}
         </Modal.Content>
         <Modal.Actions>
           <Button main onClick={onClose}>

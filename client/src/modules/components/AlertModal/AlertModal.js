@@ -24,6 +24,7 @@ import {isEmailEnabled} from 'config';
 import {t} from 'translation';
 import {withDocs, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {numberParser} from 'services';
 
 import ThresholdInput from './ThresholdInput';
 import MultiEmailInput from './MultiEmailInput';
@@ -145,10 +146,7 @@ export class AlertModal extends React.Component {
     return this.props.initialAlert && this.props.initialAlert.id;
   };
 
-  isThresholdValid = () => {
-    const value = this.getThresholdValue();
-    return value.trim() && !isNaN(value);
-  };
+  isThresholdValid = () => numberParser.isNonNegativeNumber(this.getThresholdValue());
 
   componentDidUpdate({initialAlert}) {
     const {name, webhook, emails, reportId, checkInterval, reminder, validEmails} = this.state;
@@ -176,11 +174,7 @@ export class AlertModal extends React.Component {
       this.setInvalid(true);
       return;
     }
-    if (
-      !checkInterval.value.trim() ||
-      isNaN(checkInterval.value.trim()) ||
-      !(checkInterval.value > 0)
-    ) {
+    if (!numberParser.isPositiveInt(checkInterval.value)) {
       this.setInvalid(true);
       return;
     }
@@ -317,6 +311,7 @@ export class AlertModal extends React.Component {
                   type={this.getReportType(reportId)}
                 />
               </Form.InputGroup>
+              {!this.isThresholdValid() && <Message error>{t('common.errors.number')}</Message>}
             </Form.Group>
             <Form.Group>
               <Labeled label={t('alert.form.frequency')}>
@@ -353,6 +348,9 @@ export class AlertModal extends React.Component {
                   </Select>
                 </Form.InputGroup>
               </Labeled>
+              {!numberParser.isPositiveInt(checkInterval.value) && (
+                <Message error>{t('common.errors.positiveInt')}</Message>
+              )}
             </Form.Group>
             <Form.Group>
               <Labeled label={t('alert.form.email')}>

@@ -85,8 +85,8 @@ export default function DateRangeInput({type, unit, startDate, endDate, customNu
                 <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
                 <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
               </Select>
-              {!numberParser.isPostiveInt(customNum) && (
-                <Message error>{t('common.filter.dateModal.invalidInput')}</Message>
+              {!numberParser.isPositiveInt(customNum) && (
+                <Message error>{t('common.errors.positiveInt')}</Message>
               )}
             </>
           )}

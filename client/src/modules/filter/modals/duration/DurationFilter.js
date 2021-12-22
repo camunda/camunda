@@ -54,7 +54,7 @@ export default class DurationFilter extends React.Component {
     const {value, operator, unit, applyTo} = this.state;
     const {definitions} = this.props;
 
-    const isValidInput = numberParser.isPositiveNumber(value);
+    const isValidInput = numberParser.isPositiveInt(value);
     const isValidFilter = isValidInput && applyTo.length > 0;
 
     return (
@@ -114,7 +114,7 @@ export default class DurationFilter extends React.Component {
                   <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
                 </Select>
               </Form.InputGroup>
-              {!isValidInput && <Message error>{t('common.errors.postiveNum')}</Message>}
+              {!isValidInput && <Message error>{t('common.errors.positiveInt')}</Message>}
             </Form.Group>
           </Form>
         </Modal.Content>

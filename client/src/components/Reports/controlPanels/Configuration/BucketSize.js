@@ -97,7 +97,7 @@ export default function BucketSize({
             </Select>
           )}
         </div>
-        {!sizeValid && <Message error>{t('common.errors.postiveNum')}</Message>}
+        {!sizeValid && <Message error>{t('common.errors.positiveNum')}</Message>}
         <div className="inputGroup">
           <LabeledInput
             label={t('report.config.bucket.baseline')}

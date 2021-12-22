@@ -369,7 +369,6 @@
         "value": "Actual Value",
         "target": "Target Value"
       },
-      "noChangeWarning": "Please change at least one value",
       "invalidValue": "All fields should have a numeric value",
       "targetDuration": "Target duration",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
@@ -519,7 +518,7 @@
         "goalValue": "Goal value",
         "baseline": "Baseline",
         "target": "Target",
-        "invalidInput": "Must be a non-negative number",
+        "invalidInput": "Enter a positive number",
         "lessThanTargetError": "Target must be greater than baseline"
       },
       "pointMarkers": {
@@ -846,7 +845,9 @@
     },
     "errors": {
       "inValidLink": "This link is not valid.",
-      "postiveNum": "Please enter a positive numeric value"
+      "number": "Enter a number",
+      "positiveNum": "Enter a positive number",
+      "positiveInt": "Enter a positive whole number"
     },
     "instance": {
       "label": "instance",
@@ -1057,9 +1058,8 @@
           "instanceEndDate": "Process Instances <b>ended</b>",
           "evaluationDateTime": "Decision Instances <b>evaluated</b>"
         },
-        "invalidInput": "Please enter a positive integer value",
         "to": "to",
-        "invalidDate": "Please enter a valid date",
+        "invalidDate": "Enter a valid date",
         "preview": {
           "this": {
             "week": "in the current",

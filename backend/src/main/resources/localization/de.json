@@ -369,7 +369,6 @@
         "value": "Tatsächlicher Wert",
         "target": "Sollwert"
       },
-      "noChangeWarning": "Bitte ändern Sie mindestens einen Wert",
       "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
@@ -519,7 +518,7 @@
         "goalValue": "Zielwert",
         "baseline": "Grundlinie",
         "target": "Ziel",
-        "invalidInput": "Muss eine nicht-negative Zahl sein",
+        "invalidInput": "Einen positiven Zahlenwert eingeben",
         "lessThanTargetError": "Ziel muss größer als die Grundlinie sein"
       },
       "pointMarkers": {
@@ -846,7 +845,9 @@
     },
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
-      "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
+      "number": "Eine Zahl eingeben",
+      "positiveNum": "Einen positiven Zahlenwert eingeben",
+      "positiveInt": "Einen positiven ganzzahligen Wert eingeben"
     },
     "instance": {
       "label": "Instanz",
@@ -1057,9 +1058,8 @@
           "instanceEndDate": "Prozessinstanzen <b>beendet</b>",
           "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
         },
-        "invalidInput": "Bitte geben Sie einen positiven ganzzahligen Wert ein",
         "to": "bis",
-        "invalidDate": "Bitte gültiges Datum eingeben",
+        "invalidDate": "Gültiges Datum eingeben",
         "preview": {
           "this": {
             "week": "In der aktuellen",
