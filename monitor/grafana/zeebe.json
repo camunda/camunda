@@ -88,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1636451740371,
+  "iteration": 1640095638552,
   "links": [],
   "panels": [
     {
@@ -902,14 +902,16 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:71",
               "format": "short",
               "label": null,
               "logBase": 1,
               "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             },
             {
+              "$$hashKey": "object:72",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -11080,5 +11082,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 25
+  "version": 26
 }
