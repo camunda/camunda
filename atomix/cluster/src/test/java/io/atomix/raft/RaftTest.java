@@ -19,11 +19,7 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -217,7 +213,7 @@ public class RaftTest extends ConcurrentTestCase {
     final RaftServer follower = servers.stream().filter(RaftServer::isFollower).findFirst().get();
     follower.promote().thenRun(this::resume);
     await(15000, 1001);
-    assertTrue(follower.isLeader());
+    assertThat(follower.isLeader()).isTrue();
   }
 
   /** Tests demoting the leader. */
@@ -229,13 +225,13 @@ public class RaftTest extends ConcurrentTestCase {
         servers.stream()
             .filter(s -> s.cluster().getLocalMember().equals(s.cluster().getLeader()))
             .findFirst()
-            .get();
+            .orElseThrow();
 
     final RaftServer follower =
         servers.stream()
             .filter(s -> !s.cluster().getLocalMember().equals(s.cluster().getLeader()))
             .findFirst()
-            .get();
+            .orElseThrow();
 
     follower
         .cluster()
@@ -345,7 +341,7 @@ public class RaftTest extends ConcurrentTestCase {
       throw new RuntimeException(e);
     }
 
-    assertTrue(condition.getAsBoolean());
+    assertThat(condition.getAsBoolean()).isTrue();
   }
 
   @Test
@@ -370,7 +366,7 @@ public class RaftTest extends ConcurrentTestCase {
     previousLeader.stepDown();
 
     // then
-    assertTrue(transitionCompleted.await(1000, TimeUnit.SECONDS));
+    assertThat(transitionCompleted.await(1000, TimeUnit.SECONDS)).isTrue();
   }
 
   private Optional<RaftServer> getLeader(final List<RaftServer> servers) {
@@ -393,7 +389,7 @@ public class RaftTest extends ConcurrentTestCase {
       final IndexedRaftLogEntry entry = raftLogReader.next();
 
       assertThat(entry.entry()).isInstanceOf(InitialEntry.class);
-      assertEquals(term, entry.term());
+      assertThat(entry.term()).isEqualTo(term);
       transitionCompleted.countDown();
     }
   }
@@ -429,7 +425,7 @@ public class RaftTest extends ConcurrentTestCase {
   @Test
   public void shouldLeaderStepDownOnDisconnect() throws Throwable {
     final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).get();
+    final RaftServer leader = getLeader(servers).orElseThrow();
     final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
 
     final CountDownLatch stepDownListener = new CountDownLatch(1);
@@ -444,15 +440,15 @@ public class RaftTest extends ConcurrentTestCase {
     protocolFactory.partition(leaderId);
 
     // then
-    assertTrue(stepDownListener.await(30, TimeUnit.SECONDS));
-    assertFalse(leader.isLeader());
+    assertThat(stepDownListener.await(30, TimeUnit.SECONDS)).isTrue();
+    assertThat(leader.isLeader()).isFalse();
   }
 
   @Test
   public void shouldReconnect() throws Throwable {
     // given
     final List<RaftServer> servers = createServers(3);
-    final RaftServer leader = getLeader(servers).get();
+    final RaftServer leader = getLeader(servers).orElseThrow();
     final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
     final AtomicLong commitIndex = new AtomicLong();
     leader.getContext().addCommitListener(commitIndex::set);
@@ -462,7 +458,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     // when
     final var newLeader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
-    assertNotEquals(newLeader, leader);
+    assertThat(leader).isNotEqualTo(newLeader);
     final var secondCommit = appendEntry(newLeader);
     protocolFactory.heal(leaderId);
 
@@ -474,7 +470,7 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldFailOverOnLeaderDisconnect() throws Throwable {
     final List<RaftServer> servers = createServers(3);
 
-    final RaftServer leader = getLeader(servers).get();
+    final RaftServer leader = getLeader(servers).orElseThrow();
     final MemberId leaderId = leader.getContext().getCluster().getLocalMember().memberId();
 
     final CountDownLatch newLeaderElected = new CountDownLatch(1);
@@ -492,8 +488,8 @@ public class RaftTest extends ConcurrentTestCase {
     protocolFactory.partition(leaderId);
 
     // then
-    assertTrue(newLeaderElected.await(30, TimeUnit.SECONDS));
-    assertNotEquals(newLeaderId.get(), leaderId);
+    assertThat(newLeaderElected.await(30, TimeUnit.SECONDS)).isTrue();
+    assertThat(leaderId).isNotEqualTo(newLeaderId.get());
   }
 
   @Test
