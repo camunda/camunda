@@ -29,9 +29,14 @@ import io.camunda.operate.util.TestImportListener;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
+import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.elasticsearch.action.admin.indices.flush.FlushRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
@@ -50,6 +55,8 @@ import org.springframework.test.context.ContextConfiguration;
 public class ImportSeveralVersionsIT extends OperateIntegrationTest {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
+  private static final int TIMEOUT_IN_SECONDS = 5 * 60; // 5 minutes
+  private static final int TIMEOUT_IN_MILLIS = TIMEOUT_IN_SECONDS * 1000; // 5 minutes
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule(OPERATE_PREFIX);
@@ -90,6 +97,9 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
   @MockBean
   private PartitionHolder partitionHolder;
 
+  @Autowired
+  private RecordsReaderHolder recordsReaderHolder;
+
   @Before
   public void beforeTest() {
     when(partitionHolder.getPartitionIds()).thenReturn(Arrays.asList(1));
@@ -104,31 +114,37 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
   @Test
   public void shouldImportFromSeveralZeebeVersions() throws PersistenceException {
     //when
-    startImportAndWaitTillItFinishes();
-    //then
-    sleepFor(5000L);
-    assertOperateData();
+    AtomicBoolean hold = new AtomicBoolean(true);
+    zeebeImporter.scheduleReaders();
+    countImportListener.setBatchFinishedListener(() -> {
+      logger.info("Batch finished. Imported batches: " + countImportListener.getImportedCount() + "   ::   scheduled: " + countImportListener.getScheduledCount());
+      if (countImportListener.getImportedCount() == countImportListener.getScheduledCount()) {
+        hold.set(false);
+        logger.info("All readers have finished importing batch");
+      }
+    });
+
+    int waitingFor = 0;
+    while (hold.get()) {
+      // waiting callback to be executed
+      if (waitingFor == TIMEOUT_IN_MILLIS) {
+        fail("timeout... Tests waited " + TIMEOUT_IN_SECONDS + " seconds for batches to finish");
+      }
+      waitingFor += 1000;
+      sleepFor(1000);
+    }
+
+    // then
+    executeAndRetry(60, 1000L, this::assertOperateData);
     //make sure that both importers were called
     verify(importerv1, atLeastOnce()).performImport(any(ImportBatch.class));
     verify(importerv2, atLeastOnce()).performImport(any(ImportBatch.class));
   }
 
-  private void startImportAndWaitTillItFinishes() {
-
-    zeebeImporter.scheduleReaders();
-
-    int countImported = 0;
-    sleepFor(20000L);
-    while (countImportListener.getImportedCount() > countImported) {
-      countImported += countImportListener.getImportedCount();
-      sleepFor(10000L);
-    }
-
-    logger.info("All import jobs are scheduled");
-  }
-
   private void assertOperateData() {
     try {
+      ElasticsearchUtil.flushData(esClient);
+
       //assert process count
       int count = ElasticsearchUtil.getDocCount(esClient, processIndex.getAlias());
       assertThat(count).isEqualTo(1);
@@ -150,4 +166,28 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
     }
   }
 
+  private void executeAndRetry(int retryTimes, long waitTime, Runnable execute)  {
+    executeAndRetry(0, retryTimes, waitTime, execute);
+  }
+
+  private void executeAndRetry(int currentRun, int retryTimes, long waitTime, Runnable execute) {
+    currentRun++;
+    try {
+      execute.run();
+    } catch (Exception ex) {
+      if (currentRun > retryTimes) {
+        throw ex;
+      } else {
+        sleepFor(waitTime);
+        executeAndRetry(currentRun, retryTimes, waitTime, execute);
+      }
+    }
+  }
+
+
+  // ImportSeveralVersionsIT.shouldImportFromSeveralZeebeVersions:138
+  //    ->executeAndRetry:178
+  //    ->executeAndRetry:184
+  //    ->assertOperateData:163
+  //        expected:<[2]> but was:<[1]>
 }

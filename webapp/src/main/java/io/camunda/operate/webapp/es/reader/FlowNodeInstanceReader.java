@@ -39,7 +39,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;

@@ -194,7 +194,6 @@ public class RecordsReader implements Runnable {
 
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
-        logger.debug("No index found for alias {}", aliasName);
         throw new NoSuchIndexException();
       } else {
         final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());

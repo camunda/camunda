@@ -128,7 +128,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"var1","\"updatedValue\"");
     elasticsearchTestRule.processAllRecordsAndWait(variableEqualsCheck, processInstanceKey,processInstanceKey,"newVar","555");
-    
+
     variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(4);
     assertVariable(variables, "var1","\"updatedValue\"");

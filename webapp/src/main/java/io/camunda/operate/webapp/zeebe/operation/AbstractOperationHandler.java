@@ -38,7 +38,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   @Autowired
   protected Metrics metrics;
-  
+
   @Override
   public void handle(OperationEntity operation) {
     try {
@@ -73,11 +73,11 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     }
     return null;
   }
-  
+
   protected void recordCommandMetric(final OperationEntity operation) {
-    metrics.recordCounts(Metrics.COUNTER_NAME_COMMANDS, 1, Metrics.TAG_KEY_STATUS,operation.getState().name(),Metrics.TAG_KEY_TYPE, operation.getType().name()); 
+    metrics.recordCounts(Metrics.COUNTER_NAME_COMMANDS, 1, Metrics.TAG_KEY_STATUS,operation.getState().name(),Metrics.TAG_KEY_TYPE, operation.getType().name());
   }
- 
+
   protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {
     if (isLocked(operation)) {
       operation.setState(OperationState.FAILED);

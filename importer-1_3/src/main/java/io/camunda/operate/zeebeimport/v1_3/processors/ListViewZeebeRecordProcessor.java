@@ -24,6 +24,7 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
+import io.camunda.operate.es.contract.MetricContract;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -109,6 +111,9 @@ public class ListViewZeebeRecordProcessor {
   @Autowired
   private PartitionHolder partitionHolder;
 
+  @Autowired
+  private MetricContract.Writer metricWriter;
+
   //treePath by processInstanceKey cache
   private Map<String, String> treePathCache;
   //flowNodeId by flowNodeInstanceId cache for call activities
@@ -165,7 +170,7 @@ public class ListViewZeebeRecordProcessor {
             //resolve corresponding operation
             operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
           }
-          piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity, treePathMap);
+          piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity, treePathMap, bulkRequest);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           updateFlowNodeInstance(record, intentStr, recordValue, actEntities);
         }
@@ -180,10 +185,13 @@ public class ListViewZeebeRecordProcessor {
   }
 
 
-  private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch, Record record, String intentStr,
-                                                                   ProcessInstanceRecordValueImpl recordValue,
-                                                                   ProcessInstanceForListViewEntity piEntity,
-                                                                   Map<String, String> treePathMap) {
+  private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch,
+      Record record,
+      String intentStr,
+      ProcessInstanceRecordValueImpl recordValue,
+      ProcessInstanceForListViewEntity piEntity,
+      Map<String, String> treePathMap,
+      BulkRequest bulkRequest) {
     if (piEntity == null) {
       piEntity = new ProcessInstanceForListViewEntity();
     }
@@ -198,16 +206,20 @@ public class ListViewZeebeRecordProcessor {
 
     piEntity.setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
 
+    OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       importBatch.incrementFinishedWiCount();
-      piEntity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      piEntity.setEndDate(timestamp);
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         piEntity.setState(ProcessInstanceState.CANCELED);
       } else {
         piEntity.setState(ProcessInstanceState.COMPLETED);
+        String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
+        bulkRequest.add(metricWriter
+            .registerProcessInstanceCompleteEvent(processInstanceKey, timestamp));
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      piEntity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      piEntity.setStartDate(timestamp);
       piEntity.setState(ProcessInstanceState.ACTIVE);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);

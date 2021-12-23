@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.management;
 
+import io.camunda.operate.es.contract.MetricContract;
 import io.camunda.operate.webapp.management.dto.UsageMetricDTO;
 import io.camunda.operate.webapp.management.dto.UsageMetricQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,18 +18,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RestControllerEndpoint(id = "usage-metrics")
 public class UsageMetricsService {
 
+  @Autowired private MetricContract.Reader reader;
+
   /**
-   * Retrieve list of unique assigned users in a given period
+   * Retrieve total of processed instances given a period of time
    *
    * <p>Sample Usage:
    * <HOST>:<PORT>/actuator/usage-metrics/process-instances?startTime=2012-12-19T06:01:17.171Z&endTime=2012-12-29T06:01:17.171Z
    *
-   * <p>TODO: Return UsageMetricDTO as a response - For now this is just the initial setup
    */
   @GetMapping(
       value = "/process-instances",
       produces = {MediaType.APPLICATION_JSON_VALUE})
   public UsageMetricDTO retrieveUniqueAssignedUsers(UsageMetricQueryDTO query) {
-    return new UsageMetricDTO().setTotal(99);
+    Long total = reader.retrieveProcessInstanceCount(query.getStartTime(), query.getEndTime());
+    return new UsageMetricDTO().setTotal(total);
   }
 }

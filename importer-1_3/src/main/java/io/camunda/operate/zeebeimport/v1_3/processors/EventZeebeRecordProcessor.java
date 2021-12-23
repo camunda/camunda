@@ -18,6 +18,7 @@ import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
+import io.camunda.operate.es.contract.MetricContract;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.util.DateUtil;

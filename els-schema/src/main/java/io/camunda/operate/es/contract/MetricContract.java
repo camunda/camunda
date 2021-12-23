@@ -3,19 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.operate.webapp.es.contract;
+package io.camunda.operate.es.contract;
 
-import io.camunda.operate.webapp.management.dto.UsageMetricDTO;
+import org.elasticsearch.action.index.IndexRequest;
 
 import java.time.OffsetDateTime;
 
 public interface MetricContract {
 
+  String EVENT_PROCESS_INSTANCE_FINISHED = "EVENT_PROCESS_INSTANCE_FINISHED";
+
   interface Reader {
-    UsageMetricDTO retrieveProcessInstanceCount(OffsetDateTime startDate, OffsetDateTime endDate);
+    Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime);
   }
 
   interface Writer {
-    void registerProcessInstanceCompleteEvent(String processInstanceKey);
+    IndexRequest registerProcessInstanceCompleteEvent(String processInstanceKey, OffsetDateTime timestamp);
   }
 }

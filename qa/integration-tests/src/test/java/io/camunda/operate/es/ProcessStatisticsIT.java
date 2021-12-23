@@ -46,20 +46,16 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testOneProcessStatistics() throws Exception {
-    Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
+    createData(PROCESS_KEY_DEMO_PROCESS);
 
-    createData(processDefinitionKey);
-
-    getStatisticsAndAssert(createGetAllProcessInstancesQuery(processDefinitionKey));
+    getStatisticsAndAssert(createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS));
   }
 
   @Test
   public void testStatisticsWithQueryByActivityId() throws Exception {
-    Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
+    createData(PROCESS_KEY_DEMO_PROCESS);
 
-    createData(processDefinitionKey);
-
-    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
+    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS);
     queryRequest.setActivityId("taskA");
 
     final List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
@@ -71,11 +67,9 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testStatisticsWithQueryByErrorMessage() throws Exception {
-    Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
+    createData(PROCESS_KEY_DEMO_PROCESS);
 
-    createData(processDefinitionKey);
-
-    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
+    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS);
     queryRequest.setErrorMessage("error");
 
     final List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
@@ -112,11 +106,9 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithMoreThanOneProcessDefinitionKey() throws Exception {
-    Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
+    createData(PROCESS_KEY_DEMO_PROCESS);
 
-    createData(processDefinitionKey);
-
-    final ListViewQueryDto query = createGetAllProcessInstancesQuery(processDefinitionKey, PROCESS_KEY_OTHER_PROCESS);
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS, PROCESS_KEY_OTHER_PROCESS);
 
     MvcResult mvcResult = postRequestThatShouldFail(QUERY_PROCESS_STATISTICS_URL, query);
 
@@ -138,6 +130,36 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one process must be specified in the request");
   }
 
+  @Test
+  public void testTwoProcessesStatistics() throws Exception {
+    createData(PROCESS_KEY_DEMO_PROCESS);
+    createData(PROCESS_KEY_OTHER_PROCESS);
+
+    getStatisticsAndAssert(createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS));
+    getStatisticsAndAssert(createGetAllProcessInstancesQuery(PROCESS_KEY_OTHER_PROCESS));
+  }
+
+  @Test
+  public void testGetCoreStatistics() throws Exception {
+    // when request core-statistics
+    ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse( getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
+    // then return zero statistics
+    assertEquals(coreStatistics.getActive().longValue(), 0L);
+    assertEquals(coreStatistics.getRunning().longValue(), 0L);
+    assertEquals(coreStatistics.getWithIncidents().longValue(), 0L);
+
+    // given test data
+    createData(PROCESS_KEY_DEMO_PROCESS);
+    createData(PROCESS_KEY_OTHER_PROCESS);
+
+    // when request core-statistics
+    coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
+    // then return non-zero statistics
+    assertEquals(coreStatistics.getActive().longValue(), 6L);
+    assertEquals(coreStatistics.getRunning().longValue(), 12L);
+    assertEquals(coreStatistics.getWithIncidents().longValue(), 6L);
+  }
+
   private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
     ListViewQueryDto q = TestUtil.createGetAllProcessInstancesQuery();
     if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
@@ -151,36 +173,24 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
     assertThat(activityStatisticsDtos).hasSize(5);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
-      ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
+        ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskC")).allMatch(ai->
-      ai.getActive().equals(0L) && ai.getCanceled().equals(2L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(2L)
+        ai.getActive().equals(0L) && ai.getCanceled().equals(2L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(2L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskD")).allMatch(ai->
-      ai.getActive().equals(0L) && ai.getCanceled().equals(1L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
+        ai.getActive().equals(0L) && ai.getCanceled().equals(1L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskE")).allMatch(ai->
-      ai.getActive().equals(1L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(1L)
+        ai.getActive().equals(1L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(1L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("end")).allMatch(ai->
-      ai.getActive().equals(0L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(2L) && ai.getIncidents().equals(0L)
+        ai.getActive().equals(0L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(2L) && ai.getIncidents().equals(0L)
     );
   }
 
   private List<FlowNodeStatisticsDto> getActivityStatistics(ListViewQueryDto query) throws Exception {
     return mockMvcTestRule.listFromResponse(postRequest(QUERY_PROCESS_STATISTICS_URL, query), FlowNodeStatisticsDto.class);
-  }
-
-  @Test
-  public void testTwoProcessesStatistics() throws Exception {
-    Long processDefinitionKey1 = PROCESS_KEY_DEMO_PROCESS;
-    Long processDefinitionKey2 = PROCESS_KEY_OTHER_PROCESS;
-
-    createData(processDefinitionKey1);
-    createData(processDefinitionKey2);
-
-    getStatisticsAndAssert(createGetAllProcessInstancesQuery(processDefinitionKey1));
-    getStatisticsAndAssert(createGetAllProcessInstancesQuery(processDefinitionKey2));
   }
 
   /**
@@ -339,26 +349,5 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
 
-  }
-
-  @Test
-  public void testGetCoreStatistics() throws Exception {
-    // when request core-statistics
-    ProcessInstanceCoreStatisticsDto coreStatistics = mockMvcTestRule.fromResponse( getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
-    // then return zero statistics
-    assertEquals(coreStatistics.getActive().longValue(), 0L);
-    assertEquals(coreStatistics.getRunning().longValue(), 0L);
-    assertEquals(coreStatistics.getWithIncidents().longValue(), 0L);
-
-    // given test data
-    createData(PROCESS_KEY_DEMO_PROCESS);
-    createData(PROCESS_KEY_OTHER_PROCESS);
-
-    // when request core-statistics
-    coreStatistics = mockMvcTestRule.fromResponse(getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
-    // then return non-zero statistics
-    assertEquals(coreStatistics.getActive().longValue(), 6L);
-    assertEquals(coreStatistics.getRunning().longValue(), 12L);
-    assertEquals(coreStatistics.getWithIncidents().longValue(), 6L);
   }
 }

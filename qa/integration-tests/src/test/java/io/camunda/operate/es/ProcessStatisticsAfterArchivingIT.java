@@ -28,7 +28,8 @@ public class ProcessStatisticsAfterArchivingIT extends ProcessStatisticsIT {
 
   @Before
   public void before() {
-    assumeFalse(name.getMethodName().startsWith("testFail"));
+    // testing one with archiver, the others keep on parent tests
+    assumeFalse(!name.getMethodName().startsWith("testOneProcessStatistics"));
     super.before();
   }
 

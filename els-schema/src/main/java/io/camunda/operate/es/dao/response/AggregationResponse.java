@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.operate.webapp.es.dao.response;
+package io.camunda.operate.es.dao.response;
 
 import java.util.List;
 
@@ -12,16 +12,18 @@ public class AggregationResponse implements DAOResponse {
   private boolean error;
   private List<AggregationValue> hits;
   private int size;
+  private long sumOfTotalDocs;
 
   private AggregationResponse() {}
 
   public AggregationResponse(boolean error) {
-    this(error, null);
+    this(error, null, 0);
   }
 
-  public AggregationResponse(boolean error, List<AggregationValue> hits) {
+  public AggregationResponse(boolean error, List<AggregationValue> hits, long sumOfTotalDocs) {
     this.error = error;
     this.hits = hits;
+    this.sumOfTotalDocs = sumOfTotalDocs;
     if (hits == null) {
       size = 0;
     } else {
@@ -40,6 +42,10 @@ public class AggregationResponse implements DAOResponse {
 
   public int getSize() {
     return size;
+  }
+
+  public long getSumOfTotalDocs() {
+    return sumOfTotalDocs;
   }
 
   public static class AggregationValue {

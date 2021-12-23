@@ -112,14 +112,15 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private void generateDataForCurrentVersion() {
     deployProcessWhenNeeded();
     startInstances();
-    finishInstances();
     failInstances();
+    finishInstances();
     waitForDataToBeExported();
   }
 
   private void waitForDataToBeExported() {
     int exported = 0;
     int attempts = 0;
+    ElasticsearchUtil.flushData(TestContainerUtil.getEsClient());
     while (exported < wiCount && attempts < 10) {
       sleepFor(1000);
       try {
@@ -156,7 +157,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   }
 
   private void startInstances() {
-    for (int i = 0; i < random.nextInt(10) + 10; i++) {
+    for (int i = 0; i < random.nextInt(10) + 1; i++) {
       ZeebeTestUtil.startProcessInstance(client, BPMN_PROCESS_ID, "{\"var\":111}");
       wiCount++;
     }

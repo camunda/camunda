@@ -86,31 +86,6 @@ public class ProcessInstanceReader extends AbstractReader {
   private OperationReader operationReader;
 
   /**
-   *
-   * @param processDefinitionKey
-   * @return
-   */
-//  public List<Long> queryProcessInstancesWithEmptyProcessVersion(Long processDefinitionKey) {
-//      QueryBuilder queryBuilder = constantScoreQuery(
-//          joinWithAnd(
-//              termQuery(ListViewTemplate.PROCESS_KEY, processDefinitionKey),
-//              boolQuery().mustNot(existsQuery(ListViewTemplate.PROCESS_VERSION))
-//          )
-//      );
-//      SearchRequest searchRequest = new SearchRequest(listViewTemplate.getAlias())
-//                                      .source(new SearchSourceBuilder()
-//                                      .query(queryBuilder)
-//                                      .fetchSource(false));
-//      try {
-//        return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
-//      } catch (IOException e) {
-//        final String message = String.format("Exception occurred, while obtaining process instance that has empty versions: %s", e.getMessage());
-//        logger.error(message, e);
-//        throw new OperateRuntimeException(message, e);
-//      }
-//  }
-
-  /**
    * Searches for process instance by key.
    * @param processInstanceKey
    * @return

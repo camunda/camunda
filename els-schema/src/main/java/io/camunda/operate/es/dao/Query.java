@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.operate.webapp.es.dao;
+package io.camunda.operate.es.dao;
 
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.index.query.QueryBuilder;

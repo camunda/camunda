@@ -8,13 +8,13 @@ package io.camunda.operate.webapp.management.dto;
 import java.util.Objects;
 
 public class UsageMetricDTO {
-  private int total;
+  private long total;
 
-  public int getTotal() {
+  public long getTotal() {
     return total;
   }
 
-  public UsageMetricDTO setTotal(int total) {
+  public UsageMetricDTO setTotal(long total) {
     this.total = total;
     return this;
   }

@@ -3,16 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.operate.webapp.es.dao;
+package io.camunda.operate.es.dao;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperateEntity;
+import io.camunda.operate.es.dao.response.AggregationResponse;
+import io.camunda.operate.es.dao.response.InsertResponse;
+import io.camunda.operate.es.dao.response.SearchResponse;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.es.dao.response.AggregationResponse;
-import io.camunda.operate.webapp.es.dao.response.InsertResponse;
-import io.camunda.operate.webapp.es.dao.response.SearchResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -33,7 +34,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.camunda.operate.webapp.es.dao.response.AggregationResponse.*;
+import static io.camunda.operate.es.dao.response.AggregationResponse.AggregationValue;
 
 public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
 
@@ -74,13 +75,26 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
             ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
   }
 
+  /**
+   * Returns the Elasticsearch IndexRequest.
+   * This is for a very specific use case. We'd rather leave this DAO class clean and not return any elastic class
+   *
+   * @param entity
+   * @return insert request
+   */
+  public IndexRequest buildESIndexRequest(T entity) {
+    try {
+      return new IndexRequest(index.getFullQualifiedName())
+          .id(entity.getId())
+          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+    } catch (JsonProcessingException e) {
+      throw new OperateRuntimeException("error building Index/InserRequest");
+    }
+  }
+
   public InsertResponse insert(T entity) {
     try {
-
-      final IndexRequest request =
-          new IndexRequest(index.getFullQualifiedName())
-              .id(entity.getId())
-              .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+      final IndexRequest request = buildESIndexRequest(entity);
       final IndexResponse response = esClient.index(request, RequestOptions.DEFAULT);
       if (response.status() != RestStatus.CREATED) {
         return InsertResponse.failure();
@@ -144,7 +158,9 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
               .map(it -> new AggregationValue(String.valueOf(it.getKey()), it.getDocCount()))
               .collect(Collectors.toList());
 
-      return new AggregationResponse(false, values);
+      long sumOfOtherDocCounts = ((ParsedStringTerms) group).getSumOfOtherDocCounts(); // size of documents not in result
+      long total = sumOfOtherDocCounts + values.size(); // size of result + other docs
+      return new AggregationResponse(false, values, total);
     } catch (IOException e) {
       LOGGER.error("Error searching at index: " + index, e);
     }
@@ -157,7 +173,7 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
    * @param <T> TasklistEntity - Elastic Search doc
    * @param <I> IndexDescriptor - which index to persist the doc
    */
-  static class Builder<T extends OperateEntity, I extends IndexDescriptor> {
+  public static class Builder<T extends OperateEntity, I extends IndexDescriptor> {
     private ObjectMapper objectMapper;
     private RestHighLevelClient esClient;
     private I index;

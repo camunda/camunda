@@ -24,8 +24,6 @@ import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;

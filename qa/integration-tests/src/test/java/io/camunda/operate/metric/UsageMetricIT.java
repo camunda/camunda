@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.metric;
 
+import io.camunda.operate.es.contract.MetricContract;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
@@ -13,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -24,6 +26,8 @@ import java.util.Map;
 
 import static io.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -42,9 +46,12 @@ public class UsageMetricIT {
       "/actuator/usage-metrics/process-instances?startTime={startTime}&endTime={endTime}";
 
   @Autowired private TestRestTemplate testRestTemplate;
+  @MockBean private MetricContract.Reader reader;
 
   @Test
   public void validateActuatorEndpointRegistered() {
+    when(reader.retrieveProcessInstanceCount(any(), any())).thenReturn(3L);
+
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
@@ -52,6 +59,6 @@ public class UsageMetricIT {
         testRestTemplate.getForEntity(METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody().getTotal()).isEqualTo(99);
+    assertThat(response.getBody().getTotal()).isEqualTo(3L);
   }
 }

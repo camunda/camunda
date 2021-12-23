@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.qa.util;
 
+import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -19,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class ElasticsearchUtil {
 
@@ -39,6 +42,18 @@ public abstract class ElasticsearchUtil {
       .source(searchSourceBuilder);
     final long value = ((Cardinality) esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations().get(aggName)).getValue();
     return (int)value;
+  }
+
+  public static void flushData(RestHighLevelClient esClient) {
+    try {
+      final FlushRequest flushRequest = new FlushRequest();
+      flushRequest.waitIfOngoing(true);
+      flushRequest.force(true);
+      esClient.indices().flush(flushRequest, RequestOptions.DEFAULT);
+      sleepFor(500);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
   }
 
   public static int getDocCount(RestHighLevelClient esClient, String aliasName) throws IOException {
