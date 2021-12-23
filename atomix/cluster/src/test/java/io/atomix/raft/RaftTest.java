@@ -37,6 +37,7 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -176,7 +178,12 @@ public class RaftTest extends ConcurrentTestCase {
     final RaftServer.Builder defaults =
         RaftServer.builder(memberId)
             .withMembershipService(mock(ClusterMembershipService.class))
-            .withProtocol(protocol);
+            .withProtocol(protocol)
+            .withPartitionConfig(
+                new RaftPartitionConfig()
+                    .setElectionTimeout(Duration.ofSeconds(1))
+                    .setHeartbeatInterval(Duration.ofMillis(100)));
+
     final RaftServer server = configurator.apply(defaults).build();
 
     serverProtocols.put(memberId, protocol);
@@ -553,8 +560,8 @@ public class RaftTest extends ConcurrentTestCase {
   public void shouldTriggerHeartbeatTimeouts() throws Throwable {
     final List<RaftServer> servers = createServers(3);
     final List<RaftServer> followers = getFollowers(servers);
-    final MemberId followerId =
-        followers.get(0).getContext().getCluster().getLocalMember().memberId();
+    final RaftServer follower = followers.get(0);
+    final MemberId followerId = follower.getContext().getCluster().getLocalMember().memberId();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
@@ -562,8 +569,12 @@ public class RaftTest extends ConcurrentTestCase {
     protocolFactory.partition(followerId);
 
     // then
+    // With priority election enabled the lowest priority node can wait upto 3 * electionTimeout
+    // before triggering election.
+    final var timeout = follower.getContext().getElectionTimeout().multipliedBy(4).toMillis();
+
     // should send poll requests to 2 nodes
-    verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
+    verify(followerServer, timeout(timeout).atLeast(2)).poll(any(), any());
   }
 
   @Test
