@@ -19,6 +19,7 @@ import {AddButton} from './AddButton';
 import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
 import EditButton from './EditButton';
+import {AutoRefreshSelect} from './AutoRefresh';
 
 import {FiltersEdit, AddFiltersButton} from './filters';
 import {convertFilterToDefaultValues, getDefaultFilter} from './service';
@@ -29,10 +30,11 @@ export class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
-    const {name, initialAvailableFilters, initialReports} = props;
+    const {name, initialAvailableFilters, initialReports, refreshRateSeconds} = props;
     this.state = {
       reports: initialReports,
       availableFilters: initialAvailableFilters || [],
+      refreshRateSeconds,
       filter: getDefaultFilter(initialAvailableFilters),
       name: name,
     };
@@ -182,7 +184,7 @@ export class DashboardEdit extends React.Component {
   save = (stayInEditMode) => {
     return new Promise((resolve) => {
       const promises = [];
-      const {name, reports, availableFilters, filter} = this.state;
+      const {name, reports, availableFilters, filter, refreshRateSeconds} = this.state;
 
       nowPristine();
       promises.push(
@@ -198,6 +200,7 @@ export class DashboardEdit extends React.Component {
               },
             };
           }),
+          refreshRateSeconds,
           stayInEditMode
         )
       );
@@ -242,7 +245,7 @@ export class DashboardEdit extends React.Component {
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-    const {reports, name, availableFilters, filter} = this.state;
+    const {reports, name, availableFilters, refreshRateSeconds, filter} = this.state;
 
     const optimizeReports = reports?.filter(({id, report}) => !!id || !!report);
 
@@ -265,6 +268,12 @@ export class DashboardEdit extends React.Component {
               persistReports={() => this.save(true)}
               availableFilters={availableFilters}
               setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
+            />
+            <AutoRefreshSelect
+              refreshRateMs={refreshRateSeconds * 1000}
+              onChange={(refreshRateMs) =>
+                this.setState({refreshRateSeconds: refreshRateMs / 1000 || null})
+              }
             />
             <div className="separator" />
           </EntityNameForm>
