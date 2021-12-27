@@ -10,7 +10,7 @@
 
 ### Modules
 
-![your-UML-diagram-name](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/camunda-cloud/operate/master/modules.puml?token=AAZGID7HQQIXJSDUYFOI6E3B2LFUW)
+![your-UML-diagram-name](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/camunda-cloud/operate/master/modules.puml?token=AAZGID63RHIBDTXLJOXYFZDB2LGSQ)
 
 _Source: [modules.puml](https://github.com/camunda-cloud/operate/blob/master/modules.puml)_
 
