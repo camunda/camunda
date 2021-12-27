@@ -7,8 +7,19 @@
 [els-schema] as elsschema
 [importer-<verison>] as importer
 [importer-common] as importercommon
-[qa] as qa
 [webapp] as webapp
+
+package "QA" as qa {
+  [batch-operation-performance-tests] as batch
+  [data-generator] as datatests
+  [import-old-zeebe-tests] as oldtests
+  [import-performance-tests] as performance
+  [integration-tests] as it
+  [migration-performance-test] as migrationperf
+  [migration-tests] as migration
+  [query-performance-tests] as query
+  [util] as util
+}
 
 
 archiver -- client
@@ -18,8 +29,8 @@ datagenerator -- distro
 distro -- elsschema
 elsschema -- importer
 importer -- importercommon
-importercommon -- qa
-qa -- webapp
+importercommon -- webapp
+webapp -- qa
 
 note right of archiver: Archiver is the module responsible\nfor archiving completed processes\n instances
 note right of client: Client is the module where the front-end\ncode lives in. After build/compile\nthis is packed inside webapp
