@@ -8,6 +8,12 @@
 * [Issue Tracker](https://app.camunda.com/jira/secure/RapidBoard.jspa?rapidView=61)
 * [Zeebe](https://zeebe.io)
 
+### Modules
+
+![your-UML-diagram-name](http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/camunda-cloud/operate/master/modules.puml?token=AAZGID7HQQIXJSDUYFOI6E3B2LFUW)
+
+_Source: [modules.puml](https://github.com/camunda-cloud/operate/blob/master/modules.puml)_
+
 ## Running locally
 
 ### Use maven 
