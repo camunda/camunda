@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -51,7 +53,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobState jobState;
   private final KeyGenerator keyGenerator;
   private final long maxRecordLength;
-  private final long maxJobBatchLength;
 
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
   private final JobMetrics jobMetrics;
@@ -72,7 +73,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.keyGenerator = keyGenerator;
 
     this.maxRecordLength = maxRecordLength;
-    maxJobBatchLength = maxRecordLength - Long.BYTES;
     this.jobMetrics = jobMetrics;
   }
 
@@ -143,8 +143,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             jobRecord.setVariables(DocumentValue.EMPTY_DOCUMENT);
           }
 
-          if (remainingAmount >= 0
-              && (record.getLength() + jobRecord.getLength()) <= maxJobBatchLength) {
+          final int expectedBatchLength = estimateClaimedBatchLength(record, jobRecord);
+          if (remainingAmount >= 0 && expectedBatchLength < maxRecordLength) {
 
             remainingAmount = amount.decrementAndGet();
             jobKeyIterator.add().setValue(key);
@@ -166,6 +166,27 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
           return remainingAmount > 0;
         });
+  }
+
+  /**
+   * Estimates the size of the batch that we will need to claim from the dispatcher when writing the
+   * job batch activation record. This is based on knowledge of the batch writer's internals, and
+   * the assumption that only ONE record is going to be written as part of this batch.
+   *
+   * <p>When only one record is written in a batch, its length is essentially the length of the
+   * metadata (which, when not a rejection, is fixed) plus the length of the value, plus the fixed
+   * log entry descriptor header size. This is framed, then aligned, and gives us an accurate
+   * estimate.
+   *
+   * <p>Note in this case that the metadata length plus the value length is returned by calling
+   * {@link TypedRecord#getLength()}.
+   */
+  private int estimateClaimedBatchLength(
+      final TypedRecord<JobBatchRecord> record, final JobRecord jobRecord) {
+    final var currentEstimatedLength = record.getLength() + LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+    final var estimatedLengthWithNewJob = currentEstimatedLength + jobRecord.getLength();
+
+    return LogBufferAppender.claimedBatchLength(1, (int) estimatedLengthWithNewJob);
   }
 
   private DirectBuffer collectVariables(
