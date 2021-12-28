@@ -25,6 +25,7 @@ import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
+import org.camunda.optimize.service.es.schema.index.VariableLabelIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
@@ -453,7 +454,8 @@ public class ElasticSearchSchemaManager {
       new CombinedReportIndex(),
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex(),
-      new ExternalProcessVariableIndex()
+      new ExternalProcessVariableIndex(),
+      new VariableLabelIndex()
     );
   }
 

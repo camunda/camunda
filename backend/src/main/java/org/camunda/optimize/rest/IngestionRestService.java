@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
+import org.camunda.optimize.rest.util.AuthorizationUtil;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.VariableHelper;
@@ -25,24 +26,20 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto.toExternalProcessVariableDtos;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.util.AuthorizationUtil.validateAccessToken;
 
 @AllArgsConstructor
 @Slf4j
@@ -91,26 +88,6 @@ public class IngestionRestService {
         ReportConstants.ALL_SUPPORTED_PROCESS_VARIABLE_TYPES
       ));
     }
-  }
-
-  private void validateAccessToken(final ContainerRequestContext requestContext, final String expectedAccessToken) {
-    final MultivaluedMap<String, String> queryParameters = requestContext.getUriInfo().getQueryParameters();
-    final String queryParameterAccessToken = queryParameters.getFirst(QUERY_PARAMETER_ACCESS_TOKEN);
-
-    if (!expectedAccessToken.equals(extractAuthorizationHeaderToken(requestContext))
-      && !expectedAccessToken.equals(queryParameterAccessToken)) {
-      throw new NotAuthorizedException("Invalid or no ingestion api secret provided.");
-    }
-  }
-
-  private String extractAuthorizationHeaderToken(ContainerRequestContext requestContext) {
-    return Optional.ofNullable(requestContext.getHeaderString(HttpHeaders.AUTHORIZATION))
-      .map(providedValue -> {
-        if (providedValue.startsWith(AUTH_COOKIE_TOKEN_VALUE_PREFIX)) {
-          return providedValue.replaceFirst(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
-        }
-        return providedValue;
-      }).orElse(null);
   }
 
   private String getEventIngestionAccessToken() {

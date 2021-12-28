@@ -50,6 +50,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.JSON_EXPORT_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -204,6 +205,8 @@ public class ConfigurationService {
   private JsonExportConfiguration jsonExportConfiguration;
 
   private AnalyticsConfiguration analytics;
+
+  private OptimizeApiConfiguration optimizeApiConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -1093,6 +1096,17 @@ public class ConfigurationService {
   @JsonIgnore
   public List<String> getEventBasedProcessAccessGroupIds() {
     return getEventBasedProcessConfiguration().getAuthorizedGroupIds();
+  }
+
+  @JsonIgnore
+  public OptimizeApiConfiguration getOptimizeApiConfiguration() {
+    if (optimizeApiConfiguration == null) {
+      optimizeApiConfiguration = configJsonContext.read(
+        OPTIMIZE_API_CONFIGURATION,
+        OptimizeApiConfiguration.class
+      );
+    }
+    return optimizeApiConfiguration;
   }
 
   public TelemetryConfiguration getTelemetryConfiguration() {

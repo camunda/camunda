@@ -360,4 +360,5 @@ public class ReportWriter {
       SINGLE_DECISION_REPORT_INDEX_NAME
     );
   }
+
 }

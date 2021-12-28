@@ -48,6 +48,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
@@ -920,6 +921,15 @@ public class OptimizeRequestExecutor {
     this.path = "variables";
     this.method = POST;
     this.body = getBody(variableRequestDtos);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableLabelRequest(DefinitionLabelsDto definitionLabelsDto, String accessToken) {
+    this.path = "variables/labels";
+    this.method = POST;
+    Optional.ofNullable(accessToken).ifPresent(token -> addSingleHeader(HttpHeaders.AUTHORIZATION, token));
+    this.mediaType = MediaType.APPLICATION_JSON;
+    this.body = getBody(definitionLabelsDto);
     return this;
   }
 

@@ -6,12 +6,15 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.variable.DefinitionLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +28,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+import static org.camunda.optimize.rest.util.AuthorizationUtil.validateAccessToken;
+
 @AllArgsConstructor
 @Path(ProcessVariableRestService.PROCESS_VARIABLES_PATH)
 @Component
@@ -34,6 +39,8 @@ public class ProcessVariableRestService {
 
   private final ProcessVariableService processVariableService;
   private final SessionService sessionService;
+  private final ProcessVariableLabelService processVariableLabelService;
+  private final ConfigurationService configurationService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
@@ -72,6 +79,15 @@ public class ProcessVariableRestService {
                                                   ProcessVariableReportValuesRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return processVariableService.getVariableValuesForReports(userId, requestDto);
+  }
+
+  @POST
+  @Path("/labels")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
+                                   @Valid DefinitionLabelsDto definitionLabelsDto) {
+    validateAccessToken(requestContext, configurationService.getOptimizeApiConfiguration().getOptimizeAccessToken());
+    processVariableLabelService.storeVariableLabels(definitionLabelsDto);
   }
 
 }
