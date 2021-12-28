@@ -4,6 +4,16 @@
 > and [docker-compose](https://docs.docker.com/compose/install/) installed
 > in your machine
 
+## Architecture
+
+Currently, our structure is separated in something similare to the flow below.
+
+NOTE: In the image, BE = backend
+
+![requestflow](https://user-images.githubusercontent.com/3302415/147551182-d754827b-e2ee-4706-9b22-0b724ce6fc4e.png)
+
+_Source: [docs/request_flow.puml](https://github.com/camunda-cloud/operate/blob/master/webapp/docs/request_flow.puml)_
+
 ## Build the backend
 
 To build the backend you can use maven:
