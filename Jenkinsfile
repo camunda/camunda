@@ -187,7 +187,8 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -205,7 +206,8 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -272,7 +274,8 @@ pipeline {
 
                             post {
                                 always {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
+                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true, allowEmptyResults: true
                                     stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
                                 }
 
