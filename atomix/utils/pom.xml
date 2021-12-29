@@ -62,6 +62,6 @@
   <parent>
     <artifactId>zeebe-atomix-parent</artifactId>
     <groupId>io.camunda</groupId>
-    <version>1.2.9</version>
+    <version>1.2.10-SNAPSHOT</version>
   </parent>
 </project>
