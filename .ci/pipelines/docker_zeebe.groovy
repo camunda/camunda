@@ -39,6 +39,8 @@ spec:
         # (see https://hub.docker.com/_/docker?tab=description&page=1)
         - name: DOCKER_TLS_CERTDIR
           value: ""
+      securityContext:
+        privileged: true
       tty: true
       resources:
         limits:
