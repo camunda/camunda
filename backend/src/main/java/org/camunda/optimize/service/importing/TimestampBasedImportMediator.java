@@ -43,7 +43,7 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
 
       final OffsetDateTime currentPageLastEntityTimestamp =
         getTimestamp(entitiesNextPage.get(entitiesNextPage.size() - 1));
-      importService.executeImport(allEntities, () -> {
+      importService.executeImport(filterEntitiesFromExcludedTenants(allEntities), () -> {
         importIndexHandler.updateTimestampOfLastEntity(currentPageLastEntityTimestamp);
         importCompleteCallback.run();
       });
@@ -54,7 +54,7 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
       importIndexHandler.updatePendingTimestampOfLastEntity(currentPageLastEntityTimestamp);
     } else if (entitiesLastTimestamp.size() > countOfImportedEntitiesWithLastEntityTimestamp) {
       countOfImportedEntitiesWithLastEntityTimestamp = entitiesLastTimestamp.size();
-      importService.executeImport(entitiesLastTimestamp, importCompleteCallback);
+      importService.executeImport(filterEntitiesFromExcludedTenants(entitiesLastTimestamp), importCompleteCallback);
     } else {
       importCompleteCallback.run();
     }

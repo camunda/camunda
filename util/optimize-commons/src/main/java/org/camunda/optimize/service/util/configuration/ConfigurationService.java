@@ -765,6 +765,12 @@ public class ConfigurationService {
       .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
+  public Optional<List<String>> getExcludedTenants(String engineAlias) {
+    return getEngineConfiguration(engineAlias)
+      .map(EngineConfiguration::getExcludedTenants)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
+  }
+
   public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {
     return this.getEngineRestApiEndpoint(engineAlias) + "/engine/" + getEngineName(engineAlias);
   }

@@ -9,13 +9,18 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Data
-public class DeploymentEngineDto implements Serializable, EngineDto {
+public class DeploymentEngineDto implements Serializable, TenantSpecificEngineDto {
 
   private String id;
   private String name;
   private String source;
   private OffsetDateTime deploymentTime;
   private String tenantId;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 }

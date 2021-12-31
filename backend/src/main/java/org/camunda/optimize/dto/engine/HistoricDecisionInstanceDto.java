@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-public class HistoricDecisionInstanceDto implements EngineDto {
+public class HistoricDecisionInstanceDto implements TenantSpecificEngineDto {
   private String id;
   private String decisionDefinitionId;
   private String decisionDefinitionKey;

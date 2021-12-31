@@ -9,10 +9,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-public class HistoricUserTaskInstanceDto implements EngineDto {
+public class HistoricUserTaskInstanceDto implements TenantSpecificEngineDto {
   private String id;  // == FlowNodeInstanceDto.userTaskId
   private String processDefinitionKey;
   private String processDefinitionId;
@@ -39,4 +40,8 @@ public class HistoricUserTaskInstanceDto implements EngineDto {
   private String tenantId;
   private OffsetDateTime removalTime;
   private String rootProcessInstanceId;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 }

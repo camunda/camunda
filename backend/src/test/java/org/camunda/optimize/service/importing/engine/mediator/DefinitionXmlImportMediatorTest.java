@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing.engine.mediator;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -92,6 +91,7 @@ public class DefinitionXmlImportMediatorTest {
     testIds.add("testID2");
     page.setIds(testIds);
     when(importIndexHandler.getNextPage()).thenReturn(page);
+    when(importIndexHandler.getEngineAlias()).thenReturn("camunda-bpm");
 
     List<DecisionDefinitionXmlEngineDto> resultList = new ArrayList<>();
     resultList.add(new DecisionDefinitionXmlEngineDto());

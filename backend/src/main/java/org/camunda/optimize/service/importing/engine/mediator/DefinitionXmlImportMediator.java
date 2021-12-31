@@ -27,7 +27,7 @@ public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportI
       List<DTO> entities = getEntities(page);
       if (!entities.isEmpty()) {
         importIndexHandler.updateIndex(page.getIds().size());
-        importService.executeImport(entities, importCompleteCallback);
+        importService.executeImport(filterEntitiesFromExcludedTenants(entities), importCompleteCallback);
       } else {
         importCompleteCallback.run();
       }

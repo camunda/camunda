@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
-public class HistoricProcessInstanceDto implements EngineDto {
+public class HistoricProcessInstanceDto implements TenantSpecificEngineDto {
   protected String id;
   protected String businessKey;
   protected String processDefinitionId;

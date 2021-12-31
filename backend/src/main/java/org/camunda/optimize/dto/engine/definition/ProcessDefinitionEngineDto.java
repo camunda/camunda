@@ -8,12 +8,13 @@ package org.camunda.optimize.dto.engine.definition;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.engine.TenantSpecificEngineDto;
 
 import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ProcessDefinitionEngineDto extends DefinitionEngineDto {
+public class ProcessDefinitionEngineDto extends DefinitionEngineDto implements TenantSpecificEngineDto {
 
   protected String key;
   protected String category;

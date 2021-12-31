@@ -7,9 +7,15 @@ package org.camunda.optimize.dto.engine;
 
 import lombok.Data;
 
+import java.util.Optional;
+
 @Data
-public class DecisionDefinitionXmlEngineDto implements EngineDto {
+public class DecisionDefinitionXmlEngineDto implements TenantSpecificEngineDto {
   private String id;
   private String dmnXml;
   private String tenantId;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 }

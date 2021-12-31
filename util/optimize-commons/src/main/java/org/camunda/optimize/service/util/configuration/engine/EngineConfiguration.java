@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
 
+import java.util.List;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -30,6 +31,7 @@ public class EngineConfiguration {
   private boolean importEnabled = false;
   @Builder.Default
   private boolean eventImportEnabled = false;
+  private List<String> excludedTenants;
 
   private EngineAuthenticationConfiguration authentication;
 
@@ -41,6 +43,10 @@ public class EngineConfiguration {
   @JsonIgnore
   public Optional<String> getDefaultTenantName() {
     return Optional.ofNullable(defaultTenant).map(DefaultTenant::getName);
+  }
+
+  public Optional<List<String>> getExcludedTenants() {
+    return Optional.ofNullable(excludedTenants);
   }
 
   public void setRest(String rest) {

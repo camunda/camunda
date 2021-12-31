@@ -10,6 +10,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
@@ -34,6 +35,28 @@ public class TenantImportIT extends AbstractImportIT {
     assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.id.name(), tenantId);
     assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.name.name(), tenantName);
     assertThat(hit.getSourceAsMap()).containsEntry(TenantDto.Fields.engine.name(), DEFAULT_ENGINE_ALIAS);
+  }
+
+  @Test
+  public void doNotImportTenantsThatAreExcludedInTheConfiguration() {
+    String tenant1 = "tenantExcluded";
+    List<String> excludedTenants = List.of(tenant1);
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+        .getConfiguredEngines()
+        .values()
+        .forEach(engine -> engine.setExcludedTenants(excludedTenants));
+    engineIntegrationExtension.createTenant(tenant1);
+    engineIntegrationExtension.createTenant("tenant2");
+    engineIntegrationExtension.createTenant("tenant3");
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(2L);
   }
 
   @Test

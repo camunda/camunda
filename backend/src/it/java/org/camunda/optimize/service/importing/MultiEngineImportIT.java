@@ -6,23 +6,29 @@
 package org.camunda.optimize.service.importing;
 
 import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class MultiEngineImportIT extends AbstractMultiEngineIT {
 
@@ -145,6 +151,50 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
         Tuple.tuple(firstTenantId, DEFAULT_ENGINE_ALIAS),
         Tuple.tuple(secondTenantId, SECOND_ENGINE_ALIAS)
       );
+  }
+
+  private ProcessDefinitionEngineDto deployProcessDefinitionWithTenantAndEngine(String tenantId, EngineIntegrationExtension engine) {
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    return engine.deployProcessAndGetProcessDefinition(processModel, tenantId);
+  }
+
+  @Test
+  public void tenantProcessesAreOnlyExcludedFromTheCorrectEngine() {
+    // given
+    final String firstTenantId = "tenantId1";
+    final String tenantName = "My New Tenant";
+    final String excludedTentantId = "tenantId2";
+    addSecondEngineToConfiguration();
+    engineIntegrationExtension.createTenant(firstTenantId, tenantName);
+    engineIntegrationExtension.createTenant(excludedTentantId, tenantName);
+    secondaryEngineIntegrationExtension.createTenant(firstTenantId, tenantName);
+    secondaryEngineIntegrationExtension.createTenant(excludedTentantId, tenantName);
+
+    deployProcessDefinitionWithTenantAndEngine(firstTenantId, engineIntegrationExtension);
+    ProcessDefinitionEngineDto shallBePresent = deployProcessDefinitionWithTenantAndEngine(excludedTentantId,
+                                                                                          engineIntegrationExtension);
+    deployProcessDefinitionWithTenantAndEngine(firstTenantId, secondaryEngineIntegrationExtension);
+    ProcessDefinitionEngineDto shallBeExcluded = deployProcessDefinitionWithTenantAndEngine(excludedTentantId,
+      secondaryEngineIntegrationExtension);
+
+    embeddedOptimizeExtension.getConfigurationService()
+      .getConfiguredEngines()
+      .values()
+      .stream()
+      .filter(engine -> engine.getName().equals(secondaryEngineIntegrationExtension.getEngineName()))
+      .findFirst().ifPresent(config -> config.setExcludedTenants(List.of(excludedTentantId)));
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(3L);
+    assertThat(Arrays.stream(idsResp.getHits().getHits()).anyMatch(id -> id.getId().equals(shallBePresent.getId()))).isTrue();
+    assertThat(Arrays.stream(idsResp.getHits().getHits()).anyMatch(id -> id.getId().equals(shallBeExcluded.getId()))).isFalse();
   }
 
   @Test
