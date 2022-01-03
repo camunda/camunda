@@ -1,6 +1,6 @@
 image:
   repository: camunda/zeebe
-  tag: 1.2.8
+  tag: 1.2.9
   pullPolicy: Always
 
 # ZEEBE CFG
