@@ -24,6 +24,7 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -45,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -456,6 +458,10 @@ public final class RaftRule extends ExternalResource {
 
     final RaftServer.Builder defaults =
         RaftServer.builder(memberId)
+            .withPartitionConfig(
+                new RaftPartitionConfig()
+                    .setElectionTimeout(Duration.ofSeconds(1))
+                    .setHeartbeatInterval(Duration.ofMillis(100)))
             .withMembershipService(mock(ClusterMembershipService.class))
             .withProtocol(protocol)
             .withEntryValidator(entryValidator)
