@@ -15,12 +15,15 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.EvaluatedCondition;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -106,6 +109,7 @@ public final class ExporterDirectorDistributionTest {
 
     // then
     Awaitility.await("Active Director has distributed positions and passive has received it")
+        .conditionEvaluationListener(new ClockShifter(activeExporters.getClock()))
         .untilAsserted(
             () -> {
               assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
@@ -133,6 +137,7 @@ public final class ExporterDirectorDistributionTest {
 
     final var passiveExporterState = passiveExporters.getExportersState();
     Awaitility.await("Active Director has distributed positions and passive has received it")
+        .conditionEvaluationListener(new ClockShifter(activeExporters.getClock()))
         .untilAsserted(
             () -> {
               assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
@@ -152,5 +157,26 @@ public final class ExporterDirectorDistributionTest {
 
     // then - the exported position should not go back
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+  }
+
+  /**
+   * Shifts the actor clock by the {@link this#DISTRIBUTION_INTERVAL} after an awaitility condition
+   * was evaluated.
+   *
+   * <p>This makes sure that even if we miss one export position event, we distribute the event
+   * later again, which makes tests less flaky.
+   */
+  private static final class ClockShifter implements ConditionEvaluationListener<Void> {
+
+    private final ControlledActorClock clock;
+
+    public ClockShifter(final ControlledActorClock clock) {
+      this.clock = clock;
+    }
+
+    @Override
+    public void conditionEvaluated(final EvaluatedCondition<Void> condition) {
+      clock.addTime(DISTRIBUTION_INTERVAL);
+    }
   }
 }
