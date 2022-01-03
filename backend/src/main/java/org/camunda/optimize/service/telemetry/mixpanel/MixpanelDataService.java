@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
@@ -30,6 +31,16 @@ public class MixpanelDataService {
       reportReader.getReportCount(ReportType.DECISION),
       dashboardReader.getDashboardCount(),
       alertReader.getAlertCount(),
+      mixpanelProperties.getStage(),
+      mixpanelProperties.getOrganizationId(),
+      mixpanelProperties.getClusterId()
+    );
+  }
+
+  public MixpanelEntityEventProperties getMixpanelEntityEventProperties(final String entityId) {
+    final MixpanelConfiguration.TrackingProperties mixpanelProperties = getMixpanelProperties();
+    return new MixpanelEntityEventProperties(
+      entityId,
       mixpanelProperties.getStage(),
       mixpanelProperties.getOrganizationId(),
       mixpanelProperties.getClusterId()

@@ -28,4 +28,10 @@ public class MixpanelReportingService implements TelemetryReportingService {
     );
   }
 
+  public void sendEntityEvent(final MixpanelEventName eventName, final String entityId) {
+    mixpanelClient.importEvent(
+      new MixpanelEvent(eventName, mixpanelDataService.getMixpanelEntityEventProperties(entityId))
+    );
+  }
+
 }

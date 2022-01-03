@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
@@ -33,7 +34,7 @@ public class WebhookNotificationService implements NotificationService {
   private final ConfigurationService configurationService;
 
   @Override
-  public void notify(final AlertNotificationDto notification) {
+  public void notify(@NonNull final AlertNotificationDto notification) {
     final AlertDefinitionDto alert = notification.getAlert();
     final String destination = alert.getWebhook();
     if (StringUtils.isEmpty(destination)) {
