@@ -133,7 +133,7 @@
     <plugin.version.scala>4.5.6</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.sortpom>3.0.0</plugin.version.sortpom>
+    <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.2.0</plugin.version.spotbugs>
     <plugin.version.spotless>2.18.0</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
