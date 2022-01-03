@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +32,7 @@ public class EngineConfiguration {
   private boolean importEnabled = false;
   @Builder.Default
   private boolean eventImportEnabled = false;
-  private List<String> excludedTenants;
+  private List<String> excludedTenants = new ArrayList<>();
 
   private EngineAuthenticationConfiguration authentication;
 
@@ -45,8 +46,8 @@ public class EngineConfiguration {
     return Optional.ofNullable(defaultTenant).map(DefaultTenant::getName);
   }
 
-  public Optional<List<String>> getExcludedTenants() {
-    return Optional.ofNullable(excludedTenants);
+  public List<String> getExcludedTenants() {
+    return excludedTenants;
   }
 
   public void setRest(String rest) {

@@ -248,29 +248,25 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void processDefinitionsForExcludedTenantsAreNotPresent() {
     // given
-    final String defaultTenantId = "reallyAwesomeTenantId";
+    final String randomTenantId = "reallyAwesomeTenantId";
     final String excludedTenantId1 = "excludedTenantId";
-    final String excludedTentantId2 = "notAwesomeAtAllTenantId";
-    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    final String excludedTenantId2 = "notAwesomeAtAllTenantId";
     deployProcessDefinitionWithTenant(excludedTenantId1);
-    deployProcessDefinitionWithTenant(excludedTentantId2);
-    deployAndStartSimpleServiceTaskProcess();
-    List<String> excludedTenants = List.of(excludedTentantId2, excludedTenantId1);
-    // given
-    embeddedOptimizeExtension.getConfigurationService()
-      .getConfiguredEngines()
-      .values()
-      .forEach(engine -> engine.setExcludedTenants(excludedTenants));
+    deployProcessDefinitionWithTenant(excludedTenantId2);
+    deployProcessDefinitionWithTenant(randomTenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setExcludedTenants(List.of(excludedTenantId2, excludedTenantId1));
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap()).containsEntry(ProcessDefinitionIndex.TENANT_ID, defaultTenantId);
+    final List<ProcessDefinitionOptimizeDto> storedDefinitions = elasticSearchIntegrationTestExtension
+      .getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
+    assertThat(storedDefinitions)
+      .hasSize(1)
+      .extracting(DefinitionOptimizeResponseDto::getTenantId)
+      .isEqualTo(List.of(randomTenantId));
   }
 
   @Test

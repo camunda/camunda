@@ -131,6 +131,47 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void variableImportWorksWithMultipleTenants() throws JsonProcessingException {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    String normalTenant = "potato";
+    String otherNormalTenant = "tomato";
+
+    Map<String, Object> variablesTenant1 = VariableTestUtil.createAllPrimitiveTypeVariables();
+    Map<String, Object> variablesTenant2 = VariableTestUtil.createAllPrimitiveTypeVariables();
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant1, normalTenant);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant2, otherNormalTenant);
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    assertThat(getStoredVariableUpdateInstances())
+      .hasSize(variablesTenant1.size() + variablesTenant2.size())
+      .allSatisfy(variableUpdate -> assertThat(variableUpdate.getTenantId()).isIn(List.of(normalTenant,
+                                                                                          otherNormalTenant)));
+  }
+
+  @Test
+  public void variableImportExcludesTenantsCorrectly() throws JsonProcessingException {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    String normalTenant = "potato";
+    String otherNormalTenant = "tomato";
+
+    Map<String, Object> variablesTenant1 = VariableTestUtil.createAllPrimitiveTypeVariables();
+    Map<String, Object> variablesTenant2 = VariableTestUtil.createAllPrimitiveTypeVariables();
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant1, normalTenant);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant2, otherNormalTenant);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration()
+      .setExcludedTenants(List.of(otherNormalTenant));
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    assertThat(getStoredVariableUpdateInstances())
+      .hasSize(variablesTenant1.size())
+      .allSatisfy(variableUpdate -> assertThat(variableUpdate.getTenantId()).isEqualTo(normalTenant));
+  }
+
+  @Test
   public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() throws JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();

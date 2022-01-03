@@ -119,8 +119,8 @@ engines:
   'camunda-bpm':
     # The process engines name on the platform, this is the unique engine identifier on the platforms REST API.
     name: default
-    # List of tenants to be excluded when importing data. When left empty, all data will be imported.
-    # Otherwise, all data from the tenants that are not in this list will be imported into optimize.
+    # List of tenant IDs to be excluded when importing data. When left empty, data from all tenants will be imported.
+    # Please note that the defaultTenant cannot be excluded (and therefore also not the entities with "null" as tenant)
     excludedTenants: []
     # A default tenant to be injected on data from this engine where no tenant is configured in the engine itself.
     # This property is only relevant in the context of a `One Process Engine Per Tenant`.

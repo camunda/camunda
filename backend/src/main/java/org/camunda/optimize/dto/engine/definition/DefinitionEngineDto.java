@@ -7,15 +7,18 @@ package org.camunda.optimize.dto.engine.definition;
 
 import lombok.Data;
 import org.camunda.optimize.dto.engine.EngineDto;
+import org.camunda.optimize.dto.engine.TenantSpecificEngineDto;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
 @Data
-public class DefinitionEngineDto implements Serializable, EngineDto {
+public class DefinitionEngineDto implements Serializable, EngineDto, TenantSpecificEngineDto {
 
   protected String id;
   protected String deploymentId;
+  protected String tenantId;
 
   /**
    * This property is not available directly from the engine. Instead, the deployment time
@@ -29,4 +32,8 @@ public class DefinitionEngineDto implements Serializable, EngineDto {
    * with the same key/version/tenant
    */
   protected boolean deleted;
+
+  public Optional<String> getTenantId() {
+    return Optional.ofNullable(tenantId);
+  }
 }

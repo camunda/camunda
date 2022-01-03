@@ -13,6 +13,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +27,7 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
+  protected List<String> excludedIds = null;
 
   @Override
   public CompletableFuture<Void> runImport() {
@@ -119,30 +121,50 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
     logger.debug("Was not able to produce a new job, sleeping for [{}] ms", sleepTime);
   }
 
-  protected List<DTO> filterEntitiesFromExcludedTenants(List<DTO> allEntities) {
+  protected List<String> getExcludedIds() {
+    return Optional.ofNullable(excludedIds).orElse(readExcludedIdsFromConfig());
+  }
+
+  private void setExcludedIds(List<String> excludedIds)
+  {
+    this.excludedIds = excludedIds;
+  }
+
+  private List<String> readExcludedIdsFromConfig() {
+    List<String> excludedIdsFromConfig =
     // This check for configurationService being null is necessary, otherwise migration tests fail
-    Optional<List<String>> excludedIds =
       Optional.ofNullable(configurationService)
-        .flatMap(config -> {
-          try {
-            return config.getExcludedTenants(importIndexHandler.getEngineAlias());
-          } catch (OptimizeConfigurationException e) {
-            // This happens when the Engine configured in the importIndexHandler doesn't exist in the config. That's
-            // not a problem, then we just simply have no excluded Tenants and don't do any filtering
-            logger.info(String.format("Engine '%s' could not be found in the configuration",
-                                      importIndexHandler.getEngineAlias()));
-            return Optional.empty();
-          }
-        });
-    Predicate<DTO> isTenantSpecific = TenantSpecificEngineDto.class::isInstance;
-    excludedIds.ifPresent(tenantFilters ->
-                            logger.info(String.format("Import filter by tenant is active - Excluding data " +
-                                                        "from these tenants: %s", tenantFilters)));
-    return excludedIds.map(tenantFilter -> allEntities
-        .stream()
-        .filter(isTenantSpecific.negate().or(isTenantSpecific.and(
-          entity -> !tenantFilter.contains(((TenantSpecificEngineDto)entity).getTenantId().orElse("")))))
-        .collect(Collectors.toList()))
-      .orElse(allEntities);
+      .map(config -> {
+        try {
+          return config.getExcludedTenants(importIndexHandler.getEngineAlias());
+        } catch (OptimizeConfigurationException e) {
+          // This happens when the Engine configured in the importIndexHandler doesn't exist in the config. That's
+          // not a problem, then we just simply have no excluded Tenants and don't do any filtering
+          logger.info(String.format("Engine '%s' could not be found in the configuration",
+                                    importIndexHandler.getEngineAlias()));
+          return new ArrayList<String>();
+        }
+      }).orElse(new ArrayList<>());
+    this.setExcludedIds(excludedIdsFromConfig);
+    return excludedIdsFromConfig;
+  }
+
+  protected List<DTO> filterEntitiesFromExcludedTenants(List<DTO> allEntities) {
+    List<String> tenantFilter = this.getExcludedIds();
+    if(tenantFilter.isEmpty())
+    {
+      return allEntities;
+    } else {
+      String message = String.format(
+        "Import filter by tenant is active - Excluding data from these tenants: %s", tenantFilter);
+      logger.info(message);
+      Predicate<DTO> isTenantSpecific = TenantSpecificEngineDto.class::isInstance;
+      // We only exclude entities that are tenant specific AND the tenant ID is in the exclusion list
+      return allEntities
+          .stream()
+          .filter(isTenantSpecific.negate().or(isTenantSpecific.and(
+            entity -> !tenantFilter.contains(((TenantSpecificEngineDto)entity).getTenantId().orElse("")))))
+          .collect(Collectors.toList());
+    }
   }
 }

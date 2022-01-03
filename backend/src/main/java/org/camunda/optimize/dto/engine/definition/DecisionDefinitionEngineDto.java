@@ -8,20 +8,16 @@ package org.camunda.optimize.dto.engine.definition;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.camunda.optimize.dto.engine.TenantSpecificEngineDto;
-
-import java.util.Optional;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class DecisionDefinitionEngineDto extends DefinitionEngineDto implements TenantSpecificEngineDto {
+public class DecisionDefinitionEngineDto extends DefinitionEngineDto {
 
   protected String key;
   protected String category;
   protected String name;
   protected int version;
   protected String resource;
-  protected String tenantId;
   protected String decisionRequirementsDefinitionId;
   protected String decisionRequirementsDefinitionKey;
   protected Integer historyTimeToLive;
@@ -30,9 +26,5 @@ public class DecisionDefinitionEngineDto extends DefinitionEngineDto implements 
   @JsonIgnore
   public String getVersionAsString() {
     return String.valueOf(version);
-  }
-
-  public Optional<String> getTenantId() {
-    return Optional.ofNullable(tenantId);
   }
 }
