@@ -91,8 +91,7 @@ it('should not close popup when clicking inside it', () => {
 
   node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
 
-  node.find('.dateRangeContainer').simulate('mousedown');
-  node.instance().hidePopup();
+  node.instance().hidePopup({target: {closest: () => true}});
 
   expect(node.state('popupOpen')).toBe(true);
 });

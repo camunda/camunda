@@ -16,6 +16,8 @@ import {isDateValid} from './service';
 
 import './DateFields.scss';
 
+const POPPUP_CLASSNAME = 'dateRangeContainer';
+
 export default class DateFields extends React.PureComponent {
   state = {
     popupOpen: false,
@@ -99,9 +101,7 @@ export default class DateFields extends React.PureComponent {
         </div>
         {(this.state.popupOpen || forceOpen) && (
           <div
-            onMouseDown={this.stopClosingPopup}
-            onKeyDown={({key}) => key === 'Enter' && this.stopClosingPopup()}
-            className={classnames('dateRangeContainer', {
+            className={classnames(POPPUP_CLASSNAME, {
               dateRangeContainerLeft: this.isFieldSelected('startDate'),
               dateRangeContainerRight: this.isFieldSelected('endDate'),
             })}
@@ -153,18 +153,13 @@ export default class DateFields extends React.PureComponent {
     }
   };
 
-  stopClosingPopup = () => {
-    this.insideClick = true;
-  };
-
   hidePopup = (evt) => {
-    if (!this.insideClick) {
+    if (!evt?.target?.closest('.' + POPPUP_CLASSNAME)) {
       this.setState({
         popupOpen: false,
         currentlySelectedField: null,
       });
     }
-    this.insideClick = false;
   };
 
   isFieldSelected(field) {
