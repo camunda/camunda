@@ -17,6 +17,8 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -732,6 +734,42 @@ public final class JsonSerializableToJsonTest {
         "Empty ProcessInstanceRecord",
         (Supplier<UnifiedRecordValue>) ProcessInstanceRecord::new,
         "{'bpmnProcessId':'','version':-1,'processDefinitionKey':-1,'processInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentProcessInstanceKey':-1,'parentElementInstanceKey':-1}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// DecisionRecord  ///////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "DecisionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new DecisionRecord()
+                    .setDecisionId("decision-id")
+                    .setDecisionName("decision-name")
+                    .setVersion(1)
+                    .setDecisionKey(2L)
+                    .setDecisionRequirementsKey(3L)
+                    .setDecisionRequirementsId("decision-requirements-id"),
+        "{'decisionId': 'decision-id', 'decisionName': 'decision-name', 'version': 1, 'decisionKey': 2, 'decisionRequirementsKey': 3, 'decisionRequirementsId': 'decision-requirements-id', 'duplicate': false}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// DecisionRequirementsRecord  ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "DecisionRequirementsRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new DecisionRequirementsRecord()
+                    .setDecisionRequirementsId("decision-requirements-id")
+                    .setDecisionRequirementsName("decision-requirements-name")
+                    .setDecisionRequirementsVersion(1)
+                    .setDecisionRequirementsKey(2L)
+                    .setNamespace("namespace")
+                    .setResourceName("resource-name")
+                    .setResource(wrapString("resource"))
+                    .setChecksum(wrapString("checksum")),
+        "{'decisionRequirementsId': 'decision-requirements-id', 'decisionRequirementsName': 'decision-requirements-name', 'decisionRequirementsVersion': 1, 'decisionRequirementsKey': 2, 'namespace': 'namespace', 'resourceName': 'resource-name', 'resource': 'cmVzb3VyY2U=', 'checksum': 'Y2hlY2tzdW0=', 'duplicate': false}"
       },
     };
   }
