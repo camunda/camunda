@@ -715,6 +715,7 @@
     "notCreated": "Es wurden noch keine Alarme erstellt",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
+    "existingAlerts": "Vorhandene Alarme",
     "updated": "\"{name}\" aktualisiert.",
     "removed": "\"{name}\" entfernt."
   },

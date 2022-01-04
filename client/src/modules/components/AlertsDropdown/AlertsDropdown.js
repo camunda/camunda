@@ -114,6 +114,9 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
             >
               {t('alert.newAlert')}
             </Dropdown.Option>
+            {alertsInScope.length > 0 && (
+              <div className="subTitle">{t('alert.existingAlerts')}</div>
+            )}
             {alertsInScope.map((alert) => (
               <Dropdown.Option key={alert.id} onClick={() => setOpenAlert(alert)}>
                 {alert.name}

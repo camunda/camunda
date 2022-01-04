@@ -715,6 +715,7 @@
     "notCreated": "There are no Alerts created yet",
     "inactiveStatus": "Alert inactive",
     "activateInfo": "To active add email or target system",
+    "existingAlerts": "Existing alerts",
     "updated": "\"{name}\" updated.",
     "removed": "\"{name}\" removed."
   },
