@@ -24,18 +24,15 @@ import java.util.List;
 public class IdentityLinkLogEngineImportMediator
   extends TimestampBasedImportMediator<IdentityLinkLogImportIndexHandler, HistoricIdentityLinkLogDto> {
 
-  private IdentityLinkLogInstanceFetcher engineEntityFetcher;
+  private final IdentityLinkLogInstanceFetcher engineEntityFetcher;
 
   public IdentityLinkLogEngineImportMediator(final IdentityLinkLogImportIndexHandler importIndexHandler,
                                              final IdentityLinkLogInstanceFetcher engineEntityFetcher,
                                              final IdentityLinkLogImportService importService,
                                              final ConfigurationService configurationService,
                                              final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

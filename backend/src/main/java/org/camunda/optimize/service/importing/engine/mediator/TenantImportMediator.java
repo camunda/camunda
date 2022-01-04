@@ -29,11 +29,8 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
                               final TenantImportService tenantImportService,
                               final ConfigurationService configurationService,
                               final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, tenantImportService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = tenantImportService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

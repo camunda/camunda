@@ -7,12 +7,22 @@ package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.DefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
+import org.camunda.optimize.service.util.BackoffCalculator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
 public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportIndexHandler, DTO>
   extends BackoffImportMediator<T, DTO> {
+
+  protected DefinitionXmlImportMediator(final ConfigurationService configurationService,
+                                        final BackoffCalculator idleBackoffCalculator,
+                                        final T importIndexHandler,
+                                        final ImportService<DTO> importService) {
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
+  }
 
   public void reset() {
     importIndexHandler.resetImportIndex();

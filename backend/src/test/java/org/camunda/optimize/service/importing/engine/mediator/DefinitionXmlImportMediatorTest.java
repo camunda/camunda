@@ -52,7 +52,7 @@ public class DefinitionXmlImportMediatorTest {
   @Mock
   private BackoffCalculator idleBackoffCalculator;
 
-  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+  private final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
@@ -91,7 +91,6 @@ public class DefinitionXmlImportMediatorTest {
     testIds.add("testID2");
     page.setIds(testIds);
     when(importIndexHandler.getNextPage()).thenReturn(page);
-    when(importIndexHandler.getEngineAlias()).thenReturn("camunda-bpm");
 
     List<DecisionDefinitionXmlEngineDto> resultList = new ArrayList<>();
     resultList.add(new DecisionDefinitionXmlEngineDto());

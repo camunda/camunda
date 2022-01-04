@@ -6,7 +6,6 @@
 package org.camunda.optimize.dto.engine.definition;
 
 import lombok.Data;
-import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.dto.engine.TenantSpecificEngineDto;
 
 import java.io.Serializable;
@@ -14,7 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @Data
-public class DefinitionEngineDto implements Serializable, EngineDto, TenantSpecificEngineDto {
+public class DefinitionEngineDto implements Serializable, TenantSpecificEngineDto {
 
   protected String id;
   protected String deploymentId;

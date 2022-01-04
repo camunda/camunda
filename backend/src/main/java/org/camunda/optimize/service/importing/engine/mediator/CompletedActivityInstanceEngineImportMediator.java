@@ -24,18 +24,15 @@ import java.util.List;
 public class CompletedActivityInstanceEngineImportMediator
   extends TimestampBasedImportMediator<CompletedActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto> {
 
-  private CompletedActivityInstanceFetcher engineEntityFetcher;
+  private final CompletedActivityInstanceFetcher engineEntityFetcher;
 
   public CompletedActivityInstanceEngineImportMediator(final CompletedActivityInstanceImportIndexHandler importIndexHandler,
                                                        final CompletedActivityInstanceFetcher engineEntityFetcher,
                                                        final CompletedActivityInstanceImportService importService,
                                                        final ConfigurationService configurationService,
                                                        final BackoffCalculator idleBackoffCalculator) {
-    this.importIndexHandler = importIndexHandler;
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.engineEntityFetcher = engineEntityFetcher;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

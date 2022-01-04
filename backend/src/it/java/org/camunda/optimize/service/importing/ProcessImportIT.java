@@ -256,6 +256,7 @@ public class ProcessImportIT extends AbstractImportIT {
     deployProcessDefinitionWithTenant(randomTenantId);
     embeddedOptimizeExtension.getDefaultEngineConfiguration()
       .setExcludedTenants(List.of(excludedTenantId2, excludedTenantId1));
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // when
     importAllEngineEntitiesFromScratch();

@@ -29,18 +29,14 @@ public class EventTraceImportMediator
   extends TimestampBasedImportMediator<TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventDto> {
 
   private final EventFetcherService eventService;
-  private final ConfigurationService configurationService;
 
   public EventTraceImportMediator(final EventFetcherService eventService,
                                   final TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> importIndexHandler,
                                   final EventTraceImportService importService,
                                   final ConfigurationService configurationService,
                                   final BackoffCalculator idleBackoffCalculator) {
+    super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
     this.eventService = eventService;
-    this.importIndexHandler = importIndexHandler;
-    this.importService = importService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

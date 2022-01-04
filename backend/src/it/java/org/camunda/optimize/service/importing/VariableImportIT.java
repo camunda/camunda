@@ -146,8 +146,8 @@ public class VariableImportIT extends AbstractImportIT {
     // then
     assertThat(getStoredVariableUpdateInstances())
       .hasSize(variablesTenant1.size() + variablesTenant2.size())
-      .allSatisfy(variableUpdate -> assertThat(variableUpdate.getTenantId()).isIn(List.of(normalTenant,
-                                                                                          otherNormalTenant)));
+      .extracting(VariableUpdateInstanceDto::getTenantId)
+      .containsAll(List.of(normalTenant, otherNormalTenant));
   }
 
   @Test
@@ -155,14 +155,15 @@ public class VariableImportIT extends AbstractImportIT {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     String normalTenant = "potato";
-    String otherNormalTenant = "tomato";
+    String excludedTenant = "tomato";
 
     Map<String, Object> variablesTenant1 = VariableTestUtil.createAllPrimitiveTypeVariables();
     Map<String, Object> variablesTenant2 = VariableTestUtil.createAllPrimitiveTypeVariables();
     engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant1, normalTenant);
-    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant2, otherNormalTenant);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variablesTenant2, excludedTenant);
     embeddedOptimizeExtension.getDefaultEngineConfiguration()
-      .setExcludedTenants(List.of(otherNormalTenant));
+      .setExcludedTenants(List.of(excludedTenant));
+    embeddedOptimizeExtension.reloadConfiguration();
     importAllEngineEntitiesFromScratch();
 
     // then

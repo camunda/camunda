@@ -43,12 +43,9 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
                                             final ImportService<T> eventProcessEventImportService,
                                             final ConfigurationService configurationService,
                                             final BackoffCalculator idleBackoffCalculator) {
+    super(configurationService, idleBackoffCalculator, importSourceIndexHandler, eventProcessEventImportService);
     this.publishedProcessStateId = publishedProcessStateId;
-    this.importIndexHandler = importSourceIndexHandler;
     this.eventFetcherService = eventFetcherService;
-    this.importService = eventProcessEventImportService;
-    this.configurationService = configurationService;
-    this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override

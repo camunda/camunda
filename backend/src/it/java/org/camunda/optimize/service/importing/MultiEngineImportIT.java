@@ -189,6 +189,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeExtension.getConfigurationService()
       .getConfiguredEngines().get(workaroundMapping.get(secondaryEngineIntegrationExtension.getEngineName()))
       .setExcludedTenants(List.of(excludedTenantId));
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -237,7 +238,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     }
   }
 
-  private ProcessDefinitionEngineDto deployProcessDefinitionWithTenantAndEngine(String tenantId, EngineIntegrationExtension engine) {
+  private ProcessDefinitionEngineDto deployProcessDefinitionWithTenantAndEngine(String tenantId,
+                                                                                EngineIntegrationExtension engine) {
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     return engine.deployProcessAndGetProcessDefinition(processModel, tenantId);
   }

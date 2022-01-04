@@ -44,6 +44,7 @@ public class TenantImportIT extends AbstractImportIT {
     String tenant1 = "tenantExcluded";
     embeddedOptimizeExtension.getDefaultEngineConfiguration()
       .setExcludedTenants(List.of(tenant1));
+    embeddedOptimizeExtension.reloadConfiguration();
     engineIntegrationExtension.createTenant(tenant1);
     engineIntegrationExtension.createTenant("tenant2");
     engineIntegrationExtension.createTenant("tenant3");
