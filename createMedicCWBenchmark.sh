@@ -32,7 +32,8 @@ git push origin medic-cw-benchmarks
 # delete older benchmark
 cd benchmarks/setup/
 
-nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
+nameOfOldestBenchmark=$(ls -t1 | grep medic-cw- | tail -n 1)
+nameOfNewestBenchmark=$(ls -t1 | grep medic-cw- | head -n 1)
 
 ./stopBenchmarks.sh $nameOfOldestBenchmark
 ./deleteBenchmark.sh $nameOfOldestBenchmark
@@ -43,5 +44,4 @@ git commit -am "test(benchmark): rm $nameOfOldestBenchmark"
 git push origin medic-cw-benchmarks
 
 # print out the name of the new benchmark so it can be easily copied
-nameOfNewestBenchmark=$(ls | grep medic-cw- | sort | tail -n 1)
 echo "Finished creating new medic benchmark: $nameOfNewestBenchmark"
