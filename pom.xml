@@ -50,7 +50,7 @@
     <junit.platform.version>1.8.2</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.21.0</assertj.version>
+    <assertj.version>3.22.0</assertj.version>
 
     <lombok.version>1.18.22</lombok.version>
     <logback.version>1.2.10</logback.version>
