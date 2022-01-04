@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 
@@ -113,7 +114,7 @@ public class LicenseFilter implements Filter {
   }
 
   private static boolean isStaticResource(String requestPath) {
-    return requestPath.contains("^/static/.+")
+    return requestPath.contains("^" + STATIC_RESOURCE_PATH + "/.+")
       || EXCLUDED_EXTENSIONS.stream().anyMatch(ext -> requestPath.endsWith("." + ext));
   }
 

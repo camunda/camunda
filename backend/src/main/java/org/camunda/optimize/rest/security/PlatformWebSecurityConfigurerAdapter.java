@@ -30,6 +30,7 @@ import javax.ws.rs.core.HttpHeaders;
 import static org.camunda.optimize.jetty.EmbeddedCamundaOptimize.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.rest.AssigneeRestService.ASSIGNEE_RESOURCE_PATH;
 import static org.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
@@ -101,7 +102,7 @@ public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerA
       .and()
       .authorizeRequests()
         // static resources
-        .antMatchers("/", "/index*", "/static/**", "/*.js", "/*.ico").permitAll()
+        .antMatchers("/", "/index*", STATIC_RESOURCE_PATH + "/**", "/*.js", "/*.ico").permitAll()
         // websocket
         .antMatchers(STATUS_WEBSOCKET_PATH).permitAll()
         // common public api resources

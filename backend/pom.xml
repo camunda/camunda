@@ -416,6 +416,10 @@
     </resources>
     <testResources>
       <testResource>
+        <directory>src/it/webapp</directory>
+        <targetPath>webapp</targetPath>
+      </testResource>
+      <testResource>
         <directory>src/it/resources</directory>
         <filtering>true</filtering>
         <includes>
