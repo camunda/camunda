@@ -99,7 +99,7 @@ container:
     connections:
       max: 10
   # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
-  accessUrl: null
+  accessUrl: ${CONTAINER_ACCESS_URL:null}
 
 # Configuration for fetching user data
 users:

@@ -183,4 +183,5 @@ public class PublicApiRestService {
   private String getJsonExportAccessToken() {
     return configurationService.getOptimizeApiConfiguration().getAccessToken();
   }
+
 }
