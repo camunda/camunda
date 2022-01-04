@@ -15,6 +15,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -28,6 +29,7 @@ public final class ClusterCfg {
   private int port = DEFAULT_CLUSTER_PORT;
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
+  private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
 
   public String getMemberId() {
     return memberId;
@@ -100,9 +102,26 @@ public final class ClusterCfg {
     return this;
   }
 
+  public CompressionAlgorithm getMessageCompression() {
+    return messageCompression;
+  }
+
+  public void setMessageCompression(final CompressionAlgorithm compressionAlgorithm) {
+    messageCompression = compressionAlgorithm;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(contactPoint, requestTimeout, clusterName, memberId, host, port, security);
+    return Objects.hash(
+        contactPoint,
+        requestTimeout,
+        clusterName,
+        memberId,
+        host,
+        port,
+        membership,
+        security,
+        messageCompression);
   }
 
   @Override
@@ -119,8 +138,10 @@ public final class ClusterCfg {
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(clusterName, that.clusterName)
         && Objects.equals(memberId, that.memberId)
+        && Objects.equals(host, that.host)
+        && Objects.equals(membership, that.membership)
         && Objects.equals(security, that.security)
-        && Objects.equals(host, that.host);
+        && Objects.equals(messageCompression, that.messageCompression);
   }
 
   @Override
@@ -129,7 +150,7 @@ public final class ClusterCfg {
         + "contactPoint='"
         + contactPoint
         + '\''
-        + ", requestTimeout='"
+        + ", requestTimeout="
         + requestTimeout
         + ", clusterName='"
         + clusterName
@@ -142,8 +163,12 @@ public final class ClusterCfg {
         + '\''
         + ", port="
         + port
+        + ", membership="
+        + membership
         + ", security="
         + security
+        + ", messageCompression="
+        + messageCompression
         + '}';
   }
 }

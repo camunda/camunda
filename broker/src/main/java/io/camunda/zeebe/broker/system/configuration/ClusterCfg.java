@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +40,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private MembershipCfg membership = new MembershipCfg();
   private RaftCfg raft = new RaftCfg();
+  private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -128,6 +130,22 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.raft = raft;
   }
 
+  public Duration getElectionTimeout() {
+    return electionTimeout;
+  }
+
+  public void setElectionTimeout(final Duration electionTimeout) {
+    this.electionTimeout = electionTimeout;
+  }
+
+  public CompressionAlgorithm getMessageCompression() {
+    return messageCompression;
+  }
+
+  public void setMessageCompression(final CompressionAlgorithm messageCompression) {
+    this.messageCompression = messageCompression;
+  }
+
   @Override
   public String toString() {
     return "ClusterCfg{"
@@ -146,22 +164,16 @@ public final class ClusterCfg implements ConfigurationEntry {
         + ", clusterName='"
         + clusterName
         + '\''
-        + ", membership="
-        + membership
         + ", heartbeatInterval="
         + heartbeatInterval
         + ", electionTimeout="
         + electionTimeout
+        + ", membership="
+        + membership
         + ", raft="
         + raft
+        + ", messageCompression="
+        + messageCompression
         + '}';
-  }
-
-  public Duration getElectionTimeout() {
-    return electionTimeout;
-  }
-
-  public void setElectionTimeout(final Duration electionTimeout) {
-    this.electionTimeout = electionTimeout;
   }
 }
