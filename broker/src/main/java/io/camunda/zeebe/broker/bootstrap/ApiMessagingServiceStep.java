@@ -39,6 +39,8 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
           .setPrivateKey(securityCfg.getPrivateKeyPath());
     }
 
+    messagingConfig.setCompressionAlgorithm(brokerCfg.getCluster().getMessageCompression());
+
     final var messagingService =
         new NettyMessagingService(
             brokerCfg.getCluster().getClusterName(),

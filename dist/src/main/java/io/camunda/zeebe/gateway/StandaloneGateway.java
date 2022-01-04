@@ -166,7 +166,8 @@ public class StandaloneGateway
                 BootstrapDiscoveryProvider.builder()
                     .withNodes(Address.from(config.getContactPoint()))
                     .build())
-            .withMembershipProtocol(membershipProtocol);
+            .withMembershipProtocol(membershipProtocol)
+            .withMessageCompression(config.getMessageCompression());
 
     if (config.getSecurity().isEnabled()) {
       applyClusterSecurityConfig(config, builder);

@@ -63,7 +63,8 @@ public final class AtomixClusterFactory {
                 Address.from(
                     networkCfg.getInternalApi().getAdvertisedHost(),
                     networkCfg.getInternalApi().getAdvertisedPort()))
-            .withMembershipProvider(discoveryProvider);
+            .withMembershipProvider(discoveryProvider)
+            .withMessageCompression(clusterCfg.getMessageCompression());
 
     final var securityCfg = networkCfg.getSecurity();
     if (securityCfg.isEnabled()) {

@@ -391,6 +391,7 @@ public final class ClusteringRule extends ExternalResource {
                     .build())
             .withMembershipProtocol(
                 SwimMembershipProtocol.builder().withSyncInterval(Duration.ofSeconds(1)).build())
+            .withMessageCompression(gatewayCfg.getCluster().getMessageCompression())
             .build();
 
     atomixCluster.start().join();
