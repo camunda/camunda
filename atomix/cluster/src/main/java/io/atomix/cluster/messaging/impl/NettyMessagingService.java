@@ -50,6 +50,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.compression.SnappyFrameDecoder;
+import io.netty.handler.codec.compression.SnappyFrameEncoder;
+import io.netty.handler.codec.compression.ZlibCodecFactory;
+import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
@@ -790,6 +794,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
       }
 
       channel.pipeline().addLast("handshake", new ClientHandshakeHandlerAdapter(future));
+
+      switch (config.getCompressionAlgorithm()) {
+        case GZIP:
+          channel.pipeline().addLast(ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP));
+          channel.pipeline().addLast(ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
+          break;
+        case SNAPPY:
+          channel.pipeline().addLast(new SnappyFrameEncoder());
+          channel.pipeline().addLast(new SnappyFrameDecoder());
+          break;
+        case NONE:
+          break;
+        default:
+          log.debug("Unknown compression algorithm. Proceeding without compression.");
+      }
     }
 
     @Override
@@ -811,6 +830,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
       }
 
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
+
+      switch (config.getCompressionAlgorithm()) {
+        case GZIP:
+          channel.pipeline().addLast(ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP));
+          channel.pipeline().addLast(ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
+          break;
+        case SNAPPY:
+          channel.pipeline().addLast(new SnappyFrameEncoder());
+          channel.pipeline().addLast(new SnappyFrameDecoder());
+          break;
+        case NONE:
+          break;
+        default:
+          log.debug("Unknown compression algorithm. Proceeding without compression.");
+      }
     }
   }
 

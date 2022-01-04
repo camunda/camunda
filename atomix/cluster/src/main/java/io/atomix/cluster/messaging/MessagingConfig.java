@@ -32,6 +32,7 @@ public class MessagingConfig implements Config {
   private boolean tlsEnabled = false;
   private File certificateChain;
   private File privateKey;
+  private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -131,6 +132,15 @@ public class MessagingConfig implements Config {
     return this;
   }
 
+  public CompressionAlgorithm getCompressionAlgorithm() {
+    return compressionAlgorithm;
+  }
+
+  public MessagingConfig setCompressionAlgorithm(final CompressionAlgorithm algorithm) {
+    compressionAlgorithm = algorithm;
+    return this;
+  }
+
   /**
    * The certificate chain to use for inter-cluster communication. This certificate is used for both
    * the server and the client.
@@ -205,5 +215,11 @@ public class MessagingConfig implements Config {
 
     this.privateKey = privateKey;
     return this;
+  }
+
+  public enum CompressionAlgorithm {
+    GZIP,
+    NONE,
+    SNAPPY
   }
 }
