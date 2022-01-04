@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.utils.Builder;
 import io.atomix.utils.Version;
@@ -236,6 +237,13 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
         .setTlsEnabled(true)
         .setCertificateChain(certificateChain)
         .setPrivateKey(privateKey);
+
+    return this;
+  }
+
+  public AtomixClusterBuilder withMessageCompression(
+      final CompressionAlgorithm messageCompression) {
+    config.getMessagingConfig().setCompressionAlgorithm(messageCompression);
 
     return this;
   }

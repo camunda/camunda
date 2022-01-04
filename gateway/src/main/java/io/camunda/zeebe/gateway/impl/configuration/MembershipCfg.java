@@ -124,6 +124,72 @@ public final class MembershipCfg {
   }
 
   @Override
+  public int hashCode() {
+    int result = (broadcastUpdates ? 1 : 0);
+    result = 31 * result + (broadcastDisputes ? 1 : 0);
+    result = 31 * result + (notifySuspect ? 1 : 0);
+    result = 31 * result + (gossipInterval != null ? gossipInterval.hashCode() : 0);
+    result = 31 * result + gossipFanout;
+    result = 31 * result + (probeInterval != null ? probeInterval.hashCode() : 0);
+    result = 31 * result + (probeTimeout != null ? probeTimeout.hashCode() : 0);
+    result = 31 * result + suspectProbes;
+    result = 31 * result + (failureTimeout != null ? failureTimeout.hashCode() : 0);
+    result = 31 * result + (syncInterval != null ? syncInterval.hashCode() : 0);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final MembershipCfg that = (MembershipCfg) o;
+
+    if (broadcastUpdates != that.broadcastUpdates) {
+      return false;
+    }
+    if (broadcastDisputes != that.broadcastDisputes) {
+      return false;
+    }
+    if (notifySuspect != that.notifySuspect) {
+      return false;
+    }
+    if (gossipFanout != that.gossipFanout) {
+      return false;
+    }
+    if (suspectProbes != that.suspectProbes) {
+      return false;
+    }
+    if (gossipInterval != null
+        ? !gossipInterval.equals(that.gossipInterval)
+        : that.gossipInterval != null) {
+      return false;
+    }
+    if (probeInterval != null
+        ? !probeInterval.equals(that.probeInterval)
+        : that.probeInterval != null) {
+      return false;
+    }
+    if (probeTimeout != null
+        ? !probeTimeout.equals(that.probeTimeout)
+        : that.probeTimeout != null) {
+      return false;
+    }
+    if (failureTimeout != null
+        ? !failureTimeout.equals(that.failureTimeout)
+        : that.failureTimeout != null) {
+      return false;
+    }
+    return syncInterval != null
+        ? syncInterval.equals(that.syncInterval)
+        : that.syncInterval == null;
+  }
+
+  @Override
   public String toString() {
     return "MembershipCfg{"
         + "broadcastUpdates="

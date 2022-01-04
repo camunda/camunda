@@ -204,7 +204,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
         return document.getSource();
       } catch (final IOException e) {
         throw new ElasticsearchExporterException(
-            "Failed to get record " + idFor(record) + " from index " + indexFor(record));
+            "Failed to get record " + idFor(record) + " from index " + indexFor(record), e);
       }
     }
   }

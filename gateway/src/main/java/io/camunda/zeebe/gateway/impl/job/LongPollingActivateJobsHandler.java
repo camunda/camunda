@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 /**
@@ -50,6 +51,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   private final int failedAttemptThreshold;
 
   private final LongPollingMetrics metrics;
+  private final AtomicLong requestIdGenerator = new AtomicLong(1);
 
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
@@ -79,9 +81,39 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
   public void activateJobs(
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    final LongPollingActivateJobsRequest longPollingRequest =
-        new LongPollingActivateJobsRequest(request, responseObserver);
+    final var requestId = getNextActivateJobsRequestId();
+    final var longPollingRequest =
+        new LongPollingActivateJobsRequest(requestId, request, responseObserver);
     activateJobs(longPollingRequest);
+  }
+
+  private void completeOrResubmitRequest(
+      final LongPollingActivateJobsRequest request, final boolean activateImmediately) {
+    if (request.isLongPollingDisabled()) {
+      // request is not supposed to use the
+      // long polling capabilities -> just
+      // complete the request
+      request.complete();
+      return;
+    }
+
+    if (request.isTimedOut()) {
+      // already timed out, nothing to do here
+      return;
+    }
+
+    final var type = request.getType();
+    final var state = getJobTypeState(type);
+
+    if (!request.hasScheduledTimer()) {
+      addTimeOut(state, request);
+    }
+
+    if (activateImmediately) {
+      activateJobs(request);
+    } else {
+      enqueueRequest(state, request);
+    }
   }
 
   public void activateJobs(final LongPollingActivateJobsRequest request) {
@@ -90,12 +122,16 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
           final InFlightLongPollingActivateJobsRequestsState state =
               getJobTypeState(request.getType());
 
-          if (state.getFailedAttempts() < failedAttemptThreshold) {
+          if (state.shouldAttempt(failedAttemptThreshold)) {
             activateJobsUnchecked(state, request);
           } else {
-            completeOrEnqueueRequest(state, request);
+            completeOrResubmitRequest(request, false);
           }
         });
+  }
+
+  private long getNextActivateJobsRequestId() {
+    return requestIdGenerator.getAndIncrement();
   }
 
   private InFlightLongPollingActivateJobsRequestsState getJobTypeState(final String jobType) {
@@ -162,21 +198,15 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
                       .setMessage(errorMsg)
                       .build();
 
-              request.getResponseObserver().onError(StatusProto.toStatusException(status));
+              request.onError(StatusProto.toStatusException(status));
             });
       } else {
         actor.submit(
             () -> {
               state.incrementFailedAttempts(currentTimeMillis());
-
               final boolean shouldBeRepeated = state.shouldBeRepeated(request);
               state.removeActiveRequest(request);
-
-              if (shouldBeRepeated) {
-                activateJobs(request);
-              } else {
-                completeOrEnqueueRequest(getJobTypeState(request.getType()), request);
-              }
+              completeOrResubmitRequest(request, shouldBeRepeated);
             });
       }
     } else {
@@ -219,26 +249,17 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
     }
   }
 
-  private void completeOrEnqueueRequest(
+  private void enqueueRequest(
       final InFlightLongPollingActivateJobsRequestsState state,
       final LongPollingActivateJobsRequest request) {
-    if (request.isLongPollingDisabled()) {
-      request.complete();
-      return;
-    }
-    if (!request.isTimedOut()) {
-      LOG.trace(
-          "Worker '{}' asked for '{}' jobs of type '{}', but none are available. This request will"
-              + " be kept open until a new job of this type is created or until timeout of '{}'.",
-          request.getWorker(),
-          request.getMaxJobsToActivate(),
-          request.getType(),
-          request.getLongPollingTimeout(longPollingTimeout));
-      state.enqueueRequest(request);
-      if (!request.hasScheduledTimer()) {
-        addTimeOut(state, request);
-      }
-    }
+    LOG.trace(
+        "Worker '{}' asked for '{}' jobs of type '{}', but none are available. This request will"
+            + " be kept open until a new job of this type is created or until timeout of '{}'.",
+        request.getWorker(),
+        request.getMaxJobsToActivate(),
+        request.getType(),
+        request.getLongPollingTimeout(longPollingTimeout));
+    state.enqueueRequest(request);
   }
 
   private void addTimeOut(
@@ -249,8 +270,8 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
         actor.runDelayed(
             requestTimeout,
             () -> {
-              state.removeRequest(request);
               request.timeout();
+              state.removeRequest(request);
             });
     request.setScheduledTimer(timeout);
   }

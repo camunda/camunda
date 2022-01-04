@@ -393,6 +393,10 @@ public final class EngineRule extends ExternalResource {
                     .isGreaterThanOrEqualTo(recordPosition));
   }
 
+  public boolean hasReachedEnd() {
+    return getStreamProcessor(PARTITION_ID).hasProcessingReachedTheEnd().join();
+  }
+
   private static final class VersatileBlob implements DbKey, DbValue {
 
     private final DirectBuffer genericBuffer = new UnsafeBuffer(0, 0);

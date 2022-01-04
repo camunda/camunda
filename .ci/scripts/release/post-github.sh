@@ -1,10 +1,15 @@
-#!/bin/bash
+#!/bin/bash -xue
 
-cd ${GOPATH}/src/github.com/camunda-cloud/zeebe/clients/go/internal/embedded
+# Publish Go tag for the release
+git tag "clients/go/v${RELEASE_VERSION}"
+git push origin "clients/go/v${RELEASE_VERSION}"
 
-echo ${DEVELOPMENT_VERSION} > data/VERSION
-go-bindata -pkg embedded -o embedded.go -prefix data/ data/
+# Prepare Go version for the next release
+pushd "clients/go/internal/embedded" || exit $?
 
-git commit -am "chore(project): prepare next development version (Go client)"
-git push origin ${RELEASE_BRANCH}
+echo "${DEVELOPMENT_VERSION}" > data/VERSION
+"${GOPATH}/go-bindata" -pkg embedded -o embedded.go -prefix data/ data/
+
+git commit -am "build(project): prepare next development version (Go client)"
+git push origin "${RELEASE_BRANCH}"
 

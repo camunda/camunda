@@ -22,7 +22,7 @@ spec:
       effect: "NoSchedule"
   containers:
     - name: maven
-      image: maven:3.8.3-eclipse-temurin-17
+      image: maven:3.8.4-eclipse-temurin-17
       command: ["cat"]
       tty: true
       env:
@@ -67,8 +67,8 @@ spec:
         DEVELOPMENT_VERSION = "${params.DEVELOPMENT_VERSION}"
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
         PUSH_DOCKER = "${params.PUSH_DOCKER}"
-        PUSH_DOCS = "${params.PUSH_DOCS}"
         SKIP_DEPLOY = "${!params.PUSH_CHANGES}"
+        BINDIR = "/usr/local/bin"
     }
 
     options {
@@ -153,16 +153,6 @@ spec:
                         string(name: 'VERSION', value: params.RELEASE_VERSION),
                         booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
                         booleanParam(name: 'PUSH', value: true)
-                ]
-            }
-        }
-
-        stage('Publish Docs') {
-            when { expression { return params.PUSH_DOCS } }
-            steps {
-                build job: 'zeebe-docs', parameters: [
-                        string(name: 'BRANCH', value: env.RELEASE_BRANCH),
-                        booleanParam(name: 'LIVE', value: true)
                 ]
             }
         }

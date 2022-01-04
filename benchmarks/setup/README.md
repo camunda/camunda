@@ -2,13 +2,21 @@
 
 Welcome to the setup a benchmark. :wave:
 
-This document describes the steps to setup and run a benchmark. It is target at a Linux system.
+There are two ways to run a benchmark:
 
-## Requirements
+* [Self-Managed Zeebe Cluster](#benchmarking-self-managed-zeebe-cluster)
+* [Camunda Cloud Cluster](#benchmarking-camunda-cloud-saas)
 
-Make sure you have the following installed: docker, gcloud, kubectl, kubens and helm!
+All guides are targeted at a Linux systems.
 
-## How to setup a Benchmark namespace
+## Requirements 
+
+Make sure you have the following installed: docker, gcloud, kubectl, kubens and helm
+
+
+## Benchmarking Self-Managed Zeebe Cluster
+
+### How to setup a Benchmark namespace
 
 Just run the `newBenchmark.sh` with your preferred new namespace name.
 
@@ -24,12 +32,12 @@ will be created with the given name. If you used `.` before `./newBenchmark.sh`
 the script will also change your directory after running, so you can directly start
 to configure your benchmark.
 
-## How to configure a Benchmark
+### How to configure a Benchmark
 
 The benchmark configuration is completely done via the `zeebe-values.yaml` file.
 If there is a property missing which you want to change please open an issue in https://github.com/zeebe-io/zeebe-cluster-helm
 
-### Use different Zeebe Snapshot
+#### Use different Zeebe Snapshot
 
 If you want to use your own or a different Zeebe snapshot then you could do the following.
 
@@ -53,7 +61,7 @@ image:
   pullPolicy: Always
 ```
 
-## How to run a Benchmark
+### How to run a Benchmark
 
 After you setup your benchmark namespace and made changes to your configuration.
 You can start your benchmark just with `make clean all`.
@@ -61,7 +69,7 @@ You can start your benchmark just with `make clean all`.
 This will deploy the `zeebe-cluster` and `elastic` helm charts.
 Furthermore the starters and workers should be started.
 
-## How to clean up a Benchmark
+### How to clean up a Benchmark
 
 After you're done with your benchmark you should remove the remaining namespace.
 In order to do this easily, just run:
@@ -72,24 +80,32 @@ In order to do this easily, just run:
 
 This will switch to the default namespace, delete the given namespace and delete the corresponding folder.
 
-## How to run a Benchmark in Camunda Cloud
 
-_This targets only internal use cases and is not available for external parties._
 
-We currently waiting until https://github.com/camunda-cloud/enhancements/blob/master/CEP017-programmatic-access-to-console.md is implemented, until this is done we need to do some steps manually.
+## Benchmarking Camunda Cloud SaaS
+
+_You need a Kubernetes Cluster at your disposal to run the benchmark itself, which then connects to your Camunda Cloud Cluster._
+
+Possible future extension point: Use https://docs.camunda.io/docs/apis-clients/cloud-console-api-reference/ to create clusters automatically, at the moment you need to create them manually.
 
 ### Setup Cloud Cluster
 
- * Go to https://console.cloud.ultrawombat.com
- * Login with your credentials, reach out to cloud team if you haven't one
- * Create a new cluster, as region choose 'new chaos'. This means the cluster will be created in 'ultrachaos' gke cluster
- * Create new client for the cluster
- * copy the credentials
+ * Go to Camunda Cloud Console and login with your credentials (reach out to #cloud if you haven't one)
+ * Create a new cluster
+ * Create new API credentials for that cluster
 
 ### Setup Cloud Benchmark
 
  * Create a new cloud benchmark in our benchmark folder, via `./newCloudBenchmark`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
- * Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!**
- * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter.
- * To check the metrics for your benchmark, use https://grafana-ultrachaos.internal.ultrawombat.com/?orgId=1
+ * Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda-cloud/zeebe/blob/develop/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
+ * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter. **Alternatively**, you can also manually provision the resources:
+  * `kubectl apply -f cloudcredentials.yaml`
+  * `kubectl apply -f worker.yaml`
+  * `kubectl apply -f starter.yaml`
 
+
+### Use Grafana to Inspect Cloud Metrics (Camunda Internals Only)
+
+* If you use the region 'new chaos' when creating a cluster, it will be created in 'ultrachaos' gke cluster
+* This allows to check the metrics for your benchmark via https://grafana-ultrachaos.internal.ultrawombat.com/?orgId=1
+* If you use the region "integration worker' when creating a cluster, it you can check for metrics via https://grafana-worker-1.internal.ultrawombat.com/

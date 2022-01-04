@@ -15,11 +15,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public final class LongPollingActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private final long requestId;
   private final BrokerActivateJobsRequest request;
   private final ServerStreamObserver<ActivateJobsResponse> responseObserver;
   private final String jobType;
@@ -32,9 +34,11 @@ public final class LongPollingActivateJobsRequest {
   private boolean isCompleted;
 
   public LongPollingActivateJobsRequest(
+      final long requestId,
       final ActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     this(
+        requestId,
         RequestMapper.toActivateJobsRequest(request),
         responseObserver,
         request.getType(),
@@ -44,17 +48,19 @@ public final class LongPollingActivateJobsRequest {
   }
 
   private LongPollingActivateJobsRequest(
+      final long requestId,
       final BrokerActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
       final String jobType,
       final String worker,
-      final int maxJobstoActivate,
+      final int maxJobsToActivate,
       final long longPollingTimeout) {
+    this.requestId = requestId;
     this.request = request;
     this.responseObserver = responseObserver;
     this.jobType = jobType;
     this.worker = worker;
-    maxJobsToActivate = maxJobstoActivate;
+    this.maxJobsToActivate = maxJobsToActivate;
     this.longPollingTimeout =
         longPollingTimeout == 0 ? null : Duration.ofMillis(longPollingTimeout);
   }
@@ -63,9 +69,7 @@ public final class LongPollingActivateJobsRequest {
     if (isCompleted() || isCanceled()) {
       return;
     }
-    if (scheduledTimer != null) {
-      scheduledTimer.cancel();
-    }
+    cancelTimerIfScheduled();
     try {
       responseObserver.onCompleted();
     } catch (final Exception e) {
@@ -92,7 +96,7 @@ public final class LongPollingActivateJobsRequest {
     if (isCompleted() || isCanceled()) {
       return;
     }
-
+    cancelTimerIfScheduled();
     try {
       responseObserver.onError(error);
     } catch (final Exception e) {
@@ -150,5 +154,35 @@ public final class LongPollingActivateJobsRequest {
 
   public boolean isLongPollingDisabled() {
     return longPollingTimeout != null && longPollingTimeout.isNegative();
+  }
+
+  private void cancelTimerIfScheduled() {
+    if (hasScheduledTimer()) {
+      scheduledTimer.cancel();
+      scheduledTimer = null;
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(jobType, maxJobsToActivate, requestId, worker);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    final var other = (LongPollingActivateJobsRequest) obj;
+    return Objects.equals(jobType, other.jobType)
+        && maxJobsToActivate == other.maxJobsToActivate
+        && requestId == other.requestId
+        && Objects.equals(worker, other.worker);
   }
 }
