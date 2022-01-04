@@ -81,7 +81,7 @@ export default function FilterInstance({
         <div
           tabIndex="0"
           className={classnames('sectionTitle', {clickable: isValid})}
-          onClick={isValid && toggleExpanded}
+          onClick={isValid ? toggleExpanded : undefined}
           onKeyDown={(evt) => {
             if (
               (evt.key === ' ' || evt.key === 'Enter') &&
