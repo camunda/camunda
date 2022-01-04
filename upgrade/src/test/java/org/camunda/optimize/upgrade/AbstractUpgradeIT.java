@@ -39,6 +39,7 @@ import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -54,6 +55,7 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
@@ -62,13 +64,10 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -77,6 +76,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 import static org.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSchemaUpgradeClient;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -150,22 +150,6 @@ public abstract class AbstractUpgradeIT {
       metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
-  }
-
-  protected void createIndicesWithAdditionalReadOnlyAliases(Map<IndexMappingCreator, Set<String>> indexMappingCreatorAliases) {
-    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      metadataService,
-      createDefaultConfiguration(),
-      indexNameService,
-      new ArrayList<>(indexMappingCreatorAliases.keySet())
-    );
-    for (Map.Entry<IndexMappingCreator, Set<String>> indexMappingToAlias : indexMappingCreatorAliases.entrySet()) {
-      elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
-        prefixAwareClient,
-        indexMappingToAlias.getKey(),
-        indexMappingToAlias.getValue()
-      );
-    }
   }
 
   protected void setMetadataVersion(String version) {
@@ -318,5 +302,21 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.bulk(bulkRequest);
     prefixAwareClient.refresh(new RefreshRequest(indexName));
   }
+
+  public void deleteAllDocsInIndex(final IndexMappingCreator index) {
+    final DeleteByQueryRequest request = new DeleteByQueryRequest(indexNameService.getOptimizeIndexAliasForIndex(index))
+      .setQuery(matchAllQuery())
+      .setRefresh(true);
+
+    try {
+      prefixAwareClient.getHighLevelClient().deleteByQuery(request, prefixAwareClient.requestOptions());
+    } catch (IOException | ElasticsearchStatusException e) {
+      throw new OptimizeIntegrationTestException(
+        "Could not delete data in index " + indexNameService.getOptimizeIndexAliasForIndex(index),
+        e
+      );
+    }
+  }
+
 
 }

@@ -57,7 +57,12 @@ public class EasyTelemetryDataService {
   private final OptimizeElasticsearchClient esClient;
 
   public TelemetryDataDto getTelemetryData() {
-    final Optional<MetadataDto> metadata = elasticsearchMetadataService.readMetadata(esClient);
+    Optional<MetadataDto> metadata = Optional.empty();
+    try {
+      metadata = elasticsearchMetadataService.readMetadata(esClient);
+    } catch (final Exception e) {
+      log.error("Failed retrieving Optimize metadata.", e);
+    }
 
     return TelemetryDataDto.builder()
       .installation(metadata.map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING))
