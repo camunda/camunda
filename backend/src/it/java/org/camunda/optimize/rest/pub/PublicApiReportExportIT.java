@@ -87,11 +87,13 @@ public class PublicApiReportExportIT extends AbstractIT {
     PaginatedDataExportDto dataPage1 = responsePage1.readEntity(PaginatedDataExportDto.class);
 
     Response responsePage2 = publicApiClient.exportReport(reportId, getAccessToken(), null,
-                                                          dataPage1.getSearchRequestId());
+                                                          dataPage1.getSearchRequestId()
+    );
     PaginatedDataExportDto dataPage2 = responsePage2.readEntity(PaginatedDataExportDto.class);
 
     Response responsePage3 = publicApiClient.exportReport(reportId, getAccessToken(), null,
-                                                          dataPage2.getSearchRequestId());
+                                                          dataPage2.getSearchRequestId()
+    );
     PaginatedDataExportDto dataPage3 = responsePage3.readEntity(PaginatedDataExportDto.class);
 
     // then
@@ -137,7 +139,8 @@ public class PublicApiReportExportIT extends AbstractIT {
     // when
     // Providing a non-existing scrollId
     Response response = publicApiClient.exportReport(reportId, getAccessToken(), numberOfInstances,
-                                                     "NoSoupForYou!");
+                                                     "NoSoupForYou!"
+    );
 
     // then
     assertThat(response.getStatus())
@@ -164,7 +167,8 @@ public class PublicApiReportExportIT extends AbstractIT {
     boolean succeeded = clearScrollResponse.isSucceeded();
 
     Response responsePage2 = publicApiClient.exportReport(reportId, getAccessToken(), null,
-                                                          dataPage1.getSearchRequestId());
+                                                          dataPage1.getSearchRequestId()
+    );
 
     // then
     assert (succeeded);
@@ -185,7 +189,7 @@ public class PublicApiReportExportIT extends AbstractIT {
 
     // when
     // This retrieves all results, since limit is 3 times as big as number of instances
-    Response response = publicApiClient.exportReport(reportId, getAccessToken(), numberOfInstances * 3,null);
+    Response response = publicApiClient.exportReport(reportId, getAccessToken(), numberOfInstances * 3, null);
     PaginatedDataExportDto data = response.readEntity(PaginatedDataExportDto.class);
 
     //Now there are no results left, but I try to get them anyway
@@ -250,7 +254,6 @@ public class PublicApiReportExportIT extends AbstractIT {
     List<?> nestedData = (List<?>) data.getData();
     assertThat(nestedData.size()).isEqualTo(2);
   }
-
 
 
   @Test
@@ -469,11 +472,10 @@ public class PublicApiReportExportIT extends AbstractIT {
   private String getAccessToken() {
     return
       Optional.ofNullable(
-        embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().getAccessToken())
+          embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken())
         .orElseGet(() -> {
           String randomToken = "1_2_Polizei";
-          embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(
-            randomToken);
+          embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(randomToken);
           return randomToken;
         });
   }

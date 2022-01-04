@@ -154,7 +154,7 @@ public class EventIngestionRestIT extends AbstractIT {
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
 
     final String customSecret = "mySecret";
-    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setAccessToken(customSecret);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(customSecret);
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -173,7 +173,7 @@ public class EventIngestionRestIT extends AbstractIT {
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
 
     final String customSecret = "mySecret";
-    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setAccessToken(customSecret);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(customSecret);
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -431,7 +431,7 @@ public class EventIngestionRestIT extends AbstractIT {
   }
 
   private String getAccessToken() {
-    return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken();
+    return embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken();
   }
 
 }

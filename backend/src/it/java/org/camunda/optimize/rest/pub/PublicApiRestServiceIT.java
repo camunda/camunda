@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportD
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,7 +27,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -40,28 +40,15 @@ public class PublicApiRestServiceIT extends AbstractIT {
 
   private static final String ACCESS_TOKEN = "1_2_Polizei";
 
-  private String generateValidReport(int numberOfInstances) {
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultValidRawProcessReportDefinition(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion()
-    );
-    //-1 because the call deployAndStartSimpleProcess already creates one process instance
-    for (int i = 0; i < numberOfInstances - 1; i++) {
-      engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    }
-    importAllEngineEntitiesFromScratch();
-    return reportId;
+  @BeforeEach
+  public void beforeTest() {
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("publicApiRequestWithoutAccessTokenSupplier")
   public void executePublicApiRequestWithoutAuthorization(final String name,
                                                           final Supplier<OptimizeRequestExecutor> apiRequestExecutorSupplier) {
-    // given
-    // make sure a token is generated but don't use it
-    getAccessToken();
-
     // when executing a public API request without accessToken
     final Response response = apiRequestExecutorSupplier.get().execute();
 
@@ -73,9 +60,6 @@ public class PublicApiRestServiceIT extends AbstractIT {
   @MethodSource("publicApiRequestWithoutRequiredCollectionIdSupplier")
   public void executePublicApiRequestWithoutRequiredCollectionId(final String name,
                                                                  final Supplier<OptimizeRequestExecutor> apiRequestExecutorSupplier) {
-    // given
-    getAccessToken();
-
     // when executing a request which usually requires a collectionId without a collectionId
     final Response response = apiRequestExecutorSupplier.get().execute();
 
@@ -209,13 +193,7 @@ public class PublicApiRestServiceIT extends AbstractIT {
   }
 
   private String getAccessToken() {
-    return
-      Optional.ofNullable(
-        embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().getAccessToken())
-        .orElseGet(() -> {
-          embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(ACCESS_TOKEN);
-          return ACCESS_TOKEN;
-        });
+    return embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken();
   }
 
   private Stream<Arguments> publicApiRequestWithoutAccessTokenSupplier() {

@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.rest.util.AuthorizationUtil;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.VariableHelper;
@@ -63,7 +62,7 @@ public class IngestionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventRequestDto> cloudEventDtos) {
-    validateAccessToken(requestContext, getEventIngestionAccessToken());
+    validateAccessToken(requestContext, getApiAccessToken());
     externalEventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
@@ -72,7 +71,7 @@ public class IngestionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void ingestVariables(final @Context ContainerRequestContext requestContext,
                               final @NotNull @Valid @RequestBody List<ExternalProcessVariableRequestDto> variableDtos) {
-    validateAccessToken(requestContext, getVariableIngestionAccessToken());
+    validateAccessToken(requestContext, getApiAccessToken());
     validateVariableType(variableDtos);
     externalVariableService.storeExternalProcessVariables(
       toExternalProcessVariableDtos(
@@ -90,12 +89,8 @@ public class IngestionRestService {
     }
   }
 
-  private String getEventIngestionAccessToken() {
-    return configurationService.getEventIngestionConfiguration().getAccessToken();
-  }
-
-  private String getVariableIngestionAccessToken() {
-    return configurationService.getVariableIngestionConfiguration().getAccessToken();
+  private String getApiAccessToken() {
+    return configurationService.getOptimizeApiConfiguration().getAccessToken();
   }
 
   private static List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {

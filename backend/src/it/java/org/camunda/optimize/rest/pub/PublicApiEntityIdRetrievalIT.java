@@ -34,7 +34,7 @@ public class PublicApiEntityIdRetrievalIT extends AbstractIT {
 
   @BeforeEach
   public void before() {
-    embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(ACCESS_TOKEN);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
   }
 
   @Test

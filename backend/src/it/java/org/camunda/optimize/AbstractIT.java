@@ -122,8 +122,7 @@ public abstract class AbstractIT {
   protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
   protected IngestionClient ingestionClient = new IngestionClient(
     optimizeRequestExecutorSupplier,
-    () -> embeddedOptimizeExtension.getConfigurationService().getVariableIngestionConfiguration().getAccessToken(),
-    () -> embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken()
+    () -> embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().getAccessToken()
   );
 
 }

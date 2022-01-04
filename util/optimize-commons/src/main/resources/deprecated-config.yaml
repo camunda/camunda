@@ -19,3 +19,5 @@ historyCleanup.enabled: '/technical-guide/setup/configuration/#history-cleanup-s
 historyCleanup.processDataCleanupMode: '/technical-guide/setup/configuration/#history-cleanup-settings'
 historyCleanup.perProcessDefinitionConfig: '/technical-guide/setup/configuration/#history-cleanup-settings'
 historyCleanup.perDecisionDefinitionConfig: '/technical-guide/setup/configuration/#history-cleanup-settings'
+eventBasedProcess.eventIngestion.accessToken: '/technical-guide/setup/configuration/#public-api'
+externalVariable.variableIngestion.accessToken: '/technical-guide/setup/configuration/#public-api'

@@ -59,6 +59,9 @@ data:
         # Note: For reports these users are still required to be granted access to the corresponding process/decision
         # definitions in Camunda BPM Admin
         superUserIds: ['demo']
+    
+    api:
+      accessToken: secret
 
     container:
       # A host name or IP address, to identify a specific network interface on
@@ -127,8 +130,6 @@ data:
       authorizedUserIds: ['demo']
       eventImport:
         enabled: true
-      eventIngestion:
-        accessToken: secret
 
     webhookAlerting:
       webhooks:

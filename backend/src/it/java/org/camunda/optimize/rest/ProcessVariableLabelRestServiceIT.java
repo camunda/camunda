@@ -34,7 +34,7 @@ public class ProcessVariableLabelRestServiceIT extends AbstractIT {
   public void setup() {
     embeddedOptimizeExtension.getConfigurationService()
       .getOptimizeApiConfiguration()
-      .setOptimizeAccessToken(ACCESS_TOKEN);
+      .setAccessToken(ACCESS_TOKEN);
   }
 
   @Test

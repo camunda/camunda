@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
@@ -25,7 +26,6 @@ import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheC
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
-import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 
@@ -49,7 +49,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.JSON_EXPORT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
@@ -201,8 +200,6 @@ public class ConfigurationService {
   private ExternalVariableConfiguration externalVariableConfiguration;
 
   private GlobalCacheConfiguration caches;
-
-  private JsonExportConfiguration jsonExportConfiguration;
 
   private AnalyticsConfiguration analytics;
 
@@ -1068,16 +1065,6 @@ public class ConfigurationService {
     return eventBasedProcessConfiguration;
   }
 
-  public JsonExportConfiguration getJsonExportConfiguration() {
-    if (jsonExportConfiguration == null) {
-      jsonExportConfiguration = configJsonContext.read(
-        JSON_EXPORT_CONFIGURATION,
-        JsonExportConfiguration.class
-      );
-    }
-    return jsonExportConfiguration;
-  }
-
   @JsonIgnore
   public EventImportConfiguration getEventImportConfiguration() {
     return getEventBasedProcessConfiguration().getEventImport();
@@ -1098,7 +1085,6 @@ public class ConfigurationService {
     return getEventBasedProcessConfiguration().getAuthorizedGroupIds();
   }
 
-  @JsonIgnore
   public OptimizeApiConfiguration getOptimizeApiConfiguration() {
     if (optimizeApiConfiguration == null) {
       optimizeApiConfiguration = configJsonContext.read(

@@ -73,8 +73,8 @@ security:
 # A global access token used by all public APIs of Optimize
 api:
   # Secret token to be provided on public APIs of Optimize.
-  # If set `null` a random token will be generated with each startup of Optimize and logged.
-  optimizeAccessToken: ${OPTIMIZE_API_CONFIGURATION:null}
+  # If set `null` an error will be thrown on any API access
+  accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
 
 container:
   # A host name or IP address, to identify a specific network interface on
@@ -461,11 +461,6 @@ export:
     limit: 1000
     delimiter: ","
 
-  json:
-    # Secret token to be provided on the JSON REST Export API when exporting data.
-    # If set `null` an error will be thrown and JSON Exports will be blocked
-    accessToken: ${OPTIMIZE_JSON_EXPORT_ACCESS_TOKEN:null}
-
 sharing:
   # decides if the sharing feature of Optimize can be used in the UI.
   enabled: true
@@ -542,9 +537,6 @@ eventBasedProcess:
     enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
     maxPageSize: 5000
   eventIngestion:
-    # Secret token to be provided on the Ingestion REST API when ingesting data.
-    # If set `null` a random token will be generated with each startup of Optimize and logged.
-    accessToken: ${OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN:null}
     # Content length limit for an ingestion REST API Bulk request in bytes.
     # Requests will be rejected when exceeding that limit.
     # Defaults to 10MB.
@@ -618,9 +610,6 @@ externalVariable:
     # Determines the page size for the external variable import, that got ingested via the external variable API
     maxPageSize: 10000
   variableIngestion:
-    # Secret token to be provided to the external variable ingestion API.
-    # If set to `null`, a random token will be generated with each startup of Optimize and logged.
-    accessToken: ${OPTIMIZE_VARIABLE_INGESTION_ACCESS_TOKEN:null}
     # Content length limit for the external variable ingestion request in bytes.
     # Requests will be rejected when exceeding that limit. Defaults to 10MB.
     maxBatchRequestBytes: 10485760

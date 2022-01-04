@@ -150,7 +150,7 @@ public class PublicApiDashboardDefinitionExportIT extends AbstractDashboardDefin
   }
 
   private void setAccessToken() {
-    embeddedOptimizeExtension.getConfigurationService().getJsonExportConfiguration().setAccessToken(ACCESS_TOKEN);
+    embeddedOptimizeExtension.getConfigurationService().getOptimizeApiConfiguration().setAccessToken(ACCESS_TOKEN);
   }
 
 }

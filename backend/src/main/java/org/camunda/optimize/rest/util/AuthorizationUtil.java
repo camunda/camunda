@@ -24,8 +24,15 @@ public class AuthorizationUtil {
     final MultivaluedMap<String, String> queryParameters = requestContext.getUriInfo().getQueryParameters();
     final String queryParameterAccessToken = queryParameters.getFirst(QUERY_PARAMETER_ACCESS_TOKEN);
 
-    if (expectedAccessToken == null || (!expectedAccessToken.equals(extractAuthorizationHeaderToken(requestContext))
-      && !expectedAccessToken.equals(queryParameterAccessToken))) {
+    if (expectedAccessToken == null) {
+      throw new NotAuthorizedException(
+        "The config property 'api.accessToken' is not configured, therefore all requests will be blocked. " +
+          "Please check the documentation to set this property appropriately and restart the server."
+      );
+    }
+
+    if (!(expectedAccessToken.equals(extractAuthorizationHeaderToken(requestContext))
+      || expectedAccessToken.equals(queryParameterAccessToken))) {
       throw new NotAuthorizedException("Invalid or no secret provided.");
     }
   }

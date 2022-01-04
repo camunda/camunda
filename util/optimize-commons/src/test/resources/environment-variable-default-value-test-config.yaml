@@ -6,6 +6,9 @@ security:
   license:
     enterprise: ${OPTIMIZE_ENTERPRISE_MODE:false}
 
+api:
+  accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}
+
 engines:
   'camunda-bpm-1':
     name: default
@@ -30,7 +33,6 @@ engines:
       endpoint: 'http://localhost:8080/camunda'
       enabled: true
 
-
 es:
   connection:
     nodes:
@@ -43,13 +45,5 @@ plugin:
   variableImport:
     basePackages: ['1', '${PACKAGE_2:package:2}', '${PACKAGE_3:}']
 
-eventBasedProcess:
-  eventIngestion:
-    accessToken: ${EVENT_INGESTION_SECRET:null}
-
 container:
   accessUrl: ${ACCESS_URL:null}
-
-externalVariable:
-  variableIngestion:
-    accessToken: ${VARIABLE_INGESTION_SECRET:null}

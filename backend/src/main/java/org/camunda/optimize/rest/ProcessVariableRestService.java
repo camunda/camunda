@@ -86,7 +86,7 @@ public class ProcessVariableRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void modifyVariableLabels(@Context ContainerRequestContext requestContext,
                                    @Valid DefinitionLabelsDto definitionLabelsDto) {
-    validateAccessToken(requestContext, configurationService.getOptimizeApiConfiguration().getOptimizeAccessToken());
+    validateAccessToken(requestContext, configurationService.getOptimizeApiConfiguration().getAccessToken());
     processVariableLabelService.storeVariableLabels(definitionLabelsDto);
   }
 
