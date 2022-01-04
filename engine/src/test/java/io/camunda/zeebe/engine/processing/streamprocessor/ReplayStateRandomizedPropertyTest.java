@@ -157,11 +157,9 @@ public class ReplayStateRandomizedPropertyTest {
     Awaitility.await("await the last written record to be processed")
         .untilAsserted(
             () ->
-                assertThat(engineRule.getLastProcessedPosition())
-                    .describedAs(
-                        "Last written %d has to be processed %d",
-                        engineRule.getLastWrittenPosition(1), engineRule.getLastProcessedPosition())
-                    .isEqualTo(engineRule.getLastWrittenPosition(1)));
+                assertThat(engineRule.hasReachedEnd())
+                    .describedAs("Processing has reached end of the log.")
+                    .isTrue());
   }
 
   @Parameters(name = "{0}")
