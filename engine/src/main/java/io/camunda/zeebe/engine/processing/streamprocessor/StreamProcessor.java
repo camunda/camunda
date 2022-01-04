@@ -416,6 +416,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         });
   }
 
+  public ActorFuture<Boolean> hasProcessingReachedTheEnd() {
+    return actor.call(
+        () ->
+            processingStateMachine != null
+                && !isInReplayOnlyMode()
+                && processingStateMachine.hasReachedEnd());
+  }
+
   private void setStateToPausedAndNotifyListeners() {
     if (isInReplayOnlyMode() || !replayCompletedFuture.isDone()) {
       LOG.debug("Paused replay for partition {}", partitionId);
