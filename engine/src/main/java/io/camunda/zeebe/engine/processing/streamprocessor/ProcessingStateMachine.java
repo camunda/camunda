@@ -107,6 +107,10 @@ public final class ProcessingStateMachine {
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
 
+  private final EventFilter commandFilter =
+      new MetadataEventFilter(
+          recordMetadata -> recordMetadata.getRecordType() != RecordType.COMMAND);
+
   private final MutableZeebeState zeebeState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
@@ -140,6 +144,7 @@ public final class ProcessingStateMachine {
   private int onErrorRetries;
   // Used for processing duration metrics
   private long processingStartTime;
+  private boolean reachedEnd = true;
 
   public ProcessingStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
@@ -184,7 +189,18 @@ public final class ProcessingStateMachine {
   }
 
   private void tryToReadNextEvent() {
-    if (shouldProcessNext.getAsBoolean() && logStreamReader.hasNext() && currentProcessor == null) {
+    final var hasNext = logStreamReader.hasNext();
+
+    if (currentEvent != null) {
+      // All commands cause a follow-up event or rejection, which means the processor
+      // reached the end of the log if:
+      //  * the last record was an event or rejection
+      //  * and there is no next record on the log
+      final var previousEvent = currentEvent;
+      reachedEnd = commandFilter.applies(previousEvent) && !hasNext;
+    }
+
+    if (shouldProcessNext.getAsBoolean() && hasNext && currentProcessor == null) {
       currentEvent = logStreamReader.next();
 
       if (eventFilter.applies(currentEvent)) {
@@ -193,6 +209,17 @@ public final class ProcessingStateMachine {
         skipRecord();
       }
     }
+  }
+
+  /**
+   * Be aware this is a transient property which can change anytime, e.g. if a new command is
+   * written to the log.
+   *
+   * @return true if the ProcessingStateMachine has reached the end of the log and nothing is left
+   *     to being processed/applied, false otherwise
+   */
+  public boolean hasReachedEnd() {
+    return reachedEnd;
   }
 
   private void processEvent(final LoggedEvent event) {
