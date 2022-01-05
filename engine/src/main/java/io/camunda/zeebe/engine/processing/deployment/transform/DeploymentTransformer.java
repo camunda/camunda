@@ -8,9 +8,11 @@
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.util.Map.entry;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,6 +36,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
@@ -41,6 +45,14 @@ import org.slf4j.Logger;
 public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
+
+  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
+      new UnknownResourceTransformer();
+
+  private final Map<String, DeploymentResourceTransformer> resourceTransformers =
+      Map.ofEntries(
+          entry(".bpmn", new BpmnResourceTransformer()),
+          entry(".xml", new BpmnResourceTransformer()));
 
   private final ProcessRecord processRecord = new ProcessRecord();
 
@@ -111,33 +123,26 @@ public final class DeploymentTransformer {
       final DeploymentRecord deploymentEvent,
       final StringBuilder errors,
       final DeploymentResource deploymentResource) {
-    boolean success = false;
     final String resourceName = deploymentResource.getResourceName();
 
+    final var transformer = getResourceTransformer(resourceName);
+
     try {
-      final BpmnModelInstance definition = readProcessDefinition(deploymentResource);
-      final String validationError = validator.validate(definition);
+      final var result = transformer.transformResource(deploymentResource, deploymentEvent);
 
-      if (validationError == null) {
-        // transform the model to avoid unexpected failures that are not covered by the validator
-        bpmnTransformer.transformDefinitions(definition);
-
-        final String bpmnIdDuplicateError = checkForDuplicateBpmnId(definition, resourceName);
-
-        if (bpmnIdDuplicateError == null) {
-          transformProcessResource(deploymentEvent, deploymentResource, definition);
-          success = true;
-        } else {
-          errors.append("\n").append(bpmnIdDuplicateError);
-        }
+      if (result.isRight()) {
+        return true;
       } else {
-        errors.append("\n'").append(resourceName).append("': ").append(validationError);
+        final var failureMessage = result.getLeft().getMessage();
+        errors.append("\n").append(failureMessage);
+        return false;
       }
+
     } catch (final RuntimeException e) {
       LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
       errors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
     }
-    return success;
+    return false;
   }
 
   private String checkForDuplicateBpmnId(
@@ -225,5 +230,59 @@ public final class DeploymentTransformer {
 
   public String getRejectionReason() {
     return rejectionReason;
+  }
+
+  private DeploymentResourceTransformer getResourceTransformer(String resourceName) {
+    return resourceTransformers.entrySet().stream()
+        .filter(entry -> resourceName.endsWith(entry.getKey()))
+        .map(Entry::getValue)
+        .findFirst()
+        .orElse(UNKNOWN_RESOURCE);
+  }
+
+  private interface DeploymentResourceTransformer {
+    Either<Failure, Void> transformResource(DeploymentResource resource, DeploymentRecord record);
+  }
+
+  private class BpmnResourceTransformer implements DeploymentResourceTransformer {
+
+    @Override
+    public Either<Failure, Void> transformResource(
+        final DeploymentResource resource, final DeploymentRecord record) {
+
+      final BpmnModelInstance definition = readProcessDefinition(resource);
+      final String validationError = validator.validate(definition);
+
+      if (validationError == null) {
+        // transform the model to avoid unexpected failures that are not covered by the validator
+        bpmnTransformer.transformDefinitions(definition);
+
+        final String bpmnIdDuplicateError =
+            checkForDuplicateBpmnId(definition, resource.getResourceName());
+
+        if (bpmnIdDuplicateError == null) {
+          transformProcessResource(record, resource, definition);
+          return Either.right(null);
+        } else {
+          return Either.left(new Failure(bpmnIdDuplicateError));
+        }
+      } else {
+        final var failureMessage =
+            String.format("'%s': %s", resource.getResourceName(), validationError);
+        return Either.left(new Failure(failureMessage));
+      }
+    }
+  }
+
+  private static class UnknownResourceTransformer implements DeploymentResourceTransformer {
+
+    @Override
+    public Either<Failure, Void> transformResource(
+        final DeploymentResource resource, final DeploymentRecord record) {
+
+      final var failureMessage =
+          String.format("%n'%s': unknown resource type", resource.getResourceName());
+      return Either.left(new Failure(failureMessage));
+    }
   }
 }

@@ -57,7 +57,10 @@ public final class ActivatableJobsNotificationTests {
   @Before
   public void setup() {
     taskType = Strings.newRandomValidBpmnId();
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(taskType))
+        .deploy();
   }
 
   @Test
