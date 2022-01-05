@@ -212,15 +212,17 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			}
 
 			if test.jsonOutput {
-				cmdOut, err = reformatJSON(cmdOut)
+				fmtJson, err := reformatJSON(cmdOut)
 				if err != nil {
-					t.Fatalf("failed to reformat response JSON: %v\nErroneous JSON: %v", err, cmdOut)
+					t.Fatalf("failed to reformat response JSON: %v\nErroneous JSON: %s", err, cmdOut)
 				}
+				cmdOut = fmtJson
 
-				goldenOut, err = reformatJSON(goldenOut)
+				fmtGolden, err := reformatJSON(goldenOut)
 				if err != nil {
-					t.Fatalf("failed to reformat golden JSON: %v\nErroneous JSON: %v", err, goldenOut)
+					t.Fatalf("failed to reformat golden JSON: %v\nErroneous JSON: %s", err, goldenOut)
 				}
+				goldenOut = fmtGolden
 			}
 
 			assertEq(t, test, goldenOut, cmdOut)
