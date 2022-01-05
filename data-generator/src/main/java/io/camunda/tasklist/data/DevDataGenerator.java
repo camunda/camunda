@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -214,6 +215,7 @@ public class DevDataGenerator implements DataGenerator {
     try {
       final GetIndexRequest request =
           new GetIndexRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
+      request.indicesOptions(IndicesOptions.fromOptions(true, false, true, false));
       final boolean exists = zeebeEsClient.indices().exists(request, RequestOptions.DEFAULT);
       if (exists) {
         // data already exists

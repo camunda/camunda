@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
@@ -232,7 +233,12 @@ public class ElasticsearchTestRule extends TestWatcher {
   private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
       throws IOException {
     final GetIndexResponse response =
-        esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
+        esClient
+            .indices()
+            .get(
+                new GetIndexRequest(indexPrefix + "*")
+                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                RequestOptions.DEFAULT);
     final String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;
   }
