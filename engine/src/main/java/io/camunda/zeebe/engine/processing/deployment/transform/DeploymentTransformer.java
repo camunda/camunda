@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static java.util.Map.entry;
 
+import io.camunda.zeebe.dmn.DecisionEngine;
+import io.camunda.zeebe.dmn.DecisionEngineFactory;
+import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -23,13 +27,18 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.io.ByteArrayInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
@@ -52,7 +61,8 @@ public final class DeploymentTransformer {
   private final Map<String, DeploymentResourceTransformer> resourceTransformers =
       Map.ofEntries(
           entry(".bpmn", new BpmnResourceTransformer()),
-          entry(".xml", new BpmnResourceTransformer()));
+          entry(".xml", new BpmnResourceTransformer()),
+          entry(".dmn", new DmnResourceTransformer()));
 
   private final ProcessRecord processRecord = new ProcessRecord();
 
@@ -240,6 +250,10 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
+  private DirectBuffer getChecksum(final DeploymentResource resource) {
+    return wrapArray(digestGenerator.digest(resource.getResource()));
+  }
+
   private interface DeploymentResourceTransformer {
     Either<Failure, Void> transformResource(DeploymentResource resource, DeploymentRecord record);
   }
@@ -271,6 +285,65 @@ public final class DeploymentTransformer {
             String.format("'%s': %s", resource.getResourceName(), validationError);
         return Either.left(new Failure(failureMessage));
       }
+    }
+  }
+
+  private class DmnResourceTransformer implements DeploymentResourceTransformer {
+
+    final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
+
+    @Override
+    public Either<Failure, Void> transformResource(
+        final DeploymentResource resource, final DeploymentRecord record) {
+
+      final var dmnResource = new ByteArrayInputStream(resource.getResource());
+      final var parsedDrg = decisionEngine.parse(dmnResource);
+
+      if (parsedDrg.isValid()) {
+        writeRecords(resource, parsedDrg);
+        return Either.right(null);
+
+      } else {
+        final var failure = new Failure(parsedDrg.getFailureMessage());
+        return Either.left(failure);
+      }
+    }
+
+    private void writeRecords(final DeploymentResource resource,
+        final ParsedDecisionRequirementsGraph parsedDrg) {
+
+      final var decisionRequirementsKey = keyGenerator.nextKey();
+
+      stateWriter.appendFollowUpEvent(
+          decisionRequirementsKey,
+          DecisionRequirementsIntent.CREATED,
+          new DecisionRequirementsRecord()
+              .setDecisionRequirementsKey(decisionRequirementsKey)
+              .setDecisionRequirementsId(parsedDrg.getId())
+              .setDecisionRequirementsName(parsedDrg.getName())
+              .setDecisionRequirementsVersion(1)
+              .setNamespace(parsedDrg.getNamespace())
+              .setResourceName(resource.getResourceName())
+              .setResource(resource.getResourceBuffer())
+              .setChecksum(getChecksum(resource)));
+
+      parsedDrg
+          .getDecisions()
+          .forEach(
+              decision -> {
+                final var decisionKey = keyGenerator.nextKey();
+
+                stateWriter.appendFollowUpEvent(
+                    decisionKey,
+                    DecisionIntent.CREATED,
+                    new DecisionRecord()
+                        .setDecisionKey(decisionKey)
+                        .setDecisionId(decision.getId())
+                        .setDecisionName(decision.getName())
+                        .setVersion(1)
+                        .setDecisionRequirementsId(parsedDrg.getId())
+                        .setDecisionRequirementsKey(decisionRequirementsKey));
+              });
     }
   }
 
