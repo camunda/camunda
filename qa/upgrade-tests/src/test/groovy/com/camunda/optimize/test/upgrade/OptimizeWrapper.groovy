@@ -83,7 +83,7 @@ class OptimizeWrapper {
     environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[demo]")
     environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true")
     environmentVars.add("OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true")
-    environmentVars.add("OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret")
+    environmentVars.add("OPTIMIZE_API_ACCESS_TOKEN=secret")
     def command = ["/bin/bash", "./optimize-startup.sh"]
     this.process = command.execute(environmentVars, new File(optimizeDirectory))
     try {
