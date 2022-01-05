@@ -67,6 +67,16 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
     final PushDeploymentRequest pushRequest =
         new PushDeploymentRequest().deployment(deploymentBuffer).deploymentKey(key);
 
+    scheduleRetryPushDeploymentAfterADelay(partitionId, pushedFuture, pushRequest);
+    sendPushDeploymentRequest(partitionId, pushedFuture, pushRequest);
+
+    return pushedFuture;
+  }
+
+  private void scheduleRetryPushDeploymentAfterADelay(
+      final int partitionId,
+      final CompletableActorFuture<Void> pushedFuture,
+      final PushDeploymentRequest pushRequest) {
     actor.runDelayed(
         PUSH_REQUEST_TIMEOUT,
         () -> {
@@ -77,13 +87,10 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
                 partitionId,
                 topic);
 
+            scheduleRetryPushDeploymentAfterADelay(partitionId, pushedFuture, pushRequest);
             sendPushDeploymentRequest(partitionId, pushedFuture, pushRequest);
           }
         });
-
-    sendPushDeploymentRequest(partitionId, pushedFuture, pushRequest);
-
-    return pushedFuture;
   }
 
   private void sendPushDeploymentRequest(
