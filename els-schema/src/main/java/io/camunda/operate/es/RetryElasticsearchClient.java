@@ -42,6 +42,7 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
@@ -222,7 +223,8 @@ public class RetryElasticsearchClient {
   }
 
   private boolean indicesExist(final String indexPattern) throws IOException {
-    return esClient.indices().exists(new GetIndexRequest(indexPattern), requestOptions);
+    return esClient.indices().exists(new GetIndexRequest(indexPattern).indicesOptions(
+        IndicesOptions.fromOptions(true, false, true, false)), requestOptions);
   }
 
   public boolean deleteIndicesFor(final String indexPattern) {

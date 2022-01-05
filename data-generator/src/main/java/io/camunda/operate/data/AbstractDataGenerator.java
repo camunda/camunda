@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import io.camunda.operate.property.OperateProperties;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -87,6 +88,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     if (!manuallyCalled) {    //when called manually, always create the data
       try {
         GetIndexRequest request = new GetIndexRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+        request.indicesOptions(IndicesOptions.fromOptions(true, false, true, false));
         boolean exists = zeebeEsClient.indices().exists(request, RequestOptions.DEFAULT);
         if (exists) {
           //data already exists

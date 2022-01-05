@@ -5,18 +5,11 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.zeebeimport.ZeebePostImporter;
-import io.camunda.operate.zeebeimport.post.PostImportAction;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperateEntity;
@@ -41,6 +34,8 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import io.camunda.operate.zeebeimport.ZeebePostImporter;
+import io.camunda.operate.zeebeimport.post.PostImportAction;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +49,7 @@ import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
@@ -67,11 +63,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
@@ -301,8 +292,12 @@ public class ElasticsearchTestRule extends TestWatcher {
     return areCreated;
   }
 
-  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices) throws IOException {
-    GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
+  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
+      throws IOException {
+    GetIndexResponse response = esClient.indices().get(
+        new GetIndexRequest(indexPrefix + "*")
+            .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+        RequestOptions.DEFAULT);
     String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;
   }
