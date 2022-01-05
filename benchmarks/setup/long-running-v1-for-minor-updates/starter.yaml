@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: starter
-        image: gcr.io/zeebe-io/starter:long-running-v1-for-minor-updates
+        image: gcr.io/zeebe-io/starter:1.3.0
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
