@@ -30,7 +30,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <version.zeebe>1.3.0</version.zeebe>
-    <version.iam>1.3.0-alpha3</version.iam>
+    <version.iam>1.3.0</version.iam>
 
     <version.elasticsearch>7.16.2</version.elasticsearch>
     <version.spring.boot>2.5.5</version.spring.boot>
