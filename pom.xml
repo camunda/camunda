@@ -28,8 +28,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>1.3.0-alpha3</version.zeebe>
-    <version.iam>1.3.0-alpha3</version.iam>
+    <version.zeebe>1.3.0</version.zeebe>
+    <version.iam>1.3.0</version.iam>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
     <version.log4j>2.17.1</version.log4j>
     <version.elasticsearch>7.16.2</version.elasticsearch>

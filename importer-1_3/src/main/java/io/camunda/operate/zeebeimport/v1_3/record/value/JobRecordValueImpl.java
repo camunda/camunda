@@ -105,6 +105,16 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
+  public long getRetryBackoff() {
+    return 0;
+  }
+
+  @Override
+  public long getRecurringTime() {
+    return 0;
+  }
+
+  @Override
   public long getDeadline() {
     return deadline;
   }
