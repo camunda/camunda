@@ -39,7 +39,7 @@ public class ElasticsearchConnectorSSLAuthIT {
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.12.0")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.16.2")
           .withCopyFileToContainer(
               MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
               "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")

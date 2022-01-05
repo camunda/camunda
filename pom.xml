@@ -29,10 +29,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>1.3.0-alpha3</version.zeebe>
+    <version.zeebe>1.3.0</version.zeebe>
     <version.iam>1.3.0-alpha3</version.iam>
 
-    <version.elasticsearch>7.15.2</version.elasticsearch>
+    <version.elasticsearch>7.16.2</version.elasticsearch>
     <version.spring.boot>2.5.5</version.spring.boot>
     <version.spring.session>1.3.5.RELEASE</version.spring.session>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
@@ -42,7 +42,7 @@
     <version.micrometer>1.8.1</version.micrometer>
     <version.mockito>4.2.0</version.mockito>
     <version.assertj-core>3.21.0</version.assertj-core>
-    <version.jackson>2.13.0</version.jackson>
+    <version.jackson>2.13.1</version.jackson>
     <version.graphql>11.1.0</version.graphql>
     <version.graphql.tools>11.0.1</version.graphql.tools>
     <version.failsafe>2.4.4</version.failsafe>

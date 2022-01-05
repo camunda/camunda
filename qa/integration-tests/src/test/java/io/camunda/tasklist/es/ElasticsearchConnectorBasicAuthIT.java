@@ -45,7 +45,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 public class ElasticsearchConnectorBasicAuthIT {
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.12.0")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.16.2")
           .withEnv(
               Map.of(
                   "xpack.security.enabled", "true",
