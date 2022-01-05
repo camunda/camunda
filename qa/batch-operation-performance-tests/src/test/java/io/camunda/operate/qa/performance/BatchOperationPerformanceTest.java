@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.qa.performance;
 
+import io.camunda.operate.webapp.rest.dto.UserDto;
 import java.time.Duration;
 import java.time.Instant;
 import io.camunda.operate.Application;
@@ -73,9 +74,8 @@ public class BatchOperationPerformanceTest {
     when(zeebeClient.newUpdateRetriesCommand(anyLong()).retries(1).send().join()).thenAnswer(answerWithDelay);
     when(zeebeClient.newResolveIncidentCommand(anyLong()).send().join()).thenAnswer(answerWithDelay);
 
+    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USERNAME).setUserId(USERNAME));
     createOperations();
-
-    when(userService.getCurrentUser().getUsername()).thenReturn(USERNAME);
   }
 
   private void createOperations() {
