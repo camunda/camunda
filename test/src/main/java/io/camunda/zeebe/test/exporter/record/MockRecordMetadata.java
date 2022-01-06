@@ -14,45 +14,18 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.Objects;
 
-/**
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
- */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockRecordMetadata extends ExporterMappedObject implements Cloneable {
 
-  private Intent intent = ProcessInstanceCreationIntent.CREATE;
+  private static final String BROKER_VERSION = "";
+  private final Intent intent = ProcessInstanceCreationIntent.CREATE;
   private int partitionId = 0;
   private RecordType recordType = RecordType.COMMAND;
-  private RejectionType rejectionType = RejectionType.NULL_VAL;
-  private String rejectionReason = "";
+  private final RejectionType rejectionType = RejectionType.NULL_VAL;
+  private final String rejectionReason = "";
   private ValueType valueType = ValueType.PROCESS_INSTANCE_CREATION;
-  private String brokerVersion = "";
-
-  public MockRecordMetadata() {}
-
-  public MockRecordMetadata(
-      final Intent intent,
-      final int partitionId,
-      final RecordType recordType,
-      final RejectionType rejectionType,
-      final String rejectionReason,
-      final ValueType valueType) {
-    this.intent = intent;
-    this.partitionId = partitionId;
-    this.recordType = recordType;
-    this.rejectionType = rejectionType;
-    this.rejectionReason = rejectionReason;
-    this.valueType = valueType;
-  }
 
   public Intent getIntent() {
     return intent;
-  }
-
-  public MockRecordMetadata setIntent(final Intent intent) {
-    this.intent = intent;
-    return this;
   }
 
   public int getPartitionId() {
@@ -77,18 +50,8 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return rejectionType;
   }
 
-  public MockRecordMetadata setRejectionType(final RejectionType rejectionType) {
-    this.rejectionType = rejectionType;
-    return this;
-  }
-
   public String getRejectionReason() {
     return rejectionReason;
-  }
-
-  public MockRecordMetadata setRejectionReason(final String rejectionReason) {
-    this.rejectionReason = rejectionReason;
-    return this;
   }
 
   public ValueType getValueType() {
@@ -101,11 +64,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   }
 
   public String getBrokerVersion() {
-    return brokerVersion;
-  }
-
-  public void setBrokerVersion(final String brokerVersion) {
-    this.brokerVersion = brokerVersion;
+    return BROKER_VERSION;
   }
 
   @Override
@@ -163,7 +122,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
         + rejectionReason
         + '\''
         + ", brokerVersion='"
-        + brokerVersion
+        + BROKER_VERSION
         + '\''
         + ", valueType="
         + valueType

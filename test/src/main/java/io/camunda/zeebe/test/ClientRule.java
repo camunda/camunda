@@ -13,20 +13,11 @@ import java.util.Properties;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 
-/**
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
- */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class ClientRule extends ExternalResource {
 
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(2);
   protected final Supplier<Properties> properties;
   protected ZeebeClient client;
-
-  public ClientRule() {
-    this(Properties::new);
-  }
 
   public ClientRule(final Supplier<Properties> propertiesProvider) {
     properties = propertiesProvider;

@@ -35,7 +35,6 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -51,20 +50,12 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
- */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int DEFAULT_TIMEOUT = 25;
   public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
   protected static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
-  private static final String SNAPSHOTS_DIRECTORY = "snapshots";
-  private static final String STATE_DIRECTORY = "state";
-  protected final Supplier<InputStream> configSupplier;
   protected long startTime;
   private final Consumer<BrokerCfg>[] configurators;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -75,7 +66,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
   private final Duration timeout;
   private final File newTemporaryFolder;
-  private String dataDirectory;
   private SystemContext systemContext;
 
   @SafeVarargs
@@ -108,7 +98,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
       final Supplier<InputStream> configSupplier,
       final Duration timeout,
       final Consumer<BrokerCfg>... configurators) {
-    this.configSupplier = configSupplier;
     this.configurators = configurators;
     this.timeout = timeout;
 
@@ -124,19 +113,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
       configureBroker(brokerCfg);
     } catch (final IOException e) {
       throw new RuntimeException("Unable to open configuration", e);
-    }
-  }
-
-  private static void deleteSnapshots(final File parentDir) {
-    final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
-
-    if (snapshotDirectory.exists()) {
-      try {
-        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
-      } catch (final IOException e) {
-        throw new RuntimeException(
-            "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
-      }
     }
   }
 
@@ -188,19 +164,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public BrokerCfg getBrokerCfg() {
     return brokerCfg;
-  }
-
-  public InetSocketAddress getGatewayAddress() {
-    return brokerCfg.getGateway().getNetwork().toSocketAddress();
-  }
-
-  public ControlledActorClock getClock() {
-    return controlledActorClock;
-  }
-
-  public void restartBroker() {
-    stopBroker();
-    startBroker();
   }
 
   public void stopBroker() {
@@ -256,8 +219,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
             return topology != null && topology.getLeaderForPartition(1) >= 0;
           });
     }
-
-    dataDirectory = broker.getSystemContext().getBrokerConfiguration().getData().getDirectory();
   }
 
   public void configureBroker(final BrokerCfg brokerCfg) {
@@ -273,22 +234,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     // set random port numbers
     assignSocketAddresses(brokerCfg);
-  }
-
-  public void purgeSnapshots() {
-    final File directory = new File(dataDirectory);
-
-    final File[] partitionDirectories = directory.listFiles((d, f) -> new File(d, f).isDirectory());
-    if (partitionDirectories == null) {
-      return;
-    }
-
-    for (final File partitionDirectory : partitionDirectories) {
-      final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
-      if (stateDirectory.exists()) {
-        deleteSnapshots(stateDirectory);
-      }
-    }
   }
 
   private static class LeaderPartitionListener implements PartitionListener {

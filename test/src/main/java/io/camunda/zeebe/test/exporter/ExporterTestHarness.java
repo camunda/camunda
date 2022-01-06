@@ -7,22 +7,13 @@
  */
 package io.camunda.zeebe.test.exporter;
 
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Configuration;
-import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.exporter.record.MockRecord;
 import io.camunda.zeebe.test.exporter.record.MockRecordMetadata;
 import io.camunda.zeebe.test.exporter.record.MockRecordStream;
-import io.camunda.zeebe.test.util.TestConfigurationFactory;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -32,11 +23,7 @@ import org.slf4j.LoggerFactory;
  * ExporterTestHarness provides utilities to write unit tests for concrete implementations of the
  * {@link Exporter} interface, by simulating the lifecycle that it would have on a live broker while
  * allowing callers to control the execution flow.
- *
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
  */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class ExporterTestHarness {
 
   private final Logger logger = LoggerFactory.getLogger("io.camunda.zeebe.broker.exporter");
@@ -50,59 +37,6 @@ public class ExporterTestHarness {
   /** @param exporter the exporter to be tested */
   public ExporterTestHarness(final Exporter exporter) {
     this.exporter = exporter;
-  }
-
-  /**
-   * Will configure the exporter with a default empty configuration, an empty arguments map, but the
-   * correct given ID.
-   *
-   * @param id the ID of the exporter
-   */
-  public void configure(final String id) throws Exception {
-    final MockConfiguration<Object> configuration = new MockConfiguration<>();
-    configuration.setId(id);
-
-    exporter.configure(newContext(configuration));
-  }
-
-  /**
-   * Will configure the exporter with the given ID, and parse the input as if it were a partial YAML
-   * document; this would allow one to test sample configuration and make sure they're parsed as
-   * expected.
-   *
-   * <p>The given YAML document can be a partial document which contains strictly the exporter
-   * definition. For example: <code>
-   * zeebe:
-   *   broker:
-   *     exporters:
-   *       elasticsearsch:
-   *         className: io.camunda.zeebe.exporter.ElasticsearchExporter
-   *         args:
-   *         ...
-   * </code>
-   *
-   * <p>NOTE: the ID of the exporter in the YAML document MUST match the given ID here to avoid any
-   * issues where you would pass a sample YAML document with multiple exporter definitions.
-   *
-   * @param id id of the exporter
-   * @param yaml the reference YAML document
-   */
-  public void configure(final String id, final InputStream yaml) throws Exception {
-    final BrokerCfg config = new TestConfigurationFactory().create(yaml, BrokerCfg.class);
-    configure(id, config);
-  }
-
-  /**
-   * Convenience method for {@link ExporterTestHarness#configure(String, InputStream)} which will
-   * transform the file into an {@link InputStream}. See its documentation for more.
-   *
-   * @param id the exporter ID
-   * @param configFile pointer to a yaml configuration file
-   */
-  public void configure(final String id, final File configFile) throws Exception {
-    try (final InputStream configStream = new FileInputStream(configFile)) {
-      configure(id, configStream);
-    }
   }
 
   /**
@@ -180,15 +114,6 @@ public class ExporterTestHarness {
   }
 
   /**
-   * Streams a series of record.
-   *
-   * @return a stream of {@link MockRecord}
-   */
-  public Stream stream() {
-    return new Stream(MockRecordStream.generate());
-  }
-
-  /**
    * Streams a series of record based on the given seed.
    *
    * <p>Subsequent records after the seed will be exactly the same, with the exception that the
@@ -218,16 +143,6 @@ public class ExporterTestHarness {
     return stream(seed);
   }
 
-  /**
-   * Runs all scheduled tasks which should be expired if {@param elapsed} time has passed since the
-   * last time this was called.
-   *
-   * @param elapsed time to elapse
-   */
-  public void runScheduledTasks(final Duration elapsed) {
-    controller.runScheduledTasks(elapsed);
-  }
-
   /** @return underlying mock controller */
   public MockController getController() {
     return controller;
@@ -235,41 +150,6 @@ public class ExporterTestHarness {
 
   public MockContext getContext() {
     return context;
-  }
-
-  /**
-   * Returns the last exported record's position; note that this is <em>not</em> the last updated
-   * record position, as updated by the exporter, but simply the position of that last record handed
-   * off to the exporter via {@link Exporter#export(Record)}.
-   *
-   * @return the last exported record's position
-   */
-  public long getPosition() {
-    return position;
-  }
-
-  /**
-   * Returns the last position as reported by the exporter through {@link
-   * Controller#updateLastExportedRecordPosition(long)}
-   *
-   * @return the last exported record position
-   */
-  public long getLastUpdatedPosition() {
-    return controller.getPosition();
-  }
-
-  private void configure(final String id, final BrokerCfg brokerCfg) throws Exception {
-    final Optional<ExporterCfg> config = Optional.ofNullable(brokerCfg.getExporters().get(id));
-
-    if (config.isPresent()) {
-      final MockConfiguration<Object> configuration = new MockConfiguration<>();
-      configuration.setId(id);
-      configuration.setArguments(config.get().getArgs());
-      context = newContext(configuration);
-      exporter.configure(context);
-    } else {
-      throw new IllegalArgumentException(String.format("No exporter with ID %s found", id));
-    }
   }
 
   private <T> MockContext newContext(final MockConfiguration<T> configuration) {

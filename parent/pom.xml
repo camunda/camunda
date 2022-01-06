@@ -76,7 +76,7 @@
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.14.1</version.prometheus>
     <version.protobuf>3.19.2</version.protobuf>
-    <version.protobuf-common>2.7.0</version.protobuf-common>
+    <version.protobuf-common>2.7.1</version.protobuf-common>
     <version.micrometer>1.8.1</version.micrometer>
     <version.rocksdbjni>6.27.3</version.rocksdbjni>
     <version.sbe>1.25.1</version.sbe>
@@ -270,6 +270,12 @@
         <version>${project.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-test</artifactId>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
@@ -776,6 +782,7 @@
         <version>${version.bouncycastle}</version>
         <scope>test</scope>
       </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -970,7 +977,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
@@ -1153,7 +1160,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore></ignore>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1246,7 +1253,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence></dependencyConvergence>
                 </rules>
               </configuration>
             </execution>
@@ -1257,7 +1264,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
                 </rules>
               </configuration>
             </execution>
