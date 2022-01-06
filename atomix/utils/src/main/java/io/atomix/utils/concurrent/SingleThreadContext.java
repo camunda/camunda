@@ -19,6 +19,7 @@ package io.atomix.utils.concurrent;
 import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -44,6 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SingleThreadContext extends AbstractThreadContext {
   protected static final Logger LOGGER = LoggerFactory.getLogger(SingleThreadContext.class);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOGGER);
   private static final Consumer<Throwable> DEFAULT_UNCAUGHT_EXCEPTION_OBSERVER =
       e -> LOGGER.error("An uncaught exception occurred", e);
   protected final ScheduledExecutorService executor;
@@ -119,12 +121,7 @@ public class SingleThreadContext extends AbstractThreadContext {
   protected static AtomixThread getThread(final ExecutorService executor) {
     final AtomicReference<AtomixThread> thread = new AtomicReference<>();
     try {
-      executor
-          .submit(
-              () -> {
-                thread.set((AtomixThread) Thread.currentThread());
-              })
-          .get();
+      executor.submit(() -> thread.set((AtomixThread) Thread.currentThread())).get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new IllegalStateException("failed to initialize thread state", e);
     }
@@ -172,9 +169,8 @@ public class SingleThreadContext extends AbstractThreadContext {
     public void run() {
       try {
         command.run();
-      } catch (final Exception e) {
-        uncaughtExceptionObserver.accept(e);
       } catch (final Throwable e) {
+        FATAL_ERROR_HANDLER.handleError(e);
         // If we don't handle throwable here, it will be swallowed by ScheduledThreadPoolExecutor
         uncaughtExceptionObserver.accept(e);
         throw e; // rethrow so that the ScheduledFuture is completed exceptionally
