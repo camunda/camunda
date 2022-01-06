@@ -220,11 +220,13 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
     final var timeoutFuture =
         timeoutExecutor.schedule(
-            () ->
-                responseFuture.completeExceptionally(
-                    new TimeoutException(
-                        String.format(
-                            "Request %s to %s timed out in %s", message, address, timeout))),
+            () -> {
+              responseFuture.completeExceptionally(
+                  new TimeoutException(
+                      String.format(
+                          "Request %s to %s timed out in %s", message, address, timeout)));
+              openFutures.remove(responseFuture);
+            },
             timeout.toNanos(),
             TimeUnit.NANOSECONDS);
     responseFuture.whenComplete((ignored, error) -> timeoutFuture.cancel(true));
