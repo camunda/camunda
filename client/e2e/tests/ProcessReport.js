@@ -846,7 +846,7 @@ test('distribute by variable', async (t) => {
   await t.click(e.dropdownOption('Variable'));
   await t.click(e.submenuOption('approved'));
   await t
-    .resizeWindow(1650, 960)
+    .resizeWindow(1650, 900)
     .takeElementScreenshot(e.reportRenderer, 'process/single-report/distributedByVar.png')
     .maximizeWindow();
 
