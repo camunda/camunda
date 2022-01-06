@@ -63,6 +63,9 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await clearAllAnnotations();
 
+  await t.click(e.autoRefreshButton);
+  await t.click(e.option('1 minute'));
+
   await u.save(t);
 
   await t.expect(e.dashboardName.textContent).eql('Process performance overview');

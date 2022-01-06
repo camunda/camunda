@@ -34,9 +34,7 @@ export const shareHeader = Selector('.Sharing .header');
 export const shareTitle = shareHeader.find('.name-container');
 export const shareLink = shareHeader.find('.title-button');
 export const deleteButton = Selector('.delete-button');
-export const autoRefreshButton = Selector('.DashboardView .tools .Dropdown').withText(
-  'Auto Refresh'
-);
+export const autoRefreshButton = Selector('.tools .Dropdown').withText('Auto Refresh');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const reportModal = Selector('.ReportModal');
 export const addFilterButton = Selector('.Button').withText('Add a filter');
