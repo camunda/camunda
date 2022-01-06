@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.camunda.zeebe.util.error.FatalErrorHandler;
-import io.camunda.zeebe.util.error.FatalErrorHandlers;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -46,8 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SingleThreadContext extends AbstractThreadContext {
   protected static final Logger LOGGER = LoggerFactory.getLogger(SingleThreadContext.class);
-  private static final FatalErrorHandler FATAL_ERROR_HANDLER =
-      FatalErrorHandlers.withLogger(LOGGER);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOGGER);
   private static final Consumer<Throwable> DEFAULT_UNCAUGHT_EXCEPTION_OBSERVER =
       e -> LOGGER.error("An uncaught exception occurred", e);
   protected final ScheduledExecutorService executor;

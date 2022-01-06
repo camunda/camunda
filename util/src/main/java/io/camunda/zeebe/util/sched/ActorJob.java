@@ -9,7 +9,6 @@ package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
-import io.camunda.zeebe.util.error.FatalErrorHandlers;
 import io.camunda.zeebe.util.sched.ActorTask.TaskSchedulingState;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -19,7 +18,7 @@ import org.slf4j.Logger;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ActorJob {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
-  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandlers.withLogger(LOG);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
   TaskSchedulingState schedulingState;
   Actor actor;

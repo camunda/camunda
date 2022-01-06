@@ -14,8 +14,6 @@ import org.slf4j.Logger;
  * Handles all Throwables and exits for {@link VirtualMachineError}. It can also be used as a {@link
  * UncaughtExceptionHandler uncaught exception handler}, for example as the {@link
  * Thread#setDefaultUncaughtExceptionHandler default uncaught exception handler}
- *
- * @see FatalErrorHandlers
  */
 public final class VirtualMachineErrorHandler
     implements FatalErrorHandler, UncaughtExceptionHandler {
