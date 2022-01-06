@@ -43,7 +43,7 @@ export const roleOption = (text) => Selector('.Modal .LabeledInput .label.after'
 export const userList = Selector('.UserList');
 export const sourcesList = Selector('.SourcesList');
 export const addUserModal = Selector('.AddUserModal');
-export const addSourceModal = Selector('.AddSourceModal');
+export const addSourceModal = Selector('.SourcesModal');
 export const logoutButton = Selector('header .UserMenu.Dropdown .DropdownOption');
 export const usernameDropdown = Selector('header .UserMenu.Dropdown');
 export const usersTypeahead = Selector('.MultiUserInput .Input');

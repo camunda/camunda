@@ -54,3 +54,7 @@ export const customValueAddButton = Selector('.customValueAddButton');
 export const typeahead = Selector('.Typeahead');
 export const typeaheadInput = Selector('.Typeahead .Input');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
+export const alertsDropdown = Selector('.AlertsDropdown .Button');
+export const alertDeleteButton = Selector('.AlertModal .deleteButton');
+export const collectionLink = Selector('.NavItem a').withText('New Collection');
+export const notificationCloseButton = Selector('.Notification .close');

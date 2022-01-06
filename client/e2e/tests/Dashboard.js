@@ -12,10 +12,15 @@ import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 import * as e from './Dashboard.elements.js';
 import * as Homepage from './Homepage.elements.js';
 import * as Filter from './Filter.elements.js';
+import * as Alert from './Alerts.elements.js';
 
 fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
+  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.click(Homepage.confirmButton);
+  await t.click(Homepage.confirmButton);
+
   await t.resizeWindow(1300, 750);
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Dashboard'));
@@ -69,7 +74,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.takeScreenshot('dashboard/dashboard-viewMode-monitorFeatures.png', {fullPage: true});
   await t.maximizeWindow();
 
-  await u.gotoOverview(t);
+  await t.click(e.collectionLink);
 
   await t.expect(Homepage.reportItem.visible).ok();
   await t.expect(Homepage.dashboardItem.visible).ok();
@@ -338,4 +343,47 @@ test('filters', async (t) => {
 
   await t.expect(e.report.visible).ok();
   await t.expect(e.report.textContent).contains('No data');
+});
+
+test('version selection', async (t) => {
+  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.click(Homepage.confirmButton);
+  await t.click(Homepage.confirmButton);
+
+  await u.createNewReport(t);
+  await t.typeText(e.nameEditField, 'Number Report', {replace: true});
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.save(t);
+
+  await t.click(e.collectionLink);
+  await u.createNewDashboard(t);
+  await u.addReportToDashboard(t, 'Number Report');
+  await u.save(t);
+
+  // Creating
+  await t.click(e.alertsDropdown);
+  await t.click(e.option('New Alert'));
+  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test alert', {replace: true});
+  await t.click(Alert.reportTypeahead);
+  await t.click(Alert.reportTypeaheadOption('Number Report'));
+  await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com ');
+  await t.click(Alert.primaryModalButton);
+  await t.click(e.notificationCloseButton);
+
+  // editing
+  await t.click(e.alertsDropdown);
+  await t.click(e.option('Test alert'));
+  await t.typeText(Alert.inputWithLabel('Alert Name'), 'another alert name', {replace: true});
+  await t.click(Alert.primaryModalButton);
+  await t.click(e.notificationCloseButton);
+
+  // deleting
+  await t.click(e.alertsDropdown);
+  await t.click(e.option('another alert name'));
+  await t.click(e.alertDeleteButton);
+  await t.click(e.modalConfirmbutton);
+  await t.click(e.notificationCloseButton);
+  await t.click(e.alertsDropdown);
+  await t.expect(e.option('Test alert').exists).notOk();
 });
