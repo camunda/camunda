@@ -4,7 +4,7 @@ security:
     token:
       lifeMin: ${AUTH_TOKEN_LIFEMIN:5}
   license:
-    enterprise: ${OPTIMIZE_ENTERPRISE_MODE:false}
+    enterprise: ${CAMUNDA_OPTIMIZE_ENTERPRISE_MODE:false}
 
 api:
   accessToken: ${OPTIMIZE_API_ACCESS_TOKEN:null}

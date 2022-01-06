@@ -195,6 +195,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE_MODE", String.valueOf(false));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -232,6 +233,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE_MODE", String.valueOf(false));
 
     final ConfigurationService underTest = createConfiguration(locations);
 
@@ -266,6 +268,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE_MODE", String.valueOf(false));
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -292,6 +295,8 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED", String.valueOf(CUSTOM_ES_SSL_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_SHARING_ENABLED", String.valueOf(CUSTOM_SHARING_ENABLED));
     System.setProperty("CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN", String.valueOf(CUSTOM_UI_LOGOUT_HIDDEN));
+    System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE_MODE", String.valueOf(false));
+
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then

@@ -37,7 +37,7 @@ security:
   # Configuration relating to the use of Optimize
   license:
     # True if Optimize is running in enterprise mode, or false if in trial mode
-    enterprise: ${OPTIMIZE_ENTERPRISE_MODE:true}
+    enterprise: ${CAMUNDA_OPTIMIZE_ENTERPRISE_MODE:false}
 
   # Here you can define HTTP response headers that Optimize can send in its responses
   # to increase the security of your application.

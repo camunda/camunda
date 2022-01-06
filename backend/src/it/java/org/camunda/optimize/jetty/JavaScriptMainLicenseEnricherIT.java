@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter.LICENSE_COMMERCIAL_PATH;
+import static org.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter.LICENSE_ENTERPRISE_PATH;
 
 public class JavaScriptMainLicenseEnricherIT extends AbstractIT {
   private static final String MOCKED_JS_CONTENT = "/* no content */\n";
@@ -25,6 +25,6 @@ public class JavaScriptMainLicenseEnricherIT extends AbstractIT {
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final String body = response.readEntity(String.class);
-    assertThat(body).isEqualTo(FileReaderUtil.readFile("/" + LICENSE_COMMERCIAL_PATH) + MOCKED_JS_CONTENT);
+    assertThat(body).isEqualTo(FileReaderUtil.readFile("/" + LICENSE_ENTERPRISE_PATH) + MOCKED_JS_CONTENT);
   }
 }
