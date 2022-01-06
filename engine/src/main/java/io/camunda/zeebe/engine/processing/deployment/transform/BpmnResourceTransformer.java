@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
-import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer.DeploymentResourceTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -60,7 +59,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   @Override
   public Either<Failure, Void> transformResource(
-      final DeploymentResource resource, final DeploymentRecord record) {
+      final DeploymentResource resource, final DeploymentRecord deployment) {
 
     final BpmnModelInstance definition = readProcessDefinition(resource);
     final String validationError = validator.validate(definition);
@@ -69,10 +68,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       // transform the model to avoid unexpected failures that are not covered by the validator
       bpmnTransformer.transformDefinitions(definition);
 
-      return checkForDuplicateBpmnId(definition, resource, record)
+      return checkForDuplicateBpmnId(definition, resource, deployment)
           .map(
               ok -> {
-                transformProcessResource(record, resource, definition);
+                transformProcessResource(deployment, resource, definition);
                 return null;
               });
 

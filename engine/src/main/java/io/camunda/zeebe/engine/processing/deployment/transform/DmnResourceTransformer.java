@@ -11,7 +11,6 @@ import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer.DeploymentResourceTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -44,7 +43,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   @Override
   public Either<Failure, Void> transformResource(
-      final DeploymentResource resource, final DeploymentRecord record) {
+      final DeploymentResource resource, final DeploymentRecord deployment) {
 
     final var dmnResource = new ByteArrayInputStream(resource.getResource());
     final var parsedDrg = decisionEngine.parse(dmnResource);

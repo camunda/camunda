@@ -149,15 +149,11 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
-  interface DeploymentResourceTransformer {
-    Either<Failure, Void> transformResource(DeploymentResource resource, DeploymentRecord record);
-  }
-
   private static class UnknownResourceTransformer implements DeploymentResourceTransformer {
 
     @Override
     public Either<Failure, Void> transformResource(
-        final DeploymentResource resource, final DeploymentRecord record) {
+        final DeploymentResource resource, final DeploymentRecord deployment) {
 
       final var failureMessage =
           String.format("%n'%s': unknown resource type", resource.getResourceName());
