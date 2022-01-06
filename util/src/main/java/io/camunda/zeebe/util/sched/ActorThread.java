@@ -10,7 +10,6 @@ package io.camunda.zeebe.util.sched;
 import io.camunda.zeebe.util.BoundedArrayQueue;
 import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
-import io.camunda.zeebe.util.error.FatalErrorHandlers;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.clock.DefaultActorClock;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +27,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
   private static final long STATE_OFFSET;
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
-  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandlers.withLogger(LOG);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
   static {
     try {
