@@ -23,11 +23,7 @@ import org.slf4j.LoggerFactory;
  * ExporterTestHarness provides utilities to write unit tests for concrete implementations of the
  * {@link Exporter} interface, by simulating the lifecycle that it would have on a live broker while
  * allowing callers to control the execution flow.
- *
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
  */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class ExporterTestHarness {
 
   private final Logger logger = LoggerFactory.getLogger("io.camunda.zeebe.broker.exporter");
