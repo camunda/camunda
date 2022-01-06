@@ -24,6 +24,7 @@ import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +75,9 @@ public class StandaloneGateway
   }
 
   public static void main(final String[] args) {
+    Thread.setDefaultUncaughtExceptionHandler(
+        FatalErrorHandler.uncaughtExceptionHandler(Loggers.GATEWAY_LOGGER));
+
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
     final var application =
         new SpringApplicationBuilder(StandaloneGateway.class)

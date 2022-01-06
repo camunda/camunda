@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.sched;
 
 import io.camunda.zeebe.util.BoundedArrayQueue;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.clock.DefaultActorClock;
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +27,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
   private static final long STATE_OFFSET;
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
   static {
     try {
@@ -93,16 +95,11 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
     try {
       resubmit = currentTask.execute(this);
-    } catch (final Exception e) {
-      // TODO: check interrupt state?
-      // TODO: Handle Exception
+    } catch (final Throwable e) {
+      FATAL_ERROR_HANDLER.handleError(e);
       LOG.error("Unexpected error occurred in task {}", currentTask, e);
-
-      // TODO: resubmit on exception?
-      //                resubmit = true;
     } finally {
       MDC.remove("actor-name");
-
       clock.update();
     }
 
