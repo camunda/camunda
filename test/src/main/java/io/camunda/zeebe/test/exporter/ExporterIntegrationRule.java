@@ -26,19 +26,16 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.ClientRule;
 import io.camunda.zeebe.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.netty.util.NetUtil;
-import java.io.InputStream;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -183,32 +180,6 @@ public class ExporterIntegrationRule extends ExternalResource {
   /** @return true if any exporter has been configured for the broker, false otherwise */
   public boolean hasConfiguredExporters() {
     return getConfiguredExporters().isEmpty();
-  }
-
-  /**
-   * Returns an instance of the configuration class for the given exporter.
-   *
-   * @param id the exporter ID
-   * @param configurationClass the class to instantiate based on the exporter configuration
-   * @param <T> type of the configuration instance
-   * @return instantiated configuration class based on the exporter args map
-   */
-  public <T> T getExporterConfiguration(final String id, final Class<T> configurationClass) {
-    return Optional.ofNullable(getBrokerConfig().getExporters().get(id))
-        .map(cfg -> convertMapToConfig(cfg.getArgs(), configurationClass))
-        .orElseThrow(
-            () -> new IllegalArgumentException("No exporter with ID " + id + " configured"));
-  }
-
-  /**
-   * Configures the broker to add whatever exporters are defined in the yaml represented by the
-   * input stream.
-   *
-   * @param yaml input stream wrapping a yaml document
-   */
-  public ExporterIntegrationRule configure(final InputStream yaml) {
-    final BrokerCfg config = new TestConfigurationFactory().create(yaml, BrokerCfg.class);
-    return configure(config.getExporters());
   }
 
   /**
@@ -415,9 +386,5 @@ public class ExporterIntegrationRule extends ExternalResource {
 
   private <T> Map<String, Object> convertConfigToMap(final T configuration) {
     return OBJECT_MAPPER.convertValue(configuration, new TypeReference<>() {});
-  }
-
-  private <T> T convertMapToConfig(final Map<String, Object> map, final Class<T> configClass) {
-    return OBJECT_MAPPER.convertValue(map, configClass);
   }
 }

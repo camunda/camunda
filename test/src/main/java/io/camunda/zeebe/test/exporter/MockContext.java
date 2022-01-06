@@ -18,11 +18,9 @@ import org.slf4j.Logger;
 @Deprecated(since = "1.3.0", forRemoval = true)
 public class MockContext implements Context {
 
-  private Logger logger;
-  private Configuration configuration;
+  private final Logger logger;
+  private final Configuration configuration;
   private RecordFilter filter;
-
-  public MockContext() {}
 
   public MockContext(final Logger logger, final Configuration configuration) {
     this.logger = logger;
@@ -34,17 +32,9 @@ public class MockContext implements Context {
     return logger;
   }
 
-  public void setLogger(final Logger logger) {
-    this.logger = logger;
-  }
-
   @Override
   public Configuration getConfiguration() {
     return configuration;
-  }
-
-  public void setConfiguration(final Configuration configuration) {
-    this.configuration = configuration;
   }
 
   public RecordFilter getFilter() {

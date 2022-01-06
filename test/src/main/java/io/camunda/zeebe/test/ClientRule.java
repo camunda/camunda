@@ -24,10 +24,6 @@ public class ClientRule extends ExternalResource {
   protected final Supplier<Properties> properties;
   protected ZeebeClient client;
 
-  public ClientRule() {
-    this(Properties::new);
-  }
-
   public ClientRule(final Supplier<Properties> propertiesProvider) {
     properties = propertiesProvider;
   }

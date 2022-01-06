@@ -20,30 +20,12 @@ import java.util.Objects;
  */
 @Deprecated(since = "1.3.0", forRemoval = true)
 public class MockRecord extends ExporterMappedObject implements Record, Cloneable {
-
+  private static final long SOURCE_RECORD_POSITION = -1;
   private long position = 0;
-  private long sourceRecordPosition = -1;
   private long key = -1;
   private long timestamp = -1;
   private MockRecordMetadata metadata = new MockRecordMetadata();
-  private MockRecordValueWithVariables value = new MockRecordValueWithVariables();
-
-  public MockRecord() {}
-
-  public MockRecord(
-      final long position,
-      final long sourceRecordPosition,
-      final long key,
-      final long timestamp,
-      final MockRecordMetadata metadata,
-      final MockRecordValueWithVariables value) {
-    this.position = position;
-    this.sourceRecordPosition = sourceRecordPosition;
-    this.key = key;
-    this.timestamp = timestamp;
-    this.metadata = metadata;
-    this.value = value;
-  }
+  private final MockRecordValueWithVariables value = new MockRecordValueWithVariables();
 
   @Override
   public long getPosition() {
@@ -57,12 +39,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
 
   @Override
   public long getSourceRecordPosition() {
-    return sourceRecordPosition;
-  }
-
-  public MockRecord setSourceRecordPosition(final long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
-    return this;
+    return SOURCE_RECORD_POSITION;
   }
 
   @Override
@@ -118,11 +95,6 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   @Override
   public MockRecordValueWithVariables getValue() {
     return value;
-  }
-
-  public MockRecord setValue(final MockRecordValueWithVariables value) {
-    this.value = value;
-    return this;
   }
 
   public MockRecord setTimestamp(final long timestamp) {
@@ -185,7 +157,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
         + "position="
         + position
         + ", sourceRecordPosition="
-        + sourceRecordPosition
+        + SOURCE_RECORD_POSITION
         + ", key="
         + key
         + ", timestamp="

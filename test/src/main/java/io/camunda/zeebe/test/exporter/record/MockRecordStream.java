@@ -26,10 +26,6 @@ public class MockRecordStream extends StreamWrapper<MockRecord, MockRecordStream
     return new MockRecordStream(wrappedStream);
   }
 
-  public static MockRecordStream generate() {
-    return generate(new MockRecord());
-  }
-
   public static MockRecordStream generate(final MockRecord seed) {
     return new MockRecordStream(Stream.iterate(seed, MockRecordStream::generateNextRecord));
   }

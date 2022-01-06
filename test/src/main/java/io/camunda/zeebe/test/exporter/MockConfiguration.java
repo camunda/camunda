@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.exporter;
 
 import io.camunda.zeebe.exporter.api.context.Configuration;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -20,25 +21,10 @@ import java.util.Map;
 public class MockConfiguration<T> implements Configuration {
 
   private String id;
-  private Map<String, Object> arguments;
-  private T configuration;
-
-  public MockConfiguration() {}
+  private final T configuration;
 
   /** @param configuration will be returned every time by a call to {{@link #instantiate(Class)}} */
   public MockConfiguration(final T configuration) {
-    this.configuration = configuration;
-  }
-
-  public MockConfiguration(final String id, final Map<String, Object> arguments) {
-    this.id = id;
-    this.arguments = arguments;
-  }
-
-  public MockConfiguration(
-      final String id, final Map<String, Object> arguments, final T configuration) {
-    this.id = id;
-    this.arguments = arguments;
     this.configuration = configuration;
   }
 
@@ -53,11 +39,7 @@ public class MockConfiguration<T> implements Configuration {
 
   @Override
   public Map<String, Object> getArguments() {
-    return arguments;
-  }
-
-  public void setArguments(final Map<String, Object> arguments) {
-    this.arguments = arguments;
+    return Collections.emptyMap();
   }
 
   @Override
@@ -67,14 +49,5 @@ public class MockConfiguration<T> implements Configuration {
     }
 
     return null;
-  }
-
-  /**
-   * Sets a fixed return value for {@link #instantiate(Class)}
-   *
-   * @param configuration instance to return for {@link #instantiate(Class)} calls
-   */
-  public void setConfiguration(final T configuration) {
-    this.configuration = configuration;
   }
 }

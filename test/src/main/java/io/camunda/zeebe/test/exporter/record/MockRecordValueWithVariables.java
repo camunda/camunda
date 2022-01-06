@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.exporter.record;
 
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -18,21 +19,10 @@ import java.util.Map;
 public class MockRecordValueWithVariables extends MockRecordValue
     implements RecordValueWithVariables {
 
-  private Map<String, Object> variables;
-
   public MockRecordValueWithVariables() {}
-
-  public MockRecordValueWithVariables(final Map<String, Object> variables) {
-    this.variables = variables;
-  }
 
   @Override
   public Map<String, Object> getVariables() {
-    return variables;
-  }
-
-  public MockRecordValueWithVariables setVariables(final Map<String, Object> variables) {
-    this.variables = variables;
-    return this;
+    return Collections.emptyMap();
   }
 }
