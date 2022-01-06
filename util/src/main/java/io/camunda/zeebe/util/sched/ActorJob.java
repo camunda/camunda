@@ -7,15 +7,20 @@
  */
 package io.camunda.zeebe.util.sched;
 
+import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.sched.ActorTask.TaskSchedulingState;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
+import org.slf4j.Logger;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ActorJob {
-  TaskSchedulingState schedulingState;
+  private static final Logger LOG = Loggers.ACTOR_LOGGER;
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
+  TaskSchedulingState schedulingState;
   Actor actor;
   ActorTask task;
   ActorThread actorThread;
@@ -43,7 +48,8 @@ public final class ActorJob {
         resultFuture = null;
       }
 
-    } catch (final Exception e) {
+    } catch (final Throwable e) {
+      FATAL_ERROR_HANDLER.handleError(e);
       task.onFailure(e);
     } finally {
       actorThread = null;

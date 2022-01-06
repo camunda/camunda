@@ -134,7 +134,7 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
-  protected void handleFailure(final Exception failure) {
+  protected void handleFailure(final Throwable failure) {
     if (failure instanceof UnrecoverableException) {
       onUnrecoverableFailure(HealthReport.dead(this).withIssue(failure));
     }

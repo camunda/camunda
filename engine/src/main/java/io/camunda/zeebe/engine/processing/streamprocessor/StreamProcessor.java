@@ -196,7 +196,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   @Override
-  protected void handleFailure(final Exception failure) {
+  protected void handleFailure(final Throwable failure) {
     onFailure(failure);
   }
 
