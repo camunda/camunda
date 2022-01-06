@@ -273,6 +273,12 @@
       </dependency>
 
       <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-test</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.agrona</groupId>
         <artifactId>agrona</artifactId>
         <version>${version.agrona}</version>
@@ -776,6 +782,7 @@
         <version>${version.bouncycastle}</version>
         <scope>test</scope>
       </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -970,7 +977,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
@@ -1153,7 +1160,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore></ignore>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1246,7 +1253,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence></dependencyConvergence>
                 </rules>
               </configuration>
             </execution>
@@ -1257,7 +1264,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
                 </rules>
               </configuration>
             </execution>
