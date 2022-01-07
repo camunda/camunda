@@ -320,7 +320,7 @@ public final class EngineRule extends ExternalResource {
   public Record<JobRecordValue> createJob(final String type, final String processId) {
     deployment()
         .withXmlResource(
-            processId,
+            processId + ".bpmn",
             Bpmn.createExecutableProcess(processId)
                 .startEvent("start")
                 .serviceTask("task", b -> b.zeebeJobType(type).done())

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.jackson.record;
 
+import io.camunda.zeebe.protocol.jackson.record.DecisionRecordValueBuilder.ImmutableDecisionRecordValue;
+import io.camunda.zeebe.protocol.jackson.record.DecisionRequirementsRecordValueBuilder.ImmutableDecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.jackson.record.DeploymentDistributionRecordValueBuilder.ImmutableDeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.jackson.record.DeploymentRecordValueBuilder.ImmutableDeploymentRecordValue;
 import io.camunda.zeebe.protocol.jackson.record.ErrorRecordValueBuilder.ImmutableErrorRecordValue;
@@ -26,6 +28,8 @@ import io.camunda.zeebe.protocol.jackson.record.TimerRecordValueBuilder.Immutabl
 import io.camunda.zeebe.protocol.jackson.record.VariableDocumentRecordValueBuilder.ImmutableVariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.jackson.record.VariableRecordValueBuilder.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
@@ -59,6 +63,13 @@ final class ValueTypes {
   static {
     final Map<ValueType, ValueTypeInfo<?>> mapping = new EnumMap<>(ValueType.class);
 
+    mapping.put(
+        ValueType.DECISION,
+        new ValueTypeInfo<>(ImmutableDecisionRecordValue.class, DecisionIntent.class));
+    mapping.put(
+        ValueType.DECISION_REQUIREMENTS,
+        new ValueTypeInfo<>(
+            ImmutableDecisionRequirementsRecordValue.class, DecisionRequirementsIntent.class));
     mapping.put(
         ValueType.DEPLOYMENT,
         new ValueTypeInfo<>(ImmutableDeploymentRecordValue.class, DeploymentIntent.class));

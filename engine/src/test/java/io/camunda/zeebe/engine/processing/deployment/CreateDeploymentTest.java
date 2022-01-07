@@ -440,9 +440,9 @@ public final class CreateDeploymentTest {
 
     // when
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource("process1", modelInstance).deploy();
+        ENGINE.deployment().withXmlResource("process1.bpmn", modelInstance).deploy();
     final Record<DeploymentRecordValue> deployment2 =
-        ENGINE.deployment().withXmlResource("process2", modelInstance).deploy();
+        ENGINE.deployment().withXmlResource("process2.bpmn", modelInstance).deploy();
 
     // then
     assertThat(deployment.getValue().getProcessesMetadata().get(0).getVersion()).isEqualTo(1L);

@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -57,6 +59,8 @@ public final class TypedEventRegistry {
     registry.put(ValueType.PROCESS, ProcessRecord.class);
     registry.put(ValueType.DEPLOYMENT_DISTRIBUTION, DeploymentDistributionRecord.class);
     registry.put(ValueType.PROCESS_EVENT, ProcessEventRecord.class);
+    registry.put(ValueType.DECISION, DecisionRecord.class);
+    registry.put(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
   }

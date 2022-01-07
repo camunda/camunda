@@ -44,6 +44,9 @@ public class IntentEncodingDecodingTest {
   @Parameters(name = "{0}")
   public static Collection<ParameterSet> parameters() {
     final List<ParameterSet> result = new ArrayList<>();
+    result.addAll(buildParameterSets(DecisionIntent.class, DecisionIntent::from));
+    result.addAll(
+        buildParameterSets(DecisionRequirementsIntent.class, DecisionRequirementsIntent::from));
     result.addAll(
         buildParameterSets(DeploymentDistributionIntent.class, DeploymentDistributionIntent::from));
     result.addAll(buildParameterSets(DeploymentIntent.class, DeploymentIntent::from));
