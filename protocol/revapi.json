@@ -27,16 +27,9 @@
           }
         },
         {
-          "justification": "Ignore Enum order for the default ValueType.NULL_VAL because it is not used.",
+          "justification": "Ignore Enum order for ValueType as ordinal() is not used",
           "code": "java.field.enumConstantOrderChanged",
-          "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType",
-          "fieldName": "NULL_VAL"
-        },
-        {
-          "justification": "Ignore Enum order for the default ValueType.SBE_UNKNOWN because it is not used.",
-          "code": "java.field.enumConstantOrderChanged",
-          "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType",
-          "fieldName": "SBE_UNKNOWN"
+          "classQualifiedName": "io.camunda.zeebe.protocol.record.ValueType"
         }
       ]
     }
