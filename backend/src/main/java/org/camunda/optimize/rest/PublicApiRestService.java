@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
@@ -147,9 +148,9 @@ public class PublicApiRestService {
   @Path(IMPORT_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<IdResponseDto> importEntities(@Context final ContainerRequestContext requestContext,
-                                            @QueryParam("collectionId") String collectionId,
-                                            final String exportedDtoJson) {
+  public List<EntityIdResponseDto> importEntities(@Context final ContainerRequestContext requestContext,
+                                                  @QueryParam("collectionId") String collectionId,
+                                                  final String exportedDtoJson) {
     validateAccessToken(requestContext, getJsonExportAccessToken());
     validateCollectionIdNotNull(collectionId);
     final Set<OptimizeEntityExportDto> exportDtos = entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);

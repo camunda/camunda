@@ -9,9 +9,10 @@ import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -73,14 +74,17 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
     final SingleProcessReportDefinitionRequestDto reportDefToImport = createProcessReportDefinition(reportData);
 
     // when
-    final List<IdResponseDto> importedId = publicApiClient.importEntityAndReturnIds(
+    final List<EntityIdResponseDto> importedId = publicApiClient.importEntityAndReturnIds(
       Collections.singleton(createExportDto(reportDefToImport)),
       collectionId,
       ACCESS_TOKEN
     );
 
     // then
-    assertThat(importedId).hasSize(1);
+    assertThat(importedId).hasSize(1)
+      .extracting(EntityIdResponseDto::getEntityType)
+      .singleElement()
+      .isEqualTo(EntityType.REPORT);
 
     final SingleProcessReportDefinitionRequestDto importedReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(importedId.get(0).getId());
@@ -109,13 +113,17 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
     report2.setName("DecisionReport");
 
     // when
-    final List<IdResponseDto> importedIds = publicApiClient.importEntityAndReturnIds(
+    final List<EntityIdResponseDto> importedIds = publicApiClient.importEntityAndReturnIds(
       Set.of(createExportDto(report1), createExportDto(report2)),
       collectionId,
       ACCESS_TOKEN
     );
 
     // then
+    assertThat(importedIds).hasSize(2)
+      .extracting(EntityIdResponseDto::getEntityType)
+      .containsOnly(EntityType.REPORT);
+
     final List<SingleReportDefinitionDto<? extends SingleReportDataDto>> importedReports =
       importedIds.stream()
         .map(idResp -> (SingleReportDefinitionDto<? extends SingleReportDataDto>) reportClient.getReportById(idResp.getId()))
@@ -150,7 +158,7 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
       ));
 
     // when
-    final List<IdResponseDto> importedIds =
+    final List<EntityIdResponseDto> importedIds =
       publicApiClient.importEntityAndReturnIds(
         Sets.newHashSet(dashboardExport, processReportExport, combinedReportExport, decisionReportExport),
         collectionId,
@@ -158,7 +166,10 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
       );
 
     // then
-    assertThat(importedIds).hasSize(4);
+    assertThat(importedIds).hasSize(4)
+      .extracting(EntityIdResponseDto::getEntityType)
+      .containsExactlyInAnyOrder(EntityType.REPORT, EntityType.REPORT, EntityType.REPORT, EntityType.DASHBOARD);
+
     final List<ReportDefinitionDto> importedReports = retrieveImportedReports(importedIds);
     final Optional<DashboardDefinitionRestDto> importedDashboard = retrieveImportedDashboard(importedIds);
 
@@ -198,7 +209,7 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
     dashboard1.setId("Id2");
 
     // when
-    final List<IdResponseDto> importedIds =
+    final List<EntityIdResponseDto> importedIds =
       publicApiClient.importEntityAndReturnIds(
         Sets.newHashSet(dashboard1, dashboard2),
         collectionId,
@@ -206,6 +217,10 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
       );
 
     // then
+    assertThat(importedIds).hasSize(2)
+      .extracting(EntityIdResponseDto::getEntityType)
+      .containsOnly(EntityType.DASHBOARD);
+
     assertThat(retrieveImportedDashboards(importedIds))
       .hasSize(2)
       .extracting(DashboardDefinitionRestDto::getName)

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.entities.report;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -64,7 +65,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     dateFreezer().freezeDateAndReturn();
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
 
     // then
     final SingleProcessReportDefinitionRequestDto importedReport =
@@ -154,7 +155,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     exportedReportDto.getData().setProcessDefinitionVersion(versionString);
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
     final SingleProcessReportDefinitionRequestDto importedReport =
@@ -200,7 +201,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then all non version related data is accurate
     final SingleProcessReportDefinitionRequestDto importedReport =
@@ -275,7 +276,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
     final SingleProcessReportDefinitionRequestDto importedReport =
@@ -297,7 +298,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
     final SingleProcessReportDefinitionRequestDto importedReport =
@@ -337,7 +338,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     final SingleProcessReportDefinitionExportDto exportedReportDto = createExportDto(reportDefToImport);
 
     // when
-    final IdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
+    final EntityIdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
       collectionId,
       exportedReportDto
     );
@@ -430,7 +431,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     );
 
     // when
-    final List<IdResponseDto> importedIds = importClient.importEntitiesAndReturnIds(reportsToImport);
+    final List<EntityIdResponseDto> importedIds = importClient.importEntitiesAndReturnIds(reportsToImport);
 
     // then
     assertThat(importedIds).hasSize(3);
@@ -498,7 +499,7 @@ public class ProcessReportDefinitionImportIT extends AbstractExportImportEntityD
     );
 
     // when
-    final List<IdResponseDto> importedIds = importClient.importEntitiesIntoCollectionAndReturnIds(
+    final List<EntityIdResponseDto> importedIds = importClient.importEntitiesIntoCollectionAndReturnIds(
       collectionId,
       reportsToImport
     );

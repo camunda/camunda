@@ -8,6 +8,7 @@ package org.camunda.optimize.test.optimize;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 
@@ -33,7 +34,7 @@ public class ImportClient {
     return this.importEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, exportedDtos);
   }
 
-  public IdResponseDto importEntityAndReturnId(final OptimizeEntityExportDto exportedDto) {
+  public EntityIdResponseDto importEntityAndReturnId(final OptimizeEntityExportDto exportedDto) {
     return importEntityIntoCollectionAsUserAndReturnId(
       DEFAULT_USERNAME,
       DEFAULT_USERNAME,
@@ -42,7 +43,7 @@ public class ImportClient {
     );
   }
 
-  public List<IdResponseDto> importEntitiesAndReturnIds(final Set<OptimizeEntityExportDto> exportedDtos) {
+  public List<EntityIdResponseDto> importEntitiesAndReturnIds(final Set<OptimizeEntityExportDto> exportedDtos) {
     return importEntitiesIntoCollectionAsUserAndReturnIds(DEFAULT_USERNAME, DEFAULT_USERNAME, null, exportedDtos);
   }
 
@@ -68,7 +69,7 @@ public class ImportClient {
     );
   }
 
-  public IdResponseDto importEntityIntoCollectionAndReturnId(final String collectionId,
+  public EntityIdResponseDto importEntityIntoCollectionAndReturnId(final String collectionId,
                                                              final OptimizeEntityExportDto exportedDto) {
     return importEntityIntoCollectionAsUserAndReturnId(
       DEFAULT_USERNAME,
@@ -78,7 +79,7 @@ public class ImportClient {
     );
   }
 
-  public List<IdResponseDto> importEntitiesIntoCollectionAndReturnIds(final String collectionId,
+  public List<EntityIdResponseDto> importEntitiesIntoCollectionAndReturnIds(final String collectionId,
                                                                       final Set<OptimizeEntityExportDto> exportedDtos) {
     return importEntitiesIntoCollectionAsUserAndReturnIds(
       DEFAULT_USERNAME,
@@ -105,24 +106,24 @@ public class ImportClient {
       .execute();
   }
 
-  public List<IdResponseDto> importEntitiesIntoCollectionAsUserAndReturnIds(final String userId,
+  public List<EntityIdResponseDto> importEntitiesIntoCollectionAsUserAndReturnIds(final String userId,
                                                                             final String password,
                                                                             final String collectionId,
                                                                             final Set<OptimizeEntityExportDto> exportedDtos) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
       .buildImportEntityRequest(collectionId, exportedDtos)
-      .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityIdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public IdResponseDto importEntityIntoCollectionAsUserAndReturnId(final String userId,
+  public EntityIdResponseDto importEntityIntoCollectionAsUserAndReturnId(final String userId,
                                                                    final String password,
                                                                    final String collectionId,
                                                                    final OptimizeEntityExportDto exportedDto) {
-    final List<IdResponseDto> importedIds = getRequestExecutor()
+    final List<EntityIdResponseDto> importedIds = getRequestExecutor()
       .withUserAuthentication(userId, password)
       .buildImportEntityRequest(collectionId, Sets.newHashSet(exportedDto))
-      .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(EntityIdResponseDto.class, Response.Status.OK.getStatusCode());
     assertThat(importedIds).hasSize(1);
     return importedIds.get(0);
   }

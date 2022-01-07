@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
@@ -496,13 +497,13 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     return new DashboardDefinitionExportDto(dashboard);
   }
 
-  protected Optional<DashboardDefinitionRestDto> retrieveImportedDashboard(final List<IdResponseDto> importedIds) {
+  protected Optional<DashboardDefinitionRestDto> retrieveImportedDashboard(final List<EntityIdResponseDto> importedIds) {
     return retrieveImportedDashboards(importedIds).stream().findFirst();
   }
 
-  protected List<DashboardDefinitionRestDto> retrieveImportedDashboards(final List<IdResponseDto> importedIds) {
+  protected List<DashboardDefinitionRestDto> retrieveImportedDashboards(final List<EntityIdResponseDto> importedIds) {
     List<DashboardDefinitionRestDto> dashboards = new ArrayList<>();
-    for (IdResponseDto id : importedIds) {
+    for (EntityIdResponseDto id : importedIds) {
       final Response response = embeddedOptimizeExtension.getRequestExecutor()
         .buildGetDashboardRequest(id.getId())
         .execute();
@@ -513,9 +514,9 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     return dashboards;
   }
 
-  protected List<ReportDefinitionDto> retrieveImportedReports(final List<IdResponseDto> importedIds) {
+  protected List<ReportDefinitionDto> retrieveImportedReports(final List<EntityIdResponseDto> importedIds) {
     List<ReportDefinitionDto> reports = new ArrayList<>();
-    for (IdResponseDto id : importedIds) {
+    for (EntityIdResponseDto id : importedIds) {
       final Response response = embeddedOptimizeExtension.getRequestExecutor()
         .buildGetReportRequest(id.getId())
         .execute();

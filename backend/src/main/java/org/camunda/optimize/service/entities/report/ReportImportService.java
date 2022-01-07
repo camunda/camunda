@@ -10,8 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
@@ -67,14 +69,14 @@ public class ReportImportService {
 
   public void importReportsIntoCollection(final String collectionId,
                                           final List<ReportDefinitionExportDto> reportsToImport,
-                                          final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                          final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     importReportsIntoCollection(null, collectionId, reportsToImport, originalIdToNewIdMap);
   }
 
   public void importReportsIntoCollection(final String userId,
                                           final String collectionId,
                                           final List<ReportDefinitionExportDto> reportsToImport,
-                                          final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                          final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     final List<ReportDefinitionExportDto> singleReportsToImport = reportsToImport.stream()
       .filter(entity -> SINGLE_PROCESS_REPORT.equals(entity.getExportEntityType())
         || SINGLE_DECISION_REPORT.equals(entity.getExportEntityType()))
@@ -161,7 +163,7 @@ public class ReportImportService {
   private void importReportIntoCollection(final String userId,
                                           final String collectionId,
                                           final ReportDefinitionExportDto reportToImport,
-                                          final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                          final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     switch (reportToImport.getExportEntityType()) {
       case SINGLE_PROCESS_REPORT:
         importProcessReportIntoCollection(
@@ -195,38 +197,38 @@ public class ReportImportService {
   private void importProcessReportIntoCollection(final String userId,
                                                  final String collectionId,
                                                  final SingleProcessReportDefinitionExportDto reportToImport,
-                                                 final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                                 final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     final IdResponseDto newId = importReport(
       Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
       reportToImport,
       collectionId
     );
-    originalIdToNewIdMap.put(reportToImport.getId(), newId);
+    originalIdToNewIdMap.put(reportToImport.getId(), new EntityIdResponseDto(newId.getId(), EntityType.REPORT));
   }
 
   private void importCombinedProcessReportIntoCollection(final String userId,
                                                          final String collectionId,
                                                          final CombinedProcessReportDefinitionExportDto reportToImport,
-                                                         final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                                         final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     prepareCombinedReportForImport(reportToImport, originalIdToNewIdMap);
     final IdResponseDto newId = importReport(
       Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
       reportToImport,
       collectionId
     );
-    originalIdToNewIdMap.put(reportToImport.getId(), newId);
+    originalIdToNewIdMap.put(reportToImport.getId(), new EntityIdResponseDto(newId.getId(), EntityType.REPORT));
   }
 
   private void importDecisionReportIntoCollection(final String userId,
                                                   final String collectionId,
                                                   final SingleDecisionReportDefinitionExportDto reportToImport,
-                                                  final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                                  final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     final IdResponseDto newId = importReport(
       Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
       reportToImport,
       collectionId
     );
-    originalIdToNewIdMap.put(reportToImport.getId(), newId);
+    originalIdToNewIdMap.put(reportToImport.getId(), new EntityIdResponseDto(newId.getId(), EntityType.REPORT));
   }
 
   public IdResponseDto importReport(final String userId,
@@ -260,7 +262,7 @@ public class ReportImportService {
   }
 
   private void prepareCombinedReportForImport(final CombinedProcessReportDefinitionExportDto reportToImport,
-                                              final Map<String, IdResponseDto> originalIdToNewIdMap) {
+                                              final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     // Map single report items within combined report to new IDs
     final List<CombinedReportItemDto> newSingleReportItems = reportToImport.getData()
       .getReports()

@@ -7,7 +7,7 @@ package org.camunda.optimize.service.entities.dashboard;
 
 import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -56,7 +56,7 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
       ));
 
     // when
-    final List<IdResponseDto> importedIds =
+    final List<EntityIdResponseDto> importedIds =
       importClient.importEntitiesAndReturnIds(Sets.newHashSet(
         dashboardExport,
         processReportExport,
@@ -107,7 +107,7 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
       ));
 
     // when
-    final List<IdResponseDto> importedIds =
+    final List<EntityIdResponseDto> importedIds =
       importClient.importEntitiesAndReturnIds(Sets.newHashSet(
         dashboardExport,
         processReportExport
@@ -183,7 +183,7 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
       createDashboardExportDtoWithResources(Collections.singletonList(reportExport.getId()));
 
     // when
-    final List<IdResponseDto> importedIds =
+    final List<EntityIdResponseDto> importedIds =
       importClient.importEntitiesIntoCollectionAndReturnIds(
         collectionId,
         Sets.newHashSet(dashboardExport, reportExport)

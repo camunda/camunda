@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
@@ -62,8 +62,8 @@ public class EntityImportService {
   private final CollectionService collectionService;
   private final ConfigurationService configurationService;
 
-  public List<IdResponseDto> importEntities(final String collectionId,
-                                            final Set<OptimizeEntityExportDto> entitiesToImport) {
+  public List<EntityIdResponseDto> importEntities(final String collectionId,
+                                                  final Set<OptimizeEntityExportDto> entitiesToImport) {
     validateCompletenessOrFail(entitiesToImport);
 
     final List<ReportDefinitionExportDto> reportsToImport = retrieveAllReportsToImport(entitiesToImport);
@@ -74,7 +74,7 @@ public class EntityImportService {
     reportImportService.validateAllReportsOrFail(collection, reportsToImport);
     dashboardImportService.validateAllDashboardsOrFail(dashboardsToImport);
 
-    final Map<String, IdResponseDto> originalIdToNewIdMap = new HashMap<>();
+    final Map<String, EntityIdResponseDto> originalIdToNewIdMap = new HashMap<>();
     reportImportService.importReportsIntoCollection(collectionId, reportsToImport, originalIdToNewIdMap);
     dashboardImportService.importDashboardsIntoCollection(
       collectionId,
@@ -85,9 +85,9 @@ public class EntityImportService {
     return new ArrayList<>(originalIdToNewIdMap.values());
   }
 
-  public List<IdResponseDto> importEntitiesAsUser(final String userId,
-                                                  final String collectionId,
-                                                  final Set<OptimizeEntityExportDto> entitiesToImport) {
+  public List<EntityIdResponseDto> importEntitiesAsUser(final String userId,
+                                                        final String collectionId,
+                                                        final Set<OptimizeEntityExportDto> entitiesToImport) {
     validateUserAuthorizedToImportEntitiesOrFail(userId);
     final CollectionDefinitionDto collection =
       getAndValidateCollectionExistsAndIsAccessibleOrFail(userId, collectionId);
@@ -99,7 +99,7 @@ public class EntityImportService {
     reportImportService.validateAllReportsOrFail(userId, collection, reportsToImport);
     dashboardImportService.validateAllDashboardsOrFail(userId, dashboardsToImport);
 
-    final Map<String, IdResponseDto> originalIdToNewIdMap = new HashMap<>();
+    final Map<String, EntityIdResponseDto> originalIdToNewIdMap = new HashMap<>();
     reportImportService.importReportsIntoCollection(userId, collectionId, reportsToImport, originalIdToNewIdMap);
     dashboardImportService.importDashboardsIntoCollection(
       userId,

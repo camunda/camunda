@@ -7,6 +7,7 @@ package org.camunda.optimize.service.entities.report;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -42,7 +43,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     dateFreezer().freezeDateAndReturn();
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(createExportDto(reportDefToImport));
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
@@ -136,7 +137,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     exportedReportDto.getData().getConfiguration().setXml("oldXml");
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then all non version related data is accurate
     final SingleDecisionReportDefinitionRequestDto importedReport =
@@ -211,7 +212,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1", "tenant2"));
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
@@ -235,7 +236,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     exportedReportDto.getData().setTenantIds(Lists.newArrayList("tenant1"));
 
     // when
-    final IdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
+    final EntityIdResponseDto importedId = importClient.importEntityAndReturnId(exportedReportDto);
 
     // then
     final SingleDecisionReportDefinitionRequestDto importedReport =
@@ -260,7 +261,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
     final SingleDecisionReportDefinitionExportDto exportedReportDto = createExportDto(reportDefToImport);
 
     // when
-    final IdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
+    final EntityIdResponseDto importedId = importClient.importEntityIntoCollectionAndReturnId(
       collectionId,
       exportedReportDto
     );
