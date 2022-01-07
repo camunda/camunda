@@ -1,6 +1,9 @@
 container:
   host: 0.0.0.0
 
+api:
+  accessToken: secret
+
 engines:
   'camunda-bpm':
     name: default
@@ -31,5 +34,3 @@ eventBasedProcess:
   authorizedUserIds: ['demo']
   eventImport:
     enabled: ${EVENT_IMPORT_ENABLED:false}
-  eventIngestion:
-    accessToken: secret
