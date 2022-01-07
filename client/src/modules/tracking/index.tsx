@@ -5,27 +5,18 @@
  */
 
 import mixpanel, {Mixpanel} from 'mixpanel-browser';
-import {Task} from 'modules/types';
 import {getStage} from './getStage';
 
 const MIXPANEL_PUBLIC_TOKEN = '1104cabe553c23b7e67d56b1976437aa';
 const EVENT_PREFIX = 'tasklist:';
 type Events =
-  | {eventName: 'panel-closed'}
-  | {eventName: 'panel-opened'}
   | {
-      eventName: 'task-opened';
-      taskId: Task['id'];
+      eventName: 'task-opened' | 'task-unclaimed' | 'task-claimed';
     }
   | {
       eventName: 'task-completed';
-      taskId: Task['id'];
       isCamundaForm: boolean;
     }
-  | {eventName: 'task-claimed'; taskId: Task['id']}
-  | {eventName: 'task-unclaimed'; taskId: Task['id']}
-  | {eventName: 'variable-edited'}
-  | {eventName: 'form-edited'}
   | {eventName: 'tasks-filtered'; filter: string};
 
 mixpanel.init(MIXPANEL_PUBLIC_TOKEN);

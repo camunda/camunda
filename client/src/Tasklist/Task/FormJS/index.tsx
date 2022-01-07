@@ -23,14 +23,6 @@ import {PanelHeader} from 'modules/components/PanelHeader';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
 import {useNotifications} from 'modules/notifications';
 import {usePermissions} from 'modules/hooks/usePermissions';
-import {tracking} from 'modules/tracking';
-import throttle from 'lodash/throttle';
-
-const throttledFormEditedTracking = throttle(() => {
-  tracking.track({
-    eventName: 'form-edited',
-  });
-}, 1000);
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -128,7 +120,6 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
 
           form.on('changed', DEFAULT_EVENT_PRIORITY, ({errors}: any) => {
             setIsFormValid(Object.keys(errors).length === 0);
-            throttledFormEditedTracking();
           });
 
           form.on(

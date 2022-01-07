@@ -86,12 +86,9 @@ const Task: React.FC = () => {
   const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
 
   useEffect(() => {
-    if (taskId) {
-      tracking.track({
-        eventName: 'task-opened',
-        taskId,
-      });
-    }
+    tracking.track({
+      eventName: 'task-opened',
+    });
   }, [taskId]);
 
   async function handleSubmission(
@@ -107,7 +104,6 @@ const Task: React.FC = () => {
 
       tracking.track({
         eventName: 'task-completed',
-        taskId: id,
         isCamundaForm: formKey ? isCamundaForms(formKey) : false,
       });
 

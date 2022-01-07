@@ -131,10 +131,10 @@ const Details: React.FC = () => {
     try {
       if (assignee !== null) {
         await unclaimTask();
-        tracking.track({eventName: 'task-unclaimed', taskId: id});
+        tracking.track({eventName: 'task-unclaimed'});
       } else {
         await claimTask();
-        tracking.track({eventName: 'task-claimed', taskId: id});
+        tracking.track({eventName: 'task-claimed'});
       }
     } catch (error) {
       const errorMessage = (error as Error).message ?? '';
