@@ -21,7 +21,6 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
-import {tracking} from 'modules/tracking';
 
 type Props = {
   incidents?: unknown;
@@ -97,12 +96,6 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
                 expandState={expandState}
                 isOpen={incidentsStore.state.isIncidentBarOpen}
                 onClick={() => {
-                  if (isIncidentBarOpen) {
-                    tracking.track({eventName: 'incident-bar-closed'});
-                  } else {
-                    tracking.track({eventName: 'incident-bar-opened'});
-                  }
-
                   setIncidentBarOpen(!isIncidentBarOpen);
                 }}
               />
@@ -112,9 +105,6 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
               <Diagram
                 expandState={expandState}
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                  tracking.track({
-                    eventName: 'instance-diagram-selection-toggle',
-                  });
                   flowNodeSelectionStore.selectFlowNode({
                     flowNodeId,
                     isMultiInstance,

@@ -19,39 +19,15 @@ type Events =
         | 'dashboard-running-instances'
         | 'dashboard-instances-with-incidents'
         | 'dashboard-active-instances'
-        | 'instance-called-instances';
-    }
-  | {
-      eventName: 'navigation';
-      link: 'dashboard-instances-by-process-all-versions';
-      process: string;
-    }
-  | {
-      eventName: 'navigation';
-      link: 'dashboard-instances-by-process-single-version';
-      version: string;
-      process: string;
-    }
-  | {
-      eventName: 'navigation';
-      link: 'dashboard-incidents-by-error-all-processes';
-      errorMessage: string;
-    }
-  | {
-      eventName: 'navigation';
-      link: 'dashboard-incidents-by-error-single-process';
-      errorMessage: string;
-      process: string;
-      version: string;
-    }
-  | {
-      eventName: 'navigation';
-      link:
+        | 'instance-called-instances'
+        | 'dashboard-instances-by-process-all-versions'
+        | 'dashboard-instances-by-process-single-version'
+        | 'dashboard-incidents-by-error-all-processes'
+        | 'dashboard-incidents-by-error-single-process'
         | 'instances-instance-details'
         | 'instances-parent-instance-details'
         | 'instance-parent-details'
         | 'instance-breadcrumb';
-      instanceId: string;
     }
   | {
       eventName: 'theme-toggle';
@@ -70,12 +46,7 @@ type Events =
       filters: string[];
       sortBy?: string;
       sortOrder?: 'desc' | 'asc';
-    }
-  | {eventName: 'incident-bar-opened'}
-  | {eventName: 'incident-bar-closed'}
-  | {eventName: 'instance-toggle-end-time'}
-  | {eventName: 'instance-history-log-selection-toggle'}
-  | {eventName: 'instance-diagram-selection-toggle'};
+    };
 
 mixpanel.init(MIXPANEL_PUBLIC_TOKEN);
 

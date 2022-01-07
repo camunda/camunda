@@ -73,7 +73,6 @@ const InstanceHeader = observer(() => {
                     tracking.track({
                       eventName: 'navigation',
                       link: 'instance-parent-details',
-                      instanceId: parentInstanceId,
                     });
                   }}
                 >

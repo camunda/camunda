@@ -60,8 +60,6 @@ const InstancesByProcess = observer(() => {
                   tracking.track({
                     eventName: 'navigation',
                     link: 'dashboard-instances-by-process-single-version',
-                    version: item.version,
-                    process: item.bpmnProcessId,
                   });
                 }}
                 title={concatTitle(
@@ -117,7 +115,6 @@ const InstancesByProcess = observer(() => {
           tracking.track({
             eventName: 'navigation',
             link: 'dashboard-instances-by-process-all-versions',
-            process: item.bpmnProcessId,
           });
         }}
         title={concatGroupTitle(

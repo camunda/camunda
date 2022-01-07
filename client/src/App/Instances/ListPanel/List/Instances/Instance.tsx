@@ -68,7 +68,6 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
             tracking.track({
               eventName: 'navigation',
               link: 'instances-instance-details',
-              instanceId: instance.id,
             });
           }}
         >
@@ -87,7 +86,6 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
               tracking.track({
                 eventName: 'navigation',
                 link: 'instances-parent-instance-details',
-                instanceId: parentInstanceId,
               });
             }}
           >

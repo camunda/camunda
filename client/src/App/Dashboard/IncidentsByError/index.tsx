@@ -68,9 +68,6 @@ const IncidentsByError = observer(() => {
                   tracking.track({
                     eventName: 'navigation',
                     link: 'dashboard-incidents-by-error-single-process',
-                    errorMessage: truncateErrorMessage(errorMessage),
-                    process: item.bpmnProcessId,
-                    version: item.version,
                   });
                 }}
                 title={title}
@@ -109,7 +106,6 @@ const IncidentsByError = observer(() => {
           tracking.track({
             eventName: 'navigation',
             link: 'dashboard-incidents-by-error-all-processes',
-            errorMessage: truncateErrorMessage(errorMessage),
           });
         }}
         title={title}
