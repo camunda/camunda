@@ -9,11 +9,13 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import org.agrona.DirectBuffer;
 
 public final class DecisionRecord extends UnifiedRecordValue implements DecisionRecordValue {
 
@@ -99,5 +101,20 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   public DecisionRecord setDecisionRequirementsKey(long decisionRequirementsKey) {
     decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getDecisionIdBuffer() {
+    return decisionIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getDecisionNameBuffer() {
+    return decisionNameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getDecisionRequirementsIdBuffer() {
+    return decisionRequirementsIdProp.getValue();
   }
 }

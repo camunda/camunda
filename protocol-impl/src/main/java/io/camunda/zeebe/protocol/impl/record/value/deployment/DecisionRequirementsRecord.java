@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -130,5 +131,25 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   public DecisionRequirementsRecord setResource(DirectBuffer resource) {
     resourceProp.setValue(resource);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getDecisionRequirementsIdBuffer() {
+    return decisionRequirementsIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getDecisionRequirementsNameBuffer() {
+    return decisionRequirementsNameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getNamespaceBuffer() {
+    return namespaceProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getResourceNameBuffer() {
+    return resourceNameProp.getValue();
   }
 }
