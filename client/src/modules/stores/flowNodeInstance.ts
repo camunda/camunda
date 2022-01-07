@@ -30,7 +30,7 @@ type FlowNodeInstanceType = {
   startDate: string;
   endDate: null | string;
   treePath: string;
-  sortValues: any[];
+  sortValues: unknown[];
 };
 
 type FlowNodeInstances = {
@@ -119,7 +119,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
             Math.ceil(
               flowNodeInstance.children.length / MAX_INSTANCES_PER_REQUEST
             ) * MAX_INSTANCES_PER_REQUEST,
-          searchAfterOrEqual: flowNodeInstance.children[0].sortValues,
+          searchAfterOrEqual: flowNodeInstance.children[0]?.sortValues,
         };
       });
 
@@ -183,7 +183,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     const flowNodeInstances = await this.fetchFlowNodeInstances({
       treePath,
       pageSize: MAX_INSTANCES_PER_REQUEST,
-      searchBefore: children[0].sortValues,
+      searchBefore: children[0]?.sortValues,
     });
 
     if (flowNodeInstances === undefined) {
