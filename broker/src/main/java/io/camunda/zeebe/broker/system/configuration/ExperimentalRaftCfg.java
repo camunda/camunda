@@ -14,10 +14,12 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
+  private static final int DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD = 100;
 
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
+  private int preferSnapshotReplicationThreshold = DEFAULT_PREFER_SNAPSHOT_REPLICATION_THRESHOLD;
 
   public Duration getRequestTimeout() {
     return requestTimeout;
@@ -41,5 +43,13 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public void setMinStepDownFailureCount(final int minStepDownFailureCount) {
     this.minStepDownFailureCount = minStepDownFailureCount;
+  }
+
+  public int getPreferSnapshotReplicationThreshold() {
+    return preferSnapshotReplicationThreshold;
+  }
+
+  public void setPreferSnapshotReplicationThreshold(final int preferSnapshotReplicationThreshold) {
+    this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
   }
 }

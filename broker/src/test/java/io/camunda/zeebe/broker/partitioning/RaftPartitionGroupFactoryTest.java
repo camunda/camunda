@@ -141,6 +141,18 @@ class RaftPartitionGroupFactoryTest {
     assertThat(config.getPartitionConfig().isPriorityElectionEnabled()).isFalse();
   }
 
+  @Test
+  void shouldSetPreferSnapshotReplicationThreshold() {
+    // given
+    brokerCfg.getExperimental().getRaft().setPreferSnapshotReplicationThreshold(1000);
+
+    // when
+    final var config = buildRaftPartitionGroup();
+
+    // then
+    assertThat(config.getPartitionConfig().getPreferSnapshotReplicationThreshold()).isEqualTo(1000);
+  }
+
   private RaftPartitionGroupConfig buildRaftPartitionGroup() {
     final var partitionGroup = factory.buildRaftPartitionGroup(brokerCfg, SNAPSHOT_STORE_FACTORY);
     return (RaftPartitionGroupConfig) partitionGroup.config();

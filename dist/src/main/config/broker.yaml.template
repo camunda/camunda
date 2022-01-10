@@ -566,6 +566,12 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MAXQUORUMRESPONSETIMEOUT
         # maxQuorumResponseTimeout = 0ms
 
+        # Threshold used by the leader to decide between replicating a snapshot or records.
+        # If a follower lags behind by more than the threshold, the leader will prefer replicating
+        # snapshots.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD.
+        # preferSnapshotReplicationThreshold = 100
+
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
         # Specify custom column family options overwriting Zeebe's own defaults.
