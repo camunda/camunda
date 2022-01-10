@@ -152,4 +152,14 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   public DirectBuffer getResourceNameBuffer() {
     return resourceNameProp.getValue();
   }
+
+  @JsonIgnore
+  public DirectBuffer getResourceBuffer() {
+    return resourceProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getChecksumBuffer() {
+    return checksumProp.getValue();
+  }
 }
