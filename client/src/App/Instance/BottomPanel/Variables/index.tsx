@@ -203,6 +203,7 @@ const Variables: React.FC = observer(() => {
                                               name: variableName,
                                               value,
                                             });
+                                            form.change('value', value);
                                           }}
                                           size="large"
                                           iconButtonTheme="default"
