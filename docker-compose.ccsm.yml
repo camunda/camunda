@@ -1,24 +1,47 @@
 version: "3.6"
 
 services:
-  backend:
-    image: docker.io/camunda/iam:1.2.6
+  optimize:
+    container_name: optimize
+    image: registry.camunda.cloud/optimize-ee/optimize:3.7.0
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_PROFILES_ACTIVE=ccsm
+      - CAMUNDA_OPTIMIZE_IAM_ISSUER_URL=http://iam-backend.local:9090/
+      - CAMUNDA_OPTIMIZE_IAM_CLIENTID=optimize
+      - CAMUNDA_OPTIMIZE_IAM_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+      - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
+      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
+      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
+      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
+      - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
+      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=1
+      - CAMUNDA_OPTIMIZE_SHARING_ENABLED=false
+      - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
+    networks:
+      - optimize
+      - iam-network
+  iam-backend:
+    image: docker.io/camunda/iam:1.3.0
     container_name: iam-backend
+    hostname: iam-backend
     depends_on:
-      - database
-      - mailserver
+      - iam-database
+      - iam-mailserver
     environment:
       SMTP_HOST: localhost
       SMTP_PORT: 11025
       SMTP_USER: mailhog
       SMTP_PASSWORD: mailhog
       SMTP_WITH_TLS: "false"
-      DB_URL: jdbc:postgresql://database:5432/iam
+      DB_URL: jdbc:postgresql://iam-database:5432/iam
       DB_USER: camunda
       DB_PASSWORD: mydatabasepassword
       DATABASE_ENCRYPTION_KEY: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      FRONTEND_URL: http://localhost:9090
-      BACKEND_URL: http://localhost:9090/api
+      FRONTEND_URL: http://iam-backend.local:9090
+      BACKEND_URL: http://iam-backend.local:9090/api
       EMAIL_SENDER: support@camunda.com
       EMAIL_NOREPLY_SENDER: noreply@camunda.com
       EMAIL_SENDER_NAME: Camunda Team
@@ -43,7 +66,11 @@ services:
       interval: 30s
       timeout: 15s
       retries: 5
-  database:
+    networks:
+      iam-network:
+        aliases:
+          - iam-backend.local
+  iam-database:
     # The major version matches the one used with the Cloud SQL service in Kubernetes.
     image: postgres:12.7-alpine
     container_name: iam-database
@@ -52,15 +79,62 @@ services:
       POSTGRES_USER: camunda
       POSTGRES_PASSWORD: mydatabasepassword
     ports:
-      - 15432:5432
+      - "15432:5432"
     healthcheck:
       test: pg_isready -d iam -U camunda
       interval: 30s
       timeout: 15s
       retries: 5
-  mailserver:
+    networks:
+      - iam-network
+  iam-mailserver:
     image: mailhog/mailhog:v1.0.1
     container_name: iam-mailserver
     ports:
-      - 18025:8025
-      - 11025:1025
+      - "18025:8025"
+      - "11025:1025"
+    networks:
+      - iam-network
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.8.0}
+    container_name: elasticsearch
+    environment:
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    restart: always
+    cpu_count: 4
+    mem_limit: 2g
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - optimize
+  zeebe:
+    image: camunda/zeebe:1.3.0
+    container_name: zeebe
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+    restart: always
+    volumes:
+      - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
+    depends_on:
+      - elasticsearch
+    networks:
+      - optimize
+networks:
+  optimize: { }
+  iam-network: { }

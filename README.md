@@ -59,13 +59,13 @@ Services can be shutdown again using
 docker-compose down
 ```
 
-If you need IAM running locally, you can do this by running:
+You can also run Optimize in CCSM mode by running the following command
 
 ```
-docker-compose -f docker-compose.iam.yml up -d
+docker-compose -f docker-compose.ccsm.yml up -d
 ```
 
-This will start the components of IAM, and the frontend can be access at port 9090
+This will start all the components of IAM, Elasticsearch, Zeebe, and Optimize. Optimize will be available at localhost:8090. 
 
 Optimize then needs to be started in CCSM mode, and with the following environment variables:
 ```
