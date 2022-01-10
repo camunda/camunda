@@ -64,7 +64,7 @@ describe('VariablePanel', () => {
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(null))
+        (_, res, ctx) => res.once(ctx.json(undefined))
       )
     );
 
@@ -198,7 +198,7 @@ describe('VariablePanel', () => {
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(null))
+        (_, res, ctx) => res.once(ctx.json(undefined))
       )
     );
 
@@ -454,7 +454,7 @@ describe('VariablePanel', () => {
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(null))
+        (_, res, ctx) => res.once(ctx.json(undefined))
       )
     );
 
@@ -550,7 +550,7 @@ describe('VariablePanel', () => {
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(null))
+        (_, res, ctx) => res.once(ctx.json(undefined))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json({id: '1234'}))

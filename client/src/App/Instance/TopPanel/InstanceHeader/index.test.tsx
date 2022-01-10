@@ -297,7 +297,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.json([mockVariable]))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json(null))
+        res.once(ctx.json(undefined))
       ),
       rest.get('/api/processes/:id/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessXML))

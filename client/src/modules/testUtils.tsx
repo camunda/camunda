@@ -23,7 +23,7 @@ const createRandomId = function* createRandomId(type: string) {
 };
 
 const randomIdIterator = createRandomId('id');
-const randomProcessIdInterator = createRandomId('processId');
+const randomProcessIdIterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
@@ -161,7 +161,7 @@ export const groupedProcessesMock = [
  */
 export const createProcess = (options = {}) => {
   return {
-    processId: randomProcessIdInterator.next().value,
+    processId: randomProcessIdIterator.next().value,
     name: 'mockProcess',
     version: 1,
     bpmnProcessId: 'mockProcess',
@@ -844,7 +844,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:07:33.953+0000',
             endDate: '2020-08-18T12:07:34.034+0000',
             treePath: `${processInstanceId}/2251799813686130`,
-            sortValues: [1606300828415, '2251799813686130'],
+            sortValues: ['1606300828415', '2251799813686130'],
           },
           {
             id: '2251799813686156',
@@ -854,7 +854,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:07:34.205+0000',
             endDate: null,
             treePath: `${processInstanceId}/2251799813686156`,
-            sortValues: [1606300828415, '2251799813686156'],
+            sortValues: ['1606300828415', '2251799813686156'],
           },
         ],
       },
@@ -871,7 +871,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:08:00.205+0000',
             endDate: null,
             treePath: `${processInstanceId}/2251799813686472`,
-            sortValues: [1606300828415, '2251799813686472'],
+            sortValues: ['1606300828415', '2251799813686472'],
           },
         ],
       },
@@ -888,7 +888,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:08:00.205+0000',
             endDate: null,
             treePath: `${processInstanceId}/2251390423657139`,
-            sortValues: [1606300828415, '2251390423657139'],
+            sortValues: ['1606300828415', '2251390423657139'],
           },
         ],
       },
@@ -905,7 +905,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:07:33.953+0000',
             endDate: '2020-08-18T12:07:34.034+0000',
             treePath: `${processInstanceId}/2251799813686130`,
-            sortValues: [1606300828415, '2251799813686130'],
+            sortValues: ['1606300828415', '2251799813686130'],
           },
           {
             id: '2251799813686156',
@@ -915,7 +915,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:07:34.205+0000',
             endDate: '2020-08-18T12:07:34.034+0000',
             treePath: `${processInstanceId}/2251799813686156`,
-            sortValues: [1606300828415, '2251799813686156'],
+            sortValues: ['1606300828415', '2251799813686156'],
           },
         ],
       },
@@ -932,7 +932,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:07:34.281+0000',
             endDate: null,
             treePath: `${processInstanceId}/2251799813686156/2251799813686166`,
-            sortValues: [1606300828415, '2251799813686166'],
+            sortValues: ['1606300828415', '2251799813686166'],
           },
         ],
       },
@@ -949,7 +949,7 @@ export const createMultiInstanceFlowNodeInstances = (
             startDate: '2020-08-18T12:07:34.337+0000',
             endDate: '2020-08-18T12:07:34.445+0000',
             treePath: `${processInstanceId}/2251799813686156/2251799813686166/2251799813686204`,
-            sortValues: [1606300828415, '2251799813686204'],
+            sortValues: ['1606300828415', '2251799813686204'],
           },
         ],
       },
@@ -975,7 +975,7 @@ export const createEventSubProcessFlowNodeInstances = (
             startDate: '2021-06-22T13:43:59.698+0000',
             endDate: '2021-06-22T13:43:59.701+0000',
             treePath: `${processInstanceId}/6755399441057427`,
-            sortValues: [1624369439698, '6755399441057427'],
+            sortValues: ['1624369439698', '6755399441057427'],
           },
           {
             id: '6755399441057429',
@@ -985,7 +985,7 @@ export const createEventSubProcessFlowNodeInstances = (
             startDate: '2021-06-22T13:43:59.707+0000',
             endDate: '2021-06-22T13:46:59.705+0000',
             treePath: `${processInstanceId}/6755399441057429`,
-            sortValues: [1624369439707, '6755399441057429'],
+            sortValues: ['1624369439707', '6755399441057429'],
           },
           {
             id: '6755399441063916',
@@ -995,7 +995,7 @@ export const createEventSubProcessFlowNodeInstances = (
             startDate: '2021-06-22T13:46:59.705+0000',
             endDate: null,
             treePath: `${processInstanceId}/6755399441063916`,
-            sortValues: [1624369619705, '6755399441063916'],
+            sortValues: ['1624369619705', '6755399441063916'],
           },
         ],
         running: null,
@@ -1012,7 +1012,7 @@ export const createEventSubProcessFlowNodeInstances = (
             startDate: '2021-06-22T13:46:59.714+0000',
             endDate: '2021-06-22T13:46:59.719+0000',
             treePath: `${processInstanceId}/6755399441063916/6755399441063918`,
-            sortValues: [1624369619714, '6755399441063918'],
+            sortValues: ['1624369619714', '6755399441063918'],
           },
           {
             id: '6755399441063920',
@@ -1022,7 +1022,7 @@ export const createEventSubProcessFlowNodeInstances = (
             startDate: '2021-06-22T13:46:59.722+0000',
             endDate: null,
             treePath: `${processInstanceId}/6755399441063916/6755399441063920`,
-            sortValues: [1624369619722, '6755399441063920'],
+            sortValues: ['1624369619722', '6755399441063920'],
           },
         ],
         running: true,

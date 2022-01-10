@@ -30,7 +30,7 @@ type FlowNodeInstanceType = {
   startDate: string;
   endDate: null | string;
   treePath: string;
-  sortValues: unknown[];
+  sortValues: [string, string] | [];
 };
 
 type FlowNodeInstances = {

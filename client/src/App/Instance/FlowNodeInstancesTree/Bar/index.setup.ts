@@ -13,7 +13,7 @@ const mockStartNode: FlowNodeInstance = {
   startDate: '2021-03-10T12:24:18.387+0000',
   endDate: '2021-03-10T12:24:18.399+0000',
   treePath: '',
-  sortValues: [''],
+  sortValues: [],
 };
 
 const mockStartMetaData = {
@@ -28,7 +28,7 @@ const mockMultiInstanceBodyNode: FlowNodeInstance = {
   startDate: '2021-03-10T12:24:18.387+0000',
   endDate: '2021-03-10T12:24:18.399+0000',
   treePath: '',
-  sortValues: [''],
+  sortValues: [],
 };
 
 const mockMultiInstanceBodyMetaData = {
