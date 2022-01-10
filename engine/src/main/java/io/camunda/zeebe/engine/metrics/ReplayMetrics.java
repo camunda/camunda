@@ -51,8 +51,8 @@ public final class ReplayMetrics {
     REPLAY_EVENTS_COUNT.labels(partitionIdLabel).inc();
   }
 
-  public void replayDuration(final long started, final long processed) {
-    REPLAY_DURATION.labels(partitionIdLabel).observe((processed - started) / 1000f);
+  public Histogram.Timer startReplayDurationTimer() {
+    return REPLAY_DURATION.labels(partitionIdLabel).startTimer();
   }
 
   public void setLastSourcePosition(final long position) {

@@ -32,6 +32,7 @@ import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.prometheus.client.Histogram;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -143,7 +144,7 @@ public final class ProcessingStateMachine {
   private volatile boolean onErrorHandlingLoop;
   private int onErrorRetries;
   // Used for processing duration metrics
-  private long processingStartTime;
+  private Histogram.Timer processingTimer;
   private boolean reachedEnd = true;
 
   public ProcessingStateMachine(
@@ -232,7 +233,11 @@ public final class ProcessingStateMachine {
       return;
     }
 
-    processingStartTime = ActorClock.currentTimeMillis();
+    // Here we need to get the current time, since we want to calculate
+    // how long it took between writing to the dispatcher and processing.
+    // In all other cases we should prefer to use the Prometheus Timer API.
+    final var processingStartTime = ActorClock.currentTimeMillis();
+    processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
     try {
       final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
@@ -431,8 +436,9 @@ public final class ProcessingStateMachine {
 
           notifyProcessedListener(typedEvent);
 
-          metrics.processingDuration(
-              metadata.getRecordType(), processingStartTime, ActorClock.currentTimeMillis());
+          // observe the processing duration
+          processingTimer.close();
+
           // continue with next event
           currentProcessor = null;
           actor.submit(this::readNextEvent);
