@@ -75,7 +75,9 @@ final class RaftPartitionGroupFactory {
             .withHeartbeatInterval(clusterCfg.getHeartbeatInterval())
             .withRequestTimeout(experimentalCfg.getRaft().getRequestTimeout())
             .withMaxQuorumResponseTimeout(experimentalCfg.getRaft().getMaxQuorumResponseTimeout())
-            .withMinStepDownFailureCount(experimentalCfg.getRaft().getMinStepDownFailureCount());
+            .withMinStepDownFailureCount(experimentalCfg.getRaft().getMinStepDownFailureCount())
+            .withPreferSnapshotReplicationThreshold(
+                experimentalCfg.getRaft().getPreferSnapshotReplicationThreshold());
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 
