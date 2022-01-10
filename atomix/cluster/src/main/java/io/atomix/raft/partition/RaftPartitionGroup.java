@@ -492,6 +492,22 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
       return this;
     }
 
+    /**
+     * Sets the threshold for preferring snapshot replication. The unit is <i>number of records</i>
+     * by which a follower may lag behind before the leader starts to prefer replicating snapshots
+     * instead of records.
+     *
+     * @param preferSnapshotReplicationThreshold the threshold to use
+     * @return this builder for chaining
+     */
+    public Builder withPreferSnapshotReplicationThreshold(
+        final int preferSnapshotReplicationThreshold) {
+      config
+          .getPartitionConfig()
+          .setPreferSnapshotReplicationThreshold(preferSnapshotReplicationThreshold);
+      return this;
+    }
+
     @Override
     public RaftPartitionGroup build() {
       return new RaftPartitionGroup(config);
