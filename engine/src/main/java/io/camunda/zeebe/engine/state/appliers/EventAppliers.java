@@ -12,6 +12,8 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
@@ -62,6 +64,11 @@ public final class EventAppliers implements EventApplier {
     registerProcessMessageSubscriptionEventAppliers(state);
     registerTimeEventAppliers(state);
     registerProcessEventAppliers(state);
+
+    register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDmnDecisionState()));
+    register(
+        DecisionRequirementsIntent.CREATED,
+        new DecisionRequirementsApplier(state.getDmnDecisionState()));
   }
 
   private void registerTimeEventAppliers(final MutableZeebeState state) {
