@@ -18,7 +18,7 @@ security:
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set
-        enabled: true
+        enabled: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED:true}
       secure: auto
     token:
       # Optimize uses token-based authentication to keep track of which users are
@@ -26,7 +26,7 @@ security:
       lifeMin: 60
       # Optional secret used to sign authentication tokens, it's recommended to use at least a 64 character secret.
       # If set `null` a random secret will be generated with each startup of Optimize.
-      secret: null
+      secret: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET:null}
     # List of user ids that are granted full permission to all collections, reports & dashboards
     # Note: For reports these users are still required to be granted access to the corresponding process/decision
     # definitions in Camunda Platform Admin
@@ -37,7 +37,7 @@ security:
   # Configuration relating to the use of Optimize
   license:
     # True if Optimize is running in enterprise mode, or false if in trial mode
-    enterprise: ${OPTIMIZE_ENTERPRISE_MODE:true}
+    enterprise: ${CAMUNDA_OPTIMIZE_ENTERPRISE:true}
 
   # Here you can define HTTP response headers that Optimize can send in its responses
   # to increase the security of your application.
@@ -175,13 +175,13 @@ engine-commons:
 
 zeebe:
   # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
-  enabled: false
+  enabled: ${CAMUNDA_OPTIMIZE_ZEEBE_ENABLED:false}
   # The name suffix of the exported Zeebe records. This must match the record-prefix configured in the exporter of the instance
-  name: 'zeebe-record'
+  name: '${CAMUNDA_OPTIMIZE_ZEEBE_NAME:zeebe-record}'
   # The number of partitions configured for the Zeebe record source
-  partitionCount: 1
+  partitionCount: ${CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT:1}
   # The max page size for importing Zeebe data
-  maxImportPageSize: 10000
+  maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:10000}
 
 import:
   data:
@@ -329,20 +329,20 @@ es:
   # Elasticsearch security settings
   security:
     # the basic auth (x-pack) username
-    username: null
+    username: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_USERNAME:null}
     # the basic auth (x-pack) password
-    password: null
+    password: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_PASSWORD:null}
     # SSL/HTTPS secured connection settings
     ssl:
       # path to a PEM encoded file containing the certificate (or certificate chain)
       # that will be presented to clients when they connect.
-      certificate: null
+      certificate: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_SSL_CERTIFICATE:null}
       # A list of paths to PEM encoded CA certificate files that should be trusted, e.g. ['/path/to/ca.crt'].
       # Note: if you are using a public CA that is already trusted by the Java runtime,
       # you do not need to set the certificate_authorities.
-      certificate_authorities: []
+      certificate_authorities: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES:[]}
       # used to enable or disable TLS/SSL for the HTTP connection
-      enabled: false
+      enabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED:false}
 
   # Maximum time in seconds a request to elasticsearch should last, before a timeout
   # triggers.
@@ -466,7 +466,7 @@ export:
 
 sharing:
   # decides if the sharing feature of Optimize can be used in the UI.
-  enabled: true
+  enabled: ${CAMUNDA_OPTIMIZE_SHARING_ENABLED:true}
 
 historyCleanup:
   # cron expression for when the cleanup should run
@@ -528,7 +528,7 @@ ui:
     # a hex encoded color that should be used as background color for the header. Default color is white.
     backgroundColor: '#FFFFFF'
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
-  logoutHidden: false
+  logoutHidden: ${CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN:false}
 
 eventBasedProcess:
   # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.

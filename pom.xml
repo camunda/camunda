@@ -23,11 +23,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.7.0-RC1</project.previousVersion>
+    <project.previousVersion>3.7.0</project.previousVersion>
 
     <camunda.engine.version>7.16.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.16.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.2.9</zeebe.version>
+    <zeebe.version>1.3.0</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->

@@ -7,6 +7,7 @@ package org.camunda.optimize.jetty;
 
 import com.google.common.io.CharStreams;
 import lombok.SneakyThrows;
+import org.camunda.optimize.service.UIConfigurationService;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import javax.servlet.Filter;
@@ -21,14 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
-
 public class JavaScriptMainLicenseEnricherFilter implements Filter {
-  public static final String LICENSE_COMMERCIAL_PATH = "LICENSE-COMMERCIAL.txt";
-  private static final String LICENSE_CCSM_PATH = "LICENSE-CCSM.txt";
+  public static final String LICENSE_ENTERPRISE_PATH = "LICENSE-ENTERPRISE.txt";
+  private static final String LICENSE_NON_PRODUCTION_PATH = "LICENSE-NON-PRODUCTION.txt";
   private static final Pattern MAIN_JS_PATTERN = Pattern.compile(".*/main\\..*\\.chunk\\.js");
 
   private final SpringAwareServletConfiguration awareDelegate;
@@ -85,10 +83,10 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
   }
 
   private String getLicenseContent() {
-    if (isCcsmEnvironment()) {
-      return readLicense(LICENSE_CCSM_PATH);
+    if (isEnterpriseMode()) {
+      return readLicense(LICENSE_ENTERPRISE_PATH);
     } else {
-      return readLicense(LICENSE_COMMERCIAL_PATH);
+      return readLicense(LICENSE_NON_PRODUCTION_PATH);
     }
   }
 
@@ -104,8 +102,7 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
     return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
   }
 
-  private boolean isCcsmEnvironment() {
-    return Arrays.stream(awareDelegate.getApplicationContext().getEnvironment().getActiveProfiles())
-      .anyMatch(CCSM_PROFILE::equalsIgnoreCase);
+  private boolean isEnterpriseMode() {
+    return awareDelegate.getApplicationContext().getBean(UIConfigurationService.class).isEnterpriseMode();
   }
 }
