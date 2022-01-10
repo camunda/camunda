@@ -630,8 +630,8 @@
         # maxQuorumResponseTimeout = 0ms
 
         # Threshold used by the leader to decide between replicating a snapshot or records.
-        # If a follower lags behind by more than the threshold, the leader will prefer replicating
-        # snapshots.
+        # The unit is number of records by which the follower may lag behind before the leader
+        # prefers replicating snapshots instead of records.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD.
         # preferSnapshotReplicationThreshold = 100
 
