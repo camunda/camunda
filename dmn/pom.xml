@@ -10,7 +10,7 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>dmn</artifactId>
+  <artifactId>zeebe-dmn</artifactId>
   <name>Zeebe DMN Engine</name>
 
   <dependencies>
