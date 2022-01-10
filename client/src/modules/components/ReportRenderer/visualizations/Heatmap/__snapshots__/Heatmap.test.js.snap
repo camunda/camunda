@@ -43,7 +43,7 @@ exports[`should inform if the actual value is less than 1% of the target value 1
       }
     }
   />
-  <DownloadButtonErrorHandler
+  <ComponentErrorHandler
     fileName="Exceeded-instances-test.csv"
     retriever={
       Object {
@@ -62,7 +62,7 @@ exports[`should inform if the actual value is less than 1% of the target value 1
       type="save"
     />
     Instance IDs
-  </DownloadButtonErrorHandler>
+  </ComponentErrorHandler>
 </div>
 `;
 
@@ -76,7 +76,7 @@ exports[`should show a tooltip with information about actual and target value 1`
       }
     }
   />
-  <DownloadButtonErrorHandler
+  <ComponentErrorHandler
     fileName="Exceeded-instances-test.csv"
     retriever={
       Object {
@@ -95,7 +95,7 @@ exports[`should show a tooltip with information about actual and target value 1`
       type="save"
     />
     Instance IDs
-  </DownloadButtonErrorHandler>
+  </ComponentErrorHandler>
 </div>
 `;
 
@@ -109,7 +109,7 @@ exports[`should show a tooltip with information if no actual value is available 
       }
     }
   />
-  <DownloadButtonErrorHandler
+  <ComponentErrorHandler
     fileName="Exceeded-instances-test.csv"
     retriever={
       Object {
@@ -128,6 +128,6 @@ exports[`should show a tooltip with information if no actual value is available 
       type="save"
     />
     Instance IDs
-  </DownloadButtonErrorHandler>
+  </ComponentErrorHandler>
 </div>
 `;

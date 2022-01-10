@@ -1244,7 +1244,8 @@
     },
     "csvLimit": {
       "Warning": "Warnung: CSV wird nicht alle angeforderten Daten enthalten",
-      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Filtern Sie Ihre Daten, verwenden Sie die Datenexport-API oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben"
+      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Filtern Sie Ihre Daten, oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben",
+      "exportApi": "Sie können auch die <a href='{docsLink}'>Datenexport-API</a> verwenden, um größere Datenmengen aus Optimize zu exportieren."
     },
     "unit": {
       "automatic": "Automatisch",

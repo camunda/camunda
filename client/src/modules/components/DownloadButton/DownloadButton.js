@@ -7,7 +7,7 @@
 import React, {useState, useEffect} from 'react';
 
 import {Button, Modal} from 'components';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withDocs} from 'HOC';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
@@ -23,6 +23,7 @@ export function DownloadButton({
   resetError,
   retriever,
   totalCount,
+  docsLink,
   ...props
 }) {
   const [exportLimit, setExportLimit] = useState(1000);
@@ -71,6 +72,13 @@ export function DownloadButton({
               <b>{t('common.csvLimit.Warning')}</b>
             </p>
             <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
+            <p
+              dangerouslySetInnerHTML={{
+                __html: t('common.csvLimit.exportApi', {
+                  docsLink: docsLink + 'technical-guide/rest-api/report/get-data-export',
+                }),
+              }}
+            />
           </Modal.Content>
           <Modal.Actions>
             <Button main onClick={closeModal}>
@@ -91,4 +99,4 @@ async function getData(url) {
   return await response.blob();
 }
 
-export default withErrorHandling(DownloadButton);
+export default withErrorHandling(withDocs(DownloadButton));
