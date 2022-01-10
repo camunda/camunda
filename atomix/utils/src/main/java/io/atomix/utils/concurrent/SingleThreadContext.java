@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.prometheus.client.Histogram.Timer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -50,6 +51,7 @@ public class SingleThreadContext extends AbstractThreadContext {
       e -> LOGGER.error("An uncaught exception occurred", e);
   protected final ScheduledExecutorService executor;
   private final Consumer<Throwable> uncaughtExceptionObserver;
+  private final ExecutionMetrics executionMetrics = new ExecutionMetrics();
   private final Executor wrappedExecutor =
       new Executor() {
         @Override
@@ -160,15 +162,20 @@ public class SingleThreadContext extends AbstractThreadContext {
   class WrappedRunnable implements Runnable {
 
     private final Runnable command;
+    private final Timer schedulerTimer;
 
     WrappedRunnable(final Runnable command) {
       this.command = command;
+      schedulerTimer = executionMetrics.startSchedulerTimer();
     }
 
     @Override
     public void run() {
       try {
-        command.run();
+        schedulerTimer.close();
+        try (final var timer = executionMetrics.startExecutionTimer()) {
+          command.run();
+        }
       } catch (final Throwable e) {
         FATAL_ERROR_HANDLER.handleError(e);
         // If we don't handle throwable here, it will be swallowed by ScheduledThreadPoolExecutor
