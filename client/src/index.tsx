@@ -10,10 +10,13 @@ import React from 'react';
 import {render} from 'react-dom';
 import {App} from './App';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
+import {tracking} from 'modules/tracking';
 
-render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.querySelector('#root'),
-);
+tracking.loadPermissions().then(() => {
+  render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+    document.querySelector('#root'),
+  );
+});

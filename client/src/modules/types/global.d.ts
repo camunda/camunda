@@ -9,10 +9,25 @@ export declare global {
     clientConfig?: {
       isEnterprise?: boolean;
       contextPath?: string;
-      mixpanelActivated?: boolean;
       canLogout?: boolean;
       organizationId?: null | string;
       clusterId?: null | string;
     };
+    Osano?: {
+      cm?: {
+        analytics: boolean;
+      };
+    };
+  }
+
+  namespace NodeJS {
+    interface ProcessEnv {
+      REACT_APP_DEV_ENV_URL: string;
+      REACT_APP_INT_ENV_URL: string;
+      REACT_APP_PROD_ENV_URL: string;
+      REACT_APP_OSANO_INT_ENV_URL: string;
+      REACT_APP_OSANO_PROD_ENV_URL: string;
+      REACT_APP_MIXPANEL_TOKEN: string;
+    }
   }
 }

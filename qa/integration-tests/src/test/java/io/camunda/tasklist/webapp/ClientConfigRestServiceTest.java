@@ -74,8 +74,7 @@ public class ClientConfigRestServiceTest {
                 + "\"contextPath\":\"\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
-                + "\"stage\":\"stage\","
-                + "\"mixpanelActivated\":false"
+                + "\"stage\":\"stage\""
                 + "};");
   }
 }
