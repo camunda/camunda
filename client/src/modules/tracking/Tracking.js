@@ -22,15 +22,15 @@ export function track(eventName, properties) {
 
 export function Tracking({getUser}) {
   const location = useLocation();
-  const [enabled, setEnabled] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (enabled) {
+    if (initialized) {
       track('pageView', {
         path: window.location.hash,
       });
     }
-  }, [location, enabled]);
+  }, [location, initialized]);
 
   useEffect(() => {
     (async () => {
@@ -61,7 +61,7 @@ export function Tracking({getUser}) {
         org_id: organizationId,
         cluster_id: clusterId,
       });
-      setEnabled(enabled);
+      setInitialized(true);
       trackingEnabled = true;
     })();
   }, [getUser]);
