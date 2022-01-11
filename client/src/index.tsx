@@ -9,9 +9,12 @@ import {App} from './App';
 import './index.css';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
 import {startMocking} from 'modules/mock-server/browser';
+import {tracking} from 'modules/tracking';
 
 if (process.env.NODE_ENV === 'development') {
   startMocking();
 }
 
-ReactDOM.render(<App />, document.getElementById('root'));
+tracking.loadPermissions().then(() => {
+  ReactDOM.render(<App />, document.getElementById('root'));
+});

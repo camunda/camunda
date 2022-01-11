@@ -7,7 +7,6 @@
 import mixpanel, {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
 
-const MIXPANEL_PUBLIC_TOKEN = '1104cabe553c23b7e67d56b1976437aa';
 const EVENT_PREFIX = 'operate:';
 type Events =
   | {
@@ -47,30 +46,65 @@ type Events =
       sortBy?: string;
       sortOrder?: 'desc' | 'asc';
     };
+const STAGE_ENV = getStage(window.location.host);
 
-mixpanel.init(MIXPANEL_PUBLIC_TOKEN);
+mixpanel.init(process.env.REACT_APP_MIXPANEL_TOKEN, {
+  opt_out_tracking_by_default: true,
+});
 
 class Tracking {
-  #mixpanel: null | Mixpanel =
-    window.clientConfig?.mixpanelActivated &&
-    window.clientConfig?.organizationId
-      ? mixpanel
-      : null;
+  #mixpanel: null | Mixpanel = window.clientConfig?.organizationId
+    ? mixpanel
+    : null;
+
+  constructor() {
+    this.#mixpanel?.register({
+      organizationId: window.clientConfig?.organizationId,
+      clusterId: window.clientConfig?.clusterId,
+      stage: STAGE_ENV,
+      version: process.env.REACT_APP_VERSION,
+    });
+  }
 
   track(events: Events) {
     const {eventName, ...properties} = events;
 
     try {
-      this.#mixpanel?.track(`${EVENT_PREFIX}${eventName}`, {
-        ...properties,
-        organizationId: window.clientConfig?.organizationId,
-        clusterId: window.clientConfig?.clusterId,
-        stage: getStage(window.location.host),
-        version: process.env.REACT_APP_VERSION,
-      });
+      this.#mixpanel?.track(`${EVENT_PREFIX}${eventName}`, properties);
     } catch (error) {
       console.error(`Can't track event: ${eventName}`, error);
     }
+  }
+
+  loadPermissions(): Promise<void> {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      !['prod', 'int'].includes(STAGE_ENV) ||
+      this.#mixpanel === null
+    ) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      const osanoScriptElement = document.createElement('script');
+
+      if (STAGE_ENV === 'int') {
+        osanoScriptElement.src = process.env.REACT_APP_OSANO_INT_ENV_URL;
+      }
+
+      if (STAGE_ENV === 'prod') {
+        osanoScriptElement.src = process.env.REACT_APP_OSANO_PROD_ENV_URL;
+      }
+
+      document.head.appendChild(osanoScriptElement);
+
+      osanoScriptElement.onload = () => {
+        if (window.Osano?.cm?.analytics) {
+          this.#mixpanel?.opt_in_tracking();
+        }
+        resolve();
+      };
+    });
   }
 }
 

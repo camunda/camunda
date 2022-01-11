@@ -50,8 +50,7 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
         .isEqualTo("window.clientConfig = {"
             + "\"isEnterprise\":false,\"contextPath\":\"\","
             + "\"organizationId\":null,"
-            + "\"clusterId\":\"clusterId\","
-            + "\"mixpanelActivated\":false"
+            + "\"clusterId\":\"clusterId\""
             + "};");
   }
 

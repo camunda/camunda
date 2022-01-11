@@ -5,15 +5,15 @@
  */
 
 function getStage(host: string): 'dev' | 'int' | 'prod' | 'unknown' {
-  if (host.includes('dev.ultrawombat.com')) {
+  if (host.includes(process.env.REACT_APP_DEV_ENV_URL)) {
     return 'dev';
   }
 
-  if (host.includes('ultrawombat.com')) {
+  if (host.includes(process.env.REACT_APP_INT_ENV_URL)) {
     return 'int';
   }
 
-  if (host.includes('camunda.io')) {
+  if (host.includes(process.env.REACT_APP_PROD_ENV_URL)) {
     return 'prod';
   }
 

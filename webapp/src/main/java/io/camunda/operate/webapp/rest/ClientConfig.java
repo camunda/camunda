@@ -28,17 +28,11 @@ public class ClientConfig {
 
   public String clusterId;
 
-  /**
-   * Temporary feature flag
-   */
-  public boolean mixpanelActivated;
-
   @PostConstruct
   public void init(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
     organizationId = operateProperties.getCloud().getOrganizationId();
     contextPath = context.getContextPath();
-    mixpanelActivated = false;
   }
 }
