@@ -26,6 +26,8 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -391,7 +393,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
   }
 
   @Test
-  @Disabled("OPT-5719")
+  @SneakyThrows
   public void zeebeVariableImport_importZeebeVariableDataFromMultipleDays() {
     // given
     final Process deployedProcess = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
@@ -400,7 +402,7 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
       Map.of("var1", "someValue1")
     );
 
-    //zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
+    zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.addVariablesToScope(startedInstanceKey, Map.of("var2", "someValue2"), false);
 
     // when
@@ -418,8 +420,8 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         SimpleProcessVariableDto::getType
       )
       .containsExactlyInAnyOrder(
-        Tuple.tuple("var1", "someValue1", STRING_TYPE),
-        Tuple.tuple("var2", "someValue2", STRING_TYPE)
+        Tuple.tuple("var1", Collections.singletonList("someValue1"), STRING_TYPE),
+        Tuple.tuple("var2", Collections.singletonList("someValue2"), STRING_TYPE)
       );
   }
 

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.processdefinition;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
@@ -16,6 +17,9 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
@@ -116,13 +120,13 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
 
 
   @Test
-  @Disabled("OPT-5719")
+  @SneakyThrows
   public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
     // given
     final String firstProcessName = "firstProcess";
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
-    
-    // zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
+
+    zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
     final String secondProcessName = "secondProcess";
     deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilNumberOfDefinitionsExported(2);
