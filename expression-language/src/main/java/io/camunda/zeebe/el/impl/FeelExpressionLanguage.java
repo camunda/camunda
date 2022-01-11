@@ -17,7 +17,7 @@ import io.camunda.zeebe.el.impl.feel.FeelEvaluationResult;
 import io.camunda.zeebe.el.impl.feel.FeelFunctionProvider;
 import io.camunda.zeebe.el.impl.feel.FeelToMessagePackTransformer;
 import io.camunda.zeebe.el.impl.feel.FeelVariableContext;
-import io.camunda.zeebe.el.impl.feel.MessagePackValueMapper;
+import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
