@@ -13,12 +13,16 @@ type State = {
   isSessionValid: boolean;
   notification: Notification | undefined;
   permissions: Permissions;
+  displayName: string | undefined;
+  canLogout: boolean;
 };
 
 const DEFAULT_STATE: State = {
   isSessionValid: false,
   notification: undefined,
   permissions: ['read', 'write'],
+  displayName: undefined,
+  canLogout: false,
 };
 
 class Authentication {
@@ -28,7 +32,6 @@ class Authentication {
       state: observable,
       disableUserSession: action,
       enableUserSession: action,
-      setPermissions: action,
       reset: action,
     });
   }
@@ -38,8 +41,20 @@ class Authentication {
     this.state.notification = notification;
   };
 
-  enableUserSession = () => {
+  enableUserSession = ({
+    displayName,
+    permissions,
+    canLogout,
+  }: {
+    displayName: string;
+    permissions?: Permissions;
+    canLogout: boolean;
+  }) => {
     this.state.isSessionValid = true;
+    this.state.displayName = displayName;
+    this.state.canLogout = canLogout;
+    this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
+
     this.state.notification?.remove();
     this.state.notification = undefined;
   };
@@ -48,10 +63,6 @@ class Authentication {
     return this.state.permissions.some((permission) =>
       scopes.includes(permission)
     );
-  };
-
-  setPermissions = (permissions: Permissions | undefined) => {
-    this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
   };
 
   reset = () => {

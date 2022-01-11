@@ -25,23 +25,28 @@ const Authentication: React.FC<Props> = observer((props) => {
   const [forceRedirect, setForceRedirect] = useState<boolean | null>(null);
 
   useEffect(() => {
-    requestUserEndpoint().then(({status, permissions}) => {
-      if (status === 401 || status === 403) {
-        setForceRedirect(true);
-      } else {
-        authenticationStore.enableUserSession();
-        authenticationStore.setPermissions(permissions);
-
-        setForceRedirect(false);
-      }
-      setResponseInterceptor(({status, url}: Response) => {
-        if ((status === 401 || status === 403) && !url.includes(logoutUrl)) {
+    requestUserEndpoint().then(
+      ({status, permissions, displayName, canLogout}) => {
+        if (status === 401 || status === 403) {
           setForceRedirect(true);
-        }
+        } else {
+          authenticationStore.enableUserSession({
+            permissions,
+            displayName,
+            canLogout,
+          });
 
-        return Promise.resolve();
-      });
-    });
+          setForceRedirect(false);
+        }
+        setResponseInterceptor(({status, url}: Response) => {
+          if ((status === 401 || status === 403) && !url.includes(logoutUrl)) {
+            setForceRedirect(true);
+          }
+
+          return Promise.resolve();
+        });
+      }
+    );
 
     return () => {
       setResponseInterceptor(null);
@@ -54,7 +59,13 @@ const Authentication: React.FC<Props> = observer((props) => {
     return get('/api/authentications/user')
       .then(async (response) => {
         const body = await response.json();
-        return {status: response.status, permissions: body.permissions};
+
+        return {
+          status: response.status,
+          permissions: body.permissions,
+          displayName: body.displayName,
+          canLogout: body.canLogout,
+        };
       })
       .catch((error) => error.status);
   };
@@ -85,7 +96,6 @@ const Authentication: React.FC<Props> = observer((props) => {
       />
     );
   } else if (state && state.isLoggedIn) {
-    authenticationStore.enableUserSession();
     return props.children;
   } else if (state === undefined && forceRedirect === null) {
     // show empty page until we know if we need to redirect to login screen

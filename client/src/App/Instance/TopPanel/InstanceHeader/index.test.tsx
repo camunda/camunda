@@ -370,7 +370,11 @@ describe('InstanceHeader', () => {
       )
     );
 
-    authenticationStore.setPermissions(['read', 'write']);
+    authenticationStore.enableUserSession({
+      displayName: 'demo',
+      permissions: ['read', 'write'],
+      canLogout: true,
+    });
 
     render(<InstanceHeader />, {wrapper: createWrapper()});
 
@@ -398,7 +402,11 @@ describe('InstanceHeader', () => {
       )
     );
 
-    authenticationStore.setPermissions(['read']);
+    authenticationStore.enableUserSession({
+      displayName: 'demo',
+      permissions: ['read'],
+      canLogout: true,
+    });
 
     render(<InstanceHeader />, {wrapper: createWrapper()});
 

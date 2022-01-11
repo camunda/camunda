@@ -178,7 +178,11 @@ describe('ListPanel', () => {
     });
 
     it('should render for restricted users', async () => {
-      authenticationStore.setPermissions(['read']);
+      authenticationStore.enableUserSession({
+        displayName: 'demo',
+        permissions: ['read'],
+        canLogout: true,
+      });
 
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>

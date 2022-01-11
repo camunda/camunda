@@ -5,9 +5,7 @@
  */
 
 const user = {
-  username: 'demo',
-  firstname: null,
-  lastname: null,
+  displayName: 'demo',
   canLogout: true,
 };
 

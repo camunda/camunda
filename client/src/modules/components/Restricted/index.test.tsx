@@ -14,7 +14,11 @@ describe('Restricted', () => {
   });
 
   it('should not render content that user has no permission for', () => {
-    authenticationStore.setPermissions(['read']);
+    authenticationStore.enableUserSession({
+      displayName: 'demo',
+      permissions: ['read'],
+      canLogout: true,
+    });
 
     render(
       <Restricted scopes={['write']}>
@@ -26,7 +30,11 @@ describe('Restricted', () => {
   });
 
   it('should render content that user has permission for at least one scope', () => {
-    authenticationStore.setPermissions(['read']);
+    authenticationStore.enableUserSession({
+      displayName: 'demo',
+      permissions: ['read'],
+      canLogout: true,
+    });
 
     render(
       <Restricted scopes={['read', 'write']}>
@@ -38,7 +46,11 @@ describe('Restricted', () => {
   });
 
   it('should render content that user has permission for', () => {
-    authenticationStore.setPermissions(['read', 'write']);
+    authenticationStore.enableUserSession({
+      displayName: 'demo',
+      permissions: ['read', 'write'],
+      canLogout: true,
+    });
 
     render(
       <Restricted scopes={['write']}>
@@ -50,7 +62,11 @@ describe('Restricted', () => {
   });
 
   it('should render content by default (user has no permissions defined)', () => {
-    authenticationStore.setPermissions(undefined);
+    authenticationStore.enableUserSession({
+      displayName: 'demo',
+      permissions: undefined,
+      canLogout: true,
+    });
 
     render(
       <Restricted scopes={['write']}>

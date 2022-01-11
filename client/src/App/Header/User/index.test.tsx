@@ -4,62 +4,46 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-  waitFor,
-} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-
 import {User} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {authenticationStore} from 'modules/stores/authentication';
+import Authentication from 'App/Authentication';
+import {MemoryRouter} from 'react-router-dom';
 
 const mockUser = {
-  firstname: 'Franz',
-  lastname: 'Kafka',
-  username: 'franzkafka',
+  displayName: 'Franz Kafka',
   canLogout: true,
 };
-const mockUserWithOnlyUsername = {
-  firstname: null,
-  lastname: null,
-  username: 'franzkafka',
-  canLogout: true,
-};
+
 const mockSsoUser = {
-  firstname: '',
-  lastname: 'Michael Jordan',
-  username: 'michaeljordan',
+  displayName: 'Michael Jordan',
   canLogout: false,
 };
-const previouslyLoggedInUser = {
-  firstname: 'Sponge',
-  lastname: 'Bob',
-  username: 'bob',
-  canLogout: true,
+
+type Props = {
+  children?: React.ReactNode;
+};
+
+const Wrapper = ({children}: Props) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>
+        <Authentication>{children} </Authentication>
+      </MemoryRouter>
+    </ThemeProvider>
+  );
 };
 
 describe('User', () => {
   afterEach(() => {
-    clearStateLocally();
+    authenticationStore.reset();
   });
 
-  it('should handle a previously logged in user', async () => {
-    storeStateLocally(previouslyLoggedInUser);
-
-    render(<User handleRedirect={() => {}} />, {
-      wrapper: ThemeProvider,
-    });
-
-    expect(await screen.findByText('Sponge Bob')).toBeInTheDocument();
-  });
-
-  it('should render a the user name and last name', async () => {
+  it('should render user display name', async () => {
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.json(mockUser))
@@ -67,39 +51,10 @@ describe('User', () => {
     );
 
     render(<User handleRedirect={() => {}} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
-  });
-
-  it('should handle render the username', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json(mockUserWithOnlyUsername))
-      )
-    );
-
-    render(<User handleRedirect={() => {}} />, {
-      wrapper: ThemeProvider,
-    });
-
-    expect(await screen.findByText('franzkafka')).toBeInTheDocument();
-  });
-
-  it('should render a skeleton', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json(mockUser))
-      )
-    );
-
-    render(<User handleRedirect={() => {}} />, {
-      wrapper: ThemeProvider,
-    });
-
-    expect(await screen.findByTestId('username-skeleton')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('username-skeleton'));
   });
 
   it('should handle a SSO user', async () => {
@@ -110,7 +65,7 @@ describe('User', () => {
     );
 
     render(<User handleRedirect={() => {}} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
@@ -131,7 +86,7 @@ describe('User', () => {
     const mockHandleRedirect = jest.fn();
 
     render(<User handleRedirect={mockHandleRedirect} />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     userEvent.click(await screen.findByText('Franz Kafka'));

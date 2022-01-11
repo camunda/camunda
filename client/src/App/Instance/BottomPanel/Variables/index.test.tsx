@@ -1089,7 +1089,11 @@ describe('Variables', () => {
 
   describe('Restricted user', () => {
     beforeAll(() => {
-      authenticationStore.setPermissions(['read']);
+      authenticationStore.enableUserSession({
+        displayName: 'demo',
+        permissions: ['read'],
+        canLogout: true,
+      });
     });
 
     afterAll(() => {
