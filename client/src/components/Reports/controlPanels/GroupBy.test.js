@@ -167,48 +167,17 @@ it('should pass null as a value to Select if groupBy is null', () => {
 it('should filter variables based on search query', () => {
   const node = shallow(<GroupBy {...config} variables={{variable: [{name: 'a'}, {name: 'b'}]}} />);
 
-  expect(node.find({value: 'variable_a'})).toExist();
-  expect(node.find({value: 'variable_b'})).toExist();
+  expect(node.find({value: 'variable_a'})).not.toHaveClassName('hidden');
+  expect(node.find({value: 'variable_b'})).not.toHaveClassName('hidden');
 
   node.find(Input).simulate('change', {target: {value: 'b'}});
 
-  expect(node.find({value: 'variable_a'})).not.toExist();
-  expect(node.find({value: 'variable_b'})).toExist();
-});
+  expect(node.find({value: 'variable_a'})).toHaveClassName('hidden');
+  expect(node.find({value: 'variable_b'})).not.toHaveClassName('hidden');
 
-it('should show the selected variable option in a hidden state if it was filtered by search', () => {
-  reportConfig.process.group = [
-    {
-      key: 'none',
-      matcher: jest.fn().mockReturnValue(false),
-      visible: jest.fn().mockReturnValue(true),
-      enabled: jest.fn().mockReturnValue(true),
-      label: jest.fn().mockReturnValue('None'),
-    },
-    {
-      key: 'variable',
-      matcher: jest.fn().mockReturnValue(true),
-      visible: jest.fn().mockReturnValue(true),
-      enabled: jest.fn().mockReturnValue(true),
-      label: jest.fn().mockReturnValue('Variable'),
-    },
-  ];
+  node.find(Input).simulate('change', {target: {value: 'notFoundValue'}});
 
-  const node = shallow(
-    <GroupBy
-      {...config}
-      report={{
-        ...config.report,
-        groupBy: {value: {name: 'a'}},
-      }}
-      variables={{variable: [{name: 'a'}, {name: 'b'}]}}
-    />
-  );
-
-  node.find(Input).simulate('change', {target: {value: 'b'}});
-
-  expect(node.find('.hidden').prop('value')).toBe('variable_a');
-  expect(node.find({value: 'variable_b'})).toExist();
+  expect(node.find({disabled: true}).children()).toIncludeText('No variables found');
 });
 
 it('should not fail if variables are null', () => {

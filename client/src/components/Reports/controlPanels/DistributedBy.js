@@ -39,20 +39,7 @@ export default function DistributedBy({report, onChange, variables}) {
     )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
-        const filtersVariables = variables?.filter(({name}) =>
-          name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        /**
-         *  The Select dropdown depends on the option dom element to figure out which element is selected
-         *  If we remove the element completely from the dom (e.g. when searching), the selected option checkmark
-         *  and the Select button label will not work, in that case, we add it again in a hidden state
-         *  to ensure that the select still indicate the selected option
-         */
-        const isSelectedOptionRemoved =
-          selectedOption.key === key &&
-          filtersVariables &&
-          !filtersVariables?.some(({name}) => report.distributedBy.value.name === name);
+        const matchQuery = ({name}) => name.toLowerCase().includes(searchQuery.toLowerCase());
 
         return (
           <Select.Submenu
@@ -71,25 +58,26 @@ export default function DistributedBy({report, onChange, variables}) {
                 onChange={({target: {value}}) => setSearchQuery(value)}
                 onClick={(evt) => evt.stopPropagation()}
                 onKeyDown={(evt) => evt.stopPropagation()}
+                // We progmatically trigger a click on the variable submenu on focus
+                // This prevents closing it when moving the mouse outside it
                 onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
               />
             </div>
-            {filtersVariables?.map?.(({name}, idx) => {
+            {variables?.map?.(({name}, idx) => {
               return (
-                <Select.Option key={idx} value={key + '_' + name} label={name}>
+                <Select.Option
+                  className={classnames({
+                    hidden: !matchQuery({name}),
+                  })}
+                  key={idx}
+                  value={key + '_' + name}
+                  label={name}
+                >
                   {formatters.getHighlightedText(name, searchQuery)}
                 </Select.Option>
               );
             })}
-            {isSelectedOptionRemoved && (
-              <Select.Option
-                className="hidden"
-                value={getValue(selectedOption.key, report.distributedBy)}
-              >
-                {report.distributedBy.value.name}
-              </Select.Option>
-            )}
-            {filtersVariables?.length === 0 && (
+            {variables?.filter(matchQuery).length === 0 && (
               <Select.Option disabled>{t('common.filter.variableModal.noVariables')}</Select.Option>
             )}
           </Select.Submenu>
