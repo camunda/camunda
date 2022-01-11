@@ -11,18 +11,11 @@ import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import org.slf4j.Logger;
 
-/**
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
- */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockContext implements Context {
 
-  private Logger logger;
-  private Configuration configuration;
+  private final Logger logger;
+  private final Configuration configuration;
   private RecordFilter filter;
-
-  public MockContext() {}
 
   public MockContext(final Logger logger, final Configuration configuration) {
     this.logger = logger;
@@ -34,17 +27,9 @@ public class MockContext implements Context {
     return logger;
   }
 
-  public void setLogger(final Logger logger) {
-    this.logger = logger;
-  }
-
   @Override
   public Configuration getConfiguration() {
     return configuration;
-  }
-
-  public void setConfiguration(final Configuration configuration) {
-    this.configuration = configuration;
   }
 
   public RecordFilter getFilter() {

@@ -26,9 +26,9 @@ import java.time.Instant;
  *
  * <pre>
  * final var zeebeContainer = new ZeebeContainer();
- * zeebeContainer.withEnv("zeebe.clock.controllable", "true") .start()
+ * zeebeContainer.withEnv("ZEEBE_CLOCK_CONTROLLED", "true") .start()
  * final var clockClient = new ClockActuatorClient(zeebeContainer.getExternalMonitoringAddress());
- * clockClient.setClock(Instant.now().minus(Duration.ofDays(1)));
+ * clockClient.pinZeebeTime(Instant.now().minus(Duration.ofDays(1)));
  * </pre>
  */
 public final class ClockActuatorClient {

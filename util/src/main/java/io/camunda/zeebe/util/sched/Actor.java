@@ -109,10 +109,8 @@ public abstract class Actor implements CloseableSilently, AsyncClosable, Concurr
     return String.format("Broker-%d-%s-%d", nodeId, name, partitionId);
   }
 
-  /**
-   * Invoked when a task throws an exception when the actor phase is not 'STARTING' and 'CLOSING'.
-   */
-  protected void handleFailure(final Exception failure) {
+  /** Invoked when a task throws and the actor phase is not 'STARTING' and 'CLOSING'. */
+  protected void handleFailure(final Throwable failure) {
     Loggers.ACTOR_LOGGER.error(
         "Uncaught exception in '{}' in phase '{}'. Continuing with next job.",
         getName(),

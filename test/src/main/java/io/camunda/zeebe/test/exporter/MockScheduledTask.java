@@ -12,15 +12,11 @@ import java.time.Duration;
 /**
  * Represents a single scheduled task through {@link MockController#scheduleTask(Duration,
  * Runnable)}. A call to its {@link #run()} method will only execute the underlying task once.
- *
- * @deprecated since 1.3.0. See issue <a
- *     href="https://github.com/camunda-cloud/zeebe/issues/8143">8143</a> for more information.
  */
-@Deprecated(since = "1.3.0", forRemoval = true)
 public class MockScheduledTask implements Runnable {
 
-  private Duration delay;
-  private Runnable task;
+  private final Duration delay;
+  private final Runnable task;
   private boolean executed;
   private boolean canceled;
 
@@ -33,18 +29,6 @@ public class MockScheduledTask implements Runnable {
 
   public Duration getDelay() {
     return delay;
-  }
-
-  public void setDelay(final Duration delay) {
-    this.delay = delay;
-  }
-
-  public Runnable getTask() {
-    return task;
-  }
-
-  public void setTask(final Runnable task) {
-    this.task = task;
   }
 
   @Override

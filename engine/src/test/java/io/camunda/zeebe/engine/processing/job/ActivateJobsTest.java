@@ -117,7 +117,10 @@ public final class ActivateJobsTest {
   @Test
   public void shouldAcceptEmptyWorker() {
     // given
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(taskType))
+        .deploy();
 
     final Duration timeout = Duration.ofMinutes(12);
 
@@ -137,7 +140,10 @@ public final class ActivateJobsTest {
   @Test
   public void shouldActivateSingleJob() {
     // given
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(taskType))
+        .deploy();
     final long firstInstanceKey = createProcessInstances(3, "{'foo':'bar'}").get(0);
 
     final long expectedJobKey =
@@ -272,7 +278,7 @@ public final class ActivateJobsTest {
     for (final String type : Arrays.asList(jobType, jobType2, jobType3)) {
       builder = builder.serviceTask(type, b -> b.zeebeJobType(type));
     }
-    ENGINE.deployment().withXmlResource(PROCESS_ID, builder.done()).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID + ".bpmn", builder.done()).deploy();
 
     final List<Long> processInstanceKeys = createProcessInstances(jobAmount, "{}");
 
@@ -308,7 +314,7 @@ public final class ActivateJobsTest {
             .endEvent()
             .done();
 
-    ENGINE.deployment().withXmlResource(PROCESS_ID, modelInstance).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID + ".bpmn", modelInstance).deploy();
     final long processInstanceKey = createProcessInstances(1, "{}").get(0);
     jobRecords(JobIntent.CREATED).withProcessInstanceKey(processInstanceKey).getFirst();
 
@@ -330,7 +336,10 @@ public final class ActivateJobsTest {
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
 
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(taskType))
+        .deploy();
     createProcessInstances(1, "{'foo':'bar'}");
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.CREATED).withType(taskType).getFirst();
@@ -406,7 +415,10 @@ public final class ActivateJobsTest {
     final var headerSize = ByteValue.ofKilobytes(2);
     final var maxRecordSize = maxMessageSize - headerSize;
 
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(taskType)).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(taskType))
+        .deploy();
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // since the variable update will write the variable twice, we need to split this off
@@ -481,7 +493,7 @@ public final class ActivateJobsTest {
 
   private List<Long> deployAndCreateJobs(
       final String type, final int amount, final String variables) {
-    ENGINE.deployment().withXmlResource(PROCESS_ID, MODEL_SUPPLIER.apply(type)).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_ID + ".bpmn", MODEL_SUPPLIER.apply(type)).deploy();
     final List<Long> instanceKeys = createProcessInstances(amount, variables);
 
     return jobRecords(JobIntent.CREATED)

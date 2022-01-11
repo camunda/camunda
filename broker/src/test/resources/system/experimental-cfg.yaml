@@ -6,5 +6,6 @@ zeebe:
         requestTimeout: 10s
         maxQuorumResponseTimeout: 8s
         minStepDownFailureCount: 5
+        preferSnapshotReplicationThreshold: 500
       queryApi:
         enabled: true

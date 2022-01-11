@@ -39,6 +39,8 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.time.Duration;
 import java.util.Iterator;
@@ -243,6 +245,15 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceResultRecordStream processInstanceResultRecords() {
     return new ProcessInstanceResultRecordStream(
         records(ValueType.PROCESS_INSTANCE_RESULT, ProcessInstanceResultRecordValue.class));
+  }
+
+  public static DecisionRecordStream decisionRecords() {
+    return new DecisionRecordStream(records(ValueType.DECISION, DecisionRecordValue.class));
+  }
+
+  public static DecisionRequirementsRecordStream decisionRequirementsRecords() {
+    return new DecisionRequirementsRecordStream(
+        records(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsRecordValue.class));
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

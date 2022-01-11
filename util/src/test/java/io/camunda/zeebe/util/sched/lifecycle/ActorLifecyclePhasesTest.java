@@ -268,7 +268,7 @@ public final class ActorLifecyclePhasesTest {
           }
 
           @Override
-          public void handleFailure(final Exception failure) {
+          public void handleFailure(final Throwable failure) {
             invocations.incrementAndGet();
           }
         };
@@ -301,7 +301,7 @@ public final class ActorLifecyclePhasesTest {
           }
 
           @Override
-          public void handleFailure(final Exception failure) {
+          public void handleFailure(final Throwable failure) {
             invocations.incrementAndGet();
           }
         };

@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.shared.ActorClockConfiguration;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -64,6 +65,9 @@ public class StandaloneBroker
   }
 
   public static void main(final String[] args) {
+    Thread.setDefaultUncaughtExceptionHandler(
+        FatalErrorHandler.uncaughtExceptionHandler(Loggers.SYSTEM_LOGGER));
+
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
     final var application =
         new SpringApplicationBuilder(StandaloneBroker.class)

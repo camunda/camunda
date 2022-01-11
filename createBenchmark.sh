@@ -1,5 +1,5 @@
 #!/bin/bash
-set -exo pipefail
+set -eo pipefail
 
 # The purpose of this script is to make it easier for developers to setup new benchmarks.
 # As input the benchmark name is expected, which is used for the docker image tag and k8 namespace.
@@ -15,18 +15,32 @@ set -exo pipefail
 # Contains OS specific sed function
 source benchmarks/setup/utils.sh
 
-if [ -z $1 ]
-then
-  echo "Please provide a benchmark name! Format should be 'YOUR_NAME-TOPIC'"
+function printUsageAndExit {
+  printf "\nUsage ./createBenchmark <benchmark-name>\n"
   exit 1
+}
+
+if [[ -z $1 ]]
+then
+  echo "<benchmark-name> not provided"
+  printUsageAndExit
 fi
 benchmark=$1
+
+# DNS Label regex, see https://regex101.com/r/vjsrEy/2
+if [[ ! $benchmark =~ ^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$ ]]; then
+  echo "<benchmark-name> '$benchmark' not a valid DNS label"
+  echo "See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names"
+  printUsageAndExit
+fi
 
 # Check if docker daemon is running
 if ! docker info >/dev/null 2>&1; then
     echo "Docker daemon does not seem to be running, make sure it's running and retry"
     exit 1
 fi
+
+set -x
 
 mvn clean install -DskipTests -DskipChecks -T1C
 

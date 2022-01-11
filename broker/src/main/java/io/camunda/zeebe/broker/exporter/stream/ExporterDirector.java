@@ -227,7 +227,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   @Override
-  protected void handleFailure(final Exception failure) {
+  protected void handleFailure(final Throwable failure) {
     LOG.error(
         "Actor '{}' failed in phase {} with: {} .",
         name,

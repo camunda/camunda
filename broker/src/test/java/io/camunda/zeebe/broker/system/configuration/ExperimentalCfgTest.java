@@ -86,4 +86,27 @@ public class ExperimentalCfgTest {
     // then
     assertThat(raft.getMinStepDownFailureCount()).isEqualTo(10);
   }
+
+  @Test
+  public void shouldSetPreferSnapshotReplicationThresholdFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getPreferSnapshotReplicationThreshold()).isEqualTo(500);
+  }
+
+  @Test
+  public void shouldSetPreferSnapshotReplicationThresholdFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.raft.preferSnapshotReplicationThreshold", "10");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getPreferSnapshotReplicationThreshold()).isEqualTo(10);
+  }
 }
