@@ -1,4 +1,0 @@
-{"index":{"_index":"optimize-external-process-variable_v1-000001","_id":"extVar-1"}}
-{"variableId":"extVar-1","variableName":"aName","variableValue":"aValue","variableType":"String","ingestionTimestamp":1635781642410,"processInstanceId":"anInstanceId","processDefinitionKey":"aDefinitionKey"}
-{"index":{"_index":"optimize-external-process-variable_v1-000001","_id":"extVar-2"}}
-{"variableId":"extVar-2","variableName":"anotherName","variableValue":123,"variableType":"Integer","ingestionTimestamp":1635781642415,"processInstanceId":"anInstanceId","processDefinitionKey":"aDefinitionKey"}
