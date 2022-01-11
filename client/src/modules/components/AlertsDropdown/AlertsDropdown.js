@@ -86,9 +86,11 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
     );
   };
 
-  const alertsInScope = alerts.filter((alert) => reports.some(({id}) => id === alert.reportId));
   const reportsInScope = reports.filter((report) =>
     (dashboardReports || [numberReport]).some(({id}) => report.id === id)
+  );
+  const alertsInScope = alerts.filter((alert) =>
+    reportsInScope.some(({id}) => id === alert.reportId)
   );
 
   if (!collection) {

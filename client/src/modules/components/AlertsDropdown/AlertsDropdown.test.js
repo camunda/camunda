@@ -37,12 +37,30 @@ jest.mock('services', () => {
         name: 'Report 2',
       },
       {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'},
+      {
+        id: '4',
+        data: {
+          visualization: 'number',
+          view: {properties: ['duration']},
+          configuration: {aggregationTypes: ['avg']},
+        },
+        name: 'Report 4',
+      },
     ]),
     loadAlerts: jest.fn().mockReturnValue([
       {
-        id: 'alertID',
+        id: 'alert1',
         emails: ['test@hotmail.com'],
-        name: 'Some Alert',
+        name: 'first Alert',
+        lastModifier: 'Admin',
+        lastModified: '2017-11-11T11:11:11.1111+0200',
+        reportId: '4',
+        webhook: null,
+      },
+      {
+        id: 'alert2',
+        emails: ['test@hotmail.com'],
+        name: 'second Alert',
         lastModifier: 'Admin',
         lastModified: '2017-11-11T11:11:11.1111+0200',
         reportId: '2',
@@ -104,16 +122,16 @@ it('should create new alert', async () => {
 });
 
 it('should edit an alert', async () => {
-  const node = shallow(<AlertsDropdown {...props} />);
+  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '4'}]} />);
 
   runAllEffects();
 
   node.find(Dropdown.Option).at(1).simulate('click');
 
-  const updatedAlert = {id: 'alertID', name: 'newName'};
+  const updatedAlert = {id: 'alert1', name: 'newName'};
   node.find(AlertModal).prop('onConfirm')(updatedAlert);
 
-  expect(editAlert).toHaveBeenCalledWith('alertID', updatedAlert);
+  expect(editAlert).toHaveBeenCalledWith('alert1', updatedAlert);
   expect(node.find(AlertModal)).not.toExist();
 });
 
@@ -128,8 +146,19 @@ it('should pass only reports in scope', async () => {
   expect(node.find(AlertModal).prop('reports')[0].id).toBe('2');
 });
 
+it('should show only alerts in scope', async () => {
+  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '2'}]} />);
+
+  runAllEffects();
+
+  expect(node.find(Dropdown.Option).length).toBe(2);
+  expect(node.find(Dropdown.Option).at(1)).toIncludeText('second Alert');
+});
+
 it('should pass number report id to alert modal', async () => {
-  const node = shallow(<AlertsDropdown {...props} numberReport={{id: '2'}} />);
+  const node = shallow(
+    <AlertsDropdown {...props} dashboardReports={undefined} numberReport={{id: '2'}} />
+  );
 
   runAllEffects();
 
@@ -139,17 +168,17 @@ it('should pass number report id to alert modal', async () => {
 });
 
 it('should delete an alert', async () => {
-  const node = shallow(<AlertsDropdown {...props} />);
+  const node = shallow(<AlertsDropdown {...props} dashboardReports={[{id: '4'}]} />);
 
   runAllEffects();
 
   node.find(Dropdown.Option).at(1).simulate('click');
   node.find(AlertModal).prop('onRemove')();
 
-  expect(node.find(Deleter).prop('entity').id).toBe('alertID');
+  expect(node.find(Deleter).prop('entity').id).toBe('alert1');
 
-  node.find(Deleter).prop('deleteEntity')({id: 'alertID'});
+  node.find(Deleter).prop('deleteEntity')({id: 'alert1'});
   await flushPromises();
 
-  expect(removeAlert).toHaveBeenCalledWith('alertID');
+  expect(removeAlert).toHaveBeenCalledWith('alert1');
 });
