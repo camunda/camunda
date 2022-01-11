@@ -51,7 +51,8 @@ export default function DistributedBy({report, onChange, variables}) {
          */
         const isSelectedOptionRemoved =
           selectedOption.key === key &&
-          !filtersVariables.some(({name}) => report.distributedBy.value.name === name);
+          filtersVariables &&
+          !filtersVariables?.some(({name}) => report.distributedBy.value.name === name);
 
         return (
           <Select.Submenu

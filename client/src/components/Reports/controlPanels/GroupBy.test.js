@@ -210,3 +210,42 @@ it('should show the selected variable option in a hidden state if it was filtere
   expect(node.find('.hidden').prop('value')).toBe('variable_a');
   expect(node.find({value: 'variable_b'})).toExist();
 });
+
+it('should not fail if variables are null', () => {
+  reportConfig.process.group = [
+    {
+      key: 'none',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('None'),
+    },
+    {
+      key: 'group1',
+      matcher: jest.fn().mockReturnValue(false),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Group 1'),
+    },
+    {
+      key: 'variable',
+      matcher: jest.fn().mockReturnValue(true),
+      visible: jest.fn().mockReturnValue(true),
+      enabled: jest.fn().mockReturnValue(true),
+      label: jest.fn().mockReturnValue('Variable'),
+    },
+  ];
+
+  const node = shallow(
+    <GroupBy
+      {...config}
+      report={{
+        ...config.report,
+        groupBy: {value: {name: 'a'}},
+      }}
+      variables={{variable: null}}
+    />
+  );
+
+  expect(node.find({label: 'Variable'}).prop('disabled')).toBe(true);
+});

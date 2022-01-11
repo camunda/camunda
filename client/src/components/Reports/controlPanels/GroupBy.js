@@ -63,6 +63,7 @@ export default function GroupBy({type, report, onChange, variables}) {
          */
         const isSelectedOptionRemoved =
           selectedOption.key === key &&
+          filtersVariables &&
           !filtersVariables.some(({name}) => report.groupBy.value.name === name);
 
         return (
