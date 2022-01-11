@@ -11,6 +11,7 @@ import {config} from '../config';
 import {cmInstanceIdsField, setup} from './InstancesTable.setup';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {displayOptionalFilter} from './utils/displayOptionalFilter';
 
 fixture('InstancesTable')
   .page(config.endpoint)
@@ -43,6 +44,10 @@ test('Sorting', async (t) => {
     instances.processB_v_1[0].processInstanceKey,
     instances.processB_v_2[0].processInstanceKey,
   ].sort();
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
 
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField

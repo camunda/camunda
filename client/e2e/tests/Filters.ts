@@ -30,6 +30,7 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {displayOptionalFilter} from './utils/displayOptionalFilter';
 
 fixture('Filters')
   .page(config.endpoint)
@@ -114,6 +115,10 @@ test('Instance IDs filter', async (t) => {
     .queryAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
 
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
+
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField
     : screen.queryByRole('textbox', {
@@ -162,8 +167,13 @@ test('Instance IDs filter', async (t) => {
     )
     .gt(1);
 
-  // filter has been reset
-  await t.expect(instanceIdsField.value).eql('');
+  if (IS_NEW_FILTERS_FORM) {
+    // instance ids filter is hidden
+    await t.expect(screen.queryByTestId('filter-instance-ids').exists).notOk();
+  } else {
+    // filter has been reset
+    await t.expect(instanceIdsField.value).eql('');
+  }
 
   // changes reflected in the url
   await t
@@ -188,6 +198,10 @@ test('Parent Instance Id filter', async (t) => {
     : screen.queryByRole('checkbox', {name: 'Completed'});
 
   await t.click(completedCheckbox);
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Parent Instance Id');
+  }
 
   const parentInstanceIdField = IS_NEW_FILTERS_FORM
     ? cmParentInstanceIdField
@@ -224,8 +238,15 @@ test('Parent Instance Id filter', async (t) => {
     )
     .gt(1);
 
-  // filter has been reset
-  await t.expect(parentInstanceIdField.value).eql('');
+  if (IS_NEW_FILTERS_FORM) {
+    // parent id filter is hidden
+    await t
+      .expect(screen.queryByTestId('filter-parent-instance-id').exists)
+      .notOk();
+  } else {
+    // filter has been reset
+    await t.expect(parentInstanceIdField.value).eql('');
+  }
 });
 
 test('Error Message filter', async (t) => {
@@ -237,6 +258,10 @@ test('Error Message filter', async (t) => {
 
   const errorMessage =
     "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Error Message');
+  }
 
   const errorMessageField = IS_NEW_FILTERS_FORM
     ? cmErrorMessageField
@@ -275,8 +300,13 @@ test('Error Message filter', async (t) => {
     )
     .eql(instanceCount);
 
-  // filter has been reset
-  await t.expect(errorMessageField.value).eql('');
+  if (IS_NEW_FILTERS_FORM) {
+    // error message filter is hidden
+    await t.expect(screen.queryByTestId('filter-error-message').exists).notOk();
+  } else {
+    // filter has been reset
+    await t.expect(errorMessageField.value).eql('');
+  }
 
   // changes reflected in the url
   await t
@@ -295,6 +325,10 @@ test('End Date filter', async (t) => {
   const {
     initialData: {instanceToCancel},
   } = t.fixtureCtx;
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
 
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField
@@ -349,6 +383,10 @@ test('End Date filter', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('End Date');
+  }
+
   const endDateField = IS_NEW_FILTERS_FORM
     ? cmEndDateField
     : screen.queryByRole('textbox', {name: /end date/i});
@@ -387,8 +425,13 @@ test('End Date filter', async (t) => {
     )
     .eql(instanceCount);
 
-  // filter has been reset
-  await t.expect(endDateField.value).eql('');
+  if (IS_NEW_FILTERS_FORM) {
+    // end date filter is hidden
+    await t.expect(screen.queryByTestId('filter-end-date').exists).notOk();
+  } else {
+    // filter has been reset
+    await t.expect(endDateField.value).eql('');
+  }
 
   // changes reflected in the url
   await t
@@ -404,6 +447,10 @@ test('End Date filter', async (t) => {
 });
 
 test('Variable filter', async (t) => {
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Variable');
+  }
+
   const variableNameField = IS_NEW_FILTERS_FORM
     ? cmVariableNameField
     : screen.queryByRole('textbox', {name: /variable/i});
@@ -455,10 +502,18 @@ test('Variable filter', async (t) => {
     )
     .eql(instanceCount);
 
-  // filter has been reset
-  await t.expect(variableNameField.value).eql('');
+  if (IS_NEW_FILTERS_FORM) {
+    // variable name and value filters are hidden
+    await t.expect(screen.queryByTestId('filter-variable-name').exists).notOk();
+    await t
+      .expect(screen.queryByTestId('filter-variable-value').exists)
+      .notOk();
+  } else {
+    // filter has been reset
+    await t.expect(variableNameField.value).eql('');
 
-  await t.expect(variableValueField.value).eql('');
+    await t.expect(variableValueField.value).eql('');
+  }
 
   await t
     .expect(await getPathname())
@@ -476,6 +531,10 @@ test('Operation ID filter', async (t) => {
   const {
     initialData: {instanceToCancelForOperations},
   } = t.fixtureCtx;
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
 
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField
@@ -521,6 +580,10 @@ test('Operation ID filter', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
 
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Operation Id');
+  }
+
   const operationIdField = IS_NEW_FILTERS_FORM
     ? cmOperationIdField
     : screen.queryByRole('textbox', {name: /operation id/i});
@@ -565,8 +628,13 @@ test('Operation ID filter', async (t) => {
     )
     .eql(instanceCount);
 
-  // filter has been reset
-  await t.expect(operationIdField.value).eql('');
+  if (IS_NEW_FILTERS_FORM) {
+    // operation id filter is hidden
+    await t.expect(screen.queryByTestId('filter-operation-id').exists).notOk();
+  } else {
+    // filter has been reset
+    await t.expect(operationIdField.value).eql('');
+  }
 
   await t
     .expect(await getPathname())
@@ -1608,3 +1676,116 @@ test('Should set filters from url', async (t) => {
       .ok();
   }
 });
+
+(IS_NEW_FILTERS_FORM ? test : test.skip)(
+  'Should order optional filters',
+  async (t) => {
+    await displayOptionalFilter('Error Message');
+    await displayOptionalFilter('Parent Instance Id');
+    await displayOptionalFilter('End Date');
+    await displayOptionalFilter('Variable');
+    await displayOptionalFilter('Start Date');
+    await displayOptionalFilter('Instance Id(s)');
+    await displayOptionalFilter('Operation Id');
+
+    await t
+      .expect(
+        screen.getByTestId('filter-operation-id').parent().getAttribute('order')
+      )
+      .eql('6');
+    await t
+      .expect(
+        screen.getByTestId('filter-instance-ids').parent().getAttribute('order')
+      )
+      .eql('5');
+    await t
+      .expect(
+        screen.getByTestId('filter-start-date').parent().getAttribute('order')
+      )
+      .eql('4');
+    await t
+      .expect(
+        screen
+          .getByTestId('filter-variable-name')
+          .parent()
+          .getAttribute('order')
+      )
+      .eql('3');
+    await t
+      .expect(
+        screen.getByTestId('filter-end-date').parent().getAttribute('order')
+      )
+      .eql('2');
+    await t
+      .expect(
+        screen
+          .getByTestId('filter-parent-instance-id')
+          .parent()
+          .getAttribute('order')
+      )
+      .eql('1');
+    await t
+      .expect(
+        screen
+          .getByTestId('filter-error-message')
+          .parent()
+          .getAttribute('order')
+      )
+      .eql('0');
+
+    await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+
+    await displayOptionalFilter('Variable');
+    await displayOptionalFilter('Start Date');
+    await displayOptionalFilter('Parent Instance Id');
+    await displayOptionalFilter('Operation Id');
+    await displayOptionalFilter('End Date');
+    await displayOptionalFilter('Error Message');
+    await displayOptionalFilter('Instance Id(s)');
+
+    await t
+      .expect(
+        screen.getByTestId('filter-instance-ids').parent().getAttribute('order')
+      )
+      .eql('6');
+    await t
+      .expect(
+        screen
+          .getByTestId('filter-error-message')
+          .parent()
+          .getAttribute('order')
+      )
+      .eql('5');
+    await t
+      .expect(
+        screen.getByTestId('filter-end-date').parent().getAttribute('order')
+      )
+      .eql('4');
+    await t
+      .expect(
+        screen.getByTestId('filter-operation-id').parent().getAttribute('order')
+      )
+      .eql('3');
+    await t
+      .expect(
+        screen
+          .getByTestId('filter-parent-instance-id')
+          .parent()
+          .getAttribute('order')
+      )
+      .eql('2');
+    await t
+      .expect(
+        screen.getByTestId('filter-start-date').parent().getAttribute('order')
+      )
+      .eql('1');
+    await t
+      .expect(
+        screen
+          .getByTestId('filter-variable-name')
+          .parent()
+          .getAttribute('order')
+      )
+      .eql('0');
+  }
+);

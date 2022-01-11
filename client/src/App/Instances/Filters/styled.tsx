@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 import Panel from 'modules/components/Panel';
-import {CmText} from '@camunda-cloud/common-ui-react';
+import {CmText, CmDropdown} from '@camunda-cloud/common-ui-react';
 
 const FiltersForm = styled.form`
   width: 100%;
@@ -16,30 +16,9 @@ const FiltersForm = styled.form`
   flex-direction: column;
 `;
 
-const Row = styled.div`
-  width: 100%;
-  height: fit-content;
-  padding-left: 20px;
+const OrderedFilters = styled.div`
   display: flex;
-
-  &:not(:last-child) {
-    padding-bottom: 20px;
-  }
-
-  &:first-child {
-    padding-top: 20px;
-  }
-
-  & textarea,
-  & input,
-  & select {
-    width: calc(100% - 20px);
-  }
-`;
-
-const VariableHeader = styled(CmText)`
-  display: block;
-  padding: 0 0 8px 20px;
+  flex-direction: column-reverse;
 `;
 
 const ResetButtonContainer = styled(Panel.Footer)`
@@ -75,13 +54,18 @@ const InstanceStates = styled.div`
   padding-left: 20px;
 `;
 
+const MoreFiltersDropdown = styled(CmDropdown)`
+  display: flex;
+  justify-content: flex-end;
+`;
+
 export {
   FiltersForm,
-  Row,
-  VariableHeader,
   ResetButtonContainer,
   Fields,
   ProcessHeader,
   StatesHeader,
   InstanceStates,
+  OrderedFilters,
+  MoreFiltersDropdown,
 };

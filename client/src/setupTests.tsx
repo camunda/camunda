@@ -12,6 +12,7 @@ import React from 'react';
 import {Textfield as MockTextfield} from 'modules/mocks/common-ui/Textfield';
 import {Checkbox as MockCheckbox} from 'modules/mocks/common-ui/Checkbox';
 import {Select as MockSelect} from 'modules/mocks/common-ui/Select';
+import {Dropdown as MockDropdown} from 'modules/mocks/common-ui/Dropdown';
 
 class MockJSONEditor {
   updateText() {}
@@ -38,6 +39,7 @@ jest.mock('@camunda-cloud/common-ui-react', () => {
     CmTextfield: MockTextfield,
     CmCheckbox: MockCheckbox,
     CmSelect: MockSelect,
+    CmDropdown: MockDropdown,
   };
 });
 

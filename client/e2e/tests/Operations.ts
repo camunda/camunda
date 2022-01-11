@@ -14,6 +14,7 @@ import {
 } from './Operations.setup';
 import {DATE_REGEX} from './constants';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
+import {displayOptionalFilter} from './utils/displayOptionalFilter';
 
 fixture('Operations')
   .page(config.endpoint)
@@ -44,6 +45,10 @@ test('infinite scrolling', async (t) => {
 test('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
 
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField
@@ -152,6 +157,10 @@ test('Retry and cancel multiple instances ', async (t) => {
   const instancesListItems = within(
     screen.queryByTestId('operations-list')
   ).getAllByRole('listitem');
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
 
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField

@@ -24,6 +24,7 @@ import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
 import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {displayOptionalFilter} from './utils/displayOptionalFilter';
 
 fixture('Instances')
   .page(config.endpoint)
@@ -96,6 +97,10 @@ test('Instances Page Initial Load', async (t) => {
     )
     .ok();
 
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
+
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField
     : screen.queryByRole('textbox', {
@@ -136,6 +141,10 @@ test('Select flow node in diagram', async (t) => {
       name: /view instances/i,
     })
   );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+  }
 
   const instanceIdsField = IS_NEW_FILTERS_FORM
     ? cmInstanceIdsField

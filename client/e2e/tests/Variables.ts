@@ -19,6 +19,7 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
 import {IS_NEW_FILTERS_FORM} from '../../src/modules/feature-flags';
+import {displayOptionalFilter} from './utils/displayOptionalFilter';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
@@ -378,6 +379,7 @@ test('Add variables', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
+
   await t.navigateTo(`/instances/${instance.processInstanceKey}`);
 
   await t
@@ -454,6 +456,18 @@ test('Add variables', async (t) => {
     .ok();
 
   // go to instance page, filter and find the instance by added variable
+
+  await t.click(
+    screen.queryByRole('link', {
+      name: /view instances/i,
+    })
+  );
+
+  if (IS_NEW_FILTERS_FORM) {
+    await displayOptionalFilter('Instance Id(s)');
+    await displayOptionalFilter('Variable');
+  }
+
   const variableNameFilter = IS_NEW_FILTERS_FORM
     ? cmVariableNameFilter
     : screen.queryByRole('textbox', {name: 'Variable'});
@@ -467,11 +481,6 @@ test('Add variables', async (t) => {
       });
 
   await t
-    .click(
-      screen.queryByRole('link', {
-        name: /view instances/i,
-      })
-    )
     .typeText(variableNameFilter, 'secondTestKey')
     .typeText(variableValueFilter, '"secondTestValue"')
     .typeText(instanceIdsFilter, instance.processInstanceKey);

@@ -21,6 +21,31 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processesStore} from 'modules/stores/processes';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {mockProcessXML} from 'modules/testUtils';
+import {visibleFiltersStore} from 'modules/stores/visibleFilters';
+
+type OptionalFilter =
+  | 'Variable'
+  | 'Instance Id(s)'
+  | 'Operation Id'
+  | 'Parent Instance Id'
+  | 'Error Message'
+  | 'Start Date'
+  | 'End Date';
+
+const displayOptionalFilter = (filterName: OptionalFilter) => {
+  userEvent.click(screen.getByTestId('more-filters-dropdown'));
+  userEvent.click(
+    within(screen.getByTestId('more-filters-dropdown')).getByText(filterName)
+  );
+};
+
+const validateFieldRemovedFromDropdown = (filterName: string) => {
+  userEvent.click(screen.getByTestId('more-filters-dropdown'));
+  expect(
+    // eslint-disable-next-line testing-library/prefer-presence-queries
+    within(screen.getByTestId('more-filters-dropdown')).queryByText(filterName)
+  ).not.toBeInTheDocument();
+};
 
 const GROUPED_PROCESSES = [
   {
@@ -95,6 +120,7 @@ describe('Filters', () => {
   afterEach(() => {
     processesStore.reset();
     instancesDiagramStore.reset();
+    visibleFiltersStore.reset();
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -225,15 +251,7 @@ describe('Filters', () => {
 
     expect(screen.getByTestId('filter-process-name')).toHaveValue('');
     expect(screen.getByTestId('filter-process-version')).toHaveValue('all');
-    expect(screen.getByTestId('filter-instance-ids')).toHaveValue('');
-    expect(screen.getByTestId('filter-parent-instance-id')).toHaveValue('');
-    expect(screen.getByTestId('filter-error-message')).toHaveValue('');
-    expect(screen.getByTestId('filter-start-date')).toHaveValue('');
-    expect(screen.getByTestId('filter-end-date')).toHaveValue('');
     expect(screen.getByTestId('filter-flow-node')).toHaveValue('');
-    expect(screen.getByTestId('filter-variable-name')).toHaveValue('');
-    expect(screen.getByTestId('filter-variable-value')).toHaveValue('');
-    expect(screen.getByTestId('filter-operation-id')).toHaveValue('');
     expect(screen.getByTestId(/active/)).not.toBeChecked();
     expect(screen.getByTestId(/incidents/)).not.toBeChecked();
     expect(screen.getByTestId(/completed/)).not.toBeChecked();
@@ -242,25 +260,36 @@ describe('Filters', () => {
     userEvent.selectOptions(screen.getByTestId('filter-process-name'), [
       'Big variable process',
     ]);
+
+    displayOptionalFilter('Instance Id(s)');
     userEvent.paste(screen.getByTestId('filter-instance-ids'), MOCK_VALUES.ids);
+
+    displayOptionalFilter('Parent Instance Id');
     userEvent.paste(
       screen.getByTestId('filter-parent-instance-id'),
       MOCK_VALUES.parentInstanceId
     );
 
+    displayOptionalFilter('Error Message');
     userEvent.paste(
       screen.getByTestId('filter-error-message'),
       MOCK_VALUES.errorMessage
     );
+
+    displayOptionalFilter('Start Date');
     userEvent.paste(
       screen.getByTestId('filter-start-date'),
       MOCK_VALUES.startDate
     );
+
+    displayOptionalFilter('End Date');
     userEvent.paste(screen.getByTestId('filter-end-date'), MOCK_VALUES.endDate);
 
     userEvent.selectOptions(screen.getByTestId('filter-flow-node'), [
       MOCK_VALUES.flowNodeId,
     ]);
+
+    displayOptionalFilter('Variable');
     userEvent.paste(
       screen.getByTestId('filter-variable-name'),
       MOCK_VALUES.variableName
@@ -269,10 +298,13 @@ describe('Filters', () => {
       screen.getByTestId('filter-variable-value'),
       MOCK_VALUES.variableValue
     );
+
+    displayOptionalFilter('Operation Id');
     userEvent.paste(
       screen.getByTestId('filter-operation-id'),
       MOCK_VALUES.operationId
     );
+
     userEvent.click(screen.getByTestId(/active/));
     userEvent.click(screen.getByTestId(/incidents/));
     userEvent.click(screen.getByTestId(/completed/));
@@ -292,6 +324,7 @@ describe('Filters', () => {
       wrapper: getWrapper(),
     });
 
+    displayOptionalFilter('Variable');
     userEvent.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
@@ -318,6 +351,8 @@ describe('Filters', () => {
       });
 
       expect(MOCK_HISTORY.location.search).toBe('');
+
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), 'a');
 
       expect(
@@ -362,6 +397,7 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
+      displayOptionalFilter('Parent Instance Id');
       userEvent.type(screen.getByTestId('filter-parent-instance-id'), 'a');
 
       expect(
@@ -413,6 +449,7 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
+      displayOptionalFilter('Start Date');
       userEvent.type(screen.getByTestId('filter-start-date'), 'a');
 
       expect(
@@ -445,6 +482,7 @@ describe('Filters', () => {
 
       expect(MOCK_HISTORY.location.search).toBe('');
 
+      displayOptionalFilter('End Date');
       userEvent.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
@@ -475,6 +513,8 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
       expect(MOCK_HISTORY.location.search).toBe('');
+
+      displayOptionalFilter('Variable');
 
       userEvent.type(
         screen.getByTestId('filter-variable-value'),
@@ -513,6 +553,8 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
       expect(MOCK_HISTORY.location.search).toBe('');
+
+      displayOptionalFilter('Variable');
 
       userEvent.type(
         screen.getByTestId('filter-variable-name'),
@@ -566,6 +608,8 @@ describe('Filters', () => {
       });
       expect(MOCK_HISTORY.location.search).toBe('');
 
+      displayOptionalFilter('Operation Id');
+
       userEvent.type(screen.getByTestId('filter-operation-id'), 'g');
 
       expect(
@@ -617,11 +661,14 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Operation Id');
       userEvent.type(screen.getByTestId('filter-operation-id'), 'a');
 
       expect(
         await screen.findByText('Id has to be a UUID')
       ).toBeInTheDocument();
+
+      displayOptionalFilter('Instance Id(s)');
 
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
@@ -645,6 +692,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -653,6 +701,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
+      displayOptionalFilter('Operation Id');
       userEvent.type(screen.getByTestId('filter-operation-id'), 'abc');
 
       expect(
@@ -681,6 +730,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -689,6 +739,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
+      displayOptionalFilter('Start Date');
       userEvent.type(screen.getByTestId('filter-start-date'), '2021');
 
       expect(
@@ -717,6 +768,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -725,6 +777,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
+      displayOptionalFilter('End Date');
       userEvent.type(screen.getByTestId('filter-end-date'), 'a');
 
       expect(
@@ -753,6 +806,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -761,6 +815,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
+      displayOptionalFilter('Variable');
       userEvent.type(screen.getByTestId('filter-variable-value'), 'a');
 
       expect(
@@ -793,6 +848,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -801,6 +857,7 @@ describe('Filters', () => {
         )
       ).toBeInTheDocument();
 
+      displayOptionalFilter('Variable');
       userEvent.type(screen.getByTestId('filter-variable-name'), 'a');
 
       expect(
@@ -829,6 +886,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -879,6 +937,7 @@ describe('Filters', () => {
         wrapper: getWrapper(MOCK_HISTORY),
       });
 
+      displayOptionalFilter('Instance Id(s)');
       userEvent.type(screen.getByTestId('filter-instance-ids'), '1');
 
       expect(
@@ -941,6 +1000,9 @@ describe('Filters', () => {
         wrapper: getWrapper(),
       });
 
+      displayOptionalFilter('Start Date');
+      displayOptionalFilter('End Date');
+
       userEvent.type(screen.getByTestId('filter-start-date'), '2021');
 
       userEvent.type(screen.getByTestId('filter-end-date'), '2021');
@@ -950,6 +1012,427 @@ describe('Filters', () => {
           screen.queryAllByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
         ).toHaveLength(2)
       );
+    });
+    describe('Optional Filters', () => {
+      it('should initially hide optional filters', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        expect(
+          screen.queryByTestId('filter-variable-name')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-variable-value')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-instance-ids')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-operation-id')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-parent-instance-id')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-error-message')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-start-date')
+        ).not.toBeInTheDocument();
+        expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
+      });
+
+      it('should display variable fields on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('Variable');
+
+        expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('Variable');
+      });
+
+      it('should display instance ids field on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('Instance Id(s)');
+
+        expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('Instance Id(s)');
+      });
+
+      it('should display operation id field on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('Operation Id');
+
+        expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('Operation Id');
+      });
+
+      it('should display parent instance id field on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('Parent Instance Id');
+
+        expect(
+          screen.getByTestId('filter-parent-instance-id')
+        ).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('Parent Instance Id');
+      });
+
+      it('should display error message field on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('Error Message');
+
+        expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('Error Message');
+      });
+
+      it('should display start date field on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('Start Date');
+
+        expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('Start Date');
+      });
+
+      it('should display end date field on click', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+        displayOptionalFilter('End Date');
+
+        expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
+        validateFieldRemovedFromDropdown('End Date');
+      });
+
+      it('should hide more filters button when all optional filters are visible', async () => {
+        render(<Filters />, {
+          wrapper: getWrapper(),
+        });
+
+        expect(screen.getByTestId('more-filters-dropdown')).toBeInTheDocument();
+        displayOptionalFilter('Variable');
+        displayOptionalFilter('Instance Id(s)');
+        displayOptionalFilter('Operation Id');
+        displayOptionalFilter('Parent Instance Id');
+        displayOptionalFilter('Error Message');
+        displayOptionalFilter('Start Date');
+        displayOptionalFilter('End Date');
+
+        expect(
+          screen.queryByTestId('more-filters-dropdown')
+        ).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-variable'));
+
+        expect(screen.getByTestId('more-filters-dropdown')).toBeInTheDocument();
+      });
+
+      it('should delete optional filters', async () => {
+        const MOCK_PARAMS = {
+          process: 'bigVarProcess',
+          version: '1',
+          ids: '2251799813685467',
+          parentInstanceId: '1954699813693756',
+          errorMessage: 'a random error',
+          startDate: '2021-02-21 18:17:18',
+          endDate: '2021-02-23 18:17:18',
+          flowNodeId: 'ServiceTask_0kt6c5i',
+          variableName: 'foo',
+          variableValue: 'bar',
+          operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+          active: 'true',
+          incidents: 'true',
+          completed: 'true',
+          canceled: 'true',
+        } as const;
+
+        const MOCK_HISTORY = createMemoryHistory({
+          initialEntries: [
+            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+          ],
+        });
+
+        render(<Filters />, {
+          wrapper: getWrapper(MOCK_HISTORY),
+        });
+
+        expect(MOCK_HISTORY.location.search).toBe(
+          `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        );
+
+        expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('filter-parent-instance-id')
+        ).toBeInTheDocument();
+        expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-ids'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                parentInstanceId: '1954699813693756',
+                errorMessage: 'a random error',
+                startDate: '2021-02-21 18:17:18',
+                endDate: '2021-02-23 18:17:18',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                variableName: 'foo',
+                variableValue: 'bar',
+                operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+
+        expect(
+          screen.queryByTestId('filter-instance-ids')
+        ).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-parentInstanceId'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                errorMessage: 'a random error',
+                startDate: '2021-02-21 18:17:18',
+                endDate: '2021-02-23 18:17:18',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                variableName: 'foo',
+                variableValue: 'bar',
+                operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+        expect(
+          screen.queryByTestId('filter-parent-instance-id')
+        ).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-errorMessage'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                startDate: '2021-02-21 18:17:18',
+                endDate: '2021-02-23 18:17:18',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                variableName: 'foo',
+                variableValue: 'bar',
+                operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+        expect(
+          screen.queryByTestId('filter-error-message')
+        ).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-startDate'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                endDate: '2021-02-23 18:17:18',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                variableName: 'foo',
+                variableValue: 'bar',
+                operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+        expect(
+          screen.queryByTestId('filter-start-date')
+        ).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-endDate'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                variableName: 'foo',
+                variableValue: 'bar',
+                operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+        expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-variable'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+        expect(
+          screen.queryByTestId('filter-variable-name')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-variable-value')
+        ).not.toBeInTheDocument();
+
+        userEvent.click(screen.getByTestId('delete-operationId'));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            `?${new URLSearchParams(
+              Object.entries({
+                process: 'bigVarProcess',
+                version: '1',
+                flowNodeId: 'ServiceTask_0kt6c5i',
+                active: 'true',
+                incidents: 'true',
+                completed: 'true',
+                canceled: 'true',
+              })
+            ).toString()}`
+          )
+        );
+        expect(
+          screen.queryByTestId('filter-operation-id')
+        ).not.toBeInTheDocument();
+      });
+
+      it('should remove optional filters on filter reset', async () => {
+        const MOCK_PARAMS = {
+          process: 'bigVarProcess',
+          version: '1',
+          ids: '2251799813685467',
+          parentInstanceId: '1954699813693756',
+          errorMessage: 'a random error',
+          startDate: '2021-02-21 18:17:18',
+          endDate: '2021-02-23 18:17:18',
+          flowNodeId: 'ServiceTask_0kt6c5i',
+          variableName: 'foo',
+          variableValue: 'bar',
+          operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+          active: 'true',
+          incidents: 'true',
+          completed: 'true',
+          canceled: 'true',
+        } as const;
+
+        const MOCK_HISTORY = createMemoryHistory({
+          initialEntries: [
+            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+          ],
+        });
+
+        render(<Filters />, {
+          wrapper: getWrapper(MOCK_HISTORY),
+        });
+
+        expect(MOCK_HISTORY.location.search).toBe(
+          `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+        );
+
+        expect(screen.getByTestId('filter-instance-ids')).toBeInTheDocument();
+        expect(
+          screen.getByTestId('filter-parent-instance-id')
+        ).toBeInTheDocument();
+        expect(screen.getByTestId('filter-error-message')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-start-date')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-end-date')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-variable-name')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-variable-value')).toBeInTheDocument();
+        expect(screen.getByTestId('filter-operation-id')).toBeInTheDocument();
+
+        userEvent.click(screen.getByTitle(/reset filters/i));
+
+        await waitFor(() =>
+          expect(MOCK_HISTORY.location.search).toBe(
+            '?active=true&incidents=true'
+          )
+        );
+
+        expect(
+          screen.queryByTestId('filter-instance-ids')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-parent-instance-id')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-error-message')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-start-date')
+        ).not.toBeInTheDocument();
+        expect(screen.queryByTestId('filter-end-date')).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-variable-name')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-variable-value')
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId('filter-operation-id')
+        ).not.toBeInTheDocument();
+      });
     });
   });
 });

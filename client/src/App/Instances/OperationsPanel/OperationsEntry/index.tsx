@@ -14,6 +14,7 @@ import {useHistory} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useLoadingProgress} from './useLoadingProgress';
+import {visibleFiltersStore} from 'modules/stores/visibleFilters';
 
 const TYPE_LABELS: Readonly<Record<OperationEntityType, string>> = {
   ADD_VARIABLE: 'Edit',
@@ -46,6 +47,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   function handleInstancesClick(operationId: OperationEntity['id']) {
     panelStatesStore.expandFiltersPanel();
 
+    visibleFiltersStore.reset();
     history.push(
       Locations.filters(history.location, {
         active: true,
