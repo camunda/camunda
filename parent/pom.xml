@@ -81,7 +81,7 @@
     <version.rocksdbjni>6.27.3</version.rocksdbjni>
     <version.sbe>1.25.1</version.sbe>
     <version.scala-parser>2.1.0</version.scala-parser>
-    <version.scala>2.13.7</version.scala>
+    <version.scala>2.13.8</version.scala>
     <version.slf4j>1.7.32</version.slf4j>
     <version.snakeyaml>1.30</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
@@ -113,7 +113,7 @@
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
-    <plugin.version.build-helper>3.2.0</plugin.version.build-helper>
+    <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
@@ -135,7 +135,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
-    <plugin.version.spotless>2.19.1</plugin.version.spotless>
+    <plugin.version.spotless>2.19.2</plugin.version.spotless>
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
 
