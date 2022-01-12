@@ -84,6 +84,8 @@ public class VariableZeebeRecordProcessor {
       LOGGER.debug("Variable instance for list view: id {}", entity.getId());
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableIndex.VALUE, entity.getValue());
+      updateFields.put(VariableIndex.FULL_VALUE, entity.getFullValue());
+      updateFields.put(VariableIndex.IS_PREVIEW, entity.getIsPreview());
 
       return new UpdateRequest()
           .index(variableIndex.getFullQualifiedName())

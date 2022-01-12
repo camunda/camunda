@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -415,6 +416,86 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         "false",
         () -> taskResponse.get("$.data.task.variables[0].isValueTruncated"),
         shouldContainIsTruncatedFlag);
+  }
+
+  @Test
+  public void shouldUpdateVariables() throws IOException {
+    final String taskAId = "taskA";
+    final String varName = "var";
+    final String var2Name = "var2";
+    final String var3Name = "var3";
+
+    final int size =
+        tasklistProperties.getImporter().getVariableSizeThreshold()
+            - 1; // -1 as we work with string and there is a quote at the beginning
+    final String suffix = "999";
+    final String varValue = createBigVariable(size);
+
+    // having
+    final GraphQLResponse response =
+        tester
+            .deployProcess("simple_process_2.bpmn")
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(
+                "testProcess2", "{\"" + varName + "\": 111, \"" + var2Name + "\": \"value\"}")
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .variablesExist(new String[] {varName})
+            .and()
+            .claimHumanTask(taskAId)
+            .and()
+            .completeHumanTask(
+                taskAId, varName, "222", var2Name, "\"" + varValue + suffix + "\"", var3Name, "111")
+            .waitUntil()
+            .variablesExist(new String[] {var3Name})
+            .when()
+            .getAllTasks();
+    final String taskId = response.get("$.data.tasks[0].id");
+
+    // when
+    final GraphQLResponse taskResponse = tester.getTaskById(taskId, variableFragmentResource);
+
+    // then
+    assertEquals(taskId, taskResponse.get("$.data.task.id"));
+    assertEquals("3", taskResponse.get("$.data.task.variables.length()"));
+    for (int i = 0; i < 2; i++) {
+      if (taskResponse.get("$.data.task.variables[" + i + "].name").equals(varName)) {
+        final int finalI = i;
+        assertEqualsWithExistenceCheck(
+            "222",
+            () -> taskResponse.get("$.data.task.variables[" + finalI + "].value"),
+            shouldContainFullValue);
+        assertEqualsWithExistenceCheck(
+            "222",
+            () -> taskResponse.get("$.data.task.variables[" + finalI + "].previewValue"),
+            shouldContainPreview);
+        assertEqualsWithExistenceCheck(
+            "false",
+            () -> taskResponse.get("$.data.task.variables[" + finalI + "].isValueTruncated"),
+            shouldContainIsTruncatedFlag);
+      } else if (taskResponse.get("$.data.task.variables[" + i + "].name").equals(var2Name)) {
+        final int finalI = i;
+        assertEqualsWithExistenceCheck(
+            "\"" + varValue + suffix + "\"",
+            () -> taskResponse.get("$.data.task.variables[" + finalI + "].value"),
+            shouldContainFullValue);
+        assertEqualsWithExistenceCheck(
+            "\"" + varValue + "",
+            () -> taskResponse.get("$.data.task.variables[" + finalI + "].previewValue"),
+            shouldContainPreview);
+        assertEqualsWithExistenceCheck(
+            "true",
+            () -> taskResponse.get("$.data.task.variables[" + finalI + "].isValueTruncated"),
+            shouldContainIsTruncatedFlag);
+      } else if (!taskResponse.get("$.data.task.variables[" + i + "].name").equals(var3Name)) {
+        fail(
+            String.format(
+                "Variable with name %s is not expected",
+                taskResponse.get("$.data.task.variables[" + i + "].name")));
+      }
+    }
   }
 
   @Test
