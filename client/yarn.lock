@@ -3765,10 +3765,10 @@
   resolved "https://registry.yarnpkg.com/@types/stack-utils/-/stack-utils-2.0.1.tgz#20f18294f797f2209b5f65c8e3b5c8e8261d127c"
   integrity sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==
 
-"@types/styled-components@5.1.19":
-  version "5.1.19"
-  resolved "https://registry.yarnpkg.com/@types/styled-components/-/styled-components-5.1.19.tgz#d76f431ee49d0a222ab4e758dcd540b01987652d"
-  integrity sha512-hNj14Oamk7Jhb/fMMQG7TUkd3e8uMMgxsCTH+ueJNGdFo/PuhlGDQTPChqyilpZP0WttgBHkc2YyT5UG+yc6Yw==
+"@types/styled-components@5.1.20":
+  version "5.1.20"
+  resolved "https://registry.yarnpkg.com/@types/styled-components/-/styled-components-5.1.20.tgz#83c545d1b793b846c231ff18e93019ccd2867972"
+  integrity sha512-TvpQceFwnxJJsAzR1aHsYpL5DxWMHRzM2/0EA6sGtRjV6DtJubmNxeoPMPiIPQzKEGNHccwObXO7Hug/iwm1Xw==
   dependencies:
     "@types/hoist-non-react-statics" "*"
     "@types/react" "*"
@@ -12111,10 +12111,10 @@ msw-storybook-addon@1.4.1:
     "@storybook/addons" "^6.0.0"
     is-node-process "^1.0.1"
 
-msw@0.36.3:
-  version "0.36.3"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.36.3.tgz#7feb243a5fcf563806d45edc027bc36144741170"
-  integrity sha512-Itzp/QhKaleZoslXDrNik3ramW9ynqzOdbwydX2ehBSSaZd5QoiAl/bHYcV33R6CEZcJgIX1N4s+G6XkF/bhkA==
+msw@0.36.4:
+  version "0.36.4"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.36.4.tgz#3ff71837a565b3f80c88ed710c5b452ee374cdd9"
+  integrity sha512-ilcW8L8HbOeUL+govuTMc+v6vunccAgYmvxV0mI17/ADCyT3qvh+qxNk+UF73yxrc2AOpeEF3v0nT0DnqZm8DA==
   dependencies:
     "@mswjs/cookies" "^0.1.6"
     "@mswjs/interceptors" "^0.12.7"
