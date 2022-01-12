@@ -51,7 +51,7 @@ export class AlertModal extends React.Component {
 
     this.state = {
       ...newAlert,
-      reportId: props.initialReport || '',
+      reportId: '',
       name: t('alert.newAlert'),
       inactive: false,
       invalid: false,
@@ -63,6 +63,10 @@ export class AlertModal extends React.Component {
   componentDidMount = async () => {
     if (this.isDefined(this.props.initialAlert)) {
       this.loadAlert();
+    }
+
+    if (this.props.initialReport) {
+      this.updateReport(this.props.initialReport);
     }
 
     this.setState({
@@ -275,6 +279,7 @@ export class AlertModal extends React.Component {
             <Form.Group>
               <Labeled label={t('alert.form.report')}>
                 <Typeahead
+                  disabled={!!this.props.initialReport}
                   initialValue={selectedReport.id}
                   placeholder={t('alert.form.reportPlaceholder')}
                   onChange={this.updateReport}
