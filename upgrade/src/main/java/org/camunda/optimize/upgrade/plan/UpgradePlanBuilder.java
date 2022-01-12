@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan;
 
+import com.vdurmont.semver4j.Semver;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
 import java.util.List;
@@ -29,7 +30,8 @@ public class UpgradePlanBuilder {
     }
 
     public AddToVersionBuilder fromVersion(String fromVersion) {
-      upgradePlan.setFromVersion(fromVersion);
+      // LOOSE to allow for missing patch if an update applies to all patches of a minor
+      upgradePlan.setFromVersion(new Semver(fromVersion, Semver.SemverType.LOOSE));
       return new AddToVersionBuilder(upgradePlan);
     }
   }
@@ -42,7 +44,7 @@ public class UpgradePlanBuilder {
     }
 
     public AddUpgradeStepBuilder toVersion(String toVersion) {
-      upgradePlan.setToVersion(toVersion);
+      upgradePlan.setToVersion(new Semver(toVersion));
       return new AddUpgradeStepBuilder(upgradePlan);
     }
   }

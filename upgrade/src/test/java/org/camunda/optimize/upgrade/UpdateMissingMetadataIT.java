@@ -37,7 +37,10 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
 
     // then it is skipped
     logCapturer.assertContains("Optimize Metadata index wasn't found, thus no metadata available.");
-    logCapturer.assertContains("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
+    logCapturer.assertContains(
+      "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to "
+        + upgradePlan.getToVersion().getValue() + "."
+    );
   }
 
   @Test
@@ -50,8 +53,12 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then it is skipped
-    logCapturer.assertContains("Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
-    logCapturer.assertContains("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
+    logCapturer.assertContains(
+      "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
+    logCapturer.assertContains(
+      "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to "
+        + upgradePlan.getToVersion().getValue() + "."
+    );
   }
 
   @Test

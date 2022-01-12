@@ -136,7 +136,7 @@ public class UpgradeProcedureTest {
     underTest.performUpgrade(upgradePlan);
 
     // then
-    verify(validationService).validateSchemaVersions(TARGET_VERSION, FROM_VERSION, TARGET_VERSION);
+    verify(validationService, never()).validateSchemaVersions(TARGET_VERSION, FROM_VERSION, TARGET_VERSION);
     verify(upgradePlan, never()).getUpgradeSteps();
   }
 

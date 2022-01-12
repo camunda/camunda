@@ -16,6 +16,7 @@ import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -40,30 +41,34 @@ public class UpgradeMain {
     try {
       final UpgradeExecutionDependencies upgradeDependencies = createUpgradeDependencies();
       final UpgradeProcedure upgradeProcedure = UpgradeProcedureFactory.create(upgradeDependencies);
-      String targetVersion = Arrays.stream(args)
+      final String targetVersion = Arrays.stream(args)
         .filter(arg -> arg.matches("\\d\\.\\d\\.\\d"))
         .findFirst()
         .orElse(Version.VERSION);
 
-      final UpgradePlan upgradePlan =
-        new UpgradePlanRegistry(upgradeDependencies)
-          .getUpgradePlanForTargetVersion(targetVersion);
+      final List<UpgradePlan> upgradePlans =
+        new UpgradePlanRegistry(upgradeDependencies).getSequentialUpgradePlansToTargetVersion(targetVersion);
 
-      if (upgradePlan == null) {
+      if (upgradePlans.isEmpty()) {
         String errorMessage =
-          "It was not possible to upgrade Optimize to version " + targetVersion + ".\n" +
+          "It was not possible to update Optimize to version " + targetVersion + ".\n" +
             "Either this is the wrong upgrade jar or the jar is flawed. \n" +
             "Please contact the Optimize support for help!";
         throw new UpgradeRuntimeException(errorMessage);
       }
 
       if (Arrays.stream(args).noneMatch(arg -> arg.contains("skip-warning"))) {
-        printWarning(upgradePlan.getFromVersion(), upgradePlan.getToVersion());
+        printWarning(upgradePlans.get(upgradePlans.size() - 1).getToVersion().getValue());
       }
 
-      log.info("Executing upgrade...");
+      log.info("Executing update...");
 
-      upgradeProcedure.performUpgrade(upgradePlan);
+      for (UpgradePlan upgradePlan : upgradePlans) {
+        upgradeProcedure.performUpgrade(upgradePlan);
+      }
+
+      log.info("Update finished successfully.");
+
       System.exit(0);
     } catch (final Exception e) {
       log.error(e.getMessage(), e);
@@ -71,13 +76,13 @@ public class UpgradeMain {
     }
   }
 
-  private static void printWarning(String fromVersion, String toVersion) {
+  private static void printWarning(String toVersion) {
     String message =
       "\n\n" +
         "================================ WARNING! ================================ \n\n" +
-        "Please be aware that you are about to upgrade the Optimize data \n" +
-        "schema in Elasticsearch from version %s to %s. \n" +
-        "There is no warranty that this upgrade might not break the data \n" +
+        "Please be aware that you are about to update the Optimize data \n" +
+        "schema in Elasticsearch to version %s. \n" +
+        "There is no warranty that this update might not break the data \n" +
         "structure in Elasticsearch. Therefore, it is highly recommended to \n" +
         "create a backup of your data in Elasticsearch in case something goes wrong. \n" +
         "\n" +
@@ -88,11 +93,7 @@ public class UpgradeMain {
         "\n" +
         "Your answer (type your answer and hit enter): ";
 
-    message = String.format(
-      message,
-      fromVersion,
-      toVersion
-    );
+    message = String.format(message, toVersion);
     System.out.println(message);
 
     String answer = "";
