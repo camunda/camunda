@@ -164,6 +164,7 @@
             -Xms128m
             --illegal-access=deny
             -XX:+ExitOnOutOfMemoryError
+            -Dfile.encoding=UTF-8
           </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
