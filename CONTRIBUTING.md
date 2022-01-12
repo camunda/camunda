@@ -202,8 +202,7 @@ Please follow these steps to backport your changes:
          - Make sure to change the target of the pull request to the correct branch (e.g.
            `stable/1.0`).
          - Refer to the pull request in the description to link it (e.g. `backports #123`)
-         - Refer to any issues that were referenced in the original pull request (e.g. `relates to
-           #99`).
+         - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
 
 ## Commit Message Guidelines
 
